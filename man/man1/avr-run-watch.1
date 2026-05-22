@@ -1,0 +1,54 @@
+.TH AVR\-RUN\-WATCH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-run-watch \- Watch a workflow run until it completes.
+.SH SYNOPSIS
+.B avr run watch
+[OPTIONS] [RUN_ID]
+.SH DESCRIPTION
+Watch a workflow run until it completes.
+.PP
+.RS 4
+.nf
+Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
+(repeatable) to scope the auto-select to specific repositories.
+.fi
+.RE
+.PP
+.RS 4
+.nf
+Examples:
+    avr run watch
+    avr run watch --repo acme/web
+    avr run watch --repo a/x --repo b/y
+    avr run watch run-abc123 --exit-status
+    avr run watch run-abc123 --ndjson | jq -c .
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fIRUN_ID\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Scope the auto-select to a repo (org/name or rep-xxx, repeatable). Auto-detected from git remote if omitted. (repeatable)
+.TP
+\fB\-\-exit\-status\fR
+Exit non-zero if run failed.
+.TP
+\fB\-\-interval\fR \fIINTEGER\fR
+Refresh interval in seconds. (default: 3)
+.TP
+\fB\-\-ndjson\fR
+Force NDJSON event stream (default when stdout isn't a TTY).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-list (1),
+.BR avr-run-logs (1),
+.BR avr-run-rerun (1),
+.BR avr-run-view (1)

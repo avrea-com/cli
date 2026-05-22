@@ -1,0 +1,45 @@
+.TH AVR\-CACHE\-DELETE 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-cache-delete \- Delete cache entries by key name or all entries.
+.SH SYNOPSIS
+.B avr cache delete
+[OPTIONS]
+.SH DESCRIPTION
+Delete cache entries by key name or all entries.
+.PP
+Exactly one of --key or --all must be provided. When using --key, --type is required to scope the deletion.
+.PP
+.RS 4
+.nf
+Examples:
+    avr cache delete --repo rep-abc123 --type gha --key "node_modules" --ref refs/heads/main --yes
+    avr cache delete --repo rep-abc123 --all --yes
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-type\fR \fITEXT\fR
+Cache type (required with --key, e.g. gha, bazel, sccache).
+.TP
+\fB\-\-key\fR \fITEXT\fR
+Delete entries matching this cache key name.
+.TP
+\fB\-\-ref\fR \fITEXT\fR
+Ref to narrow deletion scope (used by gha).
+.TP
+\fB\-\-all\fR
+Delete ALL cache entries for the repository.
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-cache (1),
+.BR avr-cache-list (1),
+.BR avr-cache-usage (1)

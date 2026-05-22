@@ -1,0 +1,51 @@
+.TH AVR\-RUN\-LOGS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-run-logs \- Fetch logs for a workflow run's GitHub jobs.
+.SH SYNOPSIS
+.B avr run logs
+[OPTIONS] RUN_ID
+.SH DESCRIPTION
+Fetch logs for a workflow run's GitHub jobs.
+.PP
+Long-form alternative to `avr run view --log[-failed]`. Use --follow to tail logs in real time for an in-progress job; pass --job to scope to a specific job when a run has many.
+.PP
+.RS 4
+.nf
+Examples:
+    avr run logs run-abc123
+    avr run logs run-abc123 --failed
+    avr run logs run-abc123 --job test
+    avr run logs run-abc123 --follow
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIRUN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-job\fR \fITEXT\fR
+Restrict to GitHub jobs whose name contains this string.
+.TP
+\fB\-f\fR, \fB\-\-follow\fR
+Tail logs as they appear (running jobs only).
+.TP
+\fB\-\-failed\fR
+Show only logs from failed jobs.
+.TP
+\fB\-\-all\-levels\fR
+Include diagnostic-level lines (off by default).
+.TP
+\fB\-\-no\-pager\fR
+Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-list (1),
+.BR avr-run-rerun (1),
+.BR avr-run-view (1),
+.BR avr-run-watch (1)

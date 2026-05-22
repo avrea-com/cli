@@ -1,0 +1,25 @@
+.TH AVR\-BILLING\-INVOICES\-DOWNLOAD 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-billing-invoices-download \- Download an invoice PDF.
+.SH SYNOPSIS
+.B avr billing invoices download
+[OPTIONS] INVOICE_ID
+.SH DESCRIPTION
+Download an invoice PDF.
+.PP
+.SH ARGUMENTS
+.TP
+\fIINVOICE_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-out\fR \fITEXT\fR
+Output file path. Defaults to <invoice_id>.pdf.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-billing-invoices (1),
+.BR avr-billing-invoices-list (1),
+.BR avr-billing-invoices-show (1)

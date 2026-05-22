@@ -1,0 +1,28 @@
+.TH AVR\-JOB\-SSH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-ssh \- SSH into a running job's VM.
+.SH SYNOPSIS
+.B avr job ssh
+[OPTIONS] JOB_ID
+.SH DESCRIPTION
+SSH into a running job's VM.
+.PP
+.SH ARGUMENTS
+.TP
+\fIJOB_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-print\-command\fR
+Print the SSH command instead of connecting.
+.TP
+\fB\-\-show\-password\fR
+Display the SSH password (use with caution).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-list (1),
+.BR avr-job-logs (1),
+.BR avr-job-metrics (1),
+.BR avr-job-view (1),
+.BR avr-job-watch (1)

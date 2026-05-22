@@ -1,0 +1,26 @@
+.TH AVR\-AUTH\-SWITCH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-auth-switch \- Switch the default host used when AVR_HOST isn't set.
+.SH SYNOPSIS
+.B avr auth switch
+[OPTIONS] [HOST]
+.SH DESCRIPTION
+Switch the default host used when AVR_HOST isn't set.
+.PP
+.RS 4
+.nf
+Examples:
+    avr auth switch                     # show current default + all hosts
+    avr auth switch https://api.avrea.com
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fIHOST\fR]
+\&
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-auth (1),
+.BR avr-auth-login (1),
+.BR avr-auth-logout (1),
+.BR avr-auth-status (1)

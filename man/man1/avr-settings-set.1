@@ -1,0 +1,38 @@
+.TH AVR\-SETTINGS\-SET 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-settings-set \- Set a setting value.
+.SH SYNOPSIS
+.B avr settings set
+[OPTIONS] KEY VALUE
+.SH DESCRIPTION
+Set a setting value.
+.PP
+VALUE is parsed as a boolean (true/false) or integer when possible, otherwise treated as a string.
+.PP
+.RS 4
+.nf
+Examples:
+    avr settings set cache.gha.enabled false --org org-abc123
+    avr settings set cache.packages.enabled true --repo rep-xyz789
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIKEY\fR
+\&
+.TP
+\fIVALUE\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-settings (1),
+.BR avr-settings-list (1),
+.BR avr-settings-reset (1),
+.BR avr-settings-schema (1)

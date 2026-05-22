@@ -1,0 +1,37 @@
+.TH AVR\-BILLING\-INVOICES\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-billing-invoices-list \- List invoices.
+.SH SYNOPSIS
+.B avr billing invoices list
+[OPTIONS]
+.SH DESCRIPTION
+List invoices.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    created_at, currency, has_pdf, invoice_id, period_end, period_start,
+    status, subtotal_cents, tax_cents, total_cents
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max invoices to return. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-billing-invoices (1),
+.BR avr-billing-invoices-download (1),
+.BR avr-billing-invoices-show (1)

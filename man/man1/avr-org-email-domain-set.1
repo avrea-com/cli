@@ -1,0 +1,33 @@
+.TH AVR\-ORG\-EMAIL\-DOMAIN\-SET 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-email-domain-set \- Set email domains for automatic org membership (admin only).
+.SH SYNOPSIS
+.B avr org email-domain set
+[OPTIONS] DOMAINS...
+.SH DESCRIPTION
+Set email domains for automatic org membership (admin only).
+.PP
+Replaces all existing domains — a typo wipes the org's auto-membership policy. Confirms before applying; pass --yes to skip the prompt (required when stdout isn't a TTY, e.g. in CI).
+.PP
+.RS 4
+.nf
+Examples:
+    avr org email-domain set example.com
+    avr org email-domain set example.com corp.example.com --yes
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIDOMAINS...\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-email-domain (1),
+.BR avr-org-email-domain-list (1)

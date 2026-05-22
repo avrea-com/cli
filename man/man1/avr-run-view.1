@@ -1,0 +1,77 @@
+.TH AVR\-RUN\-VIEW 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-run-view \- View a workflow run with its jobs.
+.SH SYNOPSIS
+.B avr run view
+[OPTIONS] [RUN_ID]
+.SH DESCRIPTION
+View a workflow run with its jobs.
+.PP
+.RS 4
+.nf
+Without RUN_ID, shows 10 most recent runs.
+.fi
+.RE
+.PP
+.RS 4
+.nf
+Examples:
+    avr run view
+    avr run view run-abc123
+    avr run view run-abc123 --steps
+    avr run view run-abc123 --log-failed
+    avr run view run-abc123 --job Build
+    avr run view run-abc123 --json conclusion,jobs
+    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    conclusion, created_at, display_title, duration_seconds, event,
+    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
+    run_id, run_number, status, triggering_actor, updated_at, workflow,
+    workflow_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fIRUN_ID\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-steps\fR
+Expand each job to show its individual steps.
+.TP
+\fB\-\-log\fR
+Print full logs for all jobs.
+.TP
+\fB\-\-log\-failed\fR
+Print logs only for failed steps.
+.TP
+\fB\-\-job\fR \fITEXT\fR
+Restrict view and logs to jobs whose name contains this string.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.TP
+\fB\-\-no\-pager\fR
+Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-list (1),
+.BR avr-run-logs (1),
+.BR avr-run-rerun (1),
+.BR avr-run-watch (1)

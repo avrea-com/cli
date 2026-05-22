@@ -1,0 +1,55 @@
+.TH AVR\-WORKFLOW\-RUN 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-workflow-run \- Trigger a workflow_dispatch event.
+.SH SYNOPSIS
+.B avr workflow run
+[OPTIONS] WORKFLOW
+.SH DESCRIPTION
+Trigger a workflow_dispatch event.
+.PP
+WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric workflow ID, a workflow filename (build.yml), or the workflow's display name.
+.PP
+.RS 4
+.nf
+Examples:
+    avr workflow run build.yml
+    avr workflow run "Build and Deploy" --ref feat/x
+    avr workflow run wfl-abc123 -f env=prod -f region=eu
+    echo '{"env":"prod"}' | avr workflow run build.yml --json
+    avr workflow run build.yml --watch --exit-status
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIWORKFLOW_IDENTIFIER\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-r\fR, \fB\-\-ref\fR \fITEXT\fR
+Branch or tag to run at. Defaults to the repository's default branch.
+.TP
+\fB\-f\fR, \fB\-\-raw\-field\fR \fITEXT\fR
+Workflow input: key=value (repeatable). (repeatable)
+.TP
+\fB\-\-json\fR
+Read a JSON object of inputs from stdin.
+.TP
+\fB\-w\fR, \fB\-\-watch\fR / \fB\-W\fR, \fB\-\-no\-watch\fR
+Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately. (default: True)
+.TP
+\fB\-\-exit\-status\fR
+With --watch, exit non-zero if the run failed.
+.TP
+\fB\-\-interval\fR \fIINTEGER\fR
+With --watch, refresh interval in seconds. (default: 3)
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-workflow (1),
+.BR avr-workflow-list (1),
+.BR avr-workflow-view (1)

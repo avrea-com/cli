@@ -1,0 +1,64 @@
+.TH AVR\-CACHE\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-cache-list \- List cache entries for a repository.
+.SH SYNOPSIS
+.B avr cache list
+[OPTIONS]
+.SH DESCRIPTION
+List cache entries for a repository.
+.PP
+.RS 4
+.nf
+Examples:
+    avr cache list --repo rep-abc123
+    avr cache list --repo rep-abc123 --type gha --limit 50
+    avr cache list --repo rep-abc123 --key "node_modules" --ref refs/heads/main
+    avr cache list --repo rep-abc123 --json key,size_bytes,created_at
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-type\fR \fITEXT\fR
+Filter by cache type (e.g. gha, bazel, turbo, rclone).
+.TP
+\fB\-\-key\fR \fITEXT\fR
+Filter by key prefix.
+.TP
+\fB\-\-ref\fR \fITEXT\fR
+Filter by exact ref match.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max entries to return. (default: 100)
+.TP
+\fB\-\-offset\fR \fIINTEGER RANGE\fR
+Number of entries to skip. (default: 0)
+.TP
+\fB\-\-order\fR \fICHOICE\fR
+Sort order. (choices: created_at.desc, created_at.asc; default: created_at.desc)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-cache (1),
+.BR avr-cache-delete (1),
+.BR avr-cache-usage (1)

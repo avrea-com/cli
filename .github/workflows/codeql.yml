@@ -1,0 +1,36 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1"  # Mondays 08:00 UTC — weekly baseline scan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # push findings to the Security tab
+      packages: read           # CodeQL fetches Python query packs from ghcr
+      actions: read            # SARIF fingerprinting reads workflow run metadata
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - uses: github/codeql-action/init@03e4368ac7daa2bd82b3e85262f3bf87ee112f57 # v3.36.0
+        with:
+          languages: python
+          # security-extended adds a small number of higher-precision queries
+          # on top of the default suite. Drop to "default" if signal/noise gets bad.
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@03e4368ac7daa2bd82b3e85262f3bf87ee112f57 # v3.36.0
+        with:
+          category: "/language:python"

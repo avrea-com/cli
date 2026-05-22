@@ -1,0 +1,35 @@
+.TH AVR\-CONFIG\-SET 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-config-set \- Set a CLI configuration value.
+.SH SYNOPSIS
+.B avr config set
+[OPTIONS] {org} VALUE
+.SH DESCRIPTION
+Set a CLI configuration value.
+.PP
+.RS 4
+.nf
+Available keys:
+  org   Active organization ID
+.fi
+.RE
+.PP
+.RS 4
+.nf
+Examples:
+    avr config set org org-abc123
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIKEY\fR
+(choices: org)
+.TP
+\fIVALUE\fR
+\&
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-config (1),
+.BR avr-config-get (1),
+.BR avr-config-list (1),
+.BR avr-config-unset (1)

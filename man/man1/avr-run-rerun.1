@@ -1,0 +1,39 @@
+.TH AVR\-RUN\-RERUN 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-run-rerun \- Re-run a completed workflow run.
+.SH SYNOPSIS
+.B avr run rerun
+[OPTIONS] RUN_ID
+.SH DESCRIPTION
+Re-run a completed workflow run.
+.PP
+.RS 4
+.nf
+Examples:
+    avr run rerun run-abc123
+    avr run rerun run-abc123 --failed
+    avr run rerun run-abc123 --yes
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIRUN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-failed\fR
+Re-run only the failed jobs.
+.TP
+\fB\-y\fR, \fB\-\-yes\fR
+Skip the confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-list (1),
+.BR avr-run-logs (1),
+.BR avr-run-view (1),
+.BR avr-run-watch (1)
