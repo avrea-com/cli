@@ -1,0 +1,28 @@
+.TH AVR\-FIREWALL\-SET\-DEFAULT 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-firewall-set-default \- Set (or replace) the catch-all (default) rule for the scope.
+.SH SYNOPSIS
+.B avr firewall set-default
+[OPTIONS]
+.SH DESCRIPTION
+Set (or replace) the catch-all (default) rule for the scope.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID. If provided, sets the repo-level default.
+.TP
+\fB\-\-action\fR \fICHOICE\fR
+(choices: allow, deny; required)
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-show (1)

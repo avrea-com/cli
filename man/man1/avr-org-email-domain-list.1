@@ -1,0 +1,29 @@
+.TH AVR\-ORG\-EMAIL\-DOMAIN\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-email-domain-list \- List email domains for automatic org membership (admin only).
+.SH SYNOPSIS
+.B avr org email-domain list
+[OPTIONS]
+.SH DESCRIPTION
+List email domains for automatic org membership (admin only).
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    created_at, domain, organization_email_domain_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-email-domain (1),
+.BR avr-org-email-domain-set (1)

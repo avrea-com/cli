@@ -1,0 +1,84 @@
+.TH AVR 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr \- Avrea on the command line.
+.SH SYNOPSIS
+.B avr
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Avrea on the command line.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-version\fR, \fB\-V\fR
+Show the version and exit.
+.TP
+\fB\-\-no\-color\fR
+Disable colored output. Also honors NO_COLOR=1.
+.TP
+\fB\-\-verbose\fR, \fB\-v\fR
+Show debug information including HTTP requests.
+.TP
+\fB\-\-links\fR / \fB\-\-no\-links\fR
+Make IDs clickable via OSC 8 hyperlinks. Auto-disabled off-TTY. Also honors AVR_LINKS=0. (default: True; env: AVR_LINKS)
+.SH COMMANDS
+.TP
+status
+Show recent runs, performance stats, and cache health.
+.TP
+run
+View and manage GitHub workflow runs.
+.TP
+job
+Inspect Avrea job VMs (SSH, metrics, logs).
+.TP
+workflow
+List and view workflow definitions.
+.TP
+cache
+Inspect and manage the Avrea build cache.
+.TP
+log
+Search across runner execution logs.
+.TP
+auth
+Authenticate and manage credentials.
+.TP
+config
+View and manage CLI configuration.
+.TP
+settings
+View and toggle cache and runner settings.
+.TP
+firewall
+Manage the egress firewall rule list for orgs and repositories.
+.TP
+billing
+Manage billing, invoices, and payment methods.
+.TP
+audit-events
+View audit events for organization writes.
+.TP
+repo
+List repositories connected to Avrea.
+.TP
+org
+Manage organizations and installations.
+.TP
+health
+Check Avrea platform status.
+.SH SEE ALSO
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1)

@@ -1,0 +1,59 @@
+.TH AVR\-WORKFLOW\-VIEW 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-workflow-view \- View a workflow with aggregate stats and per-job breakdown.
+.SH SYNOPSIS
+.B avr workflow view
+[OPTIONS] WORKFLOW
+.SH DESCRIPTION
+View a workflow with aggregate stats and per-job breakdown.
+.PP
+WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric workflow ID (the integer in the GH URL), a workflow filename (build.yml), or the workflow's display name. All forms except wfl-... need a repository — pass --repo or run from inside the repo's git checkout.
+.PP
+.RS 4
+.nf
+Examples:
+    avr workflow view wfl-abc123
+    avr workflow view 200589168
+    avr workflow view ci.yml
+    avr workflow view "Build and Deploy" --since 7d
+    avr workflow view ci --json runs,median_duration_seconds
+    avr workflow view wfl-abc123 --json '*' --jq '.jobs[].job.name'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    completed_runs, failure_count, flaked_count, jobs, median_duration_seconds,
+    name, p95_duration_seconds, path, platform_workflow_id, repository, runs,
+    workflow_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIWORKFLOW_IDENTIFIER\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote when WORKFLOW is a filename or display name.
+.TP
+\fB\-\-since\fR \fITEXT\fR
+Time window: '30d', '7d', '24h', or 'all'. (default: 30d)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-workflow (1),
+.BR avr-workflow-list (1),
+.BR avr-workflow-run (1)

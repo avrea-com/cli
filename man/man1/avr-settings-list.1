@@ -1,0 +1,51 @@
+.TH AVR\-SETTINGS\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-settings-list \- List settings with their current values and source.
+.SH SYNOPSIS
+.B avr settings list
+[OPTIONS]
+.SH DESCRIPTION
+List settings with their current values and source.
+.PP
+.RS 4
+.nf
+Examples:
+    avr settings list --org org-abc123
+    avr settings list --org org-abc123 --repo rep-xyz789
+    avr settings list --repo acme/web
+    avr settings list --prefix cache.
+    avr settings list --json key,value,source
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    key, source, value
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-prefix\fR \fITEXT\fR
+Filter by key prefix (e.g. 'cache.').
+.TP
+\fB\-\-web\fR
+Open in browser.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-settings (1),
+.BR avr-settings-reset (1),
+.BR avr-settings-schema (1),
+.BR avr-settings-set (1)

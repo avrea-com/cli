@@ -1,0 +1,23 @@
+.TH AVR\-BILLING\-PAYMENT\-METHODS\-SET\-DEFAULT 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-billing-payment-methods-set-default \- Set a payment method as the default.
+.SH SYNOPSIS
+.B avr billing payment-methods set-default
+[OPTIONS] PM_ID
+.SH DESCRIPTION
+Set a payment method as the default.
+.PP
+.SH ARGUMENTS
+.TP
+\fIPM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-billing-payment-methods (1),
+.BR avr-billing-payment-methods-add (1),
+.BR avr-billing-payment-methods-list (1),
+.BR avr-billing-payment-methods-remove (1)

@@ -1,0 +1,54 @@
+.TH AVR\-FIREWALL 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-firewall \- Manage the egress firewall rule list for orgs and repositories.
+.SH SYNOPSIS
+.B avr firewall
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage the egress firewall rule list for orgs and repositories.
+.PP
+.SH COMMANDS
+.TP
+add
+Add a rule.
+.TP
+delete
+Delete a rule by ID.
+.TP
+flow-summaries
+Show per-VM network activity summaries captured at VM stop.
+.TP
+list
+List egress firewall rules for the given scope.
+.TP
+move
+Move a rule to a new position (rewrites the full ordering atomically).
+.TP
+set-default
+Set (or replace) the catch-all (default) rule for the scope.
+.TP
+show
+Show the resolved (merged) firewall rule list for a repository.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

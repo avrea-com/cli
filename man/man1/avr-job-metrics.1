@@ -1,0 +1,48 @@
+.TH AVR\-JOB\-METRICS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-metrics \- Show CPU/memory/IO gauges for a job's VM.
+.SH SYNOPSIS
+.B avr job metrics
+[OPTIONS] JOB_ID
+.SH DESCRIPTION
+Show CPU/memory/IO gauges for a job's VM.
+.PP
+.RS 4
+.nf
+Examples:
+    avr job metrics job-abc123
+    avr job metrics job-abc123 --source cpu --source network
+    avr job metrics job-abc123 --watch
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIJOB_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-source\fR \fICHOICE\fR
+Metric source (repeatable). Defaults to cpu and memory. (choices: cpu, memory, filesystem, load, disk-io, disk-ops, network; repeatable)
+.TP
+\fB\-\-start\fR \fIINTEGER\fR
+Start time (Unix seconds). Defaults to execution start.
+.TP
+\fB\-\-end\fR \fIINTEGER\fR
+End time (Unix seconds). Defaults to execution end or now.
+.TP
+\fB\-w\fR, \fB\-\-watch\fR
+Refresh every 5 seconds (Ctrl-C to exit).
+.TP
+\fB\-\-json\fR
+Output raw metrics responses as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-list (1),
+.BR avr-job-logs (1),
+.BR avr-job-ssh (1),
+.BR avr-job-view (1),
+.BR avr-job-watch (1)

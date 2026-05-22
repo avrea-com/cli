@@ -1,0 +1,52 @@
+.TH AVR\-WORKFLOW\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-workflow-list \- List workflows with aggregate run stats.
+.SH SYNOPSIS
+.B avr workflow list
+[OPTIONS]
+.SH DESCRIPTION
+List workflows with aggregate run stats.
+.PP
+.RS 4
+.nf
+Examples:
+    avr workflow list
+    avr workflow list --repo acme/web
+    avr workflow list --since 7d
+    avr workflow list --limit 5
+    avr workflow list --since all
+    avr workflow list --json name,runs,median_duration_seconds
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    completed_runs, failure_count, flaked_count, median_duration_seconds, name,
+    path, platform_workflow_id, repository, runs, workflow_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Filter by repository (org/repo or rep-xxx ID, repeatable). (repeatable)
+.TP
+\fB\-\-since\fR \fITEXT\fR
+Time window: '30d', '7d', '24h', or 'all'. (default: 30d)
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max workflows to show. (default: 20)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-workflow (1),
+.BR avr-workflow-run (1),
+.BR avr-workflow-view (1)

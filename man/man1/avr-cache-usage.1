@@ -1,0 +1,41 @@
+.TH AVR\-CACHE\-USAGE 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-cache-usage \- Show cache usage summary for a repository.
+.SH SYNOPSIS
+.B avr cache usage
+[OPTIONS]
+.SH DESCRIPTION
+Show cache usage summary for a repository.
+.PP
+.RS 4
+.nf
+Examples:
+    avr cache usage --repo rep-abc123
+    avr cache usage --repo rep-abc123 --json '*'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    by_type, over_quota, quota_bytes, total_size_bytes
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-cache (1),
+.BR avr-cache-delete (1),
+.BR avr-cache-list (1)

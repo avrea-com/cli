@@ -1,0 +1,32 @@
+.TH AVR\-BILLING\-PAYMENT\-METHODS\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-billing-payment-methods-list \- List payment methods.
+.SH SYNOPSIS
+.B avr billing payment-methods list
+[OPTIONS]
+.SH DESCRIPTION
+List payment methods.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    card_brand, card_exp_month, card_exp_year, card_last4, is_default,
+    payment_method_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-billing-payment-methods (1),
+.BR avr-billing-payment-methods-add (1),
+.BR avr-billing-payment-methods-remove (1),
+.BR avr-billing-payment-methods-set-default (1)

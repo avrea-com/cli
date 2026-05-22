@@ -1,0 +1,24 @@
+.TH AVR\-ORG\-INSTALL\-ADD 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-install-add \- Start the GitHub App installation flow.
+.SH SYNOPSIS
+.B avr org install add
+[OPTIONS]
+.SH DESCRIPTION
+Start the GitHub App installation flow.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-no\-browser\fR
+Do not open browser automatically.
+.TP
+\fB\-\-wait\-seconds\fR \fIINTEGER\fR
+Seconds to wait for detection. (default: 120)
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install (1),
+.BR avr-org-install-list (1),
+.BR avr-org-install-remove (1)

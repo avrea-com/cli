@@ -1,0 +1,44 @@
+.TH AVR\-SETTINGS\-SCHEMA 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-settings-schema \- List available setting definitions.
+.SH SYNOPSIS
+.B avr settings schema
+[OPTIONS]
+.SH DESCRIPTION
+List available setting definitions.
+.PP
+.RS 4
+.nf
+Examples:
+    avr settings schema
+    avr settings schema --prefix cache. --scope repository
+    avr settings schema --json '*'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    choices, default, description, inherits, key, max_value, min_value,
+    scopes, value_type
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-prefix\fR \fITEXT\fR
+Filter by key prefix (e.g. 'cache.').
+.TP
+\fB\-\-scope\fR \fICHOICE\fR
+Filter by scope. (choices: repository, organization)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-settings (1),
+.BR avr-settings-list (1),
+.BR avr-settings-reset (1),
+.BR avr-settings-set (1)

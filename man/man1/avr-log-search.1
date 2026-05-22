@@ -1,0 +1,59 @@
+.TH AVR\-LOG\-SEARCH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-log-search \- Search logs for a repository.
+.SH SYNOPSIS
+.B avr log search
+[OPTIONS]
+.SH DESCRIPTION
+Search logs for a repository.
+.PP
+Performs full-text search when --query is provided, otherwise returns logs sorted by line number. Results are filtered to logs from repositories you have access to.
+.PP
+.RS 4
+.nf
+Examples:
+    avr log search --repo acme/web --query "error"
+    avr log search --repo rep-abc123 --level error --limit 50
+    avr log search --repo rep-abc123 --vm-id vm-xyz --stream stderr
+    avr log search --repo rep-abc123 --query "OOM" --json content,timestamp,vm_id
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    content, group_name, id, level, line_number, repository_id, score,
+    step_name, step_record_id, stream, timestamp, vm_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-query\fR \fITEXT\fR
+Full-text search query
+.TP
+\fB\-\-stream\fR \fICHOICE\fR
+Filter by output stream (choices: stdout, stderr)
+.TP
+\fB\-\-level\fR \fICHOICE\fR
+Filter by log level (choices: debug, info, warning, error)
+.TP
+\fB\-\-vm\-id\fR \fITEXT\fR
+Filter by execution/VM ID
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER\fR
+Maximum results to return (default: 100)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-log (1)

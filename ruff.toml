@@ -1,0 +1,34 @@
+line-length = 120
+exclude = [
+  ".venv",
+  "venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".ruff_cache",
+  "build",
+  "dist",
+  "*.egg-info",
+]
+
+[lint]
+extend-select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear (common bugs)
+  "UP",  # pyupgrade (modernize Python syntax)
+  "C4",  # flake8-comprehensions
+  "LOG", # flake8-logging
+  "G",   # flake8-logging-format
+  "PLC", # enable pylint checks
+]
+
+[lint.per-file-ignores]
+# Tests use lazy imports inside fixtures
+"tests/**/*.py" = ["PLC0415"]
+
+[lint.isort]
+force-single-line = true
+no-sections = true
+from-first = true

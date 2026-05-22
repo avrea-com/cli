@@ -1,0 +1,61 @@
+.TH AVR\-JOB\-VIEW 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-view \- View a single job with its steps.
+.SH SYNOPSIS
+.B avr job view
+[OPTIONS] JOB_ID
+.SH DESCRIPTION
+View a single job with its steps.
+.PP
+.RS 4
+.nf
+Examples:
+    avr job view job-abc123
+    avr job view job-abc123 --log-failed
+    avr job view job-abc123 --json conclusion,steps
+    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion=="failure")'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    running_on_avrea, started_at, state, steps, workflow_run
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIJOB_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-log\fR
+Print full logs for the job.
+.TP
+\fB\-\-log\-failed\fR
+Print logs only for failed steps.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.TP
+\fB\-\-no\-pager\fR
+Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-list (1),
+.BR avr-job-logs (1),
+.BR avr-job-metrics (1),
+.BR avr-job-ssh (1),
+.BR avr-job-watch (1)

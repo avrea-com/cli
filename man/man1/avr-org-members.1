@@ -1,0 +1,41 @@
+.TH AVR\-ORG\-MEMBERS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-members \- List organization members (admin only).
+.SH SYNOPSIS
+.B avr org members
+[OPTIONS]
+.SH DESCRIPTION
+List organization members (admin only).
+.PP
+.RS 4
+.nf
+Examples:
+    avr org members
+    avr org members --org org-abc123
+    avr org members --json name,role
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    joined_at, name, role, user_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org (1),
+.BR avr-org-create (1),
+.BR avr-org-email-domain (1),
+.BR avr-org-install (1),
+.BR avr-org-list (1)

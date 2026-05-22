@@ -1,0 +1,33 @@
+.TH AVR\-JOB\-WATCH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-watch \- Watch active jobs with auto-refresh (Ctrl+C to stop).
+.SH SYNOPSIS
+.B avr job watch
+[OPTIONS]
+.SH DESCRIPTION
+Watch active jobs with auto-refresh (Ctrl+C to stop).
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. (repeatable)
+.TP
+\fB\-\-name\fR \fITEXT\fR
+Filter by job name (repeatable). (repeatable)
+.TP
+\fB\-\-interval\fR \fIINTEGER\fR
+Refresh interval in seconds. (default: 5)
+.TP
+\fB\-\-ndjson\fR
+Emit one JSON object per refresh (default when stdout isn't a TTY).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-list (1),
+.BR avr-job-logs (1),
+.BR avr-job-metrics (1),
+.BR avr-job-ssh (1),
+.BR avr-job-view (1)

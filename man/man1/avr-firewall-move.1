@@ -1,0 +1,32 @@
+.TH AVR\-FIREWALL\-MOVE 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-firewall-move \- Move a rule to a new position (rewrites the full ordering atomically).
+.SH SYNOPSIS
+.B avr firewall move
+[OPTIONS] RULE_ID
+.SH DESCRIPTION
+Move a rule to a new position (rewrites the full ordering atomically).
+.PP
+.SH ARGUMENTS
+.TP
+\fIRULE_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-to\fR \fIINTEGER\fR
+Target 0-indexed position. (required)
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID. If provided, moves a repo-level rule.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

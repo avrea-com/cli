@@ -1,0 +1,28 @@
+.TH AVR\-FIREWALL\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-firewall-list \- List egress firewall rules for the given scope.
+.SH SYNOPSIS
+.B avr firewall list
+[OPTIONS]
+.SH DESCRIPTION
+List egress firewall rules for the given scope.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID. If provided, shows the repo-level list.
+.TP
+\fB\-\-json\fR
+Output rules as JSON instead of a table.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

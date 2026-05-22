@@ -1,0 +1,25 @@
+.TH AVR\-ORG\-INSTALL\-REMOVE 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-install-remove \- Remove/suspend a GitHub installation.
+.SH SYNOPSIS
+.B avr org install remove
+[OPTIONS]
+.SH DESCRIPTION
+Remove/suspend a GitHub installation.
+.PP
+Confirms before suspending; pass --yes to skip the prompt (required when stdout isn't a TTY, e.g. in CI).
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+Installation ID to remove (ins-xxx format) (required)
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install (1),
+.BR avr-org-install-add (1),
+.BR avr-org-install-list (1)

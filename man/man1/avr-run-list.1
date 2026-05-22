@@ -1,0 +1,82 @@
+.TH AVR\-RUN\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-run-list \- List workflow runs for an organization.
+.SH SYNOPSIS
+.B avr run list
+[OPTIONS]
+.SH DESCRIPTION
+List workflow runs for an organization.
+.PP
+.RS 4
+.nf
+Examples:
+    avr run list
+    avr run list --status failure --limit 5
+    avr run list --status in_progress --json status,conclusion,head_branch
+    avr run list --branch main --status completed
+    avr run list --since 24h
+    avr run list --json '?'           # list available fields
+    avr run list --json '*'           # all fields
+    avr run list --json status,conclusion -q '[.[] | select(.status == "completed")]'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    conclusion, created_at, display_title, duration_seconds, event,
+    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
+    run_number, status, triggering_actor, updated_at, workflow, workflow_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. (repeatable)
+.TP
+\fB\-\-status\fR \fICHOICE\fR
+Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. (choices: action_required, cancelled, completed, failure, in_progress, neutral, queued, skipped, stale, startup_failure, success, timed_out; repeatable)
+.TP
+\fB\-\-branch\fR \fITEXT\fR
+Filter by head branch (repeatable). (repeatable)
+.TP
+\fB\-w\fR, \fB\-\-workflow\fR \fITEXT\fR
+Filter by workflow ID (wfl-xxx, repeatable). (repeatable)
+.TP
+\fB\-\-since\fR \fITEXT\fR
+Relative time window: '7d', '24h', etc. Sugar for --created-after.
+.TP
+\fB\-\-from\fR, \fB\-\-created\-after\fR \fITEXT\fR
+Only runs created after this ISO timestamp.
+.TP
+\fB\-\-to\fR, \fB\-\-created\-before\fR \fITEXT\fR
+Only runs created before this ISO timestamp.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max runs to return. (default: 20)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-order\fR \fICHOICE\fR
+Sort order. (choices: created_at.desc, created_at.asc; default: created_at.desc)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-logs (1),
+.BR avr-run-rerun (1),
+.BR avr-run-view (1),
+.BR avr-run-watch (1)

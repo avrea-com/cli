@@ -1,0 +1,52 @@
+.TH AVR\-JOB\-LOGS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-logs \- View logs for a job, grouped by step.
+.SH SYNOPSIS
+.B avr job logs
+[OPTIONS] JOB_ID
+.SH DESCRIPTION
+View logs for a job, grouped by step.
+.PP
+.RS 4
+.nf
+Examples:
+    avr job logs job-abc123
+    avr job logs job-abc123 --failed
+    avr job logs job-abc123 --step "Build" --level error
+    avr job logs job-abc123 --follow
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIJOB_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-failed\fR
+Only show logs from failed steps.
+.TP
+\fB\-\-step\fR \fITEXT\fR
+Filter to a specific step by name.
+.TP
+\fB\-\-level\fR \fICHOICE\fR
+Filter by log level. (choices: debug, info, notice, warning, error)
+.TP
+\fB\-\-follow\fR, \fB\-f\fR
+Follow logs for in-progress jobs.
+.TP
+\fB\-\-all\-levels\fR
+Include diagnostic-level lines (hidden by default).
+.TP
+\fB\-\-no\-pager\fR
+Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-list (1),
+.BR avr-job-metrics (1),
+.BR avr-job-ssh (1),
+.BR avr-job-view (1),
+.BR avr-job-watch (1)

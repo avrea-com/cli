@@ -1,0 +1,25 @@
+.TH AVR\-AUTH\-STATUS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-auth-status \- Display the authenticated user and connection state.
+.SH SYNOPSIS
+.B avr auth status
+[OPTIONS]
+.SH DESCRIPTION
+Display the authenticated user and connection state.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-show\-token\fR
+Display the auth token in plain text.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-auth (1),
+.BR avr-auth-login (1),
+.BR avr-auth-logout (1),
+.BR avr-auth-switch (1)

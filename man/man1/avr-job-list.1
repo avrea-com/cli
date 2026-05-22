@@ -1,0 +1,74 @@
+.TH AVR\-JOB\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job-list \- List jobs for an organization.
+.SH SYNOPSIS
+.B avr job list
+[OPTIONS]
+.SH DESCRIPTION
+List jobs for an organization.
+.PP
+.RS 4
+.nf
+Examples:
+    avr job list
+    avr job list --status failure --limit 5
+    avr job list --status in_progress --json job_name,state,conclusion
+    avr job list --since 24h
+    avr job list --json '?'           # list available fields
+    avr job list --json '*'           # all fields
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    running_on_avrea, started_at, state
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. (repeatable)
+.TP
+\fB\-\-name\fR \fITEXT\fR
+Filter by job name (repeatable). (repeatable)
+.TP
+\fB\-\-status\fR \fICHOICE\fR
+Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. (choices: action_required, cancelled, completed, failure, in_progress, neutral, queued, skipped, stale, startup_failure, success, timed_out; repeatable)
+.TP
+\fB\-\-on\-avrea\fR / \fB\-\-shadowing\fR
+Filter by Avrea-run vs shadowing jobs.
+.TP
+\fB\-w\fR, \fB\-\-workflow\fR \fITEXT\fR
+Filter by workflow ID (wfl-xxx, repeatable). (repeatable)
+.TP
+\fB\-\-since\fR \fITEXT\fR
+Relative time window: '7d', '24h', etc.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max jobs to return. (default: 20)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-order\fR \fICHOICE\fR
+Sort order. (choices: created_at.desc, created_at.asc; default: created_at.desc)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-job (1),
+.BR avr-job-logs (1),
+.BR avr-job-metrics (1),
+.BR avr-job-ssh (1),
+.BR avr-job-view (1),
+.BR avr-job-watch (1)

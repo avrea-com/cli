@@ -1,0 +1,42 @@
+.TH AVR\-AUTH 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-auth \- Authenticate and manage credentials.
+.SH SYNOPSIS
+.B avr auth
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Authenticate and manage credentials.
+.PP
+.SH COMMANDS
+.TP
+login
+Authenticate via browser and store credentials.
+.TP
+logout
+Revoke the current API key and remove stored credentials.
+.TP
+status
+Display the authenticated user and connection state.
+.TP
+switch
+Switch the default host used when AVR_HOST isn't set.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-auth-login (1),
+.BR avr-auth-logout (1),
+.BR avr-auth-status (1),
+.BR avr-auth-switch (1)

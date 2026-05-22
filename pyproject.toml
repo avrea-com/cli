@@ -1,0 +1,58 @@
+[project]
+name = "avr-cli"
+version = "0.1.0"
+description = "Avrea command-line client"
+authors = [{ name = "Avrea", email = "support@avrea.com" }]
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.14"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "click>=8.3.1",
+  "httpx>=0.28.1",
+  "platformdirs>=4.0",
+  "prettytable>=3.17.0",
+  "pydantic>=2.12.4",
+  "typing-extensions>=4.15.0",
+  "idna>=3.15",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0.3",
+  "pytest-asyncio>=1.3.0",
+  "pytest-timeout>=2.4.0",
+  "ruff",
+  "ty==0.0.15",  # pre-release; pin until 0.1.x stabilizes
+]
+
+[tool.pytest.ini_options]
+timeout = 60
+
+[project.scripts]
+avr = "avrea_cli.main:main"
+
+[project.urls]
+Homepage = "https://avrea.com/"
+Repository = "https://github.com/avrea-com/cli"
+"Bug Tracker" = "https://github.com/avrea-com/cli/issues"
+
+[tool.uv]
+required-version = "==0.11.11"
+package = true
+exclude-newer = "P3D"
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.setuptools.packages.find]
+include = ["avrea_cli*"]
+
+[tool.setuptools.package-data]
+avrea_cli = ["assets/*.svg"]

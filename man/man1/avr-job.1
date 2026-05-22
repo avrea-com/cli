@@ -1,0 +1,50 @@
+.TH AVR\-JOB 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-job \- Inspect Avrea job VMs (SSH, metrics, logs).
+.SH SYNOPSIS
+.B avr job
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Inspect Avrea job VMs (SSH, metrics, logs).
+.PP
+.SH COMMANDS
+.TP
+list
+List jobs for an organization.
+.TP
+logs
+View logs for a job, grouped by step.
+.TP
+metrics
+Show CPU/memory/IO gauges for a job's VM.
+.TP
+ssh
+SSH into a running job's VM.
+.TP
+view
+View a single job with its steps.
+.TP
+watch
+Watch active jobs with auto-refresh (Ctrl+C to stop).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-job-list (1),
+.BR avr-job-logs (1),
+.BR avr-job-metrics (1),
+.BR avr-job-ssh (1),
+.BR avr-job-view (1),
+.BR avr-job-watch (1)

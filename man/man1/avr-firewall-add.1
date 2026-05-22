@@ -1,0 +1,47 @@
+.TH AVR\-FIREWALL\-ADD 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-firewall-add \- Add a rule.
+.SH SYNOPSIS
+.B avr firewall add
+[OPTIONS]
+.SH DESCRIPTION
+Add a rule.
+.PP
+Add a rule. Exactly one of --cidr, --fqdn, --any must be specified.
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID. If provided, adds at repo scope.
+.TP
+\fB\-\-action\fR \fICHOICE\fR
+(choices: allow, deny; required)
+.TP
+\fB\-\-cidr\fR \fITEXT\fR
+Destination CIDR (e.g. 10.0.0.0/8 or 1.2.3.4/32).
+.TP
+\fB\-\-fqdn\fR \fITEXT\fR
+Destination hostname (e.g. api.example.com).
+.TP
+\fB\-\-any\fR
+Catch-all (default) rule.
+.TP
+\fB\-\-proto\fR \fICHOICE\fR
+(choices: tcp, udp, icmp, any; default: any)
+.TP
+\fB\-\-ports\fR \fITEXT\fR
+Port or port range (e.g. 443 or 30000-39999).
+.TP
+\fB\-\-position\fR \fIINTEGER\fR
+Insert at a specific 0-indexed position.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

@@ -1,0 +1,33 @@
+.TH AVR\-SETTINGS\-RESET 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-settings-reset \- Remove a setting override, reverting to the inherited or default value.
+.SH SYNOPSIS
+.B avr settings reset
+[OPTIONS] KEY
+.SH DESCRIPTION
+Remove a setting override, reverting to the inherited or default value.
+.PP
+.RS 4
+.nf
+Examples:
+    avr settings reset cache.gha.enabled --repo rep-xyz789
+    avr settings reset cache.packages.enabled --org org-abc123
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIKEY\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-settings (1),
+.BR avr-settings-list (1),
+.BR avr-settings-schema (1),
+.BR avr-settings-set (1)

@@ -1,0 +1,38 @@
+.TH AVR\-STATUS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-status \- Show recent runs, performance stats, and cache health.
+.SH SYNOPSIS
+.B avr status
+[OPTIONS]
+.SH DESCRIPTION
+Show recent runs, performance stats, and cache health.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-since\fR \fITEXT\fR
+Time window for stats panels: '7d', '24h', etc. (default: 7d)
+.TP
+\fB\-\-json\fR
+Output raw JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1)

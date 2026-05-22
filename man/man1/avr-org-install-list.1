@@ -1,0 +1,28 @@
+.TH AVR\-ORG\-INSTALL\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-org-install-list \- List accessible installations across all your organizations.
+.SH SYNOPSIS
+.B avr org install list
+[OPTIONS]
+.SH DESCRIPTION
+List accessible installations across all your organizations.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    created_at, platform_installation_id, installation_id, organization_name,
+    organization_slug, state, target_name
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install (1),
+.BR avr-org-install-add (1),
+.BR avr-org-install-remove (1)

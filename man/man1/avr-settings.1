@@ -1,0 +1,42 @@
+.TH AVR\-SETTINGS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-settings \- View and toggle cache and runner settings.
+.SH SYNOPSIS
+.B avr settings
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+View and toggle cache and runner settings.
+.PP
+.SH COMMANDS
+.TP
+list
+List settings with their current values and source.
+.TP
+reset
+Remove a setting override, reverting to the inherited or default value.
+.TP
+schema
+List available setting definitions.
+.TP
+set
+Set a setting value.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-settings-list (1),
+.BR avr-settings-reset (1),
+.BR avr-settings-schema (1),
+.BR avr-settings-set (1)

@@ -1,0 +1,50 @@
+.TH AVR\-AUDIT\-EVENTS\-LIST 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-audit-events-list \- List audit events for the organization.
+.SH SYNOPSIS
+.B avr audit-events list
+[OPTIONS]
+.SH DESCRIPTION
+List audit events for the organization.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    acting_api_key_id, action, actor_type, actor_user_id, client_ip,
+    created_at, event_data, event_id, resource_id, resource_type
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-resource\-type\fR \fITEXT\fR
+Filter by resource type (e.g. api_key, user).
+.TP
+\fB\-\-action\fR \fITEXT\fR
+Filter by action (CREATE, UPDATE, DELETE, ...).
+.TP
+\fB\-\-actor\-user\-id\fR \fITEXT\fR
+Filter by acting user id.
+.TP
+\fB\-\-from\fR, \fB\-\-created\-after\fR \fITEXT\fR
+ISO-8601 lower bound (inclusive) on created_at.
+.TP
+\fB\-\-to\fR, \fB\-\-created\-before\fR \fITEXT\fR
+ISO-8601 upper bound (exclusive) on created_at.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max events to return. (default: 100)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Opaque cursor from a previous response's next_cursor.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-audit-events (1)

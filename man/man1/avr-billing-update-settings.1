@@ -1,0 +1,48 @@
+.TH AVR\-BILLING\-UPDATE\-SETTINGS 1 "" "avr 0.1.0" "Avrea CLI"
+.SH NAME
+avr-billing-update-settings \- Update billing settings.
+.SH SYNOPSIS
+.B avr billing update-settings
+[OPTIONS]
+.SH DESCRIPTION
+Update billing settings.
+.PP
+.RS 4
+.nf
+Examples:
+    avr billing update-settings --email billing@example.com
+    avr billing update-settings --tax-id EU123456789
+    avr billing update-settings --email a@example.com,b@example.com --tax-id FI12345678
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    billing_address, billing_emails, metronome_customer_id,
+    stripe_customer_id, tax_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-email\fR \fITEXT\fR
+Billing email address(es), comma-separated.
+.TP
+\fB\-\-tax\-id\fR \fITEXT\fR
+Tax ID (e.g. VAT number).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-billing (1),
+.BR avr-billing-invoices (1),
+.BR avr-billing-payment-methods (1),
+.BR avr-billing-settings (1),
+.BR avr-billing-summary (1)
