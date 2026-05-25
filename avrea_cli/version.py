@@ -21,6 +21,8 @@ try:
 except ImportError:
     _INJECTED_COMMIT = None
 
+IS_RELEASE_BUILD = _INJECTED_COMMIT is not None
+
 
 def _get_version() -> str:
     try:

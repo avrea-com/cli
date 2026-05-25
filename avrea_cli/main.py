@@ -12,9 +12,12 @@ implementation modules import only when the user invokes the command.
 
 from avrea_cli import __version__
 from avrea_cli.click_ext import AliasGroup
+from avrea_cli.version import IS_RELEASE_BUILD
 import click
 import os
 import sys
+
+_VERSION_MESSAGE = "%(prog)s version %(version)s" if IS_RELEASE_BUILD else "%(prog)s version %(version)s (development)"
 
 # Each tuple: (name, import_path, attr, short_help_or_None, section_or_None).
 # section=None marks hidden commands (no help row) — they remain invokable.
@@ -127,7 +130,7 @@ def main() -> None:
     "--version",
     "-V",
     prog_name="avr",
-    message="%(prog)s version %(version)s (development)",
+    message=_VERSION_MESSAGE,
 )
 @click.option(
     "--no-color",
