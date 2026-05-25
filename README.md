@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/avrea-com/cli/main/.github/banner.png" alt="Avrea CLI" width="640" />
+</p>
+
 # Avrea CLI
 
 Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs, jobs, logs, and workflow control into your terminal.
