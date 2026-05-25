@@ -1,6 +1,6 @@
 # avr(1) — Avrea command-line client
 
-Reference for `avr` v0.1.2. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
+Reference for `avr` v0.1.3. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
 
 ## Name
 
