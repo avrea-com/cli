@@ -21,10 +21,16 @@ brew install avrea-com/tap/avr
 ### PyPI
 
 ```sh
-pip install avr-cli
+uv tool install avr-cli
 ```
 
-Requires Python 3.14 or later.
+`uv tool install` puts `avr` on your `PATH` in an isolated environment
+and fetches Python 3.14 automatically if you don't have it. Or, with an
+existing Python 3.14:
+
+```sh
+pip install avr-cli
+```
 
 ## Authenticate
 
