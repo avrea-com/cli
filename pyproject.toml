@@ -41,6 +41,9 @@ timeout = 60
 
 [project.scripts]
 avr = "avrea_cli.main:main"
+# Mirror the package name so `uvx avr-cli` / `pipx run avr-cli` work without
+# `--from avr-cli avr`. Same entry point; `avr` remains the canonical name.
+avr-cli = "avrea_cli.main:main"
 
 [project.urls]
 Homepage = "https://avrea.com/"
