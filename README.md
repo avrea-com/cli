@@ -1,16 +1,8 @@
 # Avrea CLI
 
-Official command-line client for [Avrea](https://avrea.com/) — `avr` brings runs, jobs, logs, and workflow control into your terminal so you don't have to bounce between tabs.
+Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs, jobs, logs, and workflow control into your terminal.
 
 ## Install
-
-The Homebrew tap and PyPI package are expected to release soon.
-Until the first release is available, install from source:
-
-```sh
-git clone https://github.com/avrea-com/cli && cd cli && uv sync
-uv run avr --version
-```
 
 ### Homebrew
 
@@ -30,6 +22,13 @@ existing Python 3.14:
 
 ```sh
 pip install avr-cli
+```
+
+### From source
+
+```sh
+git clone https://github.com/avrea-com/cli && cd cli && uv sync
+uv run avr --version
 ```
 
 ## Authenticate
@@ -53,7 +52,7 @@ Log out (revokes the active API key on the server):
 avr auth logout
 ```
 
-For non-interactive environments (CI, scripts), set a token via env var instead — see [Configuration](#configuration).
+For non-interactive environments (CI, scripts), set a token via env var instead. See [Configuration](#configuration).
 
 ## Your first command
 
@@ -227,7 +226,7 @@ avr cache list --repo <repo> --web
 
 **Click-to-open in your terminal**
 
-IDs in tables are wrapped in OSC 8 hyperlinks — clicking opens the matching console page in your browser (supported by iTerm2, Kitty, WezTerm, Ghostty, GNOME Terminal, Konsole, Windows Terminal, and most modern terminals). Disable with `--no-links` or `AVR_LINKS=0` if your terminal renders them as visible garbage.
+IDs in tables are wrapped in OSC 8 hyperlinks. Clicking one opens the matching console page in your browser (supported by iTerm2, Kitty, WezTerm, Ghostty, GNOME Terminal, Konsole, Windows Terminal, and most modern terminals). Disable with `--no-links` or `AVR_LINKS=0` if your terminal renders them as visible garbage.
 
 **Tab completion**
 
