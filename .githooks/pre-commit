@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Refuse the commit when docs/ or man/ are stale relative to the source.
+# Only triggers when staged changes touch files that can invalidate the
+# generated reference (Click tree, version string, asset list).
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if ! grep -qE '^(avrea_cli/|pyproject\.toml$)' <<<"$staged"; then
+  exit 0
+fi
+
+if ! make docs-check >/dev/null 2>&1; then
+  echo "✗ Docs out of sync with source. Run 'make docs' and re-stage docs/ man/." >&2
+  exit 1
+fi

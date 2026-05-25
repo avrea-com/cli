@@ -26,6 +26,7 @@ help: ## Show available targets
 deps: ## Install/sync dependencies (including dev extras)
 	@echo "📦 Installing avr dependencies..."
 	@$(UV) sync --extra dev
+	@git config core.hooksPath .githooks
 	@echo "✅ avr dependencies installed"
 
 test: ## Run unit tests (fast, no Docker)
