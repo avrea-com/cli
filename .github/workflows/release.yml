@@ -59,13 +59,19 @@ jobs:
       - name: Build standalone binary
         run: |
           uv run pyinstaller --onefile --name avr \
+            --collect-all avrea_cli \
             --collect-all click \
             --collect-all pydantic \
             --collect-all certifi \
             pyinstaller_entry.py
 
       - name: Smoke test the binary
-        run: ./dist/avr --version
+        # --version skips Click's command-resolution path, so it can't catch
+        # missing lazy-loaded submodules under avrea_cli.commands.*. Invoking
+        # a real subcommand forces importlib.import_module to run.
+        run: |
+          ./dist/avr --version
+          ./dist/avr auth --help
 
       - name: Package tarball
         run: |
