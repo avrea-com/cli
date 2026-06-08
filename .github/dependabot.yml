@@ -9,6 +9,8 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "uv"
     directory: "/"
@@ -23,3 +25,5 @@ updates:
       # ty is pre-release; we pin to ==0.0.15 in pyproject.
       # bump deliberately in its own PR when 0.1.x stabilizes.
       - dependency-name: "ty"
+    cooldown:
+      default-days: 7
