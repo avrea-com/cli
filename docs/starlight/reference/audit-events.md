@@ -27,7 +27,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;resource-type</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by resource type (e.g. api_key, user).
 - <code class="cli-flag">&#x2D;&#x2D;action</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by action (CREATE, UPDATE, DELETE, ...).
 - <code class="cli-flag">&#x2D;&#x2D;actor-user-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by acting user id.

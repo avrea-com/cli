@@ -8,6 +8,7 @@ from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import match_org
 from avrea_cli.repo_context import detect_repo_from_git
 from urllib.parse import urlparse
 import click
@@ -102,35 +103,38 @@ def config_set(ctx, key: str, value: str):
 
     \b
     Available keys:
-      org   Active organization ID
+      org   Active organization (ID or slug)
 
     \b
     Examples:
         avr config set org org-abc123
+        avr config set org acme
     """
     client: ApiClient = ctx.obj["client"]
     cfg: CliConfig = ctx.obj["config"]
     ensure_authenticated(cfg)
 
     if key == "org":
-        # Verify the org exists and user has access
+        # Verify the org exists and the user has access. Accepts an ID or slug;
+        # we always store the resolved ``org-...`` ID so the default is stable
+        # even if the slug is later renamed.
         try:
             response = client.public_get("/users/me/organizations")
             organizations = response["data"]
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "fetch organizations")
 
-        org_ids = [o["organization_id"] for o in organizations]
-        if value not in org_ids:
+        org = match_org(organizations, value)
+        if org is None:
             click.echo(f"Error: Organization '{value}' not found or you don't have access.", err=True)
             click.echo("Available organizations:", err=True)
             for o in organizations:
-                click.echo(f"  {o['organization_id']} ({o['name']})", err=True)
+                click.echo(f"  {o['organization_id']} ({o.get('slug') or o['name']})", err=True)
             raise click.Abort()
 
-        auth.store_default_org(value, host=cfg.public_api_url)
-        org_name = next((o["name"] for o in organizations if o["organization_id"] == value), value)
-        click.echo(f"Default organization set to: {org_name} ({value})")
+        org_id = org["organization_id"]
+        auth.store_default_org(org_id, host=cfg.public_api_url)
+        click.echo(f"Default organization set to: {org['name']} ({org_id})")
 
 
 @config.command("get")

@@ -90,7 +90,7 @@ def _print_rules(rules: list[dict], *, as_json: bool) -> None:
 
 
 @firewall.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository ID. If provided, shows the repo-level list.")
 @click.option("--json", "as_json", is_flag=True, help="Output rules as JSON instead of a table.")
 @click.pass_context
@@ -108,7 +108,7 @@ def firewall_list(ctx, org_id, repo_id, as_json):
 
 
 @firewall.command("show")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", required=True, help="Repository ID.")
 @click.option("--json", "as_json", is_flag=True, help="Output resolved rules as JSON instead of a table.")
 @click.pass_context
@@ -127,7 +127,7 @@ def firewall_show(ctx, org_id, repo_id, as_json):
 
 
 @firewall.command("add")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository ID. If provided, adds at repo scope.")
 @click.option("--action", "action", type=click.Choice(["allow", "deny"]), required=True)
 @click.option("--cidr", "cidr", help="Destination CIDR (e.g. 10.0.0.0/8 or 1.2.3.4/32).")
@@ -177,7 +177,7 @@ def firewall_add(ctx, org_id, repo_id, action, cidr, fqdn, any_matcher, proto, p
 
 @firewall.command("delete")
 @click.argument("rule_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository ID. If provided, deletes a repo-level rule.")
 @click.pass_context
 def firewall_delete(ctx, rule_id, org_id, repo_id):
@@ -202,7 +202,7 @@ def firewall_delete(ctx, rule_id, org_id, repo_id):
 @firewall.command("move")
 @click.argument("rule_id")
 @click.option("--to", "to_position", type=int, required=True, help="Target 0-indexed position.")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository ID. If provided, moves a repo-level rule.")
 @click.pass_context
 def firewall_move(ctx, rule_id, to_position, org_id, repo_id):
@@ -233,7 +233,7 @@ def firewall_move(ctx, rule_id, to_position, org_id, repo_id):
 
 
 @firewall.command("set-default")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository ID. If provided, sets the repo-level default.")
 @click.option("--action", "action", type=click.Choice(["allow", "deny"]), required=True)
 @click.pass_context
@@ -271,7 +271,7 @@ def firewall_set_default(ctx, org_id, repo_id, action):
 
 
 @firewall.command("flow-summaries")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", required=True, help="Repository ID.")
 @click.option("--vm", "vm_id", default=None, help="Filter to a single VM ID.")
 @click.option(

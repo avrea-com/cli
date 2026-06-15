@@ -60,36 +60,89 @@ def ensure_authenticated(config: CliConfig) -> None:
 
 
 def get_org_id(config: CliConfig, org_option: str | None, *, client: ApiClient | None = None) -> str:
-    """Get organization ID from option, default config, or auto-select if user has exactly one org."""
+    """Resolve the organization to operate on.
+
+    Accepts either an Avrea org ID (``org-...``) or a slug; a slug is translated
+    to its ID via the user's membership list (needs ``client``). Falls back to
+    the stored default, then auto-selects when the user belongs to exactly one
+    org."""
     org_id = org_option or config.default_org
     if org_id:
+        # ``org-`` is the opaque-ID prefix (mirrors ``rep-`` for repos); treat
+        # anything else as a slug to resolve. Skip the round-trip for IDs and
+        # when there's no client to resolve a slug against.
+        if client is not None and not org_id.startswith("org-"):
+            return _resolve_org_slug(client, org_id)
         return org_id
 
     # Try auto-selecting if user belongs to exactly one org
     if client is not None:
-        try:
-            response = client.public_get("/users/me/organizations")
-            orgs = response.get("data", [])
-            if len(orgs) == 1:
-                auto_id = orgs[0]["organization_id"]
-                click.echo(f"(using org: {orgs[0].get('slug', auto_id)})", err=True)
-                return auto_id
-            if orgs:
-                click.echo("Error: No organization specified. Available orgs:", err=True)
-                for org in orgs:
-                    click.echo(f"  - {org.get('slug', org['organization_id'])} ({org['organization_id']})", err=True)
-                click.echo("\nUse --org <org_id> or set a default with: avr config set org <org_id>", err=True)
-                raise click.Abort()
-            # Zero orgs
-            click.echo("Error: No organizations found for your account.", err=True)
+        orgs = _fetch_user_orgs(client)
+        if len(orgs) == 1:
+            auto_id = orgs[0]["organization_id"]
+            click.echo(f"(using org: {orgs[0].get('slug', auto_id)})", err=True)
+            return auto_id
+        if orgs:
+            click.echo("Error: No organization specified. Available orgs:", err=True)
+            _print_available_orgs(orgs)
+            click.echo("\nUse --org <slug|id> or set a default with: avr config set org <slug|id>", err=True)
             raise click.Abort()
-        except httpx.HTTPStatusError as exc:
-            click.echo(f"Error: Failed to resolve organization: {exc.response.status_code}", err=True)
-            raise click.Abort() from exc
+        # Zero orgs
+        click.echo("Error: No organizations found for your account.", err=True)
+        raise click.Abort()
 
     click.echo("Error: No organization specified.", err=True)
-    click.echo("Use --org <org_id> or set a default with: avr config set org <org_id>", err=True)
+    click.echo("Use --org <slug|id> or set a default with: avr config set org <slug|id>", err=True)
     raise click.Abort()
+
+
+def match_org(orgs: list[dict], value: str) -> dict | None:
+    """Find the org in ``orgs`` whose ID or slug matches ``value``.
+
+    Tries exact org-ID, then exact slug, then case-folded slug (slugs are
+    lowercase by convention, but accept ``Acme`` for ``acme``). Returns the
+    matching org dict, or ``None`` when nothing matches."""
+    for org in orgs:
+        if org.get("organization_id") == value:
+            return org
+    for org in orgs:
+        if org.get("slug") == value:
+            return org
+    folded = value.casefold()
+    for org in orgs:
+        slug = org.get("slug")
+        if slug and slug.casefold() == folded:
+            return org
+    return None
+
+
+def _resolve_org_slug(client: ApiClient, value: str) -> str:
+    """Translate an org slug to its ``org-...`` ID via the user's membership
+    list. Aborts with the available orgs if nothing matches."""
+    orgs = _fetch_user_orgs(client)
+    org = match_org(orgs, value)
+    if org is not None:
+        return org["organization_id"]
+    click.echo(f"Error: No organization matching '{value}'.", err=True)
+    if orgs:
+        _print_available_orgs(orgs)
+    raise click.Abort()
+
+
+def _fetch_user_orgs(client: ApiClient) -> list[dict]:
+    """Fetch the orgs the user belongs to. Aborts on HTTP failure."""
+    try:
+        response = client.public_get("/users/me/organizations")
+    except httpx.HTTPStatusError as exc:
+        click.echo(f"Error: Failed to resolve organization: {exc.response.status_code}", err=True)
+        raise click.Abort() from exc
+    return response.get("data", [])
+
+
+def _print_available_orgs(orgs: list[dict]) -> None:
+    """Render the orgs the user can pick from, one per line, to stderr."""
+    for org in orgs:
+        click.echo(f"  - {org.get('slug', org['organization_id'])} ({org['organization_id']})", err=True)
 
 
 def get_org_slug(client: ApiClient, org_id: str) -> str:

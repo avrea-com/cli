@@ -218,7 +218,7 @@ def _print_slowing_down_jobs(items: list[dict]) -> None:
 
 
 @click.command("status")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.option("--since", default="7d", show_default=True, help="Time window for stats panels: '7d', '24h', etc.")
 @click.option("--json", "json_output", is_flag=True, help="Output raw JSON.")

@@ -39,7 +39,9 @@ def audit_events(ctx):
 
 
 @audit_events.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--resource-type", "resource_type", default=None, help="Filter by resource type (e.g. api_key, user).")
 @click.option("--action", "action", default=None, help="Filter by action (CREATE, UPDATE, DELETE, ...).")
 @click.option("--actor-user-id", "actor_user_id", default=None, help="Filter by acting user id.")

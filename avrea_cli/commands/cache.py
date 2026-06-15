@@ -45,7 +45,9 @@ _CACHE_LIST_FIELDS = make_schema(
 
 @cache.command("list")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--type",
     "cache_type",
@@ -169,7 +171,9 @@ _CACHE_USAGE_FIELDS = make_schema(
 
 @cache.command("usage")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--json",
     "json_fields",
@@ -240,7 +244,9 @@ def cache_usage(ctx, repo_id, org_id, json_fields, jq_expr):
 
 @cache.command("delete")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--type",
     "cache_type",

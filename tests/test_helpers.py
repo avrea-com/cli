@@ -4,6 +4,7 @@ from avrea_cli.config import CliConfig
 from avrea_cli.helpers import format_size
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import match_org
 from avrea_cli.helpers import parse_since
 from datetime import UTC
 from datetime import datetime
@@ -64,6 +65,78 @@ class TestGetOrgId:
         config.default_org = None
         with pytest.raises(click.Abort):
             get_org_id(config, None)
+
+    def test_resolves_slug_to_id(self) -> None:
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        client = MagicMock()
+        client.public_get.return_value = {
+            "data": [
+                {"organization_id": "org-a", "slug": "alpha"},
+                {"organization_id": "org-b", "slug": "beta"},
+            ]
+        }
+        assert get_org_id(config, "beta", client=client) == "org-b"
+
+    def test_resolves_slug_case_insensitively(self) -> None:
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        client = MagicMock()
+        client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
+        assert get_org_id(config, "ALPHA", client=client) == "org-a"
+
+    def test_resolves_default_org_slug(self) -> None:
+        # AVR_ORG can hold a slug; config.default_org flows through the same path.
+        config = MagicMock(spec=CliConfig)
+        config.default_org = "alpha"
+        client = MagicMock()
+        client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
+        assert get_org_id(config, None, client=client) == "org-a"
+
+    def test_org_id_skips_resolution_round_trip(self) -> None:
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        client = MagicMock()
+        assert get_org_id(config, "org-x", client=client) == "org-x"
+        client.public_get.assert_not_called()
+
+    def test_unknown_slug_aborts(self) -> None:
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        client = MagicMock()
+        client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
+        with pytest.raises(click.Abort):
+            get_org_id(config, "nope", client=client)
+
+    def test_slug_without_client_passes_through(self) -> None:
+        # No client means no resolution; the raw value goes to the backend.
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        assert get_org_id(config, "alpha") == "alpha"
+
+
+class TestMatchOrg:
+    ORGS = [
+        {"organization_id": "org-a", "slug": "alpha"},
+        {"organization_id": "org-b", "slug": "beta"},
+    ]
+
+    def test_matches_by_id(self) -> None:
+        assert match_org(self.ORGS, "org-b") == self.ORGS[1]
+
+    def test_matches_by_slug(self) -> None:
+        assert match_org(self.ORGS, "alpha") == self.ORGS[0]
+
+    def test_matches_slug_case_folded(self) -> None:
+        assert match_org(self.ORGS, "Beta") == self.ORGS[1]
+
+    def test_no_match_returns_none(self) -> None:
+        assert match_org(self.ORGS, "gamma") is None
+
+    def test_id_takes_precedence_over_slug(self) -> None:
+        # A value that is some org's ID resolves to that org even if it could
+        # never collide with a slug (slugs aren't ``org-`` prefixed).
+        assert match_org(self.ORGS, "org-a") == self.ORGS[0]
 
 
 class TestParseSince:
