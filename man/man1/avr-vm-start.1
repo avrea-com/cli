@@ -1,0 +1,32 @@
+.TH AVR\-VM\-START 1 "" "avr 0.1.5" "Avrea CLI"
+.SH NAME
+avr-vm-start \- Start a stopped VM.
+.SH SYNOPSIS
+.B avr vm start
+[OPTIONS] CUSTOMER_VM_ID
+.SH DESCRIPTION
+Start a stopped VM.
+.PP
+Start a stopped VM. Boots a fresh disk and returns a one-time password.
+.SH ARGUMENTS
+.TP
+\fICUSTOMER_VM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR
+Emit the raw API response as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1)

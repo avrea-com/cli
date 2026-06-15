@@ -1,0 +1,34 @@
+.TH AVR\-VM\-USAGE 1 "" "avr 0.1.5" "Avrea CLI"
+.SH NAME
+avr-vm-usage \- Show usage metering (runtime / vCPU / memory seconds) per VM.
+.SH SYNOPSIS
+.B avr vm usage
+[OPTIONS]
+.SH DESCRIPTION
+Show usage metering (runtime / vCPU / memory seconds) per VM.
+.PP
+Each power-on cycle's window is clipped to the requested period and summed. Deleted VMs are included: usage survives deletion.
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-start\fR \fIDATETIME\fR
+Inclusive period start (default: 30 days ago).
+.TP
+\fB\-\-end\fR \fIDATETIME\fR
+Exclusive period end (default: now).
+.TP
+\fB\-\-json\fR
+Emit the usage report as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1)

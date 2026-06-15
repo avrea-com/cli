@@ -1,0 +1,61 @@
+.TH AVR\-VM\-CREATE 1 "" "avr 0.1.5" "Avrea CLI"
+.SH NAME
+avr-vm-create \- Create a long-running VM.
+.SH SYNOPSIS
+.B avr vm create
+[OPTIONS]
+.SH DESCRIPTION
+Create a long-running VM.
+.PP
+.RS 4
+.nf
+Provisioning is asynchronous: poll `avr vm show <id>` until the state is
+RUNNING and endpoints are populated. The response carries a one-time
+password for the VM's local account; save it now, it is never stored.
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-name\fR \fITEXT\fR
+Human-readable VM name. (required)
+.TP
+\fB\-\-os\fR \fICHOICE\fR
+Guest operating system. (choices: linux, macos, windows; required)
+.TP
+\fB\-\-os\-version\fR \fICHOICE\fR
+Guest OS version (e.g. ubuntu-22.04). Defaults to the latest version for the chosen --os. (choices: ubuntu-22.04, ubuntu-24.04, macos-26, windows-2025)
+.TP
+\fB\-\-size\fR \fICHOICE\fR
+Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. (choices: 1-vcpu, 2-vcpu, 4-vcpu, 8-vcpu, 16-vcpu, 32-vcpu; required)
+.TP
+\fB\-\-ssh\-key\fR \fITEXT\fR
+SSH public key, or @path to read one from a file. Repeatable. (repeatable)
+.TP
+\fB\-\-remote\-desktop\fR / \fB\-\-no\-remote\-desktop\fR
+Enable RDP (Windows) / VNC (macOS Screen Sharing). Not available for linux.
+.TP
+\fB\-\-ttl\fR \fITEXT\fR
+Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
+.TP
+\fB\-\-egress\-rules\fR \fITEXT\fR
+Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
+.TP
+\fB\-\-ephemeral\fR
+Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
+.TP
+\fB\-\-json\fR
+Emit the raw API response (VM plus one-time password) as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1)
