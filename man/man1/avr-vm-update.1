@@ -1,0 +1,47 @@
+.TH AVR\-VM\-UPDATE 1 "" "avr 0.1.5" "Avrea CLI"
+.SH NAME
+avr-vm-update \- Update a VM's name, TTL, or SSH keys, or rotate its password.
+.SH SYNOPSIS
+.B avr vm update
+[OPTIONS] CUSTOMER_VM_ID
+.SH DESCRIPTION
+Update a VM's name, TTL, or SSH keys, or rotate its password.
+.PP
+Power state is controlled separately with `avr vm start` / `avr vm stop`.
+.SH ARGUMENTS
+.TP
+\fICUSTOMER_VM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-name\fR \fITEXT\fR
+New display name.
+.TP
+\fB\-\-ttl\fR \fITEXT\fR
+Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.
+.TP
+\fB\-\-ssh\-key\fR \fITEXT\fR
+Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start. (repeatable)
+.TP
+\fB\-\-rotate\-password\fR
+Provision a fresh one-time password (returned in the response).
+.TP
+\fB\-\-egress\-rules\fR \fITEXT\fR
+Replace the per-VM egress rules with this JSON array (or @path to a file).
+.TP
+\fB\-\-json\fR
+Emit the raw API response as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-usage (1)

@@ -33,6 +33,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
     ),  # noqa: E501
     ("run", "avrea_cli.commands.run", "run", "View and manage GitHub workflow runs.", "Core Commands"),
     ("job", "avrea_cli.commands.job", "job", "Inspect Avrea job VMs (SSH, metrics, logs).", "Core Commands"),
+    ("vm", "avrea_cli.vm", "vm", "Manage long-running VMs (SSH/RDP/VNC).", "Core Commands"),
     ("workflow", "avrea_cli.commands.workflow", "workflow", "List and view workflow definitions.", "Core Commands"),
     ("cache", "avrea_cli.commands.cache", "cache", "Inspect and manage the Avrea build cache.", "Core Commands"),
     ("log", "avrea_cli.commands.log", "log", "Search across runner execution logs.", "Core Commands"),
@@ -68,6 +69,7 @@ ALIASES: dict[str, str] = {
     "orgs": "org",
     "logs": "log",
     "workflows": "workflow",
+    "vms": "vm",
 }
 
 _KNOWN_DEBUG_CATEGORIES = frozenset({"api"})

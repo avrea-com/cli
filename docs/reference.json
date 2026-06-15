@@ -85,7 +85,8 @@
     "repos": "repo",
     "orgs": "org",
     "logs": "log",
-    "workflows": "workflow"
+    "workflows": "workflow",
+    "vms": "vm"
   },
   "section_order": [
     "Core Commands",
@@ -2074,6 +2075,1047 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Emit one JSON object per refresh (default when stdout isn't a TTY).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "vm",
+        "path": [
+          "avr",
+          "vm"
+        ],
+        "full": "avr vm",
+        "is_group": true,
+        "short_help": "Manage long-running VMs (SSH/RDP/VNC).",
+        "help": "Manage long-running VMs (SSH/RDP/VNC).",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr vm [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "create",
+            "path": [
+              "avr",
+              "vm",
+              "create"
+            ],
+            "full": "avr vm create",
+            "is_group": false,
+            "short_help": "Create a long-running VM.",
+            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show <id>` until the state is\nRUNNING and endpoints are populated. The response carries a one-time\npassword for the VM's local account; save it now, it is never stored.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm create [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "display_name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Human-readable VM name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "os_type",
+                "kind": "option",
+                "opts": [
+                  "--os"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Guest operating system.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "linux",
+                  "macos",
+                  "windows"
+                ]
+              },
+              {
+                "name": "os_version",
+                "kind": "option",
+                "opts": [
+                  "--os-version"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Guest OS version (e.g. ubuntu-22.04). Defaults to the latest version for the chosen --os.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "ubuntu-22.04",
+                  "ubuntu-24.04",
+                  "macos-26",
+                  "windows-2025"
+                ]
+              },
+              {
+                "name": "size",
+                "kind": "option",
+                "opts": [
+                  "--size"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "1-vcpu",
+                  "2-vcpu",
+                  "4-vcpu",
+                  "8-vcpu",
+                  "16-vcpu",
+                  "32-vcpu"
+                ]
+              },
+              {
+                "name": "ssh_keys",
+                "kind": "option",
+                "opts": [
+                  "--ssh-key"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "SSH public key, or @path to read one from a file. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "remote_desktop",
+                "kind": "option",
+                "opts": [
+                  "--remote-desktop"
+                ],
+                "secondary_opts": [
+                  "--no-remote-desktop"
+                ],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Enable RDP (Windows) / VNC (macOS Screen Sharing). Not available for linux.",
+                "hidden": false,
+                "show_default": true,
+                "default": false
+              },
+              {
+                "name": "ttl",
+                "kind": "option",
+                "opts": [
+                  "--ttl"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "egress_rules_raw",
+                "kind": "option",
+                "opts": [
+                  "--egress-rules"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Per-VM egress firewall rules as a JSON array, or @path to a JSON file.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ephemeral",
+                "kind": "option",
+                "opts": [
+                  "--ephemeral"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Required: acknowledge that the VM's disk is ephemeral (discarded on stop).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response (VM plus one-time password) as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "delete",
+            "path": [
+              "avr",
+              "vm",
+              "delete"
+            ],
+            "full": "avr vm delete",
+            "is_group": false,
+            "short_help": "Delete a VM.",
+            "help": "Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm delete [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip the confirmation prompt.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "vm",
+              "list"
+            ],
+            "full": "avr vm list",
+            "is_group": false,
+            "short_help": "List the organization's VMs, newest first (deleted ones excluded).",
+            "help": "List the organization's VMs, newest first (deleted ones excluded).",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "state",
+                "kind": "option",
+                "opts": [
+                  "--state"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max VMs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Pagination cursor from a previous response.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the VM list as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "show",
+            "path": [
+              "avr",
+              "vm",
+              "show"
+            ],
+            "full": "avr vm show",
+            "is_group": false,
+            "short_help": "Show a VM's details, including connection endpoints and egress rules.",
+            "help": "Show a VM's details, including connection endpoints and egress rules.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm show [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the full VM record (with egress rules) as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "ssh",
+            "path": [
+              "avr",
+              "vm",
+              "ssh"
+            ],
+            "full": "avr vm ssh",
+            "is_group": false,
+            "short_help": "Open an SSH session to a RUNNING VM (or print the command with --print).",
+            "help": "Open an SSH session to a RUNNING VM (or print the command with --print).\n\nResolves the VM's SSH endpoint and replaces this process with `ssh`.\nExtra options are passed through to ssh and placed before the destination,\nso port-forwarding and similar flags work. Use `--` to stop avr from\ninterpreting them, e.g.:\n\n    avr vm ssh cvm-abc123 -- -L 8080:localhost:80\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm ssh [OPTIONS] CUSTOMER_VM_ID [SSH_ARGS]...",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ssh_args",
+                "kind": "argument",
+                "opts": [
+                  "ssh_args"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": -1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Private key file to pass to ssh as -i.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "print_only",
+                "kind": "option",
+                "opts": [
+                  "--print"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Print the ssh command instead of running it.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "start",
+            "path": [
+              "avr",
+              "vm",
+              "start"
+            ],
+            "full": "avr vm start",
+            "is_group": false,
+            "short_help": "Start a stopped VM.",
+            "help": "Start a stopped VM. Boots a fresh disk and returns a one-time password.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm start [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "stop",
+            "path": [
+              "avr",
+              "vm",
+              "stop"
+            ],
+            "full": "avr vm stop",
+            "is_group": false,
+            "short_help": "Stop a running VM.",
+            "help": "Stop a running VM. The ephemeral disk is discarded.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm stop [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "update",
+            "path": [
+              "avr",
+              "vm",
+              "update"
+            ],
+            "full": "avr vm update",
+            "is_group": false,
+            "short_help": "Update a VM's name, TTL, or SSH keys, or rotate its password.",
+            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nPower state is controlled separately with `avr vm start` / `avr vm stop`.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm update [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "display_name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "New display name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ttl",
+                "kind": "option",
+                "opts": [
+                  "--ttl"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ssh_keys",
+                "kind": "option",
+                "opts": [
+                  "--ssh-key"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "rotate_password",
+                "kind": "option",
+                "opts": [
+                  "--rotate-password"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Provision a fresh one-time password (returned in the response).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "egress_rules_raw",
+                "kind": "option",
+                "opts": [
+                  "--egress-rules"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Replace the per-VM egress rules with this JSON array (or @path to a file).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "usage",
+            "path": [
+              "avr",
+              "vm",
+              "usage"
+            ],
+            "full": "avr vm usage",
+            "is_group": false,
+            "short_help": "Show usage metering (runtime / vCPU / memory seconds) per VM.",
+            "help": "Show usage metering (runtime / vCPU / memory seconds) per VM.\n\nEach power-on cycle's window is clipped to the requested period and summed.\nDeleted VMs are included: usage survives deletion.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm usage [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "period_start",
+                "kind": "option",
+                "opts": [
+                  "--start"
+                ],
+                "secondary_opts": [],
+                "type": "datetime",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Inclusive period start (default: 30 days ago).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "period_end",
+                "kind": "option",
+                "opts": [
+                  "--end"
+                ],
+                "secondary_opts": [],
+                "type": "datetime",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exclusive period end (default: now).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the usage report as JSON.",
                 "hidden": false,
                 "show_default": false,
                 "default": false

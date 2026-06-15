@@ -1,0 +1,36 @@
+.TH AVR\-VM\-LIST 1 "" "avr 0.1.5" "Avrea CLI"
+.SH NAME
+avr-vm-list \- List the organization's VMs, newest first (deleted ones excluded).
+.SH SYNOPSIS
+.B avr vm list
+[OPTIONS]
+.SH DESCRIPTION
+List the organization's VMs, newest first (deleted ones excluded).
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-state\fR \fITEXT\fR
+Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max VMs to return. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-json\fR
+Emit the VM list as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1)

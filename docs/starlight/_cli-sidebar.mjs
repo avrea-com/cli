@@ -13,6 +13,7 @@ export default {
         { label: "avr status", slug: "cli/reference/status" },
         { label: "avr run", slug: "cli/reference/run" },
         { label: "avr job", slug: "cli/reference/job" },
+        { label: "avr vm", slug: "cli/reference/vm" },
         { label: "avr workflow", slug: "cli/reference/workflow" },
         { label: "avr cache", slug: "cli/reference/cache" },
         { label: "avr log", slug: "cli/reference/log" },
