@@ -40,7 +40,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
 - <code class="cli-flag">&#x2D;&#x2D;query</code> <code class="cli-value">&lt;TEXT&gt;</code> — Full-text search query
 - <code class="cli-flag">&#x2D;&#x2D;stream</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by output stream _(choices: `stdout`, `stderr`)_
 - <code class="cli-flag">&#x2D;&#x2D;level</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by log level _(choices: `debug`, `info`, `warning`, `error`)_

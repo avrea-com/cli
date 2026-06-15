@@ -42,7 +42,7 @@ _LOG_SEARCH_FIELDS = make_schema(
 
 @log.command("search")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--query", help="Full-text search query")
 @click.option(
     "--stream",

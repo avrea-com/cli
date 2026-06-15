@@ -72,7 +72,9 @@ _WORKFLOW_VIEW_FIELDS = {**_WORKFLOW_LIST_FIELDS, **make_schema("p95_duration_se
 
 
 @workflow.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--repo",
     "repo_ids",
@@ -205,7 +207,7 @@ def workflow_list(ctx, org_id, repo_ids, since, limit, json_fields, jq_expr):
 
 @workflow.command("view")
 @click.argument("workflow_identifier", metavar="WORKFLOW")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--repo",
     "repo_flag",
@@ -699,7 +701,7 @@ def _row_matches_dispatch(row: dict[str, Any], dispatch_time: datetime, platform
 
 @workflow.command("run")
 @click.argument("workflow_identifier", metavar="WORKFLOW")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--repo", "repo_flag", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.option(
     "-r",

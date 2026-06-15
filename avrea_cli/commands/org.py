@@ -132,7 +132,9 @@ def org_create(ctx, name: str, json_fields, jq_expr):
 
 
 @org.command("members")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def org_members(ctx, org_id, json_fields, jq_expr):
@@ -190,7 +192,9 @@ def email_domain(ctx):
 
 
 @email_domain.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def email_domain_list(ctx, org_id, json_fields, jq_expr):
@@ -230,7 +234,9 @@ def email_domain_list(ctx, org_id, json_fields, jq_expr):
 
 
 @email_domain.command("set")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--yes", "-y", "confirmed", is_flag=True, help="Skip confirmation prompt.")
 @click.argument("domains", nargs=-1, required=True)
 @click.pass_context
@@ -323,7 +329,9 @@ def install_list(ctx, json_fields, jq_expr):
 
 
 @install.command("add")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--no-browser", is_flag=True, help="Do not open browser automatically.")
 @click.option("--wait-seconds", type=int, default=120, show_default=True, help="Seconds to wait for detection.")
 @click.pass_context
@@ -377,7 +385,9 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
 
 
 @install.command("remove")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--installation-id", required=True, help="Installation ID to remove (ins-xxx format)")
 @click.option("--yes", "-y", "confirmed", is_flag=True, help="Skip confirmation prompt.")
 @click.pass_context

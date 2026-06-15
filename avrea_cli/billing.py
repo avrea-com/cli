@@ -52,7 +52,9 @@ def billing(ctx):
 
 
 @billing.command("summary")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def billing_summary(ctx, org_id, json_fields, jq_expr):
@@ -68,7 +70,7 @@ def billing_summary(ctx, org_id, json_fields, jq_expr):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     try:
         response = client.public_get(f"/orgs/{org_id}/billing")
@@ -104,7 +106,9 @@ def invoices(ctx):
 
 
 @invoices.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "-L",
     "--limit",
@@ -130,7 +134,7 @@ def invoices_list(ctx, org_id, limit, cursor, json_fields, jq_expr):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     cursor = validate_cursor(cursor)
 
@@ -174,7 +178,9 @@ def invoices_list(ctx, org_id, limit, cursor, json_fields, jq_expr):
 
 @invoices.command("show")
 @click.argument("invoice_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def invoices_show(ctx, invoice_id, org_id, json_fields, jq_expr):
@@ -191,7 +197,7 @@ def invoices_show(ctx, invoice_id, org_id, json_fields, jq_expr):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     try:
         response = client.public_get(f"/orgs/{org_id}/billing/invoices/{invoice_id}")
@@ -232,14 +238,17 @@ def invoices_show(ctx, invoice_id, org_id, json_fields, jq_expr):
 
 @invoices.command("download")
 @click.argument("invoice_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--out", "out_path", default=None, help="Output file path. Defaults to <invoice_id>.pdf.")
 @click.pass_context
 def invoices_download(ctx, invoice_id, org_id, out_path):
     """Download an invoice PDF."""
+    client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     url = f"{config.public_api_url}/orgs/{org_id}/billing/invoices/{invoice_id}/pdf"
     try:
@@ -272,7 +281,9 @@ def payment_methods(ctx):
 
 
 @payment_methods.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def payment_methods_list(ctx, org_id, json_fields, jq_expr):
@@ -289,7 +300,7 @@ def payment_methods_list(ctx, org_id, json_fields, jq_expr):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     try:
         response = client.public_get(f"/orgs/{org_id}/billing/payment-methods")
@@ -314,7 +325,9 @@ def payment_methods_list(ctx, org_id, json_fields, jq_expr):
 
 
 @payment_methods.command("add")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--number",
     required=True,
@@ -346,7 +359,7 @@ def payment_methods_add(ctx, org_id, number, exp_month, exp_year, cvc):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     # Get Stripe publishable key
     try:
@@ -419,14 +432,16 @@ def payment_methods_add(ctx, org_id, number, exp_month, exp_year, cvc):
 
 @payment_methods.command("set-default")
 @click.argument("pm_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.pass_context
 def payment_methods_set_default(ctx, pm_id, org_id):
     """Set a payment method as the default."""
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     try:
         response = client.public_put(f"/orgs/{org_id}/billing/payment-methods/{pm_id}/default")
@@ -439,7 +454,9 @@ def payment_methods_set_default(ctx, pm_id, org_id):
 
 @payment_methods.command("remove")
 @click.argument("pm_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--yes", "confirmed", is_flag=True, help="Skip confirmation prompt.")
 @click.pass_context
 def payment_methods_remove(ctx, pm_id, org_id, confirmed):
@@ -447,7 +464,7 @@ def payment_methods_remove(ctx, pm_id, org_id, confirmed):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     if not confirmed:
         ensure_prompts_allowed("payment-method remove needs confirmation")
@@ -462,7 +479,9 @@ def payment_methods_remove(ctx, pm_id, org_id, confirmed):
 
 
 @billing.command("settings")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @json_options
 @click.pass_context
 def billing_settings(ctx, org_id, json_fields, jq_expr):
@@ -479,7 +498,7 @@ def billing_settings(ctx, org_id, json_fields, jq_expr):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     try:
         response = client.public_get(f"/orgs/{org_id}/billing/settings")
@@ -505,7 +524,9 @@ def billing_settings(ctx, org_id, json_fields, jq_expr):
 
 
 @billing.command("update-settings")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option("--email", "billing_email", default=None, help="Billing email address(es), comma-separated.")
 @click.option("--tax-id", default=None, help="Tax ID (e.g. VAT number).")
 @json_options
@@ -530,7 +551,7 @@ def billing_update_settings(ctx, org_id, billing_email, tax_id, json_fields, jq_
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id)
+    org_id = get_org_id(config, org_id, client=client)
 
     if billing_email is None and tax_id is None:
         click.echo("Error: Provide at least one of --email or --tax-id", err=True)

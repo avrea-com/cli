@@ -122,7 +122,7 @@
             "nargs": 1,
             "is_flag": false,
             "envvar": null,
-            "help": "Organization ID.",
+            "help": "Organization ID or slug.",
             "hidden": false,
             "show_default": false,
             "default": null
@@ -247,7 +247,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -303,7 +303,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -615,7 +615,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -761,7 +761,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -853,7 +853,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1053,7 +1053,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1180,7 +1180,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1456,7 +1456,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1627,7 +1627,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1855,7 +1855,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2001,7 +2001,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2128,7 +2128,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2275,7 +2275,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2462,7 +2462,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID.",
+                "help": "Organization ID or slug.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2626,7 +2626,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2772,7 +2772,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2995,7 +2995,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3105,7 +3105,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3527,7 +3527,7 @@
             "full": "avr config set",
             "is_group": false,
             "short_help": "Set a CLI configuration value.",
-            "help": "Set a CLI configuration value.\n\n\b\nAvailable keys:\n  org   Active organization ID\n\n\b\nExamples:\n    avr config set org org-abc123\n",
+            "help": "Set a CLI configuration value.\n\n\b\nAvailable keys:\n  org   Active organization (ID or slug)\n\n\b\nExamples:\n    avr config set org org-abc123\n    avr config set org acme\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -3662,7 +3662,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3808,7 +3808,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3995,7 +3995,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4068,7 +4068,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4277,7 +4277,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4332,7 +4332,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4460,7 +4460,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4569,7 +4569,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4624,7 +4624,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4701,7 +4701,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified.",
+                "help": "Organization ID or slug. Uses default org if not specified.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -4828,7 +4828,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -4884,7 +4884,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5014,7 +5014,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5108,7 +5108,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5218,7 +5218,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5311,7 +5311,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5385,7 +5385,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -5424,7 +5424,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5498,7 +5498,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5572,7 +5572,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5700,7 +5700,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5923,7 +5923,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6126,7 +6126,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -6201,7 +6201,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -6295,7 +6295,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -6426,7 +6426,7 @@
                     "nargs": 1,
                     "is_flag": false,
                     "envvar": null,
-                    "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -6558,7 +6558,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
                 "hidden": false,
                 "show_default": false,
                 "default": null

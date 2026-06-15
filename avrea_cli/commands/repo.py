@@ -97,7 +97,9 @@ def repo(ctx):
 
 
 @repo.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "-L",
     "--limit",

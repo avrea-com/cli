@@ -35,7 +35,7 @@ def settings(ctx):
 
 
 @settings.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.option("--prefix", help="Filter by key prefix (e.g. 'cache.').")
 @click.option("--web", is_flag=True, help="Open in browser.")
@@ -109,7 +109,7 @@ def settings_list(ctx, org_id, repo_id, prefix, web: bool, json_fields, jq_expr)
 @settings.command("set")
 @click.argument("key")
 @click.argument("value")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.pass_context
 def settings_set(ctx, key, value, org_id, repo_id):
@@ -151,7 +151,7 @@ def settings_set(ctx, key, value, org_id, repo_id):
 
 @settings.command("reset")
 @click.argument("key")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.pass_context
 def settings_reset(ctx, key, org_id, repo_id):

@@ -131,7 +131,9 @@ def run(ctx):
 
 
 @run.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--repo",
     "repository_ids",
@@ -436,7 +438,7 @@ def _print_run_jobs(
 
 @run.command("view")
 @click.argument("run_id", required=False)
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--steps",
     "show_steps",
@@ -1007,7 +1009,7 @@ def watch_run_loop(
 
 @run.command("watch")
 @click.argument("run_id", required=False)
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--repo",
     "repo_options",
@@ -1174,7 +1176,7 @@ def _poll_for_new_attempt(
 
 @run.command("rerun")
 @click.argument("run_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--failed", is_flag=True, help="Re-run only the failed jobs.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
@@ -1249,7 +1251,7 @@ _FAILED_CONCLUSIONS = frozenset({"failure", "timed_out", "cancelled", "action_re
 
 @run.command("logs")
 @click.argument("run_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--job", "job_name_filter", help="Restrict to GitHub jobs whose name contains this string.")
 @click.option("-f", "--follow", is_flag=True, help="Tail logs as they appear (running jobs only).")
 @click.option("--failed", "failed_only", is_flag=True, help="Show only logs from failed jobs.")
@@ -1382,7 +1384,7 @@ def run_logs(
 
 @run.command("cancel")
 @click.argument("run_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
 def run_cancel(ctx, run_id: str, org_id, yes: bool):

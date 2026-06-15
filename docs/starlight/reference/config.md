@@ -46,12 +46,13 @@ avr config set [OPTIONS] {org} VALUE
 
 ```sh
 Available keys:
-  org   Active organization ID
+  org   Active organization (ID or slug)
 ```
 
 ```sh
 Examples:
     avr config set org org-abc123
+    avr config set org acme
 ```
 
 **Arguments**

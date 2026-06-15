@@ -38,7 +38,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by job name (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
@@ -73,7 +73,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;failed</code> — Only show logs from failed steps.
 - <code class="cli-flag">&#x2D;&#x2D;step</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter to a specific step by name.
 - <code class="cli-flag">&#x2D;&#x2D;level</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by log level. _(choices: `debug`, `info`, `notice`, `warning`, `error`)_
@@ -102,7 +102,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Metric source (repeatable). Defaults to cpu and memory. _(choices: `cpu`, `memory`, `filesystem`, `load`, `disk-io`, `disk-ops`, `network` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;start</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Start time (Unix seconds). Defaults to execution start.
 - <code class="cli-flag">&#x2D;&#x2D;end</code> <code class="cli-value">&lt;INTEGER&gt;</code> — End time (Unix seconds). Defaults to execution end or now.
@@ -155,7 +155,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;log</code> — Print full logs for the job.
 - <code class="cli-flag">&#x2D;&#x2D;log-failed</code> — Print logs only for failed steps.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -173,7 +173,7 @@ avr job watch [OPTIONS]
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by job name (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;interval</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Refresh interval in seconds. _(default: `5`)_

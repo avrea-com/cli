@@ -179,7 +179,9 @@ def job(ctx):
 
 
 @job.command("list")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
 @click.option(
     "--repo",
     "repository_ids",
@@ -304,7 +306,7 @@ def job_list(
 
 
 @job.command("watch")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option(
     "--repo",
     "repository_ids",
@@ -452,7 +454,7 @@ def job_ssh(ctx, job_id: str, print_command: bool, show_password: bool):
 
 @job.command("view")
 @click.argument("job_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--log", "show_log", is_flag=True, help="Print full logs for the job.")
 @click.option("--log-failed", is_flag=True, help="Print logs only for failed steps.")
 @click.option(
@@ -624,7 +626,7 @@ def job_view(
 
 @job.command("logs")
 @click.argument("job_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--failed", is_flag=True, help="Only show logs from failed steps.")
 @click.option("--step", "step_name", help="Filter to a specific step by name.")
 @click.option(
@@ -808,7 +810,7 @@ def _resolve_vm_specs(job_data: dict[str, Any]) -> tuple[int | None, int | None,
 
 @job.command("metrics")
 @click.argument("job_id")
-@click.option("--org", "org_id", help="Organization ID.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--source",
     "sources",
