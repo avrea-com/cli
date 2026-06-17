@@ -29,7 +29,7 @@ wheels = [
 
 [[package]]
 name = "avr-cli"
-version = "0.1.4"
+version = "0.1.5"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
