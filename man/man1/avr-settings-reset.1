@@ -7,6 +7,8 @@ avr-settings-reset \- Remove a setting override, reverting to the inherited or d
 .SH DESCRIPTION
 Remove a setting override, reverting to the inherited or default value.
 .PP
+Clears the repository override when run inside a connected checkout (the repo is auto-detected), when --repo is given, or when AVR_REPO is set. Pass --org to clear the organization-scoped value (this suppresses auto-detection).
+.PP
 .RS 4
 .nf
 Examples:
@@ -24,7 +26,7 @@ Examples:
 Organization ID or slug. Uses default org if not specified.
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-settings (1),
