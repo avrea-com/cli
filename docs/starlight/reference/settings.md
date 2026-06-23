@@ -19,6 +19,11 @@ List settings with their current values and source.
 avr settings list [OPTIONS]
 ```
 
+Inside a connected checkout the repository is auto-detected from the git
+remote and its effective values are shown. Pass --org to see organization
+values (this suppresses auto-detection), or --repo / AVR_REPO to target a
+repository.
+
 ```sh
 Examples:
     avr settings list --org org-abc123
@@ -36,7 +41,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 - <code class="cli-flag">&#x2D;&#x2D;prefix</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by key prefix (e.g. 'cache.').
 - <code class="cli-flag">&#x2D;&#x2D;web</code> — Open in browser.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -49,6 +54,10 @@ Remove a setting override, reverting to the inherited or default value.
 ```sh
 avr settings reset [OPTIONS] KEY
 ```
+
+Clears the repository override when run inside a connected checkout (the
+repo is auto-detected), when --repo is given, or when AVR_REPO is set. Pass
+--org to clear the organization-scoped value (this suppresses auto-detection).
 
 ```sh
 Examples:
@@ -63,7 +72,7 @@ Examples:
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 
 ### `avr settings schema`
 
@@ -104,6 +113,12 @@ avr settings set [OPTIONS] KEY VALUE
 VALUE is parsed as a boolean (true/false) or integer when possible,
 otherwise treated as a string.
 
+Writes a repository override when run inside a connected checkout (the repo
+is auto-detected), when --repo is given, or when AVR_REPO is set. Otherwise
+targets org scope (the default org, or --org); org-only settings must be set
+with --org. A checkout whose repo isn't connected to the org is an error
+rather than a silent org-wide write.
+
 ```sh
 Examples:
     avr settings set cache.gha.enabled false --org org-abc123
@@ -118,4 +133,4 @@ Examples:
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.

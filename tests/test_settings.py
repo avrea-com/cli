@@ -1,6 +1,7 @@
 """Unit tests for CLI settings commands."""
 
 from avrea_cli.main import cli
+import httpx
 import json
 
 SAMPLE_SETTINGS = [
@@ -67,6 +68,61 @@ class TestSettingsList:
         assert result.exit_code == 0
         assert captured["params"]["prefix"] == "cache."
 
+    def test_list_autodetects_repo_when_no_org(self, runner, monkeypatch):
+        """Like gh/glab: inside a checkout, a bare `list` auto-detects the repo
+        and shows its effective values."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            captured["path"] = path
+            if path.endswith("/repos/resolve"):
+                return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
+            return SAMPLE_SETTINGS
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        result = runner.invoke(cli, ["settings", "list"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/repos/rep-detected/settings"
+
+    def test_list_explicit_org_ignores_git(self, runner, monkeypatch):
+        """An explicit --org selects org scope and suppresses git auto-detection,
+        even inside a checkout."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            captured["path"] = path
+            return SAMPLE_SETTINGS
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        result = runner.invoke(cli, ["settings", "list", "--org", "org-explicit"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-explicit/settings"
+        assert "/repos/" not in captured["path"]
+
+    def test_list_falls_back_to_org_when_detected_repo_not_in_org(self, runner, monkeypatch):
+        """Reads stay forgiving (unlike writes): when the auto-detected repo
+        isn't connected, `list` shows org-wide results instead of erroring."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            if path.endswith("/repos/resolve"):
+                request = httpx.Request("GET", "https://api.avrea.com" + path)
+                response = httpx.Response(404, request=request, json={"detail": "not found"})
+                raise httpx.HTTPStatusError("404", request=request, response=response)
+            captured["path"] = path
+            return SAMPLE_SETTINGS
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        result = runner.invoke(cli, ["settings", "list"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/settings"
+
     def test_json_output(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
@@ -90,7 +146,7 @@ class TestSettingsSet:
             return {"key": json["key"], "value": json["value"], "source": "organization"}
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
-        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "false"])
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "false", "--org", "org-default"])
         assert result.exit_code == 0
         assert captured["json"]["value"] is False
         assert "Set cache.gha.enabled = False" in result.output
@@ -119,7 +175,7 @@ class TestSettingsSet:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
         for v in ("true", "yes", "on", "True", "YES"):
-            runner.invoke(cli, ["settings", "set", "cache.gha.enabled", v])
+            runner.invoke(cli, ["settings", "set", "cache.gha.enabled", v, "--org", "org-default"])
         assert all(v is True for v in values)
 
     def test_set_false_variants(self, runner, monkeypatch):
@@ -132,7 +188,7 @@ class TestSettingsSet:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
         for v in ("false", "no", "off", "False", "NO"):
-            runner.invoke(cli, ["settings", "set", "cache.gha.enabled", v])
+            runner.invoke(cli, ["settings", "set", "cache.gha.enabled", v, "--org", "org-default"])
         assert all(v is False for v in values)
 
     def test_set_integer(self, runner, monkeypatch):
@@ -144,7 +200,7 @@ class TestSettingsSet:
             return {"key": json["key"], "value": json["value"], "source": "organization"}
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
-        result = runner.invoke(cli, ["settings", "set", "some.int.setting", "42"])
+        result = runner.invoke(cli, ["settings", "set", "some.int.setting", "42", "--org", "org-default"])
         assert result.exit_code == 0
         assert captured["json"]["value"] == 42
 
@@ -157,9 +213,184 @@ class TestSettingsSet:
             return {"key": json["key"], "value": json["value"], "source": "organization"}
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
-        result = runner.invoke(cli, ["settings", "set", "some.str.setting", "hello"])
+        result = runner.invoke(cli, ["settings", "set", "some.str.setting", "hello", "--org", "org-default"])
         assert result.exit_code == 0
         assert captured["json"]["value"] == "hello"
+
+    def test_set_explicit_org_ignores_git(self, runner, monkeypatch):
+        """`set --org` targets org scope and ignores the git remote, even inside
+        a checkout. Regression for org-only settings (e.g. some.org-scoped.setting)
+        that 422'd because --org didn't suppress repo auto-detection."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_put(self, path, json=None):
+            assert json is not None
+            captured["path"] = path
+            return {"key": json["key"], "value": json["value"], "source": "organization"}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "some.org-scoped.setting", "true", "--org", "org-explicit"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-explicit/settings"
+        assert "/repos/" not in captured["path"]
+        assert "(org)" in result.output
+
+    def test_set_autodetects_repo_when_no_org(self, runner, monkeypatch):
+        """Like gh/glab: a bare `set` inside a checkout writes a repo override."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
+
+        def mock_put(self, path, json=None):
+            assert json is not None
+            captured["path"] = path
+            return {"key": json["key"], "value": json["value"], "source": "repository"}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/repos/rep-detected/settings"
+        assert "(repo)" in result.output
+
+    def test_set_404_does_not_show_scope_hint(self, runner, monkeypatch):
+        """The org-only-scope hint is a 422 concern — it must not leak onto other
+        errors such as a 404 on a repo-scoped write."""
+
+        def mock_put(self, path, json=None):
+            request = httpx.Request("PUT", "https://api.avrea.com" + path)
+            response = httpx.Response(404, request=request, json={"detail": "nope"})
+            raise httpx.HTTPStatusError("404", request=request, response=response)
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true", "--repo", "rep-xyz"])
+        assert result.exit_code != 0
+        assert "org scope" not in result.stderr
+
+    def test_set_422_explicit_repo_hint(self, runner, monkeypatch):
+        """An org-only key with explicit --repo hints to drop --repo."""
+
+        def mock_put(self, path, json=None):
+            request = httpx.Request("PUT", "https://api.avrea.com" + path)
+            response = httpx.Response(
+                422,
+                request=request,
+                json={"detail": "Setting 'some.org-scoped.setting' is not allowed for scope 'repository'"},
+            )
+            raise httpx.HTTPStatusError("422", request=request, response=response)
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "some.org-scoped.setting", "true", "--repo", "rep-xyz"])
+        assert result.exit_code != 0
+        assert "HTTP 422" in result.stderr
+        assert "--org" in result.stderr
+        assert "drop --repo" in result.stderr
+
+    def test_set_422_autodetected_repo_hint(self, runner, monkeypatch):
+        """An org-only key hit via an auto-detected repo hints to use --org
+        (the user never typed --repo, so 'drop --repo' would be wrong)."""
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
+
+        def mock_put(self, path, json=None):
+            request = httpx.Request("PUT", "https://api.avrea.com" + path)
+            response = httpx.Response(
+                422,
+                request=request,
+                json={"detail": "Setting 'some.org-scoped.setting' is not allowed for scope 'repository'"},
+            )
+            raise httpx.HTTPStatusError("422", request=request, response=response)
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "some.org-scoped.setting", "true"])
+        assert result.exit_code != 0
+        assert "HTTP 422" in result.stderr
+        assert "--org" in result.stderr
+        assert "drop --repo" not in result.stderr
+
+    def test_set_errors_when_detected_repo_not_in_org(self, runner, monkeypatch):
+        """A bare write must not silently fall back to org scope when the
+        auto-detected repo isn't connected to the org — it errors instead."""
+        put_called = []
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            request = httpx.Request("GET", "https://api.avrea.com" + path)
+            response = httpx.Response(404, request=request, json={"detail": "not found"})
+            raise httpx.HTTPStatusError("404", request=request, response=response)
+
+        def mock_put(self, path, json=None):
+            put_called.append(path)
+            return {}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true"])
+        assert result.exit_code != 0
+        assert not put_called  # never wrote anything
+
+    def test_set_falls_back_to_org_outside_repo(self, runner, monkeypatch):
+        """With a default org and no repo context, a bare write targets org scope
+        (uses the default org) instead of erroring."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+
+        def mock_put(self, path, json=None):
+            assert json is not None
+            captured["path"] = path
+            return {"key": json["key"], "value": json["value"], "source": "organization"}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/settings"
+        assert "(org)" in result.output
+
+    def test_set_explicit_org_overrides_avr_repo(self, runner, monkeypatch):
+        """An explicit --org targets org scope even when AVR_REPO pins a repo —
+        an explicit flag outranks the ambient env default."""
+        monkeypatch.setenv("AVR_REPO", "acme/web")
+        captured = {}
+
+        def mock_put(self, path, json=None):
+            assert json is not None
+            captured["path"] = path
+            return {"key": json["key"], "value": json["value"], "source": "organization"}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true", "--org", "org-explicit"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-explicit/settings"
+        assert "/repos/" not in captured["path"]
+
+    def test_set_uses_avr_repo_when_no_org(self, runner, monkeypatch):
+        """Without --org, AVR_REPO targets repo scope."""
+        monkeypatch.setenv("AVR_REPO", "acme/web")
+        captured = {}
+
+        def mock_get(self, path, params=None):
+            return {"data": {"repository_id": "rep-env", "full_name": "acme/web"}}
+
+        def mock_put(self, path, json=None):
+            assert json is not None
+            captured["path"] = path
+            return {"key": json["key"], "value": json["value"], "source": "repository"}
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", mock_put)
+        result = runner.invoke(cli, ["settings", "set", "cache.gha.enabled", "true"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/repos/rep-env/settings"
 
 
 class TestSettingsReset:
@@ -171,7 +402,7 @@ class TestSettingsReset:
             return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
-        result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
+        result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled", "--org", "org-default"])
         assert result.exit_code == 0
         assert "cache.gha.enabled" in captured["path"]
         assert "Reset" in result.output
@@ -196,8 +427,81 @@ class TestSettingsReset:
             return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
-        runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
+        runner.invoke(cli, ["settings", "reset", "cache.gha.enabled", "--org", "org-default"])
         assert captured["path"].endswith("/settings/cache.gha.enabled")
+
+    def test_reset_explicit_org_ignores_git(self, runner, monkeypatch):
+        """`reset --org` targets org scope and ignores the git remote."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_delete(self, path, params=None):
+            captured["path"] = path
+            return None
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
+        result = runner.invoke(cli, ["settings", "reset", "some.org-scoped.setting", "--org", "org-explicit"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-explicit/settings/some.org-scoped.setting"
+        assert "/repos/" not in captured["path"]
+
+    def test_reset_autodetects_repo_when_no_org(self, runner, monkeypatch):
+        """A bare `reset` inside a checkout clears the repo override."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
+
+        def mock_delete(self, path, params=None):
+            captured["path"] = path
+            return None
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
+        result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/repos/rep-detected/settings/cache.gha.enabled"
+
+    def test_reset_falls_back_to_org_outside_repo(self, runner, monkeypatch):
+        """With a default org and no repo context, a bare `reset` targets org
+        scope instead of erroring."""
+        captured = {}
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+
+        def mock_delete(self, path, params=None):
+            captured["path"] = path
+            return None
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
+        result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
+        assert result.exit_code == 0
+        assert captured["path"] == "/orgs/org-default/settings/cache.gha.enabled"
+
+    def test_reset_errors_when_detected_repo_not_in_org(self, runner, monkeypatch):
+        """A bare `reset` errors when the auto-detected repo isn't connected,
+        rather than clearing the org-wide value by surprise."""
+        delete_called = []
+
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+
+        def mock_get(self, path, params=None):
+            request = httpx.Request("GET", "https://api.avrea.com" + path)
+            response = httpx.Response(404, request=request, json={"detail": "not found"})
+            raise httpx.HTTPStatusError("404", request=request, response=response)
+
+        def mock_delete(self, path, params=None):
+            delete_called.append(path)
+            return None
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
+        result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
+        assert result.exit_code != 0
+        assert not delete_called
 
 
 class TestSettingsSchema:

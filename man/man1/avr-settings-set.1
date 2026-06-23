@@ -9,6 +9,8 @@ Set a setting value.
 .PP
 VALUE is parsed as a boolean (true/false) or integer when possible, otherwise treated as a string.
 .PP
+Writes a repository override when run inside a connected checkout (the repo is auto-detected), when --repo is given, or when AVR_REPO is set. Otherwise targets org scope (the default org, or --org); org-only settings must be set with --org. A checkout whose repo isn't connected to the org is an error rather than a silent org-wide write.
+.PP
 .RS 4
 .nf
 Examples:
@@ -29,7 +31,7 @@ Examples:
 Organization ID or slug. Uses default org if not specified.
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-settings (1),

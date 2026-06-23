@@ -224,6 +224,8 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
         404 → caller's hint takes over (e.g. "Run `avr run list`…")
         409 → surface the API's `detail` prominently — usually meaningful
               ("already cancelled", "already running")
+        422 → validation error; show API detail + caller's hint (e.g.
+              "this setting is org-scoped only")
         429 → rate-limit hint
         5xx → "Avrea is having trouble" + suggest `avr health`
     """
@@ -244,6 +246,10 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
     elif status == 409:
         # 409 detail is usually load-bearing ("run is already cancelled").
         click.echo(f"Error: Conflict while trying to {action} (HTTP 409){detail_suffix}", err=True)
+    elif status == 422:
+        click.echo(f"Error: Failed to {action} (HTTP 422){detail_suffix}", err=True)
+        if hint:
+            click.echo(f"  Hint: {hint}", err=True)
     elif status == 429:
         click.echo("Error: Avrea is rate-limiting requests (HTTP 429). Try again in a few seconds.", err=True)
     elif 500 <= status < 600:

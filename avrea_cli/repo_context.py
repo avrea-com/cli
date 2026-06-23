@@ -252,6 +252,8 @@ def resolve_repo_or_detect(
     repo: str | None,
     *,
     required: Literal[True],
+    detect_git: bool = True,
+    strict_detected: bool = False,
 ) -> str: ...
 
 
@@ -263,6 +265,8 @@ def resolve_repo_or_detect(
     repo: str | None,
     *,
     required: Literal[False] = False,
+    detect_git: bool = True,
+    strict_detected: bool = False,
 ) -> str | None: ...
 
 
@@ -273,6 +277,8 @@ def resolve_repo_or_detect(
     repo: str | None,
     *,
     required: bool = False,
+    detect_git: bool = True,
+    strict_detected: bool = False,
 ) -> str | None:
     """Resolve a repo with this precedence:
 
@@ -283,16 +289,30 @@ def resolve_repo_or_detect(
     Returns the Avrea repo_id, or None if nothing was found and ``required``
     is False. The auto-detect / env-override hint goes to stderr so JSON or
     script output stays clean.
+
+    Pass ``detect_git=False`` to disable step 3. An explicit ``--org`` uses
+    this so an org-scoped command isn't silently narrowed to the checkout's
+    repo just because the user happens to be standing in one.
+
+    Pass ``strict_detected=True`` to abort (instead of soft-falling back to
+    None) when a git-detected repo isn't in the org, while still returning
+    None when no repo is detected at all. Writes use this: a checkout whose
+    repo isn't connected is a mistake worth surfacing, but having no repo
+    context at all just means org scope.
     """
     if repo:
         return resolve_repo(client, config, org_id, repo)
     if config.repo_override:
         _emit_using_repo_hint(config.repo_override)
         return resolve_repo(client, config, org_id, config.repo_override)
+    if not detect_git:
+        if required:
+            raise click.ClickException(_no_repo_error_message())
+        return None
     detected = detect_repo_from_git()
     if detected:
         _emit_using_repo_hint(detected)
-        if required:
+        if required or strict_detected:
             return resolve_repo(client, config, org_id, detected)
         # Soft-detect: don't abort the command if the auto-detected repo
         # isn't in the org. Caller asked for a repo but is fine without one

@@ -7,6 +7,8 @@ avr-settings-list \- List settings with their current values and source.
 .SH DESCRIPTION
 List settings with their current values and source.
 .PP
+Inside a connected checkout the repository is auto-detected from the git remote and its effective values are shown. Pass --org to see organization values (this suppresses auto-detection), or --repo / AVR_REPO to target a repository.
+.PP
 .RS 4
 .nf
 Examples:
@@ -30,7 +32,7 @@ JSON FIELDS
 Organization ID or slug. Uses default org if not specified.
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 .TP
 \fB\-\-prefix\fR \fITEXT\fR
 Filter by key prefix (e.g. 'cache.').
