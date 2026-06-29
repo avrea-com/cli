@@ -1,0 +1,9 @@
+# Configuration for the oss-report tool (lives in the avrea-core monorepo at
+# tools/oss-report). Used to regenerate the SBOMs under .oss-report/.
+# Regenerate per release:
+#
+#   oss-report generate --sbom-format both --output-dir .oss-report
+#
+project:
+  name: Avrea CLI
+  contact: security@avrea.com

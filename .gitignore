@@ -219,3 +219,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+# oss-report internal feed (not a CRA SBOM; regenerated locally)
+.oss-report/inventory.json

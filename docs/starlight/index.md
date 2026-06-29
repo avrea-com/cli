@@ -40,6 +40,19 @@ git clone https://github.com/avrea-com/cli && cd cli && uv sync
 uv run avr --version
 ```
 
+### Verifying a release
+
+Release artefacts (the binary tarballs and the PyPI wheel/sdist) carry keyless
+[SLSA build provenance](https://slsa.dev/) signed via Sigstore. Verify a
+downloaded artefact against this repository with the GitHub CLI:
+
+```sh
+gh attestation verify avr_0.1.5_linux_amd64.tar.gz --repo avrea-com/cli
+```
+
+A successful check confirms the artefact was built by this repository's release
+workflow and has not been tampered with.
+
 ## Authenticate
 
 Browser-based login (recommended):
@@ -274,7 +287,9 @@ avr <group> <command> --help      # full flag list with examples
 
 ## Reporting a vulnerability
 
-If you believe you have found a security issue in `avr`, please contact <security@avrea.com>.
+If you believe you have found a security issue in `avr`, please email
+<security@avrea.com>. Do not open a public issue. See [SECURITY.md](SECURITY.md)
+for our coordinated-disclosure policy, response targets, and safe-harbour terms.
 
 ## License
 

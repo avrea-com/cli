@@ -94,8 +94,9 @@ jobs:
       name: pypi
       url: https://pypi.org/p/avr-cli
     permissions:
-      id-token: write    # PyPI Trusted Publisher (OIDC); no API token needed
-      contents: write    # create the GitHub Release
+      id-token: write       # PyPI Trusted Publisher (OIDC) + Sigstore signing
+      contents: write       # create the GitHub Release
+      attestations: write   # record SLSA build-provenance attestations
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -141,6 +142,19 @@ jobs:
           path: binaries/
           merge-multiple: true
 
+      - name: Attest build provenance
+        # Keyless SLSA provenance (Sigstore). Covers the GitHub Release binary
+        # tarballs and the wheel/sdist so users can verify authenticity with
+        # `gh attestation verify <file> --repo ${{ github.repository }}`.
+        # PyPI artifacts also carry PEP 740 attestations from the OIDC publish.
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: |
+            dist/*
+            binaries/*
+            .oss-report/bom.cyclonedx.json
+            .oss-report/bom.spdx.json
+
       - name: Create GitHub Release
         if: github.event_name == 'push'
         env:
@@ -149,4 +163,5 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
-            dist/* binaries/*
+            dist/* binaries/* \
+            .oss-report/bom.cyclonedx.json .oss-report/bom.spdx.json

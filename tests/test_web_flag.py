@@ -47,6 +47,7 @@ def runner(monkeypatch):
     monkeypatch.setenv("AVR_TOKEN", "test-token")
     monkeypatch.setenv("AVR_ORG", "org-default")
     monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_default_host", lambda: None)
     monkeypatch.setattr("avrea_cli.auth.load_token", lambda *, host: None)
     monkeypatch.setattr("avrea_cli.auth.load_default_org", lambda *, host: None)
     # Stub out the actual browser launch.
