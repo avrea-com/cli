@@ -37,7 +37,7 @@ _OS_CHOICES = ["linux", "macos", "windows"]
 # to a concrete image and cpu/memory/disk. The server validates the (os, size)
 # and (os, version) pairs (sizes are OS-specific) and remains the source of truth.
 _SIZE_CHOICES = ["1-vcpu", "2-vcpu", "4-vcpu", "8-vcpu", "16-vcpu", "32-vcpu"]
-_OS_VERSION_CHOICES = ["ubuntu-22.04", "ubuntu-24.04", "macos-26", "windows-2025"]
+_OS_VERSION_CHOICES = ["ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "macos-26", "windows-2025"]
 
 # Bounds / default mirror the API (avrea/api/routers/customer_vms.py); kept
 # here only to fail obviously-bad input locally with a clear message. The

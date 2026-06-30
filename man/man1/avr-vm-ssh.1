@@ -1,0 +1,40 @@
+.TH AVR\-VM\-SSH 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm-ssh \- Open an SSH session to a RUNNING VM (or print the command with --print).
+.SH SYNOPSIS
+.B avr vm ssh
+[OPTIONS] CUSTOMER_VM_ID [SSH_ARGS]...
+.SH DESCRIPTION
+Open an SSH session to a RUNNING VM (or print the command with --print).
+.PP
+Resolves the VM's SSH endpoint and replaces this process with `ssh`. Extra options are passed through to ssh and placed before the destination, so port-forwarding and similar flags work. Use `--` to stop avr from interpreting them, e.g.:
+.PP
+avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+.SH ARGUMENTS
+.TP
+\fICUSTOMER_VM_ID\fR
+\&
+.TP
+[\fISSH_ARGS...\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
+Private key file to pass to ssh as -i.
+.TP
+\fB\-\-print\fR
+Print the ssh command instead of running it.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-show (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1)
