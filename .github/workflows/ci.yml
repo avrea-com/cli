@@ -65,3 +65,47 @@ jobs:
         with:
           version-file: pyproject.toml
       - run: make docs-check
+
+  # Software-composition analysis: fail the build (and therefore any release,
+  # since release.yml runs this workflow as a gate) on a known vulnerability of
+  # medium severity or worse.
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version-file: pyproject.toml
+      # Export the hash-pinned production dependency set from uv.lock into a
+      # dedicated directory holding only requirements.txt. Scanning that dir
+      # (rather than the repo root) keeps grype from re-cataloguing uv.lock /
+      # pyproject.toml — which carry the dev set — so the --no-dev scoping
+      # actually holds and a dev-only CVE can't block a release. The non-empty
+      # guard makes the gate fail loudly instead of passing on an empty export.
+      - name: Export pinned production dependencies
+        run: |
+          mkdir -p sca-scope
+          uv export --frozen --no-emit-project --no-dev --format requirements-txt --output-file sca-scope/requirements.txt
+      - name: Fail if no dependencies were resolved
+        run: test "$(grep -c '==' sca-scope/requirements.txt)" -gt 0
+      # Primary gate: scan only the exported production set, so a newly disclosed
+      # CVE blocks the build even when the committed SBOM hasn't been regenerated.
+      - name: Scan dependency tree
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          path: "sca-scope"
+          severity-cutoff: medium
+          fail-build: true
+          output-format: table
+      # Independently verify the published SBOM artefact (production scope) is
+      # itself free of known vulnerabilities — this is the file we attach to the
+      # release and retain for our records.
+      - name: Scan published SBOM (.oss-report)
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          sbom: ".oss-report/bom.cyclonedx.json"
+          severity-cutoff: medium
+          fail-build: true
+          output-format: table

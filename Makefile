@@ -48,7 +48,7 @@ fix: ## Auto-fix linting issues and format code
 
 scan: ## Scan for vulnerabilities
 	@echo "🔍 Scanning avr for vulnerabilities..."
-	@syft scan . --source-name avr-cli --source-version $(VERSION) -o syft-json | grype --fail-on critical -o table
+	@syft scan . --source-name avr-cli --source-version $(VERSION) -o syft-json | grype --fail-on medium -o table
 	@echo "✅ avr vulnerability scan complete"
 
 docs: ## Regenerate reference docs from the live Click tree
