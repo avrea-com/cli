@@ -37,8 +37,12 @@ jobs:
       contents: read
     env:
       # PyApp is the Rust bootstrapper that wraps our PyPI wheel into a
-      # standalone binary. Pin it and bump deliberately, like any build tool.
+      # standalone binary. Pin the version and its source checksum together and
+      # bump both deliberately, like any build tool.
       PYAPP_VERSION: "0.29.0"
+      # sha256 of the pinned source.tar.gz. The versioned release asset is
+      # mutable, so the Fetch step verifies this before anything is compiled.
+      PYAPP_SHA256: "0533004baf6d1d46ef15abad02e98881ec92291c024182a36b57931c8d66df5f"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -74,6 +78,13 @@ jobs:
         shell: bash
         run: |
           curl -fsSL "https://github.com/ofek/pyapp/releases/download/v${PYAPP_VERSION}/source.tar.gz" -o pyapp-source.tar.gz
+          # Verify the mutable release asset before extraction: sha256sum on
+          # Linux/Windows runners, shasum on macOS (which has no sha256sum).
+          if command -v sha256sum >/dev/null 2>&1; then
+            echo "${PYAPP_SHA256}  pyapp-source.tar.gz" | sha256sum -c -
+          else
+            echo "${PYAPP_SHA256}  pyapp-source.tar.gz" | shasum -a 256 -c -
+          fi
           tar -xzf pyapp-source.tar.gz
           mv "pyapp-v${PYAPP_VERSION}" pyapp
 
