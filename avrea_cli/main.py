@@ -114,9 +114,14 @@ def main() -> None:
 
     Click only honors group options before the subcommand path. Reordering
     argv before Click parses lets `avr run list --verbose` work the same
-    as `avr --verbose run list`."""
+    as `avr --verbose run list`.
+
+    ``prog_name`` is pinned to "avr" so the program name (and thus Click's
+    ``_AVR_COMPLETE`` shell-completion variable) is stable no matter how the
+    interpreter was launched. PyApp execs the entry point via ``python -c``,
+    which otherwise leaves ``sys.argv[0]`` as "-c" and breaks completions."""
     sys.argv[1:] = _hoist_global_flags(sys.argv[1:])
-    cli()
+    cli(prog_name="avr")
 
 
 @click.group(

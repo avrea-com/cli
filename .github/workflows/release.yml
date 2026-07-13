@@ -29,11 +29,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-latest, target: darwin_arm64 }
-          - { os: ubuntu-22.04, target: linux_amd64 }
+          - { os: macos-latest, rust_target: aarch64-apple-darwin, target: darwin_arm64 }
+          - { os: ubuntu-22.04, rust_target: x86_64-unknown-linux-gnu, target: linux_amd64 }
+          # Windows (Scoop / Chocolatey) — enable when we ship Windows. PyApp
+          # builds an .exe the same way; the staging step already appends the
+          # extension via runner.os.
+          # - { os: windows-latest, rust_target: x86_64-pc-windows-msvc, target: windows_amd64 }
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+    env:
+      # PyApp is the Rust bootstrapper that wraps our PyPI wheel into a
+      # standalone binary. Pin it and bump deliberately, like any build tool.
+      PYAPP_VERSION: "0.29.0"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -46,6 +54,9 @@ jobs:
           version-file: pyproject.toml
           enable-cache: false
 
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.rust_target }}
+
       - name: Inject _build_info
         run: |
           cat > avrea_cli/_build_info.py <<EOF
@@ -53,33 +64,56 @@ jobs:
           GIT_COMMIT = "${{ github.sha }}"
           EOF
 
-      - name: Install dependencies
-        run: uv sync --extra dev
+      - name: Build wheel
+        run: uv build --wheel
 
-      - name: Install PyInstaller
-        run: uv pip install pyinstaller
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: echo "value=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch PyApp source
+        shell: bash
+        run: |
+          curl -fsSL "https://github.com/ofek/pyapp/releases/download/v${PYAPP_VERSION}/source.tar.gz" -o pyapp-source.tar.gz
+          tar -xzf pyapp-source.tar.gz
+          mv "pyapp-v${PYAPP_VERSION}" pyapp
 
       - name: Build standalone binary
-        run: |
-          uv run pyinstaller --onefile --name avr \
-            --collect-all avrea_cli \
-            --collect-all click \
-            --collect-all pydantic \
-            --collect-all certifi \
-            pyinstaller_entry.py
+        working-directory: pyapp
+        env:
+          PYAPP_PROJECT_NAME: avr-cli
+          PYAPP_PROJECT_VERSION: ${{ steps.version.outputs.value }}
+          PYAPP_PROJECT_PATH: ${{ github.workspace }}/dist/avr_cli-${{ steps.version.outputs.value }}-py3-none-any.whl
+          PYAPP_EXEC_SPEC: avrea_cli.main:main
+          PYAPP_PYTHON_VERSION: "3.14"
+          PYAPP_DISTRIBUTION_EMBED: "1"
+          PYAPP_FULL_ISOLATION: "1"
+        run: cargo build --release --target ${{ matrix.rust_target }}
 
-      - name: Smoke test the binary
-        # --version skips Click's command-resolution path, so it can't catch
-        # missing lazy-loaded submodules under avrea_cli.commands.*. Invoking
-        # a real subcommand forces importlib.import_module to run.
+      - name: Stage binary, smoke test, and pre-generate completions
+        shell: bash
+        # First run installs the embedded wheel's dependencies from PyPI (the
+        # network is available here; on a user's machine it happens once).
+        # Warming it here doubles as a smoke test: --version skips Click's
+        # command resolution, so we also invoke a real subcommand to force the
+        # lazy imports under avrea_cli.commands.*. Completions are generated now
+        # because Homebrew's install sandbox blocks the network, so the formula
+        # cannot run the binary at install time (a self-contained Go binary can;
+        # ours pip-installs deps on first run).
         run: |
-          ./dist/avr --version
-          ./dist/avr auth --help
+          ext=""; [ "${{ runner.os }}" = "Windows" ] && ext=".exe"
+          mkdir -p out/completions
+          cp "pyapp/target/${{ matrix.rust_target }}/release/pyapp${ext}" "out/avr${ext}"
+          "out/avr${ext}" --version
+          "out/avr${ext}" auth --help >/dev/null
+          _AVR_COMPLETE=zsh_source  "out/avr${ext}" > out/completions/avr.zsh
+          _AVR_COMPLETE=bash_source "out/avr${ext}" > out/completions/avr.bash
+          _AVR_COMPLETE=fish_source "out/avr${ext}" > out/completions/avr.fish
 
       - name: Package tarball
-        run: |
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -n 1)
-          tar -czf "avr_${version}_${{ matrix.target }}.tar.gz" -C dist avr
+        shell: bash
+        run: tar -czf "avr_${{ steps.version.outputs.value }}_${{ matrix.target }}.tar.gz" -C out .
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
