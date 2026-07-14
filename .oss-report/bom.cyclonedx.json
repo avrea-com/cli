@@ -37,26 +37,6 @@
       "version": "4.13.0"
     },
     {
-      "bom-ref": "pkg:pypi/avr-cli@0.1.5",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://avrea.com/"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "name": "avr-cli",
-      "purl": "pkg:pypi/avr-cli@0.1.5",
-      "type": "library",
-      "version": "0.1.5"
-    },
-    {
       "bom-ref": "pkg:pypi/certifi@2026.4.22",
       "externalReferences": [
         {
@@ -96,6 +76,13 @@
       "purl": "pkg:pypi/click@8.4.0",
       "type": "library",
       "version": "8.4.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/colorama@0.4.6",
+      "name": "colorama",
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "type": "library",
+      "version": "0.4.6"
     },
     {
       "bom-ref": "pkg:pypi/h11@0.16.0",
@@ -332,9 +319,9 @@
       "dependsOn": [
         "pkg:pypi/annotated-types@0.7.0",
         "pkg:pypi/anyio@4.13.0",
-        "pkg:pypi/avr-cli@0.1.5",
         "pkg:pypi/certifi@2026.4.22",
         "pkg:pypi/click@8.4.0",
+        "pkg:pypi/colorama@0.4.6",
         "pkg:pypi/h11@0.16.0",
         "pkg:pypi/httpcore@1.0.9",
         "pkg:pypi/httpx@0.28.1",
@@ -347,7 +334,7 @@
         "pkg:pypi/typing-inspection@0.4.2",
         "pkg:pypi/wcwidth@0.7.0"
       ],
-      "ref": "Avrea CLI@v0.1.5-3-ge5e7e9c"
+      "ref": "Avrea CLI@v0.1.6"
     },
     {
       "ref": "pkg:pypi/annotated-types@0.7.0"
@@ -356,13 +343,13 @@
       "ref": "pkg:pypi/anyio@4.13.0"
     },
     {
-      "ref": "pkg:pypi/avr-cli@0.1.5"
-    },
-    {
       "ref": "pkg:pypi/certifi@2026.4.22"
     },
     {
       "ref": "pkg:pypi/click@8.4.0"
+    },
+    {
+      "ref": "pkg:pypi/colorama@0.4.6"
     },
     {
       "ref": "pkg:pypi/h11@0.16.0"
@@ -400,7 +387,7 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "Avrea CLI@v0.1.5-3-ge5e7e9c",
+      "bom-ref": "Avrea CLI@v0.1.6",
       "licenses": [
         {
           "license": {
@@ -410,11 +397,20 @@
       ],
       "name": "Avrea CLI",
       "type": "application",
-      "version": "v0.1.5-3-ge5e7e9c"
+      "version": "v0.1.6"
     },
-    "timestamp": "2026-07-01T00:00:00+00:00"
+    "timestamp": "2026-07-14T00:00:00+00:00",
+    "tools": {
+      "components": [
+        {
+          "name": "oss-report",
+          "type": "application",
+          "version": "0.1.0"
+        }
+      ]
+    }
   },
-  "serialNumber": "urn:uuid:6c6cb603-1e4c-501a-b496-e37e9ceeef37",
+  "serialNumber": "urn:uuid:05f64825-7f2c-54d5-977a-cfd0badda418",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
