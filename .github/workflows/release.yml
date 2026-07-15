@@ -176,6 +176,20 @@ jobs:
             exit 1
           fi
 
+      - name: Verify committed SBOM matches the release
+        # The SBOM under .oss-report/ is regenerated per release with `make sbom`
+        # (its version comes from oss-report.yaml). Fail the release if it still
+        # carries a previous version. The pre-push hook runs the same check
+        # locally.
+        if: github.event_name == 'push'
+        run: |
+          sbom_version=$(jq -r '.metadata.component.version' .oss-report/bom.cyclonedx.json)
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ "$sbom_version" != "$tag_version" ]; then
+            echo "::error::SBOM version $sbom_version does not match release $tag_version; run 'make sbom' and commit" >&2
+            exit 1
+          fi
+
       - name: Inject _build_info
         # Embed the release commit so `avr --version` can report it without
         # shelling out to git at runtime. version.py reads this lazily.

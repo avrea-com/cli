@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help deps test lint fix scan update all clean docs docs-check
+.PHONY: help deps test lint fix scan update all clean docs docs-check sbom
 
 UV ?= uv
 LINT_UV := $(UV) run --extra dev
@@ -22,6 +22,7 @@ help: ## Show available targets
 	@echo "  update           - Update dependencies"
 	@echo "  docs             - Regenerate docs/REFERENCE.md and docs/reference.json from source"
 	@echo "  docs-check       - Fail if committed docs are stale (CI gate)"
+	@echo "  sbom             - Regenerate the committed OSS SBOM under .oss-report/"
 
 deps: ## Install/sync dependencies (including dev extras)
 	@echo "📦 Installing avr dependencies..."
@@ -65,6 +66,14 @@ docs-check: ## Fail if committed docs differ from a fresh regeneration
 		exit 1; \
 	fi
 	@echo "✅ avr docs are up to date"
+
+# TODO: move SBOM generation into CI at release time so contributors don't need
+# the internal oss-report tool installed locally.
+sbom: ## Regenerate the committed OSS SBOM under .oss-report/
+	@command -v oss-report >/dev/null 2>&1 || { echo "❌ oss-report not on PATH; uv tool install it from the Avrea internal tooling repo" >&2; exit 1; }
+	@echo "📦 Regenerating avr SBOM (keep oss-report.yaml version in sync with pyproject)..."
+	@oss-report generate --sbom-format both --output-dir .oss-report
+	@echo "✅ avr SBOM regenerated"
 
 update: ## Update dependencies
 	@echo "📦 Updating avr dependencies..."

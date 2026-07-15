@@ -1,9 +1,10 @@
-# Configuration for the oss-report tool (lives in the avrea-core monorepo at
-# tools/oss-report). Used to regenerate the SBOMs under .oss-report/.
-# Regenerate per release:
+# Config for oss-report (an internal Avrea tool). Regenerate the SBOMs under
+# .oss-report/ per release with `make sbom`.
 #
-#   oss-report generate --sbom-format both --output-dir .oss-report
-#
+# `version` must track pyproject.toml: it becomes the SBOM's root version, and
+# the release workflow and pre-push hook both fail if the committed SBOM version
+# does not match the tag, so a forgotten regeneration is caught before shipping.
 project:
   name: Avrea CLI
+  version: "0.1.6"
   contact: security@avrea.com
