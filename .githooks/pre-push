@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Block pushing a release tag (v*) when the committed SBOM is stale.
+#
+# The committed .oss-report/bom.cyclonedx.json must be regenerated for each
+# release: bump `version` in oss-report.yaml, then `make sbom`. release.yml
+# enforces the same version check server-side; this hook is the fast local gate.
+set -euo pipefail
+
+# pre-push feeds refs on stdin: "<local ref> <local sha> <remote ref> <remote sha>".
+tag=""
+while read -r _ _ remote_ref _; do
+  case "$remote_ref" in
+    refs/tags/v[0-9]*) tag="${remote_ref#refs/tags/}" ;;
+  esac
+done
+[ -n "$tag" ] || exit 0
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "pre-push: jq not on PATH; skipping SBOM checks (CI will verify)." >&2
+  exit 0
+fi
+
+bom=.oss-report/bom.cyclonedx.json
+if [ ! -f "$bom" ]; then
+  echo "pre-push: $bom is missing; run 'make sbom' and commit it." >&2
+  exit 1
+fi
+
+# Version gate: the committed SBOM must carry the release version.
+sbom_version=$(jq -r '.metadata.component.version' "$bom")
+if [ "$sbom_version" != "${tag#v}" ]; then
+  echo "pre-push: SBOM version ($sbom_version) does not match tag $tag." >&2
+  echo "  Bump 'version' in oss-report.yaml, run 'make sbom', and commit." >&2
+  exit 1
+fi
+
+# Dependency-set gate (best effort; needs oss-report on PATH). Regenerate to a
+# scratch dir and compare the component set. name+version is derived from
+# uv.lock, so the comparison is independent of the local venv state. CI still
+# runs the version gate regardless.
+if ! command -v oss-report >/dev/null 2>&1; then
+  echo "pre-push: oss-report not on PATH; skipping dependency-set check." >&2
+  exit 0
+fi
+# oss-report requires a repo-relative output dir, so regenerate into a scratch
+# subdir (gitignored) and remove it on exit.
+scratch=.sbom-precheck
+rm -rf "$scratch"
+trap 'rm -rf "$scratch"' EXIT
+if ! oss-report generate --sbom-format cyclonedx --output-dir "$scratch" >/dev/null 2>&1; then
+  echo "pre-push: 'oss-report generate' failed; skipping dependency-set check." >&2
+  exit 0
+fi
+canon() { jq -S '{v: .metadata.component.version, c: (.components | map({name, version}) | sort)}' "$1"; }
+if ! diff <(canon "$bom") <(canon "$scratch/bom.cyclonedx.json") >/dev/null 2>&1; then
+  echo "pre-push: the committed SBOM's dependency set is stale. Run 'make sbom' and commit." >&2
+  exit 1
+fi
