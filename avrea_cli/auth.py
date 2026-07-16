@@ -378,6 +378,10 @@ def discover_sso_login_path(public_api_url: str, email: str) -> str | None:
         raise click.ClickException(f"Could not reach {public_api_url} to check for SSO: {e}") from None
     except ValueError:
         raise click.ClickException(f"Unexpected SSO discovery response from {public_api_url}") from None
+    # Valid JSON that isn't an object (a bare list, or null from a proxy) would
+    # otherwise blow up on .get with an AttributeError instead of this message.
+    if not isinstance(body, dict):
+        raise click.ClickException(f"Unexpected SSO discovery response from {public_api_url}")
     if body.get("method") != "saml":
         return None
     path = body.get("saml_login_path")
