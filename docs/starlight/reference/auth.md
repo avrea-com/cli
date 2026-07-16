@@ -22,6 +22,7 @@ avr auth login [OPTIONS]
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;provider</code> <code class="cli-value">&lt;CHOICE&gt;</code> — OAuth provider to use for CLI login. _(choices: `google`, `github` · default: `github`)_
+- <code class="cli-flag">&#x2D;&#x2D;email</code> <code class="cli-value">&lt;TEXT&gt;</code> — Work email. Routes through your company's SSO if its domain requires it, ignoring --provider.
 
 ### `avr auth logout`
 
