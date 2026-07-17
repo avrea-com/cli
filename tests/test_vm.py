@@ -23,6 +23,17 @@ SAMPLE_VM = {
 
 CREATE_RESPONSE = {"data": {"vm": SAMPLE_VM, "password": "hunter2hunter2"}}
 
+RD_VM = {**SAMPLE_VM, "enable_remote_desktop": True}
+RD_CREATE_RESPONSE = {"data": {"vm": RD_VM, "password": "hunter2hunter2"}}
+RD_ENDPOINTS = {
+    "ssh": {"protocol": "ssh", "external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"},
+    "remote_desktop": {"protocol": "rdp", "external_ip": "203.0.113.1", "external_port": 33389, "username": "runner"},
+}
+RD_SHOW_RESPONSE = {"data": {**RD_VM, "state": "RUNNING", "endpoints": RD_ENDPOINTS}}
+RD_ROTATE_RESPONSE = {
+    "data": {"vm": {**RD_VM, "state": "RUNNING", "endpoints": RD_ENDPOINTS}, "password": "hunter2hunter2"}
+}
+
 
 def _capture(store):
     """Return a stub that records (path, json, params) and returns ``value``."""
@@ -440,3 +451,142 @@ class TestVmSsh:
         assert result.exit_code != 0
         assert "no SSH endpoint yet" in result.output
         assert "PENDING" in result.output
+
+
+class TestVmConnectLine:
+    """The ready-to-paste `Connect` line printed under `Remote desktop  yes`."""
+
+    def _create(self, runner, monkeypatch, platform, response=RD_CREATE_RESPONSE):
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", platform)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: response,
+        )
+        return runner.invoke(
+            cli,
+            ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--remote-desktop", "--ephemeral"],
+        )
+
+    def _show(self, runner, monkeypatch, platform, response=RD_SHOW_RESPONSE):
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", platform)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: response)
+        return runner.invoke(cli, ["vm", "show", "cvm-abc123"])
+
+    def test_create_linux_bakes_password_placeholder_and_rfx(self, runner, monkeypatch):
+        result = self._create(runner, monkeypatch, "linux")
+        assert result.exit_code == 0
+        # Password baked in, IP:PORT placeholder, RemoteFX forced, cert auto-accept on the baked line.
+        assert "xfreerdp /v:IP:PORT /u:USER /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
+        assert "appears in `avr vm show cvm-abc123`" in result.output
+
+    def test_create_darwin_uri_quoted_and_scriptable_alt(self, runner, monkeypatch):
+        result = self._create(runner, monkeypatch, "darwin")
+        assert result.exit_code == 0
+        # URI is quoted and the space stays percent-encoded as full%20address.
+        assert 'open "rdp://full%20address=s:IP:PORT&username=s:USER"' in result.output
+        # A scriptable FreeRDP line carries the password since the URI cannot.
+        assert "sdl3-freerdp /v:IP:PORT /u:USER /p:hunter2hunter2 /gfx:rfx +clipboard" in result.output
+
+    def test_create_windows_cmdkey_then_mstsc(self, runner, monkeypatch):
+        result = self._create(runner, monkeypatch, "win32")
+        assert result.exit_code == 0
+        assert "cmdkey /generic:TERMSRV/IP /user:USER /pass:hunter2hunter2" in result.output
+        assert "mstsc /v:IP:PORT" in result.output
+        # The cleanup line must be pasteable on its own, with the note on a separate line.
+        assert any(line.strip() == "cmdkey /delete:TERMSRV/IP" for line in result.output.splitlines())
+
+    def test_create_without_remote_desktop_has_no_connect(self, runner, monkeypatch):
+        result = self._create(runner, monkeypatch, "linux", response=CREATE_RESPONSE)
+        assert result.exit_code == 0
+        assert "Connect" not in result.output
+
+    def test_show_real_endpoint_omits_password(self, runner, monkeypatch):
+        result = self._show(runner, monkeypatch, "linux")
+        assert result.exit_code == 0
+        assert "xfreerdp /v:203.0.113.1:33389 /u:runner /gfx:rfx +clipboard" in result.output
+        # Password is not retrievable at show time, and the cert flag rides only the baked line.
+        assert "hunter2hunter2" not in result.output
+        assert "/p:" not in result.output
+        assert "/cert:tofu" not in result.output
+
+    def test_windows_cmdkey_target_is_host_only(self, runner, monkeypatch):
+        # Real endpoint + rotated password: the TERMSRV target must carry the host, never the port.
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", "win32")
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_patch",
+            lambda self, path, json=None, params=None, timeout=None: RD_ROTATE_RESPONSE,
+        )
+        result = runner.invoke(cli, ["vm", "update", "cvm-abc123", "--rotate-password"])
+        assert result.exit_code == 0
+        assert "cmdkey /generic:TERMSRV/203.0.113.1 /user:runner /pass:hunter2hunter2" in result.output
+        assert "mstsc /v:203.0.113.1:33389" in result.output
+        assert "TERMSRV/203.0.113.1:33389" not in result.output  # port must not leak into the target
+
+    def test_macos_guest_vnc_has_no_connect_line(self, runner, monkeypatch):
+        vnc = {
+            "data": {
+                **RD_VM,
+                "os_type": "macos",
+                "state": "RUNNING",
+                "endpoints": {
+                    "remote_desktop": {
+                        "protocol": "vnc",
+                        "external_ip": "203.0.113.1",
+                        "external_port": 35900,
+                        "username": "runner",
+                    }
+                },
+            }
+        }
+        result = self._show(runner, monkeypatch, "linux", response=vnc)
+        assert result.exit_code == 0
+        assert "Connect" not in result.output
+
+    def test_show_darwin_offers_scriptable_freerdp_without_password(self, runner, monkeypatch):
+        # Finding 3: the FreeRDP alternative (with /gfx:rfx) must appear at show time too,
+        # not only when a password is baked in, or macOS users hit the black-screen trap.
+        result = self._show(runner, monkeypatch, "darwin")
+        assert result.exit_code == 0
+        assert 'open "rdp://full%20address=s:203.0.113.1:33389&username=s:runner"' in result.output
+        assert "sdl3-freerdp /v:203.0.113.1:33389 /u:runner /gfx:rfx +clipboard" in result.output
+        assert "/p:" not in result.output  # no password at show time
+        assert "hunter2hunter2" not in result.output
+
+    def test_windows_guest_freerdp_omits_rfx(self, runner, monkeypatch):
+        # A Windows guest is not GNOME Remote Desktop, so /gfx:rfx (a GRD-only paint
+        # workaround) must not be forced; let FreeRDP negotiate normally.
+        win_guest = {
+            "data": {
+                **RD_VM,
+                "os_type": "windows",
+                "state": "RUNNING",
+                "endpoints": {
+                    "remote_desktop": {
+                        "protocol": "rdp",
+                        "external_ip": "203.0.113.1",
+                        "external_port": 33389,
+                        "username": "Administrator",
+                    }
+                },
+            }
+        }
+        result = self._show(runner, monkeypatch, "linux", response=win_guest)
+        assert result.exit_code == 0
+        assert "xfreerdp /v:203.0.113.1:33389 /u:Administrator +clipboard" in result.output
+        assert "/gfx:rfx" not in result.output
+
+    def test_running_without_rd_endpoint_keeps_placeholder_hint(self):
+        # Finding 2: a bare IP:PORT placeholder always carries its "appears in show" hint,
+        # even for a RUNNING VM whose remote_desktop endpoint is (defensively) absent.
+        from avrea_cli.vm import _connect_block
+
+        vm = {**RD_VM, "os_type": "linux", "state": "RUNNING", "endpoints": {"ssh": {"external_ip": "x"}}}
+        lines = _connect_block(vm, None)
+        assert any("IP:PORT" in ln for ln in lines)
+        assert any("appears in `avr vm show" in ln for ln in lines)
+
+    def test_posix_password_quoting(self):
+        from avrea_cli.vm import _rdp_connect_lines
+
+        assert "/p:'a b'" in _rdp_connect_lines("IP:PORT", "runner", "a b", "linux", True)[0]
+        assert "/p:abc123" in _rdp_connect_lines("IP:PORT", "runner", "abc123", "linux", True)[0]

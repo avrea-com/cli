@@ -2259,7 +2259,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Enable RDP (Windows) / VNC (macOS Screen Sharing). Not available for linux.",
+                "help": "Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.",
                 "hidden": false,
                 "show_default": true,
                 "default": false

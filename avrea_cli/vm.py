@@ -28,6 +28,7 @@ import httpx
 import json
 import os
 import shlex
+import sys
 
 _OS_CHOICES = ["linux", "macos", "windows"]
 
@@ -153,8 +154,122 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _print_vm(vm: dict[str, Any]) -> None:
-    click.echo(format_key_value(_vm_summary(vm)))
+# ``/gfx:rfx`` is a GNOME-Remote-Desktop-only workaround, not a general RDP flag.
+# GRD on a GPU-less host emits only RemoteFX-Progressive and FreeRDP will not paint
+# that stream unless this flag sets its RemoteFxCodec. Windows RDP negotiates
+# AVC444/bitmap that FreeRDP paints by default, so this is emitted for Linux (GRD)
+# guests only.
+_RDP_RFX_FLAG = "/gfx:rfx"
+
+
+def _quote_pw_posix(password: str) -> str:
+    """Single-quote a password for a POSIX shell when it holds a non-alphanumeric
+    character. Generated passwords are alphanumeric, so this is usually a no-op."""
+    if password.isalnum():
+        return password
+    return "'" + password.replace("'", "'\\''") + "'"
+
+
+def _freerdp_line(binary: str, ip_port: str, username: str, password: str | None, rfx: bool) -> str:
+    """One FreeRDP invocation (``xfreerdp`` or ``sdl3-freerdp``).
+
+    ``password`` is baked in only when known; ``rfx`` forces RemoteFX-Progressive
+    for GNOME Remote Desktop (Linux) guests. ``/cert:tofu`` rides only the
+    password-baked line (create/rotate); the passwordless line relies on the
+    client's own first-connect trust prompt."""
+    parts = [f"{binary} /v:{ip_port} /u:{username}"]
+    if password:
+        parts.append(f"/p:{_quote_pw_posix(password)}")
+    if rfx:
+        parts.append(_RDP_RFX_FLAG)
+    parts.append("+clipboard")
+    if password:
+        parts.append("/cert:tofu")
+    return " ".join(parts)
+
+
+def _rdp_connect_lines(ip_port: str, username: str, password: str | None, platform: str, rfx: bool) -> list[str]:
+    """Platform-appropriate RDP client invocation(s) for the ``Connect`` row.
+
+    ``platform`` is a ``sys.platform`` value for the machine running the CLI (not
+    the guest). The first line is the primary command; later lines are further
+    commands or parenthesised notes.
+    """
+    if platform == "darwin":
+        lines = [f'open "rdp://full%20address=s:{ip_port}&username=s:{username}"']
+        if password:
+            # The rdp:// URI has no password attribute, so Windows App prompts.
+            lines.append("(no password in the URI; use the one-time password shown below)")
+        # Always offer the scriptable FreeRDP client so `show` keeps the RFX guidance.
+        lines.append(_freerdp_line("sdl3-freerdp", ip_port, username, password, rfx))
+        lines.append("(brew install freerdp; binary is sdl-freerdp on older installs)")
+        return lines
+    if platform == "win32":
+        # cmdkey's TERMSRV target takes the host only, never the port.
+        host = ip_port.split(":", 1)[0]
+        if not password:
+            return [f"mstsc /v:{ip_port}"]
+        return [
+            f"cmdkey /generic:TERMSRV/{host} /user:{username} /pass:{password}",
+            f"mstsc /v:{ip_port}",
+            f"cmdkey /delete:TERMSRV/{host}",
+            "(run the delete afterwards; the credential persists until deleted)",
+        ]
+    # linux and any other POSIX host: the FreeRDP CLI client.
+    return [_freerdp_line("xfreerdp", ip_port, username, password, rfx)]
+
+
+def _connect_block(vm: dict[str, Any], password: str | None) -> list[str]:
+    """Ready-to-paste remote-desktop invocation lines for the ``Connect`` row.
+
+    Empty when there is nothing to show: remote desktop disabled, or a non-RDP
+    (macOS/VNC) guest. Bakes the password in only when it is known (create, and
+    the password-rotation path of update/start).
+    """
+    if not vm.get("enable_remote_desktop"):
+        return []
+    # /gfx:rfx is a GNOME-Remote-Desktop (Linux guest) workaround; see _RDP_RFX_FLAG.
+    rfx = vm.get("os_type") == "linux"
+    rd = (vm.get("endpoints") or {}).get("remote_desktop")
+    if rd:
+        # macOS guests speak VNC; their connect story is separate, so skip them.
+        if rd.get("protocol") != "rdp":
+            return []
+        ip_port = f"{rd.get('external_ip')}:{rd.get('external_port')}"
+        username = rd.get("username") or "USER"
+        pending = False
+    else:
+        # Endpoints are not known yet. Emit a placeholder line for RDP guests only;
+        # the guest OS tells us whether it will speak RDP.
+        if vm.get("os_type") == "macos":
+            return []
+        ip_port = "IP:PORT"
+        username = "USER"
+        # The IP:PORT placeholder must always carry its explanatory hint below.
+        pending = True
+    lines = _rdp_connect_lines(ip_port, username, password, sys.platform, rfx)
+    if pending:
+        lines.append(f"(IP:PORT appears in `avr vm show {vm.get('customer_vm_id')}` once the VM is RUNNING)")
+    lines.append("(first connect shows a self-signed certificate warning; accept to continue)")
+    return lines
+
+
+def _print_vm(vm: dict[str, Any], password: str | None = None) -> None:
+    summary = _vm_summary(vm)
+    connect = _connect_block(vm, password)
+    if connect:
+        # Indent continuation lines to format_key_value's value column so the block
+        # lines up under the first "Connect" line. "Connect" is narrower than the
+        # widest key, so it does not widen the column.
+        value_col = max(len(k) for k in summary) + 2
+        connect_value = ("\n" + " " * value_col).join(connect)
+        ordered: dict[str, Any] = {}
+        for key, value in summary.items():
+            ordered[key] = value
+            if key == "Remote desktop":
+                ordered["Connect"] = connect_value
+        summary = ordered
+    click.echo(format_key_value(summary))
     keys = vm.get("ssh_public_keys") or []
     if keys:
         click.echo(f"SSH keys     {len(keys)} configured")
@@ -204,7 +319,10 @@ def vm(ctx):
     "--remote-desktop/--no-remote-desktop",
     default=False,
     show_default=True,
-    help="Enable RDP (Windows) / VNC (macOS Screen Sharing). Not available for linux.",
+    help=(
+        "Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). "
+        "Availability depends on OS version; the server validates."
+    ),
 )
 @click.option("--ttl", default=None, help="Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.")
 @click.option(
@@ -281,7 +399,7 @@ def vm_create(
         click.echo(json.dumps(data, indent=2, default=str))
         return
 
-    _print_vm(data["vm"])
+    _print_vm(data["vm"], password=data.get("password"))
     _print_password(data.get("password"))
     click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {data['vm'].get('customer_vm_id')}")
@@ -507,7 +625,7 @@ def vm_update(ctx, customer_vm_id, org_id, display_name, ttl, ssh_keys, rotate_p
         return
 
     if data.get("vm"):
-        _print_vm(data["vm"])
+        _print_vm(data["vm"], password=data.get("password"))
     _print_password(data.get("password"))
 
 
@@ -549,7 +667,7 @@ def _set_desired_state(ctx, customer_vm_id: str, org_id: str | None, desired_sta
         return
 
     if data.get("vm"):
-        _print_vm(data["vm"])
+        _print_vm(data["vm"], password=data.get("password"))
     _print_password(data.get("password"))
 
 

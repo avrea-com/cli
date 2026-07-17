@@ -35,7 +35,7 @@ Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows
 SSH public key, or @path to read one from a file. Repeatable. (repeatable)
 .TP
 \fB\-\-remote\-desktop\fR / \fB\-\-no\-remote\-desktop\fR
-Enable RDP (Windows) / VNC (macOS Screen Sharing). Not available for linux.
+Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 .TP
 \fB\-\-ttl\fR \fITEXT\fR
 Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
