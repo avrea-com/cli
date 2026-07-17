@@ -67,10 +67,10 @@ def _maybe_auto_pin_default_org(api_url: str, api_key: str) -> tuple[str, str] |
     return slug, org_id
 
 
-def _do_login(ctx, provider):
+def _do_login(ctx, provider, email=None):
     config: CliConfig = ctx.obj["config"]
     try:
-        api_key = auth.login(config.public_api_url, provider=provider)
+        api_key = auth.login(config.public_api_url, provider=provider, email=email)
     except click.ClickException as exc:
         # Click's exception carries a useful `.message`; surface it under a
         # consistent "Login failed:" prefix and exit 1.
@@ -138,10 +138,15 @@ def auth_group(ctx):
     show_default=True,
     help="OAuth provider to use for CLI login.",
 )
+@click.option(
+    "--email",
+    default=None,
+    help="Work email. Routes through your company's SSO if its domain requires it, ignoring --provider.",
+)
 @click.pass_context
-def auth_login(ctx, provider: str):
+def auth_login(ctx, provider: str, email: str | None):
     """Authenticate via browser and store credentials."""
-    _do_login(ctx, provider)
+    _do_login(ctx, provider, email)
 
 
 @auth_group.command("logout")
@@ -283,10 +288,15 @@ def _format_token(token: str | None, show: bool) -> str:
     show_default=True,
     help="OAuth provider to use for CLI login.",
 )
+@click.option(
+    "--email",
+    default=None,
+    help="Work email. Routes through your company's SSO if its domain requires it, ignoring --provider.",
+)
 @click.pass_context
-def login_alias(ctx, provider: str):
+def login_alias(ctx, provider: str, email: str | None):
     """Authenticate via browser and store credentials."""
-    _do_login(ctx, provider)
+    _do_login(ctx, provider, email)
 
 
 @click.command("logout", hidden=True)

@@ -3308,6 +3308,24 @@
                   "google",
                   "github"
                 ]
+              },
+              {
+                "name": "email",
+                "kind": "option",
+                "opts": [
+                  "--email"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Work email. Routes through your company's SSO if its domain requires it, ignoring --provider.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []

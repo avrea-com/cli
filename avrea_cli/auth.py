@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 from typing import override
 from urllib.parse import parse_qs
+from urllib.parse import urlencode
 from urllib.parse import urlparse
 import click
 import html as html_module
@@ -191,6 +192,9 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
 
     session_cookie = None
     csrf_token = None
+    # Set when the control plane bounces an OAuth sign-in because the email's
+    # domain enforces SAML. Carries the org slug and arrives without a session.
+    sso_required_slug: str | None = None
     # Set by login() before the server runs so the handler can call /users/me
     # with the just-issued session cookie and surface the email on the page.
     public_api_url: str | None = None
@@ -207,6 +211,8 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
             OAuthCallbackHandler.session_cookie = query["session"][0]
         if "csrf_token" in query:
             OAuthCallbackHandler.csrf_token = query["csrf_token"][0]
+        if "sso_required" in query:
+            OAuthCallbackHandler.sso_required_slug = query["sso_required"][0]
         if not OAuthCallbackHandler.session_cookie:
             cookie_header = self.headers.get("Cookie", "")
             if "avrea_session=" in cookie_header:
@@ -354,9 +360,55 @@ code {{
 """
 
 
-def login(public_api_url: str, *, provider: str = "github") -> str:
+def discover_sso_login_path(public_api_url: str, email: str) -> str | None:
+    """The org's SAML login path when ``email``'s domain enforces SSO, else None.
+
+    Mirrors what the console does before offering OAuth buttons. The email goes
+    in the POST body, not the query, to keep it out of access logs.
     """
-    Perform browser OAuth login and return the API key.
+    try:
+        response = httpx.post(
+            f"{public_api_url}/sso/discover",
+            json={"email": email},
+            timeout=10.0,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except httpx.HTTPError as e:
+        raise click.ClickException(f"Could not reach {public_api_url} to check for SSO: {e}") from None
+    except ValueError:
+        raise click.ClickException(f"Unexpected SSO discovery response from {public_api_url}") from None
+    # Valid JSON that isn't an object (a bare list, or null from a proxy) would
+    # otherwise blow up on .get with an AttributeError instead of this message.
+    if not isinstance(body, dict):
+        raise click.ClickException(f"Unexpected SSO discovery response from {public_api_url}")
+    if body.get("method") != "saml":
+        return None
+    path = body.get("saml_login_path")
+    if not path:
+        raise click.ClickException(f"{public_api_url} reported SSO for {email} but returned no login path")
+    return path
+
+
+def _auth_url(public_api_url: str, callback_uri: str, *, provider: str, saml_login_path: str | None) -> str:
+    """Where the browser starts the flow. Every branch lands back on
+    ``callback_uri`` with session/csrf_token in the query."""
+    if saml_login_path is not None:
+        return f"{public_api_url}{saml_login_path}?{urlencode({'next': callback_uri})}"
+    if provider == "google":
+        return f"{public_api_url}/oauth/google/login?final_redirect={callback_uri}"
+    if provider == "github":
+        return f"{public_api_url}/oauth/github/login?next={callback_uri}"
+    raise click.ClickException(f"Unsupported auth provider '{provider}'")
+
+
+def login(public_api_url: str, *, provider: str = "github", email: str | None = None) -> str:
+    """
+    Perform browser login and return the API key.
+
+    Routes through the org's SAML IdP when ``email`` is given and its domain
+    enforces SSO; otherwise through ``provider``'s OAuth flow. Both land on the
+    same local callback, so the handling below is shared.
     Raises click.Abort on failure.
     """
     # Control plane 302s here after the upstream OAuth callback completes;
@@ -371,7 +423,14 @@ def login(public_api_url: str, *, provider: str = "github") -> str:
     # otherwise leave stale session/csrf values behind.
     OAuthCallbackHandler.session_cookie = None
     OAuthCallbackHandler.csrf_token = None
+    OAuthCallbackHandler.sso_required_slug = None
     OAuthCallbackHandler.public_api_url = public_api_url
+
+    # Resolve the destination before binding the port: discovery is a network
+    # call and an unknown provider raises, so doing this first keeps either
+    # failure from leaving a stray listener on 8765.
+    saml_login_path = discover_sso_login_path(public_api_url, email) if email else None
+    auth_url = _auth_url(public_api_url, callback_uri, provider=provider, saml_login_path=saml_login_path)
 
     try:
         server = HTTPServer(("localhost", port), OAuthCallbackHandler)
@@ -380,12 +439,6 @@ def login(public_api_url: str, *, provider: str = "github") -> str:
         click.echo("Ensure no other process is using this port and try again.")
         raise click.Abort() from None
 
-    if provider == "google":
-        auth_url = f"{public_api_url}/oauth/google/login?final_redirect={callback_uri}"
-    elif provider == "github":
-        auth_url = f"{public_api_url}/oauth/github/login?next={callback_uri}"
-    else:
-        raise click.ClickException(f"Unsupported auth provider '{provider}'")
     click.echo(f"Opening browser to: {auth_url}")
     click.echo("Waiting for authentication...")
 
@@ -418,6 +471,16 @@ def login(public_api_url: str, *, provider: str = "github") -> str:
         server.server_close()
 
     if not OAuthCallbackHandler.session_cookie:
+        if OAuthCallbackHandler.sso_required_slug:
+            # The control plane refuses OAuth for SSO-enforced domains and
+            # bounces back without a session. Only an email gets us the IdP.
+            click.echo(
+                f"Error: {OAuthCallbackHandler.sso_required_slug} requires single sign-on.",
+                err=True,
+            )
+            click.echo("Retry with your work email so the CLI can find your identity provider:", err=True)
+            click.echo("  avr auth login --email you@yourcompany.com", err=True)
+            raise click.Abort()
         click.echo("Error: Authentication failed - no session received", err=True)
         raise click.Abort()
 
