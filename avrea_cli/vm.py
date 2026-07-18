@@ -202,6 +202,13 @@ def _rdp_connect_lines(ip_port: str, username: str, password: str | None, platfo
     ``platform`` is a ``sys.platform`` value for the machine running the CLI (not
     the guest). The first line is the primary command; later lines are further
     commands or parenthesised notes.
+
+    The one-time password is deliberately baked into the command (``/p:`` /
+    ``cmdkey``) so the line is true paste-and-go, accepting that it lands in shell
+    history and ``ps`` for the session. This is a conscious convenience tradeoff:
+    the password is single-use, rotates on every stop/start, and the exposure is
+    local to the operator's own machine. Do not switch this to a client prompt
+    without revisiting that decision.
     """
     if platform == "darwin":
         lines = [f'open "rdp://full%20address=s:{ip_port}&username=s:{username}"']

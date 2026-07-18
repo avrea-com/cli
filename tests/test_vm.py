@@ -105,6 +105,8 @@ class TestVmCreate:
         assert "os_version" not in body
         # the server derives cpu/memory/disk from the size tier; the CLI must not send them
         assert "cpu_count" not in body
+        assert "memory_mb" not in body
+        assert "disk_gb" not in body
         assert "image_series_name" not in body
         # one-time password and the poll hint are both surfaced
         assert "hunter2hunter2" in result.output
