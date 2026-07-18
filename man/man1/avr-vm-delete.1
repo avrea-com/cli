@@ -20,6 +20,12 @@ Organization ID. Uses default org if not specified (see: avr config set org).
 \fB\-\-yes\fR, \fB\-y\fR
 Skip the confirmation prompt.
 .TP
+\fB\-\-wait\fR
+Wait until the VM is fully deleted before returning.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER\fR
+Seconds to wait when --wait is set. (default: 300)
+.TP
 \fB\-\-json\fR
 Emit the raw API response as JSON.
 .SH SEE ALSO

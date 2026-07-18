@@ -10,8 +10,10 @@ Create a long-running VM.
 .RS 4
 .nf
 Provisioning is asynchronous: poll `avr vm show <id>` until the state is
-RUNNING and endpoints are populated. The response carries a one-time
-password for the VM's local account; save it now, it is never stored.
+RUNNING and endpoints are populated, or pass --wait to block until then and
+print a ready-to-paste connect command with the password baked in. The
+response carries a one-time password for the VM's local account; save it
+now, it is never stored.
 .fi
 .RE
 .SH OPTIONS
@@ -45,6 +47,12 @@ Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 .TP
 \fB\-\-ephemeral\fR
 Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
+.TP
+\fB\-\-wait\fR
+Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER\fR
+Seconds to wait when --wait is set. (default: 300)
 .TP
 \fB\-\-json\fR
 Emit the raw API response (VM plus one-time password) as JSON.

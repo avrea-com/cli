@@ -17,6 +17,12 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 \fB\-\-org\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
+\fB\-\-wait\fR
+Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER\fR
+Seconds to wait when --wait is set. (default: 300)
+.TP
 \fB\-\-json\fR
 Emit the raw API response as JSON.
 .SH SEE ALSO

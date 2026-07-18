@@ -21,8 +21,10 @@ avr vm create [OPTIONS]
 
 ```sh
 Provisioning is asynchronous: poll `avr vm show <id>` until the state is
-RUNNING and endpoints are populated. The response carries a one-time
-password for the VM's local account; save it now, it is never stored.
+RUNNING and endpoints are populated, or pass --wait to block until then and
+print a ready-to-paste connect command with the password baked in. The
+response carries a one-time password for the VM's local account; save it
+now, it is never stored.
 ```
 
 **Options**
@@ -37,6 +39,8 @@ password for the VM's local account; save it now, it is never stored.
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - <code class="cli-flag">&#x2D;&#x2D;egress-rules</code> <code class="cli-value">&lt;TEXT&gt;</code> — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - <code class="cli-flag">&#x2D;&#x2D;ephemeral</code> — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response (VM plus one-time password) as JSON.
 
 ### `avr vm delete`
@@ -57,6 +61,8 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is fully deleted before returning.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm list`
@@ -135,6 +141,8 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm stop`
@@ -154,6 +162,8 @@ Stop a running VM. The ephemeral disk is discarded.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM reaches STOPPED before returning.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm update`

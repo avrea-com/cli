@@ -1,6 +1,7 @@
 """Unit tests for the `avr vm` long-running VM commands."""
 
 from avrea_cli.main import cli
+import httpx
 import json
 
 SAMPLE_VM = {
@@ -208,6 +209,170 @@ class TestVmCreate:
         )
         assert result.exit_code == 2
         assert "3-vcpu" in result.output
+
+
+class TestVmCreateWait:
+    """`avr vm create --wait` polls until the VM is connectable, then prints a
+    fully baked (real endpoints + password) connect command."""
+
+    def _post(self, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: RD_CREATE_RESPONSE,
+        )
+
+    _ARGS = ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--remote-desktop", "--ephemeral"]
+
+    def test_wait_success_bakes_full_paste_ready_command(self, runner, monkeypatch):
+        self._post(monkeypatch)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        # Real endpoint AND password, no placeholder = paste-and-go.
+        assert (
+            "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
+        )
+        assert "IP:PORT" not in result.output
+        assert "hunter2hunter2" in result.output
+
+    def test_wait_polls_past_pending(self, runner, monkeypatch):
+        self._post(monkeypatch)
+        calls = {"n": 0}
+        pending = {"data": {**RD_VM, "state": "PENDING", "endpoints": None}}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            return RD_SHOW_RESPONSE if calls["n"] >= 2 else pending
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert calls["n"] >= 2  # kept polling past the first PENDING
+        assert (
+            "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
+        )
+
+    def test_wait_timeout_still_surfaces_password(self, runner, monkeypatch):
+        self._post(monkeypatch)
+        pending = {"data": {**RD_VM, "state": "PENDING", "endpoints": None}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: pending)
+        result = runner.invoke(cli, [*self._ARGS, "--wait", "--wait-timeout", "0"])
+        assert result.exit_code == 1  # timeout exits nonzero so scripts can detect it
+        assert "hunter2hunter2" in result.output  # password is never lost on timeout
+        assert "IP:PORT" in result.output  # falls back to the placeholder command
+        assert "avr vm show cvm-abc123" in result.output  # re-run hint
+
+    def test_wait_recovers_from_transient_error(self, runner, monkeypatch):
+        # A connection-level blip mid-poll must be retried, not crash the wait.
+        self._post(monkeypatch)
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise httpx.ConnectError("connection reset")
+            return RD_SHOW_RESPONSE
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert calls["n"] >= 2  # retried after the transient error
+        assert (
+            "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
+        )
+
+    def test_wait_transient_5xx_times_out_cleanly(self, runner, monkeypatch):
+        # Repeated 5xx from the show endpoint must not abort early or traceback.
+        self._post(monkeypatch)
+
+        def _get(self, path, params=None):
+            req = httpx.Request("GET", "http://x")
+            raise httpx.HTTPStatusError("boom", request=req, response=httpx.Response(500, request=req))
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait", "--wait-timeout", "0"])
+        assert result.exit_code == 1  # timed out, exits nonzero
+        assert not isinstance(result.exception, httpx.HTTPError)  # clean exit, no traceback
+        assert "hunter2hunter2" in result.output  # password still surfaced
+
+    def test_wait_json_emits_single_final_document(self, runner, monkeypatch):
+        self._post(monkeypatch)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, [*self._ARGS, "--wait", "--json"])
+        assert result.exit_code == 0
+        # Progress is on stderr; the stdout payload is exactly one JSON document
+        # (CliRunner concatenates both streams into .output).
+        doc = json.loads(result.output[result.output.index("{") :])
+        assert doc["password"] == "hunter2hunter2"
+        assert doc["state"] == "RUNNING"
+        assert doc["endpoints"]["remote_desktop"]["external_port"] == 33389  # waited for real endpoints
+
+    def test_wait_failure_exits_nonzero_with_reason(self, runner, monkeypatch):
+        self._post(monkeypatch)
+        failed = {"data": {**RD_VM, "state": "ERROR", "state_reason": "node exploded", "endpoints": None}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: failed)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 1
+        assert "node exploded" in result.output
+        assert "hunter2hunter2" in result.output  # password surfaced before the failure
+
+
+class TestVmLifecycleWait:
+    """--wait on start / stop / delete."""
+
+    def test_start_wait_prints_full_connect(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        patch_resp = {"data": {"vm": {**RD_VM, "state": "PENDING", "endpoints": None}, "password": "hunter2hunter2"}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_patch",
+            lambda self, path, json=None, params=None, timeout=None: patch_resp,
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, ["vm", "start", "cvm-abc123", "--wait"])
+        assert result.exit_code == 0
+        # Same paste-ready payoff as create: real endpoint + the fresh password.
+        assert (
+            "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
+        )
+
+    def test_stop_wait_blocks_until_stopped(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        patch_resp = {"data": {"vm": {**RD_VM, "state": "STOPPING", "endpoints": None}}}
+        stopped = {"data": {**RD_VM, "state": "STOPPED", "desired_state": "STOPPED", "endpoints": None}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_patch",
+            lambda self, path, json=None, params=None, timeout=None: patch_resp,
+        )
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: stopped)
+        result = runner.invoke(cli, ["vm", "stop", "cvm-abc123", "--wait"])
+        assert result.exit_code == 0
+        assert "is now STOPPED" in result.output
+        assert "IP:PORT" not in result.output  # concise confirmation, no connect-line noise
+        assert "Re-run once ready" not in result.output  # target reached, no timeout note
+
+    def test_delete_wait_until_gone(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_delete", lambda self, path: {"data": {"state": "DELETING"}}
+        )
+
+        def _gone(self, path, params=None):
+            req = httpx.Request("GET", "http://x")
+            raise httpx.HTTPStatusError("not found", request=req, response=httpx.Response(404, request=req))
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _gone)
+        result = runner.invoke(cli, ["vm", "delete", "cvm-abc123", "--yes", "--wait"])
+        assert result.exit_code == 0
+        assert "deleted" in result.output.lower()
 
 
 class TestVmList:

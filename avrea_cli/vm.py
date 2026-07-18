@@ -21,6 +21,7 @@ from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 import click
@@ -29,6 +30,7 @@ import json
 import os
 import shlex
 import sys
+import time
 
 _OS_CHOICES = ["linux", "macos", "windows"]
 
@@ -48,6 +50,12 @@ _MIN_TTL_SECONDS = 300
 _MAX_TTL_SECONDS = 7 * 24 * 3600
 
 _TTL_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+
+# --wait polls the freshly created VM until it is connectable, then reprints with
+# a fully baked (real endpoints + password) connect command. 300s covers a cold
+# provision plus first boot.
+_WAIT_DEFAULT_TIMEOUT = 300
+_WAIT_POLL_SECONDS = 3.0
 
 
 def _parse_ttl(value: str) -> int:
@@ -285,6 +293,109 @@ def _print_password(password: str | None) -> None:
     click.echo("Save it now; it is not stored and cannot be retrieved later.")
 
 
+def _endpoints_ready(vm: dict[str, Any]) -> bool:
+    """True once the VM is connectable: RUNNING with an SSH endpoint, and a
+    remote-desktop endpoint too when remote desktop was requested."""
+    if (vm.get("state") or "").upper() != "RUNNING":
+        return False
+    eps = vm.get("endpoints") or {}
+    if not eps.get("ssh"):
+        return False
+    if vm.get("enable_remote_desktop") and not eps.get("remote_desktop"):
+        return False
+    return True
+
+
+def _wait_for_vm(
+    client: ApiClient,
+    org_id: str,
+    customer_vm_id: str,
+    timeout: float,
+    is_ready: Callable[[dict[str, Any]], bool],
+    *,
+    gone_is_ready: bool = False,
+) -> tuple[dict[str, Any] | None, str]:
+    """Poll a VM until ``is_ready`` holds, it enters an ERROR/FAILED state, it is
+    gone (a 404, when ``gone_is_ready`` is set, e.g. delete), or the timeout
+    elapses. Returns (most-recent VM record or None, disposition) where
+    ``disposition`` is ``"ready"``, ``"failed"`` or ``"timeout"``. Progress goes
+    to stderr so piped stdout stays clean.
+
+    Transient poll errors (connection resets, timeouts, 5xx) are retried until
+    the deadline rather than aborting the wait; only a 404 with ``gone_is_ready``
+    is a definitive answer. Only the unambiguous ERROR/FAILED markers count as
+    failure: STOPPED/DELETING are legitimate targets or progress for stop/delete."""
+    deadline = time.monotonic() + timeout
+    vm: dict[str, Any] | None = None
+    last_state: str | None = None
+    while True:
+        try:
+            resp = client.public_get(f"/orgs/{org_id}/vms/{customer_vm_id}")
+        except httpx.HTTPError as exc:
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            if gone_is_ready and status == 404:
+                return None, "ready"
+            # Transient (connection reset, timeout, 5xx): retry until the deadline.
+            if time.monotonic() >= deadline:
+                return vm, "timeout"
+            time.sleep(_WAIT_POLL_SECONDS)
+            continue
+        vm = resp["data"]
+        state = (vm.get("state") or "").upper()
+        if state != last_state:
+            click.echo(f"  {state or 'UNKNOWN'}", err=True)
+            last_state = state
+        if is_ready(vm):
+            return vm, "ready"
+        if "ERROR" in state or "FAIL" in state:
+            return vm, "failed"
+        if time.monotonic() >= deadline:
+            return vm, "timeout"
+        time.sleep(_WAIT_POLL_SECONDS)
+
+
+def _state_is(target: str) -> Callable[[dict[str, Any]], bool]:
+    """Readiness predicate matching a specific VM state (e.g. STOPPED)."""
+
+    def _pred(vm: dict[str, Any]) -> bool:
+        return (vm.get("state") or "").upper() == target
+
+    return _pred
+
+
+def _emit_wait_json(ctx, vm_record: dict[str, Any] | None, password: str | None, disposition: str) -> None:
+    """Emit the final VM record as one JSON document (with the one-time password
+    merged in) after a --wait, then exit non-zero unless the wait succeeded."""
+    final = dict(vm_record or {})
+    if password is not None:
+        final["password"] = password
+    click.echo(json.dumps(final, indent=2, default=str))
+    if disposition != "ready":
+        ctx.exit(1)
+
+
+def _wait_exit(
+    ctx,
+    vm_state: dict[str, Any] | None,
+    disposition: str,
+    target: str,
+    wait_timeout: int,
+    customer_vm_id: str,
+) -> None:
+    """Print the failure/timeout tail for a human-readable --wait and exit
+    non-zero. A ``ready`` disposition is a no-op."""
+    if disposition == "ready":
+        return
+    click.echo()
+    if disposition == "failed":
+        state = (vm_state or {}).get("state") or "an error state"
+        reason = (vm_state or {}).get("state_reason")
+        click.echo(f"VM {customer_vm_id} entered {state}" + (f": {reason}" if reason else "") + ".")
+    else:
+        click.echo(f"Not {target} yet after {wait_timeout}s. Re-run once ready: avr vm show {customer_vm_id}")
+    ctx.exit(1)
+
+
 @click.group()
 @click.pass_context
 def vm(ctx):
@@ -337,6 +448,19 @@ def vm(ctx):
     default=False,
     help="Required: acknowledge that the VM's disk is ephemeral (discarded on stop).",
 )
+@click.option(
+    "--wait",
+    is_flag=True,
+    default=False,
+    help="Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.",
+)
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response (VM plus one-time password) as JSON.")
 @click.pass_context
 def vm_create(
@@ -351,14 +475,18 @@ def vm_create(
     ttl,
     egress_rules_raw,
     ephemeral,
+    wait,
+    wait_timeout,
     as_json,
 ):
     """Create a long-running VM.
 
     \b
     Provisioning is asynchronous: poll `avr vm show <id>` until the state is
-    RUNNING and endpoints are populated. The response carries a one-time
-    password for the VM's local account; save it now, it is never stored.
+    RUNNING and endpoints are populated, or pass --wait to block until then and
+    print a ready-to-paste connect command with the password baked in. The
+    response carries a one-time password for the VM's local account; save it
+    now, it is never stored.
     """
     if not ephemeral:
         raise click.UsageError(
@@ -395,14 +523,33 @@ def vm_create(
         handle_http_error(exc, "create VM")
 
     data = response["data"]
+    password = data.get("password")
+    customer_vm_id = data["vm"].get("customer_vm_id")
+
+    if wait:
+        # Human output surfaces the one-time password before waiting so a timeout
+        # or Ctrl-C cannot lose it; JSON carries it in the single final document.
+        if not as_json:
+            _print_password(password)
+            click.echo()
+        click.echo(f"Waiting up to {wait_timeout}s for {customer_vm_id} to become RUNNING...", err=True)
+        vm_state, disposition = _wait_for_vm(client, org_id, customer_vm_id, wait_timeout, _endpoints_ready)
+        if as_json:
+            _emit_wait_json(ctx, vm_state or data["vm"], password, disposition)
+            return
+        click.echo()
+        _print_vm(vm_state or data["vm"], password=password)
+        _wait_exit(ctx, vm_state, disposition, "connectable", wait_timeout, customer_vm_id)
+        return
+
     if as_json:
         click.echo(json.dumps(data, indent=2, default=str))
         return
 
-    _print_vm(data["vm"], password=data.get("password"))
-    _print_password(data.get("password"))
+    _print_vm(data["vm"], password=password)
+    _print_password(password)
     click.echo()
-    click.echo(f"Provisioning started. Poll status with: avr vm show {data['vm'].get('customer_vm_id')}")
+    click.echo(f"Provisioning started. Poll status with: avr vm show {customer_vm_id}")
 
 
 @vm.command("list")
@@ -632,24 +779,59 @@ def vm_update(ctx, customer_vm_id, org_id, display_name, ttl, ssh_keys, rotate_p
 @vm.command("start")
 @click.argument("customer_vm_id")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--wait",
+    is_flag=True,
+    default=False,
+    help="Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.",
+)
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
 @click.pass_context
-def vm_start(ctx, customer_vm_id, org_id, as_json):
+def vm_start(ctx, customer_vm_id, org_id, wait, wait_timeout, as_json):
     """Start a stopped VM. Boots a fresh disk and returns a one-time password."""
-    _set_desired_state(ctx, customer_vm_id, org_id, "RUNNING", as_json, action="start VM")
+    _set_desired_state(
+        ctx, customer_vm_id, org_id, "RUNNING", as_json, action="start VM", wait=wait, wait_timeout=wait_timeout
+    )
 
 
 @vm.command("stop")
 @click.argument("customer_vm_id")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM reaches STOPPED before returning.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
 @click.pass_context
-def vm_stop(ctx, customer_vm_id, org_id, as_json):
+def vm_stop(ctx, customer_vm_id, org_id, wait, wait_timeout, as_json):
     """Stop a running VM. The ephemeral disk is discarded."""
-    _set_desired_state(ctx, customer_vm_id, org_id, "STOPPED", as_json, action="stop VM")
+    _set_desired_state(
+        ctx, customer_vm_id, org_id, "STOPPED", as_json, action="stop VM", wait=wait, wait_timeout=wait_timeout
+    )
 
 
-def _set_desired_state(ctx, customer_vm_id: str, org_id: str | None, desired_state: str, as_json: bool, *, action: str):
+def _set_desired_state(
+    ctx,
+    customer_vm_id: str,
+    org_id: str | None,
+    desired_state: str,
+    as_json: bool,
+    *,
+    action: str,
+    wait: bool = False,
+    wait_timeout: int = _WAIT_DEFAULT_TIMEOUT,
+):
     """Shared body for ``start`` / ``stop`` (both PATCH ``desired_state``)."""
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -662,13 +844,42 @@ def _set_desired_state(ctx, customer_vm_id: str, org_id: str | None, desired_sta
         handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
 
     data = (response or {}).get("data") or {}
+    password = data.get("password")
+
+    if wait:
+        running = desired_state == "RUNNING"
+        is_ready = _endpoints_ready if running else _state_is(desired_state)
+        fail_target = "connectable" if running else desired_state
+        # start returns a fresh one-time password; surface it (human mode) before
+        # waiting so a timeout or Ctrl-C cannot lose it.
+        if not as_json:
+            _print_password(password)
+            click.echo()
+        click.echo(f"Waiting up to {wait_timeout}s for {customer_vm_id} to become {desired_state}...", err=True)
+        vm_state, disposition = _wait_for_vm(client, org_id, customer_vm_id, wait_timeout, is_ready)
+        if as_json:
+            _emit_wait_json(ctx, vm_state or data.get("vm"), password, disposition)
+            return
+        click.echo()
+        if running:
+            # Reprint with real endpoints + the fresh password baked into the connect line.
+            shown = vm_state or data.get("vm")
+            if shown:
+                _print_vm(shown, password=password)
+        else:
+            # Stopping has no connect payload; a concise confirmation is cleaner.
+            final = (vm_state or {}).get("state") or desired_state
+            click.echo(f"VM {customer_vm_id} is now {final}.")
+        _wait_exit(ctx, vm_state, disposition, fail_target, wait_timeout, customer_vm_id)
+        return
+
     if as_json:
         click.echo(json.dumps(response, indent=2, default=str))
         return
 
     if data.get("vm"):
-        _print_vm(data["vm"], password=data.get("password"))
-    _print_password(data.get("password"))
+        _print_vm(data["vm"], password=password)
+    _print_password(password)
 
 
 @vm.command("usage")
@@ -748,9 +959,17 @@ def vm_usage(ctx, org_id, period_start, period_end, as_json):
 @click.argument("customer_vm_id")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM is fully deleted before returning.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
 @click.pass_context
-def vm_delete(ctx, customer_vm_id, org_id, yes, as_json):
+def vm_delete(ctx, customer_vm_id, org_id, yes, wait, wait_timeout, as_json):
     """Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop."""
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -766,9 +985,26 @@ def vm_delete(ctx, customer_vm_id, org_id, yes, as_json):
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "delete VM", hint="Run `avr vm list` to see your VMs.")
 
+    state = (response or {}).get("data", {}).get("state", "DELETING")
+
+    if wait:
+        click.echo(f"Waiting up to {wait_timeout}s for {customer_vm_id} to be deleted...", err=True)
+        _, disposition = _wait_for_vm(
+            client, org_id, customer_vm_id, wait_timeout, _state_is("DELETED"), gone_is_ready=True
+        )
+        gone = disposition == "ready"
+        if as_json:
+            click.echo(json.dumps({"customer_vm_id": customer_vm_id, "deleted": gone}, indent=2))
+        elif gone:
+            click.echo(f"VM {customer_vm_id} deleted.")
+        else:
+            click.echo(f"Still deleting after {wait_timeout}s. Check with: avr vm show {customer_vm_id}")
+        if not gone:
+            ctx.exit(1)
+        return
+
     if as_json:
         click.echo(json.dumps(response, indent=2, default=str))
         return
 
-    state = (response or {}).get("data", {}).get("state", "DELETING")
     click.echo(f"VM {customer_vm_id} is now {state}.")

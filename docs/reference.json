@@ -2110,7 +2110,7 @@
             "full": "avr vm create",
             "is_group": false,
             "short_help": "Create a long-running VM.",
-            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show <id>` until the state is\nRUNNING and endpoints are populated. The response carries a one-time\npassword for the VM's local account; save it now, it is never stored.\n",
+            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show <id>` until the state is\nRUNNING and endpoints are populated, or pass --wait to block until then and\nprint a ready-to-paste connect command with the password baked in. The\nresponse carries a one-time password for the VM's local account; save it\nnow, it is never stored.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2319,6 +2319,42 @@
                 "default": false
               },
               {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
                 "name": "as_json",
                 "kind": "option",
                 "opts": [
@@ -2409,6 +2445,42 @@
                 "hidden": false,
                 "show_default": false,
                 "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM is fully deleted before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
               },
               {
                 "name": "as_json",
@@ -2777,6 +2849,42 @@
                 "default": null
               },
               {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
                 "name": "as_json",
                 "kind": "option",
                 "opts": [
@@ -2848,6 +2956,42 @@
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM reaches STOPPED before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
               },
               {
                 "name": "as_json",

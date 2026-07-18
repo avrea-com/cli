@@ -480,8 +480,10 @@ avr vm create [OPTIONS]
 
 ```sh
 Provisioning is asynchronous: poll `avr vm show <id>` until the state is
-RUNNING and endpoints are populated. The response carries a one-time
-password for the VM's local account; save it now, it is never stored.
+RUNNING and endpoints are populated, or pass --wait to block until then and
+print a ready-to-paste connect command with the password baked in. The
+response carries a one-time password for the VM's local account; save it
+now, it is never stored.
 ```
 
 **Options**
@@ -496,6 +498,8 @@ password for the VM's local account; save it now, it is never stored.
 - `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
+- `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response (VM plus one-time password) as JSON.
 
 #### `avr vm delete`
@@ -516,6 +520,8 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
+- `--wait` — Wait until the VM is fully deleted before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response as JSON.
 
 #### `avr vm list`
@@ -594,6 +600,8 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--wait` — Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response as JSON.
 
 #### `avr vm stop`
@@ -613,6 +621,8 @@ Stop a running VM. The ephemeral disk is discarded.
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--wait` — Wait until the VM reaches STOPPED before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response as JSON.
 
 #### `avr vm update`
