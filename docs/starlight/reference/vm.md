@@ -174,7 +174,7 @@ Update a VM's name, TTL, or SSH keys, or rotate its password.
 avr vm update [OPTIONS] CUSTOMER_VM_ID
 ```
 
-Power state is controlled separately with `avr vm start` / `avr vm stop`.
+Power state is controlled separately with avr vm start / avr vm stop.
 
 **Arguments**
 

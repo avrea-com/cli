@@ -301,6 +301,22 @@ class TestVmCreateWait:
         assert not isinstance(result.exception, httpx.HTTPError)  # clean exit, no traceback
         assert "hunter2hunter2" in result.output  # password still surfaced
 
+    def test_wait_permanent_4xx_surfaces_immediately(self, runner, monkeypatch):
+        # A 4xx (auth / bad request) is permanent: surface it at once rather than
+        # retrying to the timeout and hiding the actionable error.
+        self._post(monkeypatch)
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            req = httpx.Request("GET", "http://x")
+            raise httpx.HTTPStatusError("forbidden", request=req, response=httpx.Response(403, request=req))
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])  # full default timeout
+        assert result.exit_code != 0
+        assert calls["n"] == 1  # surfaced on the first poll, no retry loop
+
     def test_wait_json_emits_single_final_document(self, runner, monkeypatch):
         self._post(monkeypatch)
         monkeypatch.setattr(
@@ -360,6 +376,21 @@ class TestVmLifecycleWait:
         assert "is now STOPPED" in result.output
         assert "IP:PORT" not in result.output  # concise confirmation, no connect-line noise
         assert "Re-run once ready" not in result.output  # target reached, no timeout note
+
+    def test_stop_wait_timeout_does_not_claim_stopped(self, runner, monkeypatch):
+        # On a timed-out stop, we must not print "is now STOPPED" (it is not).
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        patch_resp = {"data": {"vm": {**RD_VM, "state": "STOPPING", "endpoints": None}}}
+        stopping = {"data": {**RD_VM, "state": "STOPPING", "endpoints": None}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_patch",
+            lambda self, path, json=None, params=None, timeout=None: patch_resp,
+        )
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: stopping)
+        result = runner.invoke(cli, ["vm", "stop", "cvm-abc123", "--wait", "--wait-timeout", "0"])
+        assert result.exit_code == 1
+        assert "is now STOPPED" not in result.output  # never claim success on timeout
+        assert "Not STOPPED yet" in result.output  # the timeout message instead
 
     def test_delete_wait_until_gone(self, runner, monkeypatch):
         monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)

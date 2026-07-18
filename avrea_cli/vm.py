@@ -339,10 +339,15 @@ def _wait_for_vm(
         try:
             resp = client.public_get(f"/orgs/{org_id}/vms/{customer_vm_id}")
         except httpx.HTTPError as exc:
-            status = getattr(getattr(exc, "response", None), "status_code", None)
-            if gone_is_ready and status == 404:
-                return None, "ready"
-            # Transient (connection reset, timeout, 5xx): retry until the deadline.
+            if isinstance(exc, httpx.HTTPStatusError):
+                status = exc.response.status_code
+                if gone_is_ready and status == 404:
+                    return None, "ready"
+                if status < 500:
+                    # A permanent 4xx (bad request, auth, not-found) must surface
+                    # now, not hide behind a wait of up to the full timeout.
+                    handle_http_error(exc, "check VM status")
+            # Transport failure or a retryable 5xx: keep polling until the deadline.
             if time.monotonic() >= deadline:
                 return vm, "timeout"
             time.sleep(_WAIT_POLL_SECONDS)
@@ -742,7 +747,7 @@ def vm_ssh(ctx, customer_vm_id, ssh_args, org_id, identity_file, print_only):
 def vm_update(ctx, customer_vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, egress_rules_raw, as_json):
     """Update a VM's name, TTL, or SSH keys, or rotate its password.
 
-    Power state is controlled separately with `avr vm start` / `avr vm stop`.
+    Power state is controlled separately with avr vm start / avr vm stop.
     """
     ttl_seconds = _parse_ttl(ttl) if ttl is not None else None
     keys = _resolve_ssh_keys(ssh_keys) if ssh_keys else None
@@ -873,8 +878,9 @@ def _set_desired_state(
             shown = vm_state or data.get("vm")
             if shown:
                 _print_vm(shown, password=password)
-        else:
-            # Stopping has no connect payload; a concise confirmation is cleaner.
+        elif disposition == "ready":
+            # Stopping has no connect payload; a concise confirmation is cleaner,
+            # but only once actually stopped (never on a timed-out wait).
             final = (vm_state or {}).get("state") or desired_state
             click.echo(f"VM {customer_vm_id} is now {final}.")
         _wait_exit(ctx, vm_state, disposition, fail_target, wait_timeout, customer_vm_id)

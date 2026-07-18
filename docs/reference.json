@@ -3024,7 +3024,7 @@
             "full": "avr vm update",
             "is_group": false,
             "short_help": "Update a VM's name, TTL, or SSH keys, or rotate its password.",
-            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nPower state is controlled separately with `avr vm start` / `avr vm stop`.\n",
+            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nPower state is controlled separately with avr vm start / avr vm stop.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
