@@ -3,6 +3,7 @@
 from avrea_cli.main import cli
 import httpx
 import json
+import re
 
 SAMPLE_VM = {
     "customer_vm_id": "cvm-abc123",
@@ -480,7 +481,10 @@ class TestVmShow:
         result = runner.invoke(cli, ["vm", "show", "cvm-abc123"])
         assert result.exit_code == 0
         assert "runner@203.0.113.1 -p 30022" in result.output
-        assert "github.com" in result.output
+        # Word-boundary match, not a bare `"host" in text` substring check: the
+        # latter trips CodeQL's incomplete-URL-sanitization rule (false positive
+        # on rendered CLI output, not URL validation).
+        assert re.search(r"\bgithub\.com\b", result.output)
 
 
 class TestVmUpdate:
