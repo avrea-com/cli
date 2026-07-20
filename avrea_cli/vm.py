@@ -87,9 +87,44 @@ def _parse_ttl(value: str) -> int:
     return seconds
 
 
+# OpenSSH public keys are a single line beginning with the algorithm name. We
+# accept the common set plus FIDO/sk- variants; anything else (notably a PEM
+# private key from a ``--ssh-key @~/.ssh/id_ed25519`` typo) is rejected before
+# it can be uploaded.
+_SSH_PUBKEY_PREFIXES = (
+    "ssh-ed25519",
+    "ssh-rsa",
+    "ssh-dss",
+    "ecdsa-sha2-",
+    "sk-ssh-ed25519@",
+    "sk-ecdsa-sha2-",
+)
+
+
+def _validate_ssh_public_key(content: str, source: str) -> None:
+    """Reject anything that is not a single-line OpenSSH public key.
+
+    The load-bearing check is refusing private-key material: ``--ssh-key
+    @~/.ssh/id_ed25519`` (a ``.pub`` typo) would otherwise read a private key
+    and upload it. ``source`` names the origin for the error message."""
+    if "PRIVATE KEY" in content:
+        raise click.BadParameter(
+            f"{source} looks like a private key, not a public key. Point --ssh-key at the .pub file.",
+            param_hint="--ssh-key",
+        )
+    tokens = content.split(maxsplit=1)
+    first = tokens[0] if tokens else ""
+    if not first.startswith(_SSH_PUBKEY_PREFIXES):
+        raise click.BadParameter(
+            f"{source} is not a recognized SSH public key (expected a line starting with e.g. ssh-ed25519 or ssh-rsa).",
+            param_hint="--ssh-key",
+        )
+
+
 def _resolve_ssh_keys(keys: tuple[str, ...]) -> list[str]:
     """Resolve ``--ssh-key`` values. Each is either a literal public key or
-    ``@path`` to read one from a file."""
+    ``@path`` to read one from a file. Private-key material is rejected so a
+    ``.pub`` typo cannot upload a private key."""
     resolved: list[str] = []
     for key in keys:
         if key.startswith("@"):
@@ -100,9 +135,12 @@ def _resolve_ssh_keys(keys: tuple[str, ...]) -> list[str]:
                 raise click.BadParameter(f"cannot read SSH key file {path}: {exc}", param_hint="--ssh-key") from exc
             if not content:
                 raise click.BadParameter(f"SSH key file {path} is empty", param_hint="--ssh-key")
-            resolved.append(content)
+            source = str(path)
         else:
-            resolved.append(key.strip())
+            content = key.strip()
+            source = "the --ssh-key value"
+        _validate_ssh_public_key(content, source)
+        resolved.append(content)
     return resolved
 
 
@@ -346,11 +384,14 @@ def _wait_for_vm(
                 status = exc.response.status_code
                 if gone_is_ready and status == 404:
                     return None, "ready"
-                if status < 500:
+                if status < 500 and status not in (408, 429):
                     # A permanent 4xx (bad request, auth, not-found) must surface
-                    # now, not hide behind a wait of up to the full timeout.
+                    # now, not hide behind a wait of up to the full timeout. 408
+                    # (Request Timeout) and 429 (rate limit) are transient, so
+                    # they fall through to the retry-until-deadline path below.
                     handle_http_error(exc, "check VM status")
-            # Transport failure or a retryable 5xx: keep polling until the deadline.
+            # Transport failure, a transient 408/429, or a retryable 5xx: keep
+            # polling until the deadline.
             if time.monotonic() >= deadline:
                 return vm, "timeout"
             time.sleep(_WAIT_POLL_SECONDS)
@@ -1005,14 +1046,26 @@ def vm_delete(ctx, customer_vm_id, org_id, yes, wait, wait_timeout, as_json):
 
     if wait:
         click.echo(f"Waiting up to {wait_timeout}s for {customer_vm_id} to be deleted...", err=True)
-        _, disposition = _wait_for_vm(
+        vm_state, disposition = _wait_for_vm(
             client, org_id, customer_vm_id, wait_timeout, _state_is("DELETED"), gone_is_ready=True
         )
         gone = disposition == "ready"
         if as_json:
-            click.echo(json.dumps({"customer_vm_id": customer_vm_id, "deleted": gone}, indent=2))
+            # Carry the disposition (and the failure reason) so a script can tell
+            # deleted from "entered FAILED" from "still deleting", not just gone/not.
+            out: dict[str, Any] = {"customer_vm_id": customer_vm_id, "deleted": gone, "disposition": disposition}
+            if disposition == "failed":
+                out["state"] = (vm_state or {}).get("state")
+                out["state_reason"] = (vm_state or {}).get("state_reason")
+            click.echo(json.dumps(out, indent=2, default=str))
         elif gone:
             click.echo(f"VM {customer_vm_id} deleted.")
+        elif disposition == "failed":
+            # The VM hit ERROR/FAILED mid-teardown; surface the reason instead of
+            # mislabeling it as a timeout and discarding state_reason.
+            state = (vm_state or {}).get("state") or "an error state"
+            reason = (vm_state or {}).get("state_reason")
+            click.echo(f"VM {customer_vm_id} entered {state}" + (f": {reason}" if reason else "") + ".")
         else:
             click.echo(f"Still deleting after {wait_timeout}s. Check with: avr vm show {customer_vm_id}")
         if not gone:
@@ -1174,6 +1227,13 @@ def _run_tunnel(
                     "or the VM may be unreachable (check `avr vm show`)."
                 )
             on_ready(proc)
+            # If ssh exited on its own with a failure (e.g. 255 on a dropped or
+            # refused connection) rather than via Ctrl-C or a client-driven
+            # teardown, surface it as a nonzero exit instead of a clean success.
+            # A negative code (killed by our own SIGTERM/SIGKILL) is intentional.
+            rc = proc.poll()
+            if rc is not None and rc > 0:
+                raise click.ClickException(f"SSH tunnel exited unexpectedly (status {rc}); the connection was lost.")
         except KeyboardInterrupt:
             click.echo("\nClosing tunnel.", err=True)
         finally:

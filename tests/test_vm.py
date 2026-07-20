@@ -5,6 +5,33 @@ import httpx
 import json
 import re
 
+
+class _FakeProc:
+    """Minimal subprocess.Popen stand-in for _run_tunnel tests: ``exit_code``
+    None means still running (until terminate()); an int means already exited."""
+
+    def __init__(self, exit_code):
+        self.returncode = exit_code
+        self.terminated = False
+
+    def poll(self):
+        return self.returncode
+
+    def wait(self, timeout=None):
+        if self.returncode is None:
+            self.returncode = 0
+        return self.returncode
+
+    def terminate(self):
+        self.terminated = True
+        if self.returncode is None:
+            self.returncode = -15
+
+    def kill(self):
+        if self.returncode is None:
+            self.returncode = -9
+
+
 SAMPLE_VM = {
     "customer_vm_id": "cvm-abc123",
     "display_name": "dev box",
@@ -182,6 +209,64 @@ class TestVmCreate:
         assert result.exit_code == 0
         assert store["json"]["ssh_public_keys"] == ["ssh-ed25519 AAAAfromfile user@host"]
 
+    def test_ssh_key_rejects_private_key_file(self, runner, monkeypatch, tmp_path):
+        # A `.pub` typo pointing at the private key must be caught locally, before
+        # the private key is ever POSTed as a public key.
+        called = {"n": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
+        )
+        key_file = tmp_path / "id_ed25519"
+        key_file.write_text(
+            "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk=\n-----END OPENSSH PRIVATE KEY-----\n"
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "d",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--ssh-key",
+                f"@{key_file}",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "private key" in result.output.lower()
+        assert called["n"] == 0  # never uploaded
+
+    def test_ssh_key_rejects_non_public_key(self, runner, monkeypatch):
+        called = {"n": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "d",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--ssh-key",
+                "not a key",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "not a recognized SSH public key" in result.output
+        assert called["n"] == 0
+
     def test_os_version_and_size_forwarded(self, runner, monkeypatch):
         store = {"return": CREATE_RESPONSE}
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
@@ -318,6 +403,42 @@ class TestVmCreateWait:
         assert result.exit_code != 0
         assert calls["n"] == 1  # surfaced on the first poll, no retry loop
 
+    def test_wait_transient_429_is_retried(self, runner, monkeypatch):
+        # 429 (rate limit) and 408 are transient during a poll: ride them out to
+        # the deadline rather than aborting the wait the way a permanent 4xx does.
+        self._post(monkeypatch)
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                req = httpx.Request("GET", "http://x")
+                raise httpx.HTTPStatusError("slow down", request=req, response=httpx.Response(429, request=req))
+            return RD_SHOW_RESPONSE
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert calls["n"] >= 2  # retried past the 429 instead of aborting
+
+    def test_wait_transient_408_is_retried(self, runner, monkeypatch):
+        # Sibling of the 429 case: 408 (Request Timeout) is transient too and must
+        # be ridden out, guarding against the two codes diverging in the retry logic.
+        self._post(monkeypatch)
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                req = httpx.Request("GET", "http://x")
+                raise httpx.HTTPStatusError("slow", request=req, response=httpx.Response(408, request=req))
+            return RD_SHOW_RESPONSE
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert calls["n"] >= 2  # retried past the 408 instead of aborting
+
     def test_wait_json_emits_single_final_document(self, runner, monkeypatch):
         self._post(monkeypatch)
         monkeypatch.setattr(
@@ -407,6 +528,37 @@ class TestVmLifecycleWait:
         result = runner.invoke(cli, ["vm", "delete", "cvm-abc123", "--yes", "--wait"])
         assert result.exit_code == 0
         assert "deleted" in result.output.lower()
+
+    def test_delete_wait_reports_failure_reason(self, runner, monkeypatch):
+        # A VM that hits ERROR/FAILED mid-teardown must surface its reason and exit
+        # nonzero, not be mislabeled "Still deleting" (which discards state_reason).
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_delete", lambda self, path: {"data": {"state": "DELETING"}}
+        )
+        failed = {"data": {**SAMPLE_VM, "state": "FAILED", "state_reason": "node lost"}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: failed)
+        result = runner.invoke(cli, ["vm", "delete", "cvm-abc123", "--yes", "--wait"])
+        assert result.exit_code == 1
+        assert "FAILED" in result.output
+        assert "node lost" in result.output
+        assert "Still deleting" not in result.output
+
+    def test_delete_wait_json_carries_disposition(self, runner, monkeypatch):
+        # --json must distinguish failed/timeout and carry state_reason, not just
+        # a bare deleted flag, so scripts don't lose the failure detail.
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_delete", lambda self, path: {"data": {"state": "DELETING"}}
+        )
+        failed = {"data": {**SAMPLE_VM, "state": "FAILED", "state_reason": "node lost"}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: failed)
+        result = runner.invoke(cli, ["vm", "delete", "cvm-abc123", "--yes", "--wait", "--json"])
+        assert result.exit_code == 1
+        doc = json.loads(result.output[result.output.index("{") :])
+        assert doc["deleted"] is False
+        assert doc["disposition"] == "failed"
+        assert doc["state_reason"] == "node lost"
 
 
 class TestVmList:
@@ -890,8 +1042,11 @@ class TestTunnelHelpers:
         from pathlib import Path
 
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
-        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=3389, identity_file=None, known_hosts=Path("/tmp/kh"))
-        assert "UserKnownHostsFile=/tmp/kh" in argv
+        kh = Path("/tmp/kh")
+        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=3389, identity_file=None, known_hosts=kh)
+        # Render the expected value through Path so the assertion matches the code
+        # on Windows too (where Path stringifies with backslashes).
+        assert f"UserKnownHostsFile={kh}" in argv
         assert "StrictHostKeyChecking=yes" in argv
         assert "-L" in argv and "127.0.0.1:40000:localhost:3389" in argv
         assert argv[-1] == "runner@203.0.113.1"
@@ -929,3 +1084,46 @@ class TestTunnelHelpers:
         assert argv == ["open", "vnc://127.0.0.1:40000"] and detaches is True
         argv, detaches = _vnc_launch_argv("127.0.0.1:40000", "linux")
         assert argv is None
+
+    def test_run_tunnel_propagates_ssh_failure(self, monkeypatch):
+        # ssh dies with 255 after the tunnel came up -> nonzero exit, not a clean 0.
+        from avrea_cli import vm as vmmod
+        import click
+        import pytest
+
+        proc = _FakeProc(255)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.Popen", lambda *a, **k: proc)
+        monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        with pytest.raises(click.ClickException):
+            vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: p.wait())
+
+    def test_run_tunnel_clean_on_ctrl_c(self, monkeypatch):
+        # Ctrl-C during the hold is an intentional teardown: no error surfaced.
+        from avrea_cli import vm as vmmod
+
+        proc = _FakeProc(None)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.Popen", lambda *a, **k: proc)
+        monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+
+        def _interrupt(_p):
+            raise KeyboardInterrupt
+
+        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=_interrupt)
+        assert proc.terminated  # torn down cleanly, no exception raised
+
+    def test_run_tunnel_clean_on_client_teardown(self, monkeypatch):
+        # --launch: the client exits with ssh still running; we terminate it and
+        # exit clean (ssh never returned a failure code of its own).
+        from avrea_cli import vm as vmmod
+
+        proc = _FakeProc(None)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.Popen", lambda *a, **k: proc)
+        monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
+        assert proc.terminated
