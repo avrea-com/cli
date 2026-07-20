@@ -2614,6 +2614,264 @@
             "subcommands": []
           },
           {
+            "name": "port-forward",
+            "path": [
+              "avr",
+              "vm",
+              "port-forward"
+            ],
+            "full": "avr vm port-forward",
+            "is_group": false,
+            "short_help": "Forward a local port to a TCP port on the VM over SSH.",
+            "help": "Forward a local port to a TCP port on the VM over SSH.\n\nThe generic primitive behind `avr vm rdp` / `avr vm vnc`: opens\n127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where\n<port> is set by --port, and holds it open until Ctrl-C. Bring your own\nclient.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm port-forward [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "guest_port",
+                "kind": "option",
+                "opts": [
+                  "--port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Guest-side TCP port to forward (e.g. 8080).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "local_port",
+                "kind": "option",
+                "opts": [
+                  "--local-port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Local port to bind (default: an unused port).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Private key file to pass to ssh as -i.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "print_only",
+                "kind": "option",
+                "opts": [
+                  "--print"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Print the ssh command and exit, without opening the tunnel.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "rdp",
+            "path": [
+              "avr",
+              "vm",
+              "rdp"
+            ],
+            "full": "avr vm rdp",
+            "is_group": false,
+            "short_help": "Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.",
+            "help": "Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.\n\nForwards a local port to the guest's RDP service (:3389) through the VM's\nSSH endpoint, so the desktop is never exposed publicly. Holds the tunnel\nopen until Ctrl-C; pass --launch to also start a local RDP client.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm rdp [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "local_port",
+                "kind": "option",
+                "opts": [
+                  "--local-port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Local port to bind (default: an unused port).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Private key file to pass to ssh as -i.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "launch",
+                "kind": "option",
+                "opts": [
+                  "--launch"
+                ],
+                "secondary_opts": [
+                  "--no-launch"
+                ],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Also start a local RDP client, instead of just printing the connect command.",
+                "hidden": false,
+                "show_default": true,
+                "default": false
+              },
+              {
+                "name": "print_only",
+                "kind": "option",
+                "opts": [
+                  "--print"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "show",
             "path": [
               "avr",
@@ -3261,6 +3519,136 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Emit the usage report as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "vnc",
+            "path": [
+              "avr",
+              "vm",
+              "vnc"
+            ],
+            "full": "avr vm vnc",
+            "is_group": false,
+            "short_help": "Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.",
+            "help": "Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.\n\nForwards a local port to the guest's Screen Sharing service (:5900) through\nthe VM's SSH endpoint, so the desktop is never exposed publicly. Holds the\ntunnel open until Ctrl-C; pass --launch to also open Screen Sharing.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm vnc [OPTIONS] CUSTOMER_VM_ID",
+            "params": [
+              {
+                "name": "customer_vm_id",
+                "kind": "argument",
+                "opts": [
+                  "customer_vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "local_port",
+                "kind": "option",
+                "opts": [
+                  "--local-port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Local port to bind (default: an unused port).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Private key file to pass to ssh as -i.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "launch",
+                "kind": "option",
+                "opts": [
+                  "--launch"
+                ],
+                "secondary_opts": [
+                  "--no-launch"
+                ],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.",
+                "hidden": false,
+                "show_default": true,
+                "default": false
+              },
+              {
+                "name": "print_only",
+                "kind": "option",
+                "opts": [
+                  "--print"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
                 "default": false

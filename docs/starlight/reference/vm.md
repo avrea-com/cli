@@ -81,6 +81,55 @@ avr vm list [OPTIONS]
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Pagination cursor from a previous response.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the VM list as JSON.
 
+### `avr vm port-forward`
+
+Forward a local port to a TCP port on the VM over SSH.
+
+```sh
+avr vm port-forward [OPTIONS] CUSTOMER_VM_ID
+```
+
+The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
+127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
+<port> is set by --port, and holds it open until Ctrl-C. Bring your own
+client.
+
+**Arguments**
+
+- <code class="cli-arg">CUSTOMER_VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Guest-side TCP port to forward (e.g. 8080). _(required)_
+- <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ssh command and exit, without opening the tunnel.
+
+### `avr vm rdp`
+
+Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+
+```sh
+avr vm rdp [OPTIONS] CUSTOMER_VM_ID
+```
+
+Forwards a local port to the guest's RDP service (:3389) through the VM's
+SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel
+open until Ctrl-C; pass --launch to also start a local RDP client.
+
+**Arguments**
+
+- <code class="cli-arg">CUSTOMER_VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local RDP client, instead of just printing the connect command.
+- <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.
+
 ### `avr vm show`
 
 Show a VM's details, including connection endpoints and egress rules.
@@ -207,3 +256,27 @@ Deleted VMs are included: usage survives deletion.
 - <code class="cli-flag">&#x2D;&#x2D;start</code> <code class="cli-value">&lt;DATETIME&gt;</code> — Inclusive period start (default: 30 days ago).
 - <code class="cli-flag">&#x2D;&#x2D;end</code> <code class="cli-value">&lt;DATETIME&gt;</code> — Exclusive period end (default: now).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the usage report as JSON.
+
+### `avr vm vnc`
+
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+
+```sh
+avr vm vnc [OPTIONS] CUSTOMER_VM_ID
+```
+
+Forwards a local port to the guest's Screen Sharing service (:5900) through
+the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the
+tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
+
+**Arguments**
+
+- <code class="cli-arg">CUSTOMER_VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
+- <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.

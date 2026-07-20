@@ -540,6 +540,55 @@ avr vm list [OPTIONS]
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
 - `--json` — Emit the VM list as JSON.
 
+#### `avr vm port-forward`
+
+Forward a local port to a TCP port on the VM over SSH.
+
+```sh
+avr vm port-forward [OPTIONS] CUSTOMER_VM_ID
+```
+
+The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
+127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
+<port> is set by --port, and holds it open until Ctrl-C. Bring your own
+client.
+
+**Arguments**
+
+- `CUSTOMER_VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--port <INTEGER RANGE>` — Guest-side TCP port to forward (e.g. 8080). _(required)_
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--print` — Print the ssh command and exit, without opening the tunnel.
+
+#### `avr vm rdp`
+
+Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+
+```sh
+avr vm rdp [OPTIONS] CUSTOMER_VM_ID
+```
+
+Forwards a local port to the guest's RDP service (:3389) through the VM's
+SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel
+open until Ctrl-C; pass --launch to also start a local RDP client.
+
+**Arguments**
+
+- `CUSTOMER_VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
+- `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
 #### `avr vm show`
 
 Show a VM's details, including connection endpoints and egress rules.
@@ -666,6 +715,30 @@ Deleted VMs are included: usage survives deletion.
 - `--start <DATETIME>` — Inclusive period start (default: 30 days ago).
 - `--end <DATETIME>` — Exclusive period end (default: now).
 - `--json` — Emit the usage report as JSON.
+
+#### `avr vm vnc`
+
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+
+```sh
+avr vm vnc [OPTIONS] CUSTOMER_VM_ID
+```
+
+Forwards a local port to the guest's Screen Sharing service (:5900) through
+the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the
+tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
+
+**Arguments**
+
+- `CUSTOMER_VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--launch / --no-launch` — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
+- `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
 
 ### `avr workflow`
 

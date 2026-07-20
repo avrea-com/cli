@@ -29,7 +29,10 @@ import httpx
 import json
 import os
 import shlex
+import socket
+import subprocess
 import sys
+import tempfile
 import time
 
 _OS_CHOICES = ["linux", "macos", "windows"]
@@ -1021,3 +1024,457 @@ def vm_delete(ctx, customer_vm_id, org_id, yes, wait, wait_timeout, as_json):
         return
 
     click.echo(f"VM {customer_vm_id} is now {state}.")
+
+
+# --- Remote desktop / port-forward over SSH -------------------------------
+#
+# `avr vm ssh` reaches the VM directly. `avr vm rdp` / `avr vm vnc` reach the
+# guest's *desktop* by forwarding a local port to the desktop service over that
+# same SSH endpoint, so the desktop never needs a public forward of its own.
+# `avr vm port-forward` is the generic primitive the two build on. All three
+# hold the ssh child open for the life of the session: closing it (Ctrl-C)
+# tears the forward down and drops the desktop, the same contract as
+# `gcloud ... start-tcp-tunnel` and `kubectl port-forward`.
+#
+# The endpoint record carries no guest-internal port, so we derive it from the
+# protocol: RDP 3389 (Windows and Linux GNOME Remote Desktop), VNC 5900 (macOS
+# Screen Sharing). Mirrors smithy vm_controller/callbacks.py enable_remote_desktop().
+_RDP_GUEST_PORT = 3389
+_VNC_GUEST_PORT = 5900
+
+# How long to wait for the local forward to start listening after we spawn ssh.
+# Generous: key auth is instant, but password auth (the one-time VM password)
+# means the user is typing at ssh's own prompt while we poll.
+_TUNNEL_READY_TIMEOUT = 60.0
+_TUNNEL_POLL_SECONDS = 0.25
+
+
+def _pick_local_port() -> int:
+    """Reserve an unused loopback TCP port by binding to :0 and reading it back.
+
+    A racy window exists between our close and ssh's bind; ssh's
+    ``ExitOnForwardFailure=yes`` turns a lost race into a clean, reported
+    failure rather than a silent forward-less tunnel."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def _port_is_listening(port: int) -> bool:
+    """True if something accepts a TCP connect on 127.0.0.1:port right now."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
+
+
+def _known_hosts_line(host_key: str, external_ip: str, external_port: int) -> str:
+    """One known_hosts entry pinning ``host_key`` to the SSH endpoint. OpenSSH
+    keys a non-default port as ``[host]:port``; port 22 is bare."""
+    host = external_ip if external_port == 22 else f"[{external_ip}]:{external_port}"
+    return f"{host} {host_key.strip()}\n"
+
+
+def _write_known_hosts(host_key: str | None, external_ip: str, external_port: int) -> Path | None:
+    """Materialize a temp known_hosts pinning the endpoint's host key, or None
+    when the endpoint carries no key (older VMs). The caller unlinks it."""
+    if not host_key:
+        return None
+    fd, name = tempfile.mkstemp(prefix="avr-vm-known-hosts-")
+    with os.fdopen(fd, "w") as handle:
+        handle.write(_known_hosts_line(host_key, external_ip, external_port))
+    return Path(name)
+
+
+def _ssh_tunnel_argv(
+    ssh_ep: dict[str, Any],
+    *,
+    local_port: int,
+    guest_port: int,
+    identity_file: str | None,
+    known_hosts: Path | None,
+) -> list[str]:
+    """The ``ssh -N -L`` argv forwarding 127.0.0.1:local_port to the guest's own
+    loopback:guest_port over the VM's SSH endpoint."""
+    argv = [
+        "ssh",
+        "-N",  # forward only, no remote command
+        "-o",
+        "ExitOnForwardFailure=yes",  # fail loudly if the local bind fails
+        "-o",
+        "ConnectTimeout=15",
+        "-o",
+        "ServerAliveInterval=30",  # keep an idle desktop session alive
+        "-L",
+        f"127.0.0.1:{local_port}:localhost:{guest_port}",
+        "-p",
+        str(ssh_ep["external_port"]),
+    ]
+    if known_hosts is not None:
+        # Pin the endpoint's host key: first connect neither prompts nor is
+        # spoofable. Without a key, accept-new so ssh still doesn't block on an
+        # interactive yes/no.
+        argv += ["-o", f"UserKnownHostsFile={known_hosts}", "-o", "StrictHostKeyChecking=yes"]
+    else:
+        argv += ["-o", "StrictHostKeyChecking=accept-new"]
+    if identity_file:
+        argv += ["-i", identity_file]
+    argv.append(f"{ssh_ep.get('username') or 'runner'}@{ssh_ep['external_ip']}")
+    return argv
+
+
+def _terminate_tunnel(proc: subprocess.Popen[bytes]) -> None:
+    """Best-effort teardown of the ssh child: SIGTERM, then SIGKILL."""
+    if proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def _wait_until_listening(proc: subprocess.Popen[bytes], local_port: int, timeout: float) -> bool:
+    """Poll until the local forward accepts connections. False if ssh exits
+    first (auth/host-key/bind failure, already on its own stderr) or we time
+    out."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            return False
+        if _port_is_listening(local_port):
+            return True
+        time.sleep(_TUNNEL_POLL_SECONDS)
+    return False
+
+
+def _run_tunnel(
+    ssh_ep: dict[str, Any],
+    *,
+    local_port: int,
+    guest_port: int,
+    identity_file: str | None,
+    on_ready: Callable[[subprocess.Popen[bytes]], None],
+) -> None:
+    """Open the SSH forward, wait for it to listen, hand the live ssh process to
+    ``on_ready`` (which holds or launches a client), then tear it down. Ctrl-C
+    closes cleanly."""
+    known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
+    argv = _ssh_tunnel_argv(
+        ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=known_hosts
+    )
+    try:
+        try:
+            proc = subprocess.Popen(argv)
+        except OSError as exc:  # ssh not on PATH, etc.
+            raise click.ClickException(f"failed to launch ssh: {exc}") from exc
+        try:
+            if not _wait_until_listening(proc, local_port, _TUNNEL_READY_TIMEOUT):
+                raise click.ClickException(
+                    "SSH tunnel did not come up. The local port may be busy (try --local-port) "
+                    "or the VM may be unreachable (check `avr vm show`)."
+                )
+            on_ready(proc)
+        except KeyboardInterrupt:
+            click.echo("\nClosing tunnel.", err=True)
+        finally:
+            _terminate_tunnel(proc)
+    finally:
+        if known_hosts is not None:
+            known_hosts.unlink(missing_ok=True)
+
+
+def _rdp_launch_argv(ip_port: str, username: str, platform: str, rfx: bool) -> tuple[list[str] | None, bool]:
+    """A native RDP client argv for --launch, plus whether it detaches.
+
+    ``detaches`` is True when the launcher hands off and exits immediately
+    (macOS ``open``), so the tunnel can't be tied to the client's lifetime and
+    is held until Ctrl-C instead."""
+    if platform == "win32":
+        return ["mstsc", f"/v:{ip_port}"], False
+    if platform == "darwin":
+        return ["open", f"rdp://full%20address=s:{ip_port}&username=s:{username}"], True
+    # linux and other POSIX: xfreerdp. /cert:tofu so the guest's self-signed
+    # cert doesn't block the launch on an interactive prompt.
+    argv = ["xfreerdp", f"/v:{ip_port}", f"/u:{username}", "+clipboard", "/cert:tofu"]
+    if rfx:
+        argv.append(_RDP_RFX_FLAG)
+    return argv, False
+
+
+def _vnc_launch_argv(ip_port: str, platform: str) -> tuple[list[str] | None, bool]:
+    """A native VNC client argv for --launch. Only macOS has an assumed client
+    (Screen Sharing via ``open vnc://``); elsewhere returns (None, False)."""
+    if platform == "darwin":
+        return ["open", f"vnc://{ip_port}"], True
+    return None, False
+
+
+def _vnc_connect_lines(ip_port: str, platform: str) -> list[str]:
+    """Paste-ready VNC connect line(s) for the CLI-host platform."""
+    if platform == "darwin":
+        return [f"open vnc://{ip_port}", "(opens macOS Screen Sharing)"]
+    return [f"point a VNC client at {ip_port}"]
+
+
+def _desktop_connect_lines(protocol: str, ip_port: str, username: str, os_type: str | None) -> list[str]:
+    """Paste-ready client invocation line(s) for a tunnelled desktop endpoint."""
+    if protocol == "vnc":
+        return _vnc_connect_lines(ip_port, sys.platform)
+    # /gfx:rfx is required for Linux GNOME Remote Desktop; see _RDP_RFX_FLAG.
+    return _rdp_connect_lines(ip_port, username, None, sys.platform, os_type == "linux")
+
+
+def _launch_client(launch_argv: list[str] | None, detaches: bool, tunnel_proc: subprocess.Popen[bytes]) -> None:
+    """Spawn the native desktop client, then hold the tunnel until the client
+    exits (waitable clients) or until Ctrl-C (detaching launchers / platforms
+    with no assumed client)."""
+    if launch_argv is None:
+        click.echo("No auto-launch client is assumed on this platform; connect manually.", err=True)
+        tunnel_proc.wait()
+        return
+    try:
+        client = subprocess.Popen(launch_argv)
+    except OSError as exc:
+        click.echo(f"Could not launch {launch_argv[0]}: {exc}. Connect manually.", err=True)
+        tunnel_proc.wait()
+        return
+    if detaches:
+        click.echo("Launched the desktop client. Press Ctrl-C to close the tunnel when done.", err=True)
+        tunnel_proc.wait()
+    else:
+        client.wait()
+
+
+def _vm_remote_desktop(
+    ctx,
+    customer_vm_id: str,
+    org_id: str | None,
+    *,
+    want_protocol: str,
+    guest_port: int,
+    local_port: int | None,
+    identity_file: str | None,
+    launch: bool,
+    print_only: bool,
+) -> None:
+    """Shared body for ``avr vm rdp`` / ``avr vm vnc``."""
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        response = client.public_get(f"/orgs/{org_id}/vms/{customer_vm_id}")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
+
+    data = response["data"]
+    if not data.get("enable_remote_desktop"):
+        raise click.ClickException(f"VM {customer_vm_id} has no remote desktop. Recreate it with `--remote-desktop`.")
+    ssh_ep = (data.get("endpoints") or {}).get("ssh")
+    if not ssh_ep:
+        raise click.ClickException(
+            f"VM {customer_vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
+            "Endpoints appear once the VM is RUNNING; check `avr vm show`."
+        )
+
+    rd = (data.get("endpoints") or {}).get("remote_desktop")
+    os_type = data.get("os_type")
+    # Prefer the live endpoint's protocol; fall back to the OS default before
+    # the remote-desktop forward is published.
+    actual_protocol = rd.get("protocol") if rd else ("vnc" if os_type == "macos" else "rdp")
+    if actual_protocol != want_protocol:
+        alt = "vnc" if actual_protocol == "vnc" else "rdp"
+        raise click.ClickException(
+            f"VM {customer_vm_id} speaks {actual_protocol}, not {want_protocol}. "
+            f"Use `avr vm {alt} {customer_vm_id}` instead."
+        )
+
+    username = (rd.get("username") if rd else None) or ssh_ep.get("username") or "runner"
+    local_port = local_port or _pick_local_port()
+    ip_port = f"127.0.0.1:{local_port}"
+    connect_lines = _desktop_connect_lines(want_protocol, ip_port, username, os_type)
+
+    if print_only:
+        display_argv = _ssh_tunnel_argv(
+            ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=None
+        )
+        click.echo("Open the tunnel:")
+        click.echo(f"  {shlex.join(display_argv)}")
+        click.echo("Then connect with:")
+        for line in connect_lines:
+            click.echo(f"  {line}")
+        return
+
+    click.echo(f"Opening SSH tunnel {ip_port} -> {customer_vm_id}:{guest_port} ...", err=True)
+
+    def on_ready(proc: subprocess.Popen[bytes]) -> None:
+        click.echo("Connect with:", err=True)
+        for line in connect_lines:
+            click.echo(f"  {line}", err=True)
+        click.echo("(use the one-time password saved at create / last start)", err=True)
+        if launch:
+            if want_protocol == "vnc":
+                argv, detaches = _vnc_launch_argv(ip_port, sys.platform)
+            else:
+                argv, detaches = _rdp_launch_argv(ip_port, username, sys.platform, os_type == "linux")
+            _launch_client(argv, detaches, proc)
+        else:
+            click.echo("Tunnel is up. Press Ctrl-C to close it.", err=True)
+            proc.wait()
+
+    _run_tunnel(ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, on_ready=on_ready)
+
+
+@vm.command("rdp")
+@click.argument("customer_vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--local-port",
+    type=click.IntRange(1, 65535),
+    default=None,
+    help="Local port to bind (default: an unused port).",
+)
+@click.option(
+    "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
+)
+@click.option(
+    "--launch/--no-launch",
+    default=False,
+    show_default=True,
+    help="Also start a local RDP client, instead of just printing the connect command.",
+)
+@click.option(
+    "--print",
+    "print_only",
+    is_flag=True,
+    help="Print the tunnel and client commands and exit, without opening the tunnel.",
+)
+@click.pass_context
+def vm_rdp(ctx, customer_vm_id, org_id, local_port, identity_file, launch, print_only):
+    """Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+
+    Forwards a local port to the guest's RDP service (:3389) through the VM's
+    SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel
+    open until Ctrl-C; pass --launch to also start a local RDP client.
+    """
+    _vm_remote_desktop(
+        ctx,
+        customer_vm_id,
+        org_id,
+        want_protocol="rdp",
+        guest_port=_RDP_GUEST_PORT,
+        local_port=local_port,
+        identity_file=identity_file,
+        launch=launch,
+        print_only=print_only,
+    )
+
+
+@vm.command("vnc")
+@click.argument("customer_vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--local-port",
+    type=click.IntRange(1, 65535),
+    default=None,
+    help="Local port to bind (default: an unused port).",
+)
+@click.option(
+    "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
+)
+@click.option(
+    "--launch/--no-launch",
+    default=False,
+    show_default=True,
+    help="Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.",
+)
+@click.option(
+    "--print",
+    "print_only",
+    is_flag=True,
+    help="Print the tunnel and client commands and exit, without opening the tunnel.",
+)
+@click.pass_context
+def vm_vnc(ctx, customer_vm_id, org_id, local_port, identity_file, launch, print_only):
+    """Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+
+    Forwards a local port to the guest's Screen Sharing service (:5900) through
+    the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the
+    tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
+    """
+    _vm_remote_desktop(
+        ctx,
+        customer_vm_id,
+        org_id,
+        want_protocol="vnc",
+        guest_port=_VNC_GUEST_PORT,
+        local_port=local_port,
+        identity_file=identity_file,
+        launch=launch,
+        print_only=print_only,
+    )
+
+
+@vm.command("port-forward")
+@click.argument("customer_vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--port",
+    "guest_port",
+    type=click.IntRange(1, 65535),
+    required=True,
+    help="Guest-side TCP port to forward (e.g. 8080).",
+)
+@click.option(
+    "--local-port",
+    type=click.IntRange(1, 65535),
+    default=None,
+    help="Local port to bind (default: an unused port).",
+)
+@click.option(
+    "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
+)
+@click.option("--print", "print_only", is_flag=True, help="Print the ssh command and exit, without opening the tunnel.")
+@click.pass_context
+def vm_port_forward(ctx, customer_vm_id, org_id, guest_port, local_port, identity_file, print_only):
+    """Forward a local port to a TCP port on the VM over SSH.
+
+    The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
+    127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
+    <port> is set by --port, and holds it open until Ctrl-C. Bring your own
+    client.
+    """
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        response = client.public_get(f"/orgs/{org_id}/vms/{customer_vm_id}")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
+
+    data = response["data"]
+    ssh_ep = (data.get("endpoints") or {}).get("ssh")
+    if not ssh_ep:
+        raise click.ClickException(
+            f"VM {customer_vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
+            "Endpoints appear once the VM is RUNNING; check `avr vm show`."
+        )
+
+    local_port = local_port or _pick_local_port()
+    if print_only:
+        display_argv = _ssh_tunnel_argv(
+            ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=None
+        )
+        click.echo(shlex.join(display_argv))
+        return
+
+    click.echo(f"Forwarding 127.0.0.1:{local_port} -> {customer_vm_id}:{guest_port} ...", err=True)
+
+    def on_ready(proc: subprocess.Popen[bytes]) -> None:
+        click.echo(f"Tunnel is up on 127.0.0.1:{local_port}. Press Ctrl-C to close it.", err=True)
+        proc.wait()
+
+    _run_tunnel(ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, on_ready=on_ready)

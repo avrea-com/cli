@@ -792,3 +792,140 @@ class TestVmConnectLine:
 
         assert "/p:'a b'" in _rdp_connect_lines("IP:PORT", "runner", "a b", "linux", True)[0]
         assert "/p:abc123" in _rdp_connect_lines("IP:PORT", "runner", "abc123", "linux", True)[0]
+
+
+class TestVmDesktopTunnel:
+    """`avr vm rdp` / `avr vm vnc` / `avr vm port-forward` (SSH-tunnelled)."""
+
+    def test_rdp_print_emits_tunnel_and_client(self, runner, monkeypatch):
+        popen_calls = {"n": 0}
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
+        monkeypatch.setattr(
+            "avrea_cli.vm.subprocess.Popen",
+            lambda *a, **k: popen_calls.__setitem__("n", popen_calls["n"] + 1),
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, ["vm", "rdp", "cvm-abc123", "--print", "--local-port", "40000"])
+        assert result.exit_code == 0
+        # the forward targets the guest's RDP port on its own loopback
+        assert "-L 127.0.0.1:40000:localhost:3389" in result.output
+        assert "-p 30022" in result.output
+        assert "runner@203.0.113.1" in result.output
+        assert "StrictHostKeyChecking=accept-new" in result.output
+        # Linux GRD needs /gfx:rfx; the client line reuses the RDP connect helper
+        assert "xfreerdp" in result.output
+        assert "/gfx:rfx" in result.output
+        assert popen_calls["n"] == 0  # --print never opens the tunnel
+
+    def test_rdp_opens_tunnel_with_derived_port(self, runner, monkeypatch):
+        captured = {}
+        monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
+        monkeypatch.setattr(
+            "avrea_cli.vm._run_tunnel",
+            lambda ssh_ep, **kw: captured.update(ssh_ep=ssh_ep, **kw),
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, ["vm", "rdp", "cvm-abc123", "--local-port", "40000"])
+        assert result.exit_code == 0
+        assert captured["guest_port"] == 3389
+        assert captured["local_port"] == 40000
+        assert captured["ssh_ep"]["external_port"] == 30022
+
+    def test_rdp_requires_remote_desktop(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: {"data": {**SAMPLE_VM, "state": "RUNNING"}},
+        )
+        result = runner.invoke(cli, ["vm", "rdp", "cvm-abc123"])
+        assert result.exit_code != 0
+        assert "no remote desktop" in result.output
+
+    def test_rdp_no_ssh_endpoint_errors(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: {"data": {**RD_VM, "state": "PENDING", "endpoints": None}},
+        )
+        result = runner.invoke(cli, ["vm", "rdp", "cvm-abc123"])
+        assert result.exit_code != 0
+        assert "no SSH endpoint yet" in result.output
+        assert "PENDING" in result.output
+
+    def test_vnc_on_rdp_vm_points_to_rdp(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+        result = runner.invoke(cli, ["vm", "vnc", "cvm-abc123"])
+        assert result.exit_code != 0
+        assert "speaks rdp, not vnc" in result.output
+        assert "avr vm rdp cvm-abc123" in result.output
+
+    def test_port_forward_print(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(
+            cli, ["vm", "port-forward", "cvm-abc123", "--port", "8080", "--local-port", "41000", "--print"]
+        )
+        assert result.exit_code == 0
+        assert "-L 127.0.0.1:41000:localhost:8080" in result.output
+        assert "runner@203.0.113.1" in result.output
+
+    def test_port_forward_no_ssh_endpoint_errors(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: {"data": {**SAMPLE_VM, "state": "PENDING", "endpoints": None}},
+        )
+        result = runner.invoke(cli, ["vm", "port-forward", "cvm-abc123", "--port", "8080"])
+        assert result.exit_code != 0
+        assert "no SSH endpoint yet" in result.output
+
+
+class TestTunnelHelpers:
+    """Pure helpers behind the tunnel commands."""
+
+    def test_ssh_tunnel_argv_pins_host_key(self):
+        from avrea_cli.vm import _ssh_tunnel_argv
+        from pathlib import Path
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=3389, identity_file=None, known_hosts=Path("/tmp/kh"))
+        assert "UserKnownHostsFile=/tmp/kh" in argv
+        assert "StrictHostKeyChecking=yes" in argv
+        assert "-L" in argv and "127.0.0.1:40000:localhost:3389" in argv
+        assert argv[-1] == "runner@203.0.113.1"
+
+    def test_ssh_tunnel_argv_accept_new_without_key(self):
+        from avrea_cli.vm import _ssh_tunnel_argv
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=5900, identity_file="/tmp/key", known_hosts=None)
+        assert "StrictHostKeyChecking=accept-new" in argv
+        assert "-i" in argv and "/tmp/key" in argv
+
+    def test_known_hosts_line_brackets_nonstandard_port(self):
+        from avrea_cli.vm import _known_hosts_line
+
+        assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 30022) == "[1.2.3.4]:30022 ssh-ed25519 AAAA\n"
+        assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 22) == "1.2.3.4 ssh-ed25519 AAAA\n"
+
+    def test_rdp_launch_argv_per_platform(self):
+        from avrea_cli.vm import _rdp_launch_argv
+
+        argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "linux", True)
+        assert argv is not None
+        assert argv[0] == "xfreerdp" and "/gfx:rfx" in argv and detaches is False
+        argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "win32", False)
+        assert argv == ["mstsc", "/v:127.0.0.1:40000"] and detaches is False
+        argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "darwin", False)
+        assert argv is not None
+        assert argv[0] == "open" and detaches is True
+
+    def test_vnc_launch_argv_macos_only(self):
+        from avrea_cli.vm import _vnc_launch_argv
+
+        argv, detaches = _vnc_launch_argv("127.0.0.1:40000", "darwin")
+        assert argv == ["open", "vnc://127.0.0.1:40000"] and detaches is True
+        argv, detaches = _vnc_launch_argv("127.0.0.1:40000", "linux")
+        assert argv is None

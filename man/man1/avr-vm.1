@@ -18,6 +18,12 @@ Delete a VM.
 list
 List the organization's VMs, newest first (deleted ones excluded).
 .TP
+port-forward
+Forward a local port to a TCP port on the VM over SSH.
+.TP
+rdp
+Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+.TP
 show
 Show a VM's details, including connection endpoints and egress rules.
 .TP
@@ -35,6 +41,9 @@ Update a VM's name, TTL, or SSH keys, or rotate its password.
 .TP
 usage
 Show usage metering (runtime / vCPU / memory seconds) per VM.
+.TP
+vnc
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-status (1),
@@ -55,9 +64,12 @@ Show usage metering (runtime / vCPU / memory seconds) per VM.
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
 .BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),
-.BR avr-vm-usage (1)
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)
