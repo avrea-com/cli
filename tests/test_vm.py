@@ -969,6 +969,9 @@ class TestVmDesktopTunnel:
         # Linux GRD needs /gfx:rfx; the client line reuses the RDP connect helper
         assert "xfreerdp" in result.output
         assert "/gfx:rfx" in result.output
+        # the tunnel is SSH-secured, so the localhost RDP cert is ignored rather
+        # than tripping a name-mismatch / host-changed prompt on 127.0.0.1
+        assert "/cert:ignore" in result.output
         assert popen_calls["n"] == 0  # --print never opens the tunnel
 
     def test_rdp_opens_tunnel_with_derived_port(self, runner, monkeypatch):
@@ -1071,6 +1074,7 @@ class TestTunnelHelpers:
         argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "linux", True)
         assert argv is not None
         assert argv[0] == "xfreerdp" and "/gfx:rfx" in argv and detaches is False
+        assert "/cert:ignore" in argv
         argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "win32", False)
         assert argv == ["mstsc", "/v:127.0.0.1:40000"] and detaches is False
         argv, detaches = _rdp_launch_argv("127.0.0.1:40000", "runner", "darwin", False)

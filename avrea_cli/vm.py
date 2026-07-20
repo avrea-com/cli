@@ -219,25 +219,34 @@ def _quote_pw_posix(password: str) -> str:
     return "'" + password.replace("'", "'\\''") + "'"
 
 
-def _freerdp_line(binary: str, ip_port: str, username: str, password: str | None, rfx: bool) -> str:
+def _freerdp_line(
+    binary: str, ip_port: str, username: str, password: str | None, rfx: bool, cert: str | None = None
+) -> str:
     """One FreeRDP invocation (``xfreerdp`` or ``sdl3-freerdp``).
 
     ``password`` is baked in only when known; ``rfx`` forces RemoteFX-Progressive
-    for GNOME Remote Desktop (Linux) guests. ``/cert:tofu`` rides only the
-    password-baked line (create/rotate); the passwordless line relies on the
-    client's own first-connect trust prompt."""
+    for GNOME Remote Desktop (Linux) guests. ``cert`` sets an explicit
+    ``/cert:<mode>``: the SSH-tunnel path passes ``"ignore"`` because the tunnel
+    (host-key pinned) is the security boundary, and the guest's self-signed
+    ``CN=avrea-rdp`` cert would otherwise trip a name-mismatch / host-changed
+    warning on 127.0.0.1. Without ``cert``, ``/cert:tofu`` rides only the
+    password-baked (create/rotate) line."""
     parts = [f"{binary} /v:{ip_port} /u:{username}"]
     if password:
         parts.append(f"/p:{_quote_pw_posix(password)}")
     if rfx:
         parts.append(_RDP_RFX_FLAG)
     parts.append("+clipboard")
-    if password:
+    if cert:
+        parts.append(f"/cert:{cert}")
+    elif password:
         parts.append("/cert:tofu")
     return " ".join(parts)
 
 
-def _rdp_connect_lines(ip_port: str, username: str, password: str | None, platform: str, rfx: bool) -> list[str]:
+def _rdp_connect_lines(
+    ip_port: str, username: str, password: str | None, platform: str, rfx: bool, cert: str | None = None
+) -> list[str]:
     """Platform-appropriate RDP client invocation(s) for the ``Connect`` row.
 
     ``platform`` is a ``sys.platform`` value for the machine running the CLI (not
@@ -257,7 +266,7 @@ def _rdp_connect_lines(ip_port: str, username: str, password: str | None, platfo
             # The rdp:// URI has no password attribute, so Windows App prompts.
             lines.append("(no password in the URI; use the one-time password shown below)")
         # Always offer the scriptable FreeRDP client so `show` keeps the RFX guidance.
-        lines.append(_freerdp_line("sdl3-freerdp", ip_port, username, password, rfx))
+        lines.append(_freerdp_line("sdl3-freerdp", ip_port, username, password, rfx, cert))
         lines.append("(brew install freerdp; binary is sdl-freerdp on older installs)")
         return lines
     if platform == "win32":
@@ -272,7 +281,7 @@ def _rdp_connect_lines(ip_port: str, username: str, password: str | None, platfo
             "(run the delete afterwards; the credential persists until deleted)",
         ]
     # linux and any other POSIX host: the FreeRDP CLI client.
-    return [_freerdp_line("xfreerdp", ip_port, username, password, rfx)]
+    return [_freerdp_line("xfreerdp", ip_port, username, password, rfx, cert)]
 
 
 def _connect_block(vm: dict[str, Any], password: str | None) -> list[str]:
@@ -1253,9 +1262,10 @@ def _rdp_launch_argv(ip_port: str, username: str, platform: str, rfx: bool) -> t
         return ["mstsc", f"/v:{ip_port}"], False
     if platform == "darwin":
         return ["open", f"rdp://full%20address=s:{ip_port}&username=s:{username}"], True
-    # linux and other POSIX: xfreerdp. /cert:tofu so the guest's self-signed
-    # cert doesn't block the launch on an interactive prompt.
-    argv = ["xfreerdp", f"/v:{ip_port}", f"/u:{username}", "+clipboard", "/cert:tofu"]
+    # linux and other POSIX: xfreerdp. /cert:ignore because the SSH tunnel is the
+    # security boundary; the guest's self-signed CN=avrea-rdp cert on 127.0.0.1
+    # would otherwise trip a name-mismatch / host-changed prompt and block launch.
+    argv = ["xfreerdp", f"/v:{ip_port}", f"/u:{username}", "+clipboard", "/cert:ignore"]
     if rfx:
         argv.append(_RDP_RFX_FLAG)
     return argv, False
@@ -1281,7 +1291,9 @@ def _desktop_connect_lines(protocol: str, ip_port: str, username: str, os_type: 
     if protocol == "vnc":
         return _vnc_connect_lines(ip_port, sys.platform)
     # /gfx:rfx is required for Linux GNOME Remote Desktop; see _RDP_RFX_FLAG.
-    return _rdp_connect_lines(ip_port, username, None, sys.platform, os_type == "linux")
+    # /cert:ignore because the tunnel (SSH host-key pinned) is the security
+    # boundary, so the guest's self-signed cert on 127.0.0.1 needn't be checked.
+    return _rdp_connect_lines(ip_port, username, None, sys.platform, os_type == "linux", cert="ignore")
 
 
 def _launch_client(launch_argv: list[str] | None, detaches: bool, tunnel_proc: subprocess.Popen[bytes]) -> None:
