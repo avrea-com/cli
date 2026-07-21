@@ -1043,6 +1043,8 @@ class TestVmDesktopTunnel:
         # the tunnel is SSH-secured, so the localhost RDP cert is ignored rather
         # than tripping a name-mismatch / host-changed prompt on 127.0.0.1
         assert "/cert:ignore" in result.output
+        # the printed form can't embed the pinned temp known_hosts, so it notes the gap
+        assert "trust-on-first-use" in result.output
         assert popen_calls["n"] == 0  # --print never opens the tunnel
 
     def test_rdp_opens_tunnel_with_derived_port(self, runner, monkeypatch):
@@ -1096,6 +1098,7 @@ class TestVmDesktopTunnel:
         )
         assert result.exit_code == 0
         assert "-L 127.0.0.1:41000:localhost:8080" in result.output
+        assert "trust-on-first-use" in result.output
         assert "runner@203.0.113.1" in result.output
 
     def test_port_forward_no_ssh_endpoint_errors(self, runner, monkeypatch):
@@ -1202,3 +1205,18 @@ class TestTunnelHelpers:
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
         vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
         assert proc.terminated
+
+    def test_run_tunnel_warns_when_no_host_key(self, monkeypatch):
+        # When the endpoint carries no host key, the tunnel can't pin and falls back
+        # to TOFU — that must be surfaced, not silent.
+        from avrea_cli import vm as vmmod
+
+        msgs: list[str] = []
+        monkeypatch.setattr("avrea_cli.vm.click.echo", lambda *a, **k: msgs.append(a[0] if a else ""))
+        proc = _FakeProc(None)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.Popen", lambda *a, **k: proc)
+        monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)  # no host key
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
+        assert any("no SSH host key" in m for m in msgs)

@@ -2188,7 +2188,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Guest OS version (e.g. ubuntu-22.04). Defaults to the latest version for the chosen --os.",
+                "help": "Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os.",
                 "hidden": false,
                 "show_default": false,
                 "default": null,

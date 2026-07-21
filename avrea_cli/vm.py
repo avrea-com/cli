@@ -37,17 +37,17 @@ import time
 
 _OS_CHOICES = ["linux", "macos", "windows"]
 
-# Hardware tiers and OS versions the API accepts. Mirrors the server
-# (avrea/executor/runner_specs.py: VmSize / OsVersion); the customer picks an
-# OS, an optional version and a size tier, and the control plane resolves those
-# to a concrete image and cpu/memory/disk. The server validates the (os, size)
-# and (os, version) pairs (sizes are OS-specific) and remains the source of truth.
+# Hardware tiers and OS versions the API accepts (see the runner docs at
+# https://docs.avrea.com/runners/). The customer picks an OS, an optional
+# version and a size tier, and the control plane resolves those to a concrete
+# image and cpu/memory/disk. The server validates the (os, size) and (os,
+# version) pairs (sizes are OS-specific) and remains the source of truth.
 _SIZE_CHOICES = ["1-vcpu", "2-vcpu", "4-vcpu", "8-vcpu", "16-vcpu", "32-vcpu"]
 _OS_VERSION_CHOICES = ["ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "macos-26", "windows-2025"]
 
-# Bounds / default mirror the API (avrea/api/routers/customer_vms.py); kept
-# here only to fail obviously-bad input locally with a clear message. The
-# server remains the source of truth and re-validates everything.
+# Bounds / default mirror the API; kept here only to fail obviously-bad input
+# locally with a clear message. The server remains the source of truth and
+# re-validates everything.
 _DEFAULT_TTL_SECONDS = 8 * 3600
 _MIN_TTL_SECONDS = 300
 _MAX_TTL_SECONDS = 7 * 24 * 3600
@@ -488,7 +488,7 @@ def vm(ctx):
     "os_version",
     type=click.Choice(_OS_VERSION_CHOICES),
     default=None,
-    help="Guest OS version (e.g. ubuntu-22.04). Defaults to the latest version for the chosen --os.",
+    help="Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os.",
 )
 @click.option(
     "--size",
@@ -1120,7 +1120,7 @@ def vm_delete(ctx, customer_vm_id, org_id, yes, wait, wait_timeout, as_json):
 #
 # The endpoint record carries no guest-internal port, so we derive it from the
 # protocol: RDP 3389 (Windows and Linux GNOME Remote Desktop), VNC 5900 (macOS
-# Screen Sharing). Mirrors smithy vm_controller/callbacks.py enable_remote_desktop().
+# Screen Sharing).
 _RDP_GUEST_PORT = 3389
 _VNC_GUEST_PORT = 5900
 
@@ -1241,6 +1241,12 @@ def _run_tunnel(
     ``on_ready`` (which holds or launches a client), then tear it down. Ctrl-C
     closes cleanly."""
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
+    if known_hosts is None:
+        click.echo(
+            "Warning: this VM's endpoint has no SSH host key; the tunnel falls back to "
+            "trust-on-first-use instead of pinning.",
+            err=True,
+        )
     argv = _ssh_tunnel_argv(
         ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=known_hosts
     )
@@ -1396,6 +1402,10 @@ def _vm_remote_desktop(
         click.echo("Then connect with:")
         for line in connect_lines:
             click.echo(f"  {line}")
+        click.echo(
+            "(the live command pins the VM's SSH host key; this printed form uses trust-on-first-use)",
+            err=True,
+        )
         return
 
     click.echo(f"Opening SSH tunnel {ip_port} -> {customer_vm_id}:{guest_port} ...", err=True)
@@ -1561,6 +1571,10 @@ def vm_port_forward(ctx, customer_vm_id, org_id, guest_port, local_port, identit
             ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=None
         )
         click.echo(shlex.join(display_argv))
+        click.echo(
+            "(the live command pins the VM's SSH host key; this printed form uses trust-on-first-use)",
+            err=True,
+        )
         return
 
     click.echo(f"Forwarding 127.0.0.1:{local_port} -> {customer_vm_id}:{guest_port} ...", err=True)
