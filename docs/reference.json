@@ -2389,13 +2389,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm delete [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm delete [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -2627,13 +2627,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm port-forward [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm port-forward [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -2755,13 +2755,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm rdp [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm rdp [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -2885,13 +2885,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm show [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm show [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -2958,13 +2958,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm ssh [OPTIONS] CUSTOMER_VM_ID [SSH_ARGS]...",
+            "usage": "avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -3068,13 +3068,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm start [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm start [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -3177,13 +3177,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm stop [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm stop [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -3286,13 +3286,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm update [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm update [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -3540,13 +3540,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm vnc [OPTIONS] CUSTOMER_VM_ID",
+            "usage": "avr vm vnc [OPTIONS] VM_ID",
             "params": [
               {
-                "name": "customer_vm_id",
+                "name": "vm_id",
                 "kind": "argument",
                 "opts": [
-                  "customer_vm_id"
+                  "vm_id"
                 ],
                 "secondary_opts": [],
                 "type": "text",

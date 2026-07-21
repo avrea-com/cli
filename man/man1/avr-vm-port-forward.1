@@ -3,14 +3,14 @@
 avr-vm-port-forward \- Forward a local port to a TCP port on the VM over SSH.
 .SH SYNOPSIS
 .B avr vm port-forward
-[OPTIONS] CUSTOMER_VM_ID
+[OPTIONS] VM_ID
 .SH DESCRIPTION
 Forward a local port to a TCP port on the VM over SSH.
 .PP
 The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where <port> is set by --port, and holds it open until Ctrl-C. Bring your own client.
 .SH ARGUMENTS
 .TP
-\fICUSTOMER_VM_ID\fR
+\fIVM_ID\fR
 \&
 .SH OPTIONS
 .TP

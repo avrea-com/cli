@@ -772,6 +772,16 @@ class TestVmDelete:
         assert result.exit_code == 0
         assert "DELETING" in result.output
 
+    def test_delete_handles_null_data(self, runner, monkeypatch):
+        # A 200 body with data: null must not AttributeError; it falls back to DELETING.
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_delete",
+            lambda self, path, params=None: {"data": None},
+        )
+        result = runner.invoke(cli, ["vm", "delete", "cvm-abc123", "--yes"])
+        assert result.exit_code == 0
+        assert "DELETING" in result.output
+
 
 class TestVmUsage:
     def test_usage_table_and_totals(self, runner, monkeypatch):

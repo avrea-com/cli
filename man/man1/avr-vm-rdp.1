@@ -3,14 +3,14 @@
 avr-vm-rdp \- Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
 .SH SYNOPSIS
 .B avr vm rdp
-[OPTIONS] CUSTOMER_VM_ID
+[OPTIONS] VM_ID
 .SH DESCRIPTION
 Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
 .PP
 Forwards a local port to the guest's RDP service (:3389) through the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel open until Ctrl-C; pass --launch to also start a local RDP client.
 .SH ARGUMENTS
 .TP
-\fICUSTOMER_VM_ID\fR
+\fIVM_ID\fR
 \&
 .SH OPTIONS
 .TP

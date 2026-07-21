@@ -3,7 +3,7 @@
 avr-vm-ssh \- Open an SSH session to a RUNNING VM (or print the command with --print).
 .SH SYNOPSIS
 .B avr vm ssh
-[OPTIONS] CUSTOMER_VM_ID [SSH_ARGS]...
+[OPTIONS] VM_ID [SSH_ARGS]...
 .SH DESCRIPTION
 Open an SSH session to a RUNNING VM (or print the command with --print).
 .PP
@@ -12,7 +12,7 @@ Resolves the VM's SSH endpoint and replaces this process with `ssh`. Extra optio
 avr vm ssh cvm-abc123 -- -L 8080:localhost:80
 .SH ARGUMENTS
 .TP
-\fICUSTOMER_VM_ID\fR
+\fIVM_ID\fR
 \&
 .TP
 [\fISSH_ARGS...\fR]

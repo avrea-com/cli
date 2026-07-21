@@ -507,14 +507,14 @@ now, it is never stored.
 Delete a VM.
 
 ```sh
-avr vm delete [OPTIONS] CUSTOMER_VM_ID
+avr vm delete [OPTIONS] VM_ID
 ```
 
 Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -545,7 +545,7 @@ avr vm list [OPTIONS]
 Forward a local port to a TCP port on the VM over SSH.
 
 ```sh
-avr vm port-forward [OPTIONS] CUSTOMER_VM_ID
+avr vm port-forward [OPTIONS] VM_ID
 ```
 
 The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
@@ -555,7 +555,7 @@ client.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -570,7 +570,7 @@ client.
 Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
 
 ```sh
-avr vm rdp [OPTIONS] CUSTOMER_VM_ID
+avr vm rdp [OPTIONS] VM_ID
 ```
 
 Forwards a local port to the guest's RDP service (:3389) through the VM's
@@ -579,7 +579,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -594,12 +594,12 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 Show a VM's details, including connection endpoints and egress rules.
 
 ```sh
-avr vm show [OPTIONS] CUSTOMER_VM_ID
+avr vm show [OPTIONS] VM_ID
 ```
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -611,7 +611,7 @@ avr vm show [OPTIONS] CUSTOMER_VM_ID
 Open an SSH session to a RUNNING VM (or print the command with --print).
 
 ```sh
-avr vm ssh [OPTIONS] CUSTOMER_VM_ID [SSH_ARGS]...
+avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...
 ```
 
 Resolves the VM's SSH endpoint and replaces this process with `ssh`.
@@ -623,7 +623,7 @@ interpreting them, e.g.:
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 - `[SSH_ARGS...]`
 
 **Options**
@@ -637,14 +637,14 @@ interpreting them, e.g.:
 Start a stopped VM.
 
 ```sh
-avr vm start [OPTIONS] CUSTOMER_VM_ID
+avr vm start [OPTIONS] VM_ID
 ```
 
 Start a stopped VM. Boots a fresh disk and returns a one-time password.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -658,14 +658,14 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 Stop a running VM.
 
 ```sh
-avr vm stop [OPTIONS] CUSTOMER_VM_ID
+avr vm stop [OPTIONS] VM_ID
 ```
 
 Stop a running VM. The ephemeral disk is discarded.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -679,14 +679,14 @@ Stop a running VM. The ephemeral disk is discarded.
 Update a VM's name, TTL, or SSH keys, or rotate its password.
 
 ```sh
-avr vm update [OPTIONS] CUSTOMER_VM_ID
+avr vm update [OPTIONS] VM_ID
 ```
 
 Power state is controlled separately with avr vm start / avr vm stop.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
@@ -721,7 +721,7 @@ Deleted VMs are included: usage survives deletion.
 Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 
 ```sh
-avr vm vnc [OPTIONS] CUSTOMER_VM_ID
+avr vm vnc [OPTIONS] VM_ID
 ```
 
 Forwards a local port to the guest's Screen Sharing service (:5900) through
@@ -730,7 +730,7 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 **Arguments**
 
-- `CUSTOMER_VM_ID`
+- `VM_ID`
 
 **Options**
 
