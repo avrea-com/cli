@@ -59,6 +59,9 @@ _TTL_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 # provision plus first boot.
 _WAIT_DEFAULT_TIMEOUT = 300
 _WAIT_POLL_SECONDS = 3.0
+# On a 429 we honor the server's Retry-After (seconds), capped so a large or
+# bogus value can't stall the whole wait on a single response.
+_WAIT_RETRY_AFTER_CAP = 30
 
 
 def _parse_ttl(value: str) -> int:
@@ -400,10 +403,18 @@ def _wait_for_vm(
                     # they fall through to the retry-until-deadline path below.
                     handle_http_error(exc, "check VM status")
             # Transport failure, a transient 408/429, or a retryable 5xx: keep
-            # polling until the deadline.
-            if time.monotonic() >= deadline:
+            # polling until the deadline. A 429 may carry Retry-After (seconds);
+            # honor it (capped) so we back off instead of hammering. Never sleep
+            # past the deadline.
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 return vm, "timeout"
-            time.sleep(_WAIT_POLL_SECONDS)
+            sleep_for: float = _WAIT_POLL_SECONDS
+            if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
+                retry_after = (exc.response.headers.get("Retry-After") or "").strip()
+                if retry_after.isdigit():
+                    sleep_for = min(int(retry_after), _WAIT_RETRY_AFTER_CAP)
+            time.sleep(min(sleep_for, remaining))
             continue
         vm = resp["data"]
         state = (vm.get("state") or "").upper()
@@ -557,6 +568,15 @@ def vm_create(
         raise click.UsageError(
             "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
             "the disk, and a restart boots fresh from the image. Pass --ephemeral to acknowledge."
+        )
+    # Windows remote desktop is not available yet (coming soon). Gate it at the
+    # CLI so `--remote-desktop --os windows` reports "coming soon" rather than
+    # provisioning. Delete this block (and its test) to enable it; Linux and
+    # macOS remote desktop are unaffected.
+    if remote_desktop and os_type == "windows":
+        raise click.ClickException(
+            "Windows remote desktop is coming soon. Create the VM without --remote-desktop, "
+            "or use --os linux / --os macos for a remote desktop now."
         )
     ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
     keys = _resolve_ssh_keys(ssh_keys)

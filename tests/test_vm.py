@@ -298,6 +298,33 @@ class TestVmCreate:
         assert result.exit_code == 2
         assert "3-vcpu" in result.output
 
+    def test_windows_remote_desktop_blocked(self, runner, monkeypatch):
+        # Windows remote desktop is gated as "coming soon"; the CLI blocks it
+        # before any API call. Remove with the vm.py block when it ships.
+        called = {"n": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
+        )
+        result = runner.invoke(
+            cli,
+            ["vm", "create", "--name", "w", "--os", "windows", "--size", "4-vcpu", "--ephemeral", "--remote-desktop"],
+        )
+        assert result.exit_code != 0
+        assert "remote desktop" in result.output.lower()
+        assert called["n"] == 0  # blocked before the API call
+
+    def test_windows_without_remote_desktop_allowed(self, runner, monkeypatch):
+        # The gate is scoped to --remote-desktop; a plain Windows VM still works.
+        store = {"return": CREATE_RESPONSE}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            ["vm", "create", "--name", "w", "--os", "windows", "--size", "4-vcpu", "--ephemeral"],
+        )
+        assert result.exit_code == 0
+        assert store["json"]["enable_remote_desktop"] is False
+
 
 class TestVmCreateWait:
     """`avr vm create --wait` polls until the VM is connectable, then prints a
@@ -420,6 +447,50 @@ class TestVmCreateWait:
         result = runner.invoke(cli, [*self._ARGS, "--wait"])
         assert result.exit_code == 0
         assert calls["n"] >= 2  # retried past the 429 instead of aborting
+
+    def test_wait_429_honors_retry_after(self, runner, monkeypatch):
+        # A 429 with Retry-After should back off for that many seconds, not the
+        # default poll cadence, so we don't hammer a rate-limiting server.
+        self._post(monkeypatch)
+        slept: list[float] = []
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda s: slept.append(s))  # override _post's no-op
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                req = httpx.Request("GET", "http://x")
+                resp = httpx.Response(429, headers={"Retry-After": "7"}, request=req)
+                raise httpx.HTTPStatusError("slow down", request=req, response=resp)
+            return RD_SHOW_RESPONSE
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert 7 in slept  # backed off for the Retry-After value, not the default 3s
+
+    def test_wait_429_retry_after_capped(self, runner, monkeypatch):
+        # A large / hostile Retry-After is clamped to the cap, so a rate-limiting
+        # (or malicious) server can't make --wait sleep arbitrarily long.
+        from avrea_cli.vm import _WAIT_RETRY_AFTER_CAP
+
+        self._post(monkeypatch)
+        slept: list[float] = []
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda s: slept.append(s))
+        calls = {"n": 0}
+
+        def _get(self, path, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                req = httpx.Request("GET", "http://x")
+                resp = httpx.Response(429, headers={"Retry-After": "99999"}, request=req)
+                raise httpx.HTTPStatusError("slow down", request=req, response=resp)
+            return RD_SHOW_RESPONSE
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
+        result = runner.invoke(cli, [*self._ARGS, "--wait"])
+        assert result.exit_code == 0
+        assert slept == [_WAIT_RETRY_AFTER_CAP]  # clamped to the cap, not 99999
 
     def test_wait_transient_408_is_retried(self, runner, monkeypatch):
         # Sibling of the 429 case: 408 (Request Timeout) is transient too and must
