@@ -1,0 +1,75 @@
+.TH AVR\-VM 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm \- Manage long-running VMs (SSH/RDP/VNC).
+.SH SYNOPSIS
+.B avr vm
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage long-running VMs (SSH/RDP/VNC).
+.PP
+.SH COMMANDS
+.TP
+create
+Create a long-running VM.
+.TP
+delete
+Delete a VM.
+.TP
+list
+List the organization's VMs, newest first (deleted ones excluded).
+.TP
+port-forward
+Forward a local port to a TCP port on the VM over SSH.
+.TP
+rdp
+Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+.TP
+show
+Show a VM's details, including connection endpoints and egress rules.
+.TP
+ssh
+Open an SSH session to a RUNNING VM (or print the command with --print).
+.TP
+start
+Start a stopped VM.
+.TP
+stop
+Stop a running VM.
+.TP
+update
+Update a VM's name, TTL, or SSH keys, or rotate its password.
+.TP
+usage
+Show usage metering (runtime / vCPU / memory seconds) per VM.
+.TP
+vnc
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-job (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

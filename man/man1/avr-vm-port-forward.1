@@ -1,0 +1,44 @@
+.TH AVR\-VM\-PORT\-FORWARD 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm-port-forward \- Forward a local port to a TCP port on the VM over SSH.
+.SH SYNOPSIS
+.B avr vm port-forward
+[OPTIONS] VM_ID
+.SH DESCRIPTION
+Forward a local port to a TCP port on the VM over SSH.
+.PP
+The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where <port> is set by --port, and holds it open until Ctrl-C. Bring your own client.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-port\fR \fIINTEGER RANGE\fR
+Guest-side TCP port to forward (e.g. 8080). (required)
+.TP
+\fB\-\-local\-port\fR \fIINTEGER RANGE\fR
+Local port to bind (default: an unused port).
+.TP
+\fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
+Private key file to pass to ssh as -i.
+.TP
+\fB\-\-print\fR
+Print the ssh command and exit, without opening the tunnel.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

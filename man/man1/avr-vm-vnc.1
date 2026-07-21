@@ -1,0 +1,44 @@
+.TH AVR\-VM\-VNC 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm-vnc \- Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+.SH SYNOPSIS
+.B avr vm vnc
+[OPTIONS] VM_ID
+.SH DESCRIPTION
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+.PP
+Forwards a local port to the guest's Screen Sharing service (:5900) through the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-local\-port\fR \fIINTEGER RANGE\fR
+Local port to bind (default: an unused port).
+.TP
+\fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
+Private key file to pass to ssh as -i.
+.TP
+\fB\-\-launch\fR / \fB\-\-no\-launch\fR
+Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
+.TP
+\fB\-\-print\fR
+Print the tunnel and client commands and exit, without opening the tunnel.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1)

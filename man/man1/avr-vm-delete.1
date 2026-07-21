@@ -1,0 +1,44 @@
+.TH AVR\-VM\-DELETE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm-delete \- Delete a VM.
+.SH SYNOPSIS
+.B avr vm delete
+[OPTIONS] VM_ID
+.SH DESCRIPTION
+Delete a VM.
+.PP
+Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.TP
+\fB\-\-wait\fR
+Wait until the VM is fully deleted before returning.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER\fR
+Seconds to wait when --wait is set. (default: 300)
+.TP
+\fB\-\-json\fR
+Emit the raw API response as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

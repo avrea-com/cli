@@ -25,6 +25,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `logs` → `log`
 - `orgs` → `org`
 - `repos` → `repo`
+- `vms` → `vm`
 - `workflows` → `workflow`
 
 ## Commands
@@ -34,6 +35,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr status`](#avr-status) — Show recent runs, performance stats, and cache health.
 - [`avr run`](#avr-run) — View and manage GitHub workflow runs.
 - [`avr job`](#avr-job) — Inspect Avrea job VMs (SSH, metrics, logs).
+- [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
 - [`avr log`](#avr-log) — Search across runner execution logs.
@@ -459,6 +461,284 @@ avr job watch [OPTIONS]
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `5`)_
 - `--ndjson` — Emit one JSON object per refresh (default when stdout isn't a TTY).
+
+### `avr vm`
+
+Manage long-running VMs (SSH/RDP/VNC).
+
+```sh
+avr vm [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr vm create`
+
+Create a long-running VM.
+
+```sh
+avr vm create [OPTIONS]
+```
+
+```sh
+Provisioning is asynchronous: poll `avr vm show <id>` until the state is
+RUNNING and endpoints are populated, or pass --wait to block until then and
+print a ready-to-paste connect command with the password baked in. The
+response carries a one-time password for the VM's local account; save it
+now, it is never stored.
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--name <TEXT>` — Human-readable VM name. _(required)_
+- `--os <CHOICE>` — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
+- `--os-version <CHOICE>` — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
+- `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
+- `--ssh-key <TEXT>` — SSH public key, or @path to read one from a file. Repeatable. _(repeatable)_
+- `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
+- `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
+- `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
+- `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
+- `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response (VM plus one-time password) as JSON.
+
+#### `avr vm delete`
+
+Delete a VM.
+
+```sh
+avr vm delete [OPTIONS] VM_ID
+```
+
+Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--wait` — Wait until the VM is fully deleted before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
+
+#### `avr vm list`
+
+List the organization's VMs, newest first (deleted ones excluded).
+
+```sh
+avr vm list [OPTIONS]
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--state <TEXT>` — Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).
+- `-L, --limit <INTEGER RANGE>` — Max VMs to return. _(default: `50`)_
+- `--cursor <TEXT>` — Pagination cursor from a previous response.
+- `--json` — Emit the VM list as JSON.
+
+#### `avr vm port-forward`
+
+Forward a local port to a TCP port on the VM over SSH.
+
+```sh
+avr vm port-forward [OPTIONS] VM_ID
+```
+
+The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
+127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
+<port> is set by --port, and holds it open until Ctrl-C. Bring your own
+client.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--port <INTEGER RANGE>` — Guest-side TCP port to forward (e.g. 8080). _(required)_
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--print` — Print the ssh command and exit, without opening the tunnel.
+
+#### `avr vm rdp`
+
+Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+
+```sh
+avr vm rdp [OPTIONS] VM_ID
+```
+
+Forwards a local port to the guest's RDP service (:3389) through the VM's
+SSH endpoint, so the desktop is never exposed publicly. Holds the tunnel
+open until Ctrl-C; pass --launch to also start a local RDP client.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
+- `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
+#### `avr vm show`
+
+Show a VM's details, including connection endpoints and egress rules.
+
+```sh
+avr vm show [OPTIONS] VM_ID
+```
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--json` — Emit the full VM record (with egress rules) as JSON.
+
+#### `avr vm ssh`
+
+Open an SSH session to a RUNNING VM (or print the command with --print).
+
+```sh
+avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...
+```
+
+Resolves the VM's SSH endpoint and replaces this process with `ssh`.
+Extra options are passed through to ssh and placed before the destination,
+so port-forwarding and similar flags work. Use `--` to stop avr from
+interpreting them, e.g.:
+
+    avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+
+**Arguments**
+
+- `VM_ID`
+- `[SSH_ARGS...]`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--print` — Print the ssh command instead of running it.
+
+#### `avr vm start`
+
+Start a stopped VM.
+
+```sh
+avr vm start [OPTIONS] VM_ID
+```
+
+Start a stopped VM. Boots a fresh disk and returns a one-time password.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--wait` — Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
+
+#### `avr vm stop`
+
+Stop a running VM.
+
+```sh
+avr vm stop [OPTIONS] VM_ID
+```
+
+Stop a running VM. The ephemeral disk is discarded.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--wait` — Wait until the VM reaches STOPPED before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
+
+#### `avr vm update`
+
+Update a VM's name, TTL, or SSH keys, or rotate its password.
+
+```sh
+avr vm update [OPTIONS] VM_ID
+```
+
+Power state is controlled separately with avr vm start / avr vm stop.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--name <TEXT>` — New display name.
+- `--ttl <TEXT>` — Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.
+- `--ssh-key <TEXT>` — Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start. _(repeatable)_
+- `--rotate-password` — Provision a fresh one-time password (returned in the response).
+- `--egress-rules <TEXT>` — Replace the per-VM egress rules with this JSON array (or @path to a file).
+- `--json` — Emit the raw API response as JSON.
+
+#### `avr vm usage`
+
+Show usage metering (runtime / vCPU / memory seconds) per VM.
+
+```sh
+avr vm usage [OPTIONS]
+```
+
+Each power-on cycle's window is clipped to the requested period and summed.
+Deleted VMs are included: usage survives deletion.
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--start <DATETIME>` — Inclusive period start (default: 30 days ago).
+- `--end <DATETIME>` — Exclusive period end (default: now).
+- `--json` — Emit the usage report as JSON.
+
+#### `avr vm vnc`
+
+Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
+
+```sh
+avr vm vnc [OPTIONS] VM_ID
+```
+
+Forwards a local port to the guest's Screen Sharing service (:5900) through
+the VM's SSH endpoint, so the desktop is never exposed publicly. Holds the
+tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--launch / --no-launch` — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
+- `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
 
 ### `avr workflow`
 
