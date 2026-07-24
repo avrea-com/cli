@@ -2,6 +2,7 @@
 
 from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
+import httpx
 
 
 def test_config_defaults(monkeypatch) -> None:
@@ -87,6 +88,46 @@ def test_api_client_timeout(monkeypatch) -> None:
     client = ApiClient(config)
 
     assert client.timeout == 30.0
+
+
+def test_public_post_supports_raw_content_and_query_params(monkeypatch) -> None:
+    monkeypatch.setenv("AVR_TOKEN", "test-token")
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.delenv("AVR_ORG", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_token", lambda *, host: None)
+    monkeypatch.setattr("avrea_cli.auth.load_default_org", lambda *, host: None)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.content == b"<EntityDescriptor/>"
+        assert request.headers["content-type"] == "application/xml"
+        assert request.url.params["attr_email"] == "mail"
+        return httpx.Response(200, request=request, json={"data": {"ok": True}})
+
+    client = ApiClient(CliConfig(), http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+    result = client.public_post(
+        "/orgs/org-default/saml",
+        content=b"<EntityDescriptor/>",
+        params={"attr_email": "mail"},
+        content_type="application/xml",
+    )
+
+    assert result == {"data": {"ok": True}}
+
+
+def test_public_post_rejects_json_and_raw_content(monkeypatch) -> None:
+    monkeypatch.delenv("AVR_TOKEN", raising=False)
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.delenv("AVR_ORG", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_token", lambda *, host: None)
+    monkeypatch.setattr("avrea_cli.auth.load_default_org", lambda *, host: None)
+    client = ApiClient(CliConfig())
+
+    try:
+        client.public_post("/test", json={"a": 1}, content=b"raw")
+    except ValueError as exc:
+        assert str(exc) == "public_post accepts either json or content, not both"
+    else:
+        raise AssertionError("expected ValueError")
 
 
 def _isolate_config(monkeypatch) -> None:

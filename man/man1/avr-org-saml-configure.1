@@ -1,0 +1,73 @@
+.TH AVR\-ORG\-SAML\-CONFIGURE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-configure \- Create or replace SAML configuration from IdP metadata (admin only).
+.SH SYNOPSIS
+.B avr org saml configure
+[OPTIONS] METADATA
+.SH DESCRIPTION
+Create or replace SAML configuration from IdP metadata (admin only).
+.PP
+METADATA is an IdP metadata XML file; pass - to read it from stdin. Reconfiguring requires the complete metadata document again.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org saml configure idp-metadata.xml
+    cat idp-metadata.xml | avr org saml configure - --org acme
+    avr org saml configure idp.xml --email-attribute mail \e
+        --given-name-attribute firstName --family-name-attribute lastName
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIMETADATA\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-email\-attribute\fR, \fB\-\-attr\-email\fR \fITEXT\fR
+IdP attribute carrying the member email. (default: email)
+.TP
+\fB\-\-given\-name\-attribute\fR, \fB\-\-attr\-given\-name\fR \fITEXT\fR
+IdP given-name attribute.
+.TP
+\fB\-\-family\-name\-attribute\fR, \fB\-\-attr\-family\-name\fR \fITEXT\fR
+IdP family-name attribute.
+.TP
+\fB\-\-groups\-attribute\fR, \fB\-\-attr\-groups\fR \fITEXT\fR
+IdP groups attribute.
+.TP
+\fB\-\-default\-role\fR \fICHOICE\fR
+Role assigned to JIT-provisioned members. (choices: user, admin, billing_admin; default: user)
+.TP
+\fB\-\-jit\-provisioning\fR / \fB\-\-no\-jit\-provisioning\fR
+Allow SAML to provision new members. (default: True)
+.TP
+\fB\-\-allow\-idp\-initiated\fR / \fB\-\-no\-allow\-idp\-initiated\fR
+Allow sign-in initiated from the IdP.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-sp-metadata (1),
+.BR avr-org-saml-test (1)

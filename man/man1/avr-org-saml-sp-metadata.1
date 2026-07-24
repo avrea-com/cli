@@ -1,0 +1,30 @@
+.TH AVR\-ORG\-SAML\-SP\-METADATA 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-sp-metadata \- Print Avrea's SAML service-provider metadata XML.
+.SH SYNOPSIS
+.B avr org saml sp-metadata
+[OPTIONS]
+.SH DESCRIPTION
+Print Avrea's SAML service-provider metadata XML.
+.PP
+Redirect stdout to a file for import into your identity provider.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org saml sp-metadata > avrea-sp.xml
+    avr org saml sp-metadata --org acme
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-test (1)

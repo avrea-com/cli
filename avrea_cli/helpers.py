@@ -154,7 +154,10 @@ def get_org_slug(client: ApiClient, org_id: str) -> str:
     command."""
     try:
         response = client.public_get("/users/me/organizations")
-    except httpx.HTTPStatusError, httpx.TransportError:
+    except (
+        httpx.HTTPStatusError,
+        httpx.TransportError,
+    ):
         return org_id
     data = response.get("data") if isinstance(response, dict) else None
     if not isinstance(data, list):

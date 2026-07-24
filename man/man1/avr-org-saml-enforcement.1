@@ -1,0 +1,40 @@
+.TH AVR\-ORG\-SAML\-ENFORCEMENT 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-enforcement \- Enable or disable mandatory SAML sign-in (admin only).
+.SH SYNOPSIS
+.B avr org saml enforcement
+[OPTIONS] {on|off}
+.SH DESCRIPTION
+Enable or disable mandatory SAML sign-in (admin only).
+.PP
+Enabling requires a configured SAML connection and at least one verified company domain.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org saml enforcement on
+    avr org saml enforcement off --org acme
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fISTATE\fR
+(choices: on, off)
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-sp-metadata (1),
+.BR avr-org-saml-test (1)

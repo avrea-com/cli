@@ -1,11 +1,21 @@
-.TH AVR\-ORG\-EMAIL\-DOMAIN\-LIST 1 "" "avr 0.1.6" "Avrea CLI"
+.TH AVR\-ORG\-EMAIL\-DOMAIN\-VERIFY 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-org-email-domain-list \- List claimed organization email domains (admin only).
+avr-org-email-domain-verify \- Check a claimed domain's DNS TXT record (admin only).
 .SH SYNOPSIS
-.B avr org email-domain list
-[OPTIONS]
+.B avr org email-domain verify
+[OPTIONS] DOMAIN
 .SH DESCRIPTION
-List claimed organization email domains (admin only).
+Check a claimed domain's DNS TXT record (admin only).
+.PP
+Each invocation performs a fresh DNS lookup. If DNS has not propagated, wait and run the command again.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org email-domain verify example.com
+    avr org email-domain verify corp.example.com --org acme
+.fi
+.RE
 .PP
 .RS 4
 .nf
@@ -14,6 +24,10 @@ JSON FIELDS
     organization_email_domain_id, verified, verified_at
 .fi
 .RE
+.SH ARGUMENTS
+.TP
+\fIDOMAIN\fR
+\&
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
@@ -28,5 +42,5 @@ Filter --json output through a jq expression.
 .BR avr (1),
 .BR avr-org-email-domain (1),
 .BR avr-org-email-domain-claim (1),
-.BR avr-org-email-domain-set (1),
-.BR avr-org-email-domain-verify (1)
+.BR avr-org-email-domain-list (1),
+.BR avr-org-email-domain-set (1)

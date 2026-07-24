@@ -1,11 +1,21 @@
-.TH AVR\-ORG\-EMAIL\-DOMAIN\-LIST 1 "" "avr 0.1.6" "Avrea CLI"
+.TH AVR\-ORG\-EMAIL\-DOMAIN\-CLAIM 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-org-email-domain-list \- List claimed organization email domains (admin only).
+avr-org-email-domain-claim \- Claim a company domain using DNS ownership verification (admin only).
 .SH SYNOPSIS
-.B avr org email-domain list
-[OPTIONS]
+.B avr org email-domain claim
+[OPTIONS] DOMAIN
 .SH DESCRIPTION
-List claimed organization email domains (admin only).
+Claim a company domain using DNS ownership verification (admin only).
+.PP
+The domain does not need to match your GitHub or Avrea account email. Publish the returned TXT record, then run ``email-domain verify``.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org email-domain claim example.com
+    avr org email-domain claim corp.example.com --org acme
+.fi
+.RE
 .PP
 .RS 4
 .nf
@@ -14,6 +24,10 @@ JSON FIELDS
     organization_email_domain_id, verified, verified_at
 .fi
 .RE
+.SH ARGUMENTS
+.TP
+\fIDOMAIN\fR
+\&
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
@@ -27,6 +41,6 @@ Filter --json output through a jq expression.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-org-email-domain (1),
-.BR avr-org-email-domain-claim (1),
+.BR avr-org-email-domain-list (1),
 .BR avr-org-email-domain-set (1),
 .BR avr-org-email-domain-verify (1)

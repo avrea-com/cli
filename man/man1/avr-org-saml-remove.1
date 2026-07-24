@@ -1,0 +1,25 @@
+.TH AVR\-ORG\-SAML\-REMOVE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-remove \- Remove the organization's SAML configuration (admin only).
+.SH SYNOPSIS
+.B avr org saml remove
+[OPTIONS]
+.SH DESCRIPTION
+Remove the organization's SAML configuration (admin only).
+.PP
+Pass --yes to skip the confirmation prompt (required when prompts are disabled for automation).
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-sp-metadata (1),
+.BR avr-org-saml-test (1)

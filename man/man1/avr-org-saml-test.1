@@ -1,0 +1,33 @@
+.TH AVR\-ORG\-SAML\-TEST 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-test \- Test the SAML connection in a browser (admin only).
+.SH SYNOPSIS
+.B avr org saml test
+[OPTIONS]
+.SH DESCRIPTION
+Test the SAML connection in a browser (admin only).
+.PP
+The test performs a real IdP sign-in and displays the parsed assertion without creating a new Avrea session.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org saml test
+    avr org saml test --org acme --no-browser
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-no\-browser\fR
+Print the test URL without opening a browser.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-sp-metadata (1)

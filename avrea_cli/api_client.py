@@ -46,14 +46,45 @@ class ApiClient:
         response.raise_for_status()
         return response.json()
 
+    def public_get_text(self, path: str, params: dict[str, Any] | None = None) -> str:
+        """GET a non-JSON public API response, such as SAML SP metadata."""
+        url = f"{self.config.public_api_url}{path}"
+        try:
+            response = self._http.get(url, headers=self.config.get_api_headers(), timeout=self.timeout, params=params)
+        except httpx.HTTPError as exc:
+            self._log("GET", url, type(exc).__name__)
+            raise
+        self._log("GET", str(response.request.url), response.status_code)
+        response.raise_for_status()
+        return response.text
+
     def public_post(
-        self, path: str, json: dict[str, Any] | None = None, timeout: float | None = None
+        self,
+        path: str,
+        json: dict[str, Any] | None = None,
+        timeout: float | None = None,
+        *,
+        content: str | bytes | None = None,
+        params: dict[str, Any] | None = None,
+        content_type: str | None = None,
     ) -> dict[str, Any]:
         """POST request to public API."""
+        if json is not None and content is not None:
+            raise ValueError("public_post accepts either json or content, not both")
         url = f"{self.config.public_api_url}{path}"
         effective_timeout = timeout if timeout is not None else self.timeout
+        headers = self.config.get_api_headers()
+        if content_type is not None:
+            headers = {**headers, "Content-Type": content_type}
         try:
-            response = self._http.post(url, headers=self.config.get_api_headers(), timeout=effective_timeout, json=json)
+            response = self._http.post(
+                url,
+                headers=headers,
+                timeout=effective_timeout,
+                json=json,
+                content=content,
+                params=params,
+            )
         except httpx.HTTPError as exc:
             self._log("POST", url, type(exc).__name__)
             raise

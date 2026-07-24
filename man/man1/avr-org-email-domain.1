@@ -1,19 +1,25 @@
 .TH AVR\-ORG\-EMAIL\-DOMAIN 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-org-email-domain \- Manage email domains for automatic org membership.
+avr-org-email-domain \- Claim and verify organization email domains.
 .SH SYNOPSIS
 .B avr org email-domain
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Manage email domains for automatic org membership.
+Claim and verify organization email domains.
 .PP
 .SH COMMANDS
 .TP
+claim
+Claim a company domain using DNS ownership verification (admin only).
+.TP
 list
-List email domains for automatic org membership (admin only).
+List claimed organization email domains (admin only).
 .TP
 set
 Set email domains for automatic org membership (admin only).
+.TP
+verify
+Check a claimed domain's DNS TXT record (admin only).
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-org (1),
@@ -21,5 +27,8 @@ Set email domains for automatic org membership (admin only).
 .BR avr-org-install (1),
 .BR avr-org-list (1),
 .BR avr-org-members (1),
+.BR avr-org-saml (1),
+.BR avr-org-email-domain-claim (1),
 .BR avr-org-email-domain-list (1),
-.BR avr-org-email-domain-set (1)
+.BR avr-org-email-domain-set (1),
+.BR avr-org-email-domain-verify (1)

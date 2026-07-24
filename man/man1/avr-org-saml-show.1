@@ -1,0 +1,36 @@
+.TH AVR\-ORG\-SAML\-SHOW 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml-show \- Show the current SAML configuration (admin only).
+.SH SYNOPSIS
+.B avr org saml show
+[OPTIONS]
+.SH DESCRIPTION
+Show the current SAML configuration (admin only).
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-saml (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-sp-metadata (1),
+.BR avr-org-saml-test (1)
