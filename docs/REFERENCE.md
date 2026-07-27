@@ -1757,20 +1757,25 @@ avr repo public-mirror check [OPTIONS] FULL_NAME
 FULL_NAME must be an owner/repository name. This performs an exact lookup;
 the global public-mirror catalog cannot be listed.
 
+A repository that is not mirrored is an answer, not a failure: the command
+reports ``Available: no`` (``available: false`` under --json) and exits 0.
+Only a real failure — denied, malformed name, server error — exits non-zero.
+
 ```sh
 Examples:
     avr repo public-mirror check rust-lang/rust
     avr repo public-mirror check rust-lang/rust --json '*'
-    avr repo public-mirror check rust-lang/rust --json repository_id,default_branch
+    avr repo public-mirror check rust-lang/rust --json available,default_branch
 ```
 
 ```sh
 JSON FIELDS
-    approval_state, default_branch, https_clone_url, installation_kind,
-    is_archived, is_disabled, is_fork, mirror_enabled, platform_owner_id,
-    platform_owner_login, platform_owner_type, platform_pushed_at,
-    platform_repository_id, platform_size_kb, public_access_expires_at,
-    public_metadata_verified_at, repository_full_name, repository_id
+    approval_state, available, default_branch, https_clone_url,
+    installation_kind, is_archived, is_disabled, is_fork, mirror_enabled,
+    platform_owner_id, platform_owner_login, platform_owner_type,
+    platform_pushed_at, platform_repository_id, platform_size_kb,
+    public_access_expires_at, public_metadata_verified_at,
+    repository_full_name, repository_id
 ```
 
 **Arguments**

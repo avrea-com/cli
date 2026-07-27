@@ -50,6 +50,9 @@ _PUBLIC_MIRROR_REQUEST_FIELDS = make_schema(
     "public_access_expires_at",
 )
 _PUBLIC_MIRROR_CATALOG_FIELDS = make_schema(
+    # Locally derived: false when the catalog lookup 404s. Every other field is
+    # null in that case, so this is the one field a script can always branch on.
+    "available",
     "repository_id",
     "platform_repository_id",
     "repository_full_name",
@@ -224,19 +227,24 @@ def public_mirror_check(ctx, full_name, json_fields, jq_expr):
     FULL_NAME must be an owner/repository name. This performs an exact lookup;
     the global public-mirror catalog cannot be listed.
 
+    A repository that is not mirrored is an answer, not a failure: the command
+    reports ``Available: no`` (``available: false`` under --json) and exits 0.
+    Only a real failure — denied, malformed name, server error — exits non-zero.
+
     \b
     Examples:
         avr repo public-mirror check rust-lang/rust
         avr repo public-mirror check rust-lang/rust --json '*'
-        avr repo public-mirror check rust-lang/rust --json repository_id,default_branch
+        avr repo public-mirror check rust-lang/rust --json available,default_branch
 
     \b
     JSON FIELDS
-        approval_state, default_branch, https_clone_url, installation_kind,
-        is_archived, is_disabled, is_fork, mirror_enabled, platform_owner_id,
-        platform_owner_login, platform_owner_type, platform_pushed_at,
-        platform_repository_id, platform_size_kb, public_access_expires_at,
-        public_metadata_verified_at, repository_full_name, repository_id
+        approval_state, available, default_branch, https_clone_url,
+        installation_kind, is_archived, is_disabled, is_fork, mirror_enabled,
+        platform_owner_id, platform_owner_login, platform_owner_type,
+        platform_pushed_at, platform_repository_id, platform_size_kb,
+        public_access_expires_at, public_metadata_verified_at,
+        repository_full_name, repository_id
     """
     if handle_json_meta(json_fields, jq_expr, _PUBLIC_MIRROR_CATALOG_FIELDS):
         return
@@ -248,15 +256,26 @@ def public_mirror_check(ctx, full_name, json_fields, jq_expr):
     try:
         mirror = client.public_get(_public_mirror_lookup_path(full_name))
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "check public-mirror availability")
+        if exc.response.status_code != 404:
+            handle_http_error(exc, "check public-mirror availability")
+        # 404 is the catalog saying "not mirrored" — the question was answered.
+        # Echo back the queried name so a --json consumer keeps the subject.
+        mirror = None
+
+    record = {"available": mirror is not None, **(mirror or {"repository_full_name": full_name})}
 
     if json_fields is not None:
         emit_json_record(
-            mirror,
+            record,
             split_fields(json_fields, _PUBLIC_MIRROR_CATALOG_FIELDS),
             _PUBLIC_MIRROR_CATALOG_FIELDS,
             jq_expr,
         )
+        return
+
+    if mirror is None:
+        click.echo(format_key_value({"Available": "no", "Repository": full_name}))
+        click.echo(f"\nHint: request one with `avr repo public-mirror request {full_name}`.", err=True)
         return
 
     click.echo(

@@ -2,6 +2,7 @@
 
 from avrea_cli.main import cli
 import json
+import re
 
 FLOW_RESPONSE = {
     "results": [
@@ -77,7 +78,10 @@ def test_flow_summaries_forwards_all_api_filters(runner, monkeypatch):
             "end_before": "2026-07-17T00:00:00Z",
         },
     }
-    assert "api.example.com" in result.output
+    # Anchored, not a bare `in`: a plain substring check also passes on
+    # "evil-api.example.com.attacker.test", and CodeQL flags it as incomplete
+    # URL sanitization. Match the destination as a whole host instead.
+    assert re.search(r"(?<![\w.-])api\.example\.com(?![\w.-])", result.output)
     assert "vm-rule-efr-test-deny(2 pkt)" in result.output
     assert "DNS:blocked.example.com(4)" in result.output
     assert "More results available. Re-run with --offset 6" in result.stderr

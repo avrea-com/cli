@@ -87,6 +87,74 @@ def test_check_json_projects_fields(runner, monkeypatch):
     assert json.loads(result.output) == {"repository_full_name": "rust-lang/rust", "mirror_enabled": True}
 
 
+def _raise_status(status, detail):
+    def mock_get(self, path, params=None):
+        request = httpx.Request("GET", "https://api.avrea.com" + path)
+        response = httpx.Response(status, request=request, json={"detail": detail})
+        raise httpx.HTTPStatusError(str(status), request=request, response=response)
+
+    return mock_get
+
+
+def test_check_reports_unavailable_instead_of_failing(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        _raise_status(404, "Public mirror not found"),
+    )
+
+    result = runner.invoke(cli, ["repo", "public-mirror", "check", "rust-lang/rust"])
+
+    assert result.exit_code == 0, result.output
+    assert "Available" in result.output
+    assert "no" in result.output
+    assert "rust-lang/rust" in result.output
+    assert "Error" not in result.output
+    assert "public-mirror request rust-lang/rust" in result.stderr
+
+
+def test_check_unavailable_json_sets_available_false(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        _raise_status(404, "Public mirror not found"),
+    )
+
+    result = runner.invoke(
+        cli,
+        ["repo", "public-mirror", "check", "rust-lang/rust", "--json", "available,repository_full_name,default_branch"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {
+        "available": False,
+        "repository_full_name": "rust-lang/rust",
+        "default_branch": None,
+    }
+
+
+def test_check_available_json_sets_available_true(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: SAMPLE_MIRROR.copy(),
+    )
+
+    result = runner.invoke(cli, ["repo", "public-mirror", "check", "rust-lang/rust", "--json", "available"])
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"available": True}
+
+
+def test_check_still_fails_on_non_404_errors(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        _raise_status(422, "Invalid GitHub repository name"),
+    )
+
+    result = runner.invoke(cli, ["repo", "public-mirror", "check", "rust-lang/rust"])
+
+    assert result.exit_code == 1
+    assert "Invalid GitHub repository name" in result.stderr
+
+
 def test_check_rejects_non_owner_repo_name_without_api_call(runner, monkeypatch):
     called = False
 
