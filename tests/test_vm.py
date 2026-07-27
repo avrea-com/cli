@@ -1331,3 +1331,174 @@ class TestTunnelHelpers:
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
         vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
         assert any("no SSH host key" in m for m in msgs)
+
+
+class TestVmBootstrapPlanning:
+    """Argument validation and the offline `--print` plan (no VM contact)."""
+
+    def test_ref_without_repo_errors(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--ref", "main"])
+        assert result.exit_code != 0
+        assert "--ref requires --repo" in result.output
+
+    def test_no_steps_errors(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1"])
+        assert result.exit_code != 0
+        assert "Nothing to do" in result.output
+
+    def test_unknown_agent_rejected(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--install", "gemini"])
+        assert result.exit_code != 0
+        assert "unknown agent" in result.output
+
+    def test_env_missing_local_var_rejected(self, runner, monkeypatch):
+        monkeypatch.delenv("DEFINITELY_UNSET_VAR", raising=False)
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--env", "DEFINITELY_UNSET_VAR"])
+        assert result.exit_code != 0
+        assert "not set in the local environment" in result.output
+
+    def test_env_bad_name_rejected(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--env", "not a name=x"])
+        assert result.exit_code != 0
+        assert "not a valid variable name" in result.output
+
+    def test_print_redacts_secrets_and_never_connects(self, runner, monkeypatch):
+        # --print must not fetch a gh token, hit the API, or touch SSH.
+        monkeypatch.setattr(
+            "avrea_cli.vm._local_gh_token",
+            lambda: (_ for _ in ()).throw(AssertionError("must not fetch a token in --print")),
+        )
+        seen = {"get": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: seen.__setitem__("get", seen["get"] + 1),
+        )
+        result = runner.invoke(
+            cli,
+            ["vm", "bootstrap", "cvm-1", "--setup-github", "--env", "MYKEY=supersecret", "--print"],
+        )
+        assert result.exit_code == 0, result.output
+        assert seen["get"] == 0  # never connected
+        assert "supersecret" not in result.output  # value rides stdin, redacted in the plan
+        assert "over stdin and is not shown" in result.output
+        assert "gh auth login --with-token" in result.output
+
+    def test_build_steps_order(self):
+        from avrea_cli.vm import _build_bootstrap_steps
+
+        steps = _build_bootstrap_steps(
+            env={"A": "1"},
+            setup_github=True,
+            gh_token="t",
+            repo_url="https://example.com/r",
+            repo_ref=None,
+            dotfiles_url="https://example.com/d",
+            agents=["claude"],
+            install_avr=True,
+            run_script="echo x",
+            redact=False,
+        )
+        assert [s.name for s in steps] == [
+            "env",
+            "github",
+            "repo",
+            "dotfiles",
+            "install-agents",
+            "install-avr",
+            "run",
+        ]
+
+    def test_env_values_ride_stdin_not_argv(self):
+        from avrea_cli.vm import _build_bootstrap_steps
+
+        steps = _build_bootstrap_steps(
+            env={"TOKEN": "s3cr3t"},
+            setup_github=False,
+            gh_token=None,
+            repo_url=None,
+            repo_ref=None,
+            dotfiles_url=None,
+            agents=[],
+            install_avr=False,
+            run_script=None,
+            redact=False,
+        )
+        (env_step,) = steps
+        assert "s3cr3t" in env_step.stdin  # value on stdin
+        assert "s3cr3t" not in env_step.script  # never in the script (argv)
+        assert env_step.secret is True
+
+
+class TestVmBootstrapRun:
+    """The real run path: readiness probe, ordered SSH steps, secret handling."""
+
+    def _patch_ssh(self, monkeypatch, calls, *, fail_step=False):
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: RUNNING_VM,
+        )
+
+        def fake_run_ssh(ssh_ep, command, *, identity_file=None, stdin_data=None, timeout=None, capture=True):
+            calls.append({"command": command, "stdin": stdin_data, "capture": capture})
+            rc = 3 if (fail_step and command != ["true"]) else 0
+            return SimpleNamespace(returncode=rc, stdout="", stderr="")
+
+        monkeypatch.setattr("avrea_cli.vm.run_ssh", fake_run_ssh)
+
+    def test_runs_steps_in_order_over_ssh(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.setattr("avrea_cli.vm._local_gh_token", lambda: "GHTOKEN")
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--setup-github", "--install", "claude"])
+        assert result.exit_code == 0, result.output
+
+        assert calls[0]["command"] == ["true"]  # SSH readiness probe first
+        steps = [c for c in calls if c["command"] != ["true"]]
+        assert len(steps) == 2
+        assert all(c["command"][:2] == ["bash", "-lc"] for c in steps)
+        assert all(c["capture"] is False for c in steps)  # steps stream live
+        gh = steps[0]
+        assert gh["stdin"] == "GHTOKEN"  # token rides stdin
+        assert "GHTOKEN" not in " ".join(gh["command"])  # never in argv
+
+    def test_step_failure_stops_and_names_step(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls, fail_step=True)
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install-avr"])
+        assert result.exit_code != 0
+        assert "install-avr" in result.output and "failed" in result.output
+        assert len(calls) == 2  # probe + the one failing step, then stop
+
+    def test_forward_agent_creds_ride_stdin(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-xyz")
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"])
+        assert result.exit_code == 0, result.output
+        steps = [c for c in calls if c["command"] != ["true"]]
+        # the env step (carrying the forwarded key) precedes the install step
+        env_call = steps[0]
+        assert "sk-ant-xyz" in (env_call["stdin"] or "")
+        assert "sk-ant-xyz" not in " ".join(env_call["command"])
+
+    def test_unreachable_ssh_surfaces_clear_error(self, runner, monkeypatch):
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: RUNNING_VM,
+        )
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        # Probe never succeeds.
+        monkeypatch.setattr(
+            "avrea_cli.vm.run_ssh",
+            lambda *a, **k: SimpleNamespace(returncode=255, stdout="", stderr=""),
+        )
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install-avr"])
+        assert result.exit_code != 0
+        assert "could not reach the VM over SSH" in result.output

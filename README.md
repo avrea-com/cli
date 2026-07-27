@@ -126,6 +126,21 @@ avr job metrics <job-id> --watch       # CPU/memory/IO gauges, refreshed every f
 avr job metrics <job-id>               # static post-mortem after the job ended
 ```
 
+**Long-running dev VMs**
+
+Durable, org-scoped VMs reachable over SSH (plus RDP/VNC for a desktop), separate from job VMs. Create one with your key, then set it up in a single command:
+
+```sh
+avr vm create --name dev --os linux --size 2-vcpu \
+  --ssh-key @~/.ssh/id_ed25519.pub --ephemeral --wait      # boot, wait for SSH, print connect
+avr vm bootstrap <vm-id> --setup-github --install claude,codex \
+  --repo https://github.com/org/project --env AWS_REGION=eu-north-1
+avr vm ssh <vm-id>                                          # host-key-pinned session (or: -- <cmd>)
+avr vm list ; avr vm stop <vm-id>                           # lifecycle
+```
+
+`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent keys) on stdin rather than argv. Disks are ephemeral, so re-run it after every `avr vm start`. For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive.
+
 **Cancel or rerun a run**
 
 ```sh
