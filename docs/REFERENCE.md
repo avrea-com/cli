@@ -608,18 +608,19 @@ avr vm show [OPTIONS] VM_ID
 
 #### `avr vm ssh`
 
-Open an SSH session to a RUNNING VM (or print the command with --print).
+Open an SSH session to a RUNNING VM, or run a command on it.
 
 ```sh
 avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...
 ```
 
-Resolves the VM's SSH endpoint and replaces this process with `ssh`.
-Extra options are passed through to ssh and placed before the destination,
-so port-forwarding and similar flags work. Use `--` to stop avr from
-interpreting them, e.g.:
+With no extra arguments this opens an interactive session. Anything after
+`--` is run as a remote command instead, e.g.:
 
-    avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+    avr vm ssh cvm-abc123 -- uname -a
+
+The VM's host key is pinned from its endpoint, so the first connect neither
+prompts nor is spoofable. For port-forwarding use `avr vm port-forward`.
 
 **Arguments**
 

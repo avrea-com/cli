@@ -837,44 +837,52 @@ RUNNING_VM = {
 
 
 class TestVmSsh:
-    def test_print_emits_command_without_exec(self, runner, monkeypatch):
+    def test_print_emits_command_without_running(self, runner, monkeypatch):
         called = {"n": 0}
-        monkeypatch.setattr("avrea_cli.vm.os.execvp", lambda *a: called.__setitem__("n", called["n"] + 1))
+        monkeypatch.setattr(
+            "avrea_cli.vm.subprocess.run",
+            lambda *a, **k: called.__setitem__("n", called["n"] + 1),
+        )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: RUNNING_VM,
         )
         result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--print"])
         assert result.exit_code == 0
-        assert result.output.strip() == "ssh -p 30022 runner@203.0.113.1"
-        assert called["n"] == 0  # never exec'd
+        # printed form uses accept-new since it can't reference the temp known_hosts
+        assert result.output.strip() == "ssh -p 30022 -o StrictHostKeyChecking=accept-new runner@203.0.113.1"
+        assert called["n"] == 0  # never ran ssh
 
-    def test_exec_builds_argv_with_identity_and_passthrough(self, runner, monkeypatch):
+    def test_runs_remote_command_after_destination_with_pinned_host_key(self, runner, monkeypatch):
+        from pathlib import Path
+        from types import SimpleNamespace
+
         captured = {}
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: Path("/tmp/kh"))
         monkeypatch.setattr(
-            "avrea_cli.vm.os.execvp",
-            lambda file, argv: captured.update(file=file, argv=argv),
+            "avrea_cli.vm.subprocess.run",
+            lambda argv, **k: captured.update(argv=argv) or SimpleNamespace(returncode=0),
         )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: RUNNING_VM,
         )
-        result = runner.invoke(
-            cli,
-            ["vm", "ssh", "cvm-abc123", "-i", "/tmp/key", "--", "-L", "8080:localhost:80"],
-        )
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "-i", "/tmp/key", "--", "uname", "-a"])
         assert result.exit_code == 0
-        assert captured["file"] == "ssh"
-        # generated options first, passthrough next, destination last
+        # host key pinned; the remote command lands after the destination
         assert captured["argv"] == [
             "ssh",
             "-i",
             "/tmp/key",
             "-p",
             "30022",
-            "-L",
-            "8080:localhost:80",
+            "-o",
+            f"UserKnownHostsFile={Path('/tmp/kh')}",
+            "-o",
+            "StrictHostKeyChecking=yes",
             "runner@203.0.113.1",
+            "uname",
+            "-a",
         ]
 
     def test_no_endpoint_yet_errors(self, runner, monkeypatch):
@@ -1151,6 +1159,74 @@ class TestTunnelHelpers:
 
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 30022) == "[1.2.3.4]:30022 ssh-ed25519 AAAA\n"
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 22) == "1.2.3.4 ssh-ed25519 AAAA\n"
+
+    def test_ssh_connect_argv_pins_host_key(self):
+        from avrea_cli.vm import _ssh_connect_argv
+        from pathlib import Path
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        kh = Path("/tmp/kh")
+        argv = _ssh_connect_argv(ep, identity_file="/tmp/key", known_hosts=kh)
+        assert argv == [
+            "ssh",
+            "-i",
+            "/tmp/key",
+            "-p",
+            "30022",
+            "-o",
+            f"UserKnownHostsFile={kh}",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "runner@203.0.113.1",
+        ]
+
+    def test_ssh_connect_argv_accept_new_without_key(self):
+        from avrea_cli.vm import _ssh_connect_argv
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        argv = _ssh_connect_argv(ep, identity_file=None, known_hosts=None)
+        assert argv == ["ssh", "-p", "30022", "-o", "StrictHostKeyChecking=accept-new", "runner@203.0.113.1"]
+
+    def test_run_ssh_places_command_after_destination_and_feeds_stdin(self, monkeypatch):
+        from avrea_cli.vm import run_ssh
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        captured = {}
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: Path("/tmp/kh"))
+
+        def fake_run(argv, **kwargs):
+            captured["argv"] = argv
+            captured["input"] = kwargs.get("input")
+            return SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+        monkeypatch.setattr("avrea_cli.vm.subprocess.run", fake_run)
+
+        ep = {
+            "external_ip": "203.0.113.1",
+            "external_port": 30022,
+            "username": "runner",
+            "host_key": "ssh-ed25519 AAAA",
+        }
+        result = run_ssh(ep, ["bash", "-s"], stdin_data="echo hi")
+        assert result.returncode == 0
+        assert captured["input"] == "echo hi"  # secrets ride stdin, not argv
+        assert captured["argv"] == [
+            "ssh",
+            "-p",
+            "30022",
+            "-o",
+            f"UserKnownHostsFile={Path('/tmp/kh')}",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=15",
+            "runner@203.0.113.1",
+            "bash",
+            "-s",
+        ]
 
     def test_rdp_launch_argv_per_platform(self):
         from avrea_cli.vm import _rdp_launch_argv

@@ -29,6 +29,7 @@ import httpx
 import json
 import os
 import shlex
+import signal
 import socket
 import subprocess
 import sys
@@ -743,52 +744,47 @@ def vm_show(ctx, vm_id, org_id, as_json):
 @click.option("--print", "print_only", is_flag=True, help="Print the ssh command instead of running it.")
 @click.pass_context
 def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
-    """Open an SSH session to a RUNNING VM (or print the command with --print).
+    """Open an SSH session to a RUNNING VM, or run a command on it.
 
-    Resolves the VM's SSH endpoint and replaces this process with `ssh`.
-    Extra options are passed through to ssh and placed before the destination,
-    so port-forwarding and similar flags work. Use `--` to stop avr from
-    interpreting them, e.g.:
+    With no extra arguments this opens an interactive session. Anything after
+    `--` is run as a remote command instead, e.g.:
 
-        avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+        avr vm ssh cvm-abc123 -- uname -a
+
+    The VM's host key is pinned from its endpoint, so the first connect neither
+    prompts nor is spoofable. For port-forwarding use `avr vm port-forward`.
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
 
-    try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
-
-    data = response["data"]
-    ssh = (data.get("endpoints") or {}).get("ssh")
-    if not ssh:
-        raise click.ClickException(
-            f"VM {vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
-            "Endpoints appear once the VM is RUNNING; check `avr vm show`."
-        )
-
-    argv = ["ssh"]
-    if identity_file:
-        argv += ["-i", identity_file]
-    port = ssh.get("external_port")
-    if port:
-        argv += ["-p", str(port)]
-    argv += list(ssh_args)
-    username = ssh.get("username")
-    host = ssh.get("external_ip")
-    argv.append(f"{username}@{host}" if username else host)
+    ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
 
     if print_only:
+        # The real run pins the host key via an ephemeral known_hosts file that
+        # a pasted command can't reference, so the printed form uses accept-new.
+        argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=None)
+        argv += list(ssh_args)
         click.echo(" ".join(shlex.quote(arg) for arg in argv))
         return
 
+    known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
+    argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=known_hosts)
+    argv += list(ssh_args)  # remote command after the destination; empty is interactive
+
+    # Ignore SIGINT in the parent so Ctrl-C reaches the ssh child (and the
+    # remote session), not this process.
+    previous_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
-        os.execvp("ssh", argv)
+        completed = subprocess.run(argv)
     except OSError as exc:  # ssh not on PATH, etc.
         raise click.ClickException(f"failed to launch ssh: {exc}") from exc
+    finally:
+        signal.signal(signal.SIGINT, previous_sigint)
+        if known_hosts is not None:
+            known_hosts.unlink(missing_ok=True)
+    sys.exit(completed.returncode)
 
 
 @vm.command("update")
@@ -1161,6 +1157,77 @@ def _write_known_hosts(host_key: str | None, external_ip: str, external_port: in
     with os.fdopen(fd, "w") as handle:
         handle.write(_known_hosts_line(host_key, external_ip, external_port))
     return Path(name)
+
+
+def _resolve_ssh_endpoint(client: ApiClient, org_id: str, vm_id: str) -> dict[str, Any]:
+    """Fetch the VM and return its SSH endpoint, raising if it has none yet
+    (endpoints appear once the VM is RUNNING)."""
+    try:
+        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
+
+    data = response["data"]
+    ssh_ep = (data.get("endpoints") or {}).get("ssh")
+    if not ssh_ep:
+        raise click.ClickException(
+            f"VM {vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
+            "Endpoints appear once the VM is RUNNING; check `avr vm show`."
+        )
+    return ssh_ep
+
+
+def _ssh_connect_argv(
+    ssh_ep: dict[str, Any],
+    *,
+    identity_file: str | None,
+    known_hosts: Path | None,
+    extra_opts: tuple[str, ...] = (),
+) -> list[str]:
+    """The ssh argv connecting to the endpoint, up to and including the
+    destination. Pins the endpoint's host key when present (first connect
+    neither prompts nor is spoofable); otherwise accept-new so ssh never blocks
+    on a prompt. A remote command, if any, goes after the returned argv."""
+    argv = ["ssh"]
+    if identity_file:
+        argv += ["-i", identity_file]
+    argv += ["-p", str(ssh_ep["external_port"])]
+    if known_hosts is not None:
+        argv += ["-o", f"UserKnownHostsFile={known_hosts}", "-o", "StrictHostKeyChecking=yes"]
+    else:
+        argv += ["-o", "StrictHostKeyChecking=accept-new"]
+    argv += list(extra_opts)
+    argv.append(f"{ssh_ep.get('username') or 'runner'}@{ssh_ep['external_ip']}")
+    return argv
+
+
+def run_ssh(
+    ssh_ep: dict[str, Any],
+    command: list[str],
+    *,
+    identity_file: str | None = None,
+    stdin_data: str | None = None,
+    timeout: float | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run ``command`` on the VM over SSH, non-interactively, host key pinned.
+
+    Returns the CompletedProcess with stdout/stderr captured as text. Feed
+    secrets via ``stdin_data``, never through ``command``: argv is visible to
+    ``ps`` on the VM. ``BatchMode=yes`` makes auth or host-key failures fail
+    fast rather than hang on a prompt."""
+    known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
+    try:
+        argv = _ssh_connect_argv(
+            ssh_ep,
+            identity_file=identity_file,
+            known_hosts=known_hosts,
+            extra_opts=("-o", "BatchMode=yes", "-o", "ConnectTimeout=15"),
+        )
+        argv += command
+        return subprocess.run(argv, input=stdin_data, capture_output=True, text=True, timeout=timeout)
+    finally:
+        if known_hosts is not None:
+            known_hosts.unlink(missing_ok=True)
 
 
 def _ssh_tunnel_argv(

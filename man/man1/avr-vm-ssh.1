@@ -1,15 +1,17 @@
 .TH AVR\-VM\-SSH 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-vm-ssh \- Open an SSH session to a RUNNING VM (or print the command with --print).
+avr-vm-ssh \- Open an SSH session to a RUNNING VM, or run a command on it.
 .SH SYNOPSIS
 .B avr vm ssh
 [OPTIONS] VM_ID [SSH_ARGS]...
 .SH DESCRIPTION
-Open an SSH session to a RUNNING VM (or print the command with --print).
+Open an SSH session to a RUNNING VM, or run a command on it.
 .PP
-Resolves the VM's SSH endpoint and replaces this process with `ssh`. Extra options are passed through to ssh and placed before the destination, so port-forwarding and similar flags work. Use `--` to stop avr from interpreting them, e.g.:
+With no extra arguments this opens an interactive session. Anything after `--` is run as a remote command instead, e.g.:
 .PP
-avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+avr vm ssh cvm-abc123 -- uname -a
+.PP
+The VM's host key is pinned from its endpoint, so the first connect neither prompts nor is spoofable. For port-forwarding use `avr vm port-forward`.
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR
