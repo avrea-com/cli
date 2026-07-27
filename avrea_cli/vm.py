@@ -770,6 +770,14 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
         return
 
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
+    if known_hosts is None:
+        # Same fallback the tunnel path surfaces: without a host key we can't pin,
+        # so ssh accepts the key on first use. Say so rather than doing it silently.
+        click.echo(
+            "Warning: this VM's endpoint has no SSH host key; the connection falls back to "
+            "trust-on-first-use instead of pinning.",
+            err=True,
+        )
     argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=known_hosts)
     argv += list(ssh_args)  # remote command after the destination; empty is interactive
 

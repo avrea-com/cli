@@ -895,6 +895,31 @@ class TestVmSsh:
         assert "no SSH endpoint yet" in result.output
         assert "PENDING" in result.output
 
+    def test_warns_when_endpoint_has_no_host_key(self, runner, monkeypatch):
+        # An endpoint without a host key can't be pinned, so ssh accepts on first
+        # use. That fallback must be surfaced, not silent (parity with the tunnel).
+        from types import SimpleNamespace
+
+        keyless = {
+            "data": {
+                **SAMPLE_VM,
+                "state": "RUNNING",
+                "endpoints": {
+                    "ssh": {
+                        "protocol": "ssh",
+                        "external_ip": "203.0.113.1",
+                        "external_port": 30022,
+                        "username": "runner",
+                    }
+                },
+            }
+        }
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: keyless)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.run", lambda *a, **k: SimpleNamespace(returncode=0))
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "no SSH host key" in result.output
+
 
 class TestVmConnectLine:
     """The ready-to-paste `Connect` line printed under `Remote desktop  yes`."""
