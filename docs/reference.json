@@ -7681,14 +7681,107 @@
             ],
             "full": "avr org email-domain",
             "is_group": true,
-            "short_help": "Manage email domains for automatic org membership.",
-            "help": "Manage email domains for automatic org membership.",
+            "short_help": "Claim and verify organization email domains.",
+            "help": "Claim and verify organization email domains.",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
             "usage": "avr org email-domain [OPTIONS] COMMAND [ARGS]...",
             "params": [],
             "subcommands": [
+              {
+                "name": "claim",
+                "path": [
+                  "avr",
+                  "org",
+                  "email-domain",
+                  "claim"
+                ],
+                "full": "avr org email-domain claim",
+                "is_group": false,
+                "short_help": "Claim a company domain using DNS ownership verification (admin only).",
+                "help": "Claim a company domain using DNS ownership verification (admin only).\n\nThe domain does not need to match your GitHub or Avrea account email.\nPublish the returned TXT record, then run ``email-domain verify``.\n\n\b\nExamples:\n    avr org email-domain claim example.com\n    avr org email-domain claim corp.example.com --org acme\n\n\b\nJSON FIELDS\n    created_at, dns_record_name, dns_record_value, domain,\n    organization_email_domain_id, verified, verified_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org email-domain claim [OPTIONS] DOMAIN",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "domain",
+                    "kind": "argument",
+                    "opts": [
+                      "domain"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
               {
                 "name": "list",
                 "path": [
@@ -7699,8 +7792,8 @@
                 ],
                 "full": "avr org email-domain list",
                 "is_group": false,
-                "short_help": "List email domains for automatic org membership (admin only).",
-                "help": "List email domains for automatic org membership (admin only).\n\n\b\nJSON FIELDS\n    created_at, domain, organization_email_domain_id\n",
+                "short_help": "List claimed organization email domains (admin only).",
+                "help": "List claimed organization email domains (admin only).\n\n\b\nJSON FIELDS\n    created_at, dns_record_name, dns_record_value, domain,\n    organization_email_domain_id, verified, verified_at\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
@@ -7832,6 +7925,99 @@
                     "is_flag": false,
                     "envvar": null,
                     "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "verify",
+                "path": [
+                  "avr",
+                  "org",
+                  "email-domain",
+                  "verify"
+                ],
+                "full": "avr org email-domain verify",
+                "is_group": false,
+                "short_help": "Check a claimed domain's DNS TXT record (admin only).",
+                "help": "Check a claimed domain's DNS TXT record (admin only).\n\nEach invocation performs a fresh DNS lookup. If DNS has not propagated,\nwait and run the command again.\n\n\b\nExamples:\n    avr org email-domain verify example.com\n    avr org email-domain verify corp.example.com --org acme\n\n\b\nJSON FIELDS\n    created_at, dns_record_name, dns_record_value, domain,\n    organization_email_domain_id, verified, verified_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org email-domain verify [OPTIONS] DOMAIN",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "domain",
+                    "kind": "argument",
+                    "opts": [
+                      "domain"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -8195,6 +8381,580 @@
               }
             ],
             "subcommands": []
+          },
+          {
+            "name": "saml",
+            "path": [
+              "avr",
+              "org",
+              "saml"
+            ],
+            "full": "avr org saml",
+            "is_group": true,
+            "short_help": "Configure SAML single sign-on for an organization.",
+            "help": "Configure SAML single sign-on for an organization.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr org saml [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "configure",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "configure"
+                ],
+                "full": "avr org saml configure",
+                "is_group": false,
+                "short_help": "Create or replace SAML configuration from IdP metadata (admin only).",
+                "help": "Create or replace SAML configuration from IdP metadata (admin only).\n\nMETADATA is an IdP metadata XML file; pass - to read it from stdin.\nReconfiguring requires the complete metadata document again.\n\n\b\nExamples:\n    avr org saml configure idp-metadata.xml\n    cat idp-metadata.xml | avr org saml configure - --org acme\n    avr org saml configure idp.xml --email-attribute mail \\\n        --given-name-attribute firstName --family-name-attribute lastName\n\n\b\nJSON FIELDS\n    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,\n    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,\n    idp_sso_url, is_enforced, jit_provisioning, name_id_format,\n    organization_id, organization_saml_config_id, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml configure [OPTIONS] METADATA",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "attr_email",
+                    "kind": "option",
+                    "opts": [
+                      "--email-attribute",
+                      "--attr-email"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "IdP attribute carrying the member email.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "email"
+                  },
+                  {
+                    "name": "attr_given_name",
+                    "kind": "option",
+                    "opts": [
+                      "--given-name-attribute",
+                      "--attr-given-name"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "IdP given-name attribute.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "attr_family_name",
+                    "kind": "option",
+                    "opts": [
+                      "--family-name-attribute",
+                      "--attr-family-name"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "IdP family-name attribute.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "attr_groups",
+                    "kind": "option",
+                    "opts": [
+                      "--groups-attribute",
+                      "--attr-groups"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "IdP groups attribute.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "default_role",
+                    "kind": "option",
+                    "opts": [
+                      "--default-role"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Role assigned to JIT-provisioned members.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "user",
+                    "choices": [
+                      "user",
+                      "admin",
+                      "billing_admin"
+                    ]
+                  },
+                  {
+                    "name": "jit_provisioning",
+                    "kind": "option",
+                    "opts": [
+                      "--jit-provisioning"
+                    ],
+                    "secondary_opts": [
+                      "--no-jit-provisioning"
+                    ],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Allow SAML to provision new members.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": true
+                  },
+                  {
+                    "name": "allow_idp_initiated",
+                    "kind": "option",
+                    "opts": [
+                      "--allow-idp-initiated"
+                    ],
+                    "secondary_opts": [
+                      "--no-allow-idp-initiated"
+                    ],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Allow sign-in initiated from the IdP.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": false
+                  },
+                  {
+                    "name": "metadata",
+                    "kind": "argument",
+                    "opts": [
+                      "metadata"
+                    ],
+                    "secondary_opts": [],
+                    "type": "filename",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "enforcement",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "enforcement"
+                ],
+                "full": "avr org saml enforcement",
+                "is_group": false,
+                "short_help": "Enable or disable mandatory SAML sign-in (admin only).",
+                "help": "Enable or disable mandatory SAML sign-in (admin only).\n\nEnabling requires a configured SAML connection and at least one verified\ncompany domain.\n\n\b\nExamples:\n    avr org saml enforcement on\n    avr org saml enforcement off --org acme\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml enforcement [OPTIONS] {on|off}",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "state",
+                    "kind": "argument",
+                    "opts": [
+                      "state"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null,
+                    "choices": [
+                      "on",
+                      "off"
+                    ]
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "remove",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "remove"
+                ],
+                "full": "avr org saml remove",
+                "is_group": false,
+                "short_help": "Remove the organization's SAML configuration (admin only).",
+                "help": "Remove the organization's SAML configuration (admin only).\n\nPass --yes to skip the confirmation prompt (required when prompts are\ndisabled for automation).\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml remove [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "confirmed",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "show",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "show"
+                ],
+                "full": "avr org saml show",
+                "is_group": false,
+                "short_help": "Show the current SAML configuration (admin only).",
+                "help": "Show the current SAML configuration (admin only).\n\n\b\nJSON FIELDS\n    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,\n    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,\n    idp_sso_url, is_enforced, jit_provisioning, name_id_format,\n    organization_id, organization_saml_config_id, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml show [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "sp-metadata",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "sp-metadata"
+                ],
+                "full": "avr org saml sp-metadata",
+                "is_group": false,
+                "short_help": "Print Avrea's SAML service-provider metadata XML.",
+                "help": "Print Avrea's SAML service-provider metadata XML.\n\nRedirect stdout to a file for import into your identity provider.\n\n\b\nExamples:\n    avr org saml sp-metadata > avrea-sp.xml\n    avr org saml sp-metadata --org acme\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml sp-metadata [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "test",
+                "path": [
+                  "avr",
+                  "org",
+                  "saml",
+                  "test"
+                ],
+                "full": "avr org saml test",
+                "is_group": false,
+                "short_help": "Test the SAML connection in a browser (admin only).",
+                "help": "Test the SAML connection in a browser (admin only).\n\nThe test performs a real IdP sign-in and displays the parsed assertion\nwithout creating a new Avrea session.\n\n\b\nExamples:\n    avr org saml test\n    avr org saml test --org acme --no-browser\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org saml test [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "no_browser",
+                    "kind": "option",
+                    "opts": [
+                      "--no-browser"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Print the test URL without opening a browser.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
           }
         ]
       },

@@ -1732,15 +1732,48 @@ JSON FIELDS
 
 #### `avr org email-domain`
 
-Manage email domains for automatic org membership.
+Claim and verify organization email domains.
 
 ```sh
 avr org email-domain [OPTIONS] COMMAND [ARGS]...
 ```
 
+##### `avr org email-domain claim`
+
+Claim a company domain using DNS ownership verification (admin only).
+
+```sh
+avr org email-domain claim [OPTIONS] DOMAIN
+```
+
+The domain does not need to match your GitHub or Avrea account email.
+Publish the returned TXT record, then run ``email-domain verify``.
+
+```sh
+Examples:
+    avr org email-domain claim example.com
+    avr org email-domain claim corp.example.com --org acme
+```
+
+```sh
+JSON FIELDS
+    created_at, dns_record_name, dns_record_value, domain,
+    organization_email_domain_id, verified, verified_at
+```
+
+**Arguments**
+
+- `DOMAIN`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ##### `avr org email-domain list`
 
-List email domains for automatic org membership (admin only).
+List claimed organization email domains (admin only).
 
 ```sh
 avr org email-domain list [OPTIONS]
@@ -1748,7 +1781,8 @@ avr org email-domain list [OPTIONS]
 
 ```sh
 JSON FIELDS
-    created_at, domain, organization_email_domain_id
+    created_at, dns_record_name, dns_record_value, domain,
+    organization_email_domain_id, verified, verified_at
 ```
 
 **Options**
@@ -1783,6 +1817,39 @@ Examples:
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip confirmation prompt.
+
+##### `avr org email-domain verify`
+
+Check a claimed domain's DNS TXT record (admin only).
+
+```sh
+avr org email-domain verify [OPTIONS] DOMAIN
+```
+
+Each invocation performs a fresh DNS lookup. If DNS has not propagated,
+wait and run the command again.
+
+```sh
+Examples:
+    avr org email-domain verify example.com
+    avr org email-domain verify corp.example.com --org acme
+```
+
+```sh
+JSON FIELDS
+    created_at, dns_record_name, dns_record_value, domain,
+    organization_email_domain_id, verified, verified_at
+```
+
+**Arguments**
+
+- `DOMAIN`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 #### `avr org install`
 
@@ -1892,6 +1959,165 @@ JSON FIELDS
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr org saml`
+
+Configure SAML single sign-on for an organization.
+
+```sh
+avr org saml [OPTIONS] COMMAND [ARGS]...
+```
+
+##### `avr org saml configure`
+
+Create or replace SAML configuration from IdP metadata (admin only).
+
+```sh
+avr org saml configure [OPTIONS] METADATA
+```
+
+METADATA is an IdP metadata XML file; pass - to read it from stdin.
+Reconfiguring requires the complete metadata document again.
+
+```sh
+Examples:
+    avr org saml configure idp-metadata.xml
+    cat idp-metadata.xml | avr org saml configure - --org acme
+    avr org saml configure idp.xml --email-attribute mail \
+        --given-name-attribute firstName --family-name-attribute lastName
+```
+
+```sh
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+```
+
+**Arguments**
+
+- `METADATA`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--email-attribute, --attr-email <TEXT>` — IdP attribute carrying the member email. _(default: `email`)_
+- `--given-name-attribute, --attr-given-name <TEXT>` — IdP given-name attribute.
+- `--family-name-attribute, --attr-family-name <TEXT>` — IdP family-name attribute.
+- `--groups-attribute, --attr-groups <TEXT>` — IdP groups attribute.
+- `--default-role <CHOICE>` — Role assigned to JIT-provisioned members. _(choices: `user`, `admin`, `billing_admin` · default: `user`)_
+- `--jit-provisioning / --no-jit-provisioning` — Allow SAML to provision new members. _(default: `True`)_
+- `--allow-idp-initiated / --no-allow-idp-initiated` — Allow sign-in initiated from the IdP.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org saml enforcement`
+
+Enable or disable mandatory SAML sign-in (admin only).
+
+```sh
+avr org saml enforcement [OPTIONS] {on|off}
+```
+
+Enabling requires a configured SAML connection and at least one verified
+company domain.
+
+```sh
+Examples:
+    avr org saml enforcement on
+    avr org saml enforcement off --org acme
+```
+
+**Arguments**
+
+- `STATE` _(choices: `on`, `off`)_
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org saml remove`
+
+Remove the organization's SAML configuration (admin only).
+
+```sh
+avr org saml remove [OPTIONS]
+```
+
+Pass --yes to skip the confirmation prompt (required when prompts are
+disabled for automation).
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip confirmation prompt.
+
+##### `avr org saml show`
+
+Show the current SAML configuration (admin only).
+
+```sh
+avr org saml show [OPTIONS]
+```
+
+```sh
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org saml sp-metadata`
+
+Print Avrea's SAML service-provider metadata XML.
+
+```sh
+avr org saml sp-metadata [OPTIONS]
+```
+
+Redirect stdout to a file for import into your identity provider.
+
+```sh
+Examples:
+    avr org saml sp-metadata > avrea-sp.xml
+    avr org saml sp-metadata --org acme
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+
+##### `avr org saml test`
+
+Test the SAML connection in a browser (admin only).
+
+```sh
+avr org saml test [OPTIONS]
+```
+
+The test performs a real IdP sign-in and displays the parsed assertion
+without creating a new Avrea session.
+
+```sh
+Examples:
+    avr org saml test
+    avr org saml test --org acme --no-browser
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--no-browser` — Print the test URL without opening a browser.
 
 ### `avr health`
 

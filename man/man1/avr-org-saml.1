@@ -1,0 +1,42 @@
+.TH AVR\-ORG\-SAML 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-org-saml \- Configure SAML single sign-on for an organization.
+.SH SYNOPSIS
+.B avr org saml
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Configure SAML single sign-on for an organization.
+.PP
+.SH COMMANDS
+.TP
+configure
+Create or replace SAML configuration from IdP metadata (admin only).
+.TP
+enforcement
+Enable or disable mandatory SAML sign-in (admin only).
+.TP
+remove
+Remove the organization's SAML configuration (admin only).
+.TP
+show
+Show the current SAML configuration (admin only).
+.TP
+sp-metadata
+Print Avrea's SAML service-provider metadata XML.
+.TP
+test
+Test the SAML connection in a browser (admin only).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org (1),
+.BR avr-org-create (1),
+.BR avr-org-email-domain (1),
+.BR avr-org-install (1),
+.BR avr-org-list (1),
+.BR avr-org-members (1),
+.BR avr-org-saml-configure (1),
+.BR avr-org-saml-enforcement (1),
+.BR avr-org-saml-remove (1),
+.BR avr-org-saml-show (1),
+.BR avr-org-saml-sp-metadata (1),
+.BR avr-org-saml-test (1)
