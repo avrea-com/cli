@@ -1,0 +1,53 @@
+.TH AVR\-REPO\-PUBLIC\-MIRROR\-REQUEST 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-public-mirror-request \- Request a mirror of a public GitHub repository.
+.SH SYNOPSIS
+.B avr repo public-mirror request
+[OPTIONS] FULL_NAME
+.SH DESCRIPTION
+Request a mirror of a public GitHub repository.
+.PP
+FULL_NAME is the canonical GitHub owner/repository name. Avrea validates the repository with GitHub before recording the request.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo public-mirror request rust-lang/rust
+    avr repo public-mirror request rust-lang/rust --reason "Build dependency"
+    avr repo public-mirror request rust-lang/rust --org acme --json '*'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    approval_state, created_at, github_snapshot, public_access_expires_at,
+    reason, repository_full_name, repository_id, request_id,
+    requester_organization_id, requester_user_id, review_note, reviewed_at,
+    reviewed_by_user_id, status, updated_at
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIFULL_NAME\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-reason\fR \fITEXT\fR
+Why your organization needs this repository mirrored.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-public-mirror (1),
+.BR avr-repo-public-mirror-cancel (1),
+.BR avr-repo-public-mirror-check (1),
+.BR avr-repo-public-mirror-requests (1),
+.BR avr-repo-public-mirror-view (1)

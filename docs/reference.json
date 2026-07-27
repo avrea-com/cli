@@ -5906,7 +5906,7 @@
             "full": "avr firewall flow-summaries",
             "is_group": false,
             "short_help": "Show per-VM network activity summaries captured at VM stop.",
-            "help": "Show per-VM network activity summaries captured at VM stop.\n\nEach row is the totals + top-N destinations + per-rule drop counters\nfor one VM run. Use ``--with-drops`` to triage what the firewall\nblocked after editing a rule, ``--vm`` to look up a specific run from\na job log.\n",
+            "help": "Show per-VM network activity summaries captured at VM stop.\n\nEach row is the totals + top-N destinations + per-rule drop counters\nfor one VM run. Use ``--with-drops`` to triage what the firewall\nblocked after editing a rule or ``--job`` to include every execution\nattempt for a job.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -5949,10 +5949,11 @@
                 "default": null
               },
               {
-                "name": "vm_id",
+                "name": "job_id",
                 "kind": "option",
                 "opts": [
-                  "--vm"
+                  "--job",
+                  "--job-id"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5961,7 +5962,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter to a single VM ID.",
+                "help": "Filter to every VM execution attempt for a job ID.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6002,6 +6003,62 @@
                 "hidden": false,
                 "show_default": true,
                 "default": 20
+              },
+              {
+                "name": "offset",
+                "kind": "option",
+                "opts": [
+                  "--offset"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Number of summaries to skip.",
+                "hidden": false,
+                "show_default": true,
+                "default": 0
+              },
+              {
+                "name": "start_after",
+                "kind": "option",
+                "opts": [
+                  "--from",
+                  "--start-after"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Only include summaries that started at or after this ISO-8601 timestamp.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "end_before",
+                "kind": "option",
+                "opts": [
+                  "--to",
+                  "--end-before"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Only include summaries that ended at or before this ISO-8601 timestamp.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               },
               {
                 "name": "as_json",
@@ -7479,8 +7536,8 @@
         ],
         "full": "avr repo",
         "is_group": true,
-        "short_help": "List repositories connected to Avrea.",
-        "help": "List repositories connected to Avrea.",
+        "short_help": "Manage repositories and public mirrors.",
+        "help": "Manage repositories and public mirrors.",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -7579,6 +7636,491 @@
               }
             ],
             "subcommands": []
+          },
+          {
+            "name": "public-mirror",
+            "path": [
+              "avr",
+              "repo",
+              "public-mirror"
+            ],
+            "full": "avr repo public-mirror",
+            "is_group": true,
+            "short_help": "Request and browse mirrors of public GitHub repositories.",
+            "help": "Request and browse mirrors of public GitHub repositories.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr repo public-mirror [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "cancel",
+                "path": [
+                  "avr",
+                  "repo",
+                  "public-mirror",
+                  "cancel"
+                ],
+                "full": "avr repo public-mirror cancel",
+                "is_group": false,
+                "short_help": "Cancel one pending public-mirror request.",
+                "help": "Cancel one pending public-mirror request.\n\nAn approved mirror is global and cannot be withdrawn by a requester.\n\n\b\nExamples:\n    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef\n    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef --yes\n\n\b\nJSON FIELDS\n    approval_state, created_at, github_snapshot, public_access_expires_at,\n    reason, repository_full_name, repository_id, request_id,\n    requester_organization_id, requester_user_id, review_note, reviewed_at,\n    reviewed_by_user_id, status, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo public-mirror cancel [OPTIONS] REQUEST_ID",
+                "params": [
+                  {
+                    "name": "request_id",
+                    "kind": "argument",
+                    "opts": [
+                      "request_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip the confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "check",
+                "path": [
+                  "avr",
+                  "repo",
+                  "public-mirror",
+                  "check"
+                ],
+                "full": "avr repo public-mirror check",
+                "is_group": false,
+                "short_help": "Check whether a public GitHub repository mirror is available.",
+                "help": "Check whether a public GitHub repository mirror is available.\n\nFULL_NAME must be an owner/repository name. This performs an exact lookup;\nthe global public-mirror catalog cannot be listed.\n\n\b\nExamples:\n    avr repo public-mirror check rust-lang/rust\n    avr repo public-mirror check rust-lang/rust --json '*'\n    avr repo public-mirror check rust-lang/rust --json repository_id,default_branch\n\n\b\nJSON FIELDS\n    approval_state, default_branch, https_clone_url, installation_kind,\n    is_archived, is_disabled, is_fork, mirror_enabled, platform_owner_id,\n    platform_owner_login, platform_owner_type, platform_pushed_at,\n    platform_repository_id, platform_size_kb, public_access_expires_at,\n    public_metadata_verified_at, repository_full_name, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo public-mirror check [OPTIONS] FULL_NAME",
+                "params": [
+                  {
+                    "name": "full_name",
+                    "kind": "argument",
+                    "opts": [
+                      "full_name"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "request",
+                "path": [
+                  "avr",
+                  "repo",
+                  "public-mirror",
+                  "request"
+                ],
+                "full": "avr repo public-mirror request",
+                "is_group": false,
+                "short_help": "Request a mirror of a public GitHub repository.",
+                "help": "Request a mirror of a public GitHub repository.\n\nFULL_NAME is the canonical GitHub owner/repository name. Avrea validates\nthe repository with GitHub before recording the request.\n\n\b\nExamples:\n    avr repo public-mirror request rust-lang/rust\n    avr repo public-mirror request rust-lang/rust --reason \"Build dependency\"\n    avr repo public-mirror request rust-lang/rust --org acme --json '*'\n\n\b\nJSON FIELDS\n    approval_state, created_at, github_snapshot, public_access_expires_at,\n    reason, repository_full_name, repository_id, request_id,\n    requester_organization_id, requester_user_id, review_note, reviewed_at,\n    reviewed_by_user_id, status, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo public-mirror request [OPTIONS] FULL_NAME",
+                "params": [
+                  {
+                    "name": "full_name",
+                    "kind": "argument",
+                    "opts": [
+                      "full_name"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "reason",
+                    "kind": "option",
+                    "opts": [
+                      "--reason"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Why your organization needs this repository mirrored.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "requests",
+                "path": [
+                  "avr",
+                  "repo",
+                  "public-mirror",
+                  "requests"
+                ],
+                "full": "avr repo public-mirror requests",
+                "is_group": false,
+                "short_help": "List your organization's public-mirror requests.",
+                "help": "List your organization's public-mirror requests.\n\n\b\nExamples:\n    avr repo public-mirror requests\n    avr repo public-mirror requests --org acme\n    avr repo public-mirror requests --json request_id,status,repository_full_name\n\n\b\nJSON FIELDS\n    approval_state, created_at, github_snapshot, public_access_expires_at,\n    reason, repository_full_name, repository_id, request_id,\n    requester_organization_id, requester_user_id, review_note, reviewed_at,\n    reviewed_by_user_id, status, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo public-mirror requests [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "view",
+                "path": [
+                  "avr",
+                  "repo",
+                  "public-mirror",
+                  "view"
+                ],
+                "full": "avr repo public-mirror view",
+                "is_group": false,
+                "short_help": "View one public-mirror request.",
+                "help": "View one public-mirror request.\n\n\b\nExamples:\n    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef\n    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef --json '*'\n\n\b\nJSON FIELDS\n    approval_state, created_at, github_snapshot, public_access_expires_at,\n    reason, repository_full_name, repository_id, request_id,\n    requester_organization_id, requester_user_id, review_note, reviewed_at,\n    reviewed_by_user_id, status, updated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo public-mirror view [OPTIONS] REQUEST_ID",
+                "params": [
+                  {
+                    "name": "request_id",
+                    "kind": "argument",
+                    "opts": [
+                      "request_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
           }
         ]
       },

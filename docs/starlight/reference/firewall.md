@@ -60,16 +60,19 @@ avr firewall flow-summaries [OPTIONS]
 
 Each row is the totals + top-N destinations + per-rule drop counters
 for one VM run. Use ``--with-drops`` to triage what the firewall
-blocked after editing a rule, ``--vm`` to look up a specific run from
-a job log.
+blocked after editing a rule or ``--job`` to include every execution
+attempt for a job.
 
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;vm</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter to a single VM ID.
+- <code class="cli-flag">&#x2D;&#x2D;job, &#x2D;&#x2D;job-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter to every VM execution attempt for a job ID.
 - <code class="cli-flag">&#x2D;&#x2D;with-drops</code> — Show only summaries where the firewall blocked at least one flow.
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max summaries to return. _(default: `20`)_
+- <code class="cli-flag">&#x2D;&#x2D;offset</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Number of summaries to skip. _(default: `0`)_
+- <code class="cli-flag">&#x2D;&#x2D;from, &#x2D;&#x2D;start-after</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only include summaries that started at or after this ISO-8601 timestamp.
+- <code class="cli-flag">&#x2D;&#x2D;to, &#x2D;&#x2D;end-before</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only include summaries that ended at or before this ISO-8601 timestamp.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit raw JSON instead of a table.
 
 ### `avr firewall list`

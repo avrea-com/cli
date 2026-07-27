@@ -1,0 +1,48 @@
+.TH AVR\-REPO\-PUBLIC\-MIRROR\-CHECK 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-public-mirror-check \- Check whether a public GitHub repository mirror is available.
+.SH SYNOPSIS
+.B avr repo public-mirror check
+[OPTIONS] FULL_NAME
+.SH DESCRIPTION
+Check whether a public GitHub repository mirror is available.
+.PP
+FULL_NAME must be an owner/repository name. This performs an exact lookup; the global public-mirror catalog cannot be listed.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo public-mirror check rust-lang/rust
+    avr repo public-mirror check rust-lang/rust --json '*'
+    avr repo public-mirror check rust-lang/rust --json repository_id,default_branch
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    approval_state, default_branch, https_clone_url, installation_kind,
+    is_archived, is_disabled, is_fork, mirror_enabled, platform_owner_id,
+    platform_owner_login, platform_owner_type, platform_pushed_at,
+    platform_repository_id, platform_size_kb, public_access_expires_at,
+    public_metadata_verified_at, repository_full_name, repository_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIFULL_NAME\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-public-mirror (1),
+.BR avr-repo-public-mirror-cancel (1),
+.BR avr-repo-public-mirror-request (1),
+.BR avr-repo-public-mirror-requests (1),
+.BR avr-repo-public-mirror-view (1)
