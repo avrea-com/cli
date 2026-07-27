@@ -1330,8 +1330,9 @@ Show per-VM network activity summaries captured at VM stop.
 avr firewall flow-summaries [OPTIONS]
 ```
 
-Each row is the totals + top-N destinations + per-rule drop counters
-for one VM run. Use ``--with-drops`` to triage what the firewall
+Each row is the totals + top-N destinations for one VM run. The Blocked
+column counts both per-rule packet drops and DNS queries the firewall
+refused to resolve. Use ``--with-drops`` to triage what the firewall
 blocked after editing a rule or ``--job`` to include every execution
 attempt for a job.
 

@@ -334,6 +334,40 @@ def test_request_surfaces_api_validation_detail(runner, monkeypatch):
     assert "Only public GitHub repositories can be requested" in result.stderr
 
 
+def test_cancel_tolerates_empty_204_body(runner, monkeypatch):
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", lambda self, path, params=None: None)
+
+    result = runner.invoke(cli, ["repo", "public-mirror", "cancel", REQUEST_ID, "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert f"Cancelled public-mirror request {REQUEST_ID}." in result.output
+
+
+def test_cancel_json_tolerates_empty_204_body(runner, monkeypatch):
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", lambda self, path, params=None: None)
+
+    result = runner.invoke(
+        cli,
+        ["repo", "public-mirror", "cancel", REQUEST_ID, "--yes", "--json", "request_id,status"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"request_id": REQUEST_ID, "status": None}
+
+
+def test_check_rejects_dot_segments_without_api_call(runner, monkeypatch):
+    def unexpected_get(self, path, params=None):
+        raise AssertionError("API should not be called")
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", unexpected_get)
+
+    # httpx collapses dot segments, so these would otherwise retarget the request.
+    for name in ["../rust", "rust-lang/..", "./rust", "rust-lang/."]:
+        result = runner.invoke(cli, ["repo", "public-mirror", "check", name])
+        assert result.exit_code == 2, f"{name}: {result.output}"
+        assert "owner/repository" in result.output
+
+
 def test_json_field_discovery_does_not_call_api(runner, monkeypatch):
     def unexpected_get(self, path, params=None):
         raise AssertionError("API should not be called")

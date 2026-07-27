@@ -5906,7 +5906,7 @@
             "full": "avr firewall flow-summaries",
             "is_group": false,
             "short_help": "Show per-VM network activity summaries captured at VM stop.",
-            "help": "Show per-VM network activity summaries captured at VM stop.\n\nEach row is the totals + top-N destinations + per-rule drop counters\nfor one VM run. Use ``--with-drops`` to triage what the firewall\nblocked after editing a rule or ``--job`` to include every execution\nattempt for a job.\n",
+            "help": "Show per-VM network activity summaries captured at VM stop.\n\nEach row is the totals + top-N destinations for one VM run. The Blocked\ncolumn counts both per-rule packet drops and DNS queries the firewall\nrefused to resolve. Use ``--with-drops`` to triage what the firewall\nblocked after editing a rule or ``--job`` to include every execution\nattempt for a job.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,

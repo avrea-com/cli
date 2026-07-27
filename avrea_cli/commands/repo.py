@@ -88,7 +88,11 @@ def _public_mirror_lookup_path(full_name: str) -> str:
     if full_name.count("/") != 1:
         raise click.BadParameter("must be an owner/repository name", param_hint="FULL_NAME")
     owner, repository = full_name.split("/")
-    if not owner or not repository:
+    # quote() leaves "." and ".." intact — both are unreserved — and httpx
+    # collapses dot segments when it builds the URL, so "../rust" would send an
+    # authenticated GET to a different endpoint entirely. Reject them here; a
+    # slash inside a segment is already neutralised by safe=''.
+    if owner in {"", ".", ".."} or repository in {"", ".", ".."}:
         raise click.BadParameter("must be an owner/repository name", param_hint="FULL_NAME")
     return f"/public-mirrors/{quote(owner, safe='')}/{quote(repository, safe='')}"
 
@@ -523,6 +527,11 @@ def public_mirror_cancel(ctx, request_id, org_id, yes, json_fields, jq_expr):
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "cancel public-mirror request")
 
+    # public_delete returns None on a 204/empty body, which is still a success.
+    # Seed the ID we already have so both output paths name the cancelled
+    # request instead of raising on a missing key.
+    result = result or {"request_id": request_id}
+
     if json_fields is not None:
         emit_json_record(
             result,
@@ -532,4 +541,5 @@ def public_mirror_cancel(ctx, request_id, org_id, yes, json_fields, jq_expr):
         )
         return
 
-    click.echo(f"Cancelled public-mirror request {result['request_id']} ({result['repository_full_name']}).")
+    full_name = result.get("repository_full_name")
+    click.echo(f"Cancelled public-mirror request {result['request_id']}{f' ({full_name})' if full_name else ''}.")
