@@ -1694,6 +1694,10 @@ _BOOTSTRAP_STEP_TIMEOUT = 600.0
 # starting sshd even though its endpoint is published.
 _BOOTSTRAP_SSH_ATTEMPTS = 5
 _BOOTSTRAP_SSH_DELAY = 3.0
+# A dropped connection or a timeout both mean sshd is not up yet: retry. Named
+# because the inline `except (A, B)` tuple gets reformatted to the Python-2-shaped
+# `except A, B` by the formatter on this Python version.
+_SSH_PROBE_ERRORS = (OSError, subprocess.TimeoutExpired)
 
 
 @dataclass
@@ -2002,7 +2006,7 @@ def _wait_for_ssh(ssh_ep: dict[str, Any], identity_file: str | None) -> None:
     for attempt in range(_BOOTSTRAP_SSH_ATTEMPTS):
         try:
             completed = run_ssh(ssh_ep, ["true"], identity_file=identity_file, stdin_data="", timeout=20)
-        except OSError, subprocess.TimeoutExpired:
+        except _SSH_PROBE_ERRORS:
             completed = None
         if completed is not None and completed.returncode == 0:
             return
