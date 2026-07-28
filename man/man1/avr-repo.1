@@ -1,16 +1,19 @@
 .TH AVR\-REPO 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-repo \- List repositories connected to Avrea.
+avr-repo \- Manage repositories and public mirrors.
 .SH SYNOPSIS
 .B avr repo
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-List repositories connected to Avrea.
+Manage repositories and public mirrors.
 .PP
 .SH COMMANDS
 .TP
 list
 List repositories you can access in an organization.
+.TP
+public-mirror
+Request and browse mirrors of public GitHub repositories.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-status (1),
@@ -28,4 +31,5 @@ List repositories you can access in an organization.
 .BR avr-audit-events (1),
 .BR avr-org (1),
 .BR avr-health (1),
-.BR avr-repo-list (1)
+.BR avr-repo-list (1),
+.BR avr-repo-public-mirror (1)

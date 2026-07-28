@@ -51,7 +51,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Additional Commands
 
-- [`avr repo`](#avr-repo) — List repositories connected to Avrea.
+- [`avr repo`](#avr-repo) — Manage repositories and public mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
 
@@ -1330,18 +1330,22 @@ Show per-VM network activity summaries captured at VM stop.
 avr firewall flow-summaries [OPTIONS]
 ```
 
-Each row is the totals + top-N destinations + per-rule drop counters
-for one VM run. Use ``--with-drops`` to triage what the firewall
-blocked after editing a rule, ``--vm`` to look up a specific run from
-a job log.
+Each row is the totals + top-N destinations for one VM run. The Blocked
+column counts both per-rule packet drops and DNS queries the firewall
+refused to resolve. Use ``--with-drops`` to triage what the firewall
+blocked after editing a rule or ``--job`` to include every execution
+attempt for a job.
 
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
 - `--repo <TEXT>` — Repository ID. _(required)_
-- `--vm <TEXT>` — Filter to a single VM ID.
+- `--job, --job-id <TEXT>` — Filter to every VM execution attempt for a job ID.
 - `--with-drops` — Show only summaries where the firewall blocked at least one flow.
 - `-L, --limit <INTEGER RANGE>` — Max summaries to return. _(default: `20`)_
+- `--offset <INTEGER RANGE>` — Number of summaries to skip. _(default: `0`)_
+- `--from, --start-after <TEXT>` — Only include summaries that started at or after this ISO-8601 timestamp.
+- `--to, --end-before <TEXT>` — Only include summaries that ended at or before this ISO-8601 timestamp.
 - `--json` — Emit raw JSON instead of a table.
 
 #### `avr firewall list`
@@ -1667,7 +1671,7 @@ JSON FIELDS
 
 ### `avr repo`
 
-List repositories connected to Avrea.
+Manage repositories and public mirrors.
 
 ```sh
 avr repo [OPTIONS] COMMAND [ARGS]...
@@ -1697,6 +1701,188 @@ JSON FIELDS
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max repositories to return. _(default: `100`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr repo public-mirror`
+
+Request and browse mirrors of public GitHub repositories.
+
+```sh
+avr repo public-mirror [OPTIONS] COMMAND [ARGS]...
+```
+
+##### `avr repo public-mirror cancel`
+
+Cancel one pending public-mirror request.
+
+```sh
+avr repo public-mirror cancel [OPTIONS] REQUEST_ID
+```
+
+An approved mirror is global and cannot be withdrawn by a requester.
+
+```sh
+Examples:
+    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef
+    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef --yes
+```
+
+```sh
+JSON FIELDS
+    approval_state, created_at, github_snapshot, public_access_expires_at,
+    reason, repository_full_name, repository_id, request_id,
+    requester_organization_id, requester_user_id, review_note, reviewed_at,
+    reviewed_by_user_id, status, updated_at
+```
+
+**Arguments**
+
+- `REQUEST_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo public-mirror check`
+
+Check whether a public GitHub repository mirror is available.
+
+```sh
+avr repo public-mirror check [OPTIONS] FULL_NAME
+```
+
+FULL_NAME must be an owner/repository name. This performs an exact lookup;
+the global public-mirror catalog cannot be listed.
+
+A repository that is not mirrored is an answer, not a failure: the command
+reports ``Available: no`` (``available: false`` under --json) and exits 0.
+Only a real failure — denied, malformed name, server error — exits non-zero.
+
+```sh
+Examples:
+    avr repo public-mirror check rust-lang/rust
+    avr repo public-mirror check rust-lang/rust --json '*'
+    avr repo public-mirror check rust-lang/rust --json available,default_branch
+```
+
+```sh
+JSON FIELDS
+    approval_state, available, default_branch, https_clone_url,
+    installation_kind, is_archived, is_disabled, is_fork, mirror_enabled,
+    platform_owner_id, platform_owner_login, platform_owner_type,
+    platform_pushed_at, platform_repository_id, platform_size_kb,
+    public_access_expires_at, public_metadata_verified_at,
+    repository_full_name, repository_id
+```
+
+**Arguments**
+
+- `FULL_NAME`
+
+**Options**
+
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo public-mirror request`
+
+Request a mirror of a public GitHub repository.
+
+```sh
+avr repo public-mirror request [OPTIONS] FULL_NAME
+```
+
+FULL_NAME is the canonical GitHub owner/repository name. Avrea validates
+the repository with GitHub before recording the request.
+
+```sh
+Examples:
+    avr repo public-mirror request rust-lang/rust
+    avr repo public-mirror request rust-lang/rust --reason "Build dependency"
+    avr repo public-mirror request rust-lang/rust --org acme --json '*'
+```
+
+```sh
+JSON FIELDS
+    approval_state, created_at, github_snapshot, public_access_expires_at,
+    reason, repository_full_name, repository_id, request_id,
+    requester_organization_id, requester_user_id, review_note, reviewed_at,
+    reviewed_by_user_id, status, updated_at
+```
+
+**Arguments**
+
+- `FULL_NAME`
+
+**Options**
+
+- `--reason <TEXT>` — Why your organization needs this repository mirrored.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo public-mirror requests`
+
+List your organization's public-mirror requests.
+
+```sh
+avr repo public-mirror requests [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo public-mirror requests
+    avr repo public-mirror requests --org acme
+    avr repo public-mirror requests --json request_id,status,repository_full_name
+```
+
+```sh
+JSON FIELDS
+    approval_state, created_at, github_snapshot, public_access_expires_at,
+    reason, repository_full_name, repository_id, request_id,
+    requester_organization_id, requester_user_id, review_note, reviewed_at,
+    reviewed_by_user_id, status, updated_at
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo public-mirror view`
+
+View one public-mirror request.
+
+```sh
+avr repo public-mirror view [OPTIONS] REQUEST_ID
+```
+
+```sh
+Examples:
+    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef
+    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef --json '*'
+```
+
+```sh
+JSON FIELDS
+    approval_state, created_at, github_snapshot, public_access_expires_at,
+    reason, repository_full_name, repository_id, request_id,
+    requester_organization_id, requester_user_id, review_note, reviewed_at,
+    reviewed_by_user_id, status, updated_at
+```
+
+**Arguments**
+
+- `REQUEST_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

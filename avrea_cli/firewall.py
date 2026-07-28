@@ -273,7 +273,13 @@ def firewall_set_default(ctx, org_id, repo_id, action):
 @firewall.command("flow-summaries")
 @click.option("--org", "org_id", help="Organization ID or slug. Uses default org if not specified.")
 @click.option("--repo", "repo_id", required=True, help="Repository ID.")
-@click.option("--vm", "vm_id", default=None, help="Filter to a single VM ID.")
+@click.option(
+    "--job",
+    "--job-id",
+    "job_id",
+    default=None,
+    help="Filter to every VM execution attempt for a job ID.",
+)
 @click.option(
     "--with-drops",
     "only_with_drops",
@@ -288,23 +294,58 @@ def firewall_set_default(ctx, org_id, repo_id, action):
     show_default=True,
     help="Max summaries to return.",
 )
+@click.option("--offset", type=click.IntRange(min=0), default=0, show_default=True, help="Number of summaries to skip.")
+@click.option(
+    "--from",
+    "--start-after",
+    "start_after",
+    default=None,
+    help="Only include summaries that started at or after this ISO-8601 timestamp.",
+)
+@click.option(
+    "--to",
+    "--end-before",
+    "end_before",
+    default=None,
+    help="Only include summaries that ended at or before this ISO-8601 timestamp.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit raw JSON instead of a table.")
 @click.pass_context
-def firewall_flow_summaries(ctx, org_id, repo_id, vm_id, only_with_drops, limit, as_json):
+def firewall_flow_summaries(
+    ctx,
+    org_id,
+    repo_id,
+    job_id,
+    only_with_drops,
+    limit,
+    offset,
+    start_after,
+    end_before,
+    as_json,
+):
     """Show per-VM network activity summaries captured at VM stop.
 
-    Each row is the totals + top-N destinations + per-rule drop counters
-    for one VM run. Use ``--with-drops`` to triage what the firewall
-    blocked after editing a rule, ``--vm`` to look up a specific run from
-    a job log.
+    Each row is the totals + top-N destinations for one VM run. The Blocked
+    column counts both per-rule packet drops and DNS queries the firewall
+    refused to resolve. Use ``--with-drops`` to triage what the firewall
+    blocked after editing a rule or ``--job`` to include every execution
+    attempt for a job.
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-    params: dict = {"limit": limit, "only_with_drops": only_with_drops}
-    if vm_id:
-        params["vm_id"] = vm_id
+    params: dict = {
+        "limit": limit,
+        "offset": offset,
+        "only_with_drops": only_with_drops,
+    }
+    if job_id:
+        params["job_id"] = job_id
+    if start_after:
+        params["start_after"] = start_after
+    if end_before:
+        params["end_before"] = end_before
     try:
         body = client.public_get(
             f"/orgs/{org_id}/repos/{repo_id}/firewall/vm-flow-summaries",
@@ -322,7 +363,10 @@ def firewall_flow_summaries(ctx, org_id, repo_id, vm_id, only_with_drops, limit,
     display_rows = []
     for r in rows:
         drops = r.get("drops") or []
+        blocked_dns = r.get("blocked_dns_queries") or []
         top = r.get("top_destinations") or []
+        blocked = [f"{d.get('label')}({d.get('packets', 0)} pkt)" for d in drops]
+        blocked.extend(f"DNS:{d.get('qname')}({d.get('count', 1)})" for d in blocked_dns)
         display_rows.append(
             {
                 "vm_id": r.get("vm_id") or "-",
@@ -332,11 +376,14 @@ def firewall_flow_summaries(ctx, org_id, repo_id, vm_id, only_with_drops, limit,
                 "ingress": f"{r.get('bytes_ingress', 0)} B / {r.get('packets_ingress', 0)} pkt",
                 "flows": r.get("flow_count", 0),
                 "top_dst": ", ".join(d.get("dst_fqdn") or d.get("dst_ip") or "-" for d in top[:3]),
-                "drops": "-" if not drops else ", ".join(f"{d.get('label')}({d.get('packets', 0)})" for d in drops),
+                "blocked": ", ".join(blocked) or "-",
             }
         )
     output_list(
         display_rows,
-        columns=["vm_id", "end_ts", "duration", "egress", "ingress", "flows", "top_dst", "drops"],
-        column_labels=["VM", "Ended", "Run", "Egress", "Ingress", "Flows", "Top destinations", "Drops"],
+        columns=["vm_id", "end_ts", "duration", "egress", "ingress", "flows", "top_dst", "blocked"],
+        column_labels=["VM", "Ended", "Run", "Egress", "Ingress", "Flows", "Top destinations", "Blocked"],
     )
+
+    if body.get("has_more"):
+        click.echo(f"\nMore results available. Re-run with --offset {offset + len(rows)}", err=True)

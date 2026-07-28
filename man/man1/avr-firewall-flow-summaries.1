@@ -7,7 +7,7 @@ avr-firewall-flow-summaries \- Show per-VM network activity summaries captured a
 .SH DESCRIPTION
 Show per-VM network activity summaries captured at VM stop.
 .PP
-Each row is the totals + top-N destinations + per-rule drop counters for one VM run. Use ``--with-drops`` to triage what the firewall blocked after editing a rule, ``--vm`` to look up a specific run from a job log.
+Each row is the totals + top-N destinations for one VM run. The Blocked column counts both per-rule packet drops and DNS queries the firewall refused to resolve. Use ``--with-drops`` to triage what the firewall blocked after editing a rule or ``--job`` to include every execution attempt for a job.
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
@@ -16,14 +16,23 @@ Organization ID or slug. Uses default org if not specified.
 \fB\-\-repo\fR \fITEXT\fR
 Repository ID. (required)
 .TP
-\fB\-\-vm\fR \fITEXT\fR
-Filter to a single VM ID.
+\fB\-\-job\fR, \fB\-\-job\-id\fR \fITEXT\fR
+Filter to every VM execution attempt for a job ID.
 .TP
 \fB\-\-with\-drops\fR
 Show only summaries where the firewall blocked at least one flow.
 .TP
 \fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
 Max summaries to return. (default: 20)
+.TP
+\fB\-\-offset\fR \fIINTEGER RANGE\fR
+Number of summaries to skip. (default: 0)
+.TP
+\fB\-\-from\fR, \fB\-\-start\-after\fR \fITEXT\fR
+Only include summaries that started at or after this ISO-8601 timestamp.
+.TP
+\fB\-\-to\fR, \fB\-\-end\-before\fR \fITEXT\fR
+Only include summaries that ended at or before this ISO-8601 timestamp.
 .TP
 \fB\-\-json\fR
 Emit raw JSON instead of a table.
