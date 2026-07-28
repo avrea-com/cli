@@ -11,6 +11,45 @@ avr vm [OPTIONS] COMMAND [ARGS]...
 
 ## Subcommands
 
+### `avr vm bootstrap`
+
+Set up a RUNNING VM with your dev essentials over SSH.
+
+```sh
+avr vm bootstrap [OPTIONS] VM_ID
+```
+
+```sh
+Each selected step runs on the VM and streams its output; bootstrap stops at
+the first failure. Secrets (GitHub token, forwarded env values, agent API
+keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
+after every `avr vm start`. Example:
+```
+
+```sh
+avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
+  --repo https://github.com/me/project --env AWS_REGION=eu-north-1
+```
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">&#x2D;&#x2D;setup-github / &#x2D;&#x2D;no-setup-github</code> — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
+- <code class="cli-flag">&#x2D;&#x2D;install</code> <code class="cli-value">&lt;TEXT&gt;</code> — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;forward-agent-creds</code> — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
+- <code class="cli-flag">&#x2D;&#x2D;install-avr</code> — Install the avr CLI in the VM (pipx, else pip).
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Clone this git repo into the VM's home directory.
+- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Check out this ref after cloning (requires --repo).
+- <code class="cli-flag">&#x2D;&#x2D;dotfiles</code> <code class="cli-value">&lt;TEXT&gt;</code> — Clone this dotfiles repo and run its installer.
+- <code class="cli-flag">&#x2D;&#x2D;env</code> <code class="cli-value">&lt;TEXT&gt;</code> — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;run</code> <code class="cli-value">&lt;TEXT&gt;</code> — Run a custom script last: an inline script, or @path to a file.
+- <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ordered plan (secrets redacted) without running.
+
 ### `avr vm create`
 
 Create a long-running VM.

@@ -1,0 +1,80 @@
+.TH AVR\-VM\-BOOTSTRAP 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-vm-bootstrap \- Set up a RUNNING VM with your dev essentials over SSH.
+.SH SYNOPSIS
+.B avr vm bootstrap
+[OPTIONS] VM_ID
+.SH DESCRIPTION
+Set up a RUNNING VM with your dev essentials over SSH.
+.PP
+.RS 4
+.nf
+Each selected step runs on the VM and streams its output; bootstrap stops at
+the first failure. Secrets (GitHub token, forwarded env values, agent API
+keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
+after every `avr vm start`. Example:
+.fi
+.RE
+.PP
+.RS 4
+.nf
+avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \e
+  --repo https://github.com/me/project --env AWS_REGION=eu-north-1
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
+Private key file to pass to ssh as -i.
+.TP
+\fB\-\-setup\-github\fR / \fB\-\-no\-setup\-github\fR
+Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
+.TP
+\fB\-\-install\fR \fITEXT\fR
+Install an agent CLI (repeatable or comma-separated): claude, codex. (repeatable)
+.TP
+\fB\-\-forward\-agent\-creds\fR
+Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
+.TP
+\fB\-\-install\-avr\fR
+Install the avr CLI in the VM (pipx, else pip).
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Clone this git repo into the VM's home directory.
+.TP
+\fB\-\-ref\fR \fITEXT\fR
+Check out this ref after cloning (requires --repo).
+.TP
+\fB\-\-dotfiles\fR \fITEXT\fR
+Clone this dotfiles repo and run its installer.
+.TP
+\fB\-\-env\fR \fITEXT\fR
+Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. (repeatable)
+.TP
+\fB\-\-run\fR \fITEXT\fR
+Run a custom script last: an inline script, or @path to a file.
+.TP
+\fB\-\-print\fR
+Print the ordered plan (secrets redacted) without running.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

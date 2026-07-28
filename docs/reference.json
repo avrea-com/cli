@@ -2101,6 +2101,262 @@
         "params": [],
         "subcommands": [
           {
+            "name": "bootstrap",
+            "path": [
+              "avr",
+              "vm",
+              "bootstrap"
+            ],
+            "full": "avr vm bootstrap",
+            "is_group": false,
+            "short_help": "Set up a RUNNING VM with your dev essentials over SSH.",
+            "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent API\nkeys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap\nafter every `avr vm start`. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm bootstrap [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Private key file to pass to ssh as -i.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "setup_github",
+                "kind": "option",
+                "opts": [
+                  "--setup-github"
+                ],
+                "secondary_opts": [
+                  "--no-setup-github"
+                ],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).",
+                "hidden": false,
+                "show_default": true,
+                "default": false
+              },
+              {
+                "name": "install_agents",
+                "kind": "option",
+                "opts": [
+                  "--install"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Install an agent CLI (repeatable or comma-separated): claude, codex.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "forward_agent_creds",
+                "kind": "option",
+                "opts": [
+                  "--forward-agent-creds"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "install_avr",
+                "kind": "option",
+                "opts": [
+                  "--install-avr"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Install the avr CLI in the VM (pipx, else pip).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "repo_url",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Clone this git repo into the VM's home directory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_ref",
+                "kind": "option",
+                "opts": [
+                  "--ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Check out this ref after cloning (requires --repo).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "dotfiles_url",
+                "kind": "option",
+                "opts": [
+                  "--dotfiles"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Clone this dotfiles repo and run its installer.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "env_flags",
+                "kind": "option",
+                "opts": [
+                  "--env"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "run_raw",
+                "kind": "option",
+                "opts": [
+                  "--run"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Run a custom script last: an inline script, or @path to a file.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "print_only",
+                "kind": "option",
+                "opts": [
+                  "--print"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Print the ordered plan (secrets redacted) without running.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "create",
             "path": [
               "avr",

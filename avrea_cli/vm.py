@@ -22,6 +22,7 @@ from avrea_cli.helpers import validate_cursor
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 import click
@@ -1216,13 +1217,16 @@ def run_ssh(
     identity_file: str | None = None,
     stdin_data: str | None = None,
     timeout: float | None = None,
+    capture: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     """Run ``command`` on the VM over SSH, non-interactively, host key pinned.
 
-    Returns the CompletedProcess with stdout/stderr captured as text. Feed
-    secrets via ``stdin_data``, never through ``command``: argv is visible to
-    ``ps`` on the VM. ``BatchMode=yes`` makes auth or host-key failures fail
-    fast rather than hang on a prompt."""
+    Feed secrets via ``stdin_data``, never through ``command``: argv is visible
+    to ``ps`` on the VM. ``BatchMode=yes`` makes auth or host-key failures fail
+    fast rather than hang on a prompt. With ``capture`` (the default) stdout and
+    stderr are captured on the returned CompletedProcess; with ``capture=False``
+    they stream straight to this process's stdout/stderr (for long-running steps
+    whose progress the user should see live) and are ``None`` on the result."""
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
     try:
         argv = _ssh_connect_argv(
@@ -1232,7 +1236,7 @@ def run_ssh(
             extra_opts=("-o", "BatchMode=yes", "-o", "ConnectTimeout=15"),
         )
         argv += command
-        return subprocess.run(argv, input=stdin_data, capture_output=True, text=True, timeout=timeout)
+        return subprocess.run(argv, input=stdin_data, capture_output=capture, text=True, timeout=timeout)
     finally:
         if known_hosts is not None:
             known_hosts.unlink(missing_ok=True)
@@ -1654,3 +1658,487 @@ def vm_port_forward(ctx, vm_id, org_id, guest_port, local_port, identity_file, p
         proc.wait()
 
     _run_tunnel(ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, on_ready=on_ready)
+
+
+# --- Bootstrap ------------------------------------------------------------
+#
+# `avr vm bootstrap` sets a freshly-started VM up with the things a developer
+# reaches for first: their GitHub auth, agent CLIs (claude / codex), a repo,
+# dotfiles, environment variables, the `avr` CLI, and an arbitrary run script.
+# Each is one shell step run over the pinned-host-key SSH endpoint via `run_ssh`;
+# steps stream their output live and stop on the first failure.
+#
+# Secrets (the GitHub token, forwarded env values, agent API keys) ride SSH
+# stdin, never argv, so they never appear in `ps` on the VM. The step script is
+# non-secret and is passed as a single shell-quoted argument so OpenSSH's
+# space-join to the remote login shell survives one extra parse intact.
+#
+# Disks are ephemeral (a fresh boot each start), so bootstrap is per-boot; run
+# it again after every `avr vm start`.
+
+# claude / codex: the npm package to install and the local env var whose value
+# --forward-agent-creds carries into the VM so the agent is usable non-interactively.
+_BOOTSTRAP_AGENTS: dict[str, dict[str, str]] = {
+    "claude": {"npm": "@anthropic-ai/claude-code", "env": "ANTHROPIC_API_KEY"},
+    "codex": {"npm": "@openai/codex", "env": "OPENAI_API_KEY"},
+}
+
+# Per-step SSH timeout. npm -g and pipx installs over a cold cache are slow, so
+# this is generous; a hung step should still not wedge the whole bootstrap.
+_BOOTSTRAP_STEP_TIMEOUT = 600.0
+
+# Connectivity probe before the first step: a just-RUNNING VM may still be
+# starting sshd even though its endpoint is published.
+_BOOTSTRAP_SSH_ATTEMPTS = 5
+_BOOTSTRAP_SSH_DELAY = 3.0
+
+
+@dataclass
+class _BootstrapStep:
+    """One bootstrap action: a bash ``script`` run on the VM, with an optional
+    ``stdin`` secret. ``secret`` marks steps whose stdin must never be printed."""
+
+    name: str
+    description: str
+    script: str
+    stdin: str = ""
+    secret: bool = False
+    timeout: float | None = _BOOTSTRAP_STEP_TIMEOUT
+
+
+def _local_gh_token() -> str:
+    """The local user's GitHub token from ``gh auth token``, to forward into the
+    VM. Fails with a clear message if the GitHub CLI is missing or logged out."""
+    try:
+        completed = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=15)
+    except FileNotFoundError as exc:
+        raise click.ClickException(
+            "`gh` CLI not found locally; install the GitHub CLI or drop --setup-github."
+        ) from exc
+    except OSError as exc:
+        raise click.ClickException(f"failed to run `gh auth token`: {exc}") from exc
+    token = completed.stdout.strip()
+    if completed.returncode != 0 or not token:
+        raise click.ClickException("no local GitHub token; run `gh auth login` first, or drop --setup-github.")
+    return token
+
+
+def _parse_bootstrap_agents(flags: tuple[str, ...]) -> list[str]:
+    """Resolve ``--install`` values (repeatable and/or comma-separated) to an
+    ordered, de-duplicated list of known agent keys."""
+    agents: list[str] = []
+    for flag in flags:
+        for raw in flag.split(","):
+            agent = raw.strip().lower()
+            if not agent:
+                continue
+            if agent not in _BOOTSTRAP_AGENTS:
+                raise click.BadParameter(
+                    f"unknown agent {agent!r} (choose from: {', '.join(_BOOTSTRAP_AGENTS)})",
+                    param_hint="--install",
+                )
+            if agent not in agents:
+                agents.append(agent)
+    return agents
+
+
+def _parse_bootstrap_env(flags: tuple[str, ...]) -> dict[str, str]:
+    """Resolve ``--env`` values into an ordered name->value map. ``KEY=VALUE``
+    sets a literal; a bare ``KEY`` forwards the local environment's value."""
+    env: dict[str, str] = {}
+    for flag in flags:
+        if "=" in flag:
+            key, value = flag.split("=", 1)
+        else:
+            key = flag
+            local = os.environ.get(key)
+            if local is None:
+                raise click.BadParameter(f"{key!r} is not set in the local environment", param_hint="--env")
+            value = local
+        key = key.strip()
+        if not key.isidentifier():
+            raise click.BadParameter(f"{key!r} is not a valid variable name", param_hint="--env")
+        if "\n" in value:
+            raise click.BadParameter(f"{key}: values containing newlines are not supported", param_hint="--env")
+        env[key] = value
+    return env
+
+
+def _forward_agent_creds(env: dict[str, str], agents: list[str]) -> None:
+    """Add each requested agent's API key from the local environment to ``env``,
+    without overriding an explicit --env. With no agents named, forward every
+    known key that is present locally. Warns (does not fail) if none are found."""
+    added: list[str] = []
+    for agent in agents or list(_BOOTSTRAP_AGENTS):
+        key = _BOOTSTRAP_AGENTS[agent]["env"]
+        value = os.environ.get(key)
+        if value and key not in env:
+            env[key] = value
+            added.append(key)
+    if not added:
+        click.echo(
+            "Warning: --forward-agent-creds set but no agent API keys "
+            f"({', '.join(a['env'] for a in _BOOTSTRAP_AGENTS.values())}) are set locally.",
+            err=True,
+        )
+
+
+def _load_run_script(value: str) -> str:
+    """Resolve ``--run``: a literal script, or ``@path`` to read one from a file."""
+    if value.startswith("@"):
+        path = Path(value[1:]).expanduser()
+        try:
+            return path.read_text()
+        except OSError as exc:
+            raise click.BadParameter(f"cannot read run script {path}: {exc}", param_hint="--run") from exc
+    return value
+
+
+def _env_step(env: dict[str, str], *, redact: bool) -> _BootstrapStep:
+    """Write ``env`` to ``~/.avrea/bootstrap.env`` and source it from the shell
+    startup files so the vars reach future shells and later `bash -lc` steps.
+
+    Values ride stdin (the file is written from stdin verbatim), so they never
+    touch argv. The file is hooked into both ~/.bashrc (interactive non-login
+    shells) and the bash *login* file that `ssh` actually reads (the first of
+    ~/.bash_profile, ~/.bash_login, ~/.profile that exists). The login file is
+    load-bearing: an interactive `ssh` session runs a login shell, and images
+    like the GitHub runner ship a ~/.bash_profile that never sources ~/.bashrc,
+    so a ~/.bashrc-only hook would never load."""
+    blob = "".join(f"export {name}={shlex.quote(value)}\n" for name, value in env.items())
+    script = rf"""set -euo pipefail
+dest="$HOME/.avrea/bootstrap.env"
+mkdir -p "$(dirname "$dest")"
+umask 077
+cat > "$dest"
+marker="# avrea bootstrap env"
+_avr_hook() {{
+  if ! grep -qF "$marker" "$1" 2>/dev/null; then
+    {{ printf '\n%s\n' "$marker"; printf '[ -f "%s" ] && . "%s"\n' "$dest" "$dest"; }} >> "$1"
+  fi
+}}
+_avr_hook "$HOME/.bashrc"
+login_rc="$HOME/.profile"
+for f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+  if [ -f "$f" ]; then login_rc="$f"; break; fi
+done
+_avr_hook "$login_rc"
+echo "wrote {len(env)} environment variable(s) to $dest (sourced from ~/.bashrc and $(basename "$login_rc"))"
+"""
+    return _BootstrapStep(
+        "env",
+        f"Set {len(env)} environment variable(s): {', '.join(env)}",
+        script,
+        stdin="" if redact else blob,
+        secret=True,
+    )
+
+
+def _github_step(gh_token: str | None, *, redact: bool) -> _BootstrapStep:
+    """Authenticate the VM's GitHub CLI with the forwarded local token and wire
+    it into git, so later private clones work. Token rides stdin."""
+    script = (
+        "set -euo pipefail\n"
+        "if ! command -v gh >/dev/null 2>&1; then\n"
+        '  echo "gh CLI not found on the VM; cannot set up GitHub auth" >&2\n'
+        "  exit 1\n"
+        "fi\n"
+        "gh auth login --with-token\n"
+        "gh auth setup-git\n"
+        'echo "GitHub: authenticated as $(gh api user -q .login 2>/dev/null || echo unknown)"'
+    )
+    return _BootstrapStep(
+        "github",
+        "Authenticate the VM's GitHub CLI and git with your local token",
+        script,
+        stdin="" if redact else (gh_token or ""),
+        secret=True,
+    )
+
+
+def _repo_step(url: str, ref: str | None) -> _BootstrapStep:
+    """Clone ``url`` into the home directory (idempotent: fetch if already
+    present) and optionally check out ``ref``. Runs after --setup-github so
+    private repos authenticate."""
+    script = (
+        "set -euo pipefail\n"
+        f"url={shlex.quote(url)}\n"
+        f"ref={shlex.quote(ref or '')}\n"
+        'name="$(basename "$url" .git)"\n'
+        'dest="$HOME/$name"\n'
+        'if [ -d "$dest/.git" ]; then\n'
+        '  echo "repo $name already present; fetching"\n'
+        '  git -C "$dest" fetch --all --tags --prune\n'
+        "else\n"
+        '  git clone "$url" "$dest"\n'
+        "fi\n"
+        'if [ -n "$ref" ]; then git -C "$dest" checkout "$ref"; fi\n'
+        'echo "repo ready at $dest"'
+    )
+    label = f"Clone {url}" + (f" @ {ref}" if ref else "")
+    return _BootstrapStep("repo", label, script)
+
+
+def _dotfiles_step(url: str) -> _BootstrapStep:
+    """Clone a dotfiles repo to ~/.dotfiles and run its installer if it ships one
+    (install.sh / install / bootstrap.sh / setup.sh).
+
+    The main clone is plain (reliable over https); submodules are then a
+    best-effort pass that rewrites the dead ``git://`` protocol (GitHub dropped
+    it in 2022) to https and does not fail the step if a stale submodule is
+    unreachable. Reports honestly: repos with no recognized installer (e.g.
+    stow-style layouts) are cloned only, not applied, so the message says so
+    rather than claiming an install that did not happen."""
+    script = (
+        "set -euo pipefail\n"
+        f"url={shlex.quote(url)}\n"
+        'dir="$HOME/.dotfiles"\n'
+        'if [ -d "$dir/.git" ]; then git -C "$dir" pull --ff-only; else git clone "$url" "$dir"; fi\n'
+        "git -C \"$dir\" -c 'url.https://github.com/.insteadOf=git://github.com/' "
+        "submodule update --init --recursive "
+        '|| echo "warning: some dotfiles submodules failed to init (continuing)"\n'
+        'ran=""\n'
+        "for f in install.sh install bootstrap.sh setup.sh; do\n"
+        '  if [ -f "$dir/$f" ]; then echo "running dotfiles installer $f"; '
+        '( cd "$dir" && sh "./$f" ); ran="$f"; break; fi\n'
+        "done\n"
+        'if [ -n "$ran" ]; then\n'
+        '  echo "dotfiles: ran $ran from $url"\n'
+        "else\n"
+        '  echo "dotfiles: cloned to $dir (no install.sh/install/bootstrap.sh/setup.sh found; '
+        'apply manually, e.g. with stow)"\n'
+        "fi"
+    )
+    return _BootstrapStep("dotfiles", f"Install dotfiles from {url}", script)
+
+
+def _install_agents_step(agents: list[str]) -> _BootstrapStep:
+    """Install the requested agent CLIs globally with npm, falling back to sudo
+    for a root-owned global prefix."""
+    pkgs = " ".join(shlex.quote(_BOOTSTRAP_AGENTS[a]["npm"]) for a in agents)
+    script = (
+        "set -euo pipefail\n"
+        "if ! command -v npm >/dev/null 2>&1; then\n"
+        '  echo "npm not found on the VM; cannot install agents" >&2\n'
+        "  exit 1\n"
+        "fi\n"
+        f"for pkg in {pkgs}; do\n"
+        '  echo "installing $pkg"\n'
+        '  npm install -g "$pkg" || sudo -n npm install -g "$pkg"\n'
+        "done\n"
+        f'echo "installed: {", ".join(agents)}"'
+    )
+    return _BootstrapStep("install-agents", f"Install {', '.join(agents)} (npm -g)", script)
+
+
+def _install_avr_step() -> _BootstrapStep:
+    """Install the avr CLI itself, preferring pipx and falling back to pip."""
+    script = (
+        "set -euo pipefail\n"
+        "if command -v pipx >/dev/null 2>&1; then\n"
+        "  pipx install --force avr-cli\n"
+        "elif command -v python3 >/dev/null 2>&1; then\n"
+        "  python3 -m pip install --user --upgrade avr-cli\n"
+        "else\n"
+        '  echo "no pipx or python3 on the VM; cannot install avr" >&2\n'
+        "  exit 1\n"
+        "fi\n"
+        "echo \"avr installed ($(avr --version 2>/dev/null || echo 'open a new shell, then: avr --version'))\""
+    )
+    return _BootstrapStep("install-avr", "Install the avr CLI", script)
+
+
+def _build_bootstrap_steps(
+    *,
+    env: dict[str, str],
+    setup_github: bool,
+    gh_token: str | None,
+    repo_url: str | None,
+    repo_ref: str | None,
+    dotfiles_url: str | None,
+    agents: list[str],
+    install_avr: bool,
+    run_script: str | None,
+    redact: bool,
+) -> list[_BootstrapStep]:
+    """Assemble the ordered step list from resolved inputs. ``redact`` blanks the
+    secret stdin of the env / github steps for --print. Order matters: env and
+    GitHub auth come first so later clones and scripts see them; the user's --run
+    runs last."""
+    steps: list[_BootstrapStep] = []
+    if env:
+        steps.append(_env_step(env, redact=redact))
+    if setup_github:
+        steps.append(_github_step(gh_token, redact=redact))
+    if repo_url:
+        steps.append(_repo_step(repo_url, repo_ref))
+    if dotfiles_url:
+        steps.append(_dotfiles_step(dotfiles_url))
+    if agents:
+        steps.append(_install_agents_step(agents))
+    if install_avr:
+        steps.append(_install_avr_step())
+    if run_script is not None:
+        steps.append(_BootstrapStep("run", "Run custom script", run_script))
+    return steps
+
+
+def _print_bootstrap_plan(steps: list[_BootstrapStep]) -> None:
+    """Print the ordered plan (scripts shown, secret stdin redacted) for --print."""
+    for index, step in enumerate(steps, 1):
+        click.echo(f"# [{index}/{len(steps)}] {step.description}")
+        if step.secret:
+            click.echo("#   (a secret is fed to this step over stdin and is not shown)")
+        click.echo(step.script)
+        click.echo()
+
+
+def _wait_for_ssh(ssh_ep: dict[str, Any], identity_file: str | None) -> None:
+    """Probe the endpoint until sshd answers, since a just-RUNNING VM may still
+    be starting it. Raises if it never becomes reachable."""
+    for attempt in range(_BOOTSTRAP_SSH_ATTEMPTS):
+        try:
+            completed = run_ssh(ssh_ep, ["true"], identity_file=identity_file, stdin_data="", timeout=20)
+        except OSError, subprocess.TimeoutExpired:
+            completed = None
+        if completed is not None and completed.returncode == 0:
+            return
+        if attempt < _BOOTSTRAP_SSH_ATTEMPTS - 1:
+            click.echo("  waiting for SSH to come up ...", err=True)
+            time.sleep(_BOOTSTRAP_SSH_DELAY)
+    raise click.ClickException(
+        "could not reach the VM over SSH. Confirm it is RUNNING (`avr vm show`) and that your key is authorized."
+    )
+
+
+def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], identity_file: str | None) -> None:
+    """Run each step in order over SSH, streaming output. Stops on the first
+    failure, naming the step so the live output above pinpoints the cause."""
+    _wait_for_ssh(ssh_ep, identity_file)
+    for index, step in enumerate(steps, 1):
+        click.echo(f"==> [{index}/{len(steps)}] {step.description}", err=True)
+        try:
+            completed = run_ssh(
+                ssh_ep,
+                ["bash", "-lc", shlex.quote(step.script)],
+                identity_file=identity_file,
+                stdin_data=step.stdin,
+                timeout=step.timeout,
+                capture=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise click.ClickException(f"bootstrap step '{step.name}' timed out after {step.timeout:.0f}s") from exc
+        except OSError as exc:  # ssh not on PATH, etc.
+            raise click.ClickException(f"failed to launch ssh: {exc}") from exc
+        if completed.returncode != 0:
+            raise click.ClickException(f"bootstrap step '{step.name}' failed (exit {completed.returncode}).")
+    click.echo("Bootstrap complete.", err=True)
+
+
+@vm.command("bootstrap")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
+)
+@click.option(
+    "--setup-github/--no-setup-github",
+    default=False,
+    show_default=True,
+    help="Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).",
+)
+@click.option(
+    "--install",
+    "install_agents",
+    multiple=True,
+    help=f"Install an agent CLI (repeatable or comma-separated): {', '.join(_BOOTSTRAP_AGENTS)}.",
+)
+@click.option(
+    "--forward-agent-creds",
+    is_flag=True,
+    default=False,
+    help="Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.",
+)
+@click.option("--install-avr", is_flag=True, default=False, help="Install the avr CLI in the VM (pipx, else pip).")
+@click.option("--repo", "repo_url", default=None, help="Clone this git repo into the VM's home directory.")
+@click.option("--ref", "repo_ref", default=None, help="Check out this ref after cloning (requires --repo).")
+@click.option("--dotfiles", "dotfiles_url", default=None, help="Clone this dotfiles repo and run its installer.")
+@click.option(
+    "--env",
+    "env_flags",
+    multiple=True,
+    help="Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable.",
+)
+@click.option("--run", "run_raw", default=None, help="Run a custom script last: an inline script, or @path to a file.")
+@click.option("--print", "print_only", is_flag=True, help="Print the ordered plan (secrets redacted) without running.")
+@click.pass_context
+def vm_bootstrap(
+    ctx,
+    vm_id,
+    org_id,
+    identity_file,
+    setup_github,
+    install_agents,
+    forward_agent_creds,
+    install_avr,
+    repo_url,
+    repo_ref,
+    dotfiles_url,
+    env_flags,
+    run_raw,
+    print_only,
+):
+    """Set up a RUNNING VM with your dev essentials over SSH.
+
+    \b
+    Each selected step runs on the VM and streams its output; bootstrap stops at
+    the first failure. Secrets (GitHub token, forwarded env values, agent API
+    keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
+    after every `avr vm start`. Example:
+
+    \b
+        avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\
+          --repo https://github.com/me/project --env AWS_REGION=eu-north-1
+    """
+    if repo_ref and not repo_url:
+        raise click.UsageError("--ref requires --repo.")
+
+    agents = _parse_bootstrap_agents(install_agents)
+    env = _parse_bootstrap_env(env_flags)
+    if forward_agent_creds:
+        _forward_agent_creds(env, agents)
+    run_script = _load_run_script(run_raw) if run_raw is not None else None
+
+    # A token is only fetched for a real run; --print marks the step secret
+    # without touching the local gh state.
+    gh_token = _local_gh_token() if setup_github and not print_only else None
+
+    steps = _build_bootstrap_steps(
+        env=env,
+        setup_github=setup_github,
+        gh_token=gh_token,
+        repo_url=repo_url,
+        repo_ref=repo_ref,
+        dotfiles_url=dotfiles_url,
+        agents=agents,
+        install_avr=install_avr,
+        run_script=run_script,
+        redact=print_only,
+    )
+    if not steps:
+        raise click.UsageError(
+            "Nothing to do. Pass at least one of --setup-github, --install, --install-avr, "
+            "--repo, --dotfiles, --env, or --run."
+        )
+
+    if print_only:
+        _print_bootstrap_plan(steps)
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
+    _run_bootstrap_steps(ssh_ep, steps, identity_file)
