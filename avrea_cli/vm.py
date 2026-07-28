@@ -752,8 +752,11 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
 
         avr vm ssh cvm-abc123 -- uname -a
 
-    The VM's host key is pinned from its endpoint, so the first connect neither
-    prompts nor is spoofable. For port-forwarding use `avr vm port-forward`.
+    When the VM's endpoint publishes a host key it is pinned, so the first
+    connect neither prompts nor is spoofable. If the endpoint has no host key,
+    `avr` prints a warning and falls back to trust-on-first-use, so this
+    spoofing protection is conditional rather than guaranteed. For
+    port-forwarding use `avr vm port-forward`.
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]

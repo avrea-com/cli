@@ -135,11 +135,11 @@ avr vm create --name dev --os linux --size 2-vcpu \
   --ssh-key @~/.ssh/id_ed25519.pub --ephemeral --wait      # boot, wait for SSH, print connect
 avr vm bootstrap <vm-id> --setup-github --install claude,codex \
   --repo https://github.com/org/project --env AWS_REGION=eu-north-1
-avr vm ssh <vm-id>                                          # host-key-pinned session (or: -- <cmd>)
+avr vm ssh <vm-id>                                          # SSH session, host key pinned when published (or: -- <cmd>)
 avr vm list ; avr vm stop <vm-id>                           # lifecycle
 ```
 
-`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent keys) on stdin rather than argv. Disks are ephemeral, so re-run it after every `avr vm start`. For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive.
+`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent keys) on stdin rather than argv. Disks are ephemeral, so re-run it after every `avr vm start`. `avr vm ssh` pins the VM's host key when its endpoint publishes one; if it doesn't, `avr` warns and falls back to trust-on-first-use. For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive.
 
 **Cancel or rerun a run**
 

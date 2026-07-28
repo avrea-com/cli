@@ -3210,7 +3210,7 @@
             "full": "avr vm ssh",
             "is_group": false,
             "short_help": "Open an SSH session to a RUNNING VM, or run a command on it.",
-            "help": "Open an SSH session to a RUNNING VM, or run a command on it.\n\nWith no extra arguments this opens an interactive session. Anything after\n`--` is run as a remote command instead, e.g.:\n\n    avr vm ssh cvm-abc123 -- uname -a\n\nThe VM's host key is pinned from its endpoint, so the first connect neither\nprompts nor is spoofable. For port-forwarding use `avr vm port-forward`.\n",
+            "help": "Open an SSH session to a RUNNING VM, or run a command on it.\n\nWith no extra arguments this opens an interactive session. Anything after\n`--` is run as a remote command instead, e.g.:\n\n    avr vm ssh cvm-abc123 -- uname -a\n\nWhen the VM's endpoint publishes a host key it is pinned, so the first\nconnect neither prompts nor is spoofable. If the endpoint has no host key,\n`avr` prints a warning and falls back to trust-on-first-use, so this\nspoofing protection is conditional rather than guaranteed. For\nport-forwarding use `avr vm port-forward`.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
