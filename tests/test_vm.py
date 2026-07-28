@@ -837,44 +837,52 @@ RUNNING_VM = {
 
 
 class TestVmSsh:
-    def test_print_emits_command_without_exec(self, runner, monkeypatch):
+    def test_print_emits_command_without_running(self, runner, monkeypatch):
         called = {"n": 0}
-        monkeypatch.setattr("avrea_cli.vm.os.execvp", lambda *a: called.__setitem__("n", called["n"] + 1))
+        monkeypatch.setattr(
+            "avrea_cli.vm.subprocess.run",
+            lambda *a, **k: called.__setitem__("n", called["n"] + 1),
+        )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: RUNNING_VM,
         )
         result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--print"])
         assert result.exit_code == 0
-        assert result.output.strip() == "ssh -p 30022 runner@203.0.113.1"
-        assert called["n"] == 0  # never exec'd
+        # printed form uses accept-new since it can't reference the temp known_hosts
+        assert result.output.strip() == "ssh -p 30022 -o StrictHostKeyChecking=accept-new runner@203.0.113.1"
+        assert called["n"] == 0  # never ran ssh
 
-    def test_exec_builds_argv_with_identity_and_passthrough(self, runner, monkeypatch):
+    def test_runs_remote_command_after_destination_with_pinned_host_key(self, runner, monkeypatch):
+        from pathlib import Path
+        from types import SimpleNamespace
+
         captured = {}
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: Path("/tmp/kh"))
         monkeypatch.setattr(
-            "avrea_cli.vm.os.execvp",
-            lambda file, argv: captured.update(file=file, argv=argv),
+            "avrea_cli.vm.subprocess.run",
+            lambda argv, **k: captured.update(argv=argv) or SimpleNamespace(returncode=0),
         )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: RUNNING_VM,
         )
-        result = runner.invoke(
-            cli,
-            ["vm", "ssh", "cvm-abc123", "-i", "/tmp/key", "--", "-L", "8080:localhost:80"],
-        )
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "-i", "/tmp/key", "--", "uname", "-a"])
         assert result.exit_code == 0
-        assert captured["file"] == "ssh"
-        # generated options first, passthrough next, destination last
+        # host key pinned; the remote command lands after the destination
         assert captured["argv"] == [
             "ssh",
             "-i",
             "/tmp/key",
             "-p",
             "30022",
-            "-L",
-            "8080:localhost:80",
+            "-o",
+            f"UserKnownHostsFile={Path('/tmp/kh')}",
+            "-o",
+            "StrictHostKeyChecking=yes",
             "runner@203.0.113.1",
+            "uname",
+            "-a",
         ]
 
     def test_no_endpoint_yet_errors(self, runner, monkeypatch):
@@ -886,6 +894,31 @@ class TestVmSsh:
         assert result.exit_code != 0
         assert "no SSH endpoint yet" in result.output
         assert "PENDING" in result.output
+
+    def test_warns_when_endpoint_has_no_host_key(self, runner, monkeypatch):
+        # An endpoint without a host key can't be pinned, so ssh accepts on first
+        # use. That fallback must be surfaced, not silent (parity with the tunnel).
+        from types import SimpleNamespace
+
+        keyless = {
+            "data": {
+                **SAMPLE_VM,
+                "state": "RUNNING",
+                "endpoints": {
+                    "ssh": {
+                        "protocol": "ssh",
+                        "external_ip": "203.0.113.1",
+                        "external_port": 30022,
+                        "username": "runner",
+                    }
+                },
+            }
+        }
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: keyless)
+        monkeypatch.setattr("avrea_cli.vm.subprocess.run", lambda *a, **k: SimpleNamespace(returncode=0))
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "no SSH host key" in result.output
 
 
 class TestVmConnectLine:
@@ -1152,6 +1185,74 @@ class TestTunnelHelpers:
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 30022) == "[1.2.3.4]:30022 ssh-ed25519 AAAA\n"
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 22) == "1.2.3.4 ssh-ed25519 AAAA\n"
 
+    def test_ssh_connect_argv_pins_host_key(self):
+        from avrea_cli.vm import _ssh_connect_argv
+        from pathlib import Path
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        kh = Path("/tmp/kh")
+        argv = _ssh_connect_argv(ep, identity_file="/tmp/key", known_hosts=kh)
+        assert argv == [
+            "ssh",
+            "-i",
+            "/tmp/key",
+            "-p",
+            "30022",
+            "-o",
+            f"UserKnownHostsFile={kh}",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "runner@203.0.113.1",
+        ]
+
+    def test_ssh_connect_argv_accept_new_without_key(self):
+        from avrea_cli.vm import _ssh_connect_argv
+
+        ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
+        argv = _ssh_connect_argv(ep, identity_file=None, known_hosts=None)
+        assert argv == ["ssh", "-p", "30022", "-o", "StrictHostKeyChecking=accept-new", "runner@203.0.113.1"]
+
+    def test_run_ssh_places_command_after_destination_and_feeds_stdin(self, monkeypatch):
+        from avrea_cli.vm import run_ssh
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        captured = {}
+        monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: Path("/tmp/kh"))
+
+        def fake_run(argv, **kwargs):
+            captured["argv"] = argv
+            captured["input"] = kwargs.get("input")
+            return SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+        monkeypatch.setattr("avrea_cli.vm.subprocess.run", fake_run)
+
+        ep = {
+            "external_ip": "203.0.113.1",
+            "external_port": 30022,
+            "username": "runner",
+            "host_key": "ssh-ed25519 AAAA",
+        }
+        result = run_ssh(ep, ["bash", "-s"], stdin_data="echo hi")
+        assert result.returncode == 0
+        assert captured["input"] == "echo hi"  # secrets ride stdin, not argv
+        assert captured["argv"] == [
+            "ssh",
+            "-p",
+            "30022",
+            "-o",
+            f"UserKnownHostsFile={Path('/tmp/kh')}",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=15",
+            "runner@203.0.113.1",
+            "bash",
+            "-s",
+        ]
+
     def test_rdp_launch_argv_per_platform(self):
         from avrea_cli.vm import _rdp_launch_argv
 
@@ -1230,3 +1331,174 @@ class TestTunnelHelpers:
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
         vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
         assert any("no SSH host key" in m for m in msgs)
+
+
+class TestVmBootstrapPlanning:
+    """Argument validation and the offline `--print` plan (no VM contact)."""
+
+    def test_ref_without_repo_errors(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--ref", "main"])
+        assert result.exit_code != 0
+        assert "--ref requires --repo" in result.output
+
+    def test_no_steps_errors(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1"])
+        assert result.exit_code != 0
+        assert "Nothing to do" in result.output
+
+    def test_unknown_agent_rejected(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--install", "gemini"])
+        assert result.exit_code != 0
+        assert "unknown agent" in result.output
+
+    def test_env_missing_local_var_rejected(self, runner, monkeypatch):
+        monkeypatch.delenv("DEFINITELY_UNSET_VAR", raising=False)
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--env", "DEFINITELY_UNSET_VAR"])
+        assert result.exit_code != 0
+        assert "not set in the local environment" in result.output
+
+    def test_env_bad_name_rejected(self, runner):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--env", "not a name=x"])
+        assert result.exit_code != 0
+        assert "not a valid variable name" in result.output
+
+    def test_print_redacts_secrets_and_never_connects(self, runner, monkeypatch):
+        # --print must not fetch a gh token, hit the API, or touch SSH.
+        monkeypatch.setattr(
+            "avrea_cli.vm._local_gh_token",
+            lambda: (_ for _ in ()).throw(AssertionError("must not fetch a token in --print")),
+        )
+        seen = {"get": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: seen.__setitem__("get", seen["get"] + 1),
+        )
+        result = runner.invoke(
+            cli,
+            ["vm", "bootstrap", "cvm-1", "--setup-github", "--env", "MYKEY=supersecret", "--print"],
+        )
+        assert result.exit_code == 0, result.output
+        assert seen["get"] == 0  # never connected
+        assert "supersecret" not in result.output  # value rides stdin, redacted in the plan
+        assert "over stdin and is not shown" in result.output
+        assert "gh auth login --with-token" in result.output
+
+    def test_build_steps_order(self):
+        from avrea_cli.vm import _build_bootstrap_steps
+
+        steps = _build_bootstrap_steps(
+            env={"A": "1"},
+            setup_github=True,
+            gh_token="t",
+            repo_url="https://example.com/r",
+            repo_ref=None,
+            dotfiles_url="https://example.com/d",
+            agents=["claude"],
+            install_avr=True,
+            run_script="echo x",
+            redact=False,
+        )
+        assert [s.name for s in steps] == [
+            "env",
+            "github",
+            "repo",
+            "dotfiles",
+            "install-agents",
+            "install-avr",
+            "run",
+        ]
+
+    def test_env_values_ride_stdin_not_argv(self):
+        from avrea_cli.vm import _build_bootstrap_steps
+
+        steps = _build_bootstrap_steps(
+            env={"TOKEN": "s3cr3t"},
+            setup_github=False,
+            gh_token=None,
+            repo_url=None,
+            repo_ref=None,
+            dotfiles_url=None,
+            agents=[],
+            install_avr=False,
+            run_script=None,
+            redact=False,
+        )
+        (env_step,) = steps
+        assert "s3cr3t" in env_step.stdin  # value on stdin
+        assert "s3cr3t" not in env_step.script  # never in the script (argv)
+        assert env_step.secret is True
+
+
+class TestVmBootstrapRun:
+    """The real run path: readiness probe, ordered SSH steps, secret handling."""
+
+    def _patch_ssh(self, monkeypatch, calls, *, fail_step=False):
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: RUNNING_VM,
+        )
+
+        def fake_run_ssh(ssh_ep, command, *, identity_file=None, stdin_data=None, timeout=None, capture=True):
+            calls.append({"command": command, "stdin": stdin_data, "capture": capture})
+            rc = 3 if (fail_step and command != ["true"]) else 0
+            return SimpleNamespace(returncode=rc, stdout="", stderr="")
+
+        monkeypatch.setattr("avrea_cli.vm.run_ssh", fake_run_ssh)
+
+    def test_runs_steps_in_order_over_ssh(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.setattr("avrea_cli.vm._local_gh_token", lambda: "GHTOKEN")
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--setup-github", "--install", "claude"])
+        assert result.exit_code == 0, result.output
+
+        assert calls[0]["command"] == ["true"]  # SSH readiness probe first
+        steps = [c for c in calls if c["command"] != ["true"]]
+        assert len(steps) == 2
+        assert all(c["command"][:2] == ["bash", "-lc"] for c in steps)
+        assert all(c["capture"] is False for c in steps)  # steps stream live
+        gh = steps[0]
+        assert gh["stdin"] == "GHTOKEN"  # token rides stdin
+        assert "GHTOKEN" not in " ".join(gh["command"])  # never in argv
+
+    def test_step_failure_stops_and_names_step(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls, fail_step=True)
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install-avr"])
+        assert result.exit_code != 0
+        assert "install-avr" in result.output and "failed" in result.output
+        assert len(calls) == 2  # probe + the one failing step, then stop
+
+    def test_forward_agent_creds_ride_stdin(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-xyz")
+
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"])
+        assert result.exit_code == 0, result.output
+        steps = [c for c in calls if c["command"] != ["true"]]
+        # the env step (carrying the forwarded key) precedes the install step
+        env_call = steps[0]
+        assert "sk-ant-xyz" in (env_call["stdin"] or "")
+        assert "sk-ant-xyz" not in " ".join(env_call["command"])
+
+    def test_unreachable_ssh_surfaces_clear_error(self, runner, monkeypatch):
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: RUNNING_VM,
+        )
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        # Probe never succeeds.
+        monkeypatch.setattr(
+            "avrea_cli.vm.run_ssh",
+            lambda *a, **k: SimpleNamespace(returncode=255, stdout="", stderr=""),
+        )
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install-avr"])
+        assert result.exit_code != 0
+        assert "could not reach the VM over SSH" in result.output

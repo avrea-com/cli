@@ -9,6 +9,9 @@ Manage long-running VMs (SSH/RDP/VNC).
 .PP
 .SH COMMANDS
 .TP
+bootstrap
+Set up a RUNNING VM with your dev essentials over SSH.
+.TP
 create
 Create a long-running VM.
 .TP
@@ -28,7 +31,7 @@ show
 Show a VM's details, including connection endpoints and egress rules.
 .TP
 ssh
-Open an SSH session to a RUNNING VM (or print the command with --print).
+Open an SSH session to a RUNNING VM, or run a command on it.
 .TP
 start
 Start a stopped VM.
@@ -61,6 +64,7 @@ Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 .BR avr-repo (1),
 .BR avr-org (1),
 .BR avr-health (1),
+.BR avr-vm-bootstrap (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
 .BR avr-vm-list (1),

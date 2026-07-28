@@ -470,6 +470,45 @@ Manage long-running VMs (SSH/RDP/VNC).
 avr vm [OPTIONS] COMMAND [ARGS]...
 ```
 
+#### `avr vm bootstrap`
+
+Set up a RUNNING VM with your dev essentials over SSH.
+
+```sh
+avr vm bootstrap [OPTIONS] VM_ID
+```
+
+```sh
+Each selected step runs on the VM and streams its output; bootstrap stops at
+the first failure. Secrets (GitHub token, forwarded env values, agent API
+keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
+after every `avr vm start`. Example:
+```
+
+```sh
+avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
+  --repo https://github.com/me/project --env AWS_REGION=eu-north-1
+```
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `--setup-github / --no-setup-github` — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
+- `--install <TEXT>` — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
+- `--forward-agent-creds` — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
+- `--install-avr` — Install the avr CLI in the VM (pipx, else pip).
+- `--repo <TEXT>` — Clone this git repo into the VM's home directory.
+- `--ref <TEXT>` — Check out this ref after cloning (requires --repo).
+- `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.
+- `--env <TEXT>` — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
+- `--run <TEXT>` — Run a custom script last: an inline script, or @path to a file.
+- `--print` — Print the ordered plan (secrets redacted) without running.
+
 #### `avr vm create`
 
 Create a long-running VM.
@@ -608,18 +647,22 @@ avr vm show [OPTIONS] VM_ID
 
 #### `avr vm ssh`
 
-Open an SSH session to a RUNNING VM (or print the command with --print).
+Open an SSH session to a RUNNING VM, or run a command on it.
 
 ```sh
 avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...
 ```
 
-Resolves the VM's SSH endpoint and replaces this process with `ssh`.
-Extra options are passed through to ssh and placed before the destination,
-so port-forwarding and similar flags work. Use `--` to stop avr from
-interpreting them, e.g.:
+With no extra arguments this opens an interactive session. Anything after
+`--` is run as a remote command instead, e.g.:
 
-    avr vm ssh cvm-abc123 -- -L 8080:localhost:80
+    avr vm ssh cvm-abc123 -- uname -a
+
+When the VM's endpoint publishes a host key it is pinned, so the first
+connect neither prompts nor is spoofable. If the endpoint has no host key,
+`avr` prints a warning and falls back to trust-on-first-use, so this
+spoofing protection is conditional rather than guaranteed. For
+port-forwarding use `avr vm port-forward`.
 
 **Arguments**
 
