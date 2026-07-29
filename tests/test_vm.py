@@ -742,6 +742,27 @@ class TestVmShow:
         # on rendered CLI output, not URL validation).
         assert re.search(r"\bgithub\.com\b", result.output)
 
+    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch):
+        detail = {"data": {**SAMPLE_VM, "egress_rules": [], "precheckout_ref": "main", "preload_status": "preloaded"}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: detail,
+        )
+        result = runner.invoke(cli, ["vm", "show", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "Preload" in result.output
+        assert "main (preloaded)" in result.output
+
+    def test_no_preload_row_without_precheckout(self, runner, monkeypatch):
+        detail = {"data": {**SAMPLE_VM, "egress_rules": []}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: detail,
+        )
+        result = runner.invoke(cli, ["vm", "show", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "Preload" not in result.output
+
 
 class TestVmUpdate:
     def test_noop_rejected(self, runner):

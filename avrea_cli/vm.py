@@ -193,7 +193,7 @@ def _format_endpoints(endpoints: dict[str, Any] | None) -> str:
 
 def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     """Flatten a VM record into an ordered key-value view for human output."""
-    return {
+    summary: dict[str, Any] = {
         "VM ID": vm.get("customer_vm_id"),
         "Name": vm.get("display_name"),
         "OS": vm.get("os_type"),
@@ -203,9 +203,15 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
         "Reason": vm.get("state_reason") or "-",
         "Remote desktop": "yes" if vm.get("enable_remote_desktop") else "no",
         "Endpoints": _format_endpoints(vm.get("endpoints")),
-        "Auto-stop at": vm.get("stop_at"),
-        "Created": vm.get("created_at"),
     }
+    # Only shown for a VM created with a precheckout repo. preload_status is
+    # null until the first start stamps the current boot's outcome.
+    ref = vm.get("precheckout_ref")
+    if ref:
+        summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
+    summary["Auto-stop at"] = vm.get("stop_at")
+    summary["Created"] = vm.get("created_at")
+    return summary
 
 
 # ``/gfx:rfx`` is a GNOME-Remote-Desktop-only workaround, not a general RDP flag.
