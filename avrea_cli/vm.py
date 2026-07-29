@@ -644,12 +644,15 @@ def vm_create(
     data = response["data"]
     password = data.get("password")
     vm_id = data["vm"].get("customer_vm_id")
+    note = data.get("precheckout_note")
 
     if wait:
         # Human output surfaces the one-time password before waiting so a timeout
         # or Ctrl-C cannot lose it; JSON carries it in the single final document.
         if not as_json:
             _print_password(password)
+            if note:
+                click.secho(f"Note: {note}", fg="yellow", err=True)
             click.echo()
         click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
         vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, _endpoints_ready)
@@ -668,6 +671,9 @@ def vm_create(
     _print_vm(data["vm"], password=password)
     _print_password(password)
     click.echo()
+    if note:
+        click.secho(f"Note: {note}", fg="yellow", err=True)
+        click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
 
 

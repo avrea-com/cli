@@ -147,6 +147,33 @@ class TestVmCreate:
         assert "hunter2hunter2" in result.output
         assert "vm show cvm-abc123" in result.output
 
+    def test_create_surfaces_precheckout_note(self, runner, monkeypatch):
+        note = "'owner/repo' is connected but not mirrored, so it will not be preloaded server-side"
+        response = {"data": {"vm": SAMPLE_VM, "password": "hunter2hunter2", "precheckout_note": note}}
+        store = {"return": response}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev box",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ssh-key",
+                "ssh-ed25519 AAAA test@host",
+                "--repo",
+                "owner/repo",
+                "--ephemeral",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Note:" in result.output
+        assert "not mirrored" in result.output
+
     def test_create_json_output(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
