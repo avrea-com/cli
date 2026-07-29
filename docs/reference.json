@@ -2557,6 +2557,42 @@
                 "default": null
               },
               {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ref",
+                "kind": "option",
+                "opts": [
+                  "--ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "ephemeral",
                 "kind": "option",
                 "opts": [

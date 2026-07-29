@@ -536,6 +536,8 @@ now, it is never stored.
 - `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
+- `--repo <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
+- `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 - `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_

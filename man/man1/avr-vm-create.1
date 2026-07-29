@@ -45,6 +45,12 @@ Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 \fB\-\-egress\-rules\fR \fITEXT\fR
 Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 .TP
+\fB\-\-repo\fR \fITEXT\fR
+Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
+.TP
+\fB\-\-ref\fR \fITEXT\fR
+Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+.TP
 \fB\-\-ephemeral\fR
 Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 .TP

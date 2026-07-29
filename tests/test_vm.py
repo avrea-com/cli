@@ -118,6 +118,10 @@ class TestVmCreate:
                 "8h",
                 "--ssh-key",
                 "ssh-ed25519 AAAA test@host",
+                "--repo",
+                "owner/repo",
+                "--ref",
+                "main",
                 "--ephemeral",
             ],
         )
@@ -129,6 +133,9 @@ class TestVmCreate:
         assert body["size"] == "2-vcpu"
         assert body["ttl_seconds"] == 8 * 3600
         assert body["ssh_public_keys"] == ["ssh-ed25519 AAAA test@host"]
+        # the optional precheckout repo/branch ride the body verbatim
+        assert body["repo"] == "owner/repo"
+        assert body["ref"] == "main"
         # os_version is omitted so the server resolves the OS default
         assert "os_version" not in body
         # the server derives cpu/memory/disk from the size tier; the CLI must not send them
@@ -164,6 +171,32 @@ class TestVmCreate:
         payload = json.loads(result.output)
         assert payload["password"] == "hunter2hunter2"
         assert payload["vm"]["customer_vm_id"] == "cvm-abc123"
+
+    def test_ref_without_repo_errors(self, runner, monkeypatch):
+        called = {"n": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--ref",
+                "main",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--ref requires --repo" in result.output
+        assert called["n"] == 0  # never hit the API
 
     def test_ttl_out_of_range_rejected(self, runner):
         result = runner.invoke(

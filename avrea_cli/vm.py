@@ -521,6 +521,24 @@ def vm(ctx):
     help="Per-VM egress firewall rules as a JSON array, or @path to a JSON file.",
 )
 @click.option(
+    "--repo",
+    "repo",
+    default=None,
+    help=(
+        "Git repository (owner/repo) to preload into the VM at boot. Best-effort; "
+        "the checkout is warmed from Avrea's mirror when available."
+    ),
+)
+@click.option(
+    "--ref",
+    "ref",
+    default=None,
+    help=(
+        "Branch to preload (default: the repository's default branch). Requires --repo. "
+        "Tags, pull-request refs, and raw commit SHAs are not supported."
+    ),
+)
+@click.option(
     "--ephemeral",
     is_flag=True,
     default=False,
@@ -552,6 +570,8 @@ def vm_create(
     remote_desktop,
     ttl,
     egress_rules_raw,
+    repo,
+    ref,
     ephemeral,
     wait,
     wait_timeout,
@@ -571,6 +591,8 @@ def vm_create(
             "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
             "the disk, and a restart boots fresh from the image. Pass --ephemeral to acknowledge."
         )
+    if ref and not repo:
+        raise click.UsageError("--ref requires --repo.")
     # Windows remote desktop is not available yet (coming soon). Gate it at the
     # CLI so `--remote-desktop --os windows` reports "coming soon" rather than
     # provisioning. Delete this block (and its test) to enable it; Linux and
@@ -603,6 +625,10 @@ def vm_create(
         body["os_version"] = os_version
     if egress_rules is not None:
         body["egress_rules"] = egress_rules
+    if repo is not None:
+        body["repo"] = repo
+    if ref is not None:
+        body["ref"] = ref
 
     try:
         response = client.public_post(f"/orgs/{org_id}/vms", json=body)

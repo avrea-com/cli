@@ -77,6 +77,8 @@ now, it is never stored.
 - <code class="cli-flag">&#x2D;&#x2D;remote-desktop / &#x2D;&#x2D;no-remote-desktop</code> — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - <code class="cli-flag">&#x2D;&#x2D;egress-rules</code> <code class="cli-value">&lt;TEXT&gt;</code> — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
+- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 - <code class="cli-flag">&#x2D;&#x2D;ephemeral</code> — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
