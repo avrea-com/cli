@@ -2276,7 +2276,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Check out this ref after cloning (requires --repo).",
+                "help": "Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

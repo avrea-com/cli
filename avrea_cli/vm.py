@@ -29,6 +29,7 @@ import click
 import httpx
 import json
 import os
+import re
 import shlex
 import signal
 import socket
@@ -189,6 +190,32 @@ def _format_endpoints(endpoints: dict[str, Any] | None) -> str:
             f"{remote_desktop.get('external_ip')}:{remote_desktop.get('external_port')}"
         )
     return "; ".join(parts) if parts else "(none)"
+
+
+_COMMIT_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+_BRANCH_NAME_RE = re.compile(r"^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$")
+
+
+def _validate_branch_ref(ref: str) -> str:
+    """Validate that ``--ref`` is a plain branch name, matching the control plane.
+
+    Rejects tags, pull-request refs, raw commit SHAs, and git/shell-hostile
+    shapes so neither ``avr vm create`` (persisted + preloaded server-side) nor
+    ``avr vm bootstrap`` (client-side checkout) acts on a non-branch ref.
+    """
+    ref = ref.strip()
+    if (
+        not ref
+        or len(ref) > 255
+        or _COMMIT_SHA_RE.fullmatch(ref)
+        or ref.startswith("refs/")
+        or ".." in ref
+        or not _BRANCH_NAME_RE.fullmatch(ref)
+    ):
+        raise click.UsageError(
+            f"--ref '{ref}' is not a branch name; tags, pull-request refs, and raw commit SHAs are not supported."
+        )
+    return ref
 
 
 def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
@@ -599,6 +626,8 @@ def vm_create(
         )
     if ref and not repo:
         raise click.UsageError("--ref requires --repo.")
+    if ref:
+        ref = _validate_branch_ref(ref)
     # Windows remote desktop is not available yet (coming soon). Gate it at the
     # CLI so `--remote-desktop --os windows` reports "coming soon" rather than
     # provisioning. Delete this block (and its test) to enable it; Linux and
@@ -2106,7 +2135,12 @@ def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], id
 )
 @click.option("--install-avr", is_flag=True, default=False, help="Install the avr CLI in the VM (pipx, else pip).")
 @click.option("--repo", "repo_url", default=None, help="Clone this git repo into the VM's home directory.")
-@click.option("--ref", "repo_ref", default=None, help="Check out this ref after cloning (requires --repo).")
+@click.option(
+    "--ref",
+    "repo_ref",
+    default=None,
+    help="Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.",
+)
 @click.option("--dotfiles", "dotfiles_url", default=None, help="Clone this dotfiles repo and run its installer.")
 @click.option(
     "--env",
@@ -2147,6 +2181,8 @@ def vm_bootstrap(
     """
     if repo_ref and not repo_url:
         raise click.UsageError("--ref requires --repo.")
+    if repo_ref:
+        repo_ref = _validate_branch_ref(repo_ref)
 
     agents = _parse_bootstrap_agents(install_agents)
     env = _parse_bootstrap_env(env_flags)

@@ -44,7 +44,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - <code class="cli-flag">&#x2D;&#x2D;forward-agent-creds</code> — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
 - <code class="cli-flag">&#x2D;&#x2D;install-avr</code> — Install the avr CLI in the VM (pipx, else pip).
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Clone this git repo into the VM's home directory.
-- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Check out this ref after cloning (requires --repo).
+- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
 - <code class="cli-flag">&#x2D;&#x2D;dotfiles</code> <code class="cli-value">&lt;TEXT&gt;</code> — Clone this dotfiles repo and run its installer.
 - <code class="cli-flag">&#x2D;&#x2D;env</code> <code class="cli-value">&lt;TEXT&gt;</code> — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;run</code> <code class="cli-value">&lt;TEXT&gt;</code> — Run a custom script last: an inline script, or @path to a file.

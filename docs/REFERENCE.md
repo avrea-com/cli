@@ -503,7 +503,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - `--forward-agent-creds` — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
 - `--install-avr` — Install the avr CLI in the VM (pipx, else pip).
 - `--repo <TEXT>` — Clone this git repo into the VM's home directory.
-- `--ref <TEXT>` — Check out this ref after cloning (requires --repo).
+- `--ref <TEXT>` — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
 - `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.
 - `--env <TEXT>` — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
 - `--run <TEXT>` — Run a custom script last: an inline script, or @path to a file.

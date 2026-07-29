@@ -3,6 +3,7 @@
 from avrea_cli.main import cli
 import httpx
 import json
+import pytest
 import re
 
 
@@ -198,6 +199,28 @@ class TestVmCreate:
         payload = json.loads(result.output)
         assert payload["password"] == "hunter2hunter2"
         assert payload["vm"]["customer_vm_id"] == "cvm-abc123"
+
+    def test_ref_rejects_non_branch(self, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "x",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--repo",
+                "owner/repo",
+                "--ref",
+                "a" * 40,
+                "--ephemeral",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "not a branch name" in result.output
 
     def test_ref_without_repo_errors(self, runner, monkeypatch):
         called = {"n": 0}
@@ -1421,6 +1444,12 @@ class TestVmBootstrapPlanning:
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--ref", "main"])
         assert result.exit_code != 0
         assert "--ref requires --repo" in result.output
+
+    @pytest.mark.parametrize("bad", ["a" * 40, "refs/tags/v1", "refs/pull/3/merge", "bad ref", "a..b"])
+    def test_ref_rejects_non_branch(self, runner, bad):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--repo", "owner/repo", "--ref", bad])
+        assert result.exit_code != 0
+        assert "not a branch name" in result.output
 
     def test_no_steps_errors(self, runner):
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1"])
