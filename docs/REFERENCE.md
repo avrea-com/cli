@@ -503,7 +503,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - `--forward-agent-creds` — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
 - `--install-avr` — Install the avr CLI in the VM (pipx, else pip).
 - `--repo <TEXT>` — Clone this git repo into the VM's home directory.
-- `--ref <TEXT>` — Check out this ref after cloning (requires --repo).
+- `--ref <TEXT>` — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
 - `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.
 - `--env <TEXT>` — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
 - `--run <TEXT>` — Run a custom script last: an inline script, or @path to a file.
@@ -536,6 +536,8 @@ now, it is never stored.
 - `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
+- `--repo <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
+- `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 - `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_

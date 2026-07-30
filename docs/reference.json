@@ -2276,7 +2276,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Check out this ref after cloning (requires --repo).",
+                "help": "Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2552,6 +2552,42 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": "Per-VM egress firewall rules as a JSON array, or @path to a JSON file.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ref",
+                "kind": "option",
+                "opts": [
+                  "--ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

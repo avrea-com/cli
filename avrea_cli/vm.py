@@ -29,6 +29,7 @@ import click
 import httpx
 import json
 import os
+import re
 import shlex
 import signal
 import socket
@@ -191,9 +192,35 @@ def _format_endpoints(endpoints: dict[str, Any] | None) -> str:
     return "; ".join(parts) if parts else "(none)"
 
 
+_COMMIT_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+_BRANCH_NAME_RE = re.compile(r"^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$")
+
+
+def _validate_branch_ref(ref: str) -> str:
+    """Validate that ``--ref`` is a plain branch name, matching the control plane.
+
+    Rejects tags, pull-request refs, raw commit SHAs, and git/shell-hostile
+    shapes so neither ``avr vm create`` (persisted + preloaded server-side) nor
+    ``avr vm bootstrap`` (client-side checkout) acts on a non-branch ref.
+    """
+    ref = ref.strip()
+    if (
+        not ref
+        or len(ref) > 255
+        or _COMMIT_SHA_RE.fullmatch(ref)
+        or ref.startswith("refs/")
+        or ".." in ref
+        or not _BRANCH_NAME_RE.fullmatch(ref)
+    ):
+        raise click.UsageError(
+            f"--ref '{ref}' is not a branch name; tags, pull-request refs, and raw commit SHAs are not supported."
+        )
+    return ref
+
+
 def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     """Flatten a VM record into an ordered key-value view for human output."""
-    return {
+    summary: dict[str, Any] = {
         "VM ID": vm.get("customer_vm_id"),
         "Name": vm.get("display_name"),
         "OS": vm.get("os_type"),
@@ -203,9 +230,15 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
         "Reason": vm.get("state_reason") or "-",
         "Remote desktop": "yes" if vm.get("enable_remote_desktop") else "no",
         "Endpoints": _format_endpoints(vm.get("endpoints")),
-        "Auto-stop at": vm.get("stop_at"),
-        "Created": vm.get("created_at"),
     }
+    # Only shown for a VM created with a precheckout repo. preload_status is
+    # null until the first start stamps the current boot's outcome.
+    ref = vm.get("precheckout_ref")
+    if ref:
+        summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
+    summary["Auto-stop at"] = vm.get("stop_at")
+    summary["Created"] = vm.get("created_at")
+    return summary
 
 
 # ``/gfx:rfx`` is a GNOME-Remote-Desktop-only workaround, not a general RDP flag.
@@ -521,6 +554,24 @@ def vm(ctx):
     help="Per-VM egress firewall rules as a JSON array, or @path to a JSON file.",
 )
 @click.option(
+    "--repo",
+    "repo",
+    default=None,
+    help=(
+        "Git repository (owner/repo) to preload into the VM at boot. Best-effort; "
+        "the checkout is warmed from Avrea's mirror when available."
+    ),
+)
+@click.option(
+    "--ref",
+    "ref",
+    default=None,
+    help=(
+        "Branch to preload (default: the repository's default branch). Requires --repo. "
+        "Tags, pull-request refs, and raw commit SHAs are not supported."
+    ),
+)
+@click.option(
     "--ephemeral",
     is_flag=True,
     default=False,
@@ -552,6 +603,8 @@ def vm_create(
     remote_desktop,
     ttl,
     egress_rules_raw,
+    repo,
+    ref,
     ephemeral,
     wait,
     wait_timeout,
@@ -571,6 +624,10 @@ def vm_create(
             "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
             "the disk, and a restart boots fresh from the image. Pass --ephemeral to acknowledge."
         )
+    if ref and not repo:
+        raise click.UsageError("--ref requires --repo.")
+    if ref:
+        ref = _validate_branch_ref(ref)
     # Windows remote desktop is not available yet (coming soon). Gate it at the
     # CLI so `--remote-desktop --os windows` reports "coming soon" rather than
     # provisioning. Delete this block (and its test) to enable it; Linux and
@@ -603,6 +660,10 @@ def vm_create(
         body["os_version"] = os_version
     if egress_rules is not None:
         body["egress_rules"] = egress_rules
+    if repo is not None:
+        body["repo"] = repo
+    if ref is not None:
+        body["ref"] = ref
 
     try:
         response = client.public_post(f"/orgs/{org_id}/vms", json=body)
@@ -612,12 +673,15 @@ def vm_create(
     data = response["data"]
     password = data.get("password")
     vm_id = data["vm"].get("customer_vm_id")
+    note = data.get("precheckout_note")
 
     if wait:
         # Human output surfaces the one-time password before waiting so a timeout
         # or Ctrl-C cannot lose it; JSON carries it in the single final document.
         if not as_json:
             _print_password(password)
+            if note:
+                click.secho(f"Note: {note}", fg="yellow", err=True)
             click.echo()
         click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
         vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, _endpoints_ready)
@@ -636,6 +700,9 @@ def vm_create(
     _print_vm(data["vm"], password=password)
     _print_password(password)
     click.echo()
+    if note:
+        click.secho(f"Note: {note}", fg="yellow", err=True)
+        click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
 
 
@@ -2068,7 +2135,12 @@ def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], id
 )
 @click.option("--install-avr", is_flag=True, default=False, help="Install the avr CLI in the VM (pipx, else pip).")
 @click.option("--repo", "repo_url", default=None, help="Clone this git repo into the VM's home directory.")
-@click.option("--ref", "repo_ref", default=None, help="Check out this ref after cloning (requires --repo).")
+@click.option(
+    "--ref",
+    "repo_ref",
+    default=None,
+    help="Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.",
+)
 @click.option("--dotfiles", "dotfiles_url", default=None, help="Clone this dotfiles repo and run its installer.")
 @click.option(
     "--env",
@@ -2109,6 +2181,8 @@ def vm_bootstrap(
     """
     if repo_ref and not repo_url:
         raise click.UsageError("--ref requires --repo.")
+    if repo_ref:
+        repo_ref = _validate_branch_ref(repo_ref)
 
     agents = _parse_bootstrap_agents(install_agents)
     env = _parse_bootstrap_env(env_flags)

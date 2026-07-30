@@ -3,6 +3,7 @@
 from avrea_cli.main import cli
 import httpx
 import json
+import pytest
 import re
 
 
@@ -118,6 +119,10 @@ class TestVmCreate:
                 "8h",
                 "--ssh-key",
                 "ssh-ed25519 AAAA test@host",
+                "--repo",
+                "owner/repo",
+                "--ref",
+                "main",
                 "--ephemeral",
             ],
         )
@@ -129,6 +134,9 @@ class TestVmCreate:
         assert body["size"] == "2-vcpu"
         assert body["ttl_seconds"] == 8 * 3600
         assert body["ssh_public_keys"] == ["ssh-ed25519 AAAA test@host"]
+        # the optional precheckout repo/branch ride the body verbatim
+        assert body["repo"] == "owner/repo"
+        assert body["ref"] == "main"
         # os_version is omitted so the server resolves the OS default
         assert "os_version" not in body
         # the server derives cpu/memory/disk from the size tier; the CLI must not send them
@@ -139,6 +147,33 @@ class TestVmCreate:
         # one-time password and the poll hint are both surfaced
         assert "hunter2hunter2" in result.output
         assert "vm show cvm-abc123" in result.output
+
+    def test_create_surfaces_precheckout_note(self, runner, monkeypatch):
+        note = "'owner/repo' is connected but not mirrored, so it will not be preloaded server-side"
+        response = {"data": {"vm": SAMPLE_VM, "password": "hunter2hunter2", "precheckout_note": note}}
+        store = {"return": response}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev box",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ssh-key",
+                "ssh-ed25519 AAAA test@host",
+                "--repo",
+                "owner/repo",
+                "--ephemeral",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Note:" in result.output
+        assert "not mirrored" in result.output
 
     def test_create_json_output(self, runner, monkeypatch):
         monkeypatch.setattr(
@@ -164,6 +199,54 @@ class TestVmCreate:
         payload = json.loads(result.output)
         assert payload["password"] == "hunter2hunter2"
         assert payload["vm"]["customer_vm_id"] == "cvm-abc123"
+
+    def test_ref_rejects_non_branch(self, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "x",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--repo",
+                "owner/repo",
+                "--ref",
+                "a" * 40,
+                "--ephemeral",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "not a branch name" in result.output
+
+    def test_ref_without_repo_errors(self, runner, monkeypatch):
+        called = {"n": 0}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--ref",
+                "main",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--ref requires --repo" in result.output
+        assert called["n"] == 0  # never hit the API
 
     def test_ttl_out_of_range_rejected(self, runner):
         result = runner.invoke(
@@ -708,6 +791,27 @@ class TestVmShow:
         # latter trips CodeQL's incomplete-URL-sanitization rule (false positive
         # on rendered CLI output, not URL validation).
         assert re.search(r"\bgithub\.com\b", result.output)
+
+    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch):
+        detail = {"data": {**SAMPLE_VM, "egress_rules": [], "precheckout_ref": "main", "preload_status": "preloaded"}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: detail,
+        )
+        result = runner.invoke(cli, ["vm", "show", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "Preload" in result.output
+        assert "main (preloaded)" in result.output
+
+    def test_no_preload_row_without_precheckout(self, runner, monkeypatch):
+        detail = {"data": {**SAMPLE_VM, "egress_rules": []}}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: detail,
+        )
+        result = runner.invoke(cli, ["vm", "show", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "Preload" not in result.output
 
 
 class TestVmUpdate:
@@ -1340,6 +1444,12 @@ class TestVmBootstrapPlanning:
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--ref", "main"])
         assert result.exit_code != 0
         assert "--ref requires --repo" in result.output
+
+    @pytest.mark.parametrize("bad", ["a" * 40, "refs/tags/v1", "refs/pull/3/merge", "bad ref", "a..b"])
+    def test_ref_rejects_non_branch(self, runner, bad):
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--repo", "owner/repo", "--ref", bad])
+        assert result.exit_code != 0
+        assert "not a branch name" in result.output
 
     def test_no_steps_errors(self, runner):
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1"])
