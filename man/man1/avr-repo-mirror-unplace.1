@@ -1,0 +1,53 @@
+.TH AVR\-REPO\-MIRROR\-UNPLACE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-unplace \- Remove the repository's mirror from a git cluster.
+.SH SYNOPSIS
+.B avr repo mirror unplace
+[OPTIONS] CLUSTER_ID
+.SH DESCRIPTION
+Remove the repository's mirror from a git cluster.
+.PP
+The mirrored data in that cluster is dropped; other placements are unaffected. Requires the organization admin role.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror unplace gsc-fi
+    avr repo mirror unplace gsc-fi --repo acme/widgets --yes
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fICLUSTER_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1)
