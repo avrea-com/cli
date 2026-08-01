@@ -1,0 +1,44 @@
+.TH AVR\-REPO\-MIRROR\-CREATE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-create \- Create an avrea-git mirror for a repository.
+.SH SYNOPSIS
+.B avr repo mirror create
+[OPTIONS]
+.SH DESCRIPTION
+Create an avrea-git mirror for a repository.
+.PP
+Enables mirroring and places the repository in Avrea's git clusters, where it is kept in sync automatically. Idempotent: re-running converges the mirror configuration. Requires the organization admin role.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror create
+    avr repo mirror create --repo acme/widgets
+    avr repo mirror create --repo rep-abc123 --json '*'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-delete (1),
+.BR avr-repo-mirror-status (1)

@@ -26,12 +26,20 @@ from avrea_cli.json_output import split_fields
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_timestamp
 from avrea_cli.output import output_list
+from avrea_cli.repo_context import resolve_repo_named
+from avrea_cli.repo_context import resolve_repo_or_detect
 from typing import Any
 from urllib.parse import quote
 import click
 import httpx
 
 _REPO_LIST_FIELDS = make_schema("repository_id", "full_name", "platform", "platform_repository_id")
+_REPO_MIRROR_FIELDS = make_schema(
+    "repository_id",
+    "full_name",
+    "enabled",
+    "placements",
+)
 _PUBLIC_MIRROR_REQUEST_FIELDS = make_schema(
     "request_id",
     "repository_id",
@@ -152,7 +160,7 @@ def _print_repos_table(repos: list[dict[str, Any]], *, console_url: str = "", sl
 @click.group(cls=GhGroup)
 @click.pass_context
 def repo(ctx):
-    """Manage repositories and public mirrors."""
+    """Manage repositories and mirrors."""
     ensure_ctx(ctx)
 
 
@@ -543,3 +551,185 @@ def public_mirror_cancel(ctx, request_id, org_id, yes, json_fields, jq_expr):
 
     full_name = result.get("repository_full_name")
     click.echo(f"Cancelled public-mirror request {result['request_id']}{f' ({full_name})' if full_name else ''}.")
+
+
+@repo.group("mirror", cls=GhGroup)
+@click.pass_context
+def mirror(ctx):
+    """Create and manage avrea-git mirrors of your repositories."""
+    ensure_ctx(ctx)
+
+
+_MIRROR_404_HINT = (
+    "Git mirrors may not be enabled for your organization yet, or the repository is not connected to Avrea."
+)
+
+
+def _print_mirror(result: dict[str, Any]) -> None:
+    """Human-readable mirror state: summary key/values plus a placement table."""
+    click.echo(
+        format_key_value(
+            {
+                "Repository": result.get("full_name") or "-",
+                "Repository ID": result["repository_id"],
+                "Mirrored": "yes" if result.get("enabled") else "no",
+            }
+        )
+    )
+    placements = result.get("placements") or []
+    if not placements:
+        return
+    click.echo()
+    for placement in placements:
+        placement["last_sync_display"] = (
+            format_timestamp(placement.get("last_sync_at")) if placement.get("last_sync_at") else "-"
+        )
+        placement["status_display"] = placement.get("last_sync_status") or "-"
+    output_list(
+        placements,
+        columns=["cluster_id", "role", "last_sync_display", "status_display"],
+        column_labels=["Cluster", "Role", "Last sync", "Status"],
+    )
+
+
+@mirror.command("create")
+@click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
+@json_options
+@click.pass_context
+def mirror_create(ctx, repo_id, org_id, json_fields, jq_expr):
+    """Create an avrea-git mirror for a repository.
+
+    Enables mirroring and places the repository in Avrea's git clusters, where
+    it is kept in sync automatically. Idempotent: re-running converges the
+    mirror configuration. Requires the organization admin role.
+
+    \b
+    Examples:
+        avr repo mirror create
+        avr repo mirror create --repo acme/widgets
+        avr repo mirror create --repo rep-abc123 --json '*'
+
+    \b
+    JSON FIELDS
+        enabled, full_name, placements, repository_id
+    """
+    if handle_json_meta(json_fields, jq_expr, _REPO_MIRROR_FIELDS):
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+
+    try:
+        result = client.public_post(f"/orgs/{org_id}/repos/{repo_id}/mirror")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "create a repository mirror", hint=_MIRROR_404_HINT)
+
+    if json_fields is not None:
+        emit_json_record(result, split_fields(json_fields, _REPO_MIRROR_FIELDS), _REPO_MIRROR_FIELDS, jq_expr)
+        return
+
+    click.echo(f"Created mirror for {result.get('full_name') or repo_id}.\n")
+    _print_mirror(result)
+
+
+@mirror.command("status")
+@click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
+@json_options
+@click.pass_context
+def mirror_status(ctx, repo_id, org_id, json_fields, jq_expr):
+    """Show a repository's avrea-git mirror status.
+
+    Reports whether the repository is mirrored and, per cluster, when it last
+    synced.
+
+    \b
+    Examples:
+        avr repo mirror status
+        avr repo mirror status --repo acme/widgets
+        avr repo mirror status --repo acme/widgets --json enabled
+        avr repo mirror status --json '*' -q '.placements[].cluster_id'
+
+    \b
+    JSON FIELDS
+        enabled, full_name, placements, repository_id
+    """
+    if handle_json_meta(json_fields, jq_expr, _REPO_MIRROR_FIELDS):
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+
+    try:
+        result = client.public_get(f"/orgs/{org_id}/repos/{repo_id}/mirror")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "get repository mirror status", hint=_MIRROR_404_HINT)
+
+    if json_fields is not None:
+        emit_json_record(result, split_fields(json_fields, _REPO_MIRROR_FIELDS), _REPO_MIRROR_FIELDS, jq_expr)
+        return
+
+    _print_mirror(result)
+
+
+@mirror.command("delete")
+@click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
+@click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
+@json_options
+@click.pass_context
+def mirror_delete(ctx, repo_id, org_id, yes, json_fields, jq_expr):
+    """Disable a repository's avrea-git mirror.
+
+    Stops mirroring the repository. The mirror configuration is retained but
+    inert, so re-creating the mirror restores it. Requires the organization
+    admin role.
+
+    \b
+    Examples:
+        avr repo mirror delete --repo acme/widgets
+        avr repo mirror delete --repo acme/widgets --yes
+
+    \b
+    JSON FIELDS
+        enabled, full_name, placements, repository_id
+    """
+    if handle_json_meta(json_fields, jq_expr, _REPO_MIRROR_FIELDS):
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    repo_id, repo_label = resolve_repo_named(client, config, org_id, repo_id)
+
+    if not yes:
+        ensure_prompts_allowed("mirror deletion needs confirmation")
+        click.confirm(f"Disable the avrea-git mirror for {repo_label}?", abort=True)
+
+    try:
+        result = client.public_delete(f"/orgs/{org_id}/repos/{repo_id}/mirror")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "disable repository mirror", hint=_MIRROR_404_HINT)
+
+    # public_delete returns None on a 204/empty body, which is still a success.
+    result = result or {"repository_id": repo_id, "enabled": False}
+
+    if json_fields is not None:
+        emit_json_record(result, split_fields(json_fields, _REPO_MIRROR_FIELDS), _REPO_MIRROR_FIELDS, jq_expr)
+        return
+
+    click.echo(f"Disabled mirror for {result.get('full_name') or repo_label}.")

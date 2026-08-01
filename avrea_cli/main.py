@@ -55,7 +55,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
     ),  # noqa: E501
     ("billing", "avrea_cli.billing", "billing", "Manage billing, invoices, and payment methods.", "Setup & Config"),
     ("audit-events", "avrea_cli.audit", "audit_events", "View audit events for organization writes.", "Setup & Config"),
-    ("repo", "avrea_cli.commands.repo", "repo", "Manage repositories and public mirrors.", "Additional Commands"),
+    ("repo", "avrea_cli.commands.repo", "repo", "Manage repositories and mirrors.", "Additional Commands"),
     ("org", "avrea_cli.commands.org", "org", "Manage organizations and installations.", "Additional Commands"),
     ("health", "avrea_cli.commands.health", "health", "Check Avrea platform status.", "Additional Commands"),
     ("login", "avrea_cli.commands.auth_cmd", "login_alias", None, None),

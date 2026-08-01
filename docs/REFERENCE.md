@@ -51,7 +51,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Additional Commands
 
-- [`avr repo`](#avr-repo) — Manage repositories and public mirrors.
+- [`avr repo`](#avr-repo) — Manage repositories and mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
 
@@ -1716,7 +1716,7 @@ JSON FIELDS
 
 ### `avr repo`
 
-Manage repositories and public mirrors.
+Manage repositories and mirrors.
 
 ```sh
 avr repo [OPTIONS] COMMAND [ARGS]...
@@ -1746,6 +1746,107 @@ JSON FIELDS
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max repositories to return. _(default: `100`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr repo mirror`
+
+Create and manage avrea-git mirrors of your repositories.
+
+```sh
+avr repo mirror [OPTIONS] COMMAND [ARGS]...
+```
+
+##### `avr repo mirror create`
+
+Create an avrea-git mirror for a repository.
+
+```sh
+avr repo mirror create [OPTIONS]
+```
+
+Enables mirroring and places the repository in Avrea's git clusters, where
+it is kept in sync automatically. Idempotent: re-running converges the
+mirror configuration. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror create
+    avr repo mirror create --repo acme/widgets
+    avr repo mirror create --repo rep-abc123 --json '*'
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror delete`
+
+Disable a repository's avrea-git mirror.
+
+```sh
+avr repo mirror delete [OPTIONS]
+```
+
+Stops mirroring the repository. The mirror configuration is retained but
+inert, so re-creating the mirror restores it. Requires the organization
+admin role.
+
+```sh
+Examples:
+    avr repo mirror delete --repo acme/widgets
+    avr repo mirror delete --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror status`
+
+Show a repository's avrea-git mirror status.
+
+```sh
+avr repo mirror status [OPTIONS]
+```
+
+Reports whether the repository is mirrored and, per cluster, when it last
+synced.
+
+```sh
+Examples:
+    avr repo mirror status
+    avr repo mirror status --repo acme/widgets
+    avr repo mirror status --repo acme/widgets --json enabled
+    avr repo mirror status --json '*' -q '.placements[].cluster_id'
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
