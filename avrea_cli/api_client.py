@@ -137,11 +137,16 @@ class ApiClient:
         response.raise_for_status()
         return response.json()
 
-    def public_put(self, path: str, json: dict[str, Any] | None = None) -> dict[str, Any]:
+    def public_put(self, path: str, json: dict[str, Any] | None = None, timeout: float | None = None) -> dict[str, Any]:
         """PUT request to public API."""
         url = f"{self.config.public_api_url}{path}"
         try:
-            response = self._http.put(url, headers=self.config.get_api_headers(), timeout=self.timeout, json=json)
+            response = self._http.put(
+                url,
+                headers=self.config.get_api_headers(),
+                timeout=timeout if timeout is not None else self.timeout,
+                json=json,
+            )
         except httpx.HTTPError as exc:
             self._log("PUT", url, type(exc).__name__)
             raise
@@ -149,7 +154,12 @@ class ApiClient:
         response.raise_for_status()
         return response.json()
 
-    def public_patch(self, path: str, json: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    def public_patch(
+        self,
+        path: str,
+        json: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> dict[str, Any] | None:
         """PATCH request to public API.
 
         Mirrors ``public_delete``'s empty-response handling: a 204 No
@@ -159,8 +169,14 @@ class ApiClient:
         non-JSON crash on the client would mask the actual outcome.
         """
         url = f"{self.config.public_api_url}{path}"
+        effective_timeout = timeout if timeout is not None else self.timeout
         try:
-            response = self._http.patch(url, headers=self.config.get_api_headers(), timeout=self.timeout, json=json)
+            response = self._http.patch(
+                url,
+                headers=self.config.get_api_headers(),
+                timeout=effective_timeout,
+                json=json,
+            )
         except httpx.HTTPError as exc:
             self._log("PATCH", url, type(exc).__name__)
             raise

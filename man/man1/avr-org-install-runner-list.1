@@ -1,0 +1,34 @@
+.TH AVR\-ORG\-INSTALL\-RUNNER\-LIST 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-runner-list \- List all machine types, runner status, and exact GitLab setup instructions.
+.SH SYNOPSIS
+.B avr org install runner list
+[OPTIONS]
+.SH DESCRIPTION
+List all machine types, runner status, and exact GitLab setup instructions.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    data, setup
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+GitLab installation ID (ins-xxx format). (required)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-runner-create (1),
+.BR avr-org-install-runner-delete (1),
+.BR avr-org-install-runner-set (1)

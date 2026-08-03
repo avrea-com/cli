@@ -1,0 +1,43 @@
+.TH AVR\-ORG\-INSTALL\-RUNNER\-DELETE 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-runner-delete \- Remove MACHINE_TYPE's runner configuration from Avrea.
+.SH SYNOPSIS
+.B avr org install runner delete
+[OPTIONS] MACHINE_TYPE
+.SH DESCRIPTION
+Remove MACHINE_TYPE's runner configuration from Avrea.
+.PP
+The runner object in GitLab remains for the group Owner to remove.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    deleted, installation_id, machine_type
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIMACHINE_TYPE\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+GitLab installation ID (ins-xxx format). (required)
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-runner-create (1),
+.BR avr-org-install-runner-list (1),
+.BR avr-org-install-runner-set (1)

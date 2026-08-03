@@ -88,6 +88,12 @@ class TestAuthUrl:
         assert github == "https://api.example.com/oauth/github/login?next=http://localhost:8765/callback"
         assert google == "https://api.example.com/oauth/google/login?final_redirect=http://localhost:8765/callback"
 
+    def test_gitlab_uses_the_github_url_shape(self):
+        gitlab = auth._auth_url(
+            "https://api.example.com", "http://localhost:8765/callback", provider="gitlab", saml_login_path=None
+        )
+        assert gitlab == "https://api.example.com/oauth/gitlab/login?next=http://localhost:8765/callback"
+
     def test_unsupported_provider_raises(self):
         with pytest.raises(click.ClickException, match="Unsupported auth provider"):
             auth._auth_url(

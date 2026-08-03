@@ -68,17 +68,48 @@ def ensure_prompts_allowed(action: str = "this command needs confirmation") -> N
     Lets scripts fail fast instead of hanging on stdin. Pass --yes (or the
     equivalent confirmation-bypass flag) when automating destructive
     operations."""
+    _refuse_prompt_when_disabled(
+        f"{action}, but AVR_PROMPT_DISABLED is set. Pass the bypass flag (e.g. --yes) instead."
+    )
+
+
+def _refuse_prompt_when_disabled(message: str) -> None:
     if os.environ.get("AVR_PROMPT_DISABLED"):
-        click.echo(
-            f"Error: {action}, but AVR_PROMPT_DISABLED is set. Pass the bypass flag (e.g. --yes) instead.",
-            err=True,
-        )
+        click.echo(f"Error: {message}", err=True)
         raise click.Abort()
 
 
 def ensure_ctx(ctx):
     """Ensure click context has an object dict initialized."""
     ctx.ensure_object(dict)
+
+
+def read_secret(from_stdin: bool, prompt: str, *, disabled_hint: str, max_length: int = 4096) -> str:
+    """Read a credential from the first line of stdin or from a hidden prompt.
+
+    Never from argv, where it would show in ``ps`` and shell history.
+    ``disabled_hint`` names the stdin flag in the ``AVR_PROMPT_DISABLED``
+    refusal so a script knows what to pass instead of the prompt; the generic
+    ``--yes`` advice of ``ensure_prompts_allowed`` would name a flag these
+    commands do not have."""
+    if from_stdin:
+        value = sys.stdin.readline().strip()
+    else:
+        _refuse_prompt_when_disabled(f"{disabled_hint}, but AVR_PROMPT_DISABLED is set.")
+        value = click.prompt(prompt, hide_input=True, show_default=False).strip()
+    if not value or len(value) > max_length:
+        raise click.UsageError(f"{prompt} must contain 1 to {max_length} characters")
+    return value
+
+
+def exit_on_transport_error(exc: httpx.RequestError, action: str) -> NoReturn:
+    """Turn a transport failure into a one-line error that names the action.
+
+    Nothing from the request (and so no credential it carried) reaches the
+    message; the chained exception is dropped for the same reason."""
+    if isinstance(exc, httpx.TimeoutException):
+        raise click.ClickException(f"Timed out while trying to {action}. Try again shortly.") from None
+    raise click.ClickException(f"Could not reach Avrea while trying to {action}. Try again shortly.") from None
 
 
 def ensure_authenticated(config: CliConfig) -> None:

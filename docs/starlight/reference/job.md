@@ -32,7 +32,7 @@ Examples:
 ```sh
 JSON FIELDS
     ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
     running_on_avrea, started_at, state
 ```
 
@@ -146,7 +146,7 @@ Examples:
 ```sh
 JSON FIELDS
     ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
     running_on_avrea, started_at, state, steps, workflow_run
 ```
 

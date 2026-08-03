@@ -501,7 +501,7 @@ Examples:
 ```sh
 JSON FIELDS
     ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
     running_on_avrea, started_at, state
 ```
 
@@ -615,7 +615,7 @@ Examples:
 ```sh
 JSON FIELDS
     ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, job_id, job_name, labels, repository, repository_id,
+    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
     running_on_avrea, started_at, state, steps, workflow_run
 ```
 
@@ -1535,7 +1535,7 @@ avr auth login [OPTIONS]
 
 **Options**
 
-- `--provider <CHOICE>` — OAuth provider to use for CLI login. _(choices: `google`, `github` · default: `github`)_
+- `--provider <CHOICE>` — OAuth provider to use for CLI login. _(choices: `google`, `github`, `gitlab` · default: `github`)_
 - `--email <TEXT>` — Work email. Routes through your company's SSO if its domain requires it, ignoring --provider.
 
 #### `avr auth logout`
@@ -2971,7 +2971,7 @@ JSON FIELDS
 
 #### `avr org install`
 
-Manage GitHub App installations.
+Manage GitHub and GitLab installations.
 
 ```sh
 avr org install [OPTIONS] COMMAND [ARGS]...
@@ -2979,17 +2979,61 @@ avr org install [OPTIONS] COMMAND [ARGS]...
 
 ##### `avr org install add`
 
-Start the GitHub App installation flow.
+Add a GitHub or GitLab installation.
 
 ```sh
 avr org install add [OPTIONS]
 ```
 
+GitHub is the default and retains the browser-based GitHub App flow.
+
+For GitLab, create an expiring gitlab.com group access token with Reporter
+role, api, and read_repository. The token is read from a hidden prompt
+or stdin and is never accepted as a command-line value.
+
+```sh
+Examples:
+    avr org install add
+    avr org install add --platform gitlab --group-full-path acme/platform --project-selection all
+    printf '%s\n' "$GITLAB_TOKEN" | avr org install add --platform gitlab \
+        --group-full-path acme/platform --project-selection selected \
+        --project-id 123 --access-token-stdin
+```
+
+With --json, GitHub emits the installations detected within --wait-seconds
+as a list and keeps progress messages on stderr; GitLab emits the
+registered installation, and the field list or jq filter must keep
+webhook_setup, which carries the one-time webhook secret.
+
+```sh
+JSON FIELDS (GitHub)
+    created_at, installation_id, organization_name, organization_slug,
+    platform, platform_installation_id, platform_settings_url, state,
+    target_id, target_name, target_type, configured_runner_count, degraded_runner_count
+```
+
+```sh
+JSON FIELDS (GitLab)
+    access_token_expires_on, access_token_invalid_at,
+    access_token_last_validated_at, created_at, credential_kind,
+    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+    installation_id, organization_id, project_selection_mode, configured_runner_count,
+    degraded_runner_count, selected_project_count, state, target_type,
+    updated_at, webhook_secret_rotated_at, webhook_setup
+```
+
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--platform <CHOICE>` — Source platform to install. _(choices: `github`, `gitlab` · default: `github`)_
+- `--group-full-path <TEXT>` — GitLab group full path, such as acme/platform.
+- `--project-selection <CHOICE>` — GitLab project selection mode. _(choices: `all`, `selected`)_
+- `--project-id <INTEGER RANGE>` — GitLab numeric project ID to select (repeatable, up to 1,000). _(repeatable)_
+- `--access-token-stdin` — Read the GitLab group access token from stdin instead of prompting.
 - `--no-browser` — Do not open browser automatically.
 - `--wait-seconds <INTEGER>` — Seconds to wait for detection. _(default: `120`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 ##### `avr org install list`
 
@@ -3001,8 +3045,9 @@ avr org install list [OPTIONS]
 
 ```sh
 JSON FIELDS
-    created_at, platform_installation_id, installation_id, organization_name,
-    organization_slug, state, target_name
+    created_at, installation_id, organization_name, organization_slug,
+    platform, platform_installation_id, platform_settings_url, state,
+    target_id, target_name, target_type, configured_runner_count, degraded_runner_count
 ```
 
 **Options**
@@ -3012,20 +3057,203 @@ JSON FIELDS
 
 ##### `avr org install remove`
 
-Remove/suspend a GitHub installation.
+Remove an installation using its provider-specific lifecycle.
 
 ```sh
 avr org install remove [OPTIONS]
 ```
 
-Confirms before suspending; pass --yes to skip the prompt (required when
-stdout isn't a TTY, e.g. in CI).
+GitHub installations are suspended. GitLab installations are permanently
+disconnected, including their Avrea history; use `avr org install rotate`
+for a credential problem instead. Pass --yes to skip confirmation.
+
+```sh
+JSON FIELDS
+    action, installation_id, organization_id, platform
+```
 
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — Installation ID to remove (ins-xxx format) _(required)_
 - `--yes, -y` — Skip confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org install rotate`
+
+Rotate a GitLab installation's access token and webhook secret.
+
+```sh
+avr org install rotate [OPTIONS]
+```
+
+Create an expiring gitlab.com group access token with Reporter role,
+api, and read_repository. The new token is read from a hidden prompt
+or stdin and is never accepted as a command-line value.
+
+With --json, the field list or jq filter must keep webhook_setup, which
+carries the one-time webhook secret.
+
+```sh
+JSON FIELDS
+    access_token_expires_on, access_token_invalid_at,
+    access_token_last_validated_at, created_at, credential_kind,
+    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+    installation_id, organization_id, project_selection_mode, configured_runner_count,
+    degraded_runner_count, selected_project_count, state, target_type,
+    updated_at, webhook_secret_rotated_at, webhook_setup
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--access-token-stdin` — Read the GitLab group access token from stdin instead of prompting.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org install runner`
+
+Manage GitLab runners, one per Linux machine type.
+
+```sh
+avr org install runner [OPTIONS] COMMAND [ARGS]...
+```
+
+###### `avr org install runner create`
+
+Create group runners in GitLab and configure their machine types in Avrea.
+
+```sh
+avr org install runner create [OPTIONS]
+```
+
+Supply your own personal access token with create_runner scope and Owner
+role. It is sent only to gitlab.com and is never persisted. Already
+configured machine types must be replaced with 'runner set'.
+
+```sh
+JSON FIELDS
+    data, setup
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--machine-type <TEXT>` — Machine type to create; repeat for multiple machine types. _(repeatable · required)_
+- `--protected` — Restrict the runners to protected branches and tags.
+- `--personal-access-token-stdin` — Read your personal access token from standard input instead of a hidden prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+###### `avr org install runner delete`
+
+Remove MACHINE_TYPE's runner configuration from Avrea.
+
+```sh
+avr org install runner delete [OPTIONS] MACHINE_TYPE
+```
+
+The runner object in GitLab remains for the group Owner to remove.
+
+```sh
+JSON FIELDS
+    deleted, installation_id, machine_type
+```
+
+**Arguments**
+
+- `MACHINE_TYPE`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+###### `avr org install runner list`
+
+List all machine types, runner status, and exact GitLab setup instructions.
+
+```sh
+avr org install runner list [OPTIONS]
+```
+
+```sh
+JSON FIELDS
+    data, setup
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+###### `avr org install runner set`
+
+Verify and configure MACHINE_TYPE, replacing its previous runner if present.
+
+```sh
+avr org install runner set [OPTIONS] MACHINE_TYPE
+```
+
+Read the token from a hidden prompt or --runner-token-stdin.
+
+```sh
+JSON FIELDS
+    architecture, configured, cpu_count, description, disk_gb,
+    invalid_at, machine_type, memory_mb, paused, run_untagged,
+    runner_id, status, tag, token_expires_at, verified_at
+```
+
+**Arguments**
+
+- `MACHINE_TYPE`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--runner-token-stdin` — Read the runner authentication token from standard input.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org install set-selection`
+
+Replace a GitLab installation's project selection.
+
+```sh
+avr org install set-selection [OPTIONS]
+```
+
+Use `--project-selection selected` without `--project-id` to select no
+projects. This updates the selection only; the next project sync applies
+it.
+
+```sh
+JSON FIELDS
+    access_token_expires_on, access_token_invalid_at,
+    access_token_last_validated_at, created_at, credential_kind,
+    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+    installation_id, organization_id, project_selection_mode, configured_runner_count,
+    degraded_runner_count, selected_project_count, state, target_type,
+    updated_at, webhook_secret_rotated_at
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
+- `--project-selection <CHOICE>` — Project selection mode. _(choices: `all`, `selected` · required)_
+- `--project-id <INTEGER RANGE>` — GitLab numeric project ID to select (repeatable, up to 1,000). _(repeatable)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 #### `avr org list`
 

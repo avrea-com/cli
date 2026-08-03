@@ -10,8 +10,9 @@ List accessible installations across all your organizations.
 .RS 4
 .nf
 JSON FIELDS
-    created_at, platform_installation_id, installation_id, organization_name,
-    organization_slug, state, target_name
+    created_at, installation_id, organization_name, organization_slug,
+    platform, platform_installation_id, platform_settings_url, state,
+    target_id, target_name, target_type, configured_runner_count, degraded_runner_count
 .fi
 .RE
 .SH OPTIONS
@@ -25,4 +26,7 @@ Filter --json output through a jq expression.
 .BR avr (1),
 .BR avr-org-install (1),
 .BR avr-org-install-add (1),
-.BR avr-org-install-remove (1)
+.BR avr-org-install-remove (1),
+.BR avr-org-install-rotate (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-set-selection (1)

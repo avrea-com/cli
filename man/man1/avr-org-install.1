@@ -1,22 +1,31 @@
 .TH AVR\-ORG\-INSTALL 1 "" "avr 0.5.0" "Avrea CLI"
 .SH NAME
-avr-org-install \- Manage GitHub App installations.
+avr-org-install \- Manage GitHub and GitLab installations.
 .SH SYNOPSIS
 .B avr org install
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Manage GitHub App installations.
+Manage GitHub and GitLab installations.
 .PP
 .SH COMMANDS
 .TP
 add
-Start the GitHub App installation flow.
+Add a GitHub or GitLab installation.
 .TP
 list
 List accessible installations across all your organizations.
 .TP
 remove
-Remove/suspend a GitHub installation.
+Remove an installation using its provider-specific lifecycle.
+.TP
+rotate
+Rotate a GitLab installation's access token and webhook secret.
+.TP
+runner
+Manage GitLab runners, one per Linux machine type.
+.TP
+set-selection
+Replace a GitLab installation's project selection.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-org (1),
@@ -27,4 +36,7 @@ Remove/suspend a GitHub installation.
 .BR avr-org-saml (1),
 .BR avr-org-install-add (1),
 .BR avr-org-install-list (1),
-.BR avr-org-install-remove (1)
+.BR avr-org-install-remove (1),
+.BR avr-org-install-rotate (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-set-selection (1)

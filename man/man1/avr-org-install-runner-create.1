@@ -1,0 +1,45 @@
+.TH AVR\-ORG\-INSTALL\-RUNNER\-CREATE 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-runner-create \- Create group runners in GitLab and configure their machine types in Avrea.
+.SH SYNOPSIS
+.B avr org install runner create
+[OPTIONS]
+.SH DESCRIPTION
+Create group runners in GitLab and configure their machine types in Avrea.
+.PP
+Supply your own personal access token with create_runner scope and Owner role. It is sent only to gitlab.com and is never persisted. Already configured machine types must be replaced with 'runner set'.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    data, setup
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+GitLab installation ID (ins-xxx format). (required)
+.TP
+\fB\-\-machine\-type\fR \fITEXT\fR
+Machine type to create; repeat for multiple machine types. (repeatable; required)
+.TP
+\fB\-\-protected\fR
+Restrict the runners to protected branches and tags.
+.TP
+\fB\-\-personal\-access\-token\-stdin\fR
+Read your personal access token from standard input instead of a hidden prompt.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-runner-delete (1),
+.BR avr-org-install-runner-list (1),
+.BR avr-org-install-runner-set (1)

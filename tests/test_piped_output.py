@@ -197,6 +197,8 @@ class TestJobListPiped:
             "created_at",
             "ci_provider",
         ]
+        # The CI column is always present, so field positions are stable
+        # whether or not the page holds a GitLab job.
         assert lines[1].split("\t") == [
             "success",
             "build",

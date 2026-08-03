@@ -70,6 +70,7 @@ _JOB_LIST_FIELDS = make_schema(
     "ci_provider",
     "run_id",
     "platform_job_id",
+    "platform",
     "job_name",
     "state",
     "conclusion",
@@ -270,7 +271,7 @@ def job_list(
     \b
     JSON FIELDS
         ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-        platform_run_id, job_id, job_name, labels, repository, repository_id,
+        platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
         running_on_avrea, started_at, state
     """
     if handle_json_meta(json_fields, jq_expr, _JOB_LIST_FIELDS):
@@ -541,7 +542,7 @@ def job_view(
     \b
     JSON FIELDS
         ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-        platform_run_id, job_id, job_name, labels, repository, repository_id,
+        platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
         running_on_avrea, started_at, state, steps, workflow_run
     """
     reject_web_with_json(json_fields, web)
@@ -574,7 +575,10 @@ def job_view(
         click.echo(f"Avrea:  {avrea_url}")
         platform_run_id = job_data.get("platform_run_id")
         platform_job_id = job_data.get("platform_job_id")
-        if repo_name and platform_run_id and platform_job_id:
+        platform = job_data.get("platform", "github")
+        if platform == "gitlab" and repo_name and platform_job_id:
+            click.echo(f"GitLab: https://gitlab.com/{repo_name}/-/jobs/{platform_job_id}")
+        elif platform == "github" and repo_name and platform_run_id and platform_job_id:
             click.echo(f"GitHub: https://github.com/{repo_name}/actions/runs/{platform_run_id}/job/{platform_job_id}")
         if sys.stdout.isatty():
             webbrowser.open(avrea_url)
@@ -621,6 +625,7 @@ def job_view(
                 "CI": _job_ci_provider(job_data),
                 "Name": job_data.get("job_name", "-"),
                 "Repository": repo_cell,
+                "Platform": job_data.get("platform", "github"),
                 "Run": run_cell,
                 "Conclusion": conclusion_display,
                 "Duration": format_duration(job_data.get("duration_seconds")),

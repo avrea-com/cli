@@ -2,13 +2,18 @@
 
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
+from avrea_cli.commands.org_install_runner import GITLAB_WRITE_TIMEOUT_SECONDS
+from avrea_cli.commands.org_install_runner import runner
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
+from avrea_cli.helpers import exit_on_transport_error
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import read_secret
+from avrea_cli.json_output import emit_committed_record
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
@@ -56,11 +61,49 @@ _SAML_FIELDS = make_schema(
 _INSTALL_FIELDS = make_schema(
     "installation_id",
     "platform_installation_id",
+    "platform",
+    "platform_settings_url",
+    "target_id",
+    "target_type",
     "target_name",
     "organization_name",
     "organization_slug",
     "state",
     "created_at",
+    "configured_runner_count",
+    "degraded_runner_count",
+)
+_GITLAB_INSTALLATION_FIELDS = make_schema(
+    "installation_id",
+    "organization_id",
+    "gitlab_namespace_id",
+    "gitlab_namespace_full_path",
+    "target_type",
+    "state",
+    "credential_kind",
+    "access_token_expires_on",
+    "access_token_last_validated_at",
+    "access_token_invalid_at",
+    "webhook_secret_rotated_at",
+    "configured_runner_count",
+    "degraded_runner_count",
+    "project_selection_mode",
+    "selected_project_count",
+    "gitlab_project_ids",
+    "created_at",
+    "updated_at",
+)
+_GITLAB_INSTALLATION_WRITE_FIELDS = make_schema(*_GITLAB_INSTALLATION_FIELDS, "webhook_setup")
+_INSTALL_REMOVE_FIELDS = make_schema(
+    "installation_id",
+    "organization_id",
+    "platform",
+    action="_local:action",
+)
+_RUNNER_COUNT_FIELDS = ("configured_runner_count", "degraded_runner_count")
+_GITLAB_NOT_ENABLED_HINT = (
+    "GitLab is not enabled for this organization, the installation belongs to another organization, "
+    "or the ID is not a GitLab installation. Check it with 'avr org install list'."
 )
 
 
@@ -741,8 +784,11 @@ def saml_remove(ctx, org_id, confirmed):
 @org.group("install", cls=GhGroup)
 @click.pass_context
 def install(ctx):
-    """Manage GitHub App installations."""
+    """Manage GitHub and GitLab installations."""
     ensure_ctx(ctx)
+
+
+install.add_command(runner)
 
 
 @install.command("list")
@@ -753,8 +799,9 @@ def install_list(ctx, json_fields, jq_expr):
 
     \b
     JSON FIELDS
-        created_at, platform_installation_id, installation_id, organization_name,
-        organization_slug, state, target_name
+        created_at, installation_id, organization_name, organization_slug,
+        platform, platform_installation_id, platform_settings_url, state,
+        target_id, target_name, target_type, configured_runner_count, degraded_runner_count
     """
     if handle_json_meta(json_fields, jq_expr, _INSTALL_FIELDS):
         return
@@ -768,6 +815,20 @@ def install_list(ctx, json_fields, jq_expr):
         installations = response["data"]
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch installations")
+    except httpx.RequestError as exc:
+        exit_on_transport_error(exc, "fetch installations")
+
+    # The runner counts live on the org-scoped GitLab listing; skip those
+    # round-trips when the caller's --json fields would discard them anyway.
+    wants_counts = json_fields is None or any(
+        f in _RUNNER_COUNT_FIELDS for f in split_fields(json_fields, _INSTALL_FIELDS)
+    )
+    if wants_counts:
+        summaries = _gitlab_runner_summaries(client, installations)
+        for row in installations:
+            summary = summaries.get(row["installation_id"], {})
+            for field in _RUNNER_COUNT_FIELDS:
+                row[field] = summary.get(field)
 
     if json_fields is not None:
         emit_json(installations, split_fields(json_fields, _INSTALL_FIELDS), _INSTALL_FIELDS, jq_expr)
@@ -776,26 +837,219 @@ def install_list(ctx, json_fields, jq_expr):
     for inst in installations:
         inst["org_name"] = inst.get("organization_name") or inst.get("organization_slug") or "-"
         inst["created_display"] = format_timestamp(inst.get("created_at"))
+        inst["platform_display"] = {"github": "GitHub", "gitlab": "GitLab"}.get(
+            str(inst.get("platform", "")).lower(), inst.get("platform") or "-"
+        )
+        inst["provider_id"] = inst.get("platform_installation_id") or inst.get("target_id") or "-"
+        for field in _RUNNER_COUNT_FIELDS:
+            # A GitHub row has no runner counts; a None cell would print as "None".
+            inst[f"{field}_display"] = "-" if inst.get(field) is None else inst[field]
 
-    output_list(
-        installations,
-        columns=["installation_id", "platform_installation_id", "target_name", "org_name", "state", "created_display"],
-        column_labels=["Installation ID", "GitHub ID", "Target", "Organization", "State", "Created"],
-    )
+    columns = [
+        "installation_id",
+        "platform_display",
+        "provider_id",
+        "target_name",
+        "org_name",
+        "state",
+        "created_display",
+    ]
+    labels = ["Installation ID", "Platform", "Provider ID", "Target", "Organization", "State", "Created"]
+    if any(_platform(row) == "gitlab" for row in installations):
+        columns += [f"{field}_display" for field in _RUNNER_COUNT_FIELDS]
+        labels += ["Configured runners", "Degraded runners"]
+    output_list(installations, columns=columns, column_labels=labels)
+
+
+def _platform(row: dict) -> str:
+    return str(row.get("platform") or "").lower()
+
+
+def _gitlab_runner_summaries(client: ApiClient, installations: list[dict]) -> dict[str, dict]:
+    """Runner counts per GitLab installation, keyed by installation ID.
+
+    ``/users/me/installations`` carries no runner counts, so each organization
+    with a GitLab installation is asked for its own listing. The counts are an
+    optional add-on to a list already in hand, so a failed listing only leaves
+    that organization's counts empty: silently when this user may not read it
+    (403) or it no longer exists (404), with a warning on stderr for anything
+    else. Only a 401 is fatal, since every later request would fail the same way."""
+    gitlab_orgs = {
+        row["organization_id"] for row in installations if _platform(row) == "gitlab" and row.get("organization_id")
+    }
+    summaries: dict[str, dict] = {}
+    for organization_id in sorted(gitlab_orgs):
+        try:
+            details = client.public_get(f"/orgs/{quote(organization_id, safe='')}/gitlab-installations")
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            if status == 401:
+                handle_http_error(exc, "fetch GitLab runner counts")
+            if status not in (403, 404):
+                _warn_runner_counts_skipped(organization_id, f"HTTP {status}")
+            continue
+        except httpx.RequestError:
+            _warn_runner_counts_skipped(organization_id, "Avrea could not be reached")
+            continue
+        summaries.update({row["installation_id"]: row for row in details["data"]})
+    return summaries
+
+
+def _warn_runner_counts_skipped(organization_id: str, reason: str) -> None:
+    click.echo(f"Warning: runner counts for {organization_id} are unavailable ({reason}).", err=True)
 
 
 @install.command("add")
 @click.option(
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
+@click.option(
+    "--platform",
+    type=click.Choice(["github", "gitlab"], case_sensitive=False),
+    default="github",
+    show_default=True,
+    help="Source platform to install.",
+)
+@click.option("--group-full-path", help="GitLab group full path, such as acme/platform.")
+@click.option(
+    "--project-selection",
+    type=click.Choice(["all", "selected"], case_sensitive=False),
+    help="GitLab project selection mode.",
+)
+@click.option(
+    "--project-id",
+    "project_ids",
+    type=click.IntRange(min=1),
+    multiple=True,
+    help="GitLab numeric project ID to select (repeatable, up to 1,000).",
+)
+@click.option(
+    "--access-token-stdin",
+    is_flag=True,
+    help="Read the GitLab group access token from stdin instead of prompting.",
+)
 @click.option("--no-browser", is_flag=True, help="Do not open browser automatically.")
 @click.option("--wait-seconds", type=int, default=120, show_default=True, help="Seconds to wait for detection.")
+@json_options
 @click.pass_context
-def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
-    """Start the GitHub App installation flow."""
+def install_add(
+    ctx,
+    org_id: str | None,
+    platform: str,
+    group_full_path: str | None,
+    project_selection: str | None,
+    project_ids: tuple[int, ...],
+    access_token_stdin: bool,
+    no_browser: bool,
+    wait_seconds: int,
+    json_fields: str | None,
+    jq_expr: str | None,
+):
+    """Add a GitHub or GitLab installation.
+
+    GitHub is the default and retains the browser-based GitHub App flow.
+
+    For GitLab, create an expiring gitlab.com group access token with Reporter
+    role, api, and read_repository. The token is read from a hidden prompt
+    or stdin and is never accepted as a command-line value.
+
+    \b
+    Examples:
+        avr org install add
+        avr org install add --platform gitlab --group-full-path acme/platform --project-selection all
+        printf '%s\\n' "$GITLAB_TOKEN" | avr org install add --platform gitlab \\
+            --group-full-path acme/platform --project-selection selected \\
+            --project-id 123 --access-token-stdin
+
+    With --json, GitHub emits the installations detected within --wait-seconds
+    as a list and keeps progress messages on stderr; GitLab emits the
+    registered installation, and the field list or jq filter must keep
+    webhook_setup, which carries the one-time webhook secret.
+
+    \b
+    JSON FIELDS (GitHub)
+        created_at, installation_id, organization_name, organization_slug,
+        platform, platform_installation_id, platform_settings_url, state,
+        target_id, target_name, target_type, configured_runner_count, degraded_runner_count
+
+    \b
+    JSON FIELDS (GitLab)
+        access_token_expires_on, access_token_invalid_at,
+        access_token_last_validated_at, created_at, credential_kind,
+        gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+        installation_id, organization_id, project_selection_mode, configured_runner_count,
+        degraded_runner_count, selected_project_count, state, target_type,
+        updated_at, webhook_secret_rotated_at, webhook_setup
+    """
+    platform = platform.lower()
+    if platform == "github":
+        json_schema = _INSTALL_FIELDS
+    elif platform == "gitlab":
+        json_schema = _GITLAB_INSTALLATION_WRITE_FIELDS
+    else:
+        raise ValueError(f"Unhandled platform: {platform}")
+    if handle_json_meta(json_fields, jq_expr, json_schema):
+        return
+
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
+
+    if platform == "gitlab":
+        _validate_gitlab_add_options(
+            ctx,
+            group_full_path=group_full_path,
+            project_selection=project_selection,
+            project_ids=project_ids,
+            no_browser=no_browser,
+        )
+        assert group_full_path is not None
+        selection_body = _gitlab_selection_body(project_selection, project_ids)
+        org_id = get_org_id(config, org_id, client=client)
+        write_fields = _gitlab_write_fields(json_fields)
+        access_token = _read_gitlab_access_token(access_token_stdin)
+        try:
+            result = client.public_post(
+                f"/orgs/{quote(org_id, safe='')}/gitlab-installations",
+                json={
+                    "group_full_path": group_full_path.strip(),
+                    "access_token": access_token,
+                    **selection_body,
+                },
+                timeout=GITLAB_WRITE_TIMEOUT_SECONDS,
+            )
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(
+                exc,
+                "register GitLab installation",
+                hints={404: "GitLab is not enabled for this organization."},
+            )
+        except httpx.RequestError as exc:
+            exit_on_transport_error(exc, "register GitLab installation")
+
+        if write_fields is not None:
+            _emit_gitlab_write_json(result, write_fields, jq_expr, "The GitLab installation was registered")
+            return
+        _print_gitlab_write_result(result, "GitLab installation configured")
+        return
+    if platform != "github":
+        raise ValueError(f"Unhandled platform: {platform}")
+
+    invalid_gitlab_options = []
+    if group_full_path is not None:
+        invalid_gitlab_options.append("--group-full-path")
+    if project_selection is not None:
+        invalid_gitlab_options.append("--project-selection")
+    if project_ids:
+        invalid_gitlab_options.append("--project-id")
+    if access_token_stdin:
+        invalid_gitlab_options.append("--access-token-stdin")
+    if invalid_gitlab_options:
+        raise click.UsageError(f"{', '.join(invalid_gitlab_options)} can only be used with --platform gitlab")
+    if json_fields is not None and wait_seconds <= 0:
+        raise click.UsageError("--json needs a positive --wait-seconds with --platform github")
+    # Under --json, stdout carries only the detected installations.
+    progress_to_stderr = json_fields is not None
 
     org_id = get_org_id(config, org_id, client=client)
 
@@ -807,10 +1061,10 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
 
     install_url = f"{config.public_api_url}/oauth/github/install?organization_id={org_id}"
 
-    click.echo(f"GitHub installation URL: {install_url}")
+    click.echo(f"GitHub installation URL: {install_url}", err=progress_to_stderr)
     if not no_browser:
         if webbrowser.open(install_url):
-            click.echo("Opened browser for GitHub installation flow.")
+            click.echo("Opened browser for GitHub installation flow.", err=progress_to_stderr)
         else:
             click.echo("Unable to open browser automatically. Please open the URL manually.", err=True)
 
@@ -818,8 +1072,12 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
         click.echo("Skipping wait for installation detection. Re-run 'avr org install list' to verify.")
         return
 
-    click.echo("Waiting for installation to appear...")
-    seen_ids = {inst["platform_installation_id"] for inst in before}
+    click.echo("Waiting for installation to appear...", err=progress_to_stderr)
+    seen_ids = {
+        inst["platform_installation_id"]
+        for inst in before
+        if str(inst.get("platform", "github")).lower() == "github" and inst.get("platform_installation_id") is not None
+    }
     deadline = time.time() + wait_seconds
     while time.time() < deadline:
         time.sleep(5)
@@ -828,9 +1086,22 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
             current = response["data"]
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "poll installations")
-        current_ids = {inst["platform_installation_id"] for inst in current}
+        current_ids = {
+            inst["platform_installation_id"]
+            for inst in current
+            if str(inst.get("platform", "github")).lower() == "github"
+            and inst.get("platform_installation_id") is not None
+        }
         added = current_ids - seen_ids
         if added:
+            if json_fields is not None:
+                emit_json(
+                    [inst for inst in current if inst.get("platform_installation_id") in added],
+                    split_fields(json_fields, _INSTALL_FIELDS),
+                    _INSTALL_FIELDS,
+                    jq_expr,
+                )
+                return
             click.echo(f"Detected new installation(s): {', '.join(str(gh_id) for gh_id in sorted(added))}")
             return
 
@@ -838,6 +1109,147 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
         "Installation not detected yet. Complete the GitHub flow and rerun 'avr org install list' to verify.",
         err=True,
     )
+    if json_fields is not None:
+        emit_json([], split_fields(json_fields, _INSTALL_FIELDS), _INSTALL_FIELDS, jq_expr)
+
+
+@install.command("set-selection")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
+@click.option("--installation-id", required=True, help="GitLab installation ID (ins-xxx format).")
+@click.option(
+    "--project-selection",
+    required=True,
+    type=click.Choice(["all", "selected"], case_sensitive=False),
+    help="Project selection mode.",
+)
+@click.option(
+    "--project-id",
+    "project_ids",
+    type=click.IntRange(min=1),
+    multiple=True,
+    help="GitLab numeric project ID to select (repeatable, up to 1,000).",
+)
+@json_options
+@click.pass_context
+def install_set_selection(ctx, org_id, installation_id, project_selection, project_ids, json_fields, jq_expr):
+    """Replace a GitLab installation's project selection.
+
+    Use `--project-selection selected` without `--project-id` to select no
+    projects. This updates the selection only; the next project sync applies
+    it.
+
+    \b
+    JSON FIELDS
+        access_token_expires_on, access_token_invalid_at,
+        access_token_last_validated_at, created_at, credential_kind,
+        gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+        installation_id, organization_id, project_selection_mode, configured_runner_count,
+        degraded_runner_count, selected_project_count, state, target_type,
+        updated_at, webhook_secret_rotated_at
+    """
+    if handle_json_meta(json_fields, jq_expr, _GITLAB_INSTALLATION_FIELDS):
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    selection_body = _gitlab_selection_body(project_selection, project_ids)
+    org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        result = client.public_patch(
+            _gitlab_installation_path(org_id, installation_id),
+            json=selection_body,
+            timeout=GITLAB_WRITE_TIMEOUT_SECONDS,
+        )
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "update GitLab project selection", hints={404: _GITLAB_NOT_ENABLED_HINT})
+    except httpx.RequestError as exc:
+        exit_on_transport_error(exc, "update GitLab project selection")
+
+    if result is None:
+        raise click.ClickException("GitLab project selection update returned no installation details")
+    if json_fields is not None:
+        emit_json_record(
+            result,
+            split_fields(json_fields, _GITLAB_INSTALLATION_FIELDS),
+            _GITLAB_INSTALLATION_FIELDS,
+            jq_expr,
+        )
+        return
+    click.echo(
+        format_key_value(
+            {
+                "Installation ID": result["installation_id"],
+                "GitLab group": result["gitlab_namespace_full_path"],
+                "Project selection": result["project_selection_mode"],
+                "Selected project count": result["selected_project_count"],
+                "GitLab project IDs": ", ".join(str(project_id) for project_id in result["gitlab_project_ids"])
+                or "none",
+            },
+            "GitLab project selection updated",
+        )
+    )
+
+
+@install.command("rotate")
+@click.option(
+    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+)
+@click.option("--installation-id", required=True, help="GitLab installation ID (ins-xxx format).")
+@click.option(
+    "--access-token-stdin",
+    is_flag=True,
+    help="Read the GitLab group access token from stdin instead of prompting.",
+)
+@json_options
+@click.pass_context
+def install_rotate(ctx, org_id, installation_id, access_token_stdin, json_fields, jq_expr):
+    """Rotate a GitLab installation's access token and webhook secret.
+
+    Create an expiring gitlab.com group access token with Reporter role,
+    api, and read_repository. The new token is read from a hidden prompt
+    or stdin and is never accepted as a command-line value.
+
+    With --json, the field list or jq filter must keep webhook_setup, which
+    carries the one-time webhook secret.
+
+    \b
+    JSON FIELDS
+        access_token_expires_on, access_token_invalid_at,
+        access_token_last_validated_at, created_at, credential_kind,
+        gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+        installation_id, organization_id, project_selection_mode, configured_runner_count,
+        degraded_runner_count, selected_project_count, state, target_type,
+        updated_at, webhook_secret_rotated_at, webhook_setup
+    """
+    if handle_json_meta(json_fields, jq_expr, _GITLAB_INSTALLATION_WRITE_FIELDS):
+        return
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    write_fields = _gitlab_write_fields(json_fields)
+    access_token = _read_gitlab_access_token(access_token_stdin)
+
+    try:
+        result = client.public_post(
+            f"{_gitlab_installation_path(org_id, installation_id)}/credential-rotations",
+            json={"access_token": access_token},
+            timeout=GITLAB_WRITE_TIMEOUT_SECONDS,
+        )
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "rotate GitLab installation credentials", hints={404: _GITLAB_NOT_ENABLED_HINT})
+    except httpx.RequestError as exc:
+        exit_on_transport_error(exc, "rotate GitLab installation credentials")
+
+    if write_fields is not None:
+        _emit_gitlab_write_json(result, write_fields, jq_expr, "The GitLab credentials were rotated")
+        return
+    _print_gitlab_write_result(result, "GitLab credentials rotated")
 
 
 @install.command("remove")
@@ -846,25 +1258,186 @@ def install_add(ctx, org_id: str | None, no_browser: bool, wait_seconds: int):
 )
 @click.option("--installation-id", required=True, help="Installation ID to remove (ins-xxx format)")
 @click.option("--yes", "-y", "confirmed", is_flag=True, help="Skip confirmation prompt.")
+@json_options
 @click.pass_context
-def install_remove(ctx, org_id: str | None, installation_id: str, confirmed: bool):
-    """Remove/suspend a GitHub installation.
+def install_remove(ctx, org_id: str | None, installation_id: str, confirmed: bool, json_fields, jq_expr):
+    """Remove an installation using its provider-specific lifecycle.
 
-    Confirms before suspending; pass --yes to skip the prompt (required when
-    stdout isn't a TTY, e.g. in CI).
+    GitHub installations are suspended. GitLab installations are permanently
+    disconnected, including their Avrea history; use `avr org install rotate`
+    for a credential problem instead. Pass --yes to skip confirmation.
+
+    \b
+    JSON FIELDS
+        action, installation_id, organization_id, platform
     """
+    if handle_json_meta(json_fields, jq_expr, _INSTALL_REMOVE_FIELDS):
+        return
+
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
 
     org_id = get_org_id(config, org_id, client=client)
 
-    if not confirmed:
-        ensure_prompts_allowed("installation remove suspends the GitHub App for this org")
-        click.confirm(f"Suspend installation {installation_id} for {org_id}?", abort=True)
+    installation_path = f"/orgs/{quote(org_id, safe='')}/installations/{quote(installation_id, safe='')}"
+    try:
+        response = client.public_get(installation_path)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "fetch installation before removal")
+    installation = response.get("data", response)
+
+    platform = _platform(installation)
+    if platform == "gitlab":
+        action = "disconnected"
+        if not confirmed:
+            ensure_prompts_allowed("permanent GitLab installation disconnect requires confirmation")
+            click.echo(
+                "This permanently disconnects the GitLab installation and removes its Avrea history. "
+                "It cannot be undone. Use 'avr org install rotate' instead for credential problems.",
+                err=True,
+            )
+            click.confirm(f"Permanently disconnect installation {installation_id} from {org_id}?", abort=True)
+    elif platform == "github":
+        action = "suspended"
+        if not confirmed:
+            ensure_prompts_allowed("installation remove suspends the GitHub App for this org")
+            click.confirm(f"Suspend installation {installation_id} for {org_id}?", abort=True)
+    else:
+        raise click.ClickException(f"Installation {installation_id} has unsupported platform {platform or 'unknown'}")
 
     try:
-        client.public_delete(f"/orgs/{org_id}/installations/{installation_id}")
-        click.echo(f"Installation {installation_id} suspended.")
+        client.public_delete(installation_path)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "remove installation")
+
+    if json_fields is not None:
+        installation["_local:action"] = action
+        emit_json_record(
+            installation,
+            split_fields(json_fields, _INSTALL_REMOVE_FIELDS),
+            _INSTALL_REMOVE_FIELDS,
+            jq_expr,
+        )
+        return
+    if platform == "gitlab":
+        click.echo(f"Installation {installation_id} permanently disconnected.")
+        click.echo(
+            "Remove the Avrea webhook, the group access token and the Avrea group runners from GitLab "
+            "if they still exist."
+        )
+    elif platform == "github":
+        click.echo(f"Installation {installation_id} suspended.")
+    else:
+        raise ValueError(f"Unhandled platform: {platform}")
+
+
+def _validate_gitlab_add_options(
+    ctx,
+    *,
+    group_full_path: str | None,
+    project_selection: str | None,
+    project_ids: tuple[int, ...],
+    no_browser: bool,
+) -> None:
+    if group_full_path is None or not group_full_path.strip():
+        raise click.UsageError("--group-full-path is required with --platform gitlab")
+    if project_selection is None:
+        raise click.UsageError("--project-selection is required with --platform gitlab")
+    incompatible = []
+    if no_browser:
+        incompatible.append("--no-browser")
+    if ctx.get_parameter_source("wait_seconds") == click.core.ParameterSource.COMMANDLINE:
+        incompatible.append("--wait-seconds")
+    if incompatible:
+        raise click.UsageError(f"{', '.join(incompatible)} cannot be used with --platform gitlab")
+
+
+def _gitlab_selection_body(project_selection: str | None, project_ids: tuple[int, ...]) -> dict:
+    if project_selection is None:
+        raise click.UsageError("--project-selection is required")
+    if len(project_ids) > 1000:
+        raise click.UsageError("--project-id may be supplied at most 1,000 times")
+    mode = project_selection.upper()
+    if mode == "ALL" and project_ids:
+        raise click.UsageError("--project-id cannot be used with --project-selection all")
+    return {
+        "project_selection_mode": mode,
+        "gitlab_project_ids": list(project_ids),
+    }
+
+
+def _read_gitlab_access_token(from_stdin: bool) -> str:
+    return read_secret(
+        from_stdin,
+        "GitLab group access token",
+        disabled_hint="GitLab access token input requires a hidden prompt or --access-token-stdin",
+    )
+
+
+def _gitlab_installation_path(org_id: str, installation_id: str) -> str:
+    return f"/orgs/{quote(org_id, safe='')}/gitlab-installations/{quote(installation_id, safe='')}"
+
+
+def _gitlab_write_fields(json_fields: str | None) -> list[str] | None:
+    """Resolve the ``--json`` field list of a registration or rotation before
+    the request is sent. Both commit a one-time webhook secret on the server,
+    so a projection that drops ``webhook_setup`` is refused here, while
+    refusing is still free, and not after the old secret has been invalidated."""
+    if json_fields is None:
+        return None
+    fields = split_fields(json_fields, _GITLAB_INSTALLATION_WRITE_FIELDS)
+    if "webhook_setup" not in fields:
+        raise click.UsageError(
+            "--json must include webhook_setup: it carries the webhook secret, which is shown only once."
+        )
+    return fields
+
+
+def _emit_gitlab_write_json(result: dict, fields: list[str], jq_expr: str | None, committed: str) -> None:
+    """Emit a registration or rotation result the server has already committed.
+
+    A jq filter that drops the one-time webhook secret, or fails on it, must
+    not lose it: the record then goes to stdout unfiltered and jq's own
+    diagnostic, which may quote the secret, is not repeated (see ``token create``)."""
+    secret = (result.get("webhook_setup") or {}).get("secret") or None
+    emit_committed_record(
+        result,
+        fields,
+        _GITLAB_INSTALLATION_WRITE_FIELDS,
+        jq_expr,
+        required_value=secret,
+        committed=committed,
+        save_what="webhook secret",
+    )
+
+
+def _print_gitlab_write_result(result: dict, title: str) -> None:
+    click.echo(
+        format_key_value(
+            {
+                "Installation ID": result["installation_id"],
+                "GitLab group": result["gitlab_namespace_full_path"],
+                "Token expires": result["access_token_expires_on"],
+                "Project selection": result["project_selection_mode"],
+                "Selected project count": result["selected_project_count"],
+            },
+            title,
+        )
+    )
+    setup = result["webhook_setup"]
+    click.echo("\nConfigure the GitLab group webhook with these exact settings:")
+    click.echo(
+        format_key_value(
+            {
+                "URL": setup["url"],
+                "Secret header": setup["secret_header"],
+                "Secret (shown once)": setup["secret"],
+                "Enabled triggers": ", ".join(setup["enabled_triggers"]),
+                "SSL verification": "enabled" if setup["ssl_verification"] else "disabled",
+                "Unlisted triggers": "enabled" if setup["unlisted_triggers_enabled"] else "disabled",
+            }
+        )
+    )
+    click.echo("Save the webhook secret now: Avrea cannot show it again.", err=True)
+    click.echo(setup["warning"], err=True)

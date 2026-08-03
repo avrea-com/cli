@@ -195,7 +195,7 @@ def git_credential(ctx: click.Context, url: str, full_name: str, operation: str)
 @auth_group.command("login")
 @click.option(
     "--provider",
-    type=click.Choice(["google", "github"], case_sensitive=False),
+    type=click.Choice(["google", "github", "gitlab"], case_sensitive=False),
     default="github",
     show_default=True,
     help="OAuth provider to use for CLI login.",
@@ -377,7 +377,7 @@ def _format_token(token: str | None, show: bool) -> str:
 @click.command("login", hidden=True)
 @click.option(
     "--provider",
-    type=click.Choice(["google", "github"], case_sensitive=False),
+    type=click.Choice(["google", "github", "gitlab"], case_sensitive=False),
     default="github",
     show_default=True,
     help="OAuth provider to use for CLI login.",

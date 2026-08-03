@@ -184,6 +184,40 @@ def emit_json_record(
     _write(projected, jq_expr, required_value=required_value)
 
 
+def emit_committed_record(
+    record: dict[str, Any],
+    fields: list[str],
+    schema: dict[str, str],
+    jq_expr: str | None,
+    *,
+    required_value: str | None,
+    committed: str,
+    save_what: str,
+) -> None:
+    """Emit a record whose request has already committed and that carries a
+    one-time credential, so a failed emission must not lose it.
+
+    Any failure in the filtered output (a jq error, a filter that drops the
+    credential, Ctrl-C, a closed pipe) falls back to the unfiltered projection
+    on stdout. Only a ``FixedMessageError`` is repeated: jq's diagnostics and
+    rendering exceptions may quote the credential. ``committed`` names what
+    happened on the server ("The installation was registered"); ``save_what``
+    names the credential to save instead of retrying."""
+    try:
+        emit_json_record(record, fields, schema, jq_expr, required_value=required_value)
+        sys.stdout.flush()
+    except (Exception, KeyboardInterrupt) as exc:
+        message = f"{committed}, but output failed"
+        message += f": {exc.format_message()}" if isinstance(exc, FixedMessageError) else "."
+        try:
+            emit_json_record(record, fields, schema, None)
+            sys.stdout.flush()
+            message += f" stdout contains its unfiltered JSON; save the {save_what} rather than retrying."
+        except Exception, KeyboardInterrupt:
+            message += f" Nothing could be written to stdout; the {save_what} is lost."
+        raise click.ClickException(message) from None
+
+
 def _write(data: Any, jq_expr: str | None, *, required_value: str | None = None) -> None:
     output = filter_with_jq(data, jq_expr) if jq_expr else json.dumps(data, indent=2, default=str) + "\n"
     if required_value is not None and required_value not in output:

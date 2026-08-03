@@ -6,6 +6,7 @@ from avrea_cli.run_refs import resolve_run_reference
 from unittest.mock import MagicMock
 import click
 import pytest
+import re
 
 
 @pytest.mark.parametrize(
@@ -100,6 +101,20 @@ def test_parse_supported_references(value, api_url, kind, run_id, platform_run_i
 )
 def test_parse_rejects_malformed_or_untrusted_references(value):
     with pytest.raises(click.ClickException):
+        parse_run_reference(value, api_url="https://api.avrea.com")
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        ("job-abc123", "This is a job ID, not a run ID. Use 'avr job view JOB_ID'."),
+        ("https://gitlab.com/acme/widgets/-/jobs/123", "Use 'avr job view JOB_ID' for GitLab jobs."),
+    ],
+)
+def test_parse_redirects_job_references_with_platform_neutral_wording(value, message):
+    """``job-`` is the Avrea job ID prefix on every platform, so only the GitLab URL
+    may call the job a GitLab job."""
+    with pytest.raises(click.BadParameter, match=re.escape(message)):
         parse_run_reference(value, api_url="https://api.avrea.com")
 
 
