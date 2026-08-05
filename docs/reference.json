@@ -2421,7 +2421,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Guest operating system.",
+                "help": "Guest operating system. macOS requires an organization allocation (contact support to request access).",
                 "hidden": false,
                 "show_default": false,
                 "default": null,

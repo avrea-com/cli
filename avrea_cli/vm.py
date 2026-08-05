@@ -517,7 +517,13 @@ def vm(ctx):
 @vm.command("create")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--name", "display_name", required=True, help="Human-readable VM name.")
-@click.option("--os", "os_type", type=click.Choice(_OS_CHOICES), required=True, help="Guest operating system.")
+@click.option(
+    "--os",
+    "os_type",
+    type=click.Choice(_OS_CHOICES),
+    required=True,
+    help="Guest operating system. macOS requires an organization allocation (contact support to request access).",
+)
 @click.option(
     "--os-version",
     "os_version",

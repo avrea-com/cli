@@ -70,7 +70,7 @@ now, it is never stored.
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Human-readable VM name. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;os</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
+- <code class="cli-flag">&#x2D;&#x2D;os</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest operating system. macOS requires an organization allocation (contact support to request access). _(choices: `linux`, `macos`, `windows` · required)_
 - <code class="cli-flag">&#x2D;&#x2D;os-version</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
 - <code class="cli-flag">&#x2D;&#x2D;size</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
 - <code class="cli-flag">&#x2D;&#x2D;ssh-key</code> <code class="cli-value">&lt;TEXT&gt;</code> — SSH public key, or @path to read one from a file. Repeatable. _(repeatable)_
