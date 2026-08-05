@@ -1,13 +1,20 @@
 .TH AVR\-VM\-PORT\-FORWARD 1 "" "avr 0.1.6" "Avrea CLI"
 .SH NAME
-avr-vm-port-forward \- Forward a local port to a TCP port on the VM over SSH.
+avr-vm-port-forward \- Forward one or more local ports to TCP ports on the VM over SSH.
 .SH SYNOPSIS
 .B avr vm port-forward
 [OPTIONS] VM_ID
 .SH DESCRIPTION
-Forward a local port to a TCP port on the VM over SSH.
+Forward one or more local ports to TCP ports on the VM over SSH.
 .PP
-The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where <port> is set by --port, and holds it open until Ctrl-C. Bring your own client.
+The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local> -> <VM>:<guest> through the VM's SSH endpoint for each --port, and holds them open until Ctrl-C. Bring your own client.
+.PP
+.RS 4
+.nf
+avr vm port-forward cvm-abc123 --port 8080
+avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
+.fi
+.RE
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR
@@ -17,11 +24,11 @@ The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local
 \fB\-\-org\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
-\fB\-\-port\fR \fIINTEGER RANGE\fR
-Guest-side TCP port to forward (e.g. 8080). (required)
+\fB\-\-port\fR \fITEXT\fR
+Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable. (repeatable; required)
 .TP
 \fB\-\-local\-port\fR \fIINTEGER RANGE\fR
-Local port to bind (default: an unused port).
+Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
 .TP
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
 Private key file to pass to ssh as -i.
@@ -38,6 +45,7 @@ Print the ssh command and exit, without opening the tunnel.
 .BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),

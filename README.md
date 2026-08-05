@@ -133,13 +133,18 @@ Durable, org-scoped VMs reachable over SSH (plus RDP/VNC for a desktop), separat
 ```sh
 avr vm create --name dev --os linux --size 2-vcpu \
   --ssh-key @~/.ssh/id_ed25519.pub --ephemeral --wait      # boot, wait for SSH, print connect
+avr vm create --name ci --os linux --size 8-vcpu --ephemeral \
+  --repo org/project --disable-cache gha,packages          # attach a repo, narrow which caches it uses
 avr vm bootstrap <vm-id> --setup-github --install claude,codex \
   --repo https://github.com/org/project --env AWS_REGION=eu-north-1
 avr vm ssh <vm-id>                                          # SSH session, host key pinned when published (or: -- <cmd>)
+avr vm ssh <vm-id> --login -- claude -p 'summarize the repo' # one-off command in a login shell (sees forwarded env)
+avr vm ssh <vm-id> --session dev                            # persistent tmux session, survives a dropped connection
+avr vm ssh-config <vm-id> --append                          # add `ssh <alias>` (scp/rsync, VS Code Remote-SSH) to ~/.ssh/config
 avr vm list ; avr vm stop <vm-id>                           # lifecycle
 ```
 
-`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent keys) on stdin rather than argv. Disks are ephemeral, so re-run it after every `avr vm start`. `avr vm ssh` pins the VM's host key when its endpoint publishes one; if it doesn't, `avr` warns and falls back to trust-on-first-use. For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive.
+`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent credentials) on stdin rather than argv. `--forward-agent-creds` carries your local `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`, or a Claude subscription token — if none is set it offers to run `claude setup-token` and forwards the pasted `CLAUDE_CODE_OAUTH_TOKEN`. Disks are ephemeral, so re-run it after every `avr vm start`. `avr vm ssh` pins the VM's host key when its endpoint publishes one; if it doesn't, `avr` warns and falls back to trust-on-first-use — pass `--session <name>` to attach to (or create) a persistent tmux session that survives a dropped connection. A one-off `avr vm ssh -- <cmd>` runs in a non-login shell that sources no startup files, so pass `--login` when the command needs bootstrap-forwarded env (e.g. `claude`'s subscription token). `avr vm ssh-config` emits a host-key-pinned SSH config block so plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH reach the VM without wrapping each tool — `--append` writes it into `~/.ssh/config` for you (idempotent: re-run after a restart to refresh the endpoint in place). For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive (repeat `--port` to forward several ports over one connection). A VM created with `--repo` inherits that repository's build/CI caches; `--disable-cache <name>` narrows them per VM (it can turn an inherited cache off, never on).
 
 **Cancel or rerun a run**
 

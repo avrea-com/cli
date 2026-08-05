@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 import click
 import json
+import re
 
 PROG = "avr"
 
@@ -142,6 +143,31 @@ def _iter_top_commands(tree: dict[str, Any]):
 # -------------------------------------------------------------- markdown --
 
 
+_MD_CODE_SPAN_RE = re.compile(r"(`+).+?\1")
+
+
+def _md_escape(text: str) -> str:
+    """Escape angle brackets in prose so literal placeholders in help text
+    (e.g. ``cache.<name>.enabled``, ``avr-<vm-id>``, ``<local> -> <VM>:<guest>``)
+    render as text instead of being parsed as HTML/JSX tags and dropped by the
+    markdown / Starlight renderer. Inline code spans are left verbatim: inside
+    backticks ``<`` already renders literally, so escaping there would surface a
+    raw ``&lt;`` instead. Only ``<``/``>`` are touched; ``&`` is left alone. Not
+    for fenced or indented code blocks — the caller keeps those literal."""
+
+    def _escape_prose(segment: str) -> str:
+        return segment.replace("<", "&lt;").replace(">", "&gt;")
+
+    out: list[str] = []
+    last = 0
+    for match in _MD_CODE_SPAN_RE.finditer(text):
+        out.append(_escape_prose(text[last : match.start()]))
+        out.append(match.group(0))  # code span, kept literal
+        last = match.end()
+    out.append(_escape_prose(text[last:]))
+    return "".join(out)
+
+
 def _md_render_help_block(text: str | None, lang: str = "text") -> str:
     """Convert a Click help/epilog string to markdown.
 
@@ -172,7 +198,10 @@ def _md_render_help_block(text: str | None, lang: str = "text") -> str:
                 out.extend(stripped)
                 out.append("```")
             continue
-        out.append(line)
+        # An indented line is a Markdown code block (shell examples like
+        # ``avr ... >> ~/.ssh/config``); keep it literal. Escape only genuine
+        # prose so bare <placeholders> survive but code stays intact.
+        out.append(line if line.startswith("    ") else _md_escape(line))
         i += 1
     return "\n".join(out).strip()
 
@@ -254,7 +283,7 @@ def _md_param_list(heading: str, params: list[dict[str, Any]], html: bool = Fals
     for p in params:
         sig = sig_fn(p)
         meta = _md_param_meta(p)
-        help_ = (p.get("help") or "").strip()
+        help_ = _md_escape((p.get("help") or "").strip())
         tail = f" — {help_}" if help_ else ""
         if meta:
             tail += f" _({meta})_"
