@@ -3,6 +3,7 @@
 from avrea_cli.main import cli
 import httpx
 import json
+import os
 import pytest
 import re
 
@@ -372,6 +373,67 @@ class TestVmCreate:
         assert result.exit_code == 0
         assert store["json"]["os_version"] == "ubuntu-22.04"
         assert store["json"]["size"] == "8-vcpu"
+
+    def test_disable_cache_maps_aliases_to_overrides(self, runner, monkeypatch):
+        store = {"return": CREATE_RESPONSE}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--disable-cache",
+                "gha,packages",
+                "--disable-cache",
+                "cache.nx.enabled",
+            ],
+        )
+        assert result.exit_code == 0
+        # Friendly aliases and a raw key both land as narrowing (False) overrides.
+        assert store["json"]["cache_setting_overrides"] == {
+            "cache.gha.enabled": False,
+            "cache.packages.enabled": False,
+            "cache.nx.enabled": False,
+        }
+        assert "Caches disabled: gha, nx, packages" in result.output
+
+    def test_disable_cache_omitted_when_unset(self, runner, monkeypatch):
+        store = {"return": CREATE_RESPONSE}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli, ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--ephemeral"]
+        )
+        assert result.exit_code == 0
+        # No key sent when the flag is unused, so the server keeps inherited defaults.
+        assert "cache_setting_overrides" not in store["json"]
+
+    def test_disable_cache_rejects_malformed_token(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture({"return": CREATE_RESPONSE}))
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "create",
+                "--name",
+                "dev",
+                "--os",
+                "linux",
+                "--size",
+                "2-vcpu",
+                "--ephemeral",
+                "--disable-cache",
+                "not a cache",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "is not a cache name" in result.output
 
     def test_invalid_size_rejected(self, runner):
         result = runner.invoke(
@@ -1024,6 +1086,265 @@ class TestVmSsh:
         assert result.exit_code == 0
         assert "no SSH host key" in result.output
 
+    def test_session_wraps_remote_command_in_tmux_with_tty(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--session", "dev", "--print"])
+        assert result.exit_code == 0
+        # -t forces a tty (a remote command otherwise gets none); tmux attaches-or-creates.
+        assert result.output.strip() == (
+            "ssh -p 30022 -o StrictHostKeyChecking=accept-new -t runner@203.0.113.1 tmux new-session -A -s dev"
+        )
+
+    def test_session_runs_given_command_inside_the_session(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--session", "build", "--print", "--", "make"])
+        assert result.exit_code == 0
+        assert result.output.strip().endswith("tmux new-session -A -s build make")
+
+    def test_session_name_validated(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--session", "bad name", "--print"])
+        assert result.exit_code != 0
+        assert "not a valid session name" in result.output
+
+    def test_login_wraps_remote_command_for_login_shell(self, runner, monkeypatch):
+        import shlex
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--login", "--print", "--", "claude", "-p", "reply OK"])
+        assert result.exit_code == 0
+        # The command is one correctly-quoted `bash -lc` argument, so the ssh
+        # flatten + remote login-shell re-parse reconstruct the exact args (the
+        # prompt keeps its spaces) — proving the quoting survives both layers.
+        tokens = shlex.split(result.output.strip())
+        assert tokens[0] == "ssh"
+        wrapped = tokens[-1]
+        assert wrapped.startswith("bash -lc ")
+        assert shlex.split(shlex.split(wrapped)[2]) == ["claude", "-p", "reply OK"]
+
+    def test_without_login_remote_command_is_raw(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh", "cvm-abc123", "--print", "--", "claude", "-p", "reply OK"])
+        assert result.exit_code == 0
+        # Default stays raw passthrough (no login shell) — Windows-safe, unchanged.
+        assert "bash -lc" not in result.output
+        assert result.output.strip().endswith("claude -p 'reply OK'")
+
+    def test_session_and_login_wraps_command_in_login_shell_inside_tmux(self, runner, monkeypatch):
+        import shlex
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(
+            cli,
+            ["vm", "ssh", "cvm-abc123", "--session", "dev", "--login", "--print", "--", "claude", "-p", "reply OK"],
+        )
+        assert result.exit_code == 0
+        # --login is honored alongside --session (not silently dropped): tmux
+        # creates/attaches the session and runs the command through a login shell,
+        # the nested quoting surviving both the ssh flatten and the re-parse.
+        tokens = shlex.split(result.output.strip())
+        assert tokens[-6:-1] == ["tmux", "new-session", "-A", "-s", "dev"]
+        wrapped = tokens[-1]
+        assert wrapped.startswith("bash -lc ")
+        assert shlex.split(shlex.split(wrapped)[2]) == ["claude", "-p", "reply OK"]
+
+
+class TestVmSshConfig:
+    """`avr vm ssh-config` emits an ssh_config Host block and pins the host key."""
+
+    def test_block_pins_host_key_and_writes_known_hosts(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        kh = tmp_path / "avr_known_hosts"
+        result = runner.invoke(cli, ["vm", "ssh-config", "cvm-abc123", "--known-hosts-file", str(kh)])
+        assert result.exit_code == 0
+        assert "Host avr-cvm-abc123" in result.output
+        assert "HostName 203.0.113.1" in result.output
+        assert "Port 30022" in result.output
+        assert "User runner" in result.output
+        assert f"UserKnownHostsFile {kh}" in result.output
+        assert "StrictHostKeyChecking yes" in result.output
+        # The pinned line lands in the referenced file, keyed by [ip]:port.
+        assert kh.read_text() == "[203.0.113.1]:30022 ssh-ed25519 AAAAkey\n"
+
+    def test_custom_alias_and_identity(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "ssh-config",
+                "cvm-abc123",
+                "--host-alias",
+                "mybox",
+                "-i",
+                "/tmp/key",
+                "--known-hosts-file",
+                str(tmp_path / "kh"),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Host mybox" in result.output
+        assert "IdentityFile /tmp/key" in result.output
+
+    def test_accept_new_and_warns_without_host_key(self, runner, monkeypatch):
+        keyless = {
+            "data": {
+                **SAMPLE_VM,
+                "state": "RUNNING",
+                "endpoints": {
+                    "ssh": {
+                        "protocol": "ssh",
+                        "external_ip": "203.0.113.1",
+                        "external_port": 30022,
+                        "username": "runner",
+                    }
+                },
+            }
+        }
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: keyless)
+        result = runner.invoke(cli, ["vm", "ssh-config", "cvm-abc123"])
+        assert result.exit_code == 0
+        assert "StrictHostKeyChecking accept-new" in result.output
+        assert "no SSH host key" in result.output
+
+    def test_no_endpoint_yet_errors(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None: {"data": {**SAMPLE_VM, "state": "PENDING", "endpoints": None}},
+        )
+        result = runner.invoke(cli, ["vm", "ssh-config", "cvm-abc123"])
+        assert result.exit_code != 0
+        assert "no SSH endpoint yet" in result.output
+
+    def test_atomic_write_creates_parent_dir_0700(self, tmp_path):
+        from avrea_cli.vm import _atomic_write_text
+
+        target = tmp_path / "new_ssh_dir" / "config"
+        _atomic_write_text(target, "Host x\n")
+        assert target.read_text() == "Host x\n"
+        if os.name == "posix":  # POSIX mode bits not enforced on Windows
+            assert oct(target.parent.stat().st_mode & 0o777) == "0o700"
+            assert oct(target.stat().st_mode & 0o777) == "0o600"
+
+    def test_upsert_known_hosts_replaces_only_this_host(self, tmp_path):
+        from avrea_cli.vm import _upsert_known_hosts
+
+        kh = tmp_path / "kh"
+        # No trailing newline on the last kept entry: the new pin must not merge
+        # onto the same line as the preserved one.
+        kh.write_text("[203.0.113.1]:30022 ssh-ed25519 OLD\n[other]:22 ssh-ed25519 KEEP")
+        _upsert_known_hosts(kh, "ssh-ed25519 NEW", "203.0.113.1", 30022)
+        lines = kh.read_text().splitlines()
+        assert "[other]:22 ssh-ed25519 KEEP" in lines  # preserved as its own line
+        assert "[203.0.113.1]:30022 ssh-ed25519 NEW" in lines  # new pin on its own line
+        assert "[203.0.113.1]:30022 ssh-ed25519 OLD" not in lines
+        assert not any("KEEP" in ln and "NEW" in ln for ln in lines)  # entries not merged
+
+    def test_append_writes_block_and_preserves_config(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        cfg = tmp_path / "config"
+        cfg.write_text("Host existing\n    HostName keep.me\n")
+        result = runner.invoke(
+            cli,
+            [
+                "vm",
+                "ssh-config",
+                "cvm-abc123",
+                "--append",
+                "--config-file",
+                str(cfg),
+                "--known-hosts-file",
+                str(tmp_path / "kh"),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Added host avr-cvm-abc123" in result.output
+        text = cfg.read_text()
+        assert "Host existing" in text and "keep.me" in text  # hand-written config preserved
+        assert "Host avr-cvm-abc123" in text and "203.0.113.1" in text
+        assert "# >>> avrea vm avr-cvm-abc123 >>>" in text  # marker-delimited for idempotent updates
+        if os.name == "posix":  # POSIX mode bits not enforced on Windows
+            assert oct(cfg.stat().st_mode & 0o777) == "0o600"
+
+    def test_append_replaces_prior_block_in_place(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        cfg, kh = tmp_path / "config", tmp_path / "kh"
+        args = ["vm", "ssh-config", "cvm-abc123", "--append", "--config-file", str(cfg), "--known-hosts-file", str(kh)]
+        assert runner.invoke(cli, args).exit_code == 0
+        again = runner.invoke(cli, args)  # a restart re-run must update, not duplicate
+        assert again.exit_code == 0
+        assert "Updated host avr-cvm-abc123" in again.output
+        assert cfg.read_text().count("Host avr-cvm-abc123") == 1
+
+    def test_upsert_ssh_config_block_rejects_unterminated_block(self, tmp_path):
+        from avrea_cli.vm import _upsert_ssh_config_block
+        import click
+
+        cfg = tmp_path / "config"
+        # A begin marker whose end marker is missing (hand-edited or a partial
+        # leftover). Writing would delete everything after it, so refuse instead.
+        original = "Host keep\n    HostName keep.me\n\n# >>> avrea vm avr-x >>>\nHost avr-x\n    HostName 1.1.1.1\n"
+        cfg.write_text(original)
+        with pytest.raises(click.ClickException, match="unterminated"):
+            _upsert_ssh_config_block(cfg, "avr-x", "Host avr-x\n    HostName 2.2.2.2\n")
+        assert cfg.read_text() == original  # left untouched, no data loss
+
+    def test_ssh_config_block_rejects_newline_in_endpoint_fields(self):
+        from avrea_cli.vm import _ssh_config_block
+        import click
+
+        # A newline in an endpoint value would inject arbitrary ssh_config
+        # directives (e.g. ProxyCommand) into the user's config.
+        evil_ip = {"external_ip": "1.2.3.4\n    ProxyCommand evil", "external_port": 22, "username": "runner"}
+        with pytest.raises(click.ClickException, match="embedded newline"):
+            _ssh_config_block("h", evil_ip, identity_file=None, known_hosts_path=None)
+        evil_user = {"external_ip": "1.2.3.4", "external_port": 22, "username": "runner\n    ProxyCommand evil"}
+        with pytest.raises(click.ClickException, match="embedded newline"):
+            _ssh_config_block("h", evil_user, identity_file=None, known_hosts_path=None)
+        # The port is numeric; a non-integer (e.g. one carrying an injected
+        # directive) is rejected rather than interpolated into the Port line.
+        evil_port = {"external_ip": "1.2.3.4", "external_port": "22\n    ProxyCommand evil", "username": "runner"}
+        with pytest.raises(click.ClickException, match="invalid SSH port"):
+            _ssh_config_block("h", evil_port, identity_file=None, known_hosts_path=None)
+
+    def test_ssh_config_path_arg_quotes_and_rejects_unsafe(self):
+        from avrea_cli.vm import _ssh_config_path_arg
+        import click
+
+        assert _ssh_config_path_arg("/home/u/.ssh/id", "IdentityFile") == "/home/u/.ssh/id"
+        # A path with a space must be double-quoted or ssh_config splits on it.
+        assert _ssh_config_path_arg("/home/u/my keys/id", "IdentityFile") == '"/home/u/my keys/id"'
+        # A newline would inject its own directives; ssh_config cannot escape a
+        # literal double quote inside a quoted argument. Reject both.
+        with pytest.raises(click.ClickException, match="embedded newline"):
+            _ssh_config_path_arg("/home/u/id\n    ProxyCommand evil", "IdentityFile")
+        with pytest.raises(click.ClickException, match="double quote"):
+            _ssh_config_path_arg('/home/u/a "b"/id', "UserKnownHostsFile")
+
+    def test_append_warns_on_earlier_catchall_override(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        cfg, kh = tmp_path / "config", tmp_path / "kh"
+        # A pre-existing catch-all block sets pinning knobs that ssh applies
+        # first, so they win over the block we append at the end of the file.
+        cfg.write_text("Host *\n    StrictHostKeyChecking no\n    UserKnownHostsFile ~/.ssh/known_hosts\n")
+        args = ["vm", "ssh-config", "cvm-abc123", "--append", "--config-file", str(cfg), "--known-hosts-file", str(kh)]
+        result = runner.invoke(cli, args)
+        assert result.exit_code == 0
+        assert "Added host avr-cvm-abc123" in result.output
+        assert "earlier 'Host *' block" in result.output
+        assert "StrictHostKeyChecking" in result.output and "UserKnownHostsFile" in result.output
+        # No spurious warning when no catch-all precedes the block.
+        cfg.write_text("Host keep\n    HostName keep.me\n")
+        again = runner.invoke(cli, args)
+        assert again.exit_code == 0
+        assert "earlier 'Host *' block" not in again.output
+
+    def test_config_file_requires_append(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(cli, ["vm", "ssh-config", "cvm-abc123", "--config-file", str(tmp_path / "c")])
+        assert result.exit_code != 0
+        assert "--config-file requires --append" in result.output
+
 
 class TestVmConnectLine:
     """The ready-to-paste `Connect` line printed under `Remote desktop  yes`."""
@@ -1206,8 +1527,7 @@ class TestVmDesktopTunnel:
         )
         result = runner.invoke(cli, ["vm", "rdp", "cvm-abc123", "--local-port", "40000"])
         assert result.exit_code == 0
-        assert captured["guest_port"] == 3389
-        assert captured["local_port"] == 40000
+        assert captured["forwards"] == [(40000, 3389)]
         assert captured["ssh_ep"]["external_port"] == 30022
 
     def test_rdp_requires_remote_desktop(self, runner, monkeypatch):
@@ -1257,6 +1577,37 @@ class TestVmDesktopTunnel:
         assert result.exit_code != 0
         assert "no SSH endpoint yet" in result.output
 
+    def test_port_forward_multiple_ports_one_ssh_process(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        # Pin the auto-picked local port so the assertion below is deterministic
+        # (a real _pick_local_port could, on some OS, hand back 5432 itself).
+        monkeypatch.setattr("avrea_cli.vm._pick_local_port", lambda: 41000)
+        result = runner.invoke(
+            cli,
+            ["vm", "port-forward", "cvm-abc123", "--port", "9000:3000", "--port", "5432", "--print"],
+        )
+        assert result.exit_code == 0
+        # Explicit local bind honored, and every forward rides one ssh invocation.
+        assert "-L 127.0.0.1:9000:localhost:3000" in result.output
+        assert "-L 127.0.0.1:41000:localhost:5432" in result.output  # 5432 gets an auto-picked local port
+        assert result.output.count("ssh -N") == 1
+
+    def test_port_forward_rejects_duplicate_guest(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(
+            cli, ["vm", "port-forward", "cvm-abc123", "--port", "8080", "--port", "9000:8080", "--print"]
+        )
+        assert result.exit_code != 0
+        assert "forwarded more than once" in result.output
+
+    def test_port_forward_local_port_with_multiple_ports_errors(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RUNNING_VM)
+        result = runner.invoke(
+            cli, ["vm", "port-forward", "cvm-abc123", "--port", "8080", "--port", "5432", "--local-port", "41000"]
+        )
+        assert result.exit_code != 0
+        assert "single bare --port" in result.output
+
 
 class TestTunnelHelpers:
     """Pure helpers behind the tunnel commands."""
@@ -1267,7 +1618,7 @@ class TestTunnelHelpers:
 
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
         kh = Path("/tmp/kh")
-        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=3389, identity_file=None, known_hosts=kh)
+        argv = _ssh_tunnel_argv(ep, forwards=[(40000, 3389)], identity_file=None, known_hosts=kh)
         # Render the expected value through Path so the assertion matches the code
         # on Windows too (where Path stringifies with backslashes).
         assert f"UserKnownHostsFile={kh}" in argv
@@ -1279,7 +1630,7 @@ class TestTunnelHelpers:
         from avrea_cli.vm import _ssh_tunnel_argv
 
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
-        argv = _ssh_tunnel_argv(ep, local_port=40000, guest_port=5900, identity_file="/tmp/key", known_hosts=None)
+        argv = _ssh_tunnel_argv(ep, forwards=[(40000, 5900)], identity_file="/tmp/key", known_hosts=None)
         assert "StrictHostKeyChecking=accept-new" in argv
         assert "-i" in argv and "/tmp/key" in argv
 
@@ -1288,6 +1639,51 @@ class TestTunnelHelpers:
 
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 30022) == "[1.2.3.4]:30022 ssh-ed25519 AAAA\n"
         assert _known_hosts_line("ssh-ed25519 AAAA", "1.2.3.4", 22) == "1.2.3.4 ssh-ed25519 AAAA\n"
+
+    def test_parse_forward_spec_bare_and_paired(self):
+        from avrea_cli.vm import _parse_forward_spec
+
+        assert _parse_forward_spec("8080") == (None, 8080)
+        assert _parse_forward_spec("9000:3000") == (9000, 3000)
+
+    def test_parse_forward_spec_rejects_bad_values(self):
+        from avrea_cli.vm import _parse_forward_spec
+        import click
+        import pytest
+
+        with pytest.raises(click.UsageError):
+            _parse_forward_spec("nope")
+        with pytest.raises(click.UsageError):
+            _parse_forward_spec("70000")  # out of range
+
+    def test_build_forwards_auto_picks_distinct_local_ports(self, monkeypatch):
+        from avrea_cli import vm as vmmod
+        from itertools import count
+
+        picks = count(41000)
+        monkeypatch.setattr(vmmod, "_pick_local_port", lambda: next(picks))
+        forwards = vmmod._build_forwards(("8080", "5432"), None)
+        assert forwards == [(41000, 8080), (41001, 5432)]
+
+    def test_build_forwards_rejects_duplicate_local_bind(self):
+        from avrea_cli.vm import _build_forwards
+        import click
+        import pytest
+
+        with pytest.raises(click.UsageError):
+            _build_forwards(("40000:8080", "40000:9090"), None)
+
+    def test_build_forwards_autopick_avoids_later_explicit_local(self, monkeypatch):
+        # An auto-pick that lands on a port the user explicitly named on a later
+        # spec must not be reported as a duplicate bind: explicit locals are
+        # reserved before any auto-pick runs, so the auto-pick skips 9000.
+        from avrea_cli import vm as vmmod
+        from itertools import count
+
+        picks = count(9000)  # first auto-pick would collide with the explicit 9000
+        monkeypatch.setattr(vmmod, "_pick_local_port", lambda: next(picks))
+        forwards = vmmod._build_forwards(("8080", "9000:3000"), None)
+        assert forwards == [(9001, 8080), (9000, 3000)]
 
     def test_ssh_connect_argv_pins_host_key(self):
         from avrea_cli.vm import _ssh_connect_argv
@@ -1390,7 +1786,7 @@ class TestTunnelHelpers:
         monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
         with pytest.raises(click.ClickException):
-            vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: p.wait())
+            vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=lambda p: p.wait())
 
     def test_run_tunnel_clean_on_ctrl_c(self, monkeypatch):
         # Ctrl-C during the hold is an intentional teardown: no error surfaced.
@@ -1405,7 +1801,7 @@ class TestTunnelHelpers:
         def _interrupt(_p):
             raise KeyboardInterrupt
 
-        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=_interrupt)
+        vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=_interrupt)
         assert proc.terminated  # torn down cleanly, no exception raised
 
     def test_run_tunnel_clean_on_client_teardown(self, monkeypatch):
@@ -1418,7 +1814,7 @@ class TestTunnelHelpers:
         monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
         monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
-        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
+        vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=lambda p: None)
         assert proc.terminated
 
     def test_run_tunnel_warns_when_no_host_key(self, monkeypatch):
@@ -1433,7 +1829,7 @@ class TestTunnelHelpers:
         monkeypatch.setattr("avrea_cli.vm._wait_until_listening", lambda *a, **k: True)
         monkeypatch.setattr("avrea_cli.vm._write_known_hosts", lambda *a, **k: None)  # no host key
         ep = {"external_ip": "203.0.113.1", "external_port": 30022, "username": "runner"}
-        vmmod._run_tunnel(ep, local_port=40000, guest_port=22, identity_file=None, on_ready=lambda p: None)
+        vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=lambda p: None)
         assert any("no SSH host key" in m for m in msgs)
 
 
@@ -1455,6 +1851,22 @@ class TestVmBootstrapPlanning:
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1"])
         assert result.exit_code != 0
         assert "Nothing to do" in result.output
+
+    def test_env_step_keeps_secret_off_argv(self):
+        from avrea_cli.vm import _env_step
+
+        step = _env_step({"CLAUDE_CODE_OAUTH_TOKEN": "sk-ant-oat01-secret"}, redact=False)
+        # The secret rides stdin, never the script (which becomes argv on the VM).
+        assert "sk-ant-oat01-secret" in step.stdin
+        assert "sk-ant-oat01-secret" not in step.script
+        assert step.secret is True
+        # Hooked into an interactive rc and a login file; a one-off remote command
+        # needs `avr vm ssh --login` (or `bash -lc`) to pick these up.
+        assert "$HOME/.bashrc" in step.script  # interactive non-login shells
+        # The login file is what `bash -lc` / `ssh --login` actually reads, chosen
+        # from the first of ~/.bash_profile, ~/.bash_login, ~/.profile that exists.
+        assert '_avr_hook "$login_rc"' in step.script
+        assert "$HOME/.bash_profile" in step.script
 
     def test_unknown_agent_rejected(self, runner):
         result = runner.invoke(cli, ["vm", "bootstrap", "cvm-1", "--install", "gemini"])
@@ -1595,6 +2007,84 @@ class TestVmBootstrapRun:
         env_call = steps[0]
         assert "sk-ant-xyz" in (env_call["stdin"] or "")
         assert "sk-ant-xyz" not in " ".join(env_call["command"])
+
+    def test_claude_oauth_token_alone_forwarded_without_prompt(self, runner, monkeypatch):
+        from types import SimpleNamespace
+
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-only")
+        monkeypatch.setattr("avrea_cli.vm._is_interactive", lambda: True)  # a token exists, so still no prompt
+        ran: list = []
+        monkeypatch.setattr(
+            "avrea_cli.vm.subprocess.run", lambda argv, *a, **k: ran.append(argv) or SimpleNamespace(returncode=0)
+        )
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"])
+        assert result.exit_code == 0, result.output
+        assert ran == []  # never offered setup-token
+        steps = [c for c in calls if c["command"] != ["true"]]
+        assert "sk-ant-oat01-only" in (steps[0]["stdin"] or "")
+
+    def test_forward_creds_warns_on_api_key_oauth_collision(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-key")
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-tok")
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"])
+        assert result.exit_code == 0, result.output
+        assert "prefers the API key" in result.output
+        env_stdin = next(c for c in calls if c["command"] != ["true"])["stdin"] or ""
+        assert "sk-ant-key" in env_stdin and "sk-ant-oat01-tok" in env_stdin  # both forwarded
+
+    def test_forward_creds_non_interactive_skips_prompt_and_warns(self, runner, monkeypatch):
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
+        monkeypatch.setattr("avrea_cli.vm._is_interactive", lambda: False)  # CI / piped stdin
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"])
+        assert result.exit_code == 0, result.output
+        assert "will be unauthenticated" in result.output  # warns rather than blocking on a prompt
+        steps = [c for c in calls if c["command"] != ["true"]]
+        assert all("CLAUDE_CODE_OAUTH_TOKEN" not in (s["stdin"] or "") for s in steps)
+
+    def test_forward_creds_without_install_is_quiet_noop(self, runner, monkeypatch):
+        # --forward-agent-creds with no --install is a no-op; the "Nothing to do"
+        # error already covers it, so don't also warn about missing credentials.
+        self._patch_ssh(monkeypatch, [])
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        result = runner.invoke(cli, ["vm", "bootstrap", "cvm-abc123", "--forward-agent-creds"])
+        assert result.exit_code != 0
+        assert "Nothing to do" in result.output
+        assert "unauthenticated" not in result.output  # no misleading credential warning without --install
+
+    def test_forward_creds_prompts_runs_setup_token_and_forwards_paste(self, runner, monkeypatch):
+        from types import SimpleNamespace
+
+        calls: list[dict] = []
+        self._patch_ssh(monkeypatch, calls)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
+        monkeypatch.setattr("avrea_cli.vm._is_interactive", lambda: True)
+        ran: list = []
+        monkeypatch.setattr(
+            "avrea_cli.vm.subprocess.run", lambda argv, *a, **k: ran.append(argv) or SimpleNamespace(returncode=0)
+        )
+        # confirm 'y' to run setup-token, then paste the token at the hidden prompt
+        result = runner.invoke(
+            cli,
+            ["vm", "bootstrap", "cvm-abc123", "--install", "claude", "--forward-agent-creds"],
+            input="y\nsk-ant-oat01-pasted\n",
+        )
+        assert result.exit_code == 0, result.output
+        assert ["claude", "setup-token"] in ran  # offered and launched setup-token
+        env_call = next(c for c in calls if c["command"] != ["true"])
+        assert "sk-ant-oat01-pasted" in (env_call["stdin"] or "")  # pasted token rides stdin
+        assert "sk-ant-oat01-pasted" not in " ".join(env_call["command"])  # never argv
+        assert "sk-ant-oat01-pasted" not in result.output  # never echoed back to the terminal
 
     def test_unreachable_ssh_surfaces_clear_error(self, runner, monkeypatch):
         from types import SimpleNamespace

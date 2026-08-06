@@ -218,6 +218,66 @@ def _validate_branch_ref(ref: str) -> str:
     return ref
 
 
+_CACHE_ALIAS_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_CACHE_KEY_RE = re.compile(r"^cache\.[a-z0-9][a-z0-9-]*\.enabled$")
+
+
+def _cache_alias(key: str) -> str:
+    """The friendly name for a cache setting key (``cache.gha.enabled`` -> ``gha``)."""
+    if key.startswith("cache.") and key.endswith(".enabled"):
+        return key[len("cache.") : -len(".enabled")]
+    return key
+
+
+def _parse_disable_cache(values: tuple[str, ...]) -> dict[str, bool]:
+    """Turn ``--disable-cache`` tokens into the narrowing overrides map
+    ``{key: False}``. A token is a friendly alias (``gha``) or a raw
+    ``cache.<name>.enabled`` key, and each value may be comma-separated. The
+    control plane is the source of truth for which keys exist and which require
+    a repository, so this only normalizes shape and lets the server validate
+    membership (surfaced as an HTTP 422 detail)."""
+    overrides: dict[str, bool] = {}
+    for value in values:
+        for token in value.split(","):
+            token = token.strip().lower()
+            if not token:
+                continue
+            if _CACHE_KEY_RE.fullmatch(token):
+                key = token
+            elif _CACHE_ALIAS_RE.fullmatch(token):
+                key = f"cache.{token}.enabled"
+            else:
+                raise click.UsageError(
+                    f"--disable-cache '{token}' is not a cache name; use e.g. 'gha' or 'cache.gha.enabled'."
+                )
+            overrides[key] = False
+    return overrides
+
+
+_SESSION_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _validate_session_name(name: str) -> str:
+    """Validate ``--session`` as a tmux-safe, shell-safe session name. tmux
+    forbids ``.`` and ``:`` in session names; this is stricter so the name is
+    also safe to pass through the remote shell unquoted."""
+    if not _SESSION_NAME_RE.fullmatch(name):
+        raise click.UsageError(
+            f"--session '{name}' is not a valid session name; use letters, digits, '_' or '-' (max 64 chars)."
+        )
+    return name
+
+
+def _login_shell_command(remote_args: tuple[str, ...]) -> str:
+    """Wrap a remote command so a login shell runs it. ssh flattens the remote
+    argv into one string the login shell re-parses, so a naive ``bash -lc
+    <script>`` would have <script> word-split away from ``-lc``. Return the whole
+    ``bash -lc <script>`` as ONE already-quoted argument (nested quoting survives
+    the flatten intact) so the command runs under a login shell and sees the
+    bootstrap-forwarded env."""
+    return "bash -lc " + shlex.quote(shlex.join(remote_args))
+
+
 def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     """Flatten a VM record into an ordered key-value view for human output."""
     summary: dict[str, Any] = {
@@ -572,6 +632,17 @@ def vm(ctx):
     ),
 )
 @click.option(
+    "--disable-cache",
+    "disable_cache",
+    metavar="CACHE",
+    multiple=True,
+    help=(
+        "Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: "
+        "a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, "
+        "maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo."
+    ),
+)
+@click.option(
     "--ephemeral",
     is_flag=True,
     default=False,
@@ -605,6 +676,7 @@ def vm_create(
     egress_rules_raw,
     repo,
     ref,
+    disable_cache,
     ephemeral,
     wait,
     wait_timeout,
@@ -640,6 +712,7 @@ def vm_create(
     ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
     keys = _resolve_ssh_keys(ssh_keys)
     egress_rules = _load_egress_rules(egress_rules_raw)
+    cache_overrides = _parse_disable_cache(disable_cache)
 
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -664,6 +737,8 @@ def vm_create(
         body["repo"] = repo
     if ref is not None:
         body["ref"] = ref
+    if cache_overrides:
+        body["cache_setting_overrides"] = cache_overrides
 
     try:
         response = client.public_post(f"/orgs/{org_id}/vms", json=body)
@@ -674,6 +749,9 @@ def vm_create(
     password = data.get("password")
     vm_id = data["vm"].get("customer_vm_id")
     note = data.get("precheckout_note")
+    # The response does not echo cache state yet, but a successful create means
+    # the server accepted these overrides, so confirm from the request.
+    disabled_caches = ", ".join(sorted(_cache_alias(key) for key in cache_overrides))
 
     if wait:
         # Human output surfaces the one-time password before waiting so a timeout
@@ -682,6 +760,8 @@ def vm_create(
             _print_password(password)
             if note:
                 click.secho(f"Note: {note}", fg="yellow", err=True)
+            if disabled_caches:
+                click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
             click.echo()
         click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
         vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, _endpoints_ready)
@@ -702,6 +782,9 @@ def vm_create(
     click.echo()
     if note:
         click.secho(f"Note: {note}", fg="yellow", err=True)
+        click.echo()
+    if disabled_caches:
+        click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
         click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
 
@@ -809,15 +892,42 @@ def vm_show(ctx, vm_id, org_id, as_json):
     default=None,
     help="Private key file to pass to ssh as -i.",
 )
+@click.option(
+    "--session",
+    "session_name",
+    default=None,
+    help="Attach to (or create) a persistent tmux session by this name, so the shell and any "
+    "long-running process in it survive a dropped connection. Reconnect with the same --session. "
+    "A `-- <cmd>` runs only when the session is created, not on reattach.",
+)
+@click.option(
+    "--login",
+    is_flag=True,
+    default=False,
+    help="Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like "
+    "CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.",
+)
 @click.option("--print", "print_only", is_flag=True, help="Print the ssh command instead of running it.")
 @click.pass_context
-def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
+def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, session_name, login, print_only):
     """Open an SSH session to a RUNNING VM, or run a command on it.
 
     With no extra arguments this opens an interactive session. Anything after
     `--` is run as a remote command instead, e.g.:
 
         avr vm ssh cvm-abc123 -- uname -a
+
+    A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
+    so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
+    in a login shell instead (e.g. so `claude` finds its subscription token):
+
+        avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+
+    Pass `--session <name>` to attach to (or create) a persistent tmux session,
+    so the shell and any long-running process in it survive a dropped
+    connection; reconnect with the same name to resume where you left off. A
+    `-- <cmd>` given with --session runs only when the session is first created;
+    reattaching to an existing session resumes it and does not rerun the command.
 
     When the VM's endpoint publishes a host key it is pinned, so the first
     connect neither prompts nor is spoofable. If the endpoint has no host key,
@@ -832,11 +942,27 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
 
     ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
 
+    remote_command = list(ssh_args)  # after the destination; empty is interactive
+    extra_opts: tuple[str, ...] = ()
+    if session_name:
+        _validate_session_name(session_name)
+        # tmux new-session -A attaches if the session exists, else creates it. A
+        # remote command runs ONLY on create; reattaching to an existing session
+        # ignores it (tmux runs the command just once, when the session is born).
+        # A remote command otherwise gets no tty, so force one with -t for a
+        # usable interactive attach. --login is honored here too: wrap the inner
+        # command so tmux runs it in a login shell.
+        inner = [_login_shell_command(ssh_args)] if (login and remote_command) else remote_command
+        remote_command = ["tmux", "new-session", "-A", "-s", session_name, *inner]
+        extra_opts = ("-t",)
+    elif login and remote_command:
+        remote_command = [_login_shell_command(ssh_args)]
+
     if print_only:
         # The real run pins the host key via an ephemeral known_hosts file that
         # a pasted command can't reference, so the printed form uses accept-new.
-        argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=None)
-        argv += list(ssh_args)
+        argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=None, extra_opts=extra_opts)
+        argv += remote_command
         click.echo(" ".join(shlex.quote(arg) for arg in argv))
         return
 
@@ -849,8 +975,8 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
             "trust-on-first-use instead of pinning.",
             err=True,
         )
-    argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=known_hosts)
-    argv += list(ssh_args)  # remote command after the destination; empty is interactive
+    argv = _ssh_connect_argv(ssh_ep, identity_file=identity_file, known_hosts=known_hosts, extra_opts=extra_opts)
+    argv += remote_command
 
     # Ignore SIGINT in the parent so Ctrl-C reaches the ssh child (and the
     # remote session), not this process.
@@ -864,6 +990,102 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, print_only):
         if known_hosts is not None:
             known_hosts.unlink(missing_ok=True)
     sys.exit(completed.returncode)
+
+
+_DEFAULT_KNOWN_HOSTS_PATH = Path.home() / ".ssh" / "avr_known_hosts"
+_DEFAULT_SSH_CONFIG_PATH = Path.home() / ".ssh" / "config"
+_HOST_ALIAS_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
+@vm.command("ssh-config")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "-i", "--identity", "identity_file", type=click.Path(), default=None, help="IdentityFile to write into the block."
+)
+@click.option("--host-alias", default=None, help="Host alias for the block (default: avr-<vm-id>).")
+@click.option(
+    "--known-hosts-file",
+    type=click.Path(),
+    default=None,
+    help="Where to pin the host key (default: ~/.ssh/avr_known_hosts).",
+)
+@click.option(
+    "--append",
+    is_flag=True,
+    default=False,
+    help="Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, "
+    "replacing any prior block for the same alias in place.",
+)
+@click.option(
+    "--config-file",
+    type=click.Path(),
+    default=None,
+    help="SSH config file for --append (default: ~/.ssh/config).",
+)
+@click.pass_context
+def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_file, append, config_file):
+    """Print (or --append) an ssh_config Host block for a RUNNING VM.
+
+    Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
+    host key pinned, without wrapping each tool. Redirect it yourself:
+
+        avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+
+    or let --append manage the block for you (idempotent — re-run after a
+    restart to refresh the endpoint in place):
+
+        avr vm ssh-config cvm-abc123 --append
+
+    The block references a dedicated known_hosts file that this command writes
+    the pinned host key into (one entry per VM). If the endpoint publishes no
+    host key, the block falls back to accept-new (trust-on-first-use) and a
+    warning is printed.
+    """
+    if config_file and not append:
+        raise click.UsageError("--config-file requires --append.")
+
+    alias = host_alias or f"avr-{vm_id}"
+    if not _HOST_ALIAS_RE.fullmatch(alias):
+        raise click.UsageError(
+            f"--host-alias '{alias}' is not valid; use letters, digits, '.', '_' or '-' (no whitespace)."
+        )
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
+
+    host_key = ssh_ep.get("host_key")
+    known_hosts_path: Path | None = None
+    if host_key:
+        known_hosts_path = Path(known_hosts_file).expanduser() if known_hosts_file else _DEFAULT_KNOWN_HOSTS_PATH
+        _upsert_known_hosts(known_hosts_path, host_key, ssh_ep["external_ip"], ssh_ep["external_port"])
+        click.echo(f"Pinned host key for {alias} in {known_hosts_path}", err=True)
+    else:
+        click.echo(
+            "Warning: this VM's endpoint has no SSH host key; the block uses accept-new "
+            "(trust-on-first-use) instead of pinning.",
+            err=True,
+        )
+
+    block = _ssh_config_block(alias, ssh_ep, identity_file=identity_file, known_hosts_path=known_hosts_path)
+    if append:
+        config_path = Path(config_file).expanduser() if config_file else _DEFAULT_SSH_CONFIG_PATH
+        action = _upsert_ssh_config_block(config_path, alias, block)
+        click.echo(f"{action.capitalize()} host {alias} in {config_path}. Connect with: ssh {alias}", err=True)
+        if action == "added" and known_hosts_path is not None:
+            overrides = _catchall_pinning_overrides(config_path)
+            if overrides:
+                click.echo(
+                    f"Warning: an earlier 'Host *' block sets {' and '.join(overrides)}; ssh uses the first "
+                    f"match, so it may override the pinning appended for {alias}.",
+                    err=True,
+                )
+    else:
+        click.echo(block, nl=False)
 
 
 @vm.command("update")
@@ -1220,11 +1442,78 @@ def _port_is_listening(port: int) -> bool:
         return sock.connect_ex(("127.0.0.1", port)) == 0
 
 
+def _valid_port(text: str, label: str) -> int:
+    """Parse a 1-65535 TCP port from ``text`` or raise a UsageError naming it."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise click.UsageError(f"--port {label} '{text}' is not an integer.") from None
+    if not 1 <= value <= 65535:
+        raise click.UsageError(f"--port {label} {value} is out of range (1-65535).")
+    return value
+
+
+def _parse_forward_spec(spec: str) -> tuple[int | None, int]:
+    """Parse one ``--port`` value: ``GUEST`` (auto-pick the local bind port) or
+    ``LOCAL:GUEST`` (bind a specific local port). Returns (local_or_None, guest)."""
+    local_s, sep, guest_s = spec.rpartition(":")
+    guest = _valid_port(guest_s, "guest port")
+    local = _valid_port(local_s, "local port") if sep else None
+    return local, guest
+
+
+def _build_forwards(port_specs: tuple[str, ...], local_port_override: int | None) -> list[tuple[int, int]]:
+    """Turn ``--port`` specs (plus an optional single ``--local-port``) into
+    (local, guest) pairs, auto-picking a free local port where one is not given
+    and rejecting a duplicate guest or local bind."""
+    if local_port_override is not None and (len(port_specs) != 1 or ":" in port_specs[0]):
+        raise click.UsageError(
+            "--local-port applies to a single bare --port; for multiple ports use --port LOCAL:GUEST."
+        )
+    used_local: set[int] = set()
+    used_guest: set[int] = set()
+    # Pass 1: parse, reject duplicate guests, and reserve every explicit local
+    # port up front — so a later auto-pick can't grab a port the user named on
+    # another spec, which would then be misreported as a duplicate bind.
+    parsed: list[tuple[int | None, int]] = []
+    for spec in port_specs:
+        explicit_local, guest = _parse_forward_spec(spec)
+        if guest in used_guest:
+            raise click.UsageError(f"--port guest {guest} is forwarded more than once.")
+        used_guest.add(guest)
+        if explicit_local is None and local_port_override is not None:
+            explicit_local = local_port_override
+        if explicit_local is not None:
+            if explicit_local in used_local:
+                raise click.UsageError(f"--port local {explicit_local} is bound more than once.")
+            used_local.add(explicit_local)
+        parsed.append((explicit_local, guest))
+    # Pass 2: keep explicit binds; auto-pick the rest around the reserved set.
+    forwards: list[tuple[int, int]] = []
+    for explicit_local, guest in parsed:
+        if explicit_local is not None:
+            local = explicit_local
+        else:
+            local = _pick_local_port()
+            while local in used_local:
+                local = _pick_local_port()
+            used_local.add(local)
+        forwards.append((local, guest))
+    return forwards
+
+
 def _known_hosts_line(host_key: str, external_ip: str, external_port: int) -> str:
     """One known_hosts entry pinning ``host_key`` to the SSH endpoint. OpenSSH
-    keys a non-default port as ``[host]:port``; port 22 is bare."""
+    keys a non-default port as ``[host]:port``; port 22 is bare. A valid key is a
+    single line; reject an embedded newline rather than write a second, unpinned
+    known_hosts entry from a malformed or hostile endpoint response."""
+    key = host_key.strip()
+    if "\n" in key or "\r" in key:
+        raise click.ClickException(
+            "VM endpoint returned a malformed SSH host key (multiple lines); refusing to pin it."
+        )
     host = external_ip if external_port == 22 else f"[{external_ip}]:{external_port}"
-    return f"{host} {host_key.strip()}\n"
+    return f"{host} {key}\n"
 
 
 def _write_known_hosts(host_key: str | None, external_ip: str, external_port: int) -> Path | None:
@@ -1236,6 +1525,186 @@ def _write_known_hosts(host_key: str | None, external_ip: str, external_port: in
     with os.fdopen(fd, "w") as handle:
         handle.write(_known_hosts_line(host_key, external_ip, external_port))
     return Path(name)
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    """Write ``content`` to ``path`` atomically at mode 0600. A same-directory
+    temp file is written and chmod'd before publication, then ``os.replace``d
+    over the target, so a reader never sees a partial file or a wider-than-0600
+    permission window, and a crash mid-write leaves the prior file intact."""
+    # Create the parent (typically ~/.ssh) and any missing ancestors restricted
+    # to 0700: SSH refuses a config/known_hosts dir that is group- or
+    # world-accessible. mkdir(parents=True) gives intermediates the umask
+    # default, so create each new level explicitly; existing dirs are left as-is.
+    missing: list[Path] = []
+    ancestor = path.parent
+    while not ancestor.exists():
+        missing.append(ancestor)
+        ancestor = ancestor.parent
+    for directory in reversed(missing):
+        directory.mkdir(mode=0o700, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as handle:
+            handle.write(content)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            # Best-effort cleanup of the temp file; a failed unlink (already
+            # gone, or the dir is unwritable) must not mask the original error,
+            # which is re-raised immediately below.
+            pass
+        raise
+
+
+def _upsert_known_hosts(path: Path, host_key: str, external_ip: str, external_port: int) -> None:
+    """Write (or replace) the pinned known_hosts line for this endpoint in a
+    persistent file, so an SSH config block can reference it. Replaces only the
+    entry for this exact host[:port], leaving other VMs' pins intact; the file
+    is created 0600."""
+    line = _known_hosts_line(host_key, external_ip, external_port)
+    host = line.split(" ", 1)[0]
+    kept: list[str] = []
+    if path.exists():
+        kept = [
+            existing for existing in path.read_text().splitlines(keepends=True) if not existing.startswith(f"{host} ")
+        ]
+    kept_text = "".join(kept)
+    if kept_text and not kept_text.endswith("\n"):
+        # A hand-edited file may lack a trailing newline; add one so the last
+        # preserved entry does not merge onto the same line as the new pin.
+        kept_text += "\n"
+    _atomic_write_text(path, kept_text + line)
+
+
+def _ssh_config_path_arg(value: object, label: str) -> str:
+    """Render a path as an ssh_config(5) argument. ssh_config splits an unquoted
+    argument on whitespace, so a path containing spaces (e.g. a home directory
+    with a space) must be double-quoted; simpler paths are left bare. A newline
+    would let the value inject its own directives, and ssh_config has no escape
+    syntax for a literal double quote inside a quoted argument, so both are
+    rejected rather than written into a pinning-critical block."""
+    text = str(value)
+    if "\n" in text or "\r" in text:
+        raise click.ClickException(f"SSH config {label} contains an embedded newline; refusing to write it.")
+    if '"' in text:
+        raise click.ClickException(
+            f"SSH config {label} contains a double quote, which ssh_config cannot escape; refusing to write it."
+        )
+    return f'"{text}"' if any(ch.isspace() for ch in text) else text
+
+
+def _ssh_config_field(value: object, label: str) -> str:
+    """Validate an endpoint value bound for an ssh_config directive. An embedded
+    newline would let a malformed or hostile API response inject arbitrary
+    directives (e.g. a ProxyCommand) into the user's SSH config, so strip and
+    reject one rather than write it."""
+    text = str(value).strip()
+    if "\n" in text or "\r" in text:
+        raise click.ClickException(f"VM endpoint {label} contains an embedded newline; refusing to write it.")
+    return text
+
+
+def _ssh_config_block(
+    alias: str, ssh_ep: dict[str, Any], *, identity_file: str | None, known_hosts_path: Path | None
+) -> str:
+    """An ``ssh_config(5)`` Host block for the endpoint. Pins the host key via
+    ``UserKnownHostsFile`` when one is known (so `ssh <alias>`, scp/rsync, and
+    Remote-SSH are spoof-safe); otherwise falls back to accept-new."""
+    host_name = _ssh_config_field(ssh_ep["external_ip"], "IP")
+    user = _ssh_config_field(ssh_ep.get("username") or "runner", "username")
+    # A port is numeric, so coerce it: int() is newline-safe (it rejects a value
+    # carrying an injected directive) and normalizes the rendered Port line.
+    try:
+        port = int(ssh_ep["external_port"])
+    except (TypeError, ValueError) as exc:
+        raise click.ClickException(f"VM endpoint returned an invalid SSH port: {ssh_ep['external_port']!r}.") from exc
+    lines = [
+        f"Host {alias}",
+        f"    HostName {host_name}",
+        f"    User {user}",
+        f"    Port {port}",
+    ]
+    if identity_file:
+        lines.append(f"    IdentityFile {_ssh_config_path_arg(identity_file, 'IdentityFile')}")
+    if known_hosts_path is not None:
+        lines.append(f"    UserKnownHostsFile {_ssh_config_path_arg(known_hosts_path, 'UserKnownHostsFile')}")
+        lines.append("    StrictHostKeyChecking yes")
+    else:
+        lines.append("    StrictHostKeyChecking accept-new")
+    return "\n".join(lines) + "\n"
+
+
+def _upsert_ssh_config_block(config_path: Path, alias: str, block: str) -> str:
+    """Write ``block`` into an ssh_config file between avrea markers keyed by
+    ``alias``, replacing a prior block for the same alias in place rather than
+    duplicating — an ephemeral VM's endpoint changes on restart, so re-running
+    must update, not append again. Everything outside the markers is preserved;
+    the file is created 0600. Returns ``"updated"`` or ``"added"``."""
+    begin = f"# >>> avrea vm {alias} >>>"
+    end = f"# <<< avrea vm {alias} <<<"
+    managed = [begin, *block.rstrip("\n").splitlines(), end]
+    lines = config_path.read_text().splitlines() if config_path.exists() else []
+    kept: list[str] = []
+    skipping = False
+    insert_at: int | None = None
+    for line in lines:
+        if line.strip() == begin:
+            skipping = True
+            insert_at = len(kept)  # remember where the prior block sat
+            continue
+        if skipping:
+            skipping = line.strip() != end  # stop skipping once the end marker passes
+            continue
+        kept.append(line)
+    if skipping:
+        # A begin marker was found but its end marker never was: the block is
+        # unterminated (hand-edited, or a partial pre-atomic-write leftover).
+        # Everything after the marker is still being skipped, so writing now
+        # would silently delete it. Refuse and leave the file untouched instead.
+        raise click.ClickException(
+            f"{config_path} has an unterminated '{begin}' block (missing its "
+            f"'{end}' marker); fix it by hand and re-run."
+        )
+    if insert_at is not None:
+        kept[insert_at:insert_at] = managed  # reinsert in place, not at the end
+    else:
+        while kept and not kept[-1].strip():  # drop trailing blanks before appending
+            kept.pop()
+        if kept:
+            kept.append("")
+        kept.extend(managed)
+    _atomic_write_text(config_path, "\n".join(kept) + "\n")
+    return "updated" if insert_at is not None else "added"
+
+
+def _catchall_pinning_overrides(config_path: Path) -> list[str]:
+    """Pinning keywords a catch-all ``Host *`` stanza sets ahead of an appended
+    alias block. ssh_config uses the first value it obtains for a keyword, so a
+    ``Host *`` block earlier in the file wins over the ``UserKnownHostsFile`` /
+    ``StrictHostKeyChecking`` our block appends at the end, silently weakening
+    the pinning the user just wrote. Returns the overridden keywords, if any."""
+    watched = {"userknownhostsfile": "UserKnownHostsFile", "stricthostkeychecking": "StrictHostKeyChecking"}
+    found: list[str] = []
+    in_catchall = False
+    lines = config_path.read_text().splitlines() if config_path.exists() else []
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        # ssh_config accepts "Keyword value" or "Keyword=value"; Host patterns
+        # are whitespace-separated. A bare '*' pattern matches every alias.
+        tokens = line.replace("=", " ", 1).split()
+        keyword = tokens[0].lower()
+        if keyword in ("host", "match"):
+            in_catchall = keyword == "host" and "*" in tokens[1:]
+            continue
+        if in_catchall and keyword in watched and watched[keyword] not in found:
+            found.append(watched[keyword])
+    return found
 
 
 def _resolve_ssh_endpoint(client: ApiClient, org_id: str, vm_id: str) -> dict[str, Any]:
@@ -1315,27 +1784,26 @@ def run_ssh(
 def _ssh_tunnel_argv(
     ssh_ep: dict[str, Any],
     *,
-    local_port: int,
-    guest_port: int,
+    forwards: list[tuple[int, int]],
     identity_file: str | None,
     known_hosts: Path | None,
 ) -> list[str]:
-    """The ``ssh -N -L`` argv forwarding 127.0.0.1:local_port to the guest's own
-    loopback:guest_port over the VM's SSH endpoint."""
+    """The ``ssh -N -L`` argv forwarding each 127.0.0.1:local_port to the guest's
+    own loopback:guest_port over the VM's SSH endpoint. Multiple ``forwards``
+    (local, guest) pairs ride one ssh process."""
     argv = [
         "ssh",
         "-N",  # forward only, no remote command
         "-o",
-        "ExitOnForwardFailure=yes",  # fail loudly if the local bind fails
+        "ExitOnForwardFailure=yes",  # fail loudly if any local bind fails
         "-o",
         "ConnectTimeout=15",
         "-o",
         "ServerAliveInterval=30",  # keep an idle desktop session alive
-        "-L",
-        f"127.0.0.1:{local_port}:localhost:{guest_port}",
-        "-p",
-        str(ssh_ep["external_port"]),
     ]
+    for local_port, guest_port in forwards:
+        argv += ["-L", f"127.0.0.1:{local_port}:localhost:{guest_port}"]
+    argv += ["-p", str(ssh_ep["external_port"])]
     if known_hosts is not None:
         # Pin the endpoint's host key: first connect neither prompts nor is
         # spoofable. Without a key, accept-new so ssh still doesn't block on an
@@ -1360,15 +1828,16 @@ def _terminate_tunnel(proc: subprocess.Popen[bytes]) -> None:
         proc.kill()
 
 
-def _wait_until_listening(proc: subprocess.Popen[bytes], local_port: int, timeout: float) -> bool:
-    """Poll until the local forward accepts connections. False if ssh exits
+def _wait_until_listening(proc: subprocess.Popen[bytes], local_ports: list[int], timeout: float) -> bool:
+    """Poll until every local forward accepts connections. False if ssh exits
     first (auth/host-key/bind failure, already on its own stderr) or we time
-    out."""
+    out. All forwards share one ssh process, and ``ExitOnForwardFailure=yes``
+    makes any failed bind exit it, so waiting on all ports is safe."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if proc.poll() is not None:
             return False
-        if _port_is_listening(local_port):
+        if all(_port_is_listening(port) for port in local_ports):
             return True
         time.sleep(_TUNNEL_POLL_SECONDS)
     return False
@@ -1377,14 +1846,13 @@ def _wait_until_listening(proc: subprocess.Popen[bytes], local_port: int, timeou
 def _run_tunnel(
     ssh_ep: dict[str, Any],
     *,
-    local_port: int,
-    guest_port: int,
+    forwards: list[tuple[int, int]],
     identity_file: str | None,
     on_ready: Callable[[subprocess.Popen[bytes]], None],
 ) -> None:
-    """Open the SSH forward, wait for it to listen, hand the live ssh process to
-    ``on_ready`` (which holds or launches a client), then tear it down. Ctrl-C
-    closes cleanly."""
+    """Open the SSH forward(s), wait for them all to listen, hand the live ssh
+    process to ``on_ready`` (which holds or launches a client), then tear it
+    down. Ctrl-C closes cleanly."""
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
     if known_hosts is None:
         click.echo(
@@ -1392,19 +1860,18 @@ def _run_tunnel(
             "trust-on-first-use instead of pinning.",
             err=True,
         )
-    argv = _ssh_tunnel_argv(
-        ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=known_hosts
-    )
+    argv = _ssh_tunnel_argv(ssh_ep, forwards=forwards, identity_file=identity_file, known_hosts=known_hosts)
     try:
         try:
             proc = subprocess.Popen(argv)
         except OSError as exc:  # ssh not on PATH, etc.
             raise click.ClickException(f"failed to launch ssh: {exc}") from exc
         try:
-            if not _wait_until_listening(proc, local_port, _TUNNEL_READY_TIMEOUT):
+            if not _wait_until_listening(proc, [local for local, _ in forwards], _TUNNEL_READY_TIMEOUT):
                 raise click.ClickException(
-                    "SSH tunnel did not come up. The local port may be busy (try --local-port) "
-                    "or the VM may be unreachable (check `avr vm show`)."
+                    "SSH tunnel did not come up. A local port may be busy (bind a different one — "
+                    "for port-forward use --port LOCAL:GUEST) or the VM may be unreachable "
+                    "(check `avr vm show`)."
                 )
             on_ready(proc)
             # If ssh exited on its own with a failure (e.g. 255 on a dropped or
@@ -1539,7 +2006,7 @@ def _vm_remote_desktop(
 
     if print_only:
         display_argv = _ssh_tunnel_argv(
-            ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=None
+            ssh_ep, forwards=[(local_port, guest_port)], identity_file=identity_file, known_hosts=None
         )
         click.echo("Open the tunnel:")
         click.echo(f"  {shlex.join(display_argv)}")
@@ -1569,7 +2036,7 @@ def _vm_remote_desktop(
             click.echo("Tunnel is up. Press Ctrl-C to close it.", err=True)
             proc.wait()
 
-    _run_tunnel(ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, on_ready=on_ready)
+    _run_tunnel(ssh_ep, forwards=[(local_port, guest_port)], identity_file=identity_file, on_ready=on_ready)
 
 
 @vm.command("rdp")
@@ -1667,53 +2134,45 @@ def vm_vnc(ctx, vm_id, org_id, local_port, identity_file, launch, print_only):
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--port",
-    "guest_port",
-    type=click.IntRange(1, 65535),
+    "port_specs",
+    metavar="[LOCAL:]GUEST",
+    multiple=True,
     required=True,
-    help="Guest-side TCP port to forward (e.g. 8080).",
+    help="Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable.",
 )
 @click.option(
     "--local-port",
     type=click.IntRange(1, 65535),
     default=None,
-    help="Local port to bind (default: an unused port).",
+    help="Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).",
 )
 @click.option(
     "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
 )
 @click.option("--print", "print_only", is_flag=True, help="Print the ssh command and exit, without opening the tunnel.")
 @click.pass_context
-def vm_port_forward(ctx, vm_id, org_id, guest_port, local_port, identity_file, print_only):
-    """Forward a local port to a TCP port on the VM over SSH.
+def vm_port_forward(ctx, vm_id, org_id, port_specs, local_port, identity_file, print_only):
+    """Forward one or more local ports to TCP ports on the VM over SSH.
 
     The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
-    127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
-    <port> is set by --port, and holds it open until Ctrl-C. Bring your own
-    client.
+    127.0.0.1:<local> -> <VM>:<guest> through the VM's SSH endpoint for each
+    --port, and holds them open until Ctrl-C. Bring your own client.
+
+    \b
+        avr vm port-forward cvm-abc123 --port 8080
+        avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
     """
+    forwards = _build_forwards(port_specs, local_port)
+
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
 
-    try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
+    ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
 
-    data = response["data"]
-    ssh_ep = (data.get("endpoints") or {}).get("ssh")
-    if not ssh_ep:
-        raise click.ClickException(
-            f"VM {vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
-            "Endpoints appear once the VM is RUNNING; check `avr vm show`."
-        )
-
-    local_port = local_port or _pick_local_port()
     if print_only:
-        display_argv = _ssh_tunnel_argv(
-            ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, known_hosts=None
-        )
+        display_argv = _ssh_tunnel_argv(ssh_ep, forwards=forwards, identity_file=identity_file, known_hosts=None)
         click.echo(shlex.join(display_argv))
         click.echo(
             "(the live command pins the VM's SSH host key; this printed form uses trust-on-first-use)",
@@ -1721,13 +2180,15 @@ def vm_port_forward(ctx, vm_id, org_id, guest_port, local_port, identity_file, p
         )
         return
 
-    click.echo(f"Forwarding 127.0.0.1:{local_port} -> {vm_id}:{guest_port} ...", err=True)
+    routes = ", ".join(f"127.0.0.1:{local} -> {vm_id}:{guest}" for local, guest in forwards)
+    click.echo(f"Forwarding {routes} ...", err=True)
 
     def on_ready(proc: subprocess.Popen[bytes]) -> None:
-        click.echo(f"Tunnel is up on 127.0.0.1:{local_port}. Press Ctrl-C to close it.", err=True)
+        binds = ", ".join(f"127.0.0.1:{local}" for local, _ in forwards)
+        click.echo(f"Tunnel is up on {binds}. Press Ctrl-C to close it.", err=True)
         proc.wait()
 
-    _run_tunnel(ssh_ep, local_port=local_port, guest_port=guest_port, identity_file=identity_file, on_ready=on_ready)
+    _run_tunnel(ssh_ep, forwards=forwards, identity_file=identity_file, on_ready=on_ready)
 
 
 # --- Bootstrap ------------------------------------------------------------
@@ -1746,11 +2207,14 @@ def vm_port_forward(ctx, vm_id, org_id, guest_port, local_port, identity_file, p
 # Disks are ephemeral (a fresh boot each start), so bootstrap is per-boot; run
 # it again after every `avr vm start`.
 
-# claude / codex: the npm package to install and the local env var whose value
-# --forward-agent-creds carries into the VM so the agent is usable non-interactively.
-_BOOTSTRAP_AGENTS: dict[str, dict[str, str]] = {
-    "claude": {"npm": "@anthropic-ai/claude-code", "env": "ANTHROPIC_API_KEY"},
-    "codex": {"npm": "@openai/codex", "env": "OPENAI_API_KEY"},
+# claude / codex: the npm package to install, and the local credential env vars
+# --forward-agent-creds carries into the VM so the agent is usable
+# non-interactively. claude accepts either an API key or a subscription OAuth
+# token (CLAUDE_CODE_OAUTH_TOKEN, minted by `claude setup-token`); Claude Code
+# prefers the API key when both are present.
+_BOOTSTRAP_AGENTS: dict[str, dict[str, Any]] = {
+    "claude": {"npm": "@anthropic-ai/claude-code", "creds": ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"]},
+    "codex": {"npm": "@openai/codex", "creds": ["OPENAI_API_KEY"]},
 }
 
 # Per-step SSH timeout. npm -g and pipx installs over a cold cache are slow, so
@@ -1838,23 +2302,75 @@ def _parse_bootstrap_env(flags: tuple[str, ...]) -> dict[str, str]:
     return env
 
 
+_CLAUDE_CRED_KEYS = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN")
+
+
+def _is_interactive() -> bool:
+    """True when both stdin and stdout are a terminal, so an interactive prompt
+    is appropriate. A helper (not inline) so tests can force it."""
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
 def _forward_agent_creds(env: dict[str, str], agents: list[str]) -> None:
-    """Add each requested agent's API key from the local environment to ``env``,
-    without overriding an explicit --env. With no agents named, forward every
-    known key that is present locally. Warns (does not fail) if none are found."""
-    added: list[str] = []
+    """Add each requested agent's credential(s) from the local environment to
+    ``env``, without overriding an explicit --env. With no agents named, forward
+    every known credential present locally. claude takes either an API key or a
+    subscription OAuth token; when both are set, forward both but warn that
+    Claude Code prefers the API key, so the subscription token would go unused.
+
+    Does not warn when nothing is found — the caller decides that, after the
+    interactive Claude-token prompt has had its chance to supply one."""
     for agent in agents or list(_BOOTSTRAP_AGENTS):
-        key = _BOOTSTRAP_AGENTS[agent]["env"]
-        value = os.environ.get(key)
-        if value and key not in env:
-            env[key] = value
-            added.append(key)
-    if not added:
+        for key in _BOOTSTRAP_AGENTS[agent]["creds"]:
+            value = os.environ.get(key)
+            if value and key not in env:
+                env[key] = value
+    if "ANTHROPIC_API_KEY" in env and "CLAUDE_CODE_OAUTH_TOKEN" in env:
         click.echo(
-            "Warning: --forward-agent-creds set but no agent API keys "
-            f"({', '.join(a['env'] for a in _BOOTSTRAP_AGENTS.values())}) are set locally.",
+            "Warning: both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are set; Claude Code "
+            "prefers the API key, so your subscription token won't be used. Unset one to choose.",
             err=True,
         )
+
+
+def _prompt_claude_setup_token(env: dict[str, str]) -> None:
+    """When claude has no credential to carry, offer to mint a subscription
+    token interactively. Runs `claude setup-token` (which opens a browser and
+    prints a 1-year token) on request, then reads the token from a hidden prompt
+    — the token is pasted, never captured from setup-token's output. Skips
+    silently on a non-interactive stdin so a scripted bootstrap never blocks."""
+    if not _is_interactive():
+        return
+    click.echo(
+        "Claude has no credential to use on the VM (no ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN set locally).",
+        err=True,
+    )
+    if click.confirm("Run `claude setup-token` now to create a 1-year subscription token?", default=False):
+        try:
+            subprocess.run(["claude", "setup-token"])  # inherits the terminal: opens a browser, prints the token
+        except OSError:
+            click.echo(
+                "Could not launch `claude` (is it installed?). Paste an existing token below, or skip.", err=True
+            )
+    token = click.prompt(
+        "Paste the token (sk-ant-...), or leave blank to skip",
+        default="",
+        hide_input=True,
+        show_default=False,
+    ).strip()
+    if not token:
+        click.echo("No token provided; claude will be installed but left unauthenticated on the VM.", err=True)
+        return
+    if not token.startswith("sk-ant-"):
+        click.echo(
+            "Warning: that does not look like a Claude token (expected sk-ant-...); forwarding it anyway.", err=True
+        )
+    env["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    click.echo(
+        "Forwarding the token as CLAUDE_CODE_OAUTH_TOKEN. Tip: `export CLAUDE_CODE_OAUTH_TOKEN=...` locally "
+        "to reuse it on the next re-bootstrap instead of minting a new one each boot.",
+        err=True,
+    )
 
 
 def _load_run_script(value: str) -> str:
@@ -1878,7 +2394,11 @@ def _env_step(env: dict[str, str], *, redact: bool) -> _BootstrapStep:
     ~/.bash_profile, ~/.bash_login, ~/.profile that exists). The login file is
     load-bearing: an interactive `ssh` session runs a login shell, and images
     like the GitHub runner ship a ~/.bash_profile that never sources ~/.bashrc,
-    so a ~/.bashrc-only hook would never load."""
+    so a ~/.bashrc-only hook would never load.
+
+    A non-interactive, non-login shell (what `ssh host cmd` runs) reads neither,
+    so a one-off remote command sees these vars only via `avr vm ssh --login`
+    (which runs it in a login shell) or an explicit `bash -lc`."""
     blob = "".join(f"export {name}={shlex.quote(value)}\n" for name, value in env.items())
     script = rf"""set -euo pipefail
 dest="$HOME/.avrea/bootstrap.env"
@@ -2131,7 +2651,8 @@ def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], id
     "--forward-agent-creds",
     is_flag=True,
     default=False,
-    help="Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.",
+    help="Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / "
+    "CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.",
 )
 @click.option("--install-avr", is_flag=True, default=False, help="Install the avr CLI in the VM (pipx, else pip).")
 @click.option("--repo", "repo_url", default=None, help="Clone this git repo into the VM's home directory.")
@@ -2171,9 +2692,11 @@ def vm_bootstrap(
 
     \b
     Each selected step runs on the VM and streams its output; bootstrap stops at
-    the first failure. Secrets (GitHub token, forwarded env values, agent API
-    keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
-    after every `avr vm start`. Example:
+    the first failure. Secrets (GitHub token, forwarded env values, agent
+    credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
+    is a year-long, subscription-wide bearer, so it is only carried under the
+    explicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run
+    bootstrap after every `avr vm start`. Example:
 
     \b
         avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\
@@ -2188,6 +2711,34 @@ def vm_bootstrap(
     env = _parse_bootstrap_env(env_flags)
     if forward_agent_creds:
         _forward_agent_creds(env, agents)
+        # Claude accepts a subscription token, not just an API key. If installing
+        # claude and none was found, offer to mint one interactively (never on
+        # --print or a non-interactive stdin). Then warn only if still nothing.
+        if not print_only and "claude" in agents and not any(k in env for k in _CLAUDE_CRED_KEYS):
+            _prompt_claude_setup_token(env)
+        # Warn per installed agent that still has no credential of its own — the
+        # consequence (it will be unauthenticated) is what matters, and an agent
+        # with creds must not suppress the warning for one without. With no
+        # --install this is empty, and a fully empty invocation is already caught
+        # by "Nothing to do".
+        for agent in agents:
+            keys = _BOOTSTRAP_AGENTS[agent]["creds"]
+            if not any(key in env for key in keys):
+                click.echo(
+                    f"Warning: no credential ({', '.join(keys)}) is set locally, so {agent} "
+                    "will be unauthenticated on the VM.",
+                    err=True,
+                )
+        # A forwarded subscription token authenticates headless claude, but the
+        # interactive TUI still runs its onboarding login screen — set that
+        # expectation so it doesn't read as a failure (which it did in testing).
+        if not print_only and "claude" in agents and "CLAUDE_CODE_OAUTH_TOKEN" in env:
+            click.echo(
+                "Note: the token authenticates claude for headless use (`claude -p` and the SDK). The "
+                "interactive `claude` TUI still shows its onboarding login screen — the env token does "
+                "not skip it; that is expected.",
+                err=True,
+            )
     run_script = _load_run_script(run_raw) if run_raw is not None else None
 
     # A token is only fetched for a real run; --print marks the step secret

@@ -22,7 +22,7 @@ list
 List the organization's VMs, newest first (deleted ones excluded).
 .TP
 port-forward
-Forward a local port to a TCP port on the VM over SSH.
+Forward one or more local ports to TCP ports on the VM over SSH.
 .TP
 rdp
 Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
@@ -32,6 +32,9 @@ Show a VM's details, including connection endpoints and egress rules.
 .TP
 ssh
 Open an SSH session to a RUNNING VM, or run a command on it.
+.TP
+ssh-config
+Print (or --append) an ssh_config Host block for a RUNNING VM.
 .TP
 start
 Start a stopped VM.
@@ -72,6 +75,7 @@ Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 .BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),
