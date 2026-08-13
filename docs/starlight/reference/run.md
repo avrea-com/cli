@@ -141,17 +141,21 @@ Examples:
 View a workflow run with its jobs.
 
 ```sh
-avr run view [OPTIONS] [RUN_ID]
+avr run view [OPTIONS] [RUN]
 ```
 
 ```sh
-Without RUN_ID, shows 10 most recent runs.
+RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
+run URL, or an Avrea console run URL. Without RUN, shows 10 most recent
+runs.
 ```
 
 ```sh
 Examples:
     avr run view
     avr run view run-abc123
+    avr run view 123456789
+    avr run view https://github.com/acme/widgets/actions/runs/123456789
     avr run view run-abc123 --steps
     avr run view run-abc123 --log-failed
     avr run view run-abc123 --job Build
@@ -169,7 +173,7 @@ JSON FIELDS
 
 **Arguments**
 
-- <code class="cli-arg">[RUN_ID]</code>
+- <code class="cli-arg">[RUN]</code>
 
 **Options**
 

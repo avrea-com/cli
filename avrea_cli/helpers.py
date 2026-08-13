@@ -170,6 +170,29 @@ def get_org_slug(client: ApiClient, org_id: str) -> str:
     return org_id
 
 
+def get_verified_org_slug(client: ApiClient, org_id: str) -> str:
+    """Resolve an organization slug or fail when it cannot be verified.
+
+    Use this for security or correctness checks where ``get_org_slug``'s
+    best-effort fallback would incorrectly treat a failed lookup as a match.
+    """
+    try:
+        response = client.public_get("/users/me/organizations")
+    except (httpx.HTTPError, ValueError) as exc:
+        raise click.ClickException("Could not verify the selected organization for this Avrea run URL.") from exc
+
+    data = response.get("data") if isinstance(response, dict) else None
+    if isinstance(data, list):
+        for org in data:
+            if not isinstance(org, dict) or org.get("organization_id") != org_id:
+                continue
+            slug = org.get("slug")
+            if isinstance(slug, str) and slug:
+                return slug
+
+    raise click.ClickException("Could not verify the selected organization for this Avrea run URL.")
+
+
 # Opaque base64 cursors are short — Avrea's cursors are well under 200 chars.
 # 512 leaves headroom for protocol changes while still rejecting paste-mistakes
 # (e.g. a whole file pasted into --cursor) before they hit the server.

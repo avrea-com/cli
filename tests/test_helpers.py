@@ -1,8 +1,10 @@
 """Tests for shared CLI helper functions."""
 
+from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import format_size
 from avrea_cli.helpers import get_org_id
+from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import match_org
 from avrea_cli.helpers import parse_since
@@ -113,6 +115,17 @@ class TestGetOrgId:
         config = MagicMock(spec=CliConfig)
         config.default_org = None
         assert get_org_id(config, "alpha") == "alpha"
+
+
+def test_verified_org_slug_handles_successful_non_json_response() -> None:
+    config = MagicMock(spec=CliConfig)
+    config.public_api_url = "https://api.avrea.com"
+    config.get_api_headers.return_value = {}
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, content=b"not json"))
+    client = ApiClient(config, http_client=httpx.Client(transport=transport))
+
+    with pytest.raises(click.ClickException, match="Could not verify the selected organization"):
+        get_verified_org_slug(client, "org-acme")
 
 
 class TestMatchOrg:

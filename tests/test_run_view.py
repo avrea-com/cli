@@ -95,6 +95,126 @@ SAMPLE_RUNS_LIST = {
 
 
 class TestRunView:
+    def test_numeric_github_id_uses_direct_platform_lookup(self, runner, monkeypatch):
+        calls = []
+
+        def fake_get(self, path, **kwargs):
+            calls.append((path, kwargs.get("params")))
+            return SAMPLE_RUN
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+        result = runner.invoke(cli, ["run", "view", "123456789", "--json", "run_id"])
+
+        assert result.exit_code == 0, result.output
+        assert calls == [
+            (
+                "/orgs/org-default/workflow-runs/by-platform-id/123456789",
+                {"include": ["jobs", "workflow"]},
+            )
+        ]
+
+    def test_github_actions_url_uses_direct_platform_lookup(self, runner, monkeypatch):
+        calls = []
+
+        def fake_get(self, path, **kwargs):
+            calls.append((path, kwargs.get("params")))
+            return SAMPLE_RUN
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+        result = runner.invoke(
+            cli,
+            [
+                "run",
+                "view",
+                "https://github.com/org/repo/actions/runs/123456789",
+                "--json",
+                "run_id",
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert calls[0][0] == "/orgs/org-default/workflow-runs/by-platform-id/123456789"
+
+    @pytest.mark.parametrize(
+        ("api_url", "console_url"),
+        [
+            ("https://api.avrea.com", "https://console.avrea.com"),
+            ("https://api.test.example.com", "https://console.test.example.com"),
+        ],
+    )
+    def test_avrea_url_selects_its_org_and_environment(self, runner, monkeypatch, api_url, console_url):
+        monkeypatch.setenv("AVR_HOST", api_url)
+        calls = []
+
+        def fake_get(self, path, **kwargs):
+            calls.append((path, kwargs.get("params")))
+            if path == "/users/me/organizations":
+                return {"data": [{"organization_id": "org-acme", "slug": "acme"}]}
+            return SAMPLE_RUN
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+        result = runner.invoke(
+            cli,
+            ["run", "view", f"{console_url}/org/acme/runs/run-abc123", "--json", "run_id"],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert calls[-1] == (
+            "/orgs/org-acme/workflow-runs/run-abc123",
+            {"include": ["jobs", "workflow"]},
+        )
+
+    def test_avrea_url_fails_when_selected_org_cannot_be_verified(self, runner, monkeypatch):
+        calls = []
+
+        def fake_get(self, path, **kwargs):
+            calls.append(path)
+            if path == "/users/me/organizations":
+                raise httpx.ConnectError("membership lookup failed")
+            return SAMPLE_RUN
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+        result = runner.invoke(
+            cli,
+            [
+                "run",
+                "view",
+                "https://console.avrea.com/org/acme/runs/run-abc123",
+                "--org",
+                "org-other",
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert "Could not verify the selected organization" in result.output
+        assert all("workflow-runs" not in path for path in calls)
+
+    def test_avrea_url_rejects_mismatched_selected_org(self, runner, monkeypatch):
+        def fake_get(self, path, **kwargs):
+            if path == "/users/me/organizations":
+                return {"data": [{"organization_id": "org-other", "slug": "other"}]}
+            return SAMPLE_RUN
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+        result = runner.invoke(
+            cli,
+            [
+                "run",
+                "view",
+                "https://console.avrea.com/org/acme/runs/run-abc123",
+                "--org",
+                "org-other",
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert "does not match the selected organization 'other'" in result.output
+
     def test_no_run_id_lists_recent(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
