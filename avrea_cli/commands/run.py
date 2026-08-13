@@ -27,6 +27,7 @@ from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
+from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_since
 from avrea_cli.helpers import validate_cursor
@@ -43,6 +44,8 @@ from avrea_cli.log_display import print_logs_grouped
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
+from avrea_cli.run_refs import parse_run_reference
+from avrea_cli.run_refs import resolve_run_reference
 from datetime import UTC
 from datetime import datetime
 from typing import Any
@@ -437,7 +440,7 @@ def _print_run_jobs(
 
 
 @run.command("view")
-@click.argument("run_id", required=False)
+@click.argument("run", required=False)
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--steps",
@@ -464,7 +467,7 @@ def _print_run_jobs(
 @click.pass_context
 def run_view(
     ctx,
-    run_id: str | None,
+    run: str | None,
     org_id,
     show_steps: bool,
     show_log: bool,
@@ -478,12 +481,16 @@ def run_view(
     """View a workflow run with its jobs.
 
     \b
-    Without RUN_ID, shows 10 most recent runs.
+    RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
+    run URL, or an Avrea console run URL. Without RUN, shows 10 most recent
+    runs.
 
     \b
     Examples:
         avr run view
         avr run view run-abc123
+        avr run view 123456789
+        avr run view https://github.com/acme/widgets/actions/runs/123456789
         avr run view run-abc123 --steps
         avr run view run-abc123 --log-failed
         avr run view run-abc123 --job Build
@@ -504,9 +511,20 @@ def run_view(
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
 
+    reference = parse_run_reference(run, api_url=config.public_api_url) if run else None
+    if reference is not None and reference.organization_slug is not None and org_id is None:
+        org_id = reference.organization_slug
     org_id = get_org_id(config, org_id, client=client)
 
-    if not run_id:
+    if reference is not None and reference.organization_slug is not None:
+        active_org_slug = get_verified_org_slug(client, org_id)
+        if active_org_slug.casefold() != reference.organization_slug.casefold():
+            raise click.ClickException(
+                f"Avrea run URL organization {reference.organization_slug!r} does not match "
+                f"the selected organization {active_org_slug!r}."
+            )
+
+    if not run:
         try:
             response = client.public_get(
                 f"/orgs/{org_id}/workflow-runs",
@@ -538,13 +556,16 @@ def run_view(
 
     include = ["jobs", "workflow"]
     try:
-        response = client.public_get(
-            f"/orgs/{org_id}/workflow-runs/{run_id}",
-            params={"include": include},
-        )
-        run_data = response.get("data", response)
+        if reference is None:
+            raise click.ClickException("A run reference is required.")
+        run_data = resolve_run_reference(client, org_id, reference, include=include)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "get workflow run")
+
+    resolved_run_id = run_data.get("run_id")
+    if not isinstance(resolved_run_id, str):
+        raise click.ClickException("Avrea returned a workflow run without a run_id.")
+    run_id = resolved_run_id
 
     if json_fields is not None:
         emit_json_record(run_data, split_fields(json_fields, _RUN_VIEW_FIELDS), _RUN_VIEW_FIELDS, jq_expr)

@@ -817,17 +817,17 @@
             "full": "avr run view",
             "is_group": false,
             "short_help": "View a workflow run with its jobs.",
-            "help": "View a workflow run with its jobs.\n\n\b\nWithout RUN_ID, shows 10 most recent runs.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run view [OPTIONS] [RUN_ID]",
+            "usage": "avr run view [OPTIONS] [RUN]",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",

@@ -3,13 +3,15 @@
 avr-run-view \- View a workflow run with its jobs.
 .SH SYNOPSIS
 .B avr run view
-[OPTIONS] [RUN_ID]
+[OPTIONS] [RUN]
 .SH DESCRIPTION
 View a workflow run with its jobs.
 .PP
 .RS 4
 .nf
-Without RUN_ID, shows 10 most recent runs.
+RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
+run URL, or an Avrea console run URL. Without RUN, shows 10 most recent
+runs.
 .fi
 .RE
 .PP
@@ -18,6 +20,8 @@ Without RUN_ID, shows 10 most recent runs.
 Examples:
     avr run view
     avr run view run-abc123
+    avr run view 123456789
+    avr run view https://github.com/acme/widgets/actions/runs/123456789
     avr run view run-abc123 --steps
     avr run view run-abc123 --log-failed
     avr run view run-abc123 --job Build
@@ -37,7 +41,7 @@ JSON FIELDS
 .RE
 .SH ARGUMENTS
 .TP
-[\fIRUN_ID\fR]
+[\fIRUN\fR]
 \&
 .SH OPTIONS
 .TP
