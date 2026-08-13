@@ -193,7 +193,7 @@ def resolve_run_reference(
 ) -> dict[str, Any]:
     """Resolve a normalized reference without scanning recent runs."""
     params: dict[str, Any] = {}
-    if include:
+    if include is not None:
         params["include"] = include
 
     if reference.run_id is not None:

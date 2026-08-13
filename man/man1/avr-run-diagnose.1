@@ -1,0 +1,39 @@
+.TH AVR\-RUN\-DIAGNOSE 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-run-diagnose \- Explain a failed or unexpectedly slow workflow run.
+.SH SYNOPSIS
+.B avr run diagnose
+[OPTIONS] RUN
+.SH DESCRIPTION
+Explain a failed or unexpectedly slow workflow run.
+.PP
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`. The report combines jobs and failed steps, bounded failed-job log tails, queue/execution timings, runner metrics, and a prior-success workflow baseline.
+.PP
+.RS 4
+.nf
+Examples:
+    avr run diagnose run-abc123
+    avr run diagnose 123456789 --json
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIRUN\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug.
+.TP
+\fB\-\-json\fR
+Output the diagnostic report as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-run (1),
+.BR avr-run-cancel (1),
+.BR avr-run-list (1),
+.BR avr-run-logs (1),
+.BR avr-run-rerun (1),
+.BR avr-run-view (1),
+.BR avr-run-watch (1)

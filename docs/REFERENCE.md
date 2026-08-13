@@ -103,6 +103,35 @@ Examples:
 - `--org <TEXT>` — Organization ID or slug.
 - `-y, --yes` — Skip the confirmation prompt.
 
+#### `avr run diagnose`
+
+Explain a failed or unexpectedly slow workflow run.
+
+```sh
+avr run diagnose [OPTIONS] RUN
+```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. The report combines jobs and failed steps, bounded
+failed-job log tails, queue/execution timings, runner metrics, and a
+prior-success workflow baseline.
+
+```sh
+Examples:
+    avr run diagnose run-abc123
+    avr run diagnose 123456789 --json
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+```
+
+**Arguments**
+
+- `RUN`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug.
+- `--json` — Output the diagnostic report as JSON.
+
 #### `avr run list`
 
 List workflow runs for an organization.
