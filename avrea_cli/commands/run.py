@@ -538,7 +538,6 @@ def run_view(
     if run:
         reference, org_id = _run_reference_and_org(client, config, run, org_id)
     else:
-        reference = None
         org_id = get_org_id(config, org_id, client=client)
 
     if not run:
