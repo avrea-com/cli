@@ -1,0 +1,19 @@
+{
+  "name": "avrea",
+  "version": "0.2.0",
+  "description": "Run commits in Avrea CI and use disposable Avrea VMs as agent sandboxes.",
+  "author": {
+    "name": "Avrea",
+    "email": "support@avrea.com",
+    "url": "https://avrea.com/"
+  },
+  "homepage": "https://avrea.com/",
+  "repository": "https://github.com/avrea-com/cli",
+  "license": "Apache-2.0",
+  "keywords": [
+    "avrea",
+    "ci",
+    "github-actions",
+    "virtual-machines"
+  ]
+}

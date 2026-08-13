@@ -38,6 +38,13 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
     ("cache", "avrea_cli.commands.cache", "cache", "Inspect and manage the Avrea build cache.", "Core Commands"),
     ("log", "avrea_cli.commands.log", "log", "Search across runner execution logs.", "Core Commands"),
     ("auth", "avrea_cli.commands.auth_cmd", "auth_group", "Authenticate and manage credentials.", "Setup & Config"),
+    (
+        "skill",
+        "avrea_cli.commands.skill",
+        "skill",
+        "Manage Avrea's agent skill for Codex and Claude.",
+        "Setup & Config",
+    ),
     ("config", "avrea_cli.commands.config_cmd", "config", "View and manage CLI configuration.", "Setup & Config"),
     (
         "settings",

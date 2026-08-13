@@ -1,0 +1,35 @@
+.TH AVR\-SKILL\-UNINSTALL 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-skill-uninstall \- Uninstall the Avrea skill.
+.SH SYNOPSIS
+.B avr skill uninstall
+[OPTIONS]
+.SH DESCRIPTION
+Uninstall the Avrea skill.
+.PP
+Uninstall the Avrea skill. Alias: remove.
+.PP
+Unmanaged skill directories are never removed automatically.
+.PP
+.RS 4
+.nf
+Examples:
+    avr skill uninstall
+    avr skill uninstall --target claude
+    avr skill remove --target codex
+    avr skill uninstall --target all --force
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-target\fR \fICHOICE\fR
+Installed agent host to uninstall from. (choices: codex, claude, all; default: all)
+.TP
+\fB\-\-force\fR
+Remove a locally modified avr-managed skill.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-skill (1),
+.BR avr-skill-install (1),
+.BR avr-skill-status (1),
+.BR avr-skill-update (1)
