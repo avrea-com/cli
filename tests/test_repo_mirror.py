@@ -23,18 +23,22 @@ SAMPLE_MIRROR = {
     ],
 }
 
-SAMPLE_CLUSTERS = [
-    {"cluster_id": "gsc-fi", "datacenter_id": "dc-fi", "name": "Finland"},
-    {"cluster_id": "gsc-rbx", "datacenter_id": "dc-rbx", "name": "Roubaix"},
-]
+SAMPLE_CLUSTERS = {
+    "data": [
+        {"cluster_id": "gsc-fi", "datacenter_id": "dc-fi", "name": "Finland"},
+        {"cluster_id": "gsc-rbx", "datacenter_id": "dc-rbx", "name": "Roubaix"},
+    ],
+    "pagination": {"next_cursor": None},
+}
 
-MIRROR_PATH = f"/api/v1/orgs/{ORG_ID}/repos/{REPO_ID}/git-mirror"
+MIRROR_PATH = f"/orgs/{ORG_ID}/repos/{REPO_ID}/git-mirrors"
 
 
 def _capture(captured, key, result):
     def mock(self, path, json=None, params=None):
         captured[key] = path
         captured.setdefault("bodies", []).append(json)
+        captured.setdefault("params", []).append(params)
         return result() if callable(result) else result
 
     return mock
@@ -94,16 +98,16 @@ def test_status_no_placements_hint(runner, monkeypatch):
     assert "avr repo mirror place" in result.output
 
 
-def test_status_surfaces_flag_off_403(runner, monkeypatch):
+def test_status_surfaces_flag_off_404(runner, monkeypatch):
     monkeypatch.setattr(
         "avrea_cli.api_client.ApiClient.public_get",
-        _raise_status(403, "avrea-git mirror management is not enabled for this organization"),
+        _raise_status(404, "Not found"),
     )
 
     result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", REPO_ID])
 
     assert result.exit_code != 0
-    assert "not enabled for this organization" in result.stderr
+    assert "Not found while trying to get git-mirror status (HTTP 404)" in result.stderr
 
 
 def test_enable_puts_enabled_true(runner, monkeypatch):
@@ -223,7 +227,8 @@ def test_clusters_lists_targets(runner, monkeypatch):
     result = runner.invoke(cli, ["repo", "mirror", "clusters"])
 
     assert result.exit_code == 0, result.output
-    assert captured["get"] == f"/api/v1/orgs/{ORG_ID}/git-clusters"
+    assert captured["get"] == f"/orgs/{ORG_ID}/git-clusters"
+    assert captured["params"] == [{"limit": 1000, "order": "cluster_id.asc"}]
     assert "gsc-fi" in result.output
     assert "Roubaix" in result.output
 
@@ -238,6 +243,52 @@ def test_clusters_json(runner, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == [{"cluster_id": "gsc-fi"}, {"cluster_id": "gsc-rbx"}]
+
+
+def test_clusters_follows_pagination(runner, monkeypatch):
+    calls = []
+
+    def mock_get(self, path, params=None):
+        assert params is not None
+        calls.append((path, params))
+        if params.get("cursor") is None:
+            return {
+                "data": [{"cluster_id": "gsc-fi", "datacenter_id": "dc-fi", "name": "Finland"}],
+                "pagination": {"next_cursor": "next-page"},
+            }
+        return {
+            "data": [{"cluster_id": "gsc-rbx", "datacenter_id": "dc-rbx", "name": "Roubaix"}],
+            "pagination": {"next_cursor": None},
+        }
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
+
+    result = runner.invoke(cli, ["repo", "mirror", "clusters", "--json", "cluster_id"])
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == [{"cluster_id": "gsc-fi"}, {"cluster_id": "gsc-rbx"}]
+    assert calls == [
+        (
+            f"/orgs/{ORG_ID}/git-clusters",
+            {"limit": 1000, "order": "cluster_id.asc"},
+        ),
+        (
+            f"/orgs/{ORG_ID}/git-clusters",
+            {"limit": 1000, "order": "cluster_id.asc", "cursor": "next-page"},
+        ),
+    ]
+
+
+def test_clusters_rejects_malformed_response(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: {"data": "not-a-list", "pagination": {"next_cursor": None}},
+    )
+
+    result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+
+    assert result.exit_code != 0
+    assert "Unexpected response while listing git clusters" in result.stderr
 
 
 def test_json_meta_lists_fields(runner):

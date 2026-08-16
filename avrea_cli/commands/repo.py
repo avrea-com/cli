@@ -556,12 +556,13 @@ def public_mirror_cancel(ctx, request_id, org_id, yes, json_fields, jq_expr):
 # --- Git mirrors (feature.git-mirrors.enabled) -----------------------------
 #
 # Customer-managed avrea-git mirrors of the org's own repositories: declare a
-# repo mirrored and place the mirror in git clusters. The API 403s while the
-# org's launch flag is off — handle_http_error surfaces the server's detail
-# ("avrea-git mirror management is not enabled for this organization"), so no
-# client-side gating is needed. Reads are member-level; writes need org admin.
+# repo mirrored and place the mirror in git clusters. The API deliberately
+# 404s while the org's launch flag is off, so no client-side gating is needed.
+# Reads are member-level; writes need org admin.
 
-_GIT_MIRROR_BASE = "/api/v1/orgs/{org_id}/repos/{repo_id}/git-mirror"
+_GIT_MIRROR_BASE = "/orgs/{org_id}/repos/{repo_id}/git-mirrors"
+_GIT_CLUSTERS_PATH = "/orgs/{org_id}/git-clusters"
+_GIT_CLUSTERS_PAGE_SIZE = 1000
 
 
 def _git_mirror_view(client: ApiClient, org_id: str, repo_id: str, action: str) -> dict[str, Any]:
@@ -569,6 +570,39 @@ def _git_mirror_view(client: ApiClient, org_id: str, repo_id: str, action: str) 
         return client.public_get(_GIT_MIRROR_BASE.format(org_id=org_id, repo_id=repo_id))
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, action)
+
+
+def _git_clusters_list(client: ApiClient, org_id: str) -> list[dict[str, Any]]:
+    """Return every placement target from the cursor-paginated API."""
+    clusters: list[dict[str, Any]] = []
+    cursor: str | None = None
+    seen_cursors: set[str] = set()
+
+    while True:
+        params: dict[str, Any] = {
+            "limit": _GIT_CLUSTERS_PAGE_SIZE,
+            "order": "cluster_id.asc",
+        }
+        if cursor is not None:
+            params["cursor"] = cursor
+
+        response = client.public_get(
+            _GIT_CLUSTERS_PATH.format(org_id=org_id),
+            params=params,
+        )
+        page = response.get("data")
+        if not isinstance(page, list) or not all(isinstance(item, dict) for item in page):
+            raise click.ClickException("Unexpected response while listing git clusters.")
+        clusters.extend(page)
+
+        pagination = response.get("pagination")
+        next_cursor = pagination.get("next_cursor") if isinstance(pagination, dict) else None
+        if next_cursor is None:
+            return clusters
+        if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:
+            raise click.ClickException("Unexpected pagination response while listing git clusters.")
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
 
 
 def _print_git_mirror(mirror: dict[str, Any]) -> None:
@@ -860,7 +894,7 @@ def mirror_clusters(ctx, org_id, json_fields, jq_expr):
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        clusters = client.public_get(f"/api/v1/orgs/{org_id}/git-clusters")
+        clusters = _git_clusters_list(client, org_id)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "list git clusters")
 
