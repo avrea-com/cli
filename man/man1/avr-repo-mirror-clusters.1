@@ -1,0 +1,41 @@
+.TH AVR\-REPO\-MIRROR\-CLUSTERS 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-clusters \- List the git clusters a mirror can be placed in.
+.SH SYNOPSIS
+.B avr repo mirror clusters
+[OPTIONS]
+.SH DESCRIPTION
+List the git clusters a mirror can be placed in.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror clusters
+    avr repo mirror clusters --json cluster_id,datacenter_id
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    cluster_id, datacenter_id, name
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)

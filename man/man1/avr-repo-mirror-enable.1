@@ -1,0 +1,46 @@
+.TH AVR\-REPO\-MIRROR\-ENABLE 1 "" "avr 0.1.6" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-enable \- Declare the repository mirrored into avrea-git.
+.SH SYNOPSIS
+.B avr repo mirror enable
+[OPTIONS]
+.SH DESCRIPTION
+Declare the repository mirrored into avrea-git.
+.PP
+Enabling makes existing placements active again; a freshly declared repository still needs at least one placement (`avr repo mirror place`) before anything is synced. Requires the organization admin role.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror enable
+    avr repo mirror enable --repo acme/widgets
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)
