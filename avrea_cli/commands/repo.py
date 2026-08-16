@@ -590,13 +590,17 @@ def _git_clusters_list(client: ApiClient, org_id: str) -> list[dict[str, Any]]:
             _GIT_CLUSTERS_PATH.format(org_id=org_id),
             params=params,
         )
+        if not isinstance(response, dict):
+            raise click.ClickException("Unexpected response while listing git clusters.")
         page = response.get("data")
         if not isinstance(page, list) or not all(isinstance(item, dict) for item in page):
             raise click.ClickException("Unexpected response while listing git clusters.")
         clusters.extend(page)
 
         pagination = response.get("pagination")
-        next_cursor = pagination.get("next_cursor") if isinstance(pagination, dict) else None
+        if not isinstance(pagination, dict) or "next_cursor" not in pagination:
+            raise click.ClickException("Unexpected pagination response while listing git clusters.")
+        next_cursor = pagination["next_cursor"]
         if next_cursor is None:
             return clusters
         if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:

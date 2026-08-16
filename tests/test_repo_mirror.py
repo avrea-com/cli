@@ -280,15 +280,25 @@ def test_clusters_follows_pagination(runner, monkeypatch):
 
 
 def test_clusters_rejects_malformed_response(runner, monkeypatch):
-    monkeypatch.setattr(
-        "avrea_cli.api_client.ApiClient.public_get",
-        lambda self, path, params=None: {"data": "not-a-list", "pagination": {"next_cursor": None}},
+    responses = (
+        [],
+        {"data": "not-a-list", "pagination": {"next_cursor": None}},
+        {"data": []},
+        {"data": [], "pagination": []},
+        {"data": [], "pagination": {}},
     )
 
-    result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+    for response in responses:
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, params=None, response=response: response,
+        )
 
-    assert result.exit_code != 0
-    assert "Unexpected response while listing git clusters" in result.stderr
+        result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+
+        assert result.exit_code != 0
+        assert "Unexpected" in result.stderr
+        assert "git clusters" in result.stderr
 
 
 def test_json_meta_lists_fields(runner):
