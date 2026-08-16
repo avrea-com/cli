@@ -21,9 +21,11 @@ avr vm bootstrap [OPTIONS] VM_ID
 
 ```sh
 Each selected step runs on the VM and streams its output; bootstrap stops at
-the first failure. Secrets (GitHub token, forwarded env values, agent API
-keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
-after every `avr vm start`. Example:
+the first failure. Secrets (GitHub token, forwarded env values, agent
+credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
+is a year-long, subscription-wide bearer, so it is only carried under the
+explicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run
+bootstrap after every `avr vm start`. Example:
 ```
 
 ```sh
@@ -41,7 +43,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
 - <code class="cli-flag">&#x2D;&#x2D;setup-github / &#x2D;&#x2D;no-setup-github</code> — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
 - <code class="cli-flag">&#x2D;&#x2D;install</code> <code class="cli-value">&lt;TEXT&gt;</code> — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
-- <code class="cli-flag">&#x2D;&#x2D;forward-agent-creds</code> — Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
+- <code class="cli-flag">&#x2D;&#x2D;forward-agent-creds</code> — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
 - <code class="cli-flag">&#x2D;&#x2D;install-avr</code> — Install the avr CLI in the VM (pipx, else pip).
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Clone this git repo into the VM's home directory.
 - <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
@@ -79,6 +81,7 @@ now, it is never stored.
 - <code class="cli-flag">&#x2D;&#x2D;egress-rules</code> <code class="cli-value">&lt;TEXT&gt;</code> — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 - <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+- <code class="cli-flag">&#x2D;&#x2D;disable-cache</code> <code class="cli-value">&lt;TEXT&gt;</code> — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;ephemeral</code> — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
@@ -124,16 +127,20 @@ avr vm list [OPTIONS]
 
 ### `avr vm port-forward`
 
-Forward a local port to a TCP port on the VM over SSH.
+Forward one or more local ports to TCP ports on the VM over SSH.
 
 ```sh
 avr vm port-forward [OPTIONS] VM_ID
 ```
 
 The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
-127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where
-<port> is set by --port, and holds it open until Ctrl-C. Bring your own
-client.
+127.0.0.1:&lt;local&gt; -&gt; &lt;VM&gt;:&lt;guest&gt; through the VM's SSH endpoint for each
+--port, and holds them open until Ctrl-C. Bring your own client.
+
+```sh
+avr vm port-forward cvm-abc123 --port 8080
+avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
+```
 
 **Arguments**
 
@@ -142,8 +149,8 @@ client.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Guest-side TCP port to forward (e.g. 8080). _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
+- <code class="cli-flag">&#x2D;&#x2D;port</code> <code class="cli-value">&lt;TEXT&gt;</code> — Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable. _(repeatable · required)_
+- <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
 - <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ssh command and exit, without opening the tunnel.
 
@@ -201,6 +208,18 @@ With no extra arguments this opens an interactive session. Anything after
 
     avr vm ssh cvm-abc123 -- uname -a
 
+A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
+so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
+in a login shell instead (e.g. so `claude` finds its subscription token):
+
+    avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+
+Pass `--session <name>` to attach to (or create) a persistent tmux session,
+so the shell and any long-running process in it survive a dropped
+connection; reconnect with the same name to resume where you left off. A
+`-- <cmd>` given with --session runs only when the session is first created;
+reattaching to an existing session resumes it and does not rerun the command.
+
 When the VM's endpoint publishes a host key it is pinned, so the first
 connect neither prompts nor is spoofable. If the endpoint has no host key,
 `avr` prints a warning and falls back to trust-on-first-use, so this
@@ -216,7 +235,45 @@ port-forwarding use `avr vm port-forward`.
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">&#x2D;&#x2D;session</code> <code class="cli-value">&lt;TEXT&gt;</code> — Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.
+- <code class="cli-flag">&#x2D;&#x2D;login</code> — Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ssh command instead of running it.
+
+### `avr vm ssh-config`
+
+Print (or --append) an ssh_config Host block for a RUNNING VM.
+
+```sh
+avr vm ssh-config [OPTIONS] VM_ID
+```
+
+Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
+host key pinned, without wrapping each tool. Redirect it yourself:
+
+    avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+
+or let --append manage the block for you (idempotent — re-run after a
+restart to refresh the endpoint in place):
+
+    avr vm ssh-config cvm-abc123 --append
+
+The block references a dedicated known_hosts file that this command writes
+the pinned host key into (one entry per VM). If the endpoint publishes no
+host key, the block falls back to accept-new (trust-on-first-use) and a
+warning is printed.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — IdentityFile to write into the block.
+- <code class="cli-flag">&#x2D;&#x2D;host-alias</code> <code class="cli-value">&lt;TEXT&gt;</code> — Host alias for the block (default: avr-&lt;vm-id&gt;).
+- <code class="cli-flag">&#x2D;&#x2D;known-hosts-file</code> <code class="cli-value">&lt;PATH&gt;</code> — Where to pin the host key (default: ~/.ssh/avr_known_hosts).
+- <code class="cli-flag">&#x2D;&#x2D;append</code> — Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, replacing any prior block for the same alias in place.
+- <code class="cli-flag">&#x2D;&#x2D;config-file</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH config file for --append (default: ~/.ssh/config).
 
 ### `avr vm start`
 

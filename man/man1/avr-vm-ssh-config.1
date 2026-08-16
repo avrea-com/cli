@@ -1,0 +1,57 @@
+.TH AVR\-VM\-SSH\-CONFIG 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-vm-ssh-config \- Print (or --append) an ssh_config Host block for a RUNNING VM.
+.SH SYNOPSIS
+.B avr vm ssh-config
+[OPTIONS] VM_ID
+.SH DESCRIPTION
+Print (or --append) an ssh_config Host block for a RUNNING VM.
+.PP
+Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH, host key pinned, without wrapping each tool. Redirect it yourself:
+.PP
+avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+.PP
+or let --append manage the block for you (idempotent — re-run after a restart to refresh the endpoint in place):
+.PP
+avr vm ssh-config cvm-abc123 --append
+.PP
+The block references a dedicated known_hosts file that this command writes the pinned host key into (one entry per VM). If the endpoint publishes no host key, the block falls back to accept-new (trust-on-first-use) and a warning is printed.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
+IdentityFile to write into the block.
+.TP
+\fB\-\-host\-alias\fR \fITEXT\fR
+Host alias for the block (default: avr-<vm-id>).
+.TP
+\fB\-\-known\-hosts\-file\fR \fIPATH\fR
+Where to pin the host key (default: ~/.ssh/avr_known_hosts).
+.TP
+\fB\-\-append\fR
+Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, replacing any prior block for the same alias in place.
+.TP
+\fB\-\-config\-file\fR \fIPATH\fR
+SSH config file for --append (default: ~/.ssh/config).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-bootstrap (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-start (1),
+.BR avr-vm-stop (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

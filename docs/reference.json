@@ -1,6 +1,6 @@
 {
   "program": "avr",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "summary": "Avrea on the command line.",
   "global_options": [
     {
@@ -817,17 +817,17 @@
             "full": "avr run view",
             "is_group": false,
             "short_help": "View a workflow run with its jobs.",
-            "help": "View a workflow run with its jobs.\n\n\b\nWithout RUN_ID, shows 10 most recent runs.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run view [OPTIONS] [RUN_ID]",
+            "usage": "avr run view [OPTIONS] [RUN]",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -2110,7 +2110,7 @@
             "full": "avr vm bootstrap",
             "is_group": false,
             "short_help": "Set up a RUNNING VM with your dev essentials over SSH.",
-            "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent API\nkeys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap\nafter every `avr vm start`. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
+            "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent\ncredentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN\nis a year-long, subscription-wide bearer, so it is only carried under the\nexplicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run\nbootstrap after every `avr vm start`. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2222,7 +2222,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.",
+                "help": "Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.",
                 "hidden": false,
                 "show_default": false,
                 "default": false
@@ -2593,6 +2593,24 @@
                 "default": null
               },
               {
+                "name": "disable_cache",
+                "kind": "option",
+                "opts": [
+                  "--disable-cache"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "ephemeral",
                 "kind": "option",
                 "opts": [
@@ -2914,8 +2932,8 @@
             ],
             "full": "avr vm port-forward",
             "is_group": false,
-            "short_help": "Forward a local port to a TCP port on the VM over SSH.",
-            "help": "Forward a local port to a TCP port on the VM over SSH.\n\nThe generic primitive behind `avr vm rdp` / `avr vm vnc`: opens\n127.0.0.1:<local-port> -> <VM>:<port> through the VM's SSH endpoint, where\n<port> is set by --port, and holds it open until Ctrl-C. Bring your own\nclient.\n",
+            "short_help": "Forward one or more local ports to TCP ports on the VM over SSH.",
+            "help": "Forward one or more local ports to TCP ports on the VM over SSH.\n\nThe generic primitive behind `avr vm rdp` / `avr vm vnc`: opens\n127.0.0.1:<local> -> <VM>:<guest> through the VM's SSH endpoint for each\n--port, and holds them open until Ctrl-C. Bring your own client.\n\n\b\n    avr vm port-forward cvm-abc123 --port 8080\n    avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2958,19 +2976,19 @@
                 "default": null
               },
               {
-                "name": "guest_port",
+                "name": "port_specs",
                 "kind": "option",
                 "opts": [
                   "--port"
                 ],
                 "secondary_opts": [],
-                "type": "integer range",
+                "type": "text",
                 "required": true,
-                "multiple": false,
+                "multiple": true,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Guest-side TCP port to forward (e.g. 8080).",
+                "help": "Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2988,7 +3006,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Local port to bind (default: an unused port).",
+                "help": "Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3246,7 +3264,7 @@
             "full": "avr vm ssh",
             "is_group": false,
             "short_help": "Open an SSH session to a RUNNING VM, or run a command on it.",
-            "help": "Open an SSH session to a RUNNING VM, or run a command on it.\n\nWith no extra arguments this opens an interactive session. Anything after\n`--` is run as a remote command instead, e.g.:\n\n    avr vm ssh cvm-abc123 -- uname -a\n\nWhen the VM's endpoint publishes a host key it is pinned, so the first\nconnect neither prompts nor is spoofable. If the endpoint has no host key,\n`avr` prints a warning and falls back to trust-on-first-use, so this\nspoofing protection is conditional rather than guaranteed. For\nport-forwarding use `avr vm port-forward`.\n",
+            "help": "Open an SSH session to a RUNNING VM, or run a command on it.\n\nWith no extra arguments this opens an interactive session. Anything after\n`--` is run as a remote command instead, e.g.:\n\n    avr vm ssh cvm-abc123 -- uname -a\n\nA one-off `-- <cmd>` runs in a non-login shell that sources no startup files,\nso it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it\nin a login shell instead (e.g. so `claude` finds its subscription token):\n\n    avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'\n\nPass `--session <name>` to attach to (or create) a persistent tmux session,\nso the shell and any long-running process in it survive a dropped\nconnection; reconnect with the same name to resume where you left off. A\n`-- <cmd>` given with --session runs only when the session is first created;\nreattaching to an existing session resumes it and does not rerun the command.\n\nWhen the VM's endpoint publishes a host key it is pinned, so the first\nconnect neither prompts nor is spoofable. If the endpoint has no host key,\n`avr` prints a warning and falls back to trust-on-first-use, so this\nspoofing protection is conditional rather than guaranteed. For\nport-forwarding use `avr vm port-forward`.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -3326,6 +3344,42 @@
                 "default": null
               },
               {
+                "name": "session_name",
+                "kind": "option",
+                "opts": [
+                  "--session"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "login",
+                "kind": "option",
+                "opts": [
+                  "--login"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
                 "name": "print_only",
                 "kind": "option",
                 "opts": [
@@ -3342,6 +3396,152 @@
                 "hidden": false,
                 "show_default": false,
                 "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "ssh-config",
+            "path": [
+              "avr",
+              "vm",
+              "ssh-config"
+            ],
+            "full": "avr vm ssh-config",
+            "is_group": false,
+            "short_help": "Print (or --append) an ssh_config Host block for a RUNNING VM.",
+            "help": "Print (or --append) an ssh_config Host block for a RUNNING VM.\n\nReach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,\nhost key pinned, without wrapping each tool. Redirect it yourself:\n\n    avr vm ssh-config cvm-abc123 >> ~/.ssh/config\n\nor let --append manage the block for you (idempotent \u2014 re-run after a\nrestart to refresh the endpoint in place):\n\n    avr vm ssh-config cvm-abc123 --append\n\nThe block references a dedicated known_hosts file that this command writes\nthe pinned host key into (one entry per VM). If the endpoint publishes no\nhost key, the block falls back to accept-new (trust-on-first-use) and a\nwarning is printed.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm ssh-config [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "identity_file",
+                "kind": "option",
+                "opts": [
+                  "-i",
+                  "--identity"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "IdentityFile to write into the block.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "host_alias",
+                "kind": "option",
+                "opts": [
+                  "--host-alias"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Host alias for the block (default: avr-<vm-id>).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "known_hosts_file",
+                "kind": "option",
+                "opts": [
+                  "--known-hosts-file"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Where to pin the host key (default: ~/.ssh/avr_known_hosts).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "append",
+                "kind": "option",
+                "opts": [
+                  "--append"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, replacing any prior block for the same alias in place.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "config_file",
+                "kind": "option",
+                "opts": [
+                  "--config-file"
+                ],
+                "secondary_opts": [],
+                "type": "path",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "SSH config file for --append (default: ~/.ssh/config).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []

@@ -34,7 +34,7 @@ avr billing invoices download [OPTIONS] INVOICE_ID
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;out</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output file path. Defaults to <invoice_id>.pdf.
+- <code class="cli-flag">&#x2D;&#x2D;out</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output file path. Defaults to &lt;invoice_id&gt;.pdf.
 
 #### `avr billing invoices list`
 

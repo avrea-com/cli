@@ -1,4 +1,4 @@
-.TH AVR\-VM\-SSH 1 "" "avr 0.1.6" "Avrea CLI"
+.TH AVR\-VM\-SSH 1 "" "avr 0.2.0" "Avrea CLI"
 .SH NAME
 avr-vm-ssh \- Open an SSH session to a RUNNING VM, or run a command on it.
 .SH SYNOPSIS
@@ -10,6 +10,12 @@ Open an SSH session to a RUNNING VM, or run a command on it.
 With no extra arguments this opens an interactive session. Anything after `--` is run as a remote command instead, e.g.:
 .PP
 avr vm ssh cvm-abc123 -- uname -a
+.PP
+A one-off `-- <cmd>` runs in a non-login shell that sources no startup files, so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it in a login shell instead (e.g. so `claude` finds its subscription token):
+.PP
+avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+.PP
+Pass `--session <name>` to attach to (or create) a persistent tmux session, so the shell and any long-running process in it survive a dropped connection; reconnect with the same name to resume where you left off. A `-- <cmd>` given with --session runs only when the session is first created; reattaching to an existing session resumes it and does not rerun the command.
 .PP
 When the VM's endpoint publishes a host key it is pinned, so the first connect neither prompts nor is spoofable. If the endpoint has no host key, `avr` prints a warning and falls back to trust-on-first-use, so this spoofing protection is conditional rather than guaranteed. For port-forwarding use `avr vm port-forward`.
 .SH ARGUMENTS
@@ -27,6 +33,12 @@ Organization ID. Uses default org if not specified (see: avr config set org).
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
 Private key file to pass to ssh as -i.
 .TP
+\fB\-\-session\fR \fITEXT\fR
+Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.
+.TP
+\fB\-\-login\fR
+Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.
+.TP
 \fB\-\-print\fR
 Print the ssh command instead of running it.
 .SH SEE ALSO
@@ -39,6 +51,7 @@ Print the ssh command instead of running it.
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
+.BR avr-vm-ssh-config (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),

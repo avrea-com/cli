@@ -1,4 +1,4 @@
-.TH AVR\-VM\-CREATE 1 "" "avr 0.1.6" "Avrea CLI"
+.TH AVR\-VM\-CREATE 1 "" "avr 0.2.0" "Avrea CLI"
 .SH NAME
 avr-vm-create \- Create a long-running VM.
 .SH SYNOPSIS
@@ -51,6 +51,9 @@ Git repository (owner/repo) to preload into the VM at boot. Best-effort; the che
 \fB\-\-ref\fR \fITEXT\fR
 Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 .TP
+\fB\-\-disable\-cache\fR \fITEXT\fR
+Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo. (repeatable)
+.TP
 \fB\-\-ephemeral\fR
 Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 .TP
@@ -72,6 +75,7 @@ Emit the raw API response (VM plus one-time password) as JSON.
 .BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),

@@ -1,4 +1,4 @@
-.TH AVR\-VM\-BOOTSTRAP 1 "" "avr 0.1.6" "Avrea CLI"
+.TH AVR\-VM\-BOOTSTRAP 1 "" "avr 0.2.0" "Avrea CLI"
 .SH NAME
 avr-vm-bootstrap \- Set up a RUNNING VM with your dev essentials over SSH.
 .SH SYNOPSIS
@@ -10,9 +10,11 @@ Set up a RUNNING VM with your dev essentials over SSH.
 .RS 4
 .nf
 Each selected step runs on the VM and streams its output; bootstrap stops at
-the first failure. Secrets (GitHub token, forwarded env values, agent API
-keys) ride SSH stdin, never argv. Disks are ephemeral, so re-run bootstrap
-after every `avr vm start`. Example:
+the first failure. Secrets (GitHub token, forwarded env values, agent
+credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
+is a year-long, subscription-wide bearer, so it is only carried under the
+explicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run
+bootstrap after every `avr vm start`. Example:
 .fi
 .RE
 .PP
@@ -41,7 +43,7 @@ Forward your local `gh auth token` into the VM (gh auth login --with-token + gh 
 Install an agent CLI (repeatable or comma-separated): claude, codex. (repeatable)
 .TP
 \fB\-\-forward\-agent\-creds\fR
-Also forward the installed agents' API keys (ANTHROPIC_API_KEY / OPENAI_API_KEY) from your environment.
+Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
 .TP
 \fB\-\-install\-avr\fR
 Install the avr CLI in the VM (pipx, else pip).
@@ -73,6 +75,7 @@ Print the ordered plan (secrets redacted) without running.
 .BR avr-vm-rdp (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
 .BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),
