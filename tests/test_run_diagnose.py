@@ -217,6 +217,27 @@ def test_avrea_id_composes_existing_apis(runner, monkeypatch) -> None:
     ]
 
 
+def test_failed_non_avrea_job_skips_log_search(runner, monkeypatch) -> None:
+    job = {**JOBS["data"][0], "running_on_avrea": False}
+    _, post_calls = _install_api(
+        monkeypatch,
+        jobs_response={"data": [job], "pagination": {"next_cursor": None}},
+    )
+
+    result = runner.invoke(cli, ["run", "diagnose", "run-abc123", "--json"])
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.output)
+    assert report["jobs"][0]["failed_logs"] == {
+        "status": "not_applicable",
+        "reason": "not_running_on_avrea",
+        "truncated": False,
+        "lines": [],
+    }
+    assert post_calls == []
+    assert not any(warning["component"] == "logs" for warning in report["warnings"])
+
+
 def test_github_id_resolves_directly_then_composes(runner, monkeypatch) -> None:
     get_calls, _ = _install_api(monkeypatch)
 

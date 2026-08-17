@@ -473,7 +473,8 @@ def build_run_diagnostics(
             )
 
         failed_jobs = [job for job in jobs if job.get("conclusion") in _FAILED_JOB_CONCLUSIONS]
-        selected_failed_jobs = failed_jobs[:MAX_LOG_JOBS]
+        log_eligible_jobs = [job for job in failed_jobs if job.get("running_on_avrea") is not False]
+        selected_failed_jobs = log_eligible_jobs[:MAX_LOG_JOBS]
         log_futures = {
             str(job.get("job_id")): executor.submit(
                 client.public_post,
@@ -511,17 +512,25 @@ def build_run_diagnostics(
             }
             for job in jobs
         }
+        for job in failed_jobs:
+            if job.get("running_on_avrea") is False:
+                logs_by_job[str(job.get("job_id"))] = {
+                    "status": "not_applicable",
+                    "reason": "not_running_on_avrea",
+                    "truncated": False,
+                    "lines": [],
+                }
         for job in selected_failed_jobs:
             job_id = str(job.get("job_id"))
             logs_by_job[job_id] = _build_log_excerpt(log_futures[job_id], job_id, warnings)
-        for job in failed_jobs[MAX_LOG_JOBS:]:
+        for job in log_eligible_jobs[MAX_LOG_JOBS:]:
             logs_by_job[str(job.get("job_id"))] = {
                 "status": "partial",
                 "reason": "log_job_limit",
                 "truncated": True,
                 "lines": [],
             }
-        if len(failed_jobs) > MAX_LOG_JOBS:
+        if len(log_eligible_jobs) > MAX_LOG_JOBS:
             warnings.append(
                 _warning(
                     "log_jobs_truncated",
