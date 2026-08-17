@@ -63,7 +63,6 @@ def _parse_trusted_https_url(value: str) -> SplitResult:
         or parts.username is not None
         or parts.password is not None
         or port is not None
-        or parts.query
         or parts.fragment
     ):
         raise _invalid_reference()
@@ -71,7 +70,7 @@ def _parse_trusted_https_url(value: str) -> SplitResult:
 
 
 def _parse_github_url(value: str, parts: SplitResult) -> RunReference:
-    path = parts.path.split("/")
+    path = parts.path.removesuffix("/").split("/")
     if len(path) not in {6, 8} or path[0] or path[3:5] != ["actions", "runs"]:
         raise _invalid_reference()
 
@@ -129,7 +128,7 @@ def _parse_avrea_url(value: str, parts: SplitResult, *, api_url: str) -> RunRefe
             f"Switch with `avr auth switch {required_api_url}` and try again."
         )
 
-    path = parts.path.split("/")
+    path = parts.path.removesuffix("/").split("/")
     if len(path) != 5 or path[0] or path[1] != "org" or path[3] != "runs":
         raise _invalid_reference()
     organization_slug, run_id = path[2], path[4]
