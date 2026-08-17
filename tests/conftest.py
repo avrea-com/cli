@@ -34,7 +34,12 @@ def _force_tty_mode(monkeypatch):
     Each command module does `from avrea_cli.display import is_piped`, so the
     name is bound at import time — patching `display.is_piped` afterwards
     doesn't affect those local bindings. Patch each consumer instead."""
-    for mod in ("avrea_cli.commands.run", "avrea_cli.commands.job", "avrea_cli.commands.cache"):
+    for mod in (
+        "avrea_cli.commands.run",
+        "avrea_cli.commands.job",
+        "avrea_cli.commands.cache",
+        "avrea_cli.commands.pr",
+    ):
         monkeypatch.setattr(f"{mod}.is_piped", lambda: False, raising=False)
 
 

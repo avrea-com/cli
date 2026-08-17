@@ -24,6 +24,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `jobs` → `job`
 - `logs` → `log`
 - `orgs` → `org`
+- `prs` → `pr`
 - `repos` → `repo`
 - `vms` → `vm`
 - `workflows` → `workflow`
@@ -34,6 +35,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 - [`avr status`](#avr-status) — Show recent runs, performance stats, and cache health.
 - [`avr run`](#avr-run) — View and manage GitHub workflow runs.
+- [`avr pr`](#avr-pr) — View pull requests.
 - [`avr job`](#avr-job) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
@@ -289,6 +291,41 @@ Examples:
 - `--exit-status` — Exit non-zero if run failed.
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `3`)_
 - `--ndjson` — Force NDJSON event stream (default when stdout isn't a TTY).
+
+### `avr pr`
+
+View pull requests.
+
+```sh
+avr pr [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr pr list`
+
+List pull requests across repositories.
+
+```sh
+avr pr list [OPTIONS]
+```
+
+```sh
+Examples:
+    avr pr list
+    avr pr list --scope authored
+    avr pr list --repo acme/widgets --state merged
+    avr pr list --json number,title,mergeability
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--scope <CHOICE>` — List every readable PR, PRs you authored, or PRs you are involved in. _(choices: `all`, `authored`, `involved` · default: `all`)_
+- `--state <CHOICE>` — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
+- `-L, --limit <INTEGER RANGE>` — Max PRs to return. _(default: `20`)_
+- `--cursor <TEXT>` — Pagination cursor from a previous response.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 ### `avr job`
 

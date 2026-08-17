@@ -24,6 +24,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 - [`avr status`](./status/) — Show recent runs, performance stats, and cache health.
 - [`avr run`](./run/) — View and manage GitHub workflow runs.
+- [`avr pr`](./pr/) — View pull requests.
 - [`avr job`](./job/) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](./vm/) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
@@ -50,6 +51,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `jobs` → [`job`](./job/)
 - `logs` → [`log`](./log/)
 - `orgs` → [`org`](./org/)
+- `prs` → [`pr`](./pr/)
 - `repos` → [`repo`](./repo/)
 - `vms` → [`vm`](./vm/)
 - `workflows` → [`workflow`](./workflow/)

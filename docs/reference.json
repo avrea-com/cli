@@ -82,6 +82,7 @@
   ],
   "aliases": {
     "jobs": "job",
+    "prs": "pr",
     "repos": "repo",
     "orgs": "org",
     "logs": "log",
@@ -1130,6 +1131,200 @@
                 "hidden": false,
                 "show_default": false,
                 "default": false
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "pr",
+        "path": [
+          "avr",
+          "pr"
+        ],
+        "full": "avr pr",
+        "is_group": true,
+        "short_help": "View pull requests.",
+        "help": "View pull requests.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr pr [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "pr",
+              "list"
+            ],
+            "full": "avr pr list",
+            "is_group": false,
+            "short_help": "List pull requests across repositories.",
+            "help": "List pull requests across repositories.\n\n\b\nExamples:\n    avr pr list\n    avr pr list --scope authored\n    avr pr list --repo acme/widgets --state merged\n    avr pr list --json number,title,mergeability\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr pr list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repository_ids",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "scope",
+                "kind": "option",
+                "opts": [
+                  "--scope"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "List every readable PR, PRs you authored, or PRs you are involved in.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "all",
+                  "authored",
+                  "involved"
+                ]
+              },
+              {
+                "name": "state",
+                "kind": "option",
+                "opts": [
+                  "--state"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by pull request state. 'all' removes the state filter.",
+                "hidden": false,
+                "show_default": true,
+                "default": "open",
+                "choices": [
+                  "open",
+                  "closed",
+                  "merged",
+                  "all"
+                ]
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max PRs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 20
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Pagination cursor from a previous response.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []

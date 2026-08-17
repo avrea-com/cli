@@ -6,6 +6,7 @@ from avrea_cli.display import get_console_url
 from avrea_cli.display import hyperlink
 from avrea_cli.display import job_url
 from avrea_cli.display import page_output
+from avrea_cli.display import pr_url
 from avrea_cli.display import run_url
 from avrea_cli.display import status_indicator
 from avrea_cli.display import terminal_title
@@ -92,7 +93,7 @@ class TestHyperlink:
         assert url in result
 
 
-class TestRunAndJobUrls:
+class TestEntityUrls:
     def test_run_url_template(self):
         assert (
             run_url("https://console.avrea.com", "acme", "run-abc") == "https://console.avrea.com/org/acme/runs/run-abc"
@@ -101,6 +102,12 @@ class TestRunAndJobUrls:
     def test_job_url_template(self):
         assert (
             job_url("https://console.avrea.com", "acme", "job-xyz") == "https://console.avrea.com/org/acme/jobs/job-xyz"
+        )
+
+    def test_pr_url_template(self):
+        assert (
+            pr_url("https://console.avrea.com", "acme", "rep-xyz", 42)
+            == "https://console.avrea.com/org/acme/repos/rep-xyz/pulls/42"
         )
 
 
