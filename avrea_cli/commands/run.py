@@ -44,6 +44,7 @@ from avrea_cli.log_display import print_logs_grouped
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
+from avrea_cli.run_diagnostics import build_run_diagnostics
 from avrea_cli.run_diagnostics_display import render_run_diagnostics
 from avrea_cli.run_refs import RunReference
 from avrea_cli.run_refs import parse_run_reference
@@ -744,25 +745,15 @@ def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
     ensure_authenticated(config)
 
     reference, org_id = _run_reference_and_org(client, config, run, org_id)
-    if reference.run_id is not None:
-        run_id = reference.run_id
-    else:
-        try:
-            resolved = resolve_run_reference(client, org_id, reference, include=[])
-        except httpx.HTTPStatusError as exc:
-            handle_http_error(exc, "resolve workflow run")
-        run_id = resolved.get("run_id")
-        if not isinstance(run_id, str):
-            raise click.ClickException("Avrea returned a workflow run without a run_id.")
+    try:
+        resolved = resolve_run_reference(client, org_id, reference, include=["workflow"])
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "resolve workflow run")
 
     try:
-        response = client.public_get(f"/orgs/{org_id}/workflow-runs/{run_id}/diagnostics")
+        report = build_run_diagnostics(client, org_id, resolved)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "diagnose workflow run")
-
-    report = response.get("data", response)
-    if not isinstance(report, dict):
-        raise click.ClickException("Avrea returned an invalid diagnostics response.")
     if json_output:
         click.echo(json.dumps(report, indent=2, default=str))
         return
