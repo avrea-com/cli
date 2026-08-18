@@ -116,6 +116,23 @@ class TestGetOrgId:
         config.default_org = None
         assert get_org_id(config, "alpha") == "alpha"
 
+    def test_http_failure_names_the_api_endpoint_and_status(self) -> None:
+        """An organization lookup failure must identify which configured API failed."""
+        config = MagicMock(spec=CliConfig)
+        config.default_org = None
+        config.public_api_url = "https://api.example.com"
+        config.get_api_headers.return_value = {}
+        transport = httpx.MockTransport(lambda request: httpx.Response(500, request=request))
+        client = ApiClient(config, http_client=httpx.Client(transport=transport))
+
+        with pytest.raises(click.ClickException) as exc_info:
+            get_org_id(config, None, client=client)
+
+        assert exc_info.value.message == (
+            "The API at https://api.example.com/users/me/organizations responded with HTTP 500 "
+            "while resolving the organization."
+        )
+
 
 def test_verified_org_slug_handles_successful_non_json_response() -> None:
     config = MagicMock(spec=CliConfig)

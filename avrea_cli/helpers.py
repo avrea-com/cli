@@ -130,12 +130,14 @@ def _resolve_org_slug(client: ApiClient, value: str) -> str:
 
 
 def _fetch_user_orgs(client: ApiClient) -> list[dict]:
-    """Fetch the orgs the user belongs to. Aborts on HTTP failure."""
+    """Fetch the orgs the user belongs to. Reports the failing API on HTTP errors."""
     try:
         response = client.public_get("/users/me/organizations")
     except httpx.HTTPStatusError as exc:
-        click.echo(f"Error: Failed to resolve organization: {exc.response.status_code}", err=True)
-        raise click.Abort() from exc
+        raise click.ClickException(
+            f"The API at {exc.request.url} responded with HTTP {exc.response.status_code} "
+            "while resolving the organization."
+        ) from None
     return response.get("data", [])
 
 
