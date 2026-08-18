@@ -398,6 +398,11 @@ def repo_url(console_url: str, slug: str, repo_id: str) -> str:
     return f"{console_url}/org/{slug}/activity?repositories={repo_id}"
 
 
+def pr_url(console_url: str, slug: str, repo_id: str, number: int) -> str:
+    """Console deep-link for a pull request."""
+    return f"{console_url}/org/{slug}/repos/{repo_id}/pulls/{number}"
+
+
 def hint(msg: str) -> None:
     """Print a dim, stderr-only hint line. Used for "next step" suggestions
     that shouldn't pollute stdout when the command output is piped."""

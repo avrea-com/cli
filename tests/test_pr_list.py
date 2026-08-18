@@ -1,0 +1,297 @@
+"""Tests for ``avr pr list``."""
+
+from avrea_cli.main import cli
+import httpx
+import json
+import pytest
+
+PULL = {
+    "number": 42,
+    "title": "Keep PR reads inside Avrea",
+    "state": "open",
+    "draft": False,
+    "merged": False,
+    "author_login": "octocat",
+    "base_ref": "main",
+    "head_ref": "pr-list",
+    "head_sha": "a" * 40,
+    "base_sha": "b" * 40,
+    "created_at": "2026-08-16T10:00:00Z",
+    "updated_at": "2026-08-17T10:00:00Z",
+    "comment_count": 3,
+    "unresolved_thread_count": 1,
+    "check_status": "success",
+    "mergeability": {"status": "mergeable", "base_sha": "b" * 40, "head_sha": "a" * 40},
+    "repository_id": "rep-widgets",
+    "repository_full_name": "acme/widgets",
+}
+FEATURE_FLAG = "feature.org-pull-requests.enabled"
+
+
+def enabled_feature_or(path, response):
+    if path.endswith(f"/feature-flags/{FEATURE_FLAG}"):
+        return {"key": FEATURE_FLAG, "enabled": True}
+    return response
+
+
+def test_default_list_uses_the_org_endpoint(runner, monkeypatch):
+    captured = {}
+
+    def fake_get(self, path, params=None):
+        captured["path"] = path
+        captured["params"] = params
+        return enabled_feature_or(path, {"data": [PULL], "pagination": {"next_cursor": None}})
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert captured == {
+        "path": "/orgs/org-default/pull-requests",
+        "params": {"scope": "all", "state": "open", "limit": 20},
+    }
+    assert "acme/widgets" in result.output
+    assert "mergeable" in result.output
+    assert result.output.index("PR") < result.output.index("REPOSITORY")
+
+
+def test_filters_repositories_scope_state_and_cursor(runner, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(
+        "avrea_cli.commands.pr.resolve_repos_or_detect",
+        lambda client, config, org_id, repos, *, soft_detect: ["rep-one", "rep-two"],
+    )
+
+    def fake_get(self, path, params=None):
+        captured.update(params or {})
+        return enabled_feature_or(path, {"data": [], "pagination": {"next_cursor": None}})
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(
+        cli,
+        [
+            "pr",
+            "list",
+            "--repo",
+            "acme/one",
+            "--repo",
+            "acme/two",
+            "--scope",
+            "involved",
+            "--state",
+            "all",
+            "--cursor",
+            "next-page",
+            "-L",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert captured == {
+        "scope": "involved",
+        "limit": 7,
+        "repository_ids": ["rep-one", "rep-two"],
+        "cursor": "next-page",
+    }
+
+
+def test_json_preserves_nested_mergeability(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [PULL], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list", "--json", "number,repository_full_name,mergeability"])
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == [
+        {
+            "number": 42,
+            "repository_full_name": "acme/widgets",
+            "mergeability": PULL["mergeability"],
+        }
+    ]
+
+
+def test_next_cursor_is_reported_on_stderr(runner, monkeypatch):
+    """The pagination hint must not contaminate stdout consumed by scripts."""
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(
+            path, {"data": [PULL], "pagination": {"next_cursor": "page-two"}}
+        ),
+    )
+
+    result = runner.invoke(cli, ["prs", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert "Next page: --cursor page-two" in result.stderr
+
+
+def test_null_pagination_is_treated_as_no_next_page(runner, monkeypatch):
+    """A valid page with null pagination must not fail after rendering its rows."""
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [PULL], "pagination": None}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert "Next page:" not in result.stderr
+
+
+def test_unsupported_target_org_gets_coming_soon_message(runner, monkeypatch):
+    """An org without Avrea Git must stop at the flag check with a clear message."""
+    paths = []
+
+    def fake_get(self, path, params=None):
+        paths.append(path)
+        return {"key": FEATURE_FLAG, "enabled": False}
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list", "--org", "org-target", "--repo", "acme/widgets"])
+
+    assert result.exit_code == 1
+    assert "Sorry, pull request listing is not yet supported for this organization. Coming soon." in result.stderr
+    assert not isinstance(result.exception, httpx.HTTPError)
+    assert paths == [f"/orgs/org-target/feature-flags/{FEATURE_FLAG}"]
+
+
+def test_missing_feature_flag_endpoint_gets_coming_soon_message(runner, monkeypatch):
+    """An ambiguous 404 must not claim that the organization definitely lacks the feature."""
+    request = httpx.Request("GET", f"https://api.example.com/orgs/org-default/feature-flags/{FEATURE_FLAG}")
+
+    def fake_get(self, path, params=None):
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError("not found", request=request, response=response)
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 1
+    assert "could not find this organization or confirm pull request listing support" in result.stderr
+    assert "Organizations without Avrea Git are not supported yet. Coming soon." in result.stderr
+    assert not isinstance(result.exception, httpx.HTTPError)
+
+
+@pytest.mark.parametrize("error_type", [httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError])
+def test_transport_errors_are_user_facing(runner, monkeypatch, error_type):
+    """Any HTTP transport failure during the feature check must not expose a traceback."""
+
+    def fake_get(self, path, params=None):
+        raise error_type("request failed")
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 1
+    assert "Could not list pull requests because the request to Avrea failed: request failed" in result.stderr
+    assert not isinstance(result.exception, httpx.HTTPError)
+
+
+def test_transport_error_from_pull_request_endpoint_is_user_facing(runner, monkeypatch):
+    """The list request needs the same transport-error handling as its feature preflight."""
+
+    def fake_get(self, path, params=None):
+        if path.endswith(f"/feature-flags/{FEATURE_FLAG}"):
+            return {"key": FEATURE_FLAG, "enabled": True}
+        raise httpx.ReadError("response interrupted")
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 1
+    assert "Could not list pull requests because the request to Avrea failed: response interrupted" in result.stderr
+    assert not isinstance(result.exception, httpx.HTTPError)
+
+
+def test_unknown_scope_is_rejected_before_api_call(runner, monkeypatch):
+    called = False
+
+    def fake_get(self, path, params=None):
+        nonlocal called
+        called = True
+        return {"data": []}
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list", "--scope", "mine"])
+
+    assert result.exit_code == 2
+    assert not called
+
+
+def test_open_pull_without_mergeability_renders_unknown(runner, monkeypatch):
+    pull = {**PULL, "mergeability": None}
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [pull], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert "?" in result.output
+
+
+def test_closed_draft_renders_closed(runner, monkeypatch):
+    """Closure is the terminal state even if the pull request was still marked as a draft."""
+    pull = {**PULL, "state": "closed", "draft": True}
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [pull], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list", "--state", "all"])
+
+    assert result.exit_code == 0, result.output
+    assert "closed" in result.output
+    assert "draft" not in result.output
+
+
+def test_help_explains_repeatable_repositories_and_json_fields(runner):
+    """Terminal help must explain multi-repo filtering and make the JSON schema discoverable."""
+    result = runner.invoke(cli, ["pr", "list", "--help"])
+    help_text = " ".join(result.output.split())
+
+    assert result.exit_code == 0, result.output
+    assert "Pass --repo more than once to filter multiple repositories" in help_text
+    assert "JSON FIELDS" in help_text
+    assert "repository_full_name" in help_text
+
+
+def test_single_repository_output_omits_redundant_repository_column(runner, monkeypatch):
+    monkeypatch.setattr(
+        "avrea_cli.commands.pr.resolve_repos_or_detect",
+        lambda client, config, org_id, repos, *, soft_detect: ["rep-widgets"],
+    )
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [PULL], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list", "--repo", "acme/widgets"])
+
+    assert result.exit_code == 0, result.output
+    assert "REPOSITORY" not in result.output
+
+
+def test_pull_without_checks_renders_no_checks_not_unknown(runner, monkeypatch):
+    pull = {**PULL, "check_status": None}
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [pull], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert "?" not in result.output

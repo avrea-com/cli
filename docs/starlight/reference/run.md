@@ -93,7 +93,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by head branch (repeatable). _(repeatable)_
 - <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_

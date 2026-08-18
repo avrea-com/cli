@@ -1,30 +1,24 @@
-.TH AVR\-CACHE 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR\-PR 1 "" "avr 0.2.0" "Avrea CLI"
 .SH NAME
-avr-cache \- Inspect and manage the Avrea build cache.
+avr-pr \- View pull requests.
 .SH SYNOPSIS
-.B avr cache
+.B avr pr
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Inspect and manage the Avrea build cache.
+View pull requests.
 .PP
 .SH COMMANDS
 .TP
-delete
-Delete cache entries by key name or all entries.
-.TP
 list
-List cache entries for a repository.
-.TP
-usage
-Show cache usage summary for a repository.
+List pull requests across repositories.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-status (1),
 .BR avr-run (1),
-.BR avr-pr (1),
 .BR avr-job (1),
 .BR avr-vm (1),
 .BR avr-workflow (1),
+.BR avr-cache (1),
 .BR avr-log (1),
 .BR avr-auth (1),
 .BR avr-config (1),
@@ -35,6 +29,4 @@ Show cache usage summary for a repository.
 .BR avr-repo (1),
 .BR avr-org (1),
 .BR avr-health (1),
-.BR avr-cache-delete (1),
-.BR avr-cache-list (1),
-.BR avr-cache-usage (1)
+.BR avr-pr-list (1)

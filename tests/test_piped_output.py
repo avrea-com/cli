@@ -1,5 +1,4 @@
-"""Unit tests for piped/non-TTY output on `avr run list`, `avr job list`,
-and `avr cache list`.
+"""Unit tests for piped/non-TTY output on list commands.
 
 Each test opts back into piped mode (the autouse `_force_tty_mode` fixture
 keeps everything else in TTY mode). The contract: a single header row of
@@ -25,8 +24,81 @@ def runner(monkeypatch):
 @pytest.fixture()
 def piped(monkeypatch):
     """Opt into piped output for a single test."""
-    for mod in ("avrea_cli.commands.run", "avrea_cli.commands.job", "avrea_cli.commands.cache"):
+    for mod in (
+        "avrea_cli.commands.run",
+        "avrea_cli.commands.job",
+        "avrea_cli.commands.cache",
+        "avrea_cli.commands.pr",
+    ):
         monkeypatch.setattr(f"{mod}.is_piped", lambda: True)
+
+
+class TestPrListPiped:
+    def test_emits_raw_tab_separated_pull_rows(self, runner, piped, monkeypatch):
+        pull = {
+            "number": 42,
+            "repository_full_name": "acme/widgets",
+            "repository_id": "rep-widgets",
+            "state": "open",
+            "draft": False,
+            "merged": False,
+            "title": "A title that must not be truncated in piped output",
+            "author_login": "octocat",
+            "head_ref": "feature/pr-list",
+            "base_ref": "main",
+            "check_status": "success",
+            "mergeability": {"status": "mergeable"},
+            "comment_count": 3,
+            "unresolved_thread_count": 1,
+            "head_sha": "a" * 40,
+            "updated_at": "2026-08-17T10:00:00Z",
+        }
+
+        def fake_get(self, path, **kw):
+            if "/feature-flags/" in path:
+                return {"key": "feature.org-pull-requests.enabled", "enabled": True}
+            return {"data": [pull], "pagination": {}}
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            fake_get,
+        )
+
+        result = runner.invoke(cli, ["pr", "list"])
+
+        assert result.exit_code == 0, result.output
+        assert "\x1b[" not in result.output
+        lines = result.output.splitlines()
+        assert lines[0].split("\t") == [
+            "number",
+            "repository",
+            "state",
+            "title",
+            "author",
+            "head_ref",
+            "base_ref",
+            "check_status",
+            "mergeability",
+            "comment_count",
+            "unresolved_threads",
+            "head_sha",
+            "updated_at",
+        ]
+        assert lines[1].split("\t") == [
+            "42",
+            "acme/widgets",
+            "open",
+            "A title that must not be truncated in piped output",
+            "octocat",
+            "feature/pr-list",
+            "main",
+            "success",
+            "mergeable",
+            "3",
+            "1",
+            "a" * 40,
+            "2026-08-17T10:00:00Z",
+        ]
 
 
 class TestRunListPiped:

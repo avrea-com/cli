@@ -35,7 +35,7 @@ JSON FIELDS
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. (repeatable)
+Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. (repeatable)
 .TP
 \fB\-\-status\fR \fICHOICE\fR
 Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. (choices: action_required, cancelled, completed, failure, in_progress, neutral, queued, skipped, stale, startup_failure, success, timed_out; repeatable)

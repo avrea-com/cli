@@ -32,6 +32,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
         "Core Commands",
     ),  # noqa: E501
     ("run", "avrea_cli.commands.run", "run", "View and manage GitHub workflow runs.", "Core Commands"),
+    ("pr", "avrea_cli.commands.pr", "pr", "View pull requests.", "Core Commands"),
     ("job", "avrea_cli.commands.job", "job", "Inspect Avrea job VMs (SSH, metrics, logs).", "Core Commands"),
     ("vm", "avrea_cli.vm", "vm", "Manage long-running VMs (SSH/RDP/VNC).", "Core Commands"),
     ("workflow", "avrea_cli.commands.workflow", "workflow", "List and view workflow definitions.", "Core Commands"),
@@ -71,6 +72,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
 
 ALIASES: dict[str, str] = {
     "jobs": "job",
+    "prs": "pr",
     "repos": "repo",
     "orgs": "org",
     "logs": "log",

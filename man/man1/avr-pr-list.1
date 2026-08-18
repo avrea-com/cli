@@ -1,0 +1,57 @@
+.TH AVR\-PR\-LIST 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-pr-list \- List pull requests across repositories.
+.SH SYNOPSIS
+.B avr pr list
+[OPTIONS]
+.SH DESCRIPTION
+List pull requests across repositories.
+.PP
+.RS 4
+.nf
+Examples:
+    avr pr list
+    avr pr list --scope authored
+    avr pr list --repo acme/widgets --state merged
+    avr pr list --json number,title,mergeability
+    avr pr list --json '?'           # list available fields
+    avr pr list --json '*'           # all fields
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    author_login, base_ref, base_sha, check_status, comment_count, created_at,
+    draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
+    repository_id, state, title, unresolved_thread_count, updated_at
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. (repeatable)
+.TP
+\fB\-\-scope\fR \fICHOICE\fR
+List every readable PR, PRs you authored, or PRs you are involved in. (choices: all, authored, involved; default: all)
+.TP
+\fB\-\-state\fR \fICHOICE\fR
+Filter by pull request state. 'all' removes the state filter. (choices: open, closed, merged, all; default: open)
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max PRs to return. (default: 20)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-pr (1)
