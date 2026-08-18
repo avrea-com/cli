@@ -51,7 +51,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Additional Commands
 
-- [`avr repo`](#avr-repo) — Manage repositories and public mirrors.
+- [`avr repo`](#avr-repo) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
 
@@ -1806,7 +1806,7 @@ JSON FIELDS
 
 ### `avr repo`
 
-Manage repositories and public mirrors.
+Manage repositories, git mirrors, and public mirrors.
 
 ```sh
 avr repo [OPTIONS] COMMAND [ARGS]...
@@ -1836,6 +1836,194 @@ JSON FIELDS
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max repositories to return. _(default: `100`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr repo mirror`
+
+Manage this repository's avrea-git mirror (feature-flagged).
+
+```sh
+avr repo mirror [OPTIONS] COMMAND [ARGS]...
+```
+
+##### `avr repo mirror clusters`
+
+List the git clusters a mirror can be placed in.
+
+```sh
+avr repo mirror clusters [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror clusters
+    avr repo mirror clusters --json cluster_id,datacenter_id
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror disable`
+
+Stop mirroring the repository into avrea-git.
+
+```sh
+avr repo mirror disable [OPTIONS]
+```
+
+Placements are kept but become inert, so re-enabling restores them.
+Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror disable
+    avr repo mirror disable --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror enable`
+
+Declare the repository mirrored into avrea-git.
+
+```sh
+avr repo mirror enable [OPTIONS]
+```
+
+Enabling makes existing placements active again; a freshly declared
+repository still needs at least one placement (`avr repo mirror place`)
+before anything is synced. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror enable
+    avr repo mirror enable --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror place`
+
+Place the repository's mirror in a git cluster.
+
+```sh
+avr repo mirror place [OPTIONS] CLUSTER_ID
+```
+
+CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
+idempotent; a new placement syncs from the upstream platform copy.
+Mirroring must be enabled first. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror place gsc-fi
+    avr repo mirror place gsc-fi --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `CLUSTER_ID`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror status`
+
+Show the repository's git-mirror declaration and placements.
+
+```sh
+avr repo mirror status [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror status
+    avr repo mirror status --repo acme/widgets
+    avr repo mirror status --json enabled,placements
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror unplace`
+
+Remove the repository's mirror from a git cluster.
+
+```sh
+avr repo mirror unplace [OPTIONS] CLUSTER_ID
+```
+
+The mirrored data in that cluster is dropped; other placements are
+unaffected. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror unplace gsc-fi
+    avr repo mirror unplace gsc-fi --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `CLUSTER_ID`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

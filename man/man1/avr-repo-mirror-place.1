@@ -1,0 +1,50 @@
+.TH AVR\-REPO\-MIRROR\-PLACE 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-place \- Place the repository's mirror in a git cluster.
+.SH SYNOPSIS
+.B avr repo mirror place
+[OPTIONS] CLUSTER_ID
+.SH DESCRIPTION
+Place the repository's mirror in a git cluster.
+.PP
+CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is idempotent; a new placement syncs from the upstream platform copy. Mirroring must be enabled first. Requires the organization admin role.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror place gsc-fi
+    avr repo mirror place gsc-fi --repo acme/widgets
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fICLUSTER_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)

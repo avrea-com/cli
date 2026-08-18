@@ -1,0 +1,39 @@
+.TH AVR\-REPO\-MIRROR 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-repo-mirror \- Manage this repository's avrea-git mirror (feature-flagged).
+.SH SYNOPSIS
+.B avr repo mirror
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage this repository's avrea-git mirror (feature-flagged).
+.PP
+.SH COMMANDS
+.TP
+clusters
+List the git clusters a mirror can be placed in.
+.TP
+disable
+Stop mirroring the repository into avrea-git.
+.TP
+enable
+Declare the repository mirrored into avrea-git.
+.TP
+place
+Place the repository's mirror in a git cluster.
+.TP
+status
+Show the repository's git-mirror declaration and placements.
+.TP
+unplace
+Remove the repository's mirror from a git cluster.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo (1),
+.BR avr-repo-list (1),
+.BR avr-repo-public-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)

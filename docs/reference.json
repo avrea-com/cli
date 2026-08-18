@@ -8101,8 +8101,8 @@
         ],
         "full": "avr repo",
         "is_group": true,
-        "short_help": "Manage repositories and public mirrors.",
-        "help": "Manage repositories and public mirrors.",
+        "short_help": "Manage repositories, git mirrors, and public mirrors.",
+        "help": "Manage repositories, git mirrors, and public mirrors.",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -8201,6 +8201,639 @@
               }
             ],
             "subcommands": []
+          },
+          {
+            "name": "mirror",
+            "path": [
+              "avr",
+              "repo",
+              "mirror"
+            ],
+            "full": "avr repo mirror",
+            "is_group": true,
+            "short_help": "Manage this repository's avrea-git mirror (feature-flagged).",
+            "help": "Manage this repository's avrea-git mirror (feature-flagged).",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr repo mirror [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "clusters",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "clusters"
+                ],
+                "full": "avr repo mirror clusters",
+                "is_group": false,
+                "short_help": "List the git clusters a mirror can be placed in.",
+                "help": "List the git clusters a mirror can be placed in.\n\n\b\nExamples:\n    avr repo mirror clusters\n    avr repo mirror clusters --json cluster_id,datacenter_id\n\n\b\nJSON FIELDS\n    cluster_id, datacenter_id, name\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror clusters [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "disable",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "disable"
+                ],
+                "full": "avr repo mirror disable",
+                "is_group": false,
+                "short_help": "Stop mirroring the repository into avrea-git.",
+                "help": "Stop mirroring the repository into avrea-git.\n\nPlacements are kept but become inert, so re-enabling restores them.\nRequires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror disable\n    avr repo mirror disable --repo acme/widgets --yes\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror disable [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip the confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "enable",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "enable"
+                ],
+                "full": "avr repo mirror enable",
+                "is_group": false,
+                "short_help": "Declare the repository mirrored into avrea-git.",
+                "help": "Declare the repository mirrored into avrea-git.\n\nEnabling makes existing placements active again; a freshly declared\nrepository still needs at least one placement (`avr repo mirror place`)\nbefore anything is synced. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror enable\n    avr repo mirror enable --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror enable [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "place",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "place"
+                ],
+                "full": "avr repo mirror place",
+                "is_group": false,
+                "short_help": "Place the repository's mirror in a git cluster.",
+                "help": "Place the repository's mirror in a git cluster.\n\nCLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is\nidempotent; a new placement syncs from the upstream platform copy.\nMirroring must be enabled first. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror place gsc-fi\n    avr repo mirror place gsc-fi --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror place [OPTIONS] CLUSTER_ID",
+                "params": [
+                  {
+                    "name": "cluster_id",
+                    "kind": "argument",
+                    "opts": [
+                      "cluster_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "status",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "status"
+                ],
+                "full": "avr repo mirror status",
+                "is_group": false,
+                "short_help": "Show the repository's git-mirror declaration and placements.",
+                "help": "Show the repository's git-mirror declaration and placements.\n\n\b\nExamples:\n    avr repo mirror status\n    avr repo mirror status --repo acme/widgets\n    avr repo mirror status --json enabled,placements\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror status [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "unplace",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "unplace"
+                ],
+                "full": "avr repo mirror unplace",
+                "is_group": false,
+                "short_help": "Remove the repository's mirror from a git cluster.",
+                "help": "Remove the repository's mirror from a git cluster.\n\nThe mirrored data in that cluster is dropped; other placements are\nunaffected. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror unplace gsc-fi\n    avr repo mirror unplace gsc-fi --repo acme/widgets --yes\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror unplace [OPTIONS] CLUSTER_ID",
+                "params": [
+                  {
+                    "name": "cluster_id",
+                    "kind": "argument",
+                    "opts": [
+                      "cluster_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip the confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
           },
           {
             "name": "public-mirror",
