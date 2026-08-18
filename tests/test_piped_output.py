@@ -53,9 +53,15 @@ class TestPrListPiped:
             "head_sha": "a" * 40,
             "updated_at": "2026-08-17T10:00:00Z",
         }
+
+        def fake_get(self, path, **kw):
+            if "/feature-flags/" in path:
+                return {"key": "feature.org-pull-requests.enabled", "enabled": True}
+            return {"data": [pull], "pagination": {}}
+
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
-            lambda self, path, **kw: {"data": [pull], "pagination": {}},
+            fake_get,
         )
 
         result = runner.invoke(cli, ["pr", "list"])

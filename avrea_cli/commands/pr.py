@@ -50,6 +50,8 @@ _PR_LIST_FIELDS = make_schema(
 
 _SCOPES = ["all", "authored", "involved"]
 _STATES = ["open", "closed", "merged", "all"]
+_PR_LIST_FEATURE_FLAG = "feature.org-pull-requests.enabled"
+_PR_LIST_UNSUPPORTED_MESSAGE = "Sorry, pull request listing is not yet supported for this organization. Coming soon."
 
 
 @click.group(cls=GhGroup)
@@ -67,7 +69,7 @@ def pr(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
 )
 @click.option(
     "--scope",
@@ -120,6 +122,19 @@ def pr_list(
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        feature = client.public_get(f"/orgs/{org_id}/feature-flags/{_PR_LIST_FEATURE_FLAG}")
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise click.ClickException(_PR_LIST_UNSUPPORTED_MESSAGE) from None
+        handle_http_error(exc, "check pull request listing availability")
+    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+        raise click.ClickException(f"Could not list pull requests because the request to Avrea failed: {exc}") from None
+
+    if feature.get("enabled") is not True:
+        raise click.ClickException(_PR_LIST_UNSUPPORTED_MESSAGE)
+
     resolved_repositories = resolve_repos_or_detect(
         client,
         config,
@@ -144,11 +159,9 @@ def pr_list(
         response = client.public_get(f"/orgs/{org_id}/pull-requests", params=params)
         pulls = response.get("data") or []
     except httpx.HTTPStatusError as exc:
-        handle_http_error(
-            exc,
-            "list pull requests",
-            hint="The selected Avrea host may not support organization-wide PR listing.",
-        )
+        handle_http_error(exc, "list pull requests")
+    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+        raise click.ClickException(f"Could not list pull requests because the request to Avrea failed: {exc}") from None
 
     if json_fields is not None:
         emit_json(list(pulls), split_fields(json_fields, _PR_LIST_FIELDS), _PR_LIST_FIELDS, jq_expr)
@@ -170,7 +183,7 @@ def pr_list(
             show_repository=len(resolved_repositories) != 1,
         )
 
-    next_cursor = response.get("pagination", {}).get("next_cursor")
+    next_cursor = (response.get("pagination") or {}).get("next_cursor")
     if next_cursor:
         click.echo(f"\nMore results available. Next page: --cursor {next_cursor}", err=True)
 

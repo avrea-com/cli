@@ -141,7 +141,7 @@ def run(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
 )
 @click.option(
     "--status",
@@ -371,7 +371,7 @@ def run_list(
             f"{elapsed}{s}{click.style(age, dim=True)}"
         )
 
-    next_cursor = response.get("pagination", {}).get("next_cursor")
+    next_cursor = (response.get("pagination") or {}).get("next_cursor")
     if next_cursor:
         click.echo(f"\nMore results available. Next page: --cursor {next_cursor}", err=True)
 

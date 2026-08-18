@@ -186,7 +186,7 @@ def job(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
 )
 @click.option("--name", "job_names", multiple=True, help="Filter by job name (repeatable).")
 @click.option(
@@ -300,7 +300,7 @@ def job_list(
     link_slug = get_org_slug(client, org_id) if links_enabled else ""
     _print_jobs_table(jobs_data, console_url=link_console_url, slug=link_slug)
 
-    next_cursor = response.get("pagination", {}).get("next_cursor")
+    next_cursor = (response.get("pagination") or {}).get("next_cursor")
     if next_cursor:
         click.echo(f"\nMore results available. Next page: --cursor {next_cursor}", err=True)
 
@@ -311,7 +311,7 @@ def job_list(
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
 )
 @click.option("--name", "job_names", multiple=True, help="Filter by job name (repeatable).")
 @click.option("--interval", type=int, default=5, show_default=True, help="Refresh interval in seconds.")

@@ -323,7 +323,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1200,7 +1200,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1394,7 +1394,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2215,7 +2215,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

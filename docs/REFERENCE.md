@@ -135,7 +135,7 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted. _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--branch <TEXT>` — Filter by head branch (repeatable). _(repeatable)_
 - `-w, --workflow <TEXT>` — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_
@@ -319,7 +319,7 @@ Examples:
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted. _(repeatable)_
 - `--scope <CHOICE>` — List every readable PR, PRs you authored, or PRs you are involved in. _(choices: `all`, `authored`, `involved` · default: `all`)_
 - `--state <CHOICE>` — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
 - `-L, --limit <INTEGER RANGE>` — Max PRs to return. _(default: `20`)_
@@ -363,7 +363,7 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--on-avrea / --shadowing` — Filter by Avrea-run vs shadowing jobs.
@@ -498,7 +498,7 @@ avr job watch [OPTIONS]
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `5`)_
 - `--ndjson` — Emit one JSON object per refresh (default when stdout isn't a TTY).
