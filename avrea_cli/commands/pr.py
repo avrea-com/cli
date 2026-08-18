@@ -52,6 +52,10 @@ _SCOPES = ["all", "authored", "involved"]
 _STATES = ["open", "closed", "merged", "all"]
 _PR_LIST_FEATURE_FLAG = "feature.org-pull-requests.enabled"
 _PR_LIST_UNSUPPORTED_MESSAGE = "Sorry, pull request listing is not yet supported for this organization. Coming soon."
+_PR_LIST_AVAILABILITY_UNKNOWN_MESSAGE = (
+    "Sorry, we could not find this organization or confirm pull request listing support. "
+    "Organizations without Avrea Git are not supported yet. Coming soon."
+)
 
 
 @click.group(cls=GhGroup)
@@ -69,7 +73,10 @@ def pr(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+    help=(
+        "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. "
+        "Auto-detected from git remote if omitted."
+    ),
 )
 @click.option(
     "--scope",
@@ -114,6 +121,14 @@ def pr_list(
         avr pr list --scope authored
         avr pr list --repo acme/widgets --state merged
         avr pr list --json number,title,mergeability
+        avr pr list --json '?'           # list available fields
+        avr pr list --json '*'           # all fields
+
+    \b
+    JSON FIELDS
+        author_login, base_ref, base_sha, check_status, comment_count, created_at,
+        draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
+        repository_id, state, title, unresolved_thread_count, updated_at
     """
     if handle_json_meta(json_fields, jq_expr, _PR_LIST_FIELDS):
         return
@@ -127,9 +142,9 @@ def pr_list(
         feature = client.public_get(f"/orgs/{org_id}/feature-flags/{_PR_LIST_FEATURE_FLAG}")
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 404:
-            raise click.ClickException(_PR_LIST_UNSUPPORTED_MESSAGE) from None
+            raise click.ClickException(_PR_LIST_AVAILABILITY_UNKNOWN_MESSAGE) from None
         handle_http_error(exc, "check pull request listing availability")
-    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+    except httpx.TransportError as exc:
         raise click.ClickException(f"Could not list pull requests because the request to Avrea failed: {exc}") from None
 
     if feature.get("enabled") is not True:
@@ -160,7 +175,7 @@ def pr_list(
         pulls = response.get("data") or []
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "list pull requests")
-    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+    except httpx.TransportError as exc:
         raise click.ClickException(f"Could not list pull requests because the request to Avrea failed: {exc}") from None
 
     if json_fields is not None:
@@ -191,7 +206,7 @@ def pr_list(
 def _display_state(pull: dict[str, Any]) -> str:
     if pull.get("merged"):
         return "merged"
-    if pull.get("draft"):
+    if pull.get("draft") and pull.get("state") != "closed":
         return "draft"
     return str(pull.get("state") or "unknown")
 

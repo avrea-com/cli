@@ -186,7 +186,10 @@ def job(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+    help=(
+        "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. "
+        "Auto-detected from git remote if omitted."
+    ),
 )
 @click.option("--name", "job_names", multiple=True, help="Filter by job name (repeatable).")
 @click.option(
@@ -311,7 +314,10 @@ def job_list(
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+    help=(
+        "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. "
+        "Auto-detected from git remote if omitted."
+    ),
 )
 @click.option("--name", "job_names", multiple=True, help="Filter by job name (repeatable).")
 @click.option("--interval", type=int, default=5, show_default=True, help="Refresh interval in seconds.")

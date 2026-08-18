@@ -323,7 +323,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1163,7 +1163,7 @@
             "full": "avr pr list",
             "is_group": false,
             "short_help": "List pull requests across repositories.",
-            "help": "List pull requests across repositories.\n\n\b\nExamples:\n    avr pr list\n    avr pr list --scope authored\n    avr pr list --repo acme/widgets --state merged\n    avr pr list --json number,title,mergeability\n",
+            "help": "List pull requests across repositories.\n\n\b\nExamples:\n    avr pr list\n    avr pr list --scope authored\n    avr pr list --repo acme/widgets --state merged\n    avr pr list --json number,title,mergeability\n    avr pr list --json '?'           # list available fields\n    avr pr list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    author_login, base_ref, base_sha, check_status, comment_count, created_at,\n    draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,\n    repository_id, state, title, unresolved_thread_count, updated_at\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1200,7 +1200,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1394,7 +1394,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2215,7 +2215,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

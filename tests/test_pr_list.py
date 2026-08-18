@@ -163,7 +163,7 @@ def test_unsupported_target_org_gets_coming_soon_message(runner, monkeypatch):
 
 
 def test_missing_feature_flag_endpoint_gets_coming_soon_message(runner, monkeypatch):
-    """An older Avrea host without the flag endpoint must not expose a generic 404."""
+    """An ambiguous 404 must not claim that the organization definitely lacks the feature."""
     request = httpx.Request("GET", f"https://api.example.com/orgs/org-default/feature-flags/{FEATURE_FLAG}")
 
     def fake_get(self, path, params=None):
@@ -175,13 +175,14 @@ def test_missing_feature_flag_endpoint_gets_coming_soon_message(runner, monkeypa
     result = runner.invoke(cli, ["pr", "list"])
 
     assert result.exit_code == 1
-    assert "Sorry, pull request listing is not yet supported for this organization. Coming soon." in result.stderr
+    assert "could not find this organization or confirm pull request listing support" in result.stderr
+    assert "Organizations without Avrea Git are not supported yet. Coming soon." in result.stderr
     assert not isinstance(result.exception, httpx.HTTPError)
 
 
-@pytest.mark.parametrize("error_type", [httpx.ConnectError, httpx.TimeoutException])
+@pytest.mark.parametrize("error_type", [httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError])
 def test_transport_errors_are_user_facing(runner, monkeypatch, error_type):
-    """Connection and timeout failures must exit cleanly instead of exposing a traceback."""
+    """Any HTTP transport failure during the feature check must not expose a traceback."""
 
     def fake_get(self, path, params=None):
         raise error_type("request failed")
@@ -192,6 +193,23 @@ def test_transport_errors_are_user_facing(runner, monkeypatch, error_type):
 
     assert result.exit_code == 1
     assert "Could not list pull requests because the request to Avrea failed: request failed" in result.stderr
+    assert not isinstance(result.exception, httpx.HTTPError)
+
+
+def test_transport_error_from_pull_request_endpoint_is_user_facing(runner, monkeypatch):
+    """The list request needs the same transport-error handling as its feature preflight."""
+
+    def fake_get(self, path, params=None):
+        if path.endswith(f"/feature-flags/{FEATURE_FLAG}"):
+            return {"key": FEATURE_FLAG, "enabled": True}
+        raise httpx.ReadError("response interrupted")
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
+
+    result = runner.invoke(cli, ["pr", "list"])
+
+    assert result.exit_code == 1
+    assert "Could not list pull requests because the request to Avrea failed: response interrupted" in result.stderr
     assert not isinstance(result.exception, httpx.HTTPError)
 
 
@@ -222,6 +240,32 @@ def test_open_pull_without_mergeability_renders_unknown(runner, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert "?" in result.output
+
+
+def test_closed_draft_renders_closed(runner, monkeypatch):
+    """Closure is the terminal state even if the pull request was still marked as a draft."""
+    pull = {**PULL, "state": "closed", "draft": True}
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None: enabled_feature_or(path, {"data": [pull], "pagination": {}}),
+    )
+
+    result = runner.invoke(cli, ["pr", "list", "--state", "all"])
+
+    assert result.exit_code == 0, result.output
+    assert "closed" in result.output
+    assert "draft" not in result.output
+
+
+def test_help_explains_repeatable_repositories_and_json_fields(runner):
+    """Terminal help must explain multi-repo filtering and make the JSON schema discoverable."""
+    result = runner.invoke(cli, ["pr", "list", "--help"])
+    help_text = " ".join(result.output.split())
+
+    assert result.exit_code == 0, result.output
+    assert "Pass --repo more than once to filter multiple repositories" in help_text
+    assert "JSON FIELDS" in help_text
+    assert "repository_full_name" in help_text
 
 
 def test_single_repository_output_omits_redundant_repository_column(runner, monkeypatch):

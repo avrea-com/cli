@@ -141,7 +141,10 @@ def run(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+    help=(
+        "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. "
+        "Auto-detected from git remote if omitted."
+    ),
 )
 @click.option(
     "--status",
