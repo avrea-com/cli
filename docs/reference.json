@@ -276,6 +276,79 @@
             "subcommands": []
           },
           {
+            "name": "diagnose",
+            "path": [
+              "avr",
+              "run",
+              "diagnose"
+            ],
+            "full": "avr run diagnose",
+            "is_group": false,
+            "short_help": "Explain a failed or unexpectedly slow workflow run.",
+            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-abc123\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr run diagnose [OPTIONS] RUN",
+            "params": [
+              {
+                "name": "run",
+                "kind": "argument",
+                "opts": [
+                  "run"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_output",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Output the diagnostic report as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "list",
             "path": [
               "avr",

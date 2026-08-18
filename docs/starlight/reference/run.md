@@ -34,6 +34,35 @@ Examples:
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">-y, &#x2D;&#x2D;yes</code> — Skip the confirmation prompt.
 
+### `avr run diagnose`
+
+Explain a failed or unexpectedly slow workflow run.
+
+```sh
+avr run diagnose [OPTIONS] RUN
+```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. The report combines jobs and failed steps, bounded
+failed-job log tails, queue/execution timings, runner metrics, and a
+prior-success workflow baseline.
+
+```sh
+Examples:
+    avr run diagnose run-abc123
+    avr run diagnose 123456789 --json
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+```
+
+**Arguments**
+
+- <code class="cli-arg">RUN</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Output the diagnostic report as JSON.
+
 ### `avr run list`
 
 List workflow runs for an organization.

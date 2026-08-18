@@ -44,6 +44,9 @@ from avrea_cli.log_display import print_logs_grouped
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
+from avrea_cli.run_diagnostics import build_run_diagnostics
+from avrea_cli.run_diagnostics_display import render_run_diagnostics
+from avrea_cli.run_refs import RunReference
 from avrea_cli.run_refs import parse_run_reference
 from avrea_cli.run_refs import resolve_run_reference
 from datetime import UTC
@@ -439,6 +442,28 @@ def _print_run_jobs(
             click.echo("")
 
 
+def _run_reference_and_org(
+    client: ApiClient,
+    config: CliConfig,
+    value: str,
+    org_id: str | None,
+) -> tuple[RunReference, str]:
+    """Parse RUN and resolve/verify the organization embedded in a URL."""
+    reference = parse_run_reference(value, api_url=config.public_api_url)
+    if reference.organization_slug is not None and org_id is None:
+        org_id = reference.organization_slug
+    resolved_org_id = get_org_id(config, org_id, client=client)
+
+    if reference.organization_slug is not None:
+        active_org_slug = get_verified_org_slug(client, resolved_org_id)
+        if active_org_slug.casefold() != reference.organization_slug.casefold():
+            raise click.ClickException(
+                f"Avrea run URL organization {reference.organization_slug!r} does not match "
+                f"the selected organization {active_org_slug!r}."
+            )
+    return reference, resolved_org_id
+
+
 @run.command("view")
 @click.argument("run", required=False)
 @click.option("--org", "org_id", help="Organization ID or slug.")
@@ -511,18 +536,10 @@ def run_view(
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
 
-    reference = parse_run_reference(run, api_url=config.public_api_url) if run else None
-    if reference is not None and reference.organization_slug is not None and org_id is None:
-        org_id = reference.organization_slug
-    org_id = get_org_id(config, org_id, client=client)
-
-    if reference is not None and reference.organization_slug is not None:
-        active_org_slug = get_verified_org_slug(client, org_id)
-        if active_org_slug.casefold() != reference.organization_slug.casefold():
-            raise click.ClickException(
-                f"Avrea run URL organization {reference.organization_slug!r} does not match "
-                f"the selected organization {active_org_slug!r}."
-            )
+    if run:
+        reference, org_id = _run_reference_and_org(client, config, run, org_id)
+    else:
+        org_id = get_org_id(config, org_id, client=client)
 
     if not run:
         try:
@@ -702,6 +719,45 @@ def run_view(
     slug = get_org_slug(client, org_id)
     console_url = get_console_url(config.public_api_url)
     _hint(f"View this run on Avrea: {console_url}/org/{slug}/runs/{run_id}")
+
+
+@run.command("diagnose")
+@click.argument("run")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option("--json", "json_output", is_flag=True, help="Output the diagnostic report as JSON.")
+@click.pass_context
+def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
+    """Explain a failed or unexpectedly slow workflow run.
+
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`. The report combines jobs and failed steps, bounded
+    failed-job log tails, queue/execution timings, runner metrics, and a
+    prior-success workflow baseline.
+
+    \b
+    Examples:
+        avr run diagnose run-abc123
+        avr run diagnose 123456789 --json
+        avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+    """
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+
+    reference, org_id = _run_reference_and_org(client, config, run, org_id)
+    try:
+        resolved = resolve_run_reference(client, org_id, reference, include=["workflow"])
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "resolve workflow run")
+
+    try:
+        report = build_run_diagnostics(client, org_id, resolved)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "diagnose workflow run")
+    if json_output:
+        click.echo(json.dumps(report, indent=2, default=str))
+        return
+    click.echo(render_run_diagnostics(report))
 
 
 def _print_other_attempts(client: ApiClient, org_id: str, run_id: str, run_data: dict[str, Any]) -> None:
