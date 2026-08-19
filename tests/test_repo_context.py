@@ -1,6 +1,7 @@
 """Unit tests for repo_context — resolve_repo and git remote parsing."""
 
 from avrea_cli.config import CliConfig
+from avrea_cli.helpers import EXIT_AUTH_REQUIRED
 from avrea_cli.repo_context import detect_repo_from_git
 from avrea_cli.repo_context import parse_remote_url
 from avrea_cli.repo_context import resolve_repo
@@ -200,18 +201,40 @@ class TestResolveRepoOrDetect:
         assert "isn't in this org" in err
         assert "acme/foreign" in err
 
-    def test_soft_detect_propagates_auth_failure_instead_of_falling_back(self, config, monkeypatch):
+    def test_soft_detect_propagates_auth_failure_instead_of_falling_back(self, config, monkeypatch, capsys):
         """A non-404 status (auth/transport/server error) on the resolve
         endpoint must NOT be silently converted to "repo not in org" — that
         would route the user into degraded org-wide queries with broken
-        auth and no diagnostic. Must abort so the real cause surfaces."""
+        auth and no diagnostic. A 401 here earns the same auth hint and exit 4
+        as every other API call, so scripts can trigger `avr auth login`."""
         client = MagicMock()
         request = httpx.Request("GET", "https://api.example.com/x")
         response = httpx.Response(401, request=request, json={"detail": "unauthorized"})
         client.public_get.side_effect = httpx.HTTPStatusError("unauthorized", request=request, response=response)
         monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/foreign")
-        with pytest.raises(click.Abort):
+        with pytest.raises(SystemExit) as exc_info:
             resolve_repo_or_detect(client, config, "org-1", None)
+        assert exc_info.value.code == EXIT_AUTH_REQUIRED
+        err = capsys.readouterr().err
+        assert "avr auth login" in err
+        assert "isn't in this org" not in err
+
+    def test_server_error_reports_status_not_httpx_internals(self, config, monkeypatch, capsys):
+        """Repo resolution used to render httpx's own exception string, which
+        carries a two-line message and an MDN link. The user gets the CLI's
+        error vocabulary instead, like every other failing API call."""
+        client = MagicMock()
+        request = httpx.Request("GET", "https://api.example.com/x")
+        response = httpx.Response(503, request=request, json={"detail": "upstream down"})
+        client.public_get.side_effect = httpx.HTTPStatusError("unavailable", request=request, response=response)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/foreign")
+        with pytest.raises(SystemExit) as exc_info:
+            resolve_repo_or_detect(client, config, "org-1", None)
+        assert exc_info.value.code == 1
+        err = capsys.readouterr().err
+        assert "Error: Avrea is having trouble (HTTP 503)" in err
+        assert "  Detail: upstream down" in err
+        assert "developer.mozilla.org" not in err
 
 
 class TestResolveReposOrDetect:
