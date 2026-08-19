@@ -148,6 +148,16 @@ class TestGetOrgId:
 
         assert "  API:" not in capsys.readouterr().err
 
+    def test_expired_token_stays_quiet_about_the_default_api(self, capsys) -> None:
+        """The 401 branch has its own way of naming the API, so it needs its own
+        check that the default host stays unnamed."""
+        config, client = self._client_returning(401, host=CliConfig.DEFAULT_API_URL)
+
+        with pytest.raises(SystemExit):
+            get_org_id(config, None, client=client)
+
+        assert "rejected your credentials" not in capsys.readouterr().err
+
     def test_expired_token_gets_the_auth_hint_and_exit_4(self, capsys) -> None:
         """Org resolution is usually the first authenticated request, so it is
         where a stale token surfaces. It must tell the user to log in and exit 4
@@ -160,6 +170,21 @@ class TestGetOrgId:
         assert exc_info.value.code == EXIT_AUTH_REQUIRED
         assert "avr auth login" in capsys.readouterr().err
 
+    def test_expired_token_names_a_non_default_api(self, capsys) -> None:
+        """Holding a token for one API while pointed at another is the confusing
+        case, and the auth hint alone doesn't say which API did the rejecting.
+        The 401 path has no "Error:" line to hang an indented note under, so the
+        API gets named in a sentence of its own."""
+        config, client = self._client_returning(401, host="https://avrea.internal.example.com")
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_org_id(config, None, client=client)
+
+        assert exc_info.value.code == EXIT_AUTH_REQUIRED
+        err = capsys.readouterr().err
+        assert "Error: https://avrea.internal.example.com rejected your credentials (HTTP 401)." in err
+        assert "avr auth login" in err
+
 
 def test_verified_org_slug_handles_successful_non_json_response() -> None:
     config = MagicMock(spec=CliConfig)
@@ -170,6 +195,23 @@ def test_verified_org_slug_handles_successful_non_json_response() -> None:
 
     with pytest.raises(click.ClickException, match="Could not verify the selected organization"):
         get_verified_org_slug(client, "org-acme")
+
+
+def test_verified_org_slug_expired_token_gets_the_auth_hint_and_exit_4(capsys) -> None:
+    """When --org is already an org- ID, get_org_id skips its round-trip and this
+    is the first authenticated request. A stale token has to reach the same auth
+    hint and exit 4 as everywhere else, not a generic "could not verify"."""
+    config = MagicMock(spec=CliConfig)
+    config.public_api_url = CliConfig.DEFAULT_API_URL
+    config.get_api_headers.return_value = {}
+    transport = httpx.MockTransport(lambda request: httpx.Response(401, request=request))
+    client = ApiClient(config, http_client=httpx.Client(transport=transport))
+
+    with pytest.raises(SystemExit) as exc_info:
+        get_verified_org_slug(client, "org-acme")
+
+    assert exc_info.value.code == EXIT_AUTH_REQUIRED
+    assert "avr auth login" in capsys.readouterr().err
 
 
 class TestMatchOrg:
