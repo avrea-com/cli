@@ -1,13 +1,13 @@
-.TH AVR\-VM\-START 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR\-VM\-PAUSE 1 "" "avr 0.2.0" "Avrea CLI"
 .SH NAME
-avr-vm-start \- Start a stopped VM.
+avr-vm-pause \- Pause a RUNNING Linux VM while preserving its disk.
 .SH SYNOPSIS
-.B avr vm start
+.B avr vm pause
 [OPTIONS] VM_ID
 .SH DESCRIPTION
-Start a stopped VM.
+Pause a RUNNING Linux VM while preserving its disk.
 .PP
-Start a stopped VM. Boots a fresh disk and returns a one-time password.
+By default the snapshot is disk-only: the filesystem survives, but resume performs a fresh boot and running processes do not. Pass --memory to also preserve guest memory and continue processes from where they stopped.
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR
@@ -17,8 +17,11 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 \fB\-\-org\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
+\fB\-\-memory\fR
+Include guest memory and device state so running processes continue on resume.
+.TP
 \fB\-\-wait\fR
-Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.
+Wait until the VM reaches PAUSED before returning.
 .TP
 \fB\-\-wait\-timeout\fR \fIINTEGER\fR
 Seconds to wait when --wait is set. (default: 300)
@@ -32,13 +35,13 @@ Emit the raw API response as JSON.
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
 .BR avr-vm-list (1),
-.BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
+.BR avr-vm-start (1),
 .BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
