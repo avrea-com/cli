@@ -3,14 +3,15 @@
 avr-run-watch \- Watch a workflow run until it completes.
 .SH SYNOPSIS
 .B avr run watch
-[OPTIONS] [RUN_ID]
+[OPTIONS] [RUN]
 .SH DESCRIPTION
 Watch a workflow run until it completes.
 .PP
 .RS 4
 .nf
-Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-(repeatable) to scope the auto-select to specific repositories.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. Without RUN, auto-selects the latest in-progress run.
+Pass --repo (repeatable) to scope the auto-select to specific repositories.
 .fi
 .RE
 .PP
@@ -26,7 +27,7 @@ Examples:
 .RE
 .SH ARGUMENTS
 .TP
-[\fIRUN_ID\fR]
+[\fIRUN\fR]
 \&
 .SH OPTIONS
 .TP

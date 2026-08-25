@@ -3,9 +3,11 @@
 avr-run-logs \- Fetch logs for a workflow run's GitHub jobs.
 .SH SYNOPSIS
 .B avr run logs
-[OPTIONS] RUN_ID
+[OPTIONS] RUN
 .SH DESCRIPTION
 Fetch logs for a workflow run's GitHub jobs.
+.PP
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`.
 .PP
 Long-form alternative to `avr run view --log[-failed]`. Use --follow to tail logs in real time for an in-progress job; pass --job to scope to a specific job when a run has many.
 .PP
@@ -20,7 +22,7 @@ Examples:
 .RE
 .SH ARGUMENTS
 .TP
-\fIRUN_ID\fR
+\fIRUN\fR
 \&
 .SH OPTIONS
 .TP

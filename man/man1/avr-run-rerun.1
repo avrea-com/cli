@@ -3,9 +3,11 @@
 avr-run-rerun \- Re-run a completed workflow run.
 .SH SYNOPSIS
 .B avr run rerun
-[OPTIONS] RUN_ID
+[OPTIONS] RUN
 .SH DESCRIPTION
 Re-run a completed workflow run.
+.PP
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`.
 .PP
 .RS 4
 .nf
@@ -17,7 +19,7 @@ Examples:
 .RE
 .SH ARGUMENTS
 .TP
-\fIRUN_ID\fR
+\fIRUN\fR
 \&
 .SH OPTIONS
 .TP
