@@ -212,17 +212,17 @@
             "full": "avr run cancel",
             "is_group": false,
             "short_help": "Cancel an in-progress or queued workflow run.",
-            "help": "Cancel an in-progress or queued workflow run.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
+            "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run cancel [OPTIONS] RUN_ID",
+            "usage": "avr run cancel [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -653,17 +653,17 @@
             "full": "avr run logs",
             "is_group": false,
             "short_help": "Fetch logs for a workflow run's GitHub jobs.",
-            "help": "Fetch logs for a workflow run's GitHub jobs.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
+            "help": "Fetch logs for a workflow run's GitHub jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run logs [OPTIONS] RUN_ID",
+            "usage": "avr run logs [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -799,17 +799,17 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run rerun [OPTIONS] RUN_ID",
+            "usage": "avr run rerun [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -1091,17 +1091,17 @@
             "full": "avr run watch",
             "is_group": false,
             "short_help": "Watch a workflow run until it completes.",
-            "help": "Watch a workflow run until it completes.\n\n\b\nWithout RUN_ID, auto-selects the latest in-progress run. Pass --repo\n(repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
+            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run watch [OPTIONS] [RUN_ID]",
+            "usage": "avr run watch [OPTIONS] [RUN]",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",

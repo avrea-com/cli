@@ -16,8 +16,11 @@ avr run [OPTIONS] COMMAND [ARGS]...
 Cancel an in-progress or queued workflow run.
 
 ```sh
-avr run cancel [OPTIONS] RUN_ID
+avr run cancel [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -27,7 +30,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
@@ -112,8 +115,11 @@ JSON FIELDS
 Fetch logs for a workflow run's GitHub jobs.
 
 ```sh
-avr run logs [OPTIONS] RUN_ID
+avr run logs [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
@@ -129,7 +135,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
@@ -145,8 +151,11 @@ Examples:
 Re-run a completed workflow run.
 
 ```sh
-avr run rerun [OPTIONS] RUN_ID
+avr run rerun [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -157,7 +166,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
@@ -221,12 +230,13 @@ JSON FIELDS
 Watch a workflow run until it completes.
 
 ```sh
-avr run watch [OPTIONS] [RUN_ID]
+avr run watch [OPTIONS] [RUN]
 ```
 
 ```sh
-Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-(repeatable) to scope the auto-select to specific repositories.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. Without RUN, auto-selects the latest in-progress run.
+Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
 ```sh
@@ -240,7 +250,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">[RUN_ID]</code>
+- <code class="cli-arg">[RUN]</code>
 
 **Options**
 
