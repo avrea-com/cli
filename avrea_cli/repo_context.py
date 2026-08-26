@@ -2,6 +2,7 @@
 
 from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
+from avrea_cli.helpers import handle_http_error
 from typing import Literal
 from typing import NoReturn
 from typing import overload
@@ -132,8 +133,7 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
         return data["repository_id"]
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code != 404:
-            click.echo(f"Error: Failed to resolve repository: {exc}", err=True)
-            raise click.Abort() from None
+            handle_http_error(exc, "resolve the repository")
         is_miss, message, nearby, other_orgs = _parse_resolve_404_detail(exc)
         # Always raise _RepoNotInOrgError on 404 so the soft-detect path
         # (resolve_repo_or_detect) can fall back to org-wide queries. Whether

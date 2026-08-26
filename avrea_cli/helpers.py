@@ -130,12 +130,16 @@ def _resolve_org_slug(client: ApiClient, value: str) -> str:
 
 
 def _fetch_user_orgs(client: ApiClient) -> list[dict]:
-    """Fetch the orgs the user belongs to. Aborts on HTTP failure."""
+    """Fetch the orgs the user belongs to. Aborts on HTTP failure.
+
+    Goes through ``handle_http_error`` like every other API call: org
+    resolution is usually the first authenticated request a command makes, so
+    it's the most likely place to meet a stale token, and it has to give the
+    same auth hint and exit 4 that the rest of the CLI does."""
     try:
         response = client.public_get("/users/me/organizations")
     except httpx.HTTPStatusError as exc:
-        click.echo(f"Error: Failed to resolve organization: {exc.response.status_code}", err=True)
-        raise click.Abort() from exc
+        handle_http_error(exc, "resolve the organization")
     return response.get("data", [])
 
 
@@ -178,6 +182,8 @@ def get_verified_org_slug(client: ApiClient, org_id: str) -> str:
     """
     try:
         response = client.public_get("/users/me/organizations")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "verify the organization for this Avrea run URL")
     except (httpx.HTTPError, ValueError) as exc:
         raise click.ClickException("Could not verify the selected organization for this Avrea run URL.") from exc
 
@@ -254,9 +260,16 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
               "this setting is org-scoped only")
         429 → rate-limit hint
         5xx → "Avrea is having trouble" + suggest `avr health`
+
+    Every branch ends with the API origin when it isn't the public default.
     """
     status = exc.response.status_code
     if status == 401:
+        # No "Error:" line precedes the auth hint, so the origin can't ride
+        # along as an indented continuation here — say it as its own sentence.
+        origin = _api_origin(exc)
+        if origin:
+            click.echo(f"Error: {origin} rejected your credentials (HTTP 401).", err=True)
         exit_with_auth_hint()
 
     detail = _extract_detail(exc.response)
@@ -287,7 +300,29 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
             click.echo(f"  Detail: {detail}", err=True)
     else:
         click.echo(f"Error: Failed to {action} (HTTP {status}){detail_suffix}", err=True)
+    _echo_api_url(exc)
     sys.exit(1)
+
+
+def _api_origin(exc: httpx.HTTPStatusError) -> str:
+    """The scheme + host that answered, or ``""`` when it's the public default.
+
+    The host is configurable (``AVR_HOST``, or ``default_host`` in hosts.json),
+    so against a self-hosted or staging endpoint a bare status never says which
+    API failed. Empty on the default host: there, naming it is noise on every
+    error."""
+    url = exc.request.url
+    origin = f"{url.scheme}://{url.netloc.decode()}"
+    return "" if origin == CliConfig.DEFAULT_API_URL else origin
+
+
+def _echo_api_url(exc: httpx.HTTPStatusError) -> None:
+    """Add the failing request URL under the error, for non-default APIs.
+
+    Full URL rather than just the origin — the path identifies the endpoint for
+    a bug report, and no request in this CLI puts secrets in the query string."""
+    if _api_origin(exc):
+        click.echo(f"  API: {exc.request.url}", err=True)
 
 
 def _extract_detail(response: httpx.Response) -> str:
