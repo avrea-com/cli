@@ -1,0 +1,30 @@
+.TH AVR\-SKILL\-UPDATE 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-skill-update \- Update an installed Avrea skill from this avr release.
+.SH SYNOPSIS
+.B avr skill update
+[OPTIONS]
+.SH DESCRIPTION
+Update an installed Avrea skill from this avr release.
+.PP
+.RS 4
+.nf
+Examples:
+    avr skill update
+    avr skill update --target claude
+    avr skill update --target all --force
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-target\fR \fICHOICE\fR
+Installed agent host to update. (choices: codex, claude, all; default: all)
+.TP
+\fB\-\-force\fR
+Replace a locally modified skill.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-skill (1),
+.BR avr-skill-install (1),
+.BR avr-skill-status (1),
+.BR avr-skill-uninstall (1)

@@ -51,7 +51,7 @@ Repository = "https://github.com/avrea-com/cli"
 "Bug Tracker" = "https://github.com/avrea-com/cli/issues"
 
 [tool.uv]
-required-version = "==0.11.11"
+required-version = ">=0.11.11"
 package = true
 exclude-newer = "P3D"
 
@@ -62,4 +62,11 @@ python-version = "3.14"
 include = ["avrea_cli*"]
 
 [tool.setuptools.package-data]
-avrea_cli = ["assets/*.svg"]
+avrea_cli = [
+  "assets/*.svg",
+  "bundled/avrea/.codex-plugin/*.json",
+  "bundled/avrea/.claude-plugin/*.json",
+  "bundled/avrea/skills/avrea-cli/*.md",
+  "bundled/avrea/skills/avrea-cli/agents/*.yaml",
+  "bundled/avrea/skills/avrea-cli/references/*.md",
+]

@@ -6051,6 +6051,246 @@
         ]
       },
       {
+        "name": "skill",
+        "path": [
+          "avr",
+          "skill"
+        ],
+        "full": "avr skill",
+        "is_group": true,
+        "short_help": "Manage Avrea's agent skill for Codex and Claude.",
+        "help": "Manage Avrea's agent skill for Codex and Claude.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr skill [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "install",
+            "path": [
+              "avr",
+              "skill",
+              "install"
+            ],
+            "full": "avr skill install",
+            "is_group": false,
+            "short_help": "Install the bundled Avrea skill.",
+            "help": "Install the bundled Avrea skill.\n\n\b\nExamples:\n    avr skill install\n    avr skill install --target codex\n    avr skill install --target claude\n    avr skill install --target all --force\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill install [OPTIONS]",
+            "params": [
+              {
+                "name": "target",
+                "kind": "option",
+                "opts": [
+                  "--target"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Agent host to install for.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "codex",
+                  "claude",
+                  "all"
+                ]
+              },
+              {
+                "name": "force",
+                "kind": "option",
+                "opts": [
+                  "--force"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Replace an existing modified or unmanaged skill.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "status",
+            "path": [
+              "avr",
+              "skill",
+              "status"
+            ],
+            "full": "avr skill status",
+            "is_group": false,
+            "short_help": "Show whether the bundled Avrea skill is installed and current.",
+            "help": "Show whether the bundled Avrea skill is installed and current.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill status [OPTIONS]",
+            "params": [
+              {
+                "name": "target",
+                "kind": "option",
+                "opts": [
+                  "--target"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Agent host to inspect.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "codex",
+                  "claude",
+                  "all"
+                ]
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "uninstall",
+            "path": [
+              "avr",
+              "skill",
+              "uninstall"
+            ],
+            "full": "avr skill uninstall",
+            "is_group": false,
+            "short_help": "Uninstall the Avrea skill.",
+            "help": "Uninstall the Avrea skill. Alias: remove.\n\nUnmanaged skill directories are never removed automatically.\n\n\b\nExamples:\n    avr skill uninstall\n    avr skill uninstall --target claude\n    avr skill remove --target codex\n    avr skill uninstall --target all --force\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill uninstall [OPTIONS]",
+            "params": [
+              {
+                "name": "target",
+                "kind": "option",
+                "opts": [
+                  "--target"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Installed agent host to uninstall from.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "codex",
+                  "claude",
+                  "all"
+                ]
+              },
+              {
+                "name": "force",
+                "kind": "option",
+                "opts": [
+                  "--force"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove a locally modified avr-managed skill.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "update",
+            "path": [
+              "avr",
+              "skill",
+              "update"
+            ],
+            "full": "avr skill update",
+            "is_group": false,
+            "short_help": "Update an installed Avrea skill from this avr release.",
+            "help": "Update an installed Avrea skill from this avr release.\n\n\b\nExamples:\n    avr skill update\n    avr skill update --target claude\n    avr skill update --target all --force\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill update [OPTIONS]",
+            "params": [
+              {
+                "name": "target",
+                "kind": "option",
+                "opts": [
+                  "--target"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Installed agent host to update.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "codex",
+                  "claude",
+                  "all"
+                ]
+              },
+              {
+                "name": "force",
+                "kind": "option",
+                "opts": [
+                  "--force"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Replace a locally modified skill.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "config",
         "path": [
           "avr",

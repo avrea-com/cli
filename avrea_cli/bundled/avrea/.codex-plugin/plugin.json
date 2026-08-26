@@ -1,0 +1,33 @@
+{
+  "name": "avrea",
+  "version": "0.2.0",
+  "description": "Run commits in Avrea CI and use disposable Avrea VMs as agent sandboxes.",
+  "author": {
+    "name": "Avrea",
+    "email": "support@avrea.com",
+    "url": "https://avrea.com/"
+  },
+  "homepage": "https://avrea.com/",
+  "repository": "https://github.com/avrea-com/cli",
+  "license": "Apache-2.0",
+  "keywords": [
+    "avrea",
+    "ci",
+    "github-actions",
+    "virtual-machines"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Avrea",
+    "shortDescription": "Run CI and sandbox work with Avrea CLI",
+    "longDescription": "Use Avrea CI as the primary test environment, inspect runs and jobs, and create disposable VMs for isolated agent work.",
+    "developerName": "Avrea",
+    "category": "Productivity",
+    "capabilities": [
+      "CI",
+      "Virtual machines"
+    ],
+    "websiteURL": "https://avrea.com/",
+    "defaultPrompt": "Use Avrea CI to test this change and an Avrea VM if isolated compute would help."
+  }
+}

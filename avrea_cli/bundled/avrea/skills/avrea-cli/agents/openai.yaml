@@ -1,0 +1,4 @@
+interface:
+  display_name: "Avrea CLI"
+  short_description: "Run CI and sandbox work with Avrea CLI"
+  default_prompt: "Use $avrea-cli to run this change in CI and use an Avrea VM if a sandbox would help."

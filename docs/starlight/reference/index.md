@@ -34,6 +34,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 ### Setup & Config
 
 - [`avr auth`](./auth/) — Authenticate and manage credentials.
+- [`avr skill`](./skill/) — Manage Avrea's agent skill for Codex and Claude.
 - [`avr config`](./config/) — View and manage CLI configuration.
 - [`avr settings`](./settings/) — View and toggle cache and runner settings.
 - [`avr firewall`](./firewall/) — Manage the egress firewall rule list for orgs and repositories.
