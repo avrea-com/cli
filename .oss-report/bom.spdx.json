@@ -1,15 +1,15 @@
 {
     "SPDXID": "SPDXRef-DOCUMENT",
     "creationInfo": {
-        "created": "2026-08-13T00:00:00Z",
+        "created": "2026-08-26T00:00:00Z",
         "creators": [
             "Tool: oss-report-0.1.0"
         ]
     },
     "dataLicense": "CC0-1.0",
-    "name": "Avrea CLI-0.2.0",
+    "name": "Avrea CLI-0.3.0",
     "spdxVersion": "SPDX-2.3",
-    "documentNamespace": "urn:uuid:47ea08d7-09c1-5a7d-8754-a741da565c07",
+    "documentNamespace": "urn:uuid:2e09c3e5-63b1-5547-a3ed-2ea76f6d581d",
     "packages": [
         {
             "SPDXID": "SPDXRef-Project-Avrea-CLI-f68c208f",
@@ -20,7 +20,7 @@
             "licenseDeclared": "Apache-2.0",
             "name": "Avrea CLI",
             "primaryPackagePurpose": "APPLICATION",
-            "versionInfo": "0.2.0"
+            "versionInfo": "0.3.0"
         },
         {
             "SPDXID": "SPDXRef-Package-python-click-8.4.0-93085de7",
