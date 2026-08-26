@@ -3192,6 +3192,133 @@
             "subcommands": []
           },
           {
+            "name": "pause",
+            "path": [
+              "avr",
+              "vm",
+              "pause"
+            ],
+            "full": "avr vm pause",
+            "is_group": false,
+            "short_help": "Pause a RUNNING Linux VM while preserving its disk.",
+            "help": "Pause a RUNNING Linux VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm pause [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "memory",
+                "kind": "option",
+                "opts": [
+                  "--memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Include guest memory and device state so running processes continue on resume.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM reaches PAUSED before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "port-forward",
             "path": [
               "avr",
@@ -3442,6 +3569,133 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "resume",
+            "path": [
+              "avr",
+              "vm",
+              "resume"
+            ],
+            "full": "avr vm resume",
+            "is_group": false,
+            "short_help": "Resume a PAUSED VM from its preserved snapshot.",
+            "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains valid. If a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm resume [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "discard_memory",
+                "kind": "option",
+                "opts": [
+                  "--discard-memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM is RUNNING and connectable.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
                 "default": false

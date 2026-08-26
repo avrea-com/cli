@@ -673,6 +673,30 @@ avr vm list [OPTIONS]
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
 - `--json` — Emit the VM list as JSON.
 
+#### `avr vm pause`
+
+Pause a RUNNING Linux VM while preserving its disk.
+
+```sh
+avr vm pause [OPTIONS] VM_ID
+```
+
+By default the snapshot is disk-only: the filesystem survives, but resume
+performs a fresh boot and running processes do not. Pass --memory to also
+preserve guest memory and continue processes from where they stopped.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--memory` — Include guest memory and device state so running processes continue on resume.
+- `--wait` — Wait until the VM reaches PAUSED before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
+
 #### `avr vm port-forward`
 
 Forward one or more local ports to TCP ports on the VM over SSH.
@@ -725,6 +749,30 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
+#### `avr vm resume`
+
+Resume a PAUSED VM from its preserved snapshot.
+
+```sh
+avr vm resume [OPTIONS] VM_ID
+```
+
+The existing password remains valid. If a memory restore cannot complete,
+retry with --discard-memory to boot the preserved disk without restoring
+running processes.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--discard-memory` — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
+- `--wait` — Wait until the VM is RUNNING and connectable.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
 
 #### `avr vm show`
 

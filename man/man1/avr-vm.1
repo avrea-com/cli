@@ -21,11 +21,17 @@ Delete a VM.
 list
 List the organization's VMs, newest first (deleted ones excluded).
 .TP
+pause
+Pause a RUNNING Linux VM while preserving its disk.
+.TP
 port-forward
 Forward one or more local ports to TCP ports on the VM over SSH.
 .TP
 rdp
 Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
+.TP
+resume
+Resume a PAUSED VM from its preserved snapshot.
 .TP
 show
 Show a VM's details, including connection endpoints and egress rules.
@@ -72,8 +78,10 @@ Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
 .BR avr-vm-list (1),
+.BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
+.BR avr-vm-resume (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
