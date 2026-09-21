@@ -22,7 +22,7 @@
       "version": "0.7.0"
     },
     {
-      "bom-ref": "pkg:pypi/anyio@4.13.0",
+      "bom-ref": "pkg:pypi/anyio@4.15.1",
       "copyright": "Copyright (c) 2018 Alex Gr\u00f6nholm",
       "licenses": [
         {
@@ -32,9 +32,9 @@
         }
       ],
       "name": "anyio",
-      "purl": "pkg:pypi/anyio@4.13.0",
+      "purl": "pkg:pypi/anyio@4.15.1",
       "type": "library",
-      "version": "4.13.0"
+      "version": "4.15.1"
     },
     {
       "bom-ref": "pkg:pypi/certifi@2026.4.22",
@@ -252,7 +252,7 @@
       "version": "2.46.4"
     },
     {
-      "bom-ref": "pkg:pypi/typing-extensions@4.15.0",
+      "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
       "externalReferences": [
         {
           "type": "website",
@@ -267,9 +267,9 @@
         }
       ],
       "name": "typing-extensions",
-      "purl": "pkg:pypi/typing-extensions@4.15.0",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
       "type": "library",
-      "version": "4.15.0"
+      "version": "4.16.0"
     },
     {
       "bom-ref": "pkg:pypi/typing-inspection@0.4.2",
@@ -318,7 +318,7 @@
     {
       "dependsOn": [
         "pkg:pypi/annotated-types@0.7.0",
-        "pkg:pypi/anyio@4.13.0",
+        "pkg:pypi/anyio@4.15.1",
         "pkg:pypi/certifi@2026.4.22",
         "pkg:pypi/click@8.4.0",
         "pkg:pypi/colorama@0.4.6",
@@ -330,7 +330,7 @@
         "pkg:pypi/prettytable@3.17.0",
         "pkg:pypi/pydantic-core@2.46.4",
         "pkg:pypi/pydantic@2.13.4",
-        "pkg:pypi/typing-extensions@4.15.0",
+        "pkg:pypi/typing-extensions@4.16.0",
         "pkg:pypi/typing-inspection@0.4.2",
         "pkg:pypi/wcwidth@0.7.0"
       ],
@@ -340,7 +340,7 @@
       "ref": "pkg:pypi/annotated-types@0.7.0"
     },
     {
-      "ref": "pkg:pypi/anyio@4.13.0"
+      "ref": "pkg:pypi/anyio@4.15.1"
     },
     {
       "ref": "pkg:pypi/certifi@2026.4.22"
@@ -376,7 +376,7 @@
       "ref": "pkg:pypi/pydantic@2.13.4"
     },
     {
-      "ref": "pkg:pypi/typing-extensions@4.15.0"
+      "ref": "pkg:pypi/typing-extensions@4.16.0"
     },
     {
       "ref": "pkg:pypi/typing-inspection@0.4.2"
@@ -399,7 +399,7 @@
       "type": "application",
       "version": "0.3.0"
     },
-    "timestamp": "2026-08-26T00:00:00+00:00",
+    "timestamp": "2026-09-21T00:00:00+00:00",
     "tools": {
       "components": [
         {
@@ -410,7 +410,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:2e09c3e5-63b1-5547-a3ed-2ea76f6d581d",
+  "serialNumber": "urn:uuid:690c3f57-a353-5eff-89b1-ca958013f560",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
