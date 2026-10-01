@@ -76,6 +76,23 @@ avr auth logout
 
 For non-interactive environments (CI, scripts), set a token via env var instead. See [Configuration](#configuration).
 
+## Install the agent skill
+
+`avr` bundles an Avrea skill for Codex and Claude Code. Install it for both agents, or select one:
+
+```sh
+avr skill install                         # Codex + Claude Code
+avr skill install --target codex
+avr skill install --target claude
+avr skill status
+avr skill uninstall                      # alias: avr skill remove
+```
+
+The skill teaches agents to prefer Avrea CI over expensive local test runs and to use disposable Avrea VMs as
+sandboxes. `avr skill update` refreshes installations after a CLI upgrade, while `avr skill uninstall` removes
+CLI-managed copies. Existing local modifications are preserved unless you explicitly pass `--force`; unmanaged skill
+directories are never removed automatically.
+
 ## Your first command
 
 Inside any git checkout of an Avrea-connected repository:

@@ -25,6 +25,7 @@ export default {
       collapsed: false,
       items: [
         { label: "avr auth", slug: "cli/reference/auth" },
+        { label: "avr skill", slug: "cli/reference/skill" },
         { label: "avr config", slug: "cli/reference/config" },
         { label: "avr settings", slug: "cli/reference/settings" },
         { label: "avr firewall", slug: "cli/reference/firewall" },
