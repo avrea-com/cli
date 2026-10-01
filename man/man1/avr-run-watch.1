@@ -1,16 +1,17 @@
-.TH AVR\-RUN\-WATCH 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR\-RUN\-WATCH 1 "" "avr 0.3.0" "Avrea CLI"
 .SH NAME
 avr-run-watch \- Watch a workflow run until it completes.
 .SH SYNOPSIS
 .B avr run watch
-[OPTIONS] [RUN_ID]
+[OPTIONS] [RUN]
 .SH DESCRIPTION
 Watch a workflow run until it completes.
 .PP
 .RS 4
 .nf
-Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-(repeatable) to scope the auto-select to specific repositories.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. Without RUN, auto-selects the latest in-progress run.
+Pass --repo (repeatable) to scope the auto-select to specific repositories.
 .fi
 .RE
 .PP
@@ -26,7 +27,7 @@ Examples:
 .RE
 .SH ARGUMENTS
 .TP
-[\fIRUN_ID\fR]
+[\fIRUN\fR]
 \&
 .SH OPTIONS
 .TP
@@ -48,6 +49,7 @@ Force NDJSON event stream (default when stdout isn't a TTY).
 .BR avr (1),
 .BR avr-run (1),
 .BR avr-run-cancel (1),
+.BR avr-run-diagnose (1),
 .BR avr-run-list (1),
 .BR avr-run-logs (1),
 .BR avr-run-rerun (1),

@@ -125,6 +125,30 @@ avr vm list [OPTIONS]
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Pagination cursor from a previous response.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the VM list as JSON.
 
+### `avr vm pause`
+
+Pause a RUNNING Linux VM while preserving its disk.
+
+```sh
+avr vm pause [OPTIONS] VM_ID
+```
+
+By default the snapshot is disk-only: the filesystem survives, but resume
+performs a fresh boot and running processes do not. Pass --memory to also
+preserve guest memory and continue processes from where they stopped.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;memory</code> — Include guest memory and device state so running processes continue on resume.
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM reaches PAUSED before returning.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
+
 ### `avr vm port-forward`
 
 Forward one or more local ports to TCP ports on the VM over SSH.
@@ -177,6 +201,30 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 - <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
 - <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local RDP client, instead of just printing the connect command.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.
+
+### `avr vm resume`
+
+Resume a PAUSED VM from its preserved snapshot.
+
+```sh
+avr vm resume [OPTIONS] VM_ID
+```
+
+The existing password remains valid. If a memory restore cannot complete,
+retry with --discard-memory to boot the preserved disk without restoring
+running processes.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;discard-memory</code> — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING and connectable.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm show`
 

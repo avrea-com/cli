@@ -1,11 +1,13 @@
-.TH AVR\-RUN\-CANCEL 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR\-RUN\-CANCEL 1 "" "avr 0.3.0" "Avrea CLI"
 .SH NAME
 avr-run-cancel \- Cancel an in-progress or queued workflow run.
 .SH SYNOPSIS
 .B avr run cancel
-[OPTIONS] RUN_ID
+[OPTIONS] RUN
 .SH DESCRIPTION
 Cancel an in-progress or queued workflow run.
+.PP
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`.
 .PP
 .RS 4
 .nf
@@ -16,7 +18,7 @@ Examples:
 .RE
 .SH ARGUMENTS
 .TP
-\fIRUN_ID\fR
+\fIRUN\fR
 \&
 .SH OPTIONS
 .TP
@@ -28,6 +30,7 @@ Skip the confirmation prompt.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-run (1),
+.BR avr-run-diagnose (1),
 .BR avr-run-list (1),
 .BR avr-run-logs (1),
 .BR avr-run-rerun (1),

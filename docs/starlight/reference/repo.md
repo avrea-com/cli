@@ -1,9 +1,9 @@
 ---
 title: avr repo
-description: "Manage repositories and public mirrors."
+description: "Manage repositories, git mirrors, and public mirrors."
 ---
 
-Manage repositories and public mirrors.
+Manage repositories, git mirrors, and public mirrors.
 
 ```sh
 avr repo [OPTIONS] COMMAND [ARGS]...
@@ -35,6 +35,194 @@ JSON FIELDS
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max repositories to return. _(default: `100`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+### `avr repo mirror`
+
+Manage this repository's avrea-git mirror (feature-flagged).
+
+```sh
+avr repo mirror [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr repo mirror clusters`
+
+List the git clusters a mirror can be placed in.
+
+```sh
+avr repo mirror clusters [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror clusters
+    avr repo mirror clusters --json cluster_id,datacenter_id
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror disable`
+
+Stop mirroring the repository into avrea-git.
+
+```sh
+avr repo mirror disable [OPTIONS]
+```
+
+Placements are kept but become inert, so re-enabling restores them.
+Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror disable
+    avr repo mirror disable --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror enable`
+
+Declare the repository mirrored into avrea-git.
+
+```sh
+avr repo mirror enable [OPTIONS]
+```
+
+Enabling makes existing placements active again; a freshly declared
+repository still needs at least one placement (`avr repo mirror place`)
+before anything is synced. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror enable
+    avr repo mirror enable --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror place`
+
+Place the repository's mirror in a git cluster.
+
+```sh
+avr repo mirror place [OPTIONS] CLUSTER_ID
+```
+
+CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
+idempotent; a new placement syncs from the upstream platform copy.
+Mirroring must be enabled first. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror place gsc-fi
+    avr repo mirror place gsc-fi --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- <code class="cli-arg">CLUSTER_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror status`
+
+Show the repository's git-mirror declaration and placements.
+
+```sh
+avr repo mirror status [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror status
+    avr repo mirror status --repo acme/widgets
+    avr repo mirror status --json enabled,placements
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror unplace`
+
+Remove the repository's mirror from a git cluster.
+
+```sh
+avr repo mirror unplace [OPTIONS] CLUSTER_ID
+```
+
+The mirrored data in that cluster is dropped; other placements are
+unaffected. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror unplace gsc-fi
+    avr repo mirror unplace gsc-fi --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- <code class="cli-arg">CLUSTER_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 

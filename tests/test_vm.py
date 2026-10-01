@@ -65,6 +65,20 @@ RD_ROTATE_RESPONSE = {
     "data": {"vm": {**RD_VM, "state": "RUNNING", "endpoints": RD_ENDPOINTS}, "password": "hunter2hunter2"}
 }
 
+PAUSING_VM = {**SAMPLE_VM, "desired_state": "PAUSED", "state": "PAUSING", "endpoints": None}
+PAUSED_VM = {
+    **SAMPLE_VM,
+    "desired_state": "PAUSED",
+    "state": "PAUSED",
+    "state_reason": "user_pause",
+    "endpoints": None,
+    "snapshot": {
+        "memory_included": True,
+        "paused_at": "2026-06-15T05:00:00Z",
+        "archive_bytes": 123456,
+    },
+}
+
 
 def _capture(store):
     """Return a stub that records (path, json, params) and returns ``value``."""
@@ -916,6 +930,108 @@ class TestVmPower:
         result = runner.invoke(cli, ["vm", "stop", "cvm-abc123"])
         assert result.exit_code == 0
         assert store["json"] == {"desired_state": "STOPPED"}
+
+
+class TestVmPauseResume:
+    def test_pause_posts_disk_only_request_by_default(self, runner, monkeypatch):
+        store = {"return": {"data": PAUSING_VM}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123"])
+
+        assert result.exit_code == 0
+        assert store["path"] == "/orgs/org-default/vms/cvm-abc123/pause"
+        assert store["json"] == {"memory": False}
+        assert "PAUSING" in result.output
+
+    def test_pause_memory_flag_is_forwarded(self, runner, monkeypatch):
+        store = {"return": {"data": PAUSING_VM}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--memory"])
+
+        assert result.exit_code == 0
+        assert store["json"] == {"memory": True}
+
+    def test_resume_posts_restore_request_by_default(self, runner, monkeypatch):
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        store = {"return": {"data": pending}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123"])
+
+        assert result.exit_code == 0
+        assert store["path"] == "/orgs/org-default/vms/cvm-abc123/resume"
+        assert store["json"] == {"discard_memory": False}
+        assert "PENDING" in result.output
+
+    def test_resume_discard_memory_flag_is_forwarded(self, runner, monkeypatch):
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        store = {"return": {"data": pending}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123", "--discard-memory"])
+
+        assert result.exit_code == 0
+        assert store["json"] == {"discard_memory": True}
+
+    def test_pause_wait_blocks_until_paused_and_shows_snapshot(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: {"data": PAUSING_VM},
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: {"data": PAUSED_VM}
+        )
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--memory", "--wait"])
+
+        assert result.exit_code == 0
+        assert "PAUSED" in result.output
+        assert "memory + disk" in result.output
+        assert "2026-06-15T05:00:00Z" in result.output
+
+    def test_resume_wait_blocks_until_connectable(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post", lambda self, path, json=None, timeout=None: {"data": pending}
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123", "--wait"])
+
+        assert result.exit_code == 0
+        assert "RUNNING" in result.output
+        assert "runner@203.0.113.1 -p 30022" in result.output
+
+    def test_pause_wait_detects_return_to_running_as_failure(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: {"data": PAUSING_VM},
+        )
+        failed = {"data": {**SAMPLE_VM, "state": "RUNNING", "state_reason": "pause_failed"}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: failed)
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--wait"])
+
+        assert result.exit_code == 1
+        assert "pause_failed" in result.output
+
+    def test_json_emits_raw_api_response(self, runner, monkeypatch):
+        response = {"data": PAUSING_VM}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post", lambda self, path, json=None, timeout=None: response
+        )
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--json"])
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == response
 
 
 class TestVmDelete:

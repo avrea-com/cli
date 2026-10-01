@@ -1,6 +1,6 @@
 {
   "name": "avrea",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Run commits in Avrea CI and use disposable Avrea VMs as agent sandboxes.",
   "author": {
     "name": "Avrea",

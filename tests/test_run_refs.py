@@ -22,6 +22,14 @@ import pytest
             None,
         ),
         (
+            "https://github.com/acme/widgets/actions/runs/123456789/?any=url&paremerts=true",
+            "https://api.avrea.com",
+            RunReferenceKind.GITHUB_URL,
+            None,
+            123456789,
+            None,
+        ),
+        (
             "https://github.com/acme/widgets/actions/runs/123456789/attempts/2",
             "https://api.avrea.com",
             RunReferenceKind.GITHUB_URL,
@@ -31,6 +39,14 @@ import pytest
         ),
         (
             "https://console.avrea.com/org/acme/runs/run-abc123",
+            "https://api.avrea.com",
+            RunReferenceKind.AVREA_URL,
+            "run-abc123",
+            None,
+            None,
+        ),
+        (
+            "https://console.avrea.com/org/acme/runs/run-abc123/?any=url&paremerts=true",
             "https://api.avrea.com",
             RunReferenceKind.AVREA_URL,
             "run-abc123",

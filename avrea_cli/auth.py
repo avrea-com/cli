@@ -515,6 +515,14 @@ def login(public_api_url: str, *, provider: str = "github", email: str | None = 
             pass  # Best-effort; the session will expire on its own
 
         return api_key
+    except httpx.HTTPStatusError as e:
+        # Not handle_http_error: this is the login flow itself, where a 401
+        # means the browser session expired, not "go run `avr auth login`".
+        click.echo(
+            f"Error: {public_api_url} returned HTTP {e.response.status_code} when creating an API key.",
+            err=True,
+        )
+        raise click.Abort() from None
     except httpx.HTTPError as e:
-        click.echo(f"Error: Failed to create API key: {e}", err=True)
+        click.echo(f"Error: Could not reach {public_api_url} to create an API key: {e}", err=True)
         raise click.Abort() from None

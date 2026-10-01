@@ -163,7 +163,15 @@ def fetch_all_logs(
         if after_line is not None:
             payload["after_line"] = after_line
 
-        response = client.public_post("/logs/search", json=payload)
+        try:
+            response = client.public_post("/logs/search", json=payload)
+        except httpx.HTTPStatusError as exc:
+            # A job can be recorded as completed without ever receiving an
+            # execution or GitHub log source. The API represents that state as
+            # 404, which is equivalent to an empty result for a static read.
+            if exc.response.status_code == 404:
+                break
+            raise
         raw_entries: list[dict[str, Any]] = response.get("results", [])
 
         if not raw_entries:

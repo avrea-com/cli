@@ -6,5 +6,5 @@
 # does not match the tag, so a forgotten regeneration is caught before shipping.
 project:
   name: Avrea CLI
-  version: "0.2.0"
+  version: "0.3.0"
   contact: security@avrea.com

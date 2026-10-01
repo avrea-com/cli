@@ -44,6 +44,9 @@ from avrea_cli.log_display import print_logs_grouped
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
+from avrea_cli.run_diagnostics import build_run_diagnostics
+from avrea_cli.run_diagnostics_display import render_run_diagnostics
+from avrea_cli.run_refs import RunReference
 from avrea_cli.run_refs import parse_run_reference
 from avrea_cli.run_refs import resolve_run_reference
 from datetime import UTC
@@ -141,7 +144,10 @@ def run(ctx):
     "--repo",
     "repository_ids",
     multiple=True,
-    help="Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+    help=(
+        "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. "
+        "Auto-detected from git remote if omitted."
+    ),
 )
 @click.option(
     "--status",
@@ -371,7 +377,7 @@ def run_list(
             f"{elapsed}{s}{click.style(age, dim=True)}"
         )
 
-    next_cursor = response.get("pagination", {}).get("next_cursor")
+    next_cursor = (response.get("pagination") or {}).get("next_cursor")
     if next_cursor:
         click.echo(f"\nMore results available. Next page: --cursor {next_cursor}", err=True)
 
@@ -437,6 +443,76 @@ def _print_run_jobs(
                         pass
                 click.echo(f"       {s_indicator}  {step.get('name', '?')}{s_dur}")
             click.echo("")
+
+
+def _run_reference_and_org(
+    client: ApiClient,
+    config: CliConfig,
+    value: str,
+    org_id: str | None,
+) -> tuple[RunReference, str]:
+    """Parse RUN and resolve/verify the organization embedded in a URL."""
+    reference = parse_run_reference(value, api_url=config.public_api_url)
+    if reference.organization_slug is not None and org_id is None:
+        org_id = reference.organization_slug
+    resolved_org_id = get_org_id(config, org_id, client=client)
+
+    if reference.organization_slug is not None:
+        active_org_slug = get_verified_org_slug(client, resolved_org_id)
+        if active_org_slug.casefold() != reference.organization_slug.casefold():
+            raise click.ClickException(
+                f"Avrea run URL organization {reference.organization_slug!r} does not match "
+                f"the selected organization {active_org_slug!r}."
+            )
+    return reference, resolved_org_id
+
+
+def _resolve_run_argument(
+    client: ApiClient,
+    config: CliConfig,
+    value: str,
+    org_id: str | None,
+    *,
+    action: str,
+    include: list[str] | None = None,
+) -> tuple[dict[str, Any], str, str]:
+    """Resolve any supported run reference to its canonical Avrea run ID."""
+    reference, resolved_org_id = _run_reference_and_org(client, config, value, org_id)
+    try:
+        run_data = resolve_run_reference(client, resolved_org_id, reference, include=include)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, action)
+
+    resolved_run_id = _resolved_run_id(run_data)
+    return run_data, resolved_org_id, resolved_run_id
+
+
+def _resolved_run_id(run_data: dict[str, Any]) -> str:
+    """Return the canonical run ID from a validated API response."""
+    resolved_run_id = run_data.get("run_id")
+    if not isinstance(resolved_run_id, str):
+        raise click.ClickException("Avrea returned a workflow run without a run_id.")
+    return resolved_run_id
+
+
+def _resolve_run_id_argument(
+    client: ApiClient,
+    config: CliConfig,
+    value: str,
+    org_id: str | None,
+    *,
+    action: str,
+) -> tuple[str, str]:
+    """Resolve a run reference without re-fetching an embedded Avrea ID."""
+    reference, resolved_org_id = _run_reference_and_org(client, config, value, org_id)
+    if reference.run_id is not None:
+        return resolved_org_id, reference.run_id
+
+    try:
+        run_data = resolve_run_reference(client, resolved_org_id, reference)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, action)
+    return resolved_org_id, _resolved_run_id(run_data)
 
 
 @run.command("view")
@@ -511,18 +587,17 @@ def run_view(
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
 
-    reference = parse_run_reference(run, api_url=config.public_api_url) if run else None
-    if reference is not None and reference.organization_slug is not None and org_id is None:
-        org_id = reference.organization_slug
-    org_id = get_org_id(config, org_id, client=client)
-
-    if reference is not None and reference.organization_slug is not None:
-        active_org_slug = get_verified_org_slug(client, org_id)
-        if active_org_slug.casefold() != reference.organization_slug.casefold():
-            raise click.ClickException(
-                f"Avrea run URL organization {reference.organization_slug!r} does not match "
-                f"the selected organization {active_org_slug!r}."
-            )
+    if run:
+        run_data, org_id, run_id = _resolve_run_argument(
+            client,
+            config,
+            run,
+            org_id,
+            action="get workflow run",
+            include=["jobs", "workflow"],
+        )
+    else:
+        org_id = get_org_id(config, org_id, client=client)
 
     if not run:
         try:
@@ -553,19 +628,6 @@ def run_view(
 
         click.echo("\nTo view a run, try: avr run view <run-id>", err=True)
         return
-
-    include = ["jobs", "workflow"]
-    try:
-        if reference is None:
-            raise click.ClickException("A run reference is required.")
-        run_data = resolve_run_reference(client, org_id, reference, include=include)
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "get workflow run")
-
-    resolved_run_id = run_data.get("run_id")
-    if not isinstance(resolved_run_id, str):
-        raise click.ClickException("Avrea returned a workflow run without a run_id.")
-    run_id = resolved_run_id
 
     if json_fields is not None:
         emit_json_record(run_data, split_fields(json_fields, _RUN_VIEW_FIELDS), _RUN_VIEW_FIELDS, jq_expr)
@@ -702,6 +764,48 @@ def run_view(
     slug = get_org_slug(client, org_id)
     console_url = get_console_url(config.public_api_url)
     _hint(f"View this run on Avrea: {console_url}/org/{slug}/runs/{run_id}")
+
+
+@run.command("diagnose")
+@click.argument("run")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option("--json", "json_output", is_flag=True, help="Output the diagnostic report as JSON.")
+@click.pass_context
+def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
+    """Explain a failed or unexpectedly slow workflow run.
+
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`. The report combines jobs and failed steps, bounded
+    failed-job log tails, queue/execution timings, runner metrics, and a
+    prior-success workflow baseline.
+
+    \b
+    Examples:
+        avr run diagnose run-abc123
+        avr run diagnose 123456789 --json
+        avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+    """
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+
+    resolved, org_id, _ = _resolve_run_argument(
+        client,
+        config,
+        run,
+        org_id,
+        action="resolve workflow run",
+        include=["workflow"],
+    )
+
+    try:
+        report = build_run_diagnostics(client, org_id, resolved)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "diagnose workflow run")
+    if json_output:
+        click.echo(json.dumps(report, indent=2, default=str))
+        return
+    click.echo(render_run_diagnostics(report))
 
 
 def _print_other_attempts(client: ApiClient, org_id: str, run_id: str, run_data: dict[str, Any]) -> None:
@@ -1029,7 +1133,7 @@ def watch_run_loop(
 
 
 @run.command("watch")
-@click.argument("run_id", required=False)
+@click.argument("run", required=False)
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option(
     "--repo",
@@ -1048,7 +1152,7 @@ def watch_run_loop(
 @click.pass_context
 def run_watch(
     ctx,
-    run_id: str | None,
+    run: str | None,
     org_id,
     repo_options: tuple[str, ...],
     exit_status: bool,
@@ -1058,8 +1162,9 @@ def run_watch(
     """Watch a workflow run until it completes.
 
     \b
-    Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-    (repeatable) to scope the auto-select to specific repositories.
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`. Without RUN, auto-selects the latest in-progress run.
+    Pass --repo (repeatable) to scope the auto-select to specific repositories.
 
     \b
     Examples:
@@ -1076,9 +1181,17 @@ def run_watch(
         click.echo("Error: --interval must be at least 1 second.", err=True)
         raise click.Abort()
 
-    org_id = get_org_id(config, org_id, client=client)
-
-    if not run_id:
+    run_id: str
+    if run:
+        org_id, run_id = _resolve_run_id_argument(
+            client,
+            config,
+            run,
+            org_id,
+            action="resolve workflow run before watch",
+        )
+    else:
+        org_id = get_org_id(config, org_id, client=client)
         click.echo(click.style("Looking for an in-progress run…", dim=True), err=True)
         params: dict[str, Any] = {
             "limit": 1,
@@ -1108,7 +1221,10 @@ def run_watch(
             scope = " for these repos" if repo_ids else ""
             click.echo(f"No in-progress workflow runs found{scope}.")
             return
-        run_id = runs[0]["run_id"]
+        selected_run_id = runs[0].get("run_id")
+        if not isinstance(selected_run_id, str):
+            raise click.ClickException("Avrea returned a workflow run without a run_id.")
+        run_id = selected_run_id
         title = runs[0].get("display_title", "")
         click.echo(f"Auto-selected: {run_id} ({title})", err=True)
 
@@ -1196,13 +1312,16 @@ def _poll_for_new_attempt(
 
 
 @run.command("rerun")
-@click.argument("run_id")
+@click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--failed", is_flag=True, help="Re-run only the failed jobs.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
-def run_rerun(ctx, run_id: str, org_id, failed: bool, yes: bool):
+def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
     """Re-run a completed workflow run.
+
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`.
 
     \b
     Examples:
@@ -1213,22 +1332,23 @@ def run_rerun(ctx, run_id: str, org_id, failed: bool, yes: bool):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id, client=client)
+
+    existing_data, org_id, run_id = _resolve_run_argument(
+        client,
+        config,
+        run,
+        org_id,
+        action="look up workflow run before rerun",
+    )
 
     if not yes:
         scope = "failed jobs only" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
         click.confirm(f"Re-run {run_id} ({scope})?", abort=True)
 
-    # Fetch the run first so we know which platform_run_id and attempt to
-    # diff against — the new attempt's run_id is what users want to navigate to.
-    try:
-        existing = client.public_get(f"/orgs/{org_id}/workflow-runs/{run_id}")
-        existing_data = existing.get("data", existing)
-        platform_run_id = existing_data.get("platform_run_id")
-        current_attempt = existing_data.get("run_attempt", 1)
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "look up workflow run before rerun")
+    # The new attempt's run_id is what users want to navigate to.
+    platform_run_id = existing_data.get("platform_run_id")
+    current_attempt = existing_data.get("run_attempt", 1)
 
     try:
         client.public_post(
@@ -1271,7 +1391,7 @@ _FAILED_CONCLUSIONS = frozenset({"failure", "timed_out", "cancelled", "action_re
 
 
 @run.command("logs")
-@click.argument("run_id")
+@click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--job", "job_name_filter", help="Restrict to GitHub jobs whose name contains this string.")
 @click.option("-f", "--follow", is_flag=True, help="Tail logs as they appear (running jobs only).")
@@ -1290,7 +1410,7 @@ _FAILED_CONCLUSIONS = frozenset({"failure", "timed_out", "cancelled", "action_re
 @click.pass_context
 def run_logs(
     ctx,
-    run_id: str,
+    run: str,
     org_id,
     job_name_filter: str | None,
     follow: bool,
@@ -1299,6 +1419,9 @@ def run_logs(
     no_pager: bool,
 ):
     """Fetch logs for a workflow run's GitHub jobs.
+
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`.
 
     Long-form alternative to `avr run view --log[-failed]`. Use --follow to
     tail logs in real time for an in-progress job; pass --job to scope to a
@@ -1317,16 +1440,14 @@ def run_logs(
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id, client=client)
-
-    try:
-        response = client.public_get(
-            f"/orgs/{org_id}/workflow-runs/{run_id}",
-            params={"include": ["jobs"]},
-        )
-        run_data = response.get("data", response)
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "get workflow run")
+    run_data, org_id, _ = _resolve_run_argument(
+        client,
+        config,
+        run,
+        org_id,
+        action="get workflow run",
+        include=["jobs"],
+    )
 
     jobs_list: list[dict[str, Any]] = run_data.get("jobs") or []
     if job_name_filter:
@@ -1404,12 +1525,15 @@ def run_logs(
 
 
 @run.command("cancel")
-@click.argument("run_id")
+@click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
-def run_cancel(ctx, run_id: str, org_id, yes: bool):
+def run_cancel(ctx, run: str, org_id, yes: bool):
     """Cancel an in-progress or queued workflow run.
+
+    RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+    `avr run view`.
 
     \b
     Examples:
@@ -1419,7 +1543,13 @@ def run_cancel(ctx, run_id: str, org_id, yes: bool):
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id, client=client)
+    org_id, run_id = _resolve_run_id_argument(
+        client,
+        config,
+        run,
+        org_id,
+        action="look up workflow run before cancel",
+    )
 
     if not yes:
         ensure_prompts_allowed("run cancel needs confirmation")

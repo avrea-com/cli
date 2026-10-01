@@ -1,4 +1,4 @@
-.TH AVR 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR 1 "" "avr 0.3.0" "Avrea CLI"
 .SH NAME
 avr \- Avrea on the command line.
 .SH SYNOPSIS
@@ -27,6 +27,9 @@ Show recent runs, performance stats, and cache health.
 .TP
 run
 View and manage GitHub workflow runs.
+.TP
+pr
+View pull requests.
 .TP
 job
 Inspect Avrea job VMs (SSH, metrics, logs).
@@ -65,7 +68,7 @@ audit-events
 View audit events for organization writes.
 .TP
 repo
-Manage repositories and public mirrors.
+Manage repositories, git mirrors, and public mirrors.
 .TP
 org
 Manage organizations and installations.
@@ -75,6 +78,7 @@ Check Avrea platform status.
 .SH SEE ALSO
 .BR avr-status (1),
 .BR avr-run (1),
+.BR avr-pr (1),
 .BR avr-job (1),
 .BR avr-vm (1),
 .BR avr-workflow (1),

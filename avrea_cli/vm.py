@@ -1,14 +1,15 @@
 """Long-running customer VM management CLI commands.
 
 Customer VMs are durable, org-scoped machines reachable over SSH (all OSes)
-plus RDP (Windows) or VNC (macOS Screen Sharing). Creation, start and stop
-are asynchronous: the API records intent and the resource reaches RUNNING
-(with connection endpoints) once the control plane places it on a node.
+plus RDP (Windows) or VNC (macOS Screen Sharing). Lifecycle transitions are
+asynchronous: the API records intent and the resource moves through an
+intermediate state before reaching its target state.
 
 Disks are ephemeral today: stopping a VM (or losing its node) discards the
-disk, and a restart boots fresh from the image. ``create`` therefore requires
-an explicit ``--ephemeral`` acknowledgement so the no-persistence semantics
-are a conscious opt-in.
+disk, and a restart boots fresh from the image. Pausing is the exception: it
+archives the disk (and optionally memory) for a later resume. ``create``
+therefore requires an explicit ``--ephemeral`` acknowledgement so the normal
+stop/start semantics are a conscious opt-in.
 """
 
 from avrea_cli.api_client import ApiClient
@@ -296,6 +297,11 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     ref = vm.get("precheckout_ref")
     if ref:
         summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
+    snapshot = vm.get("snapshot")
+    if snapshot:
+        summary["Snapshot"] = "memory + disk" if snapshot.get("memory_included") else "disk only"
+        if snapshot.get("paused_at"):
+            summary["Paused at"] = snapshot["paused_at"]
     summary["Auto-stop at"] = vm.get("stop_at")
     summary["Created"] = vm.get("created_at")
     return summary
@@ -469,6 +475,7 @@ def _wait_for_vm(
     is_ready: Callable[[dict[str, Any]], bool],
     *,
     gone_is_ready: bool = False,
+    is_failed: Callable[[dict[str, Any]], bool] | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     """Poll a VM until ``is_ready`` holds, it enters an ERROR/FAILED state, it is
     gone (a 404, when ``gone_is_ready`` is set, e.g. delete), or the timeout
@@ -479,7 +486,9 @@ def _wait_for_vm(
     Transient poll errors (connection resets, timeouts, 5xx) are retried until
     the deadline rather than aborting the wait; only a 404 with ``gone_is_ready``
     is a definitive answer. Only the unambiguous ERROR/FAILED markers count as
-    failure: STOPPED/DELETING are legitimate targets or progress for stop/delete."""
+    general failure: STOPPED/DELETING are legitimate targets or progress for
+    stop/delete. ``is_failed`` can additionally identify operation-specific
+    terminal states, such as a failed pause returning the VM to RUNNING."""
     deadline = time.monotonic() + timeout
     vm: dict[str, Any] | None = None
     last_state: str | None = None
@@ -518,7 +527,7 @@ def _wait_for_vm(
             last_state = state
         if is_ready(vm):
             return vm, "ready"
-        if "ERROR" in state or "FAIL" in state:
+        if (is_failed is not None and is_failed(vm)) or "ERROR" in state or "FAIL" in state:
             return vm, "failed"
         if time.monotonic() >= deadline:
             return vm, "timeout"
@@ -1197,6 +1206,145 @@ def vm_start(ctx, vm_id, org_id, wait, wait_timeout, as_json):
 def vm_stop(ctx, vm_id, org_id, wait, wait_timeout, as_json):
     """Stop a running VM. The ephemeral disk is discarded."""
     _set_desired_state(ctx, vm_id, org_id, "STOPPED", as_json, action="stop VM", wait=wait, wait_timeout=wait_timeout)
+
+
+@vm.command("pause")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--memory",
+    is_flag=True,
+    default=False,
+    help="Include guest memory and device state so running processes continue on resume.",
+)
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM reaches PAUSED before returning.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
+@click.pass_context
+def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
+    """Pause a RUNNING Linux VM while preserving its disk.
+
+    By default the snapshot is disk-only: the filesystem survives, but resume
+    performs a fresh boot and running processes do not. Pass --memory to also
+    preserve guest memory and continue processes from where they stopped.
+    """
+    _post_vm_transition(
+        ctx,
+        vm_id,
+        org_id,
+        "pause",
+        {"memory": memory},
+        "PAUSED",
+        as_json,
+        action="pause VM",
+        wait=wait,
+        wait_timeout=wait_timeout,
+        is_ready=_state_is("PAUSED"),
+        in_progress_states={"PAUSING", "PAUSED"},
+    )
+
+
+@vm.command("resume")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--discard-memory",
+    is_flag=True,
+    default=False,
+    help="Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).",
+)
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM is RUNNING and connectable.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
+@click.pass_context
+def vm_resume(ctx, vm_id, org_id, discard_memory, wait, wait_timeout, as_json):
+    """Resume a PAUSED VM from its preserved snapshot.
+
+    The existing password remains valid. If a memory restore cannot complete,
+    retry with --discard-memory to boot the preserved disk without restoring
+    running processes.
+    """
+    _post_vm_transition(
+        ctx,
+        vm_id,
+        org_id,
+        "resume",
+        {"discard_memory": discard_memory},
+        "RUNNING",
+        as_json,
+        action="resume VM",
+        wait=wait,
+        wait_timeout=wait_timeout,
+        is_ready=_endpoints_ready,
+        in_progress_states={"PENDING", "STARTING", "RUNNING"},
+    )
+
+
+def _post_vm_transition(
+    ctx,
+    vm_id: str,
+    org_id: str | None,
+    endpoint: str,
+    body: dict[str, Any],
+    target_state: str,
+    as_json: bool,
+    *,
+    action: str,
+    wait: bool,
+    wait_timeout: int,
+    is_ready: Callable[[dict[str, Any]], bool],
+    in_progress_states: set[str],
+) -> None:
+    """Shared POST lifecycle transition used by pause and resume."""
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms/{vm_id}/{endpoint}", json=body)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
+
+    data = (response or {}).get("data") or {}
+    if wait:
+        click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become {target_state}...", err=True)
+        vm_state, disposition = _wait_for_vm(
+            client,
+            org_id,
+            vm_id,
+            wait_timeout,
+            is_ready,
+            is_failed=lambda record: (record.get("state") or "").upper() not in in_progress_states,
+        )
+        shown = vm_state or data
+        if as_json:
+            _emit_wait_json(ctx, shown, None, disposition)
+            return
+        if shown:
+            click.echo()
+            _print_vm(shown)
+        _wait_exit(ctx, vm_state, disposition, target_state, wait_timeout, vm_id)
+        return
+
+    if as_json:
+        click.echo(json.dumps(response, indent=2, default=str))
+        return
+
+    if data:
+        _print_vm(data)
 
 
 def _set_desired_state(

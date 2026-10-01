@@ -1,6 +1,7 @@
 """Unit tests for job view and job logs commands."""
 
 from avrea_cli.main import cli
+import httpx
 import json
 
 SAMPLE_JOB = {
@@ -124,6 +125,36 @@ class TestJobLogs:
         result = runner.invoke(cli, ["job", "logs", "job-abc123"])
         assert result.exit_code == 0
         assert "No log entries found" in result.output
+
+    def test_missing_log_source_is_reported_as_no_logs(self, runner, monkeypatch):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, **kw: SAMPLE_JOB,
+        )
+
+        def raise_missing_logs(self, path, **kw):
+            request = httpx.Request("POST", "https://api.avrea.test/logs/search")
+            response = httpx.Response(
+                404,
+                request=request,
+                json={"detail": "No execution found for job"},
+            )
+            raise httpx.HTTPStatusError(
+                "Client error '404 Not Found'",
+                request=request,
+                response=response,
+            )
+
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            raise_missing_logs,
+        )
+
+        result = runner.invoke(cli, ["job", "logs", "job-abc123"])
+
+        assert result.exit_code == 0
+        assert "No log entries found" in result.output
+        assert "Traceback" not in result.output
 
     def test_failed_filter(self, runner, monkeypatch):
         # Distinct step names + log content so the negative assertions

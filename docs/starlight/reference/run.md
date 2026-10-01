@@ -16,8 +16,11 @@ avr run [OPTIONS] COMMAND [ARGS]...
 Cancel an in-progress or queued workflow run.
 
 ```sh
-avr run cancel [OPTIONS] RUN_ID
+avr run cancel [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -27,12 +30,41 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">-y, &#x2D;&#x2D;yes</code> — Skip the confirmation prompt.
+
+### `avr run diagnose`
+
+Explain a failed or unexpectedly slow workflow run.
+
+```sh
+avr run diagnose [OPTIONS] RUN
+```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. The report combines jobs and failed steps, bounded
+failed-job log tails, queue/execution timings, runner metrics, and a
+prior-success workflow baseline.
+
+```sh
+Examples:
+    avr run diagnose run-abc123
+    avr run diagnose 123456789 --json
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+```
+
+**Arguments**
+
+- <code class="cli-arg">RUN</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Output the diagnostic report as JSON.
 
 ### `avr run list`
 
@@ -64,7 +96,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by head branch (repeatable). _(repeatable)_
 - <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_
@@ -83,8 +115,11 @@ JSON FIELDS
 Fetch logs for a workflow run's GitHub jobs.
 
 ```sh
-avr run logs [OPTIONS] RUN_ID
+avr run logs [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
@@ -100,7 +135,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
@@ -116,8 +151,11 @@ Examples:
 Re-run a completed workflow run.
 
 ```sh
-avr run rerun [OPTIONS] RUN_ID
+avr run rerun [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -128,7 +166,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">RUN_ID</code>
+- <code class="cli-arg">RUN</code>
 
 **Options**
 
@@ -192,12 +230,13 @@ JSON FIELDS
 Watch a workflow run until it completes.
 
 ```sh
-avr run watch [OPTIONS] [RUN_ID]
+avr run watch [OPTIONS] [RUN]
 ```
 
 ```sh
-Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-(repeatable) to scope the auto-select to specific repositories.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. Without RUN, auto-selects the latest in-progress run.
+Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
 ```sh
@@ -211,7 +250,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">[RUN_ID]</code>
+- <code class="cli-arg">[RUN]</code>
 
 **Options**
 

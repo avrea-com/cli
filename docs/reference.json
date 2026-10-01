@@ -1,6 +1,6 @@
 {
   "program": "avr",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "summary": "Avrea on the command line.",
   "global_options": [
     {
@@ -82,6 +82,7 @@
   ],
   "aliases": {
     "jobs": "job",
+    "prs": "pr",
     "repos": "repo",
     "orgs": "org",
     "logs": "log",
@@ -211,17 +212,17 @@
             "full": "avr run cancel",
             "is_group": false,
             "short_help": "Cancel an in-progress or queued workflow run.",
-            "help": "Cancel an in-progress or queued workflow run.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
+            "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run cancel [OPTIONS] RUN_ID",
+            "usage": "avr run cancel [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -276,6 +277,79 @@
             "subcommands": []
           },
           {
+            "name": "diagnose",
+            "path": [
+              "avr",
+              "run",
+              "diagnose"
+            ],
+            "full": "avr run diagnose",
+            "is_group": false,
+            "short_help": "Explain a failed or unexpectedly slow workflow run.",
+            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-abc123\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr run diagnose [OPTIONS] RUN",
+            "params": [
+              {
+                "name": "run",
+                "kind": "argument",
+                "opts": [
+                  "run"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_output",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Output the diagnostic report as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "list",
             "path": [
               "avr",
@@ -322,7 +396,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -579,17 +653,17 @@
             "full": "avr run logs",
             "is_group": false,
             "short_help": "Fetch logs for a workflow run's GitHub jobs.",
-            "help": "Fetch logs for a workflow run's GitHub jobs.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
+            "help": "Fetch logs for a workflow run's GitHub jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run logs [OPTIONS] RUN_ID",
+            "usage": "avr run logs [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -725,17 +799,17 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run rerun [OPTIONS] RUN_ID",
+            "usage": "avr run rerun [OPTIONS] RUN",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -1017,17 +1091,17 @@
             "full": "avr run watch",
             "is_group": false,
             "short_help": "Watch a workflow run until it completes.",
-            "help": "Watch a workflow run until it completes.\n\n\b\nWithout RUN_ID, auto-selects the latest in-progress run. Pass --repo\n(repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
+            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr run watch [OPTIONS] [RUN_ID]",
+            "usage": "avr run watch [OPTIONS] [RUN]",
             "params": [
               {
-                "name": "run_id",
+                "name": "run",
                 "kind": "argument",
                 "opts": [
-                  "run_id"
+                  "run"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -1137,6 +1211,200 @@
         ]
       },
       {
+        "name": "pr",
+        "path": [
+          "avr",
+          "pr"
+        ],
+        "full": "avr pr",
+        "is_group": true,
+        "short_help": "View pull requests.",
+        "help": "View pull requests.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr pr [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "pr",
+              "list"
+            ],
+            "full": "avr pr list",
+            "is_group": false,
+            "short_help": "List pull requests across repositories.",
+            "help": "List pull requests across repositories.\n\n\b\nExamples:\n    avr pr list\n    avr pr list --scope authored\n    avr pr list --repo acme/widgets --state merged\n    avr pr list --json number,title,mergeability\n    avr pr list --json '?'           # list available fields\n    avr pr list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    author_login, base_ref, base_sha, check_status, comment_count, created_at,\n    draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,\n    repository_id, state, title, unresolved_thread_count, updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr pr list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repository_ids",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "scope",
+                "kind": "option",
+                "opts": [
+                  "--scope"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "List every readable PR, PRs you authored, or PRs you are involved in.",
+                "hidden": false,
+                "show_default": true,
+                "default": "all",
+                "choices": [
+                  "all",
+                  "authored",
+                  "involved"
+                ]
+              },
+              {
+                "name": "state",
+                "kind": "option",
+                "opts": [
+                  "--state"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by pull request state. 'all' removes the state filter.",
+                "hidden": false,
+                "show_default": true,
+                "default": "open",
+                "choices": [
+                  "open",
+                  "closed",
+                  "merged",
+                  "all"
+                ]
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max PRs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 20
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Pagination cursor from a previous response.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "job",
         "path": [
           "avr",
@@ -1199,7 +1467,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2020,7 +2288,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted.",
+                "help": "Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2924,6 +3192,133 @@
             "subcommands": []
           },
           {
+            "name": "pause",
+            "path": [
+              "avr",
+              "vm",
+              "pause"
+            ],
+            "full": "avr vm pause",
+            "is_group": false,
+            "short_help": "Pause a RUNNING Linux VM while preserving its disk.",
+            "help": "Pause a RUNNING Linux VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm pause [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "memory",
+                "kind": "option",
+                "opts": [
+                  "--memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Include guest memory and device state so running processes continue on resume.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM reaches PAUSED before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "port-forward",
             "path": [
               "avr",
@@ -3174,6 +3569,133 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "resume",
+            "path": [
+              "avr",
+              "vm",
+              "resume"
+            ],
+            "full": "avr vm resume",
+            "is_group": false,
+            "short_help": "Resume a PAUSED VM from its preserved snapshot.",
+            "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains valid. If a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm resume [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "discard_memory",
+                "kind": "option",
+                "opts": [
+                  "--discard-memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM is RUNNING and connectable.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
                 "default": false
@@ -8268,8 +8790,8 @@
         ],
         "full": "avr repo",
         "is_group": true,
-        "short_help": "Manage repositories and public mirrors.",
-        "help": "Manage repositories and public mirrors.",
+        "short_help": "Manage repositories, git mirrors, and public mirrors.",
+        "help": "Manage repositories, git mirrors, and public mirrors.",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -8368,6 +8890,639 @@
               }
             ],
             "subcommands": []
+          },
+          {
+            "name": "mirror",
+            "path": [
+              "avr",
+              "repo",
+              "mirror"
+            ],
+            "full": "avr repo mirror",
+            "is_group": true,
+            "short_help": "Manage this repository's avrea-git mirror (feature-flagged).",
+            "help": "Manage this repository's avrea-git mirror (feature-flagged).",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr repo mirror [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "clusters",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "clusters"
+                ],
+                "full": "avr repo mirror clusters",
+                "is_group": false,
+                "short_help": "List the git clusters a mirror can be placed in.",
+                "help": "List the git clusters a mirror can be placed in.\n\n\b\nExamples:\n    avr repo mirror clusters\n    avr repo mirror clusters --json cluster_id,datacenter_id\n\n\b\nJSON FIELDS\n    cluster_id, datacenter_id, name\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror clusters [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "disable",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "disable"
+                ],
+                "full": "avr repo mirror disable",
+                "is_group": false,
+                "short_help": "Stop mirroring the repository into avrea-git.",
+                "help": "Stop mirroring the repository into avrea-git.\n\nPlacements are kept but become inert, so re-enabling restores them.\nRequires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror disable\n    avr repo mirror disable --repo acme/widgets --yes\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror disable [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip the confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "enable",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "enable"
+                ],
+                "full": "avr repo mirror enable",
+                "is_group": false,
+                "short_help": "Declare the repository mirrored into avrea-git.",
+                "help": "Declare the repository mirrored into avrea-git.\n\nEnabling makes existing placements active again; a freshly declared\nrepository still needs at least one placement (`avr repo mirror place`)\nbefore anything is synced. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror enable\n    avr repo mirror enable --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror enable [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "place",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "place"
+                ],
+                "full": "avr repo mirror place",
+                "is_group": false,
+                "short_help": "Place the repository's mirror in a git cluster.",
+                "help": "Place the repository's mirror in a git cluster.\n\nCLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is\nidempotent; a new placement syncs from the upstream platform copy.\nMirroring must be enabled first. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror place gsc-fi\n    avr repo mirror place gsc-fi --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror place [OPTIONS] CLUSTER_ID",
+                "params": [
+                  {
+                    "name": "cluster_id",
+                    "kind": "argument",
+                    "opts": [
+                      "cluster_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "status",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "status"
+                ],
+                "full": "avr repo mirror status",
+                "is_group": false,
+                "short_help": "Show the repository's git-mirror declaration and placements.",
+                "help": "Show the repository's git-mirror declaration and placements.\n\n\b\nExamples:\n    avr repo mirror status\n    avr repo mirror status --repo acme/widgets\n    avr repo mirror status --json enabled,placements\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror status [OPTIONS]",
+                "params": [
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "unplace",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "unplace"
+                ],
+                "full": "avr repo mirror unplace",
+                "is_group": false,
+                "short_help": "Remove the repository's mirror from a git cluster.",
+                "help": "Remove the repository's mirror from a git cluster.\n\nThe mirrored data in that cluster is dropped; other placements are\nunaffected. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror unplace gsc-fi\n    avr repo mirror unplace gsc-fi --repo acme/widgets --yes\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror unplace [OPTIONS] CLUSTER_ID",
+                "params": [
+                  {
+                    "name": "cluster_id",
+                    "kind": "argument",
+                    "opts": [
+                      "cluster_id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "repo_id",
+                    "kind": "option",
+                    "opts": [
+                      "--repo"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "--yes",
+                      "-y"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Skip the confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": false
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              }
+            ]
           },
           {
             "name": "public-mirror",

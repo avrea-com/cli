@@ -1,6 +1,6 @@
 # avr(1) — Avrea command-line client
 
-Reference for `avr` v0.2.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
+Reference for `avr` v0.3.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
 
 ## Name
 
@@ -24,6 +24,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `jobs` → `job`
 - `logs` → `log`
 - `orgs` → `org`
+- `prs` → `pr`
 - `repos` → `repo`
 - `vms` → `vm`
 - `workflows` → `workflow`
@@ -34,6 +35,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 - [`avr status`](#avr-status) — Show recent runs, performance stats, and cache health.
 - [`avr run`](#avr-run) — View and manage GitHub workflow runs.
+- [`avr pr`](#avr-pr) — View pull requests.
 - [`avr job`](#avr-job) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
@@ -52,7 +54,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Additional Commands
 
-- [`avr repo`](#avr-repo) — Manage repositories and public mirrors.
+- [`avr repo`](#avr-repo) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
 
@@ -86,8 +88,11 @@ avr run [OPTIONS] COMMAND [ARGS]...
 Cancel an in-progress or queued workflow run.
 
 ```sh
-avr run cancel [OPTIONS] RUN_ID
+avr run cancel [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -97,12 +102,41 @@ Examples:
 
 **Arguments**
 
-- `RUN_ID`
+- `RUN`
 
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug.
 - `-y, --yes` — Skip the confirmation prompt.
+
+#### `avr run diagnose`
+
+Explain a failed or unexpectedly slow workflow run.
+
+```sh
+avr run diagnose [OPTIONS] RUN
+```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. The report combines jobs and failed steps, bounded
+failed-job log tails, queue/execution timings, runner metrics, and a
+prior-success workflow baseline.
+
+```sh
+Examples:
+    avr run diagnose run-abc123
+    avr run diagnose 123456789 --json
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+```
+
+**Arguments**
+
+- `RUN`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug.
+- `--json` — Output the diagnostic report as JSON.
 
 #### `avr run list`
 
@@ -134,7 +168,7 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--branch <TEXT>` — Filter by head branch (repeatable). _(repeatable)_
 - `-w, --workflow <TEXT>` — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_
@@ -153,8 +187,11 @@ JSON FIELDS
 Fetch logs for a workflow run's GitHub jobs.
 
 ```sh
-avr run logs [OPTIONS] RUN_ID
+avr run logs [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
@@ -170,7 +207,7 @@ Examples:
 
 **Arguments**
 
-- `RUN_ID`
+- `RUN`
 
 **Options**
 
@@ -186,8 +223,11 @@ Examples:
 Re-run a completed workflow run.
 
 ```sh
-avr run rerun [OPTIONS] RUN_ID
+avr run rerun [OPTIONS] RUN
 ```
+
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`.
 
 ```sh
 Examples:
@@ -198,7 +238,7 @@ Examples:
 
 **Arguments**
 
-- `RUN_ID`
+- `RUN`
 
 **Options**
 
@@ -262,12 +302,13 @@ JSON FIELDS
 Watch a workflow run until it completes.
 
 ```sh
-avr run watch [OPTIONS] [RUN_ID]
+avr run watch [OPTIONS] [RUN]
 ```
 
 ```sh
-Without RUN_ID, auto-selects the latest in-progress run. Pass --repo
-(repeatable) to scope the auto-select to specific repositories.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
+`avr run view`. Without RUN, auto-selects the latest in-progress run.
+Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
 ```sh
@@ -281,7 +322,7 @@ Examples:
 
 **Arguments**
 
-- `[RUN_ID]`
+- `[RUN]`
 
 **Options**
 
@@ -290,6 +331,50 @@ Examples:
 - `--exit-status` — Exit non-zero if run failed.
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `3`)_
 - `--ndjson` — Force NDJSON event stream (default when stdout isn't a TTY).
+
+### `avr pr`
+
+View pull requests.
+
+```sh
+avr pr [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr pr list`
+
+List pull requests across repositories.
+
+```sh
+avr pr list [OPTIONS]
+```
+
+```sh
+Examples:
+    avr pr list
+    avr pr list --scope authored
+    avr pr list --repo acme/widgets --state merged
+    avr pr list --json number,title,mergeability
+    avr pr list --json '?'           # list available fields
+    avr pr list --json '*'           # all fields
+```
+
+```sh
+JSON FIELDS
+    author_login, base_ref, base_sha, check_status, comment_count, created_at,
+    draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
+    repository_id, state, title, unresolved_thread_count, updated_at
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- `--scope <CHOICE>` — List every readable PR, PRs you authored, or PRs you are involved in. _(choices: `all`, `authored`, `involved` · default: `all`)_
+- `--state <CHOICE>` — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
+- `-L, --limit <INTEGER RANGE>` — Max PRs to return. _(default: `20`)_
+- `--cursor <TEXT>` — Pagination cursor from a previous response.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 ### `avr job`
 
@@ -327,7 +412,7 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--on-avrea / --shadowing` — Filter by Avrea-run vs shadowing jobs.
@@ -462,7 +547,7 @@ avr job watch [OPTIONS]
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `5`)_
 - `--ndjson` — Emit one JSON object per refresh (default when stdout isn't a TTY).
@@ -589,6 +674,30 @@ avr vm list [OPTIONS]
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
 - `--json` — Emit the VM list as JSON.
 
+#### `avr vm pause`
+
+Pause a RUNNING Linux VM while preserving its disk.
+
+```sh
+avr vm pause [OPTIONS] VM_ID
+```
+
+By default the snapshot is disk-only: the filesystem survives, but resume
+performs a fresh boot and running processes do not. Pass --memory to also
+preserve guest memory and continue processes from where they stopped.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--memory` — Include guest memory and device state so running processes continue on resume.
+- `--wait` — Wait until the VM reaches PAUSED before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
+
 #### `avr vm port-forward`
 
 Forward one or more local ports to TCP ports on the VM over SSH.
@@ -641,6 +750,30 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
+#### `avr vm resume`
+
+Resume a PAUSED VM from its preserved snapshot.
+
+```sh
+avr vm resume [OPTIONS] VM_ID
+```
+
+The existing password remains valid. If a memory restore cannot complete,
+retry with --discard-memory to boot the preserved disk without restoring
+running processes.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--discard-memory` — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
+- `--wait` — Wait until the VM is RUNNING and connectable.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
 
 #### `avr vm show`
 
@@ -1864,7 +1997,7 @@ JSON FIELDS
 
 ### `avr repo`
 
-Manage repositories and public mirrors.
+Manage repositories, git mirrors, and public mirrors.
 
 ```sh
 avr repo [OPTIONS] COMMAND [ARGS]...
@@ -1894,6 +2027,194 @@ JSON FIELDS
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max repositories to return. _(default: `100`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr repo mirror`
+
+Manage this repository's avrea-git mirror (feature-flagged).
+
+```sh
+avr repo mirror [OPTIONS] COMMAND [ARGS]...
+```
+
+##### `avr repo mirror clusters`
+
+List the git clusters a mirror can be placed in.
+
+```sh
+avr repo mirror clusters [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror clusters
+    avr repo mirror clusters --json cluster_id,datacenter_id
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror disable`
+
+Stop mirroring the repository into avrea-git.
+
+```sh
+avr repo mirror disable [OPTIONS]
+```
+
+Placements are kept but become inert, so re-enabling restores them.
+Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror disable
+    avr repo mirror disable --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror enable`
+
+Declare the repository mirrored into avrea-git.
+
+```sh
+avr repo mirror enable [OPTIONS]
+```
+
+Enabling makes existing placements active again; a freshly declared
+repository still needs at least one placement (`avr repo mirror place`)
+before anything is synced. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror enable
+    avr repo mirror enable --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror place`
+
+Place the repository's mirror in a git cluster.
+
+```sh
+avr repo mirror place [OPTIONS] CLUSTER_ID
+```
+
+CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
+idempotent; a new placement syncs from the upstream platform copy.
+Mirroring must be enabled first. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror place gsc-fi
+    avr repo mirror place gsc-fi --repo acme/widgets
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `CLUSTER_ID`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror status`
+
+Show the repository's git-mirror declaration and placements.
+
+```sh
+avr repo mirror status [OPTIONS]
+```
+
+```sh
+Examples:
+    avr repo mirror status
+    avr repo mirror status --repo acme/widgets
+    avr repo mirror status --json enabled,placements
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror unplace`
+
+Remove the repository's mirror from a git cluster.
+
+```sh
+avr repo mirror unplace [OPTIONS] CLUSTER_ID
+```
+
+The mirrored data in that cluster is dropped; other placements are
+unaffected. Requires the organization admin role.
+
+```sh
+Examples:
+    avr repo mirror unplace gsc-fi
+    avr repo mirror unplace gsc-fi --repo acme/widgets --yes
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `CLUSTER_ID`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: "Reference for the avr command-line client (v0.2.0)."
+description: "Reference for the avr command-line client (v0.3.0)."
 ---
 
 `avr` is the Avrea command-line client. Avrea on the command line.
@@ -24,6 +24,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 - [`avr status`](./status/) — Show recent runs, performance stats, and cache health.
 - [`avr run`](./run/) — View and manage GitHub workflow runs.
+- [`avr pr`](./pr/) — View pull requests.
 - [`avr job`](./job/) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](./vm/) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
@@ -42,7 +43,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Additional Commands
 
-- [`avr repo`](./repo/) — Manage repositories and public mirrors.
+- [`avr repo`](./repo/) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](./org/) — Manage organizations and installations.
 - [`avr health`](./health/) — Check Avrea platform status.
 
@@ -51,6 +52,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `jobs` → [`job`](./job/)
 - `logs` → [`log`](./log/)
 - `orgs` → [`org`](./org/)
+- `prs` → [`pr`](./pr/)
 - `repos` → [`repo`](./repo/)
 - `vms` → [`vm`](./vm/)
 - `workflows` → [`workflow`](./workflow/)
