@@ -116,7 +116,8 @@ class TestVmCreate:
         assert "ephemeral" in result.output.lower()
         assert called["n"] == 0  # never hit the API
 
-    def test_create_success(self, runner, monkeypatch):
+    @pytest.mark.parametrize("fetch_depth", [None, 0, 1, 500])
+    def test_create_success(self, runner, monkeypatch, fetch_depth: int | None) -> None:
         store = {"return": CREATE_RESPONSE}
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
         result = runner.invoke(
@@ -139,6 +140,7 @@ class TestVmCreate:
                 "--ref",
                 "main",
                 "--ephemeral",
+                *(["--fetch-depth", str(fetch_depth)] if fetch_depth is not None else []),
             ],
         )
         assert result.exit_code == 0
@@ -152,6 +154,10 @@ class TestVmCreate:
         # the optional precheckout repo/branch ride the body verbatim
         assert body["repo"] == "owner/repo"
         assert body["ref"] == "main"
+        if fetch_depth is None:
+            assert "fetch_depth" not in body
+        else:
+            assert body["fetch_depth"] == fetch_depth
         # os_version is omitted so the server resolves the OS default
         assert "os_version" not in body
         # the server derives cpu/memory/disk from the size tier; the CLI must not send them
@@ -262,6 +268,18 @@ class TestVmCreate:
         assert result.exit_code != 0
         assert "--ref requires --repo" in result.output
         assert called["n"] == 0  # never hit the API
+
+    @pytest.mark.parametrize("args", [["--fetch-depth", "0"], ["--repo", "owner/repo", "--fetch-depth", "-1"]])
+    def test_invalid_fetch_depth_errors(self, runner, monkeypatch, args: list[str]) -> None:
+        store = {"return": CREATE_RESPONSE}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--ephemeral", *args],
+        )
+        assert result.exit_code == 2
+        assert "--fetch-depth" in result.output
+        assert "path" not in store
 
     def test_ttl_out_of_range_rejected(self, runner):
         result = runner.invoke(
@@ -868,8 +886,17 @@ class TestVmShow:
         # on rendered CLI output, not URL validation).
         assert re.search(r"\bgithub\.com\b", result.output)
 
-    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch):
-        detail = {"data": {**SAMPLE_VM, "egress_rules": [], "precheckout_ref": "main", "preload_status": "preloaded"}}
+    @pytest.mark.parametrize("fetch_depth", [None, 0, 1, 500])
+    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch, fetch_depth: int | None) -> None:
+        detail = {
+            "data": {
+                **SAMPLE_VM,
+                "egress_rules": [],
+                "precheckout_ref": "main",
+                "preload_status": "preloaded",
+                **({"fetch_depth": fetch_depth} if fetch_depth is not None else {}),
+            }
+        }
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: detail,
@@ -878,6 +905,13 @@ class TestVmShow:
         assert result.exit_code == 0
         assert "Preload" in result.output
         assert "main (preloaded)" in result.output
+        if fetch_depth is None:
+            assert "Fetch depth" not in result.output
+        else:
+            assert "Fetch depth" in result.output
+            assert str(fetch_depth) in result.output
+            if fetch_depth == 0:
+                assert "all branches and tags" in result.output
 
     def test_no_preload_row_without_precheckout(self, runner, monkeypatch):
         detail = {"data": {**SAMPLE_VM, "egress_rules": []}}

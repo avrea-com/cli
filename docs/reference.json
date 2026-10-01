@@ -2861,6 +2861,24 @@
                 "default": null
               },
               {
+                "name": "fetch_depth",
+                "kind": "option",
+                "opts": [
+                  "--fetch-depth"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "disable_cache",
                 "kind": "option",
                 "opts": [
