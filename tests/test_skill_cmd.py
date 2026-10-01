@@ -24,7 +24,7 @@ def test_install_defaults_to_both_targets(runner, isolated_home):
     claude_skill = isolated_home / ".claude" / "skills" / "avrea-cli"
     assert (codex_skill / "SKILL.md").is_file()
     assert (claude_skill / "SKILL.md").is_file()
-    assert json.loads((codex_skill / ".avrea-install.json").read_text())["version"] == __version__
+    assert json.loads((codex_skill / ".avrea-install.json").read_text(encoding="utf-8"))["version"] == __version__
     assert "Codex: installed" in result.output
     assert "Claude Code: installed" in result.output
 
@@ -56,42 +56,42 @@ def test_install_is_idempotent(runner, isolated_home):
 def test_all_preflights_conflicts_before_writing(runner, isolated_home):
     codex_skill = isolated_home / ".agents" / "skills" / "avrea-cli"
     codex_skill.mkdir(parents=True)
-    (codex_skill / "SKILL.md").write_text("customer customization\n")
+    (codex_skill / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "install", "--target", "all"])
 
     assert result.exit_code != 0
     assert "Refusing to overwrite" in result.output
-    assert (codex_skill / "SKILL.md").read_text() == "customer customization\n"
+    assert (codex_skill / "SKILL.md").read_text(encoding="utf-8") == "customer customization\n"
     assert not (isolated_home / ".claude" / "skills" / "avrea-cli").exists()
 
 
 def test_force_replaces_modified_skill(runner, isolated_home):
     destination = isolated_home / ".claude" / "skills" / "avrea-cli"
     destination.mkdir(parents=True)
-    (destination / "SKILL.md").write_text("customer customization\n")
+    (destination / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "install", "--target", "claude", "--force"])
 
     assert result.exit_code == 0, result.output
-    assert "# Avrea CLI" in (destination / "SKILL.md").read_text()
+    assert "# Avrea CLI" in (destination / "SKILL.md").read_text(encoding="utf-8")
 
 
 def test_update_replaces_an_unmodified_older_install(runner, isolated_home):
     destination = isolated_home / ".agents" / "skills" / "avrea-cli"
     assert runner.invoke(cli, ["skill", "install", "--target", "codex"]).exit_code == 0
-    (destination / "SKILL.md").write_text("old bundled skill\n")
+    (destination / "SKILL.md").write_text("old bundled skill\n", encoding="utf-8")
     marker_path = destination / skill_module._MARKER_NAME
-    marker = json.loads(marker_path.read_text())
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
     marker["content_sha256"] = skill_module._tree_digest(destination)
     marker["version"] = "0.1.0"
-    marker_path.write_text(json.dumps(marker))
+    marker_path.write_text(json.dumps(marker), encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "update", "--target", "codex"])
 
     assert result.exit_code == 0, result.output
     assert "Codex: updated" in result.output
-    assert "# Avrea CLI" in (destination / "SKILL.md").read_text()
+    assert "# Avrea CLI" in (destination / "SKILL.md").read_text(encoding="utf-8")
 
 
 def test_update_all_skips_uninstalled_target(runner, isolated_home):
@@ -107,20 +107,20 @@ def test_update_all_skips_uninstalled_target(runner, isolated_home):
 def test_update_protects_local_modifications(runner, isolated_home):
     destination = isolated_home / ".agents" / "skills" / "avrea-cli"
     assert runner.invoke(cli, ["skill", "install", "--target", "codex"]).exit_code == 0
-    (destination / "SKILL.md").write_text("customer customization\n")
+    (destination / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "update", "--target", "codex"])
 
     assert result.exit_code != 0
     assert "Refusing to overwrite" in result.output
-    assert (destination / "SKILL.md").read_text() == "customer customization\n"
+    assert (destination / "SKILL.md").read_text(encoding="utf-8") == "customer customization\n"
 
 
 def test_uninstall_defaults_to_both_targets_and_preserves_parents(runner, isolated_home):
     assert runner.invoke(cli, ["skill", "install"]).exit_code == 0
     other_skill = isolated_home / ".agents" / "skills" / "customer-skill" / "SKILL.md"
     other_skill.parent.mkdir(parents=True)
-    other_skill.write_text("customer skill\n")
+    other_skill.write_text("customer skill\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "uninstall"])
 
@@ -129,7 +129,7 @@ def test_uninstall_defaults_to_both_targets_and_preserves_parents(runner, isolat
     assert "Claude Code: uninstalled" in result.output
     assert not (isolated_home / ".agents" / "skills" / "avrea-cli").exists()
     assert not (isolated_home / ".claude" / "skills" / "avrea-cli").exists()
-    assert other_skill.read_text() == "customer skill\n"
+    assert other_skill.read_text(encoding="utf-8") == "customer skill\n"
     assert (isolated_home / ".claude" / "skills").is_dir()
 
 
@@ -155,7 +155,7 @@ def test_uninstall_all_preflights_modified_install(runner, isolated_home):
     codex_skill = isolated_home / ".agents" / "skills" / "avrea-cli"
     claude_skill = isolated_home / ".claude" / "skills" / "avrea-cli"
     assert runner.invoke(cli, ["skill", "install"]).exit_code == 0
-    (claude_skill / "SKILL.md").write_text("customer customization\n")
+    (claude_skill / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "uninstall"])
 
@@ -168,7 +168,7 @@ def test_uninstall_all_preflights_modified_install(runner, isolated_home):
 def test_uninstall_force_removes_modified_managed_install(runner, isolated_home):
     destination = isolated_home / ".agents" / "skills" / "avrea-cli"
     assert runner.invoke(cli, ["skill", "install", "--target", "codex"]).exit_code == 0
-    (destination / "SKILL.md").write_text("customer customization\n")
+    (destination / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "uninstall", "--target", "codex", "--force"])
 
@@ -179,13 +179,13 @@ def test_uninstall_force_removes_modified_managed_install(runner, isolated_home)
 def test_uninstall_never_removes_unmanaged_install(runner, isolated_home):
     destination = isolated_home / ".claude" / "skills" / "avrea-cli"
     destination.mkdir(parents=True)
-    (destination / "SKILL.md").write_text("customer skill\n")
+    (destination / "SKILL.md").write_text("customer skill\n", encoding="utf-8")
 
     result = runner.invoke(cli, ["skill", "uninstall", "--target", "claude", "--force"])
 
     assert result.exit_code != 0
     assert "Refusing to remove an unmanaged skill" in result.output
-    assert (destination / "SKILL.md").read_text() == "customer skill\n"
+    assert (destination / "SKILL.md").read_text(encoding="utf-8") == "customer skill\n"
 
 
 def test_status_reports_current_and_modified(runner, isolated_home):
@@ -196,7 +196,7 @@ def test_status_reports_current_and_modified(runner, isolated_home):
     assert current.exit_code == 0
     assert "Codex: current" in current.output
 
-    (destination / "SKILL.md").write_text("customer customization\n")
+    (destination / "SKILL.md").write_text("customer customization\n", encoding="utf-8")
     modified = runner.invoke(cli, ["skill", "status", "--target", "codex"])
     assert modified.exit_code == 1
     assert "locally modified or unmanaged" in modified.output
@@ -204,9 +204,9 @@ def test_status_reports_current_and_modified(runner, isolated_home):
 
 def test_bundled_plugin_has_both_manifests():
     plugin = resources.files("avrea_cli").joinpath("bundled", "avrea")
-    codex = json.loads(plugin.joinpath(".codex-plugin", "plugin.json").read_text())
-    claude = json.loads(plugin.joinpath(".claude-plugin", "plugin.json").read_text())
-    pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
+    codex = json.loads(plugin.joinpath(".codex-plugin", "plugin.json").read_text(encoding="utf-8"))
+    claude = json.loads(plugin.joinpath(".claude-plugin", "plugin.json").read_text(encoding="utf-8"))
+    pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert codex["name"] == claude["name"] == "avrea"
     assert codex["version"] == claude["version"] == pyproject["project"]["version"]
