@@ -629,6 +629,7 @@ now, it is never stored.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - `--repo <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 - `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+- `--fetch-depth <INTEGER RANGE>` — Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
 - `--disable-cache <TEXT>` — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
 - `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.

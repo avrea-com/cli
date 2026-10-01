@@ -51,6 +51,9 @@ Git repository (owner/repo) to preload into the VM at boot. Best-effort; the che
 \fB\-\-ref\fR \fITEXT\fR
 Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 .TP
+\fB\-\-fetch\-depth\fR \fIINTEGER RANGE\fR
+Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
+.TP
 \fB\-\-disable\-cache\fR \fITEXT\fR
 Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo. (repeatable)
 .TP

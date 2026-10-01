@@ -297,6 +297,9 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     ref = vm.get("precheckout_ref")
     if ref:
         summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
+    fetch_depth = vm.get("fetch_depth")
+    if fetch_depth is not None:
+        summary["Fetch depth"] = "0 (all branches and tags)" if fetch_depth == 0 else str(fetch_depth)
     snapshot = vm.get("snapshot")
     if snapshot:
         summary["Snapshot"] = "memory + disk" if snapshot.get("memory_included") else "disk only"
@@ -641,6 +644,15 @@ def vm(ctx):
     ),
 )
 @click.option(
+    "--fetch-depth",
+    type=click.IntRange(min=0),
+    default=None,
+    help=(
+        "Git history to preload with --repo, like actions/checkout fetch-depth: "
+        "1 (default) = branch tip, N = N commits, 0 = all branches and tags."
+    ),
+)
+@click.option(
     "--disable-cache",
     "disable_cache",
     metavar="CACHE",
@@ -685,6 +697,7 @@ def vm_create(
     egress_rules_raw,
     repo,
     ref,
+    fetch_depth: int | None,
     disable_cache,
     ephemeral,
     wait,
@@ -707,6 +720,8 @@ def vm_create(
         )
     if ref and not repo:
         raise click.UsageError("--ref requires --repo.")
+    if fetch_depth is not None and not repo:
+        raise click.UsageError("--fetch-depth requires --repo.")
     if ref:
         ref = _validate_branch_ref(ref)
     # Windows remote desktop is not available yet (coming soon). Gate it at the
@@ -744,6 +759,8 @@ def vm_create(
         body["egress_rules"] = egress_rules
     if repo is not None:
         body["repo"] = repo
+    if fetch_depth is not None:
+        body["fetch_depth"] = fetch_depth
     if ref is not None:
         body["ref"] = ref
     if cache_overrides:
