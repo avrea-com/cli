@@ -1308,7 +1308,7 @@ Examples:
 View and manage CLI configuration.
 
 ```sh
-avr config [OPTIONS] COMMAND [ARGS]...
+avr config [OPTIONS] [COMMAND] [ARGS]...
 ```
 
 #### `avr config get`

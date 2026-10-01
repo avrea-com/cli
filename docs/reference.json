@@ -20,7 +20,7 @@
       "help": "Show the version and exit.",
       "hidden": false,
       "show_default": false,
-      "default": false
+      "default": null
     },
     {
       "name": "no_color",
@@ -181,7 +181,7 @@
             "help": "Output raw JSON.",
             "hidden": false,
             "show_default": false,
-            "default": false
+            "default": null
           }
         ],
         "subcommands": []
@@ -271,7 +271,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -344,7 +344,7 @@
                 "help": "Output the diagnostic report as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -638,7 +638,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -730,7 +730,7 @@
                 "help": "Tail logs as they appear (running jobs only).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "failed_only",
@@ -748,7 +748,7 @@
                 "help": "Show only logs from failed jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_all_levels",
@@ -766,7 +766,7 @@
                 "help": "Include diagnostic-level lines (off by default).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -784,7 +784,7 @@
                 "help": "Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -857,7 +857,7 @@
                 "help": "Re-run only the failed jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "yes",
@@ -876,7 +876,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -949,7 +949,7 @@
                 "help": "Expand each job to show its individual steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_log",
@@ -967,7 +967,7 @@
                 "help": "Print full logs for all jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "log_failed",
@@ -985,7 +985,7 @@
                 "help": "Print logs only for failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "job_name_filter",
@@ -1058,7 +1058,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -1076,7 +1076,7 @@
                 "help": "Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1167,7 +1167,7 @@
                 "help": "Exit non-zero if run failed.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "interval",
@@ -1203,7 +1203,7 @@
                 "help": "Force NDJSON event stream (default when stdout isn't a TTY).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1746,7 +1746,7 @@
                 "help": "Only show logs from failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "step_name",
@@ -1808,7 +1808,7 @@
                 "help": "Follow logs for in-progress jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "all_levels",
@@ -1826,7 +1826,7 @@
                 "help": "Include diagnostic-level lines (hidden by default).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -1844,7 +1844,7 @@
                 "help": "Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1981,7 +1981,7 @@
                 "help": "Refresh every 5 seconds (Ctrl-C to exit).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_output",
@@ -1999,7 +1999,7 @@
                 "help": "Output raw metrics responses as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2054,7 +2054,7 @@
                 "help": "Print the SSH command instead of connecting.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_password",
@@ -2072,7 +2072,7 @@
                 "help": "Display the SSH password (use with caution).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2145,7 +2145,7 @@
                 "help": "Print full logs for the job.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "log_failed",
@@ -2163,7 +2163,7 @@
                 "help": "Print logs only for failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -2218,7 +2218,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -2236,7 +2236,7 @@
                 "help": "Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2345,7 +2345,7 @@
                 "help": "Emit one JSON object per refresh (default when stdout isn't a TTY).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2619,7 +2619,7 @@
                 "help": "Print the ordered plan (secrets redacted) without running.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2948,7 +2948,7 @@
                 "help": "Emit the raw API response (VM plus one-time password) as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3022,7 +3022,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "wait",
@@ -3076,7 +3076,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3186,7 +3186,7 @@
                 "help": "Emit the VM list as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3313,7 +3313,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3441,7 +3441,7 @@
                 "help": "Print the ssh command and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3571,7 +3571,7 @@
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3698,7 +3698,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3771,7 +3771,7 @@
                 "help": "Emit the full VM record (with egress rules) as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3917,7 +3917,7 @@
                 "help": "Print the ssh command instead of running it.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4172,7 +4172,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4281,7 +4281,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4444,7 +4444,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4535,7 +4535,7 @@
                 "help": "Emit the usage report as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4665,7 +4665,7 @@
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4941,7 +4941,7 @@
                 "help": "Read a JSON object of inputs from stdin.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "watch",
@@ -4981,7 +4981,7 @@
                 "help": "With --watch, exit non-zero if the run failed.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "interval",
@@ -5145,7 +5145,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5290,7 +5290,7 @@
                 "help": "Delete ALL cache entries for the repository.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "yes",
@@ -5309,7 +5309,7 @@
                 "help": "Skip confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5532,7 +5532,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5969,7 +5969,7 @@
                 "help": "Display the auth token in plain text.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -6063,7 +6063,7 @@
         "epilog": null,
         "deprecated": false,
         "hidden": false,
-        "usage": "avr config [OPTIONS] COMMAND [ARGS]...",
+        "usage": "avr config [OPTIONS] [COMMAND] [ARGS]...",
         "params": [],
         "subcommands": [
           {
@@ -6326,7 +6326,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -6772,7 +6772,7 @@
                 "help": "Catch-all (default) rule.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "proto",
@@ -6997,7 +6997,7 @@
                 "help": "Show only summaries where the firewall blocked at least one flow.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "limit",
@@ -7090,7 +7090,7 @@
                 "help": "Emit raw JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -7163,7 +7163,7 @@
                 "help": "Output rules as JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -7404,7 +7404,7 @@
                 "help": "Output resolved rules as JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -7996,7 +7996,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -8813,7 +8813,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "json_fields",
@@ -9240,7 +9240,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "json_fields",
@@ -9371,7 +9371,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "json_fields",
@@ -10098,7 +10098,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "domains",
@@ -10284,7 +10284,7 @@
                     "help": "Do not open browser automatically.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "wait_seconds",
@@ -10434,7 +10434,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -10969,7 +10969,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -11138,7 +11138,7 @@
                     "help": "Print the test URL without opening a browser.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
