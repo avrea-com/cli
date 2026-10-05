@@ -19,6 +19,7 @@ from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import retry_after_seconds
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
@@ -515,9 +516,9 @@ def _wait_for_vm(
                 return vm, "timeout"
             sleep_for: float = _WAIT_POLL_SECONDS
             if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
-                retry_after = (exc.response.headers.get("Retry-After") or "").strip()
-                if retry_after.isdigit():
-                    sleep_for = min(int(retry_after), _WAIT_RETRY_AFTER_CAP)
+                retry_after = retry_after_seconds(exc.response)
+                if retry_after is not None:
+                    sleep_for = min(retry_after, _WAIT_RETRY_AFTER_CAP)
             time.sleep(min(sleep_for, remaining))
             continue
         vm = resp["data"]

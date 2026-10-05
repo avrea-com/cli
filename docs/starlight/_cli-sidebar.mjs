@@ -17,6 +17,7 @@ export default {
         { label: "avr vm", slug: "cli/reference/vm" },
         { label: "avr workflow", slug: "cli/reference/workflow" },
         { label: "avr cache", slug: "cli/reference/cache" },
+        { label: "avr sbom", slug: "cli/reference/sbom" },
         { label: "avr log", slug: "cli/reference/log" },
       ],
     },

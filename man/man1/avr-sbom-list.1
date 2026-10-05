@@ -1,0 +1,52 @@
+.TH AVR\-SBOM\-LIST 1 "" "avr 0.3.0" "Avrea CLI"
+.SH NAME
+avr-sbom-list \- List the repository's recorded SBOMs, newest first.
+.SH SYNOPSIS
+.B avr sbom list
+[OPTIONS]
+.SH DESCRIPTION
+List the repository's recorded SBOMs, newest first.
+.PP
+Counts shown as "?" were not recorded by the SBOM's schema version.
+.PP
+.RS 4
+.nf
+Examples:
+    avr sbom list --repo acme/api
+    avr sbom list --repo acme/api --json commit_sha,copyleft_count
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    artifacts, branch, commit_sha, copyleft_count, generated_at,
+    is_release, recorded_at, schema_version, total_dependencies,
+    unresolved
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max SBOMs to return. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Opaque cursor from a previous response's next_cursor.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-sbom (1),
+.BR avr-sbom-download (1),
+.BR avr-sbom-generate (1),
+.BR avr-sbom-view (1)

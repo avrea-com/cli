@@ -290,7 +290,12 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
         if hint:
             click.echo(f"  Hint: {hint}", err=True)
     elif status == 429:
-        click.echo("Error: Avrea is rate-limiting requests (HTTP 429). Try again in a few seconds.", err=True)
+        retry_after = retry_after_seconds(exc.response)
+        click.echo(f"Error: Avrea is rate-limiting requests (HTTP 429){detail_suffix}", err=True)
+        if retry_after is not None:
+            click.echo(f"  Retry in {retry_after}s.", err=True)
+        else:
+            click.echo("  Try again in a few seconds.", err=True)
     elif 500 <= status < 600:
         click.echo(
             f"Error: Avrea is having trouble (HTTP {status}). Try again shortly — `avr health` shows status.",
@@ -302,6 +307,15 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
         click.echo(f"Error: Failed to {action} (HTTP {status}){detail_suffix}", err=True)
     _echo_api_url(exc)
     sys.exit(1)
+
+
+def retry_after_seconds(response: httpx.Response) -> int | None:
+    """The delay-seconds form of a ``Retry-After`` header, or None.
+
+    The HTTP-date form is not interpreted: Avrea sends seconds, and a date would
+    need the client clock to agree with the server's."""
+    value = (response.headers.get("Retry-After") or "").strip()
+    return int(value) if value.isdigit() else None
 
 
 def _api_origin(exc: httpx.HTTPStatusError) -> str:

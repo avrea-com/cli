@@ -313,6 +313,32 @@ class TestHandleHttpError:
         err = capsys.readouterr().err
         assert "HTTP 503" in err
 
+    def test_rate_limit_names_retry_after_seconds(self, capsys):
+        req = httpx.Request("POST", "https://api.example/x")
+        resp = httpx.Response(429, request=req, json={"detail": "cooldown"}, headers={"Retry-After": "312"})
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "generate SBOM")
+        assert excinfo.value.code == 1
+        err = capsys.readouterr().err
+        assert "HTTP 429" in err
+        assert "Retry in 312s" in err
+        assert "few seconds" not in err
+
+    @pytest.mark.parametrize("header", [{}, {"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}])
+    def test_rate_limit_without_numeric_retry_after(self, capsys, header):
+        req = httpx.Request("GET", "https://api.example/x")
+        resp = httpx.Response(429, request=req, json={}, headers=header)
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "x")
+        assert "Try again in a few seconds" in capsys.readouterr().err
+
+    def test_rate_limit_names_non_default_api(self, capsys):
+        req = httpx.Request("GET", "https://api.staging.example/x")
+        resp = httpx.Response(429, request=req, json={}, headers={"Retry-After": "5"})
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "x")
+        assert "API: https://api.staging.example/x" in capsys.readouterr().err
+
 
 class TestFormatSize:
     """Pin the unit-step boundaries; the cache panel + cache list use this

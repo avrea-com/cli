@@ -1,0 +1,47 @@
+.TH AVR\-SBOM\-VIEW 1 "" "avr 0.3.0" "Avrea CLI"
+.SH NAME
+avr-sbom-view \- Show an SBOM's summary: dependency counts, licences, and artifacts.
+.SH SYNOPSIS
+.B avr sbom view
+[OPTIONS]
+.SH DESCRIPTION
+Show an SBOM's summary: dependency counts, licences, and artifacts.
+.PP
+.RS 4
+.nf
+Examples:
+    avr sbom view --repo acme/api
+    avr sbom view --repo acme/api --commit 3f2c...e91a
+    avr sbom view --repo acme/api --json summary --jq .summary.licenses
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
+    schema_version, summary
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-commit\fR \fITEXT\fR
+Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-sbom (1),
+.BR avr-sbom-download (1),
+.BR avr-sbom-generate (1),
+.BR avr-sbom-list (1)

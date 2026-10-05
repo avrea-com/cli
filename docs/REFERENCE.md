@@ -40,6 +40,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
+- [`avr sbom`](#avr-sbom) — View, generate, and download repository SBOMs.
 - [`avr log`](#avr-log) — Search across runner execution logs.
 
 ### Setup & Config
@@ -1193,6 +1194,143 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr sbom`
+
+View, generate, and download repository SBOMs.
+
+```sh
+avr sbom [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr sbom download`
+
+Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+
+```sh
+avr sbom download [OPTIONS]
+```
+
+```sh
+Examples:
+    avr sbom download --repo acme/api
+    avr sbom download --repo acme/api --format spdx --out api.spdx.json
+    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- `--format <CHOICE>` — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
+- `--out <TEXT>` — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
+
+#### `avr sbom generate`
+
+Start SBOM generation for a repository.
+
+```sh
+avr sbom generate [OPTIONS]
+```
+
+One analysis runs per repository at a time. A request for the same ref as
+the analysis already running joins it; a request for a different ref is
+rejected (HTTP 409) until that analysis finishes. Once an SBOM has been
+recorded for the repository, a new run is refused (HTTP 429) for a
+cooldown period, and the error says how many seconds remain.
+
+With --wait and --ref set to a full commit SHA, success means a new SBOM
+for that commit is downloadable, whatever the analysis task's own outcome
+(task_status); commit_sha and recorded_at identify it. A failed analysis
+can still deliver its SBOM later, so such a wait runs to --wait-timeout
+before reporting failure. For a branch, tag, or the default branch the API
+does not say which commit the run resolved, so --wait reports the analysis
+task's outcome only. Transient errors while waiting are retried until
+--wait-timeout; a wait that times out leaves the analysis running.
+
+```sh
+Examples:
+    avr sbom generate --repo acme/api
+    avr sbom generate --repo acme/api --ref v1.4.0
+    avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+```
+
+```sh
+JSON FIELDS
+    ai_task_id, commit_sha, error_code, recorded_at, status, task_status
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--ref <TEXT>` — Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.
+- `--wait` — Wait until generation finishes before returning.
+- `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `900`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr sbom list`
+
+List the repository's recorded SBOMs, newest first.
+
+```sh
+avr sbom list [OPTIONS]
+```
+
+Counts shown as "?" were not recorded by the SBOM's schema version.
+
+```sh
+Examples:
+    avr sbom list --repo acme/api
+    avr sbom list --repo acme/api --json commit_sha,copyleft_count
+```
+
+```sh
+JSON FIELDS
+    artifacts, branch, commit_sha, copyleft_count, generated_at,
+    is_release, recorded_at, schema_version, total_dependencies,
+    unresolved
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-L, --limit <INTEGER RANGE>` — Max SBOMs to return. _(default: `50`)_
+- `--cursor <TEXT>` — Opaque cursor from a previous response's next_cursor.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr sbom view`
+
+Show an SBOM's summary: dependency counts, licences, and artifacts.
+
+```sh
+avr sbom view [OPTIONS]
+```
+
+```sh
+Examples:
+    avr sbom view --repo acme/api
+    avr sbom view --repo acme/api --commit 3f2c...e91a
+    avr sbom view --repo acme/api --json summary --jq .summary.licenses
+```
+
+```sh
+JSON FIELDS
+    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
+    schema_version, summary
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

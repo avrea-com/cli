@@ -3,6 +3,7 @@
 from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
 import httpx
+import pytest
 
 
 def test_config_defaults(monkeypatch) -> None:
@@ -112,6 +113,48 @@ def test_public_post_supports_raw_content_and_query_params(monkeypatch) -> None:
     )
 
     assert result == {"data": {"ok": True}}
+
+
+def test_public_get_bytes_returns_raw_body(monkeypatch) -> None:
+    monkeypatch.setenv("AVR_TOKEN", "test-token")
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_token", lambda *, host: None)
+    monkeypatch.setattr("avrea_cli.auth.load_default_host", lambda: None)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["authorization"] == "Bearer test-token"
+        return httpx.Response(200, request=request, content=b"\x00raw-bytes")
+
+    client = ApiClient(CliConfig(), http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert client.public_get_bytes("/artifact") == b"\x00raw-bytes"
+
+
+def test_public_get_honours_per_call_timeout(monkeypatch) -> None:
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_default_host", lambda: None)
+    seen: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.extensions["timeout"])
+        return httpx.Response(200, request=request, json={})
+
+    client = ApiClient(CliConfig(), http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+    client.public_get("/a")
+    client.public_get("/b", timeout=2.5)
+
+    assert seen[0]["read"] == 30.0
+    assert seen[1]["read"] == 2.5
+
+
+def test_public_get_bytes_raises_on_error_status(monkeypatch) -> None:
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_default_host", lambda: None)
+    transport = httpx.MockTransport(lambda request: httpx.Response(404, request=request, json={"detail": "gone"}))
+    client = ApiClient(CliConfig(), http_client=httpx.Client(transport=transport))
+
+    with pytest.raises(httpx.HTTPStatusError):
+        client.public_get_bytes("/artifact")
 
 
 def test_public_post_rejects_json_and_raw_content(monkeypatch) -> None:

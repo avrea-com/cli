@@ -5632,6 +5632,523 @@
         ]
       },
       {
+        "name": "sbom",
+        "path": [
+          "avr",
+          "sbom"
+        ],
+        "full": "avr sbom",
+        "is_group": true,
+        "short_help": "View, generate, and download repository SBOMs.",
+        "help": "View, generate, and download repository SBOMs.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr sbom [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "download",
+            "path": [
+              "avr",
+              "sbom",
+              "download"
+            ],
+            "full": "avr sbom download",
+            "is_group": false,
+            "short_help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).",
+            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom download [OPTIONS]",
+            "params": [
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "commit_sha",
+                "kind": "option",
+                "opts": [
+                  "--commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "artifact_format",
+                "kind": "option",
+                "opts": [
+                  "--format"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Artifact to download.",
+                "hidden": false,
+                "show_default": true,
+                "default": "cyclonedx",
+                "choices": [
+                  "cyclonedx",
+                  "inventory",
+                  "spdx"
+                ]
+              },
+              {
+                "name": "out_path",
+                "kind": "option",
+                "opts": [
+                  "--out"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output file path, or \"-\" for stdout. Defaults to the artifact filename in the current directory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "generate",
+            "path": [
+              "avr",
+              "sbom",
+              "generate"
+            ],
+            "full": "avr sbom generate",
+            "is_group": false,
+            "short_help": "Start SBOM generation for a repository.",
+            "help": "Start SBOM generation for a repository.\n\nOne analysis runs per repository at a time. A request for the same ref as\nthe analysis already running joins it; a request for a different ref is\nrejected (HTTP 409) until that analysis finishes. Once an SBOM has been\nrecorded for the repository, a new run is refused (HTTP 429) for a\ncooldown period, and the error says how many seconds remain.\n\nWith --wait and --ref set to a full commit SHA, success means a new SBOM\nfor that commit is downloadable, whatever the analysis task's own outcome\n(task_status); commit_sha and recorded_at identify it. A failed analysis\ncan still deliver its SBOM later, so such a wait runs to --wait-timeout\nbefore reporting failure. For a branch, tag, or the default branch the API\ndoes not say which commit the run resolved, so --wait reports the analysis\ntask's outcome only. Transient errors while waiting are retried until\n--wait-timeout; a wait that times out leaves the analysis running.\n\n\b\nExamples:\n    avr sbom generate --repo acme/api\n    avr sbom generate --repo acme/api --ref v1.4.0\n    avr sbom generate --repo acme/api --ref \"$(git rev-parse HEAD)\" --wait\n\n\b\nJSON FIELDS\n    ai_task_id, commit_sha, error_code, recorded_at, status, task_status\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom generate [OPTIONS]",
+            "params": [
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ref",
+                "kind": "option",
+                "opts": [
+                  "--ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until generation finishes before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 900
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "sbom",
+              "list"
+            ],
+            "full": "avr sbom list",
+            "is_group": false,
+            "short_help": "List the repository's recorded SBOMs, newest first.",
+            "help": "List the repository's recorded SBOMs, newest first.\n\nCounts shown as \"?\" were not recorded by the SBOM's schema version.\n\n\b\nExamples:\n    avr sbom list --repo acme/api\n    avr sbom list --repo acme/api --json commit_sha,copyleft_count\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, copyleft_count, generated_at,\n    is_release, recorded_at, schema_version, total_dependencies,\n    unresolved\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom list [OPTIONS]",
+            "params": [
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max SBOMs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Opaque cursor from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "sbom",
+              "view"
+            ],
+            "full": "avr sbom view",
+            "is_group": false,
+            "short_help": "Show an SBOM's summary: dependency counts, licences, and artifacts.",
+            "help": "Show an SBOM's summary: dependency counts, licences, and artifacts.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view --repo acme/api --commit 3f2c...e91a\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom view [OPTIONS]",
+            "params": [
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "commit_sha",
+                "kind": "option",
+                "opts": [
+                  "--commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "log",
         "path": [
           "avr",
