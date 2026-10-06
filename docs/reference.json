@@ -1,6 +1,6 @@
 {
   "program": "avr",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "summary": "Avrea on the command line.",
   "global_options": [
     {
