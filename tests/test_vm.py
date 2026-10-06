@@ -1,6 +1,7 @@
 """Unit tests for the `avr vm` long-running VM commands."""
 
 from avrea_cli.main import cli
+from typing import Any
 import httpx
 import json
 import os
@@ -1122,7 +1123,7 @@ class TestVmUsage:
                 "total_memory_mb_seconds": 7372800,
             }
         }
-        store = {"return": report}
+        store: dict[str, Any] = {"return": report}
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: store.__setitem__("params", params) or store["return"],
