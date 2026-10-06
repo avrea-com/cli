@@ -47,8 +47,12 @@ Examples:
 Start SBOM generation for a repository.
 
 ```sh
-avr sbom generate [OPTIONS]
+avr sbom generate [OPTIONS] REF
 ```
+
+REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
+as the one `avr sbom list` shows works too. Defaults to the default-branch
+tip.
 
 One analysis runs per repository at a time. A request for the same ref as
 the analysis already running joins it; a request for a different ref is
@@ -56,8 +60,8 @@ rejected (HTTP 409) until that analysis finishes. Once an SBOM has been
 recorded for the repository, a new run is refused (HTTP 429) for a
 cooldown period, and the error says how many seconds remain.
 
-With --wait and --ref set to a full commit SHA, success means a new SBOM
-for that commit is downloadable, whatever the analysis task's own outcome
+With --wait and a REF that names a commit, success means a new SBOM for
+that commit is downloadable, whatever the analysis task's own outcome
 (task_status); commit_sha and recorded_at identify it. A failed analysis
 can still deliver its SBOM later, so such a wait runs to --wait-timeout
 before reporting failure. For a branch, tag, or the default branch the API
@@ -68,8 +72,8 @@ task's outcome only. Transient errors while waiting are retried until
 ```sh
 Examples:
     avr sbom generate --repo acme/api
-    avr sbom generate --repo acme/api --ref v1.4.0
-    avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+    avr sbom generate v1.4.0 --repo acme/api
+    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 ```
 
 ```sh
@@ -77,11 +81,15 @@ JSON FIELDS
     ai_task_id, commit_sha, error_code, recorded_at, status, task_status
 ```
 
+**Arguments**
+
+- <code class="cli-arg">[REF_ARGUMENT]</code>
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.
+- <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Same as the REF argument.
 - <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until generation finishes before returning.
 - <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Seconds to wait when --wait is set. _(default: `900`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.

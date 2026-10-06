@@ -818,6 +818,61 @@ class TestSbomGenerateWaitForCommit:
         assert calls.log == []
 
 
+SHORT_NEW_SHA = NEW_SHA[:12]
+
+
+class TestSbomGenerateRefArgument:
+    def test_ref_as_argument(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "v1.2.0", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][2] == {"scope": "sbom", "ref": "v1.2.0"}
+
+    def test_rejects_conflicting_ref_argument_and_option(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "generate", "v1.2.0", "--repo", "rep-123", "--ref", "main"])
+        assert result.exit_code == 2
+        assert "REF argument or with --ref, not both" in result.output
+        assert calls.log == []
+
+    def test_short_sha_is_sent_for_the_api_to_expand(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log == [("POST", f"{BASE}/generate", {"scope": "sbom", "ref": SHORT_NEW_SHA})]
+
+    def test_wait_follows_the_commit_the_api_expanded(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [_http_error(404, "analysis result not found"), NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": NEW_SHA}
+        assert [c[1] for c in calls.log[:2]] == [f"{BASE}/generate", COMMIT_PATH]
+
+    def test_wait_for_an_expanded_commit_needs_a_new_delivery(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "recorded_at"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"recorded_at": NEW_SNAPSHOT["recorded_at"]}
+
+    @pytest.mark.parametrize("expanded", [{}, {"commit_sha": None}, {"commit_sha": SHORT_NEW_SHA}])
+    def test_wait_follows_the_task_without_an_expanded_commit(self, runner, calls, expanded):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **expanded})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": None}
+        assert all("/commits/" not in c[1] for c in calls.log)
+
+
 RUNNING = {"ai_task_id": "task-1", "status": "RUNNING"}
 COMPLETED = {"ai_task_id": "task-1", "status": "COMPLETED"}
 UNPINNED_WAIT = ["sbom", "generate", "--repo", "rep-123", "--wait"]

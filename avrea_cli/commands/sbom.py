@@ -567,14 +567,10 @@ class _TaskTracker:
 
 
 @sbom.command("generate")
+@click.argument("ref_argument", metavar="REF", required=False, callback=_strip_ref)
 @_repo_option
 @_org_option
-@click.option(
-    "--ref",
-    default=None,
-    callback=_strip_ref,
-    help="Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.",
-)
+@click.option("--ref", default=None, callback=_strip_ref, help="Same as the REF argument.")
 @click.option("--wait", is_flag=True, default=False, help="Wait until generation finishes before returning.")
 @click.option(
     "--wait-timeout",
@@ -585,8 +581,12 @@ class _TaskTracker:
 )
 @json_options
 @click.pass_context
-def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq_expr):
+def sbom_generate(ctx, ref_argument, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq_expr):
     """Start SBOM generation for a repository.
+
+    REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
+    as the one `avr sbom list` shows works too. Defaults to the default-branch
+    tip.
 
     One analysis runs per repository at a time. A request for the same ref as
     the analysis already running joins it; a request for a different ref is
@@ -594,8 +594,8 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     recorded for the repository, a new run is refused (HTTP 429) for a
     cooldown period, and the error says how many seconds remain.
 
-    With --wait and --ref set to a full commit SHA, success means a new SBOM
-    for that commit is downloadable, whatever the analysis task's own outcome
+    With --wait and a REF that names a commit, success means a new SBOM for
+    that commit is downloadable, whatever the analysis task's own outcome
     (task_status); commit_sha and recorded_at identify it. A failed analysis
     can still deliver its SBOM later, so such a wait runs to --wait-timeout
     before reporting failure. For a branch, tag, or the default branch the API
@@ -606,8 +606,8 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     \b
     Examples:
         avr sbom generate --repo acme/api
-        avr sbom generate --repo acme/api --ref v1.4.0
-        avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+        avr sbom generate v1.4.0 --repo acme/api
+        avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 
     \b
     JSON FIELDS
@@ -615,6 +615,9 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     """
     if handle_json_meta(json_fields, jq_expr, _SBOM_GENERATE_FIELDS):
         return
+    if ref_argument and ref and ref_argument != ref:
+        raise click.UsageError("Pass the ref either as the REF argument or with --ref, not both.")
+    ref = ref_argument or ref
     output = _JsonOutput(
         fields=split_fields(json_fields, _SBOM_GENERATE_FIELDS) if json_fields is not None else [],
         jq_expr=jq_expr,
@@ -655,6 +658,11 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
         return
 
     click.echo(f"Waiting for SBOM generation (task {task_id})…", err=True)
+    expanded_sha = response.get("commit_sha")
+    if commit_sha is None and isinstance(expanded_sha, str) and _COMMIT_SHA_RE.match(expanded_sha):
+        # The API expanded an abbreviated SHA, so the baseline is read only now.
+        commit_sha = expanded_sha
+        baseline = _commit_snapshot_or_none(client, org_id, repo_id, commit_sha)
     poller = _Poller(client, deadline)
     tracker = _TaskTracker(poller, org_id, repo_id, task_id)
     waiter = _Wait(poller, tracker, wait_timeout, result, output)
