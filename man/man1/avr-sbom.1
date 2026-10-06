@@ -1,0 +1,45 @@
+.TH AVR\-SBOM 1 "" "avr 0.3.0" "Avrea CLI"
+.SH NAME
+avr-sbom \- View, generate, and download repository SBOMs.
+.SH SYNOPSIS
+.B avr sbom
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+View, generate, and download repository SBOMs.
+.PP
+.SH COMMANDS
+.TP
+download
+Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.TP
+generate
+Start SBOM generation for a repository.
+.TP
+list
+List the repository's recorded SBOMs, newest first.
+.TP
+view
+Show an SBOM's summary: dependency counts, licences, and artifacts.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-sbom-download (1),
+.BR avr-sbom-generate (1),
+.BR avr-sbom-list (1),
+.BR avr-sbom-view (1)

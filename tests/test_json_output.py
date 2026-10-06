@@ -2,6 +2,7 @@
 
 from avrea_cli.json_output import filter_with_jq
 from avrea_cli.json_output import get_path
+from avrea_cli.json_output import handle_json_meta
 from avrea_cli.json_output import select_fields
 from avrea_cli.json_output import split_fields
 from avrea_cli.main import cli
@@ -67,6 +68,25 @@ class TestSelectFields:
 
 
 @pytest.mark.skipif(shutil.which("jq") is None, reason="jq not installed in this environment")
+class TestHandleJsonMeta:
+    def test_unknown_field_raises_before_the_command_runs(self):
+        with pytest.raises(click.ClickException, match="Unknown JSON field\\(s\\): bogus"):
+            handle_json_meta("id,bogus", None, SAMPLE_SCHEMA)
+
+    def test_known_fields_proceed(self):
+        assert handle_json_meta("id, status", None, SAMPLE_SCHEMA) is False
+
+    def test_star_proceeds(self):
+        assert handle_json_meta("*", None, SAMPLE_SCHEMA) is False
+
+    def test_no_json_proceeds(self):
+        assert handle_json_meta(None, None, SAMPLE_SCHEMA) is False
+
+    def test_question_mark_lists_and_stops(self, capsys):
+        assert handle_json_meta("?", None, SAMPLE_SCHEMA) is True
+        assert "workflowName" in capsys.readouterr().out
+
+
 class TestFilterWithJq:
     """Run only when jq is available — otherwise skip rather than vendor a stub."""
 
@@ -167,6 +187,16 @@ class TestRunListJson:
         result = runner.invoke(cli, ["run", "list", "--json", "bogus"])
         assert result.exit_code != 0
         assert "Unknown JSON field" in result.output
+
+    def test_unknown_field_rejected_before_any_request(self, runner, monkeypatch):
+        requested: list[str] = []
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda self, path, **kw: requested.append(path) or SAMPLE_RUNS,
+        )
+        result = runner.invoke(cli, ["run", "list", "--json", "bogus"])
+        assert result.exit_code != 0
+        assert requested == []
 
     @pytest.mark.skipif(shutil.which("jq") is None, reason="jq not installed")
     def test_jq_pipes_correctly(self, runner):

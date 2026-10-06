@@ -37,6 +37,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
     ("vm", "avrea_cli.vm", "vm", "Manage long-running VMs (SSH/RDP/VNC).", "Core Commands"),
     ("workflow", "avrea_cli.commands.workflow", "workflow", "List and view workflow definitions.", "Core Commands"),
     ("cache", "avrea_cli.commands.cache", "cache", "Inspect and manage the Avrea build cache.", "Core Commands"),
+    ("sbom", "avrea_cli.commands.sbom", "sbom", "View, generate, and download repository SBOMs.", "Core Commands"),
     ("log", "avrea_cli.commands.log", "log", "Search across runner execution logs.", "Core Commands"),
     ("auth", "avrea_cli.commands.auth_cmd", "auth_group", "Authenticate and manage credentials.", "Setup & Config"),
     ("config", "avrea_cli.commands.config_cmd", "config", "View and manage CLI configuration.", "Setup & Config"),

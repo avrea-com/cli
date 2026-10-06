@@ -1,0 +1,39 @@
+.TH AVR\-SBOM\-DOWNLOAD 1 "" "avr 0.3.0" "Avrea CLI"
+.SH NAME
+avr-sbom-download \- Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.SH SYNOPSIS
+.B avr sbom download
+[OPTIONS]
+.SH DESCRIPTION
+Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.PP
+.RS 4
+.nf
+Examples:
+    avr sbom download --repo acme/api
+    avr sbom download --repo acme/api --format spdx --out api.spdx.json
+    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-commit\fR \fITEXT\fR
+Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+.TP
+\fB\-\-format\fR \fICHOICE\fR
+Artifact to download. (choices: cyclonedx, inventory, spdx; default: cyclonedx)
+.TP
+\fB\-\-out\fR \fITEXT\fR
+Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-sbom (1),
+.BR avr-sbom-generate (1),
+.BR avr-sbom-list (1),
+.BR avr-sbom-view (1)

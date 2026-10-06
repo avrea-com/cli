@@ -1,0 +1,56 @@
+.TH AVR\-SBOM\-GENERATE 1 "" "avr 0.3.0" "Avrea CLI"
+.SH NAME
+avr-sbom-generate \- Start SBOM generation for a repository.
+.SH SYNOPSIS
+.B avr sbom generate
+[OPTIONS]
+.SH DESCRIPTION
+Start SBOM generation for a repository.
+.PP
+One analysis runs per repository at a time. A request for the same ref as the analysis already running joins it; a request for a different ref is rejected (HTTP 409) until that analysis finishes. Once an SBOM has been recorded for the repository, a new run is refused (HTTP 429) for a cooldown period, and the error says how many seconds remain.
+.PP
+With --wait and --ref set to a full commit SHA, success means a new SBOM for that commit is downloadable, whatever the analysis task's own outcome (task_status); commit_sha and recorded_at identify it. A failed analysis can still deliver its SBOM later, so such a wait runs to --wait-timeout before reporting failure. For a branch, tag, or the default branch the API does not say which commit the run resolved, so --wait reports the analysis task's outcome only. Transient errors while waiting are retried until --wait-timeout; a wait that times out leaves the analysis running.
+.PP
+.RS 4
+.nf
+Examples:
+    avr sbom generate --repo acme/api
+    avr sbom generate --repo acme/api --ref v1.4.0
+    avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    ai_task_id, commit_sha, error_code, recorded_at, status, task_status
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-ref\fR \fITEXT\fR
+Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.
+.TP
+\fB\-\-wait\fR
+Wait until generation finishes before returning.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER RANGE\fR
+Seconds to wait when --wait is set. (default: 900)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-sbom (1),
+.BR avr-sbom-download (1),
+.BR avr-sbom-list (1),
+.BR avr-sbom-view (1)

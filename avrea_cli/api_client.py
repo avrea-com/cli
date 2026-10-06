@@ -34,11 +34,17 @@ class ApiClient:
             styled_status = click.style(status, fg="red")
         click.echo(f"  → {styled_method} {url} [{styled_status}]", err=True)
 
-    def public_get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        """GET request to public API."""
+    def public_get(
+        self, path: str, params: dict[str, Any] | None = None, timeout: float | None = None
+    ) -> dict[str, Any]:
+        """GET request to public API. ``timeout`` overrides the client default for
+        this call, e.g. so a polling loop never outlives its own deadline."""
         url = f"{self.config.public_api_url}{path}"
+        effective_timeout = timeout if timeout is not None else self.timeout
         try:
-            response = self._http.get(url, headers=self.config.get_api_headers(), timeout=self.timeout, params=params)
+            response = self._http.get(
+                url, headers=self.config.get_api_headers(), timeout=effective_timeout, params=params
+            )
         except httpx.HTTPError as exc:
             self._log("GET", url, type(exc).__name__)
             raise
@@ -57,6 +63,18 @@ class ApiClient:
         self._log("GET", str(response.request.url), response.status_code)
         response.raise_for_status()
         return response.text
+
+    def public_get_bytes(self, path: str, params: dict[str, Any] | None = None) -> bytes:
+        """GET a binary or opaque public API response, such as an SBOM artifact."""
+        url = f"{self.config.public_api_url}{path}"
+        try:
+            response = self._http.get(url, headers=self.config.get_api_headers(), timeout=self.timeout, params=params)
+        except httpx.HTTPError as exc:
+            self._log("GET", url, type(exc).__name__)
+            raise
+        self._log("GET", str(response.request.url), response.status_code)
+        response.raise_for_status()
+        return response.content
 
     def public_post(
         self,

@@ -74,28 +74,43 @@ def get_path(obj: Any, path: str) -> Any:
     return obj
 
 
-def select_fields(records: list[dict[str, Any]], fields: list[str], schema: dict[str, str]) -> list[dict[str, Any]]:
-    """Pluck the requested fields from each record using the schema's path
-    mapping. Unknown fields raise a ClickException listing available ones."""
+def require_known_fields(fields: list[str], schema: dict[str, str]) -> None:
+    """Raise a ClickException listing available fields when any is unknown.
+
+    ``handle_json_meta`` runs this before a command does anything, and
+    ``select_fields`` again at output time, where a command may project onto a
+    narrower schema than the one it advertised (``auth status`` without
+    ``--show-token``)."""
     unknown = [f for f in fields if f not in schema]
     if unknown:
         avail = ", ".join(sorted(schema))
         raise click.ClickException(f"Unknown JSON field(s): {', '.join(unknown)}. Available: {avail}")
+
+
+def select_fields(records: list[dict[str, Any]], fields: list[str], schema: dict[str, str]) -> list[dict[str, Any]]:
+    """Pluck the requested fields from each record using the schema's path
+    mapping. Unknown fields raise a ClickException listing available ones."""
+    require_known_fields(fields, schema)
     return [{f: get_path(record, schema[f]) for f in fields} for record in records]
 
 
 def handle_json_meta(json_fields: str | None, jq_expr: str | None, schema: dict[str, str]) -> bool:
-    """Validate ``--jq`` requires ``--json`` and handle ``--json '?'`` discovery.
+    """Validate ``--jq`` requires ``--json``, handle ``--json '?'`` discovery,
+    and reject unknown ``--json`` fields.
 
     Returns True when the caller should ``return`` immediately (the ``?``
     discovery path printed and is done). Otherwise returns False so the
     command proceeds. Centralizes a preamble that was duplicated at every
-    ``--json``-bearing command's entry point."""
+    ``--json``-bearing command's entry point. Field names are checked here,
+    before any request, so a typo cannot start a mutating action and then
+    discard its result at output time."""
     if jq_expr and json_fields is None:
         raise click.UsageError("--jq requires --json")
     if json_fields == "?":
         print_available_fields(schema)
         return True
+    if json_fields is not None:
+        require_known_fields(split_fields(json_fields, schema), schema)
     return False
 
 
