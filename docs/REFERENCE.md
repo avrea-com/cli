@@ -1211,21 +1211,29 @@ avr sbom [OPTIONS] COMMAND [ARGS]...
 Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
 
 ```sh
-avr sbom download [OPTIONS]
+avr sbom download [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom download --repo acme/api
     avr sbom download --repo acme/api --format spdx --out api.spdx.json
-    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
 ```
+
+**Arguments**
+
+- `[COMMIT]`
 
 **Options**
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- `--commit <TEXT>` — Same as the COMMIT argument.
 - `--format <CHOICE>` — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
 - `--out <TEXT>` — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
 
@@ -1311,13 +1319,17 @@ JSON FIELDS
 Show an SBOM's summary: dependency counts, licences, and artifacts.
 
 ```sh
-avr sbom view [OPTIONS]
+avr sbom view [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom view --repo acme/api
-    avr sbom view --repo acme/api --commit 3f2c...e91a
+    avr sbom view 3f2c9a1b7d04 --repo acme/api
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
@@ -1327,11 +1339,15 @@ JSON FIELDS
     schema_version, summary
 ```
 
+**Arguments**
+
+- `[COMMIT]`
+
 **Options**
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- `--commit <TEXT>` — Same as the COMMIT argument.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

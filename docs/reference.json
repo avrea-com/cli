@@ -5675,12 +5675,30 @@
             "full": "avr sbom download",
             "is_group": false,
             "short_help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).",
-            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components\n",
+            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom download [OPTIONS]",
+            "usage": "avr sbom download [OPTIONS] [COMMIT]",
             "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
               {
                 "name": "repo_id",
                 "kind": "option",
@@ -5718,7 +5736,7 @@
                 "default": null
               },
               {
-                "name": "commit_sha",
+                "name": "commit_option",
                 "kind": "option",
                 "opts": [
                   "--commit"
@@ -5730,7 +5748,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "help": "Same as the COMMIT argument.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6064,12 +6082,30 @@
             "full": "avr sbom view",
             "is_group": false,
             "short_help": "Show an SBOM's summary: dependency counts, licences, and artifacts.",
-            "help": "Show an SBOM's summary: dependency counts, licences, and artifacts.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view --repo acme/api --commit 3f2c...e91a\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
+            "help": "Show an SBOM's summary: dependency counts, licences, and artifacts.\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view 3f2c9a1b7d04 --repo acme/api\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom view [OPTIONS]",
+            "usage": "avr sbom view [OPTIONS] [COMMIT]",
             "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
               {
                 "name": "repo_id",
                 "kind": "option",
@@ -6107,7 +6143,7 @@
                 "default": null
               },
               {
-                "name": "commit_sha",
+                "name": "commit_option",
                 "kind": "option",
                 "opts": [
                   "--commit"
@@ -6119,7 +6155,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "help": "Same as the COMMIT argument.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

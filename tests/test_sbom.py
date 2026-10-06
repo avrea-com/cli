@@ -67,6 +67,7 @@ HISTORY = {
     ],
     "pagination": {"next_cursor": "Y3Vyc29y"},
 }
+HISTORY_LAST_PAGE = {**HISTORY, "pagination": {"next_cursor": None}}
 
 
 def _http_error(status: int, detail: str = "", headers: dict[str, str] | None = None) -> httpx.HTTPStatusError:
@@ -201,11 +202,36 @@ class TestSbomView:
         assert result.exit_code == 0, result.output
         assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
 
-    def test_rejects_short_commit(self, runner, calls):
-        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", "abc123"])
+    def test_commit_as_argument(self, runner, calls):
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    def test_short_commit_resolves_through_history(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA[:12], "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    @pytest.mark.parametrize("commit", ["abc123", "xyz1234567", "a" * 65, " "])
+    def test_rejects_invalid_commit(self, runner, calls, commit):
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", commit])
         assert result.exit_code == 2
-        assert "40 or 64" in result.output
+        assert "at least 7" in result.output
         assert calls.log == []
+
+    def test_rejects_conflicting_commit_argument_and_option(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123", "--commit", OTHER_SHA])
+        assert result.exit_code == 2
+        assert "--commit" in result.output
+        assert calls.log == []
+
+    def test_accepts_same_commit_as_argument_and_option(self, runner, calls):
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123", "--commit", SHA.upper()])
+        assert result.exit_code == 0, result.output
 
     def test_not_found_hints_generate(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _http_error(404, "analysis result not found"))
@@ -251,14 +277,14 @@ class TestSbomView:
         omitted = {"omitted": "oversized", "serialized_bytes": 143362}
         calls.route("GET", f"{BASE}/commits/{SHA}", {**SNAPSHOT, "summary": omitted})
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", SHA])
-        expected = f"avr sbom download --org org-default --repo rep-123 --commit {SHA} --format inventory"
+        expected = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
         assert expected in result.output
 
     def test_copyleft_overflow_hint_pins_the_viewed_snapshot(self, runner, calls):
         summary = {**SUMMARY, "copyleft": ["a"], "copyleft_omitted": 3}
         calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
-        expected = f"avr sbom download --org org-default --repo rep-123 --commit {SHA} --format inventory"
+        expected = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
         assert expected in result.output
 
     def test_inventory_hint_quotes_values_for_the_shell(self, runner, calls):
@@ -352,6 +378,72 @@ class TestSbomDownload:
         assert result.exit_code == 1
         assert "no artifact" in result.output
         assert not (tmp_path / "x").exists()
+
+    def test_short_commit_argument_downloads_the_resolved_commit(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b'{"ok":true}')
+        result = runner.invoke(cli, ["sbom", "download", SHA[:12], "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        assert result.stdout == '{"ok":true}'
+        assert calls.log[-1] == ("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", None)
+
+
+AMBIGUOUS_SHA = "a" * 12 + "f" * 28
+
+
+def _history_page(*shas: str, next_cursor: str | None = None) -> dict[str, Any]:
+    return {"data": [{"commit_sha": sha} for sha in shas], "pagination": {"next_cursor": next_cursor}}
+
+
+class TestSbomCommitPrefix:
+    def test_full_commit_skips_history(self, runner, calls):
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA, "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        assert [c[0] for c in calls.log] == ["GET_BYTES"]
+
+    def test_prefix_is_case_insensitive(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7].upper(), "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+
+    def test_resolution_pages_through_history(self, runner, calls):
+        calls.route("GET", BASE, [_history_page(OTHER_SHA, next_cursor="page2"), _history_page(SHA)])
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7], "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        history_params = [c[2] for c in calls.log if c[:2] == ("GET", BASE)]
+        assert history_params == [{"limit": 1000}, {"limit": 1000, "cursor": "page2"}]
+
+    def test_unknown_prefix_names_the_list_command(self, runner, calls):
+        calls.route("GET", BASE, _history_page(OTHER_SHA))
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert SHA[:7] in result.output
+        assert "avr sbom list" in result.output
+        assert [c[0] for c in calls.log] == ["GET"]
+
+    def test_ambiguous_prefix_lists_candidates(self, runner, calls):
+        calls.route("GET", BASE, [_history_page(SHA, next_cursor="page2"), _history_page(AMBIGUOUS_SHA)])
+        result = runner.invoke(cli, ["sbom", "view", SHA[:10], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "ambiguous" in result.output
+        assert SHA in result.output
+        assert AMBIGUOUS_SHA in result.output
+
+    def test_longer_prefix_disambiguates(self, runner, calls):
+        calls.route("GET", BASE, _history_page(SHA, AMBIGUOUS_SHA))
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA[:13], "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    def test_history_error_is_reported(self, runner, calls):
+        calls.route("GET", BASE, _http_error(403, "forbidden"))
+        result = runner.invoke(cli, ["sbom", "view", SHA[:7], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "forbidden" in result.output
 
 
 STATE_PATH = "/orgs/org-default/repos/rep-123/ai-task/state"
@@ -587,6 +679,7 @@ class TestSbomGenerateWaitForCommit:
         result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"])
         assert result.exit_code == 0, result.output
         assert f"SBOM generated for {NEW_SHA[:12]}" in result.output
+        assert f"avr sbom view {NEW_SHA} --org org-default --repo rep-123" in result.output
 
     def test_unrelated_snapshot_arrival_does_not_satisfy_wait(self, runner, calls):
         calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)

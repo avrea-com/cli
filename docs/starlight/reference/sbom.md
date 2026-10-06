@@ -16,21 +16,29 @@ avr sbom [OPTIONS] COMMAND [ARGS]...
 Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
 
 ```sh
-avr sbom download [OPTIONS]
+avr sbom download [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom download --repo acme/api
     avr sbom download --repo acme/api --format spdx --out api.spdx.json
-    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
 ```
+
+**Arguments**
+
+- <code class="cli-arg">[COMMIT]</code>
 
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;commit</code> <code class="cli-value">&lt;TEXT&gt;</code> — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- <code class="cli-flag">&#x2D;&#x2D;commit</code> <code class="cli-value">&lt;TEXT&gt;</code> — Same as the COMMIT argument.
 - <code class="cli-flag">&#x2D;&#x2D;format</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
 - <code class="cli-flag">&#x2D;&#x2D;out</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
 
@@ -116,13 +124,17 @@ JSON FIELDS
 Show an SBOM's summary: dependency counts, licences, and artifacts.
 
 ```sh
-avr sbom view [OPTIONS]
+avr sbom view [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom view --repo acme/api
-    avr sbom view --repo acme/api --commit 3f2c...e91a
+    avr sbom view 3f2c9a1b7d04 --repo acme/api
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
@@ -132,10 +144,14 @@ JSON FIELDS
     schema_version, summary
 ```
 
+**Arguments**
+
+- <code class="cli-arg">[COMMIT]</code>
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;commit</code> <code class="cli-value">&lt;TEXT&gt;</code> — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- <code class="cli-flag">&#x2D;&#x2D;commit</code> <code class="cli-value">&lt;TEXT&gt;</code> — Same as the COMMIT argument.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.

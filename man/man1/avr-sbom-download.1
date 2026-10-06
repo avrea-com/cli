@@ -3,18 +3,24 @@
 avr-sbom-download \- Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
 .SH SYNOPSIS
 .B avr sbom download
-[OPTIONS]
+[OPTIONS] [COMMIT]
 .SH DESCRIPTION
 Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.PP
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix of at least 7 characters such as the one `avr sbom list` shows. Defaults to the latest SBOM.
 .PP
 .RS 4
 .nf
 Examples:
     avr sbom download --repo acme/api
     avr sbom download --repo acme/api --format spdx --out api.spdx.json
-    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
 .fi
 .RE
+.SH ARGUMENTS
+.TP
+[\fICOMMIT\fR]
+\&
 .SH OPTIONS
 .TP
 \fB\-\-repo\fR \fITEXT\fR
@@ -24,7 +30,7 @@ Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-commit\fR \fITEXT\fR
-Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+Same as the COMMIT argument.
 .TP
 \fB\-\-format\fR \fICHOICE\fR
 Artifact to download. (choices: cyclonedx, inventory, spdx; default: cyclonedx)
