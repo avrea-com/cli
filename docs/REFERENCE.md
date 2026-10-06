@@ -1248,7 +1248,7 @@ avr sbom generate [OPTIONS] [REF]
 REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
 as the one `avr sbom list` shows works too. Defaults to the default-branch
 tip. Without --wait, commit_sha is the full SHA of the commit the run
-analyses when REF names one.
+analyses when REF is a full SHA or one the API expanded.
 
 One analysis runs per repository at a time. A request for the same ref as
 the analysis already running joins it; a request for a different ref is

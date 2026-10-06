@@ -879,22 +879,23 @@ class TestSbomGenerateRefArgument:
     @pytest.mark.parametrize("failure", [_http_error(503), httpx.ConnectError("connection reset")])
     def test_baseline_after_the_request_retries_transient_errors(self, runner, calls, failure):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
-        calls.route("GET", COMMIT_PATH, [failure, _http_error(404, "analysis result not found"), NEW_SNAPSHOT])
+        calls.route("GET", COMMIT_PATH, [failure, PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
         calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
         result = runner.invoke(
-            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "recorded_at"]
         )
         assert result.exit_code == 0, result.output
-        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": NEW_SHA}
+        assert json.loads(result.stdout) == {"recorded_at": NEW_SNAPSHOT["recorded_at"]}
 
     def test_baseline_after_the_request_that_never_succeeds_times_out(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
         calls.route("GET", COMMIT_PATH, _http_error(503))
         args = ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--wait-timeout", "30"]
-        result = runner.invoke(cli, [*args, "--json", "status"])
+        result = runner.invoke(cli, args)
         assert result.exit_code == 1
-        assert json.loads(result.stdout) == {"status": "timeout"}
+        assert f"the SBOM for {SHORT_NEW_SHA} could not be checked" in result.output
         assert calls.now >= 30
+        assert all(c[1] != STATE_PATH for c in calls.log)
 
     @pytest.mark.parametrize(("ref", "response"), [(SHORT_NEW_SHA, {"commit_sha": NEW_SHA}), (NEW_SHA, {})])
     def test_reports_the_pinned_commit_without_wait(self, runner, calls, ref, response):
