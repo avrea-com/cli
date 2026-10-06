@@ -876,6 +876,40 @@ class TestSbomGenerateRefArgument:
         assert json.loads(result.stdout) == {"status": "completed", "commit_sha": None}
         assert all("/commits/" not in c[1] for c in calls.log)
 
+    @pytest.mark.parametrize("failure", [_http_error(503), httpx.ConnectError("connection reset")])
+    def test_baseline_after_the_request_retries_transient_errors(self, runner, calls, failure):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [failure, _http_error(404, "analysis result not found"), NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": NEW_SHA}
+
+    def test_baseline_after_the_request_that_never_succeeds_times_out(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, _http_error(503))
+        args = ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--wait-timeout", "30"]
+        result = runner.invoke(cli, [*args, "--json", "status"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {"status": "timeout"}
+        assert calls.now >= 30
+
+    @pytest.mark.parametrize(("ref", "response"), [(SHORT_NEW_SHA, {"commit_sha": NEW_SHA}), (NEW_SHA, {})])
+    def test_reports_the_pinned_commit_without_wait(self, runner, calls, ref, response):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **response})
+        json_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123", "--json", "commit_sha"])
+        human_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123"])
+        assert json.loads(json_result.stdout) == {"commit_sha": NEW_SHA}
+        assert f"started for {NEW_SHA[:12]} (task task-1)" in human_result.output
+
+    @pytest.mark.parametrize("response", [{}, {"commit_sha": SHORT_NEW_SHA}])
+    def test_reports_no_commit_without_a_valid_expansion(self, runner, calls, response):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **response})
+        result = runner.invoke(cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--json", "commit_sha"])
+        assert json.loads(result.stdout) == {"commit_sha": None}
+
 
 RUNNING = {"ai_task_id": "task-1", "status": "RUNNING"}
 COMPLETED = {"ai_task_id": "task-1", "status": "COMPLETED"}

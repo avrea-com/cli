@@ -586,7 +586,8 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
 
     REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
     as the one `avr sbom list` shows works too. Defaults to the default-branch
-    tip.
+    tip. Without --wait, commit_sha is the full SHA of the commit the run
+    analyses when REF names one.
 
     One analysis runs per repository at a time. A request for the same ref as
     the analysis already running joins it; a request for a different ref is
@@ -647,22 +648,24 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
         "recorded_at": None,
     }
 
+    expanded_sha = response.get("commit_sha")
+    expanded = commit_sha is None and isinstance(expanded_sha, str) and _COMMIT_SHA_RE.match(expanded_sha)
+    if expanded:
+        commit_sha = expanded_sha
+
     if not wait:
+        result["commit_sha"] = commit_sha
         if output.emit(result):
             return
+        target = f" for {commit_sha[:12]}" if commit_sha else ""
         if result["status"] == "already_running":
-            click.echo(f"SBOM generation already running (task {task_id}); joined it.")
+            click.echo(f"SBOM generation already running{target} (task {task_id}); joined it.")
         else:
-            click.echo(f"SBOM generation started (task {task_id}).")
+            click.echo(f"SBOM generation started{target} (task {task_id}).")
         click.echo("Generation takes a few minutes; run `avr sbom view` afterwards to see the result.", err=True)
         return
 
     click.echo(f"Waiting for SBOM generation (task {task_id})…", err=True)
-    expanded_sha = response.get("commit_sha")
-    if commit_sha is None and isinstance(expanded_sha, str) and _COMMIT_SHA_RE.match(expanded_sha):
-        # The API expanded an abbreviated SHA, so the baseline is read only now.
-        commit_sha = expanded_sha
-        baseline = _commit_snapshot_or_none(client, org_id, repo_id, commit_sha)
     poller = _Poller(client, deadline)
     tracker = _TaskTracker(poller, org_id, repo_id, task_id)
     waiter = _Wait(poller, tracker, wait_timeout, result, output)
@@ -670,6 +673,10 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
         _wait_for_task_outcome(waiter)
         return
     snapshot_path = f"{_sbom_path(org_id, repo_id)}/commits/{commit_sha}"
+    if expanded:
+        # The API expanded an abbreviated SHA, so the baseline is read only now,
+        # after the run has started; retry it like the wait's own reads.
+        baseline = _snapshot_after_request(waiter, snapshot_path, commit_sha)
     baseline_recorded_at = baseline.get("recorded_at") if baseline else None
     view_command = shlex.join(["avr", "sbom", "view", commit_sha, "--org", org_id, "--repo", repo_id])
     _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at, view_command)
@@ -713,6 +720,16 @@ class _Wait:
                 err=True,
             )
         raise SystemExit(1)
+
+
+def _snapshot_after_request(waiter: _Wait, snapshot_path: str, commit_sha: str) -> dict[str, Any] | None:
+    """The commit's current snapshot, or None; transient errors retry until the deadline."""
+    while True:
+        try:
+            return waiter.poller.get(snapshot_path, action="check for the commit's SBOM", missing_ok=True)
+        except _TransientPollError as exc:
+            if not waiter.poller.sleep(exc.backoff):
+                waiter.time_out(f"the SBOM for {commit_sha[:12]} could not be checked")
 
 
 def _wait_for_task_outcome(waiter: _Wait) -> None:
