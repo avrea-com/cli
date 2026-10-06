@@ -567,10 +567,10 @@ class _TaskTracker:
 
 
 @sbom.command("generate")
-@click.argument("ref_argument", metavar="REF", required=False, callback=_strip_ref)
+@click.argument("ref", required=False, callback=_strip_ref)
 @_repo_option
 @_org_option
-@click.option("--ref", default=None, callback=_strip_ref, help="Same as the REF argument.")
+@click.option("--ref", "ref_option", default=None, callback=_strip_ref, help="Same as the REF argument.")
 @click.option("--wait", is_flag=True, default=False, help="Wait until generation finishes before returning.")
 @click.option(
     "--wait-timeout",
@@ -581,7 +581,7 @@ class _TaskTracker:
 )
 @json_options
 @click.pass_context
-def sbom_generate(ctx, ref_argument, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq_expr):
+def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, json_fields, jq_expr):
     """Start SBOM generation for a repository.
 
     REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
@@ -615,9 +615,9 @@ def sbom_generate(ctx, ref_argument, repo_id, org_id, ref, wait, wait_timeout, j
     """
     if handle_json_meta(json_fields, jq_expr, _SBOM_GENERATE_FIELDS):
         return
-    if ref_argument and ref and ref_argument != ref:
+    if ref and ref_option and ref != ref_option:
         raise click.UsageError("Pass the ref either as the REF argument or with --ref, not both.")
-    ref = ref_argument or ref
+    ref = ref or ref_option
     output = _JsonOutput(
         fields=split_fields(json_fields, _SBOM_GENERATE_FIELDS) if json_fields is not None else [],
         jq_expr=jq_expr,

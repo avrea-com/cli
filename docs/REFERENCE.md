@@ -1242,7 +1242,7 @@ Examples:
 Start SBOM generation for a repository.
 
 ```sh
-avr sbom generate [OPTIONS] REF
+avr sbom generate [OPTIONS] [REF]
 ```
 
 REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
@@ -1278,7 +1278,7 @@ JSON FIELDS
 
 **Arguments**
 
-- `[REF_ARGUMENT]`
+- `[REF]`
 
 **Options**
 

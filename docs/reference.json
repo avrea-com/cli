@@ -5811,13 +5811,13 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom generate [OPTIONS] REF",
+            "usage": "avr sbom generate [OPTIONS] [REF]",
             "params": [
               {
-                "name": "ref_argument",
+                "name": "ref",
                 "kind": "argument",
                 "opts": [
-                  "ref_argument"
+                  "ref"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5868,7 +5868,7 @@
                 "default": null
               },
               {
-                "name": "ref",
+                "name": "ref_option",
                 "kind": "option",
                 "opts": [
                   "--ref"

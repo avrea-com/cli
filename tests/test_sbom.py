@@ -822,6 +822,10 @@ SHORT_NEW_SHA = NEW_SHA[:12]
 
 
 class TestSbomGenerateRefArgument:
+    def test_usage_shows_ref_as_optional(self, runner):
+        result = runner.invoke(cli, ["sbom", "generate", "--help"])
+        assert "generate [OPTIONS] [REF]" in result.output
+
     def test_ref_as_argument(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
         result = runner.invoke(cli, ["sbom", "generate", "v1.2.0", "--repo", "rep-123"])
