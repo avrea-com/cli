@@ -1211,21 +1211,29 @@ avr sbom [OPTIONS] COMMAND [ARGS]...
 Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
 
 ```sh
-avr sbom download [OPTIONS]
+avr sbom download [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom download --repo acme/api
     avr sbom download --repo acme/api --format spdx --out api.spdx.json
-    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
 ```
+
+**Arguments**
+
+- `[COMMIT]`
 
 **Options**
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- `--commit <TEXT>` — Same as the COMMIT argument.
 - `--format <CHOICE>` — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
 - `--out <TEXT>` — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
 
@@ -1234,8 +1242,13 @@ Examples:
 Start SBOM generation for a repository.
 
 ```sh
-avr sbom generate [OPTIONS]
+avr sbom generate [OPTIONS] [REF]
 ```
+
+REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
+as the one `avr sbom list` shows works too. Defaults to the default-branch
+tip. Without --wait, commit_sha is the full SHA of the commit the run
+analyses when REF is a full SHA or one the API expanded.
 
 One analysis runs per repository at a time. A request for the same ref as
 the analysis already running joins it; a request for a different ref is
@@ -1243,8 +1256,8 @@ rejected (HTTP 409) until that analysis finishes. Once an SBOM has been
 recorded for the repository, a new run is refused (HTTP 429) for a
 cooldown period, and the error says how many seconds remain.
 
-With --wait and --ref set to a full commit SHA, success means a new SBOM
-for that commit is downloadable, whatever the analysis task's own outcome
+With --wait and a REF that names a commit, success means a new SBOM for
+that commit is downloadable, whatever the analysis task's own outcome
 (task_status); commit_sha and recorded_at identify it. A failed analysis
 can still deliver its SBOM later, so such a wait runs to --wait-timeout
 before reporting failure. For a branch, tag, or the default branch the API
@@ -1255,8 +1268,8 @@ task's outcome only. Transient errors while waiting are retried until
 ```sh
 Examples:
     avr sbom generate --repo acme/api
-    avr sbom generate --repo acme/api --ref v1.4.0
-    avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+    avr sbom generate v1.4.0 --repo acme/api
+    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 ```
 
 ```sh
@@ -1264,11 +1277,15 @@ JSON FIELDS
     ai_task_id, commit_sha, error_code, recorded_at, status, task_status
 ```
 
+**Arguments**
+
+- `[REF]`
+
 **Options**
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--ref <TEXT>` — Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.
+- `--ref <TEXT>` — Same as the REF argument.
 - `--wait` — Wait until generation finishes before returning.
 - `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `900`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -1311,13 +1328,17 @@ JSON FIELDS
 Show an SBOM's summary: dependency counts, licences, and artifacts.
 
 ```sh
-avr sbom view [OPTIONS]
+avr sbom view [OPTIONS] [COMMIT]
 ```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
 
 ```sh
 Examples:
     avr sbom view --repo acme/api
-    avr sbom view --repo acme/api --commit 3f2c...e91a
+    avr sbom view 3f2c9a1b7d04 --repo acme/api
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
@@ -1327,11 +1348,15 @@ JSON FIELDS
     schema_version, summary
 ```
 
+**Arguments**
+
+- `[COMMIT]`
+
 **Options**
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--commit <TEXT>` — Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.
+- `--commit <TEXT>` — Same as the COMMIT argument.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

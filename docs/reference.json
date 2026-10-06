@@ -5675,12 +5675,30 @@
             "full": "avr sbom download",
             "is_group": false,
             "short_help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).",
-            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components\n",
+            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom download [OPTIONS]",
+            "usage": "avr sbom download [OPTIONS] [COMMIT]",
             "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
               {
                 "name": "repo_id",
                 "kind": "option",
@@ -5718,7 +5736,7 @@
                 "default": null
               },
               {
-                "name": "commit_sha",
+                "name": "commit_option",
                 "kind": "option",
                 "opts": [
                   "--commit"
@@ -5730,7 +5748,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "help": "Same as the COMMIT argument.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5789,12 +5807,30 @@
             "full": "avr sbom generate",
             "is_group": false,
             "short_help": "Start SBOM generation for a repository.",
-            "help": "Start SBOM generation for a repository.\n\nOne analysis runs per repository at a time. A request for the same ref as\nthe analysis already running joins it; a request for a different ref is\nrejected (HTTP 409) until that analysis finishes. Once an SBOM has been\nrecorded for the repository, a new run is refused (HTTP 429) for a\ncooldown period, and the error says how many seconds remain.\n\nWith --wait and --ref set to a full commit SHA, success means a new SBOM\nfor that commit is downloadable, whatever the analysis task's own outcome\n(task_status); commit_sha and recorded_at identify it. A failed analysis\ncan still deliver its SBOM later, so such a wait runs to --wait-timeout\nbefore reporting failure. For a branch, tag, or the default branch the API\ndoes not say which commit the run resolved, so --wait reports the analysis\ntask's outcome only. Transient errors while waiting are retried until\n--wait-timeout; a wait that times out leaves the analysis running.\n\n\b\nExamples:\n    avr sbom generate --repo acme/api\n    avr sbom generate --repo acme/api --ref v1.4.0\n    avr sbom generate --repo acme/api --ref \"$(git rev-parse HEAD)\" --wait\n\n\b\nJSON FIELDS\n    ai_task_id, commit_sha, error_code, recorded_at, status, task_status\n",
+            "help": "Start SBOM generation for a repository.\n\nREF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such\nas the one `avr sbom list` shows works too. Defaults to the default-branch\ntip. Without --wait, commit_sha is the full SHA of the commit the run\nanalyses when REF is a full SHA or one the API expanded.\n\nOne analysis runs per repository at a time. A request for the same ref as\nthe analysis already running joins it; a request for a different ref is\nrejected (HTTP 409) until that analysis finishes. Once an SBOM has been\nrecorded for the repository, a new run is refused (HTTP 429) for a\ncooldown period, and the error says how many seconds remain.\n\nWith --wait and a REF that names a commit, success means a new SBOM for\nthat commit is downloadable, whatever the analysis task's own outcome\n(task_status); commit_sha and recorded_at identify it. A failed analysis\ncan still deliver its SBOM later, so such a wait runs to --wait-timeout\nbefore reporting failure. For a branch, tag, or the default branch the API\ndoes not say which commit the run resolved, so --wait reports the analysis\ntask's outcome only. Transient errors while waiting are retried until\n--wait-timeout; a wait that times out leaves the analysis running.\n\n\b\nExamples:\n    avr sbom generate --repo acme/api\n    avr sbom generate v1.4.0 --repo acme/api\n    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait\n\n\b\nJSON FIELDS\n    ai_task_id, commit_sha, error_code, recorded_at, status, task_status\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom generate [OPTIONS]",
+            "usage": "avr sbom generate [OPTIONS] [REF]",
             "params": [
+              {
+                "name": "ref",
+                "kind": "argument",
+                "opts": [
+                  "ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
               {
                 "name": "repo_id",
                 "kind": "option",
@@ -5832,7 +5868,7 @@
                 "default": null
               },
               {
-                "name": "ref",
+                "name": "ref_option",
                 "kind": "option",
                 "opts": [
                   "--ref"
@@ -5844,7 +5880,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.",
+                "help": "Same as the REF argument.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6064,12 +6100,30 @@
             "full": "avr sbom view",
             "is_group": false,
             "short_help": "Show an SBOM's summary: dependency counts, licences, and artifacts.",
-            "help": "Show an SBOM's summary: dependency counts, licences, and artifacts.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view --repo acme/api --commit 3f2c...e91a\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
+            "help": "Show an SBOM's summary: dependency counts, licences, and artifacts.\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view 3f2c9a1b7d04 --repo acme/api\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr sbom view [OPTIONS]",
+            "usage": "avr sbom view [OPTIONS] [COMMIT]",
             "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
               {
                 "name": "repo_id",
                 "kind": "option",
@@ -6107,7 +6161,7 @@
                 "default": null
               },
               {
-                "name": "commit_sha",
+                "name": "commit_option",
                 "kind": "option",
                 "opts": [
                   "--commit"
@@ -6119,7 +6173,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+                "help": "Same as the COMMIT argument.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

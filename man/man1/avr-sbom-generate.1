@@ -3,20 +3,22 @@
 avr-sbom-generate \- Start SBOM generation for a repository.
 .SH SYNOPSIS
 .B avr sbom generate
-[OPTIONS]
+[OPTIONS] [REF]
 .SH DESCRIPTION
 Start SBOM generation for a repository.
 .PP
+REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such as the one `avr sbom list` shows works too. Defaults to the default-branch tip. Without --wait, commit_sha is the full SHA of the commit the run analyses when REF is a full SHA or one the API expanded.
+.PP
 One analysis runs per repository at a time. A request for the same ref as the analysis already running joins it; a request for a different ref is rejected (HTTP 409) until that analysis finishes. Once an SBOM has been recorded for the repository, a new run is refused (HTTP 429) for a cooldown period, and the error says how many seconds remain.
 .PP
-With --wait and --ref set to a full commit SHA, success means a new SBOM for that commit is downloadable, whatever the analysis task's own outcome (task_status); commit_sha and recorded_at identify it. A failed analysis can still deliver its SBOM later, so such a wait runs to --wait-timeout before reporting failure. For a branch, tag, or the default branch the API does not say which commit the run resolved, so --wait reports the analysis task's outcome only. Transient errors while waiting are retried until --wait-timeout; a wait that times out leaves the analysis running.
+With --wait and a REF that names a commit, success means a new SBOM for that commit is downloadable, whatever the analysis task's own outcome (task_status); commit_sha and recorded_at identify it. A failed analysis can still deliver its SBOM later, so such a wait runs to --wait-timeout before reporting failure. For a branch, tag, or the default branch the API does not say which commit the run resolved, so --wait reports the analysis task's outcome only. Transient errors while waiting are retried until --wait-timeout; a wait that times out leaves the analysis running.
 .PP
 .RS 4
 .nf
 Examples:
     avr sbom generate --repo acme/api
-    avr sbom generate --repo acme/api --ref v1.4.0
-    avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+    avr sbom generate v1.4.0 --repo acme/api
+    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 .fi
 .RE
 .PP
@@ -26,6 +28,10 @@ JSON FIELDS
     ai_task_id, commit_sha, error_code, recorded_at, status, task_status
 .fi
 .RE
+.SH ARGUMENTS
+.TP
+[\fIREF\fR]
+\&
 .SH OPTIONS
 .TP
 \fB\-\-repo\fR \fITEXT\fR
@@ -35,7 +41,7 @@ Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-ref\fR \fITEXT\fR
-Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.
+Same as the REF argument.
 .TP
 \fB\-\-wait\fR
 Wait until generation finishes before returning.

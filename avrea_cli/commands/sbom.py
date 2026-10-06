@@ -30,6 +30,8 @@ import shlex
 import time
 
 _COMMIT_SHA_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+_COMMIT_PREFIX_RE = re.compile(r"^[0-9a-f]{7,64}$")
+_HISTORY_PAGE_LIMIT = 1000
 
 _ARTIFACT_FILENAMES = {
     "cyclonedx": "bom.cyclonedx.json",
@@ -55,8 +57,8 @@ def _validate_commit(_ctx: click.Context, _param: click.Parameter, value: str | 
     if value is None:
         return None
     sha = value.strip().lower()
-    if not _COMMIT_SHA_RE.match(sha):
-        raise click.BadParameter("must be a full 40 or 64 character hex commit SHA.")
+    if not _COMMIT_PREFIX_RE.match(sha):
+        raise click.BadParameter("must be a hex commit SHA or a prefix of at least 7 characters.")
     return sha
 
 
@@ -70,12 +72,54 @@ def _strip_ref(_ctx: click.Context, _param: click.Parameter, value: str | None) 
     return ref
 
 
+_commit_argument = click.argument("commit", required=False, callback=_validate_commit)
 _commit_option = click.option(
     "--commit",
-    "commit_sha",
+    "commit_option",
     callback=_validate_commit,
-    help="Full commit SHA of a recorded SBOM. Defaults to the latest SBOM.",
+    help="Same as the COMMIT argument.",
 )
+
+
+def _requested_commit(commit: str | None, commit_option: str | None) -> str | None:
+    if commit and commit_option and commit != commit_option:
+        raise click.UsageError("Pass the commit either as the COMMIT argument or with --commit, not both.")
+    return commit or commit_option
+
+
+def _resolve_commit(client: ApiClient, org_id: str, repo_id: str, commit: str) -> str:
+    """The full SHA for ``commit``, a full SHA or a prefix of one.
+
+    The API addresses SBOMs by full SHA only, so a prefix is matched against the
+    recorded history. Matching stops at a second hit, which already makes the
+    prefix ambiguous."""
+    if _COMMIT_SHA_RE.match(commit):
+        return commit
+    matches: list[str] = []
+    params: dict[str, Any] = {"limit": _HISTORY_PAGE_LIMIT}
+    while len(matches) < 2:
+        try:
+            response = client.public_get(_sbom_path(org_id, repo_id), params=params)
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "list SBOMs")
+        for row in response.get("data", []):
+            sha = row.get("commit_sha") or ""
+            if sha.startswith(commit) and sha not in matches:
+                matches.append(sha)
+        next_cursor = (response.get("pagination") or {}).get("next_cursor")
+        if not next_cursor:
+            break
+        params = {"limit": _HISTORY_PAGE_LIMIT, "cursor": next_cursor}
+
+    if not matches:
+        raise click.ClickException(
+            f"No recorded SBOM matches commit {commit}. Run `avr sbom list` to see the recorded commits."
+        )
+    if len(matches) > 1:
+        raise click.ClickException(
+            f"Commit {commit} is ambiguous; it matches {matches[0]} and {matches[1]}. Use a longer prefix."
+        )
+    return matches[0]
 
 
 def _resolve_scope(ctx: click.Context, org_id: str | None, repo_id: str | None) -> tuple[ApiClient, str, str]:
@@ -239,18 +283,23 @@ _SBOM_VIEW_FIELDS = make_schema(
 
 
 @sbom.command("view")
+@_commit_argument
 @_repo_option
 @_org_option
 @_commit_option
 @json_options
 @click.pass_context
-def sbom_view(ctx, repo_id, org_id, commit_sha, json_fields, jq_expr):
+def sbom_view(ctx, commit, repo_id, org_id, commit_option, json_fields, jq_expr):
     """Show an SBOM's summary: dependency counts, licences, and artifacts.
+
+    COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+    of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+    the latest SBOM.
 
     \b
     Examples:
         avr sbom view --repo acme/api
-        avr sbom view --repo acme/api --commit 3f2c...e91a
+        avr sbom view 3f2c9a1b7d04 --repo acme/api
         avr sbom view --repo acme/api --json summary --jq .summary.licenses
 
     \b
@@ -260,7 +309,10 @@ def sbom_view(ctx, repo_id, org_id, commit_sha, json_fields, jq_expr):
     """
     if handle_json_meta(json_fields, jq_expr, _SBOM_VIEW_FIELDS):
         return
+    commit_sha = _requested_commit(commit, commit_option)
     client, org_id, repo_id = _resolve_scope(ctx, org_id, repo_id)
+    if commit_sha is not None:
+        commit_sha = _resolve_commit(client, org_id, repo_id, commit_sha)
     snapshot = _fetch_snapshot(client, org_id, repo_id, commit_sha)
 
     if json_fields is not None:
@@ -276,12 +328,11 @@ def sbom_view(ctx, repo_id, org_id, commit_sha, json_fields, jq_expr):
             "avr",
             "sbom",
             "download",
+            snapshot.get("commit_sha", ""),
             "--org",
             org_id,
             "--repo",
             repo_id,
-            "--commit",
-            snapshot.get("commit_sha", ""),
             "--format",
             "inventory",
         ]
@@ -342,6 +393,7 @@ def sbom_view(ctx, repo_id, org_id, commit_sha, json_fields, jq_expr):
 
 
 @sbom.command("download")
+@_commit_argument
 @_repo_option
 @_org_option
 @_commit_option
@@ -360,18 +412,25 @@ def sbom_view(ctx, repo_id, org_id, commit_sha, json_fields, jq_expr):
     help='Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.',
 )
 @click.pass_context
-def sbom_download(ctx, repo_id, org_id, commit_sha, artifact_format, out_path):
+def sbom_download(ctx, commit, repo_id, org_id, commit_option, artifact_format, out_path):
     """Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+
+    COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+    of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+    the latest SBOM.
 
     \b
     Examples:
         avr sbom download --repo acme/api
         avr sbom download --repo acme/api --format spdx --out api.spdx.json
-        avr sbom download --repo acme/api --commit 3f2c...e91a --out - | jq .components
+        avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
     """
+    commit_sha = _requested_commit(commit, commit_option)
     client, org_id, repo_id = _resolve_scope(ctx, org_id, repo_id)
     if commit_sha is None:
         commit_sha = _fetch_snapshot(client, org_id, repo_id, None)["commit_sha"]
+    else:
+        commit_sha = _resolve_commit(client, org_id, repo_id, commit_sha)
 
     filename = _ARTIFACT_FILENAMES[artifact_format]
     try:
@@ -508,14 +567,10 @@ class _TaskTracker:
 
 
 @sbom.command("generate")
+@click.argument("ref", required=False, callback=_strip_ref)
 @_repo_option
 @_org_option
-@click.option(
-    "--ref",
-    default=None,
-    callback=_strip_ref,
-    help="Branch, tag, or commit SHA to analyse. Defaults to the default-branch tip.",
-)
+@click.option("--ref", "ref_option", default=None, callback=_strip_ref, help="Same as the REF argument.")
 @click.option("--wait", is_flag=True, default=False, help="Wait until generation finishes before returning.")
 @click.option(
     "--wait-timeout",
@@ -526,8 +581,13 @@ class _TaskTracker:
 )
 @json_options
 @click.pass_context
-def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq_expr):
+def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, json_fields, jq_expr):
     """Start SBOM generation for a repository.
+
+    REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
+    as the one `avr sbom list` shows works too. Defaults to the default-branch
+    tip. Without --wait, commit_sha is the full SHA of the commit the run
+    analyses when REF is a full SHA or one the API expanded.
 
     One analysis runs per repository at a time. A request for the same ref as
     the analysis already running joins it; a request for a different ref is
@@ -535,8 +595,8 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     recorded for the repository, a new run is refused (HTTP 429) for a
     cooldown period, and the error says how many seconds remain.
 
-    With --wait and --ref set to a full commit SHA, success means a new SBOM
-    for that commit is downloadable, whatever the analysis task's own outcome
+    With --wait and a REF that names a commit, success means a new SBOM for
+    that commit is downloadable, whatever the analysis task's own outcome
     (task_status); commit_sha and recorded_at identify it. A failed analysis
     can still deliver its SBOM later, so such a wait runs to --wait-timeout
     before reporting failure. For a branch, tag, or the default branch the API
@@ -547,8 +607,8 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     \b
     Examples:
         avr sbom generate --repo acme/api
-        avr sbom generate --repo acme/api --ref v1.4.0
-        avr sbom generate --repo acme/api --ref "$(git rev-parse HEAD)" --wait
+        avr sbom generate v1.4.0 --repo acme/api
+        avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 
     \b
     JSON FIELDS
@@ -556,6 +616,9 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
     """
     if handle_json_meta(json_fields, jq_expr, _SBOM_GENERATE_FIELDS):
         return
+    if ref and ref_option and ref != ref_option:
+        raise click.UsageError("Pass the ref either as the REF argument or with --ref, not both.")
+    ref = ref or ref_option
     output = _JsonOutput(
         fields=split_fields(json_fields, _SBOM_GENERATE_FIELDS) if json_fields is not None else [],
         jq_expr=jq_expr,
@@ -585,13 +648,20 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
         "recorded_at": None,
     }
 
+    expanded_sha = response.get("commit_sha")
+    expanded = commit_sha is None and isinstance(expanded_sha, str) and _COMMIT_SHA_RE.match(expanded_sha)
+    if expanded:
+        commit_sha = expanded_sha
+
     if not wait:
+        result["commit_sha"] = commit_sha
         if output.emit(result):
             return
+        target = f" for {commit_sha[:12]}" if commit_sha else ""
         if result["status"] == "already_running":
-            click.echo(f"SBOM generation already running (task {task_id}); joined it.")
+            click.echo(f"SBOM generation already running{target} (task {task_id}); joined it.")
         else:
-            click.echo(f"SBOM generation started (task {task_id}).")
+            click.echo(f"SBOM generation started{target} (task {task_id}).")
         click.echo("Generation takes a few minutes; run `avr sbom view` afterwards to see the result.", err=True)
         return
 
@@ -603,8 +673,13 @@ def sbom_generate(ctx, repo_id, org_id, ref, wait, wait_timeout, json_fields, jq
         _wait_for_task_outcome(waiter)
         return
     snapshot_path = f"{_sbom_path(org_id, repo_id)}/commits/{commit_sha}"
+    if expanded:
+        # The API expanded an abbreviated SHA, so the baseline is read only now,
+        # after the run has started; retry it like the wait's own reads.
+        baseline = _snapshot_after_request(waiter, snapshot_path, commit_sha)
     baseline_recorded_at = baseline.get("recorded_at") if baseline else None
-    _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at)
+    view_command = shlex.join(["avr", "sbom", "view", commit_sha, "--org", org_id, "--repo", repo_id])
+    _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at, view_command)
 
 
 @dataclass(frozen=True)
@@ -645,6 +720,16 @@ class _Wait:
                 err=True,
             )
         raise SystemExit(1)
+
+
+def _snapshot_after_request(waiter: _Wait, snapshot_path: str, commit_sha: str) -> dict[str, Any] | None:
+    """The commit's current snapshot, or None; transient errors retry until the deadline."""
+    while True:
+        try:
+            return waiter.poller.get(snapshot_path, action="check for the commit's SBOM", missing_ok=True)
+        except _TransientPollError as exc:
+            if not waiter.poller.sleep(exc.backoff):
+                waiter.time_out(f"the SBOM for {commit_sha[:12]} could not be checked")
 
 
 def _wait_for_task_outcome(waiter: _Wait) -> None:
@@ -690,7 +775,7 @@ def _echo_task_outcome(tracker: _TaskTracker) -> None:
 
 
 def _wait_for_commit_delivery(
-    waiter: _Wait, snapshot_path: str, commit_sha: str, baseline_recorded_at: str | None
+    waiter: _Wait, snapshot_path: str, commit_sha: str, baseline_recorded_at: str | None, view_command: str
 ) -> None:
     """Wait for the commit's SBOM to be recorded after the baseline.
 
@@ -731,7 +816,7 @@ def _wait_for_commit_delivery(
             "producing the SBOM.",
             err=True,
         )
-    click.echo(f"SBOM generated for {short_sha}. Run `avr sbom view --commit {commit_sha}` to see it.")
+    click.echo(f"SBOM generated for {short_sha}. Run `{view_command}` to see it.")
 
 
 def _echo_undelivered(tracker: _TaskTracker, short_sha: str, wait_timeout: int) -> None:
