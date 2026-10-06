@@ -57,7 +57,7 @@
       "version": "2026.4.22"
     },
     {
-      "bom-ref": "pkg:pypi/click@8.4.0",
+      "bom-ref": "pkg:pypi/click@8.5.0",
       "copyright": "Copyright 2014 Pallets",
       "externalReferences": [
         {
@@ -73,16 +73,9 @@
         }
       ],
       "name": "click",
-      "purl": "pkg:pypi/click@8.4.0",
+      "purl": "pkg:pypi/click@8.5.0",
       "type": "library",
-      "version": "8.4.0"
-    },
-    {
-      "bom-ref": "pkg:pypi/colorama@0.4.6",
-      "name": "colorama",
-      "purl": "pkg:pypi/colorama@0.4.6",
-      "type": "library",
-      "version": "0.4.6"
+      "version": "8.5.0"
     },
     {
       "bom-ref": "pkg:pypi/h11@0.16.0",
@@ -148,7 +141,7 @@
       "version": "0.28.1"
     },
     {
-      "bom-ref": "pkg:pypi/idna@3.15",
+      "bom-ref": "pkg:pypi/idna@3.20",
       "copyright": "Copyright (c) 2013-2026, Kim Davies and contributors.",
       "externalReferences": [
         {
@@ -164,12 +157,12 @@
         }
       ],
       "name": "idna",
-      "purl": "pkg:pypi/idna@3.15",
+      "purl": "pkg:pypi/idna@3.20",
       "type": "library",
-      "version": "3.15"
+      "version": "3.20"
     },
     {
-      "bom-ref": "pkg:pypi/platformdirs@4.9.6",
+      "bom-ref": "pkg:pypi/platformdirs@4.11.10",
       "copyright": "Copyright (c) 2010-202x The platformdirs developers",
       "externalReferences": [
         {
@@ -185,12 +178,12 @@
         }
       ],
       "name": "platformdirs",
-      "purl": "pkg:pypi/platformdirs@4.9.6",
+      "purl": "pkg:pypi/platformdirs@4.11.10",
       "type": "library",
-      "version": "4.9.6"
+      "version": "4.11.10"
     },
     {
-      "bom-ref": "pkg:pypi/prettytable@3.17.0",
+      "bom-ref": "pkg:pypi/prettytable@3.18.0",
       "externalReferences": [
         {
           "type": "website",
@@ -205,12 +198,12 @@
         }
       ],
       "name": "prettytable",
-      "purl": "pkg:pypi/prettytable@3.17.0",
+      "purl": "pkg:pypi/prettytable@3.18.0",
       "type": "library",
-      "version": "3.17.0"
+      "version": "3.18.0"
     },
     {
-      "bom-ref": "pkg:pypi/pydantic@2.13.4",
+      "bom-ref": "pkg:pypi/pydantic@2.13.5",
       "copyright": "Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.",
       "externalReferences": [
         {
@@ -226,12 +219,12 @@
         }
       ],
       "name": "pydantic",
-      "purl": "pkg:pypi/pydantic@2.13.4",
+      "purl": "pkg:pypi/pydantic@2.13.5",
       "type": "library",
-      "version": "2.13.4"
+      "version": "2.13.5"
     },
     {
-      "bom-ref": "pkg:pypi/pydantic-core@2.46.4",
+      "bom-ref": "pkg:pypi/pydantic-core@2.46.5",
       "copyright": "Copyright (c) 2022 Samuel Colvin",
       "externalReferences": [
         {
@@ -247,9 +240,9 @@
         }
       ],
       "name": "pydantic_core",
-      "purl": "pkg:pypi/pydantic-core@2.46.4",
+      "purl": "pkg:pypi/pydantic-core@2.46.5",
       "type": "library",
-      "version": "2.46.4"
+      "version": "2.46.5"
     },
     {
       "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
@@ -320,21 +313,20 @@
         "pkg:pypi/annotated-types@0.7.0",
         "pkg:pypi/anyio@4.15.1",
         "pkg:pypi/certifi@2026.4.22",
-        "pkg:pypi/click@8.4.0",
-        "pkg:pypi/colorama@0.4.6",
+        "pkg:pypi/click@8.5.0",
         "pkg:pypi/h11@0.16.0",
         "pkg:pypi/httpcore@1.0.9",
         "pkg:pypi/httpx@0.28.1",
-        "pkg:pypi/idna@3.15",
-        "pkg:pypi/platformdirs@4.9.6",
-        "pkg:pypi/prettytable@3.17.0",
-        "pkg:pypi/pydantic-core@2.46.4",
-        "pkg:pypi/pydantic@2.13.4",
+        "pkg:pypi/idna@3.20",
+        "pkg:pypi/platformdirs@4.11.10",
+        "pkg:pypi/prettytable@3.18.0",
+        "pkg:pypi/pydantic-core@2.46.5",
+        "pkg:pypi/pydantic@2.13.5",
         "pkg:pypi/typing-extensions@4.16.0",
         "pkg:pypi/typing-inspection@0.4.2",
         "pkg:pypi/wcwidth@0.7.0"
       ],
-      "ref": "Avrea CLI@0.3.0"
+      "ref": "Avrea CLI@0.4.0"
     },
     {
       "ref": "pkg:pypi/annotated-types@0.7.0"
@@ -346,10 +338,7 @@
       "ref": "pkg:pypi/certifi@2026.4.22"
     },
     {
-      "ref": "pkg:pypi/click@8.4.0"
-    },
-    {
-      "ref": "pkg:pypi/colorama@0.4.6"
+      "ref": "pkg:pypi/click@8.5.0"
     },
     {
       "ref": "pkg:pypi/h11@0.16.0"
@@ -361,19 +350,19 @@
       "ref": "pkg:pypi/httpx@0.28.1"
     },
     {
-      "ref": "pkg:pypi/idna@3.15"
+      "ref": "pkg:pypi/idna@3.20"
     },
     {
-      "ref": "pkg:pypi/platformdirs@4.9.6"
+      "ref": "pkg:pypi/platformdirs@4.11.10"
     },
     {
-      "ref": "pkg:pypi/prettytable@3.17.0"
+      "ref": "pkg:pypi/prettytable@3.18.0"
     },
     {
-      "ref": "pkg:pypi/pydantic-core@2.46.4"
+      "ref": "pkg:pypi/pydantic-core@2.46.5"
     },
     {
-      "ref": "pkg:pypi/pydantic@2.13.4"
+      "ref": "pkg:pypi/pydantic@2.13.5"
     },
     {
       "ref": "pkg:pypi/typing-extensions@4.16.0"
@@ -387,7 +376,7 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "Avrea CLI@0.3.0",
+      "bom-ref": "Avrea CLI@0.4.0",
       "licenses": [
         {
           "license": {
@@ -397,9 +386,9 @@
       ],
       "name": "Avrea CLI",
       "type": "application",
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
-    "timestamp": "2026-09-21T00:00:00+00:00",
+    "timestamp": "2026-10-06T00:00:00+00:00",
     "tools": {
       "components": [
         {
@@ -410,7 +399,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:690c3f57-a353-5eff-89b1-ca958013f560",
+  "serialNumber": "urn:uuid:81d13039-bfca-5cab-a41c-92c477b0dbbc",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",

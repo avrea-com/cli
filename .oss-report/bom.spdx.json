@@ -1,15 +1,15 @@
 {
     "SPDXID": "SPDXRef-DOCUMENT",
     "creationInfo": {
-        "created": "2026-09-21T00:00:00Z",
+        "created": "2026-10-06T00:00:00Z",
         "creators": [
             "Tool: oss-report-0.1.0"
         ]
     },
     "dataLicense": "CC0-1.0",
-    "name": "Avrea CLI-0.3.0",
+    "name": "Avrea CLI-0.4.0",
     "spdxVersion": "SPDX-2.3",
-    "documentNamespace": "urn:uuid:690c3f57-a353-5eff-89b1-ca958013f560",
+    "documentNamespace": "urn:uuid:81d13039-bfca-5cab-a41c-92c477b0dbbc",
     "packages": [
         {
             "SPDXID": "SPDXRef-Project-Avrea-CLI-f68c208f",
@@ -20,7 +20,7 @@
             "licenseDeclared": "Apache-2.0",
             "name": "Avrea CLI",
             "primaryPackagePurpose": "APPLICATION",
-            "versionInfo": "0.3.0"
+            "versionInfo": "0.4.0"
         },
         {
             "SPDXID": "SPDXRef-Package-python-anyio-4.15.1-584963c6",
@@ -42,13 +42,13 @@
             "versionInfo": "4.15.1"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-click-8.4.0-93085de7",
+            "SPDXID": "SPDXRef-Package-python-click-8.5.0-c78851cd",
             "copyrightText": "Copyright 2014 Pallets",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/click@8.4.0",
+                    "referenceLocator": "pkg:pypi/click@8.5.0",
                     "referenceType": "purl"
                 }
             ],
@@ -58,7 +58,7 @@
             "licenseDeclared": "BSD-3-Clause",
             "name": "click",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "8.4.0"
+            "versionInfo": "8.5.0"
         },
         {
             "SPDXID": "SPDXRef-Package-python-httpx-0.28.1-a7e33e55",
@@ -80,13 +80,13 @@
             "versionInfo": "0.28.1"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-platformdirs-4.9.6-5eeca87f",
+            "SPDXID": "SPDXRef-Package-python-platformdirs-4.11.10-958ddfa5",
             "copyrightText": "Copyright (c) 2010-202x The platformdirs developers",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/platformdirs@4.9.6",
+                    "referenceLocator": "pkg:pypi/platformdirs@4.11.10",
                     "referenceType": "purl"
                 }
             ],
@@ -96,16 +96,16 @@
             "licenseDeclared": "MIT",
             "name": "platformdirs",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "4.9.6"
+            "versionInfo": "4.11.10"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-prettytable-3.17.0-6c6703d5",
+            "SPDXID": "SPDXRef-Package-python-prettytable-3.18.0-1db5056d",
             "copyrightText": "NOASSERTION",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/prettytable@3.17.0",
+                    "referenceLocator": "pkg:pypi/prettytable@3.18.0",
                     "referenceType": "purl"
                 }
             ],
@@ -115,16 +115,16 @@
             "licenseDeclared": "BSD-3-Clause",
             "name": "prettytable",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "3.17.0"
+            "versionInfo": "3.18.0"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-pydantic-2.13.4-8f44457e",
+            "SPDXID": "SPDXRef-Package-python-pydantic-2.13.5-cc761f10",
             "copyrightText": "Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/pydantic@2.13.4",
+                    "referenceLocator": "pkg:pypi/pydantic@2.13.5",
                     "referenceType": "purl"
                 }
             ],
@@ -134,7 +134,7 @@
             "licenseDeclared": "MIT",
             "name": "pydantic",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "2.13.4"
+            "versionInfo": "2.13.5"
         },
         {
             "SPDXID": "SPDXRef-Package-python-typing-extensions-4.16.0-07c1c04d",
@@ -156,13 +156,13 @@
             "versionInfo": "4.16.0"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-idna-3.15-ca1d42e2",
+            "SPDXID": "SPDXRef-Package-python-idna-3.20-55320be4",
             "copyrightText": "Copyright (c) 2013-2026, Kim Davies and contributors.",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/idna@3.15",
+                    "referenceLocator": "pkg:pypi/idna@3.20",
                     "referenceType": "purl"
                 }
             ],
@@ -172,7 +172,45 @@
             "licenseDeclared": "BSD-3-Clause",
             "name": "idna",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "3.15"
+            "versionInfo": "3.20"
+        },
+        {
+            "SPDXID": "SPDXRef-Package-python-annotated-types-0.7.0-4293439a",
+            "copyrightText": "Copyright (c) 2022 the contributors",
+            "downloadLocation": "NOASSERTION",
+            "externalRefs": [
+                {
+                    "referenceCategory": "PACKAGE_MANAGER",
+                    "referenceLocator": "pkg:pypi/annotated-types@0.7.0",
+                    "referenceType": "purl"
+                }
+            ],
+            "filesAnalyzed": false,
+            "homepage": "https://github.com/annotated-types/annotated-types",
+            "licenseConcluded": "MIT",
+            "licenseDeclared": "MIT",
+            "name": "annotated-types",
+            "primaryPackagePurpose": "LIBRARY",
+            "versionInfo": "0.7.0"
+        },
+        {
+            "SPDXID": "SPDXRef-Package-python-pydantic-core-2.46.5-2966c238",
+            "copyrightText": "Copyright (c) 2022 Samuel Colvin",
+            "downloadLocation": "NOASSERTION",
+            "externalRefs": [
+                {
+                    "referenceCategory": "PACKAGE_MANAGER",
+                    "referenceLocator": "pkg:pypi/pydantic-core@2.46.5",
+                    "referenceType": "purl"
+                }
+            ],
+            "filesAnalyzed": false,
+            "homepage": "https://github.com/pydantic/pydantic",
+            "licenseConcluded": "MIT",
+            "licenseDeclared": "MIT",
+            "name": "pydantic_core",
+            "primaryPackagePurpose": "LIBRARY",
+            "versionInfo": "2.46.5"
         },
         {
             "SPDXID": "SPDXRef-Package-python-typing-inspection-0.4.2-1aff98e5",
@@ -213,25 +251,6 @@
             "versionInfo": "2026.4.22"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-annotated-types-0.7.0-4293439a",
-            "copyrightText": "Copyright (c) 2022 the contributors",
-            "downloadLocation": "NOASSERTION",
-            "externalRefs": [
-                {
-                    "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/annotated-types@0.7.0",
-                    "referenceType": "purl"
-                }
-            ],
-            "filesAnalyzed": false,
-            "homepage": "https://github.com/annotated-types/annotated-types",
-            "licenseConcluded": "MIT",
-            "licenseDeclared": "MIT",
-            "name": "annotated-types",
-            "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "0.7.0"
-        },
-        {
             "SPDXID": "SPDXRef-Package-python-h11-0.16.0-0be2c1d2",
             "copyrightText": "Copyright (c) 2016 Nathaniel J. Smith <njs@pobox.com> and other contributors",
             "downloadLocation": "NOASSERTION",
@@ -249,44 +268,6 @@
             "name": "h11",
             "primaryPackagePurpose": "LIBRARY",
             "versionInfo": "0.16.0"
-        },
-        {
-            "SPDXID": "SPDXRef-Package-python-pydantic-core-2.46.4-fa89e024",
-            "copyrightText": "Copyright (c) 2022 Samuel Colvin",
-            "downloadLocation": "NOASSERTION",
-            "externalRefs": [
-                {
-                    "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/pydantic-core@2.46.4",
-                    "referenceType": "purl"
-                }
-            ],
-            "filesAnalyzed": false,
-            "homepage": "https://github.com/pydantic/pydantic",
-            "licenseConcluded": "MIT",
-            "licenseDeclared": "MIT",
-            "name": "pydantic_core",
-            "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "2.46.4"
-        },
-        {
-            "SPDXID": "SPDXRef-Package-python-httpcore-1.0.9-252d83af",
-            "copyrightText": "Copyright \u00a9 2020, [Encode OSS Ltd](https://www.encode.io/).",
-            "downloadLocation": "NOASSERTION",
-            "externalRefs": [
-                {
-                    "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/httpcore@1.0.9",
-                    "referenceType": "purl"
-                }
-            ],
-            "filesAnalyzed": false,
-            "homepage": "https://www.encode.io/httpcore/",
-            "licenseConcluded": "BSD-3-Clause",
-            "licenseDeclared": "BSD-3-Clause",
-            "name": "httpcore",
-            "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "1.0.9"
         },
         {
             "SPDXID": "SPDXRef-Package-python-wcwidth-0.7.0-cedf0a92",
@@ -308,23 +289,23 @@
             "versionInfo": "0.7.0"
         },
         {
-            "SPDXID": "SPDXRef-Package-python-colorama-0.4.6-2106fdb1",
-            "copyrightText": "NOASSERTION",
+            "SPDXID": "SPDXRef-Package-python-httpcore-1.0.9-252d83af",
+            "copyrightText": "Copyright \u00a9 2020, [Encode OSS Ltd](https://www.encode.io/).",
             "downloadLocation": "NOASSERTION",
             "externalRefs": [
                 {
                     "referenceCategory": "PACKAGE_MANAGER",
-                    "referenceLocator": "pkg:pypi/colorama@0.4.6",
+                    "referenceLocator": "pkg:pypi/httpcore@1.0.9",
                     "referenceType": "purl"
                 }
             ],
             "filesAnalyzed": false,
-            "homepage": "NOASSERTION",
-            "licenseConcluded": "NOASSERTION",
-            "licenseDeclared": "NOASSERTION",
-            "name": "colorama",
+            "homepage": "https://www.encode.io/httpcore/",
+            "licenseConcluded": "BSD-3-Clause",
+            "licenseDeclared": "BSD-3-Clause",
+            "name": "httpcore",
             "primaryPackagePurpose": "LIBRARY",
-            "versionInfo": "0.4.6"
+            "versionInfo": "1.0.9"
         }
     ],
     "relationships": [
@@ -340,7 +321,7 @@
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-click-8.4.0-93085de7",
+            "relatedSpdxElement": "SPDXRef-Package-python-click-8.5.0-c78851cd",
             "relationshipType": "DEPENDS_ON"
         },
         {
@@ -350,17 +331,17 @@
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-platformdirs-4.9.6-5eeca87f",
+            "relatedSpdxElement": "SPDXRef-Package-python-platformdirs-4.11.10-958ddfa5",
             "relationshipType": "DEPENDS_ON"
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-prettytable-3.17.0-6c6703d5",
+            "relatedSpdxElement": "SPDXRef-Package-python-prettytable-3.18.0-1db5056d",
             "relationshipType": "DEPENDS_ON"
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-pydantic-2.13.4-8f44457e",
+            "relatedSpdxElement": "SPDXRef-Package-python-pydantic-2.13.5-cc761f10",
             "relationshipType": "DEPENDS_ON"
         },
         {
@@ -370,7 +351,17 @@
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-idna-3.15-ca1d42e2",
+            "relatedSpdxElement": "SPDXRef-Package-python-idna-3.20-55320be4",
+            "relationshipType": "DEPENDS_ON"
+        },
+        {
+            "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
+            "relatedSpdxElement": "SPDXRef-Package-python-annotated-types-0.7.0-4293439a",
+            "relationshipType": "DEPENDS_ON"
+        },
+        {
+            "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
+            "relatedSpdxElement": "SPDXRef-Package-python-pydantic-core-2.46.5-2966c238",
             "relationshipType": "DEPENDS_ON"
         },
         {
@@ -385,22 +376,7 @@
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-annotated-types-0.7.0-4293439a",
-            "relationshipType": "DEPENDS_ON"
-        },
-        {
-            "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
             "relatedSpdxElement": "SPDXRef-Package-python-h11-0.16.0-0be2c1d2",
-            "relationshipType": "DEPENDS_ON"
-        },
-        {
-            "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-pydantic-core-2.46.4-fa89e024",
-            "relationshipType": "DEPENDS_ON"
-        },
-        {
-            "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-httpcore-1.0.9-252d83af",
             "relationshipType": "DEPENDS_ON"
         },
         {
@@ -410,7 +386,7 @@
         },
         {
             "spdxElementId": "SPDXRef-Project-Avrea-CLI-f68c208f",
-            "relatedSpdxElement": "SPDXRef-Package-python-colorama-0.4.6-2106fdb1",
+            "relatedSpdxElement": "SPDXRef-Package-python-httpcore-1.0.9-252d83af",
             "relationshipType": "DEPENDS_ON"
         }
     ]
