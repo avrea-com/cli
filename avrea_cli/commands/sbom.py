@@ -380,9 +380,7 @@ def sbom_download(ctx, repo_id, org_id, commit_sha, artifact_format, out_path):
         handle_http_error(exc, f"download {filename}", hint=_NO_SBOM_HINT)
 
     if out_path == "-":
-        stdout = click.get_binary_stream("stdout")
-        stdout.write(content)
-        stdout.flush()
+        click.echo(content, nl=False)
         return
 
     target = out_path or filename
