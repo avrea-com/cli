@@ -5,6 +5,7 @@ from avrea_cli.config import CliConfig
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from typing import Any
 from typing import NoReturn
 import click
 import httpx
@@ -340,7 +341,10 @@ def _echo_api_url(exc: httpx.HTTPStatusError) -> None:
 
 
 def _extract_detail(response: httpx.Response) -> str:
-    """Pull the FastAPI-style ``detail`` field out of a JSON error body."""
+    """Pull the FastAPI-style ``detail`` field out of a JSON error body.
+
+    A validation error carries a list of ``{loc, msg}`` items instead of a
+    string; those render as ``field: message``, joined with ``; ``."""
     try:
         body = response.json()
     except ValueError:
@@ -349,4 +353,22 @@ def _extract_detail(response: httpx.Response) -> str:
         detail = body.get("detail")
         if isinstance(detail, str):
             return detail
+        if isinstance(detail, list):
+            return "; ".join(_format_validation_item(item) for item in detail if isinstance(item, dict))
     return ""
+
+
+def _format_validation_item(item: dict[str, Any]) -> str:
+    """Render one validation item, e.g. ``grants[0].access_level: Input should be 'read'``.
+
+    The leading ``body`` / ``query`` / ``path`` of ``loc`` says where the server
+    read the field from, which the CLI user never chose, so it is dropped."""
+    loc = item.get("loc")
+    parts = list(loc) if isinstance(loc, list) else []
+    if parts and parts[0] in ("body", "query", "path"):
+        parts = parts[1:]
+    field = ""
+    for part in parts:
+        field += f"[{part}]" if isinstance(part, int) else f".{part}" if field else str(part)
+    msg = str(item.get("msg") or "invalid")
+    return f"{field}: {msg}" if field else msg

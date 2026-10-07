@@ -339,6 +339,23 @@ class TestHandleHttpError:
             handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "x")
         assert "API: https://api.staging.example/x" in capsys.readouterr().err
 
+    def test_validation_list_detail_names_each_field(self, capsys):
+        """The API answers a validation failure with a list of ``{loc, msg}``
+        items, not a string; dropping it left a bare "HTTP 422"."""
+        detail = [
+            {"type": "literal_error", "loc": ["body", "grants", 0, "access_level"], "msg": "Input should be 'read'"},
+            {"type": "missing", "loc": ["query", "limit"], "msg": "Field required"},
+            {"type": "value_error", "msg": "A token needs at least one grant or VM creation"},
+        ]
+        req = httpx.Request("POST", "https://api.example/x")
+        resp = httpx.Response(422, request=req, json={"detail": detail})
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "do thing")
+        assert (
+            "Error: Failed to do thing (HTTP 422): grants[0].access_level: Input should be 'read'; "
+            "limit: Field required; A token needs at least one grant or VM creation\n"
+        ) in capsys.readouterr().err
+
 
 class TestFormatSize:
     """Pin the unit-step boundaries; the cache panel + cache list use this
