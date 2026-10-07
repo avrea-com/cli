@@ -326,7 +326,7 @@
         "pkg:pypi/typing-inspection@0.4.2",
         "pkg:pypi/wcwidth@0.7.0"
       ],
-      "ref": "Avrea CLI@0.4.0"
+      "ref": "Avrea CLI@0.4.1"
     },
     {
       "ref": "pkg:pypi/annotated-types@0.7.0"
@@ -376,7 +376,7 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "Avrea CLI@0.4.0",
+      "bom-ref": "Avrea CLI@0.4.1",
       "licenses": [
         {
           "license": {
@@ -386,7 +386,7 @@
       ],
       "name": "Avrea CLI",
       "type": "application",
-      "version": "0.4.0"
+      "version": "0.4.1"
     },
     "timestamp": "2026-10-06T00:00:00+00:00",
     "tools": {
@@ -399,7 +399,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:81d13039-bfca-5cab-a41c-92c477b0dbbc",
+  "serialNumber": "urn:uuid:590803bd-d88f-50df-9289-923420091011",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
