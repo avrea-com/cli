@@ -255,6 +255,35 @@ class TestRepositoryNames:
         assert "isn't in this org" in result.stderr
 
 
+class TestConfigSetOrg:
+    """``config set org`` writes the stored default of the host, which is the
+    member's own; a scoped token names its organization per invocation."""
+
+    @pytest.mark.parametrize("value", ["org-default", "org-other", "acme"])
+    def test_refused_without_a_lookup_or_a_write(self, scoped, api, monkeypatch, value):
+        stored = []
+        monkeypatch.setattr("avrea_cli.auth.store_default_org", lambda *args, **kwargs: stored.append(args))
+        result = scoped.invoke(cli, ["config", "set", "org", value])
+        assert result.exit_code == 1
+        assert "scoped token" in result.stderr
+        assert "--org org-" in result.stderr
+        assert "AVR_ORG" in result.stderr
+        assert api.requests == []
+        assert stored == []
+
+    def test_api_key_still_stores_the_organization(self, runner, api, monkeypatch):
+        stored = []
+        monkeypatch.setattr("avrea_cli.auth.store_default_org", lambda org_id, *, host: stored.append(org_id))
+        api.reply(
+            "GET",
+            "/users/me/organizations",
+            json={"data": [{"organization_id": "org-default", "slug": "acme", "name": "Acme"}]},
+        )
+        result = runner.invoke(cli, ["config", "set", "org", "acme"])
+        assert result.exit_code == 0, result.output
+        assert stored == ["org-default"]
+
+
 class TestAuthStatus:
     def test_reports_a_scoped_token_and_its_organization(self, scoped, api):
         result = scoped.invoke(cli, ["auth", "status"])

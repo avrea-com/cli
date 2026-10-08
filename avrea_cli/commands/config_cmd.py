@@ -4,6 +4,7 @@ from avrea_cli import auth
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
+from avrea_cli.helpers import SCOPED_TOKEN_ORG_HINT
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import get_org_slug
@@ -120,6 +121,12 @@ def config_set(ctx, key: str, value: str):
     ensure_authenticated(cfg)
 
     if key == "org":
+        if is_scoped_token(cfg.auth_token):
+            # The stored default belongs to the host's own login and would
+            # outlive the token; the membership list below answers a token 404.
+            click.echo("Error: A scoped token is bound to one organization and has no stored default to set.", err=True)
+            click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
+            raise click.Abort()
         # Verify the org exists and the user has access. Accepts an ID or slug;
         # we always store the resolved ``org-...`` ID so the default is stable
         # even if the slug is later renamed.

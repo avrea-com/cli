@@ -28,6 +28,7 @@ _AUTH_HINT = (
 
 # Scoped tokens (`avr token create`) carry this prefix; API keys carry `avk_`.
 _SCOPED_TOKEN_PREFIX = "avs_"
+SCOPED_TOKEN_ORG_HINT = "Pass that organization's ID with --org org-... or set AVR_ORG to it."
 
 _SCOPED_TOKEN_HINT = (
     "a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
@@ -96,7 +97,7 @@ def get_org_id(config: CliConfig, org_option: str | None, *, client: ApiClient |
         # The membership list answers 404 to a scoped token, so for one neither
         # a slug nor a missing organization can be resolved.
         click.echo("Error: A scoped token is bound to one organization and cannot look it up.", err=True)
-        click.echo("Pass that organization's ID with --org org-... or set AVR_ORG to it.", err=True)
+        click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
         raise click.Abort()
     if org_id:
         # ``org-`` is the opaque-ID prefix (mirrors ``rep-`` for repos); treat
