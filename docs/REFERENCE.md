@@ -560,12 +560,15 @@ Manage long-running VMs (SSH/RDP/VNC).
 avr vm [OPTIONS] COMMAND [ARGS]...
 ```
 
+A VM is named by the display name you gave it, or by its cvm- ID. Names
+are unique within an organization and case-insensitive.
+
 #### `avr vm bootstrap`
 
 Set up a RUNNING VM with your dev essentials over SSH.
 
 ```sh
-avr vm bootstrap [OPTIONS] VM_ID
+avr vm bootstrap [OPTIONS] VM
 ```
 
 ```sh
@@ -578,7 +581,7 @@ bootstrap after every `avr vm start`. Example:
 ```
 
 ```sh
-avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
+avr vm bootstrap dev-box --setup-github --install claude,codex \
   --repo https://github.com/me/project --env AWS_REGION=eu-north-1
 ```
 
@@ -620,7 +623,7 @@ now, it is never stored.
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `--name <TEXT>` — Human-readable VM name. _(required)_
+- `--name <TEXT>` — VM name, unique in the organization. Defaults to &lt;you&gt;-&lt;os version&gt;-&lt;timestamp&gt;.
 - `--os <CHOICE>` — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
 - `--os-version <CHOICE>` — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
 - `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
@@ -642,7 +645,7 @@ now, it is never stored.
 Delete a VM.
 
 ```sh
-avr vm delete [OPTIONS] VM_ID
+avr vm delete [OPTIONS] VM
 ```
 
 Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.
@@ -680,7 +683,7 @@ avr vm list [OPTIONS]
 Pause a RUNNING Linux VM while preserving its disk.
 
 ```sh
-avr vm pause [OPTIONS] VM_ID
+avr vm pause [OPTIONS] VM
 ```
 
 By default the snapshot is disk-only: the filesystem survives, but resume
@@ -704,7 +707,7 @@ preserve guest memory and continue processes from where they stopped.
 Forward one or more local ports to TCP ports on the VM over SSH.
 
 ```sh
-avr vm port-forward [OPTIONS] VM_ID
+avr vm port-forward [OPTIONS] VM
 ```
 
 The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
@@ -712,8 +715,8 @@ The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens
 --port, and holds them open until Ctrl-C. Bring your own client.
 
 ```sh
-avr vm port-forward cvm-abc123 --port 8080
-avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
+avr vm port-forward dev-box --port 8080
+avr vm port-forward dev-box --port 8080 --port 5432 --port 9000:3000
 ```
 
 **Arguments**
@@ -733,7 +736,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
 
 ```sh
-avr vm rdp [OPTIONS] VM_ID
+avr vm rdp [OPTIONS] VM
 ```
 
 Forwards a local port to the guest's RDP service (:3389) through the VM's
@@ -757,7 +760,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 Resume a PAUSED VM from its preserved snapshot.
 
 ```sh
-avr vm resume [OPTIONS] VM_ID
+avr vm resume [OPTIONS] VM
 ```
 
 The existing password remains valid. If a memory restore cannot complete,
@@ -781,7 +784,7 @@ running processes.
 Show a VM's details, including connection endpoints and egress rules.
 
 ```sh
-avr vm show [OPTIONS] VM_ID
+avr vm show [OPTIONS] VM
 ```
 
 **Arguments**
@@ -798,19 +801,19 @@ avr vm show [OPTIONS] VM_ID
 Open an SSH session to a RUNNING VM, or run a command on it.
 
 ```sh
-avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...
+avr vm ssh [OPTIONS] VM [SSH_ARGS]...
 ```
 
 With no extra arguments this opens an interactive session. Anything after
 `--` is run as a remote command instead, e.g.:
 
-    avr vm ssh cvm-abc123 -- uname -a
+    avr vm ssh dev-box -- uname -a
 
 A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
 so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
 in a login shell instead (e.g. so `claude` finds its subscription token):
 
-    avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+    avr vm ssh dev-box --login -- claude -p 'summarize the repo'
 
 Pass `--session <name>` to attach to (or create) a persistent tmux session,
 so the shell and any long-running process in it survive a dropped
@@ -842,18 +845,18 @@ port-forwarding use `avr vm port-forward`.
 Print (or --append) an ssh_config Host block for a RUNNING VM.
 
 ```sh
-avr vm ssh-config [OPTIONS] VM_ID
+avr vm ssh-config [OPTIONS] VM
 ```
 
 Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
 host key pinned, without wrapping each tool. Redirect it yourself:
 
-    avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+    avr vm ssh-config dev-box >> ~/.ssh/config
 
 or let --append manage the block for you (idempotent — re-run after a
 restart to refresh the endpoint in place):
 
-    avr vm ssh-config cvm-abc123 --append
+    avr vm ssh-config dev-box --append
 
 The block references a dedicated known_hosts file that this command writes
 the pinned host key into (one entry per VM). If the endpoint publishes no
@@ -878,7 +881,7 @@ warning is printed.
 Start a stopped VM.
 
 ```sh
-avr vm start [OPTIONS] VM_ID
+avr vm start [OPTIONS] VM
 ```
 
 Start a stopped VM. Boots a fresh disk and returns a one-time password.
@@ -899,7 +902,7 @@ Start a stopped VM. Boots a fresh disk and returns a one-time password.
 Stop a running VM.
 
 ```sh
-avr vm stop [OPTIONS] VM_ID
+avr vm stop [OPTIONS] VM
 ```
 
 Stop a running VM. The ephemeral disk is discarded.
@@ -920,7 +923,7 @@ Stop a running VM. The ephemeral disk is discarded.
 Update a VM's name, TTL, or SSH keys, or rotate its password.
 
 ```sh
-avr vm update [OPTIONS] VM_ID
+avr vm update [OPTIONS] VM
 ```
 
 Power state is controlled separately with avr vm start / avr vm stop.
@@ -932,7 +935,7 @@ Power state is controlled separately with avr vm start / avr vm stop.
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `--name <TEXT>` — New display name.
+- `--name <TEXT>` — New display name, unique in the organization.
 - `--ttl <TEXT>` — Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.
 - `--ssh-key <TEXT>` — Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start. _(repeatable)_
 - `--rotate-password` — Provision a fresh one-time password (returned in the response).
@@ -962,7 +965,7 @@ Deleted VMs are included: usage survives deletion.
 Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 
 ```sh
-avr vm vnc [OPTIONS] VM_ID
+avr vm vnc [OPTIONS] VM
 ```
 
 Forwards a local port to the guest's Screen Sharing service (:5900) through

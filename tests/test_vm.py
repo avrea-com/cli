@@ -168,7 +168,7 @@ class TestVmCreate:
         assert "image_series_name" not in body
         # one-time password and the poll hint are both surfaced
         assert "hunter2hunter2" in result.output
-        assert "vm show cvm-abc123" in result.output
+        assert "vm show 'dev box'" in result.output
 
     def test_create_surfaces_precheckout_note(self, runner, monkeypatch):
         note = "'owner/repo' is connected but not mirrored, so it will not be preloaded server-side"
@@ -557,7 +557,7 @@ class TestVmCreateWait:
         assert result.exit_code == 1  # timeout exits nonzero so scripts can detect it
         assert "hunter2hunter2" in result.output  # password is never lost on timeout
         assert "IP:PORT" in result.output  # falls back to the placeholder command
-        assert "avr vm show cvm-abc123" in result.output  # re-run hint
+        assert "avr vm show 'dev box'" in result.output  # re-run hint
 
     def test_wait_recovers_from_transient_error(self, runner, monkeypatch):
         # A connection-level blip mid-poll must be retried, not crash the wait.
@@ -1521,7 +1521,7 @@ class TestVmConnectLine:
         assert result.exit_code == 0
         # Password baked in, IP:PORT placeholder, RemoteFX forced, cert auto-accept on the baked line.
         assert "xfreerdp /v:IP:PORT /u:USER /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
-        assert "appears in `avr vm show cvm-abc123`" in result.output
+        assert "appears in `avr vm show 'dev box'`" in result.output
 
     def test_create_darwin_uri_quoted_and_scriptable_alt(self, runner, monkeypatch):
         result = self._create(runner, monkeypatch, "darwin")

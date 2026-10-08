@@ -3,7 +3,7 @@
 avr-vm-bootstrap \- Set up a RUNNING VM with your dev essentials over SSH.
 .SH SYNOPSIS
 .B avr vm bootstrap
-[OPTIONS] VM_ID
+[OPTIONS] VM
 .SH DESCRIPTION
 Set up a RUNNING VM with your dev essentials over SSH.
 .PP
@@ -20,7 +20,7 @@ bootstrap after every `avr vm start`. Example:
 .PP
 .RS 4
 .nf
-avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \e
+avr vm bootstrap dev-box --setup-github --install claude,codex \e
   --repo https://github.com/me/project --env AWS_REGION=eu-north-1
 .fi
 .RE

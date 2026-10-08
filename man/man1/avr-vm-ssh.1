@@ -3,17 +3,17 @@
 avr-vm-ssh \- Open an SSH session to a RUNNING VM, or run a command on it.
 .SH SYNOPSIS
 .B avr vm ssh
-[OPTIONS] VM_ID [SSH_ARGS]...
+[OPTIONS] VM [SSH_ARGS]...
 .SH DESCRIPTION
 Open an SSH session to a RUNNING VM, or run a command on it.
 .PP
 With no extra arguments this opens an interactive session. Anything after `--` is run as a remote command instead, e.g.:
 .PP
-avr vm ssh cvm-abc123 -- uname -a
+avr vm ssh dev-box -- uname -a
 .PP
 A one-off `-- <cmd>` runs in a non-login shell that sources no startup files, so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it in a login shell instead (e.g. so `claude` finds its subscription token):
 .PP
-avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+avr vm ssh dev-box --login -- claude -p 'summarize the repo'
 .PP
 Pass `--session <name>` to attach to (or create) a persistent tmux session, so the shell and any long-running process in it survive a dropped connection; reconnect with the same name to resume where you left off. A `-- <cmd>` given with --session runs only when the session is first created; reattaching to an existing session resumes it and does not rerun the command.
 .PP

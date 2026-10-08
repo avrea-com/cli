@@ -3,7 +3,7 @@
 avr-vm-port-forward \- Forward one or more local ports to TCP ports on the VM over SSH.
 .SH SYNOPSIS
 .B avr vm port-forward
-[OPTIONS] VM_ID
+[OPTIONS] VM
 .SH DESCRIPTION
 Forward one or more local ports to TCP ports on the VM over SSH.
 .PP
@@ -11,8 +11,8 @@ The generic primitive behind `avr vm rdp` / `avr vm vnc`: opens 127.0.0.1:<local
 .PP
 .RS 4
 .nf
-avr vm port-forward cvm-abc123 --port 8080
-avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
+avr vm port-forward dev-box --port 8080
+avr vm port-forward dev-box --port 8080 --port 5432 --port 9000:3000
 .fi
 .RE
 .SH ARGUMENTS

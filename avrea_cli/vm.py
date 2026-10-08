@@ -27,6 +27,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 import click
 import httpx
 import json
@@ -422,7 +423,8 @@ def _connect_block(vm: dict[str, Any], password: str | None) -> list[str]:
         pending = True
     lines = _rdp_connect_lines(ip_port, username, password, sys.platform, rfx)
     if pending:
-        lines.append(f"(IP:PORT appears in `avr vm show {vm.get('customer_vm_id')}` once the VM is RUNNING)")
+        label = _vm_label(vm, str(vm.get("customer_vm_id")))
+        lines.append(f"(IP:PORT appears in `avr vm show {label}` once the VM is RUNNING)")
     lines.append("(first connect shows a self-signed certificate warning; accept to continue)")
     return lines
 
@@ -498,7 +500,7 @@ def _wait_for_vm(
     last_state: str | None = None
     while True:
         try:
-            resp = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+            resp = client.public_get(_vm_path(org_id, vm_id))
         except httpx.HTTPError as exc:
             if isinstance(exc, httpx.HTTPStatusError):
                 status = exc.response.status_code
@@ -571,25 +573,48 @@ def _wait_exit(
     if disposition == "ready":
         return
     click.echo()
+    label = _vm_label(vm_state, vm_id)
     if disposition == "failed":
         state = (vm_state or {}).get("state") or "an error state"
         reason = (vm_state or {}).get("state_reason")
-        click.echo(f"VM {vm_id} entered {state}" + (f": {reason}" if reason else "") + ".")
+        click.echo(f"VM {label} entered {state}" + (f": {reason}" if reason else "") + ".")
     else:
-        click.echo(f"Not {target} yet after {wait_timeout}s. Re-run once ready: avr vm show {vm_id}")
+        click.echo(f"Not {target} yet after {wait_timeout}s. Re-run once ready: avr vm show {label}")
     ctx.exit(1)
+
+
+def _vm_label(vm: dict[str, Any] | None, fallback: str) -> str:
+    """How a hint names a VM: its display name, quoted for the shell, which is
+    what a person types back; the id only when no name is at hand."""
+    name = (vm or {}).get("display_name")
+    return shlex.quote(name) if name else fallback
+
+
+def _vm_path(org_id: str, vm_id: str, *suffix: str) -> str:
+    """The API path of a VM named by its display name or its cvm- ID. The
+    API resolves either; a name is percent-encoded like any path segment."""
+    return "/".join([f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}", *suffix])
 
 
 @click.group()
 @click.pass_context
 def vm(ctx):
-    """Manage long-running VMs (SSH/RDP/VNC)."""
+    """Manage long-running VMs (SSH/RDP/VNC).
+
+    A VM is named by the display name you gave it, or by its cvm- ID. Names
+    are unique within an organization and case-insensitive.
+    """
     ensure_ctx(ctx)
 
 
 @vm.command("create")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--name", "display_name", required=True, help="Human-readable VM name.")
+@click.option(
+    "--name",
+    "display_name",
+    default=None,
+    help="VM name, unique in the organization. Defaults to <you>-<os version>-<timestamp>.",
+)
 @click.option("--os", "os_type", type=click.Choice(_OS_CHOICES), required=True, help="Guest operating system.")
 @click.option(
     "--os-version",
@@ -745,7 +770,6 @@ def vm_create(
     org_id = get_org_id(config, org_id, client=client)
 
     body: dict[str, Any] = {
-        "display_name": display_name,
         "ephemeral": True,
         "os_type": os_type,
         "size": size,
@@ -753,6 +777,10 @@ def vm_create(
         "enable_remote_desktop": remote_desktop,
         "ttl_seconds": ttl_seconds,
     }
+    # Omitted, the server names the VM <you>-<os version>-<timestamp> and
+    # takes a free variant of it.
+    if display_name is not None:
+        body["display_name"] = display_name
     # os_version is optional; omit it so the server resolves the OS default.
     if os_version is not None:
         body["os_version"] = os_version
@@ -790,7 +818,7 @@ def vm_create(
             if disabled_caches:
                 click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
             click.echo()
-        click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
+        click.echo(f"Waiting up to {wait_timeout}s for {_vm_label(data['vm'], vm_id)} to become RUNNING...", err=True)
         vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, _endpoints_ready)
         if as_json:
             _emit_wait_json(ctx, vm_state or data["vm"], password, disposition)
@@ -813,7 +841,7 @@ def vm_create(
     if disabled_caches:
         click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
         click.echo()
-    click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
+    click.echo(f"Provisioning started. Poll status with: avr vm show {_vm_label(data['vm'], vm_id)}")
 
 
 @vm.command("list")
@@ -872,7 +900,7 @@ def vm_list(ctx, org_id, state, limit, cursor, as_json):
 
 
 @vm.command("show")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--json", "as_json", is_flag=True, help="Emit the full VM record (with egress rules) as JSON.")
 @click.pass_context
@@ -884,7 +912,7 @@ def vm_show(ctx, vm_id, org_id, as_json):
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(_vm_path(org_id, vm_id))
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -908,7 +936,7 @@ def vm_show(ctx, vm_id, org_id, as_json):
 
 
 @vm.command("ssh", context_settings={"ignore_unknown_options": True})
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.argument("ssh_args", nargs=-1, type=click.UNPROCESSED)
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
@@ -942,13 +970,13 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, session_name, login, pri
     With no extra arguments this opens an interactive session. Anything after
     `--` is run as a remote command instead, e.g.:
 
-        avr vm ssh cvm-abc123 -- uname -a
+        avr vm ssh dev-box -- uname -a
 
     A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
     so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
     in a login shell instead (e.g. so `claude` finds its subscription token):
 
-        avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+        avr vm ssh dev-box --login -- claude -p 'summarize the repo'
 
     Pass `--session <name>` to attach to (or create) a persistent tmux session,
     so the shell and any long-running process in it survive a dropped
@@ -1025,7 +1053,7 @@ _HOST_ALIAS_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 @vm.command("ssh-config")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "-i", "--identity", "identity_file", type=click.Path(), default=None, help="IdentityFile to write into the block."
@@ -1057,12 +1085,12 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
     Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
     host key pinned, without wrapping each tool. Redirect it yourself:
 
-        avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+        avr vm ssh-config dev-box >> ~/.ssh/config
 
     or let --append manage the block for you (idempotent — re-run after a
     restart to refresh the endpoint in place):
 
-        avr vm ssh-config cvm-abc123 --append
+        avr vm ssh-config dev-box --append
 
     The block references a dedicated known_hosts file that this command writes
     the pinned host key into (one entry per VM). If the endpoint publishes no
@@ -1116,9 +1144,9 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
 
 
 @vm.command("update")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--name", "display_name", default=None, help="New display name.")
+@click.option("--name", "display_name", default=None, help="New display name, unique in the organization.")
 @click.option("--ttl", default=None, help="Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.")
 @click.option(
     "--ssh-key",
@@ -1171,7 +1199,7 @@ def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, 
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_patch(f"/orgs/{org_id}/vms/{vm_id}", json=body)
+        response = client.public_patch(_vm_path(org_id, vm_id), json=body)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "update VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -1186,7 +1214,7 @@ def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, 
 
 
 @vm.command("start")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--wait",
@@ -1209,7 +1237,7 @@ def vm_start(ctx, vm_id, org_id, wait, wait_timeout, as_json):
 
 
 @vm.command("stop")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--wait", is_flag=True, default=False, help="Wait until the VM reaches STOPPED before returning.")
 @click.option(
@@ -1227,7 +1255,7 @@ def vm_stop(ctx, vm_id, org_id, wait, wait_timeout, as_json):
 
 
 @vm.command("pause")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--memory",
@@ -1269,7 +1297,7 @@ def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
 
 
 @vm.command("resume")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--discard-memory",
@@ -1332,7 +1360,7 @@ def _post_vm_transition(
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_post(f"/orgs/{org_id}/vms/{vm_id}/{endpoint}", json=body)
+        response = client.public_post(_vm_path(org_id, vm_id, endpoint), json=body)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
 
@@ -1383,7 +1411,7 @@ def _set_desired_state(
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_patch(f"/orgs/{org_id}/vms/{vm_id}", json={"desired_state": desired_state})
+        response = client.public_patch(_vm_path(org_id, vm_id), json={"desired_state": desired_state})
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
 
@@ -1501,7 +1529,7 @@ def vm_usage(ctx, org_id, period_start, period_end, as_json):
 
 
 @vm.command("delete")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
 @click.option("--wait", is_flag=True, default=False, help="Wait until the VM is fully deleted before returning.")
@@ -1526,7 +1554,7 @@ def vm_delete(ctx, vm_id, org_id, yes, wait, wait_timeout, as_json):
         click.confirm(f"Delete VM {vm_id}? This is permanent.", abort=True)
 
     try:
-        response = client.public_delete(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_delete(_vm_path(org_id, vm_id))
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "delete VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -1877,7 +1905,7 @@ def _resolve_ssh_endpoint(client: ApiClient, org_id: str, vm_id: str) -> dict[st
     """Fetch the VM and return its SSH endpoint, raising if it has none yet
     (endpoints appear once the VM is RUNNING)."""
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(_vm_path(org_id, vm_id))
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -2140,7 +2168,7 @@ def _vm_remote_desktop(
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(_vm_path(org_id, vm_id))
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -2206,7 +2234,7 @@ def _vm_remote_desktop(
 
 
 @vm.command("rdp")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--local-port",
@@ -2251,7 +2279,7 @@ def vm_rdp(ctx, vm_id, org_id, local_port, identity_file, launch, print_only):
 
 
 @vm.command("vnc")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--local-port",
@@ -2296,7 +2324,7 @@ def vm_vnc(ctx, vm_id, org_id, local_port, identity_file, launch, print_only):
 
 
 @vm.command("port-forward")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--port",
@@ -2325,8 +2353,8 @@ def vm_port_forward(ctx, vm_id, org_id, port_specs, local_port, identity_file, p
     --port, and holds them open until Ctrl-C. Bring your own client.
 
     \b
-        avr vm port-forward cvm-abc123 --port 8080
-        avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
+        avr vm port-forward dev-box --port 8080
+        avr vm port-forward dev-box --port 8080 --port 5432 --port 9000:3000
     """
     forwards = _build_forwards(port_specs, local_port)
 
@@ -2796,7 +2824,7 @@ def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], id
 
 
 @vm.command("bootstrap")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
@@ -2865,7 +2893,7 @@ def vm_bootstrap(
     bootstrap after every `avr vm start`. Example:
 
     \b
-        avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\
+        avr vm bootstrap dev-box --setup-github --install claude,codex \\
           --repo https://github.com/me/project --env AWS_REGION=eu-north-1
     """
     if repo_ref and not repo_url:
