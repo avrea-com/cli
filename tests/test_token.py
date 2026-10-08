@@ -299,17 +299,18 @@ class TestTokenCreateRefusals:
         api.reply("POST", TOKENS, status, json=body, headers=headers)
         return _create(runner, "--repo", "rep-aaa", "--vm", "cvm-1")
 
-    CREATE_UNAVAILABLE = (
-        "Error: Scoped token creation is not available for this organization (HTTP 404).\n"
-        "  To request access, contact support@avrea.com.\n"
+    CREATE_NOT_FOUND = (
+        "Error: Not found while trying to create the token (HTTP 404): Not Found\n"
+        "  Hint: Check the organization and API host. "
+        "If scoped-token access is unavailable, contact support@avrea.com.\n"
     )
-    VM_UNAVAILABLE = "  Check whether scoped tokens and customer VMs are enabled for this organization.\n"
+    VM_ACCESS_HINT = " Check whether scoped tokens and customer VMs are enabled for this organization."
 
-    def test_404_without_vm_access_says_creation_is_unavailable_and_how_to_ask(self, runner, api):
+    def test_404_without_vm_access_preserves_reason_and_offers_access_hint(self, runner, api):
         api.reply("POST", TOKENS, 404, json={"detail": "Not Found"})
         result = _create(runner, "--repo", "rep-019a0000000070008000000000000002")
         assert result.exit_code == 1
-        assert result.stderr == self.CREATE_UNAVAILABLE
+        assert result.stderr == self.CREATE_NOT_FOUND
         assert result.stdout == ""
 
     @pytest.mark.parametrize(
@@ -326,7 +327,7 @@ class TestTokenCreateRefusals:
         api.reply("POST", TOKENS, 404, json={"detail": "Not Found"})
         result = _create(runner, *args)
         assert result.exit_code == 1
-        assert result.stderr == self.CREATE_UNAVAILABLE + self.VM_UNAVAILABLE
+        assert result.stderr == self.CREATE_NOT_FOUND.rstrip("\n") + self.VM_ACCESS_HINT + "\n"
         assert result.stdout == ""
 
     def test_404_names_a_non_default_api(self, runner, api, monkeypatch):
@@ -334,7 +335,23 @@ class TestTokenCreateRefusals:
         api.reply("POST", TOKENS, 404, json={"detail": "Not Found"})
         result = _create(runner, "--repo", "rep-aaa")
         assert result.exit_code == 1
-        assert result.stderr == (self.CREATE_UNAVAILABLE + f"  API: https://avrea.example.com{TOKENS}\n")
+        assert result.stderr == (self.CREATE_NOT_FOUND + f"  API: https://avrea.example.com{TOKENS}\n")
+
+    @pytest.mark.parametrize("host", ["https://api.avrea.com", "https://avrea.example.com"])
+    @pytest.mark.parametrize("detail", ["Organization not found", "Unknown route", "Requested resource not found"])
+    def test_404_preserves_the_api_reason_without_classifying_support(self, runner, api, monkeypatch, host, detail):
+        monkeypatch.setenv("AVR_HOST", host)
+        api.reply("POST", TOKENS, 404, json={"detail": detail})
+        result = _create(runner, "--repo", "rep-aaa")
+        assert result.exit_code == 1
+        assert (
+            result.stderr.splitlines()[0] == f"Error: Not found while trying to create the token (HTTP 404): {detail}"
+        )
+        assert "creation is not available for this organization" not in result.stderr
+        assert "Check the organization and API host" in result.stderr
+        assert "If scoped-token access is unavailable" in result.stderr
+        if host != "https://api.avrea.com":
+            assert f"API: {host}{TOKENS}" in result.stderr
 
     def test_403_surfaces_the_refused_grant(self, runner, api):
         detail = "grants[1] names an object you cannot reach at that level"

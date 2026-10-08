@@ -7,7 +7,6 @@ from avrea_cli.display import escape_control_characters
 from avrea_cli.display import is_piped
 from avrea_cli.display import print_piped_header
 from avrea_cli.display import print_piped_row
-from avrea_cli.helpers import echo_api_url
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
@@ -29,7 +28,6 @@ from avrea_cli.repo_context import resolve_repo
 from datetime import UTC
 from datetime import datetime
 from typing import Any
-from typing import NoReturn
 import click
 import httpx
 import re
@@ -116,31 +114,19 @@ def _strip_level(spec: str, resource_type: str, flag: str) -> str:
     return target
 
 
-def _exit_create_unavailable(exc: httpx.HTTPStatusError, *, names_vms: bool) -> NoReturn:
-    """Explain a 404 from creating a token, then exit 1.
-
-    The API's bare 404 does not distinguish disabled scoped tokens from
-    disabled customer-VM support when VM grants or creation were requested."""
-    click.echo("Error: Scoped token creation is not available for this organization (HTTP 404).", err=True)
-    click.echo("  To request access, contact support@avrea.com.", err=True)
-    if names_vms:
-        click.echo(
-            "  Check whether scoped tokens and customer VMs are enabled for this organization.",
-            err=True,
-        )
-    echo_api_url(exc)
-    sys.exit(1)
-
-
-def _create_hints(response: httpx.Response) -> dict[int, str]:
-    """What the create endpoint means by the statuses it gives a specific sense."""
+def _create_hints(response: httpx.Response, *, names_vms: bool) -> dict[int, str]:
+    """Explain recovery without inferring a 404's cause."""
     retry_after = retry_after_seconds(response)
     retry = f"Retry in {retry_after}s." if retry_after is not None else "Retry shortly."
+    not_found = "Check the organization and API host. If scoped-token access is unavailable, contact support@avrea.com."
+    if names_vms:
+        not_found += " Check whether scoped tokens and customer VMs are enabled for this organization."
     # A refused grant is reported by its position in the request body, which
     # the user only ever expressed as flags.
     grant_order = {403: _GRANT_ORDER_HINT, 422: _GRANT_ORDER_HINT} if "grants" in response.text else {}
     return {
         **grant_order,
+        404: not_found,
         409: (
             f"A member can hold at most {_LIVE_TOKEN_LIMIT} live tokens per organization. "
             "Free one with `avr token list` and `avr token revoke <token-id>`."
@@ -245,9 +231,9 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
     try:
         minted = client.public_post(f"/orgs/{org_id}/access-tokens", json=body)
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 404:
-            _exit_create_unavailable(exc, names_vms=bool(vm_ids) or allow_vm_create)
-        handle_http_error(exc, "create the token", hints=_create_hints(exc.response))
+        handle_http_error(
+            exc, "create the token", hints=_create_hints(exc.response, names_vms=bool(vm_ids) or allow_vm_create)
+        )
     except httpx.RequestError, ValueError, KeyboardInterrupt:
         raise click.ClickException(
             "The creation response was not received. A token may have been created; "

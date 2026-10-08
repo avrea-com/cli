@@ -217,8 +217,8 @@ Exit code `4` is reserved for "auth required". `1` is general failure; `2` is a 
 **Scoped tokens for scripts and agents**
 
 ```sh
-avr token create --name ci-read --repo acme/api --ttl 8h          # prints the credential once
-avr token create --name agent --vm <vm-id> --allow-vm-create --vm-create-limit 3
+avr token create --name ci-read --org <org-id> --repo acme/api --ttl 8h  # prints the credential once
+avr token create --name agent --org <org-id> --vm <vm-id> --allow-vm-create --vm-create-limit 3
 avr token list
 avr token view <token-id>
 avr token revoke <token-id>
@@ -230,7 +230,7 @@ With a scoped token, a repository name (`--repo acme/api`, `AVR_REPO` or the che
 
 Creation returns the credential only once. If `--jq` fails or removes it, the command falls back to the requested JSON without filtering and exits nonzero. Save the credential from that JSON. Output failures also report a revoke command on stderr without exposing the credential there. If the creation request is interrupted or its response is lost, a token may already exist: check `avr token list` before retrying.
 
-If `avr token create` reports that creation is unavailable, contact support@avrea.com to request access. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
+If `avr token create` returns a 404, check the API's reason, the organization and the API host. If scoped-token access is unavailable, contact support@avrea.com to request it. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
 
 **Pipe-aware output**
 
