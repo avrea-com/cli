@@ -125,6 +125,136 @@ class TestOrganizationRule:
         client.public_get.assert_not_called()
 
 
+REPOS = "/orgs/org-default/repos"
+RESOLVE = "/orgs/org-default/repos/resolve"
+RUNS = "/orgs/org-default/workflow-runs"
+NAMED_ENTRIES = "/orgs/org-default/repos/rep-api/cache/entries"
+
+
+def _repos(*full_names_and_ids, next_cursor=None):
+    data = [{"repository_id": rid, "full_name": name} for name, rid in full_names_and_ids]
+    return {"data": data, "pagination": {"next_cursor": next_cursor}}
+
+
+class TestRepositoryNames:
+    """The name lookup is closed to a scoped token, so a name is matched
+    against the repositories the token reaches, which the list route answers."""
+
+    def test_name_resolves_through_the_repository_list(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 0, result.output
+        assert [r.url.path for r in api.requests] == [REPOS, NAMED_ENTRIES]
+        assert api.requests[0].url.params["q"] == "acme/api"
+
+    def test_name_in_avr_repo_resolves_the_same_way(self, scoped, api, monkeypatch):
+        monkeypatch.setenv("AVR_REPO", "acme/api")
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        result = scoped.invoke(cli, ["cache", "list"])
+        assert result.exit_code == 0, result.output
+        assert [r.url.path for r in api.requests] == [REPOS, NAMED_ENTRIES]
+
+    def test_name_matches_whatever_its_case(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "Acme/API"])
+        assert result.exit_code == 0, result.output
+        assert api.sent("GET", NAMED_ENTRIES)
+
+    def test_a_longer_name_that_contains_it_is_not_a_match(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos(("acme/api-docs", "rep-docs"), ("other/acme/api", "rep-x")))
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 1
+        assert [r.url.path for r in api.requests] == [REPOS]
+
+    def test_match_on_a_later_page_is_found(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos(("acme/api-docs", "rep-docs"), next_cursor="page-2"))
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 0, result.output
+        first, second = api.sent("GET", REPOS)
+        assert "cursor" not in first.url.params
+        assert second.url.params["cursor"] == "page-2"
+        assert second.url.params["q"] == "acme/api"
+
+    def test_unreached_name_is_refused_with_what_to_do(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos())
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 1
+        assert "acme/api" in result.stderr
+        assert "scoped token" in result.stderr
+        assert "avr repo list" in result.stderr
+        # Not the advice for a member: connecting the repository or switching
+        # organization would not change what this token reaches.
+        assert "Connect this repo" not in result.stderr
+        assert "is not in org" not in result.stderr
+        assert "avr config set org" not in result.stderr
+        assert [r.url.path for r in api.requests] == [REPOS]
+
+    def test_the_name_lookup_is_never_asked(self, scoped, api):
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        scoped.invoke(cli, ["cache", "list", "--repo", "acme/gone"])
+        assert api.sent("GET", RESOLVE) == []
+
+    def test_an_id_needs_no_lookup(self, scoped, api):
+        api.reply("GET", ENTRIES, json={"data": [], "total": 0})
+        result = scoped.invoke(cli, CACHE_LIST)
+        assert result.exit_code == 0, result.output
+        assert [r.url.path for r in api.requests] == [ENTRIES]
+
+    def test_a_failing_list_is_reported_as_the_failure_it_is(self, scoped, api):
+        api.reply("GET", REPOS, 503, json={"detail": "Repository permissions are temporarily unavailable"})
+        result = scoped.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 1
+        assert "HTTP 503" in result.stderr
+        assert "avr repo list" not in result.stderr
+
+    def test_checkout_of_a_reached_repository_narrows_the_listing(self, scoped, api, monkeypatch):
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/api")
+        api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
+        api.reply("GET", RUNS, json={"data": [], "pagination": {}})
+        result = scoped.invoke(cli, ["run", "list"])
+        assert result.exit_code == 0, result.output
+        (runs,) = api.sent("GET", RUNS)
+        assert runs.url.params.get_list("repository_ids") == ["rep-api"]
+
+    def test_checkout_of_an_unreached_repository_says_what_is_listed(self, scoped, api, monkeypatch):
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/elsewhere")
+        api.reply("GET", REPOS, json=_repos())
+        api.reply("GET", RUNS, json={"data": [], "pagination": {}})
+        result = scoped.invoke(cli, ["run", "list"])
+        assert result.exit_code == 0, result.output
+        assert "acme/elsewhere" in result.stderr
+        assert "scoped token" in result.stderr
+        # Neither claim holds for a token: the repository may well be in the
+        # organization, and the listing covers only what the token reaches.
+        assert "isn't in this org" not in result.stderr
+        assert "org-wide" not in result.stderr
+        (runs,) = api.sent("GET", RUNS)
+        assert "repository_ids" not in runs.url.params
+        assert api.sent("GET", RESOLVE) == []
+
+    def test_api_key_still_asks_the_name_lookup(self, runner, api):
+        api.reply("GET", RESOLVE, json={"data": {"repository_id": "rep-api", "full_name": "acme/api"}})
+        api.reply("GET", NAMED_ENTRIES, json={"data": [], "total": 0})
+        result = runner.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+        assert result.exit_code == 0, result.output
+        assert [r.url.path for r in api.requests] == [RESOLVE, NAMED_ENTRIES]
+
+    def test_api_key_checkout_miss_keeps_its_message(self, runner, api, monkeypatch):
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/elsewhere")
+        api.reply("GET", RESOLVE, 404, json={"detail": {"message": "not found", "nearby_full_names": []}})
+        api.reply("GET", RUNS, json={"data": [], "pagination": {}})
+        result = runner.invoke(cli, ["run", "list"])
+        assert result.exit_code == 0, result.output
+        assert "isn't in this org" in result.stderr
+
+
 class TestAuthStatus:
     def test_reports_a_scoped_token_and_its_organization(self, scoped, api):
         result = scoped.invoke(cli, ["auth", "status"])

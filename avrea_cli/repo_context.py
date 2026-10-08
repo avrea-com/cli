@@ -3,6 +3,7 @@
 from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import is_scoped_token
 from typing import Literal
 from typing import NoReturn
 from typing import overload
@@ -63,16 +64,20 @@ class _RepoNotInOrgError(Exception):
 
     Carries the server's structured 404 hint payload (nearby names + other org
     memberships) so the caller can render "did you mean?" without any extra
-    round-trips."""
+    round-trips.
+
+    With ``scoped_token`` the miss is a scoped token's: the name is not among
+    the repositories the token reaches, which says nothing about the org."""
 
     def __init__(
         self,
         repo: str,
         *,
-        is_structured: bool,
+        is_structured: bool = False,
         message: str | None = None,
-        nearby: list[str],
-        other_orgs: list[dict[str, str]],
+        nearby: list[str] | None = None,
+        other_orgs: list[dict[str, str]] | None = None,
+        scoped_token: bool = False,
     ):
         super().__init__(repo)
         self.repo = repo
@@ -82,8 +87,9 @@ class _RepoNotInOrgError(Exception):
         # renderer needs the flag, to gate the "Connect this repo" hint.
         self.is_structured = is_structured
         self.message = message
-        self.nearby = nearby
-        self.other_orgs = other_orgs
+        self.nearby = nearby or []
+        self.other_orgs = other_orgs or []
+        self.scoped_token = scoped_token
 
 
 def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -> str:
@@ -100,6 +106,10 @@ def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -
     try:
         return _resolve_repo_strict(client, config, org_id, repo)
     except _RepoNotInOrgError as exc:
+        if exc.scoped_token:
+            click.echo(f'Error: This scoped token does not reach repository "{exc.repo}".', err=True)
+            click.echo("  `avr repo list` shows the repositories it reaches.", err=True)
+            raise click.Abort() from None
         _abort_repo_not_found(
             exc.repo,
             org_id,
@@ -126,6 +136,9 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
         click.echo("Use org/repo (e.g. acme/web) or a repo ID (rep-...).", err=True)
         raise click.Abort()
 
+    if is_scoped_token(config.auth_token):
+        return _resolve_repo_for_scoped_token(client, org_id, repo)
+
     try:
         result = client.public_get(f"/orgs/{org_id}/repos/resolve", params={"name": repo})
         data = result.get("data") or {}
@@ -148,6 +161,39 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
             nearby=nearby,
             other_orgs=other_orgs,
         ) from None
+
+
+def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) -> str:
+    """Match ``repo`` against the repositories a scoped token reaches.
+
+    The resolve endpoint answers a scoped token 404 whatever the name. The
+    repository list is open to one and already holds only what the token
+    reaches, so the name is matched there: ``q`` narrows the listing to names
+    that contain it, and the exact one is picked here."""
+    wanted = repo.casefold()
+    params: dict[str, str | int] = {"q": repo, "limit": 100}
+    while True:
+        try:
+            response = client.public_get(f"/orgs/{org_id}/repos", params=params)
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "resolve the repository")
+        for row in response.get("data") or []:
+            if str(row.get("full_name") or "").casefold() == wanted:
+                _warn_if_case_folded(repo, row["full_name"])
+                return row["repository_id"]
+        cursor = (response.get("pagination") or {}).get("next_cursor")
+        if not cursor:
+            raise _RepoNotInOrgError(repo, scoped_token=True)
+        params = {**params, "cursor": cursor}
+
+
+def _echo_soft_detect_miss(exc: _RepoNotInOrgError, detected: str) -> None:
+    """Say why a command that auto-detected ``detected`` is not narrowed to it."""
+    if exc.scoped_token:
+        note = f"auto-detected {detected} is not a repository this scoped token reaches; showing all that it reaches."
+    else:
+        note = f"auto-detected {detected} isn't in this org — showing org-wide results."
+    click.echo(click.style(f"  ({note})", dim=True), err=True)
 
 
 def _parse_resolve_404_detail(
@@ -322,14 +368,8 @@ def resolve_repo_or_detect(
         # broken token.
         try:
             return _resolve_repo_strict(client, config, org_id, detected)
-        except _RepoNotInOrgError:
-            click.echo(
-                click.style(
-                    f"  (auto-detected {detected} isn't in this org — showing org-wide results.)",
-                    dim=True,
-                ),
-                err=True,
-            )
+        except _RepoNotInOrgError as exc:
+            _echo_soft_detect_miss(exc, detected)
             return None
     if required:
         raise click.ClickException(_no_repo_error_message())
@@ -365,14 +405,8 @@ def resolve_repos_or_detect(
     if soft_detect:
         try:
             return [_resolve_repo_strict(client, config, org_id, detected)]
-        except _RepoNotInOrgError:
-            click.echo(
-                click.style(
-                    f"  (auto-detected {detected} isn't in this org — showing org-wide results.)",
-                    dim=True,
-                ),
-                err=True,
-            )
+        except _RepoNotInOrgError as exc:
+            _echo_soft_detect_miss(exc, detected)
             return []
     return [resolve_repo(client, config, org_id, detected)]
 

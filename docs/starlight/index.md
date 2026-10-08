@@ -226,7 +226,7 @@ avr token revoke <token-id>
 
 A scoped token is a short-lived credential (60 seconds to 7 days, 8 hours by default) bound to one organization. It reads only the repositories it names and manages only the VMs it names, and it cannot create further tokens. `create` prints the `export AVR_TOKEN=...` and `export AVR_ORG=...` lines for whatever will use the token: a scoped token cannot look an organization up by slug, so `AVR_ORG` (or `--org`) must be the `org-...` ID. With a scoped token, `avr auth status` reports the credential type and the configured organization, and a 403 or 404 comes with a reminder that the token reaches only what it names.
 
-Use `rep-...` IDs for repository operations with a scoped token; repository name lookups are unavailable to it. If `--jq` fails after creation, the command prints the requested JSON without filtering and exits nonzero. Save the credential from that JSON; the token was already created.
+With a scoped token, a repository name (`--repo acme/api`, `AVR_REPO` or the checkout's remote) is matched against the repositories the token reaches; a `rep-...` ID works as well. If `--jq` fails after creation, the command prints the requested JSON without filtering and exits nonzero. Save the credential from that JSON; the token was already created.
 
 If `avr token create` reports that creation is unavailable, contact support@avrea.com to request access. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
 
