@@ -214,6 +214,22 @@ esac
 
 Exit code `4` is reserved for "auth required". `1` is general failure; `2` is a usage error.
 
+**Scoped tokens for scripts and agents**
+
+```sh
+avr token create --name ci-read --repo acme/api --ttl 8h          # prints the credential once
+avr token create --name agent --vm <vm-id> --allow-vm-create --vm-create-limit 3
+avr token list
+avr token view <token-id>
+avr token revoke <token-id>
+```
+
+A scoped token is a short-lived credential (60 seconds to 7 days, 8 hours by default) bound to one organization. It reads only the repositories it names and manages only the VMs it names, and it cannot create further tokens. `create` prints the `export AVR_TOKEN=...` and `export AVR_ORG=...` lines for whatever will use the token: a scoped token cannot look an organization up by slug, so `AVR_ORG` (or `--org`) must be the `org-...` ID. With a scoped token, `avr auth status` reports the credential type and the configured organization, and a 403 or 404 comes with a reminder that the token reaches only what it names.
+
+Use `rep-...` IDs for repository operations with a scoped token; repository name lookups are unavailable to it. If `--jq` fails after creation, the command prints the requested JSON without filtering and exits nonzero. Save the credential from that JSON; the token was already created.
+
+If `avr token create` reports that creation is unavailable, contact support@avrea.com to request access. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
+
 **Pipe-aware output**
 
 When stdout isn't a TTY, list commands switch to tab-separated rows (no color, no truncation, ISO timestamps), so `avr run list | awk` works without flags. `avr run watch | jq -c .` automatically switches to NDJSON event mode.
@@ -225,8 +241,8 @@ When stdout isn't a TTY, list commands switch to tab-separated rows (no color, n
 | Variable         | Purpose                                                                                          |
 | ---------------- | ------------------------------------------------------------------------------------------------ |
 | `AVR_HOST`       | Avrea API URL. Defaults to the active host in `hosts.json`, then `https://api.avrea.com`.        |
-| `AVR_TOKEN`      | API key. Overrides whatever's stored for the active host.                                         |
-| `AVR_ORG`        | Default organization ID. Overrides the stored default.                                           |
+| `AVR_TOKEN`      | API key or scoped token. Overrides whatever's stored for the active host.                         |
+| `AVR_ORG`        | Default organization ID. Overrides the stored default. A scoped token needs it, or `--org`.      |
 | `AVR_REPO`       | Default repository (`org/name` or `rep-xxx`). Overrides git auto-detect.                          |
 | `AVR_BROWSER`    | Browser to launch for `--web` and OAuth login. Falls back to `BROWSER`, then system default.      |
 | `AVR_PAGER`      | Pager for long output. Overrides `PAGER`. Set to empty string to disable paging.                  |

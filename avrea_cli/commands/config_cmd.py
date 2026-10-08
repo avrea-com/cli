@@ -8,6 +8,7 @@ from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import match_org
 from avrea_cli.repo_context import detect_repo_from_git
 from urllib.parse import urlparse
@@ -45,9 +46,13 @@ def _print_config_status(ctx) -> None:
 
     # Auth status line
     if cfg.auth_token:
-        me = _fetch_me(client)
         token_src = _src("AVR_TOKEN" if os.getenv("AVR_TOKEN") else "hosts.json")
-        if me and me.get("email"):
+        scoped = is_scoped_token(cfg.auth_token)
+        # A scoped token has no user profile: `/users/me` answers it 404.
+        me = None if scoped else _fetch_me(client)
+        if scoped:
+            click.echo(f"  - scoped token {token_src}, not checked against the API")
+        elif me and me.get("email"):
             click.echo(f"  {click.style('✓', fg='green')} authenticated as {me['email']} {token_src}")
         elif me:
             click.echo(f"  {click.style('✓', fg='green')} authenticated {token_src}")

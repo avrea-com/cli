@@ -87,7 +87,8 @@
     "orgs": "org",
     "logs": "log",
     "workflows": "workflow",
-    "vms": "vm"
+    "vms": "vm",
+    "tokens": "token"
   },
   "section_order": [
     "Core Commands",
@@ -6630,6 +6631,465 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "token",
+        "path": [
+          "avr",
+          "token"
+        ],
+        "full": "avr token",
+        "is_group": true,
+        "short_help": "Create and manage scoped access tokens.",
+        "help": "Create and manage scoped access tokens.\n\nA scoped access token is a credential bound to one organization that\nexpires within seven days. It reaches only the repositories and VMs it\nnames, and it cannot create further tokens. To use one, set AVR_TOKEN to\nthe credential and AVR_ORG to the organization ID.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr token [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "create",
+            "path": [
+              "avr",
+              "token",
+              "create"
+            ],
+            "full": "avr token create",
+            "is_group": false,
+            "short_help": "Create a scoped token and print its credential.",
+            "help": "Create a scoped token and print its credential.\n\nThe credential is shown once and cannot be retrieved later. A token needs\nat least one of --repo, --vm or --allow-vm-create. Repository grants are\nread-only and VM grants are admin; an optional level suffix\n(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n\n\b\nExamples:\n    avr token create --name ci-read --repo acme/api --repo acme/web\n    avr token create --name agent --vm cvm-abc123 --ttl 30m\n    avr token create --name sandbox --allow-vm-create --vm-create-limit 3\n    avr token create --name ci-read --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, token, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token create [OPTIONS]",
+            "params": [
+              {
+                "name": "name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Token name (1-100 characters).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant read access to a repository (org/repo or rep-xxx). Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "vms",
+                "kind": "option",
+                "opts": [
+                  "--vm"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant admin access to a VM, by VM ID. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "allow_vm_create",
+                "kind": "option",
+                "opts": [
+                  "--allow-vm-create"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Let the token create VMs.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "vm_create_limit",
+                "kind": "option",
+                "opts": [
+                  "--vm-create-limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max VMs the token may create; needs --allow-vm-create. The server default is 1.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ttl",
+                "kind": "option",
+                "opts": [
+                  "--ttl"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 7 days; the server default is 8 hours.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "token",
+              "list"
+            ],
+            "full": "avr token list",
+            "is_group": false,
+            "short_help": "List live tokens, newest first.",
+            "help": "List live tokens, newest first.\n\nShows your own tokens, or every member's when you are an organization\nadmin. Revoked and expired tokens are not listed; `avr token view` still\nreads them by ID.\n\n\b\nExamples:\n    avr token list\n    avr token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max tokens to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "revoke",
+            "path": [
+              "avr",
+              "token",
+              "revoke"
+            ],
+            "full": "avr token revoke",
+            "is_group": false,
+            "short_help": "Revoke a token.",
+            "help": "Revoke a token.\n\nRequests made with the token are refused from then on. Revoking a token\nthat is already revoked succeeds.\n\n\b\nExamples:\n    avr token revoke key-abc123\n    avr token revoke key-abc123 --yes\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token revoke [OPTIONS] TOKEN_ID",
+            "params": [
+              {
+                "name": "token_id",
+                "kind": "argument",
+                "opts": [
+                  "token_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip the confirmation prompt.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "token",
+              "view"
+            ],
+            "full": "avr token view",
+            "is_group": false,
+            "short_help": "Show a token's details and grants, including a revoked or expired one.",
+            "help": "Show a token's details and grants, including a revoked or expired one.\n\nThe credential itself is never shown again after `avr token create`.\n\n\b\nExamples:\n    avr token view key-abc123\n    avr token view key-abc123 --json grants\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token view [OPTIONS] TOKEN_ID",
+            "params": [
+              {
+                "name": "token_id",
+                "kind": "argument",
+                "opts": [
+                  "token_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

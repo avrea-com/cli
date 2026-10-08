@@ -7,6 +7,7 @@ from avrea_cli.config import CliConfig
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import is_scoped_token
 from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
 from avrea_cli.json_output import json_options
@@ -17,7 +18,7 @@ import click
 import httpx
 import sys
 
-# `host`/`default_org`/`token` come from local config, not the API response.
+# `host`/`default_org`/`token`/`credential_type` come from local config, not the API response.
 # The handler injects them under `_local:*` keys before projection so the
 # schema stays a flat wire-name → path map (matching every other command).
 _AUTH_STATUS_FIELDS = make_schema(
@@ -28,6 +29,7 @@ _AUTH_STATUS_FIELDS = make_schema(
     host="_local:host",
     default_org="_local:default_org",
     token="_local:token",
+    credential_type="_local:credential_type",
 )
 
 
@@ -214,12 +216,17 @@ def auth_status(ctx, show_token: bool, json_fields, jq_expr):
 
     ensure_authenticated(config)
 
-    try:
-        result = client.public_get("/users/me")
-    except httpx.HTTPStatusError as exc:
-        # handle_http_error short-circuits 401 to the same auth hint, and
-        # surfaces other statuses with detail-aware framing.
-        handle_http_error(exc, "fetch user info")
+    scoped = is_scoped_token(config.auth_token)
+    if scoped:
+        # A scoped token has no user profile: `/users/me` answers it 404.
+        result: dict = {}
+    else:
+        try:
+            result = client.public_get("/users/me")
+        except httpx.HTTPStatusError as exc:
+            # handle_http_error short-circuits 401 to the same auth hint, and
+            # surfaces other statuses with detail-aware framing.
+            handle_http_error(exc, "fetch user info")
 
     # `.get()` for every field — a partial /users/me response (schema drift,
     # degraded backend) should yield a missing-field message, not a KeyError
@@ -234,12 +241,29 @@ def auth_status(ctx, show_token: bool, json_fields, jq_expr):
         record: dict[str, object] = dict(result)
         record["_local:host"] = config.public_api_url
         record["_local:default_org"] = config.default_org
+        record["_local:credential_type"] = "scoped_token" if scoped else "api_key"
         if show_token:
             record["_local:token"] = config.auth_token
             schema = _AUTH_STATUS_FIELDS
         else:
             schema = {k: v for k, v in _AUTH_STATUS_FIELDS.items() if k != "token"}
         emit_json_record(record, split_fields(json_fields, schema), schema, jq_expr)
+        return
+
+    if scoped:
+        click.echo(
+            format_key_value(
+                {
+                    "Credential": "scoped token",
+                    "Host": config.public_api_url,
+                    "Organization": _scoped_token_org(config.default_org),
+                    "Token": _format_token(config.auth_token, show_token),
+                }
+            )
+        )
+        click.echo()
+        click.echo(click.style("  A scoped token reaches only the repositories and VMs it names.", dim=True))
+        click.echo(click.style("  It is not checked here: an expired or revoked one fails on first use.", dim=True))
         return
 
     click.echo(
@@ -258,6 +282,16 @@ def auth_status(ctx, show_token: bool, json_fields, jq_expr):
     click.echo()
     click.echo(click.style("  Switch host:        avr auth switch <host>", dim=True))
     click.echo(click.style("  Switch default org: avr config set org <slug>", dim=True))
+
+
+def _scoped_token_org(org: str | None) -> str:
+    """Render the configured organization for a scoped token, which works
+    only with an ``org-...`` ID (see ``helpers.get_org_id``)."""
+    if not org:
+        return "(not set: pass --org org-... or set AVR_ORG)"
+    if not org.startswith("org-"):
+        return f"{org} (a slug: a scoped token needs the ID, org-...)"
+    return org
 
 
 def _format_token(token: str | None, show: bool) -> str:

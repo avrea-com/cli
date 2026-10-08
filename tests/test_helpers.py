@@ -21,21 +21,25 @@ import pytest
 class TestGetOrgId:
     def test_returns_explicit_option(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         assert get_org_id(config, "org-explicit") == "org-explicit"
 
     def test_returns_default_org(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "org-default"
         assert get_org_id(config, None) == "org-default"
 
     def test_option_overrides_default(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "org-default"
         assert get_org_id(config, "org-override") == "org-override"
 
     def test_auto_selects_single_org(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-only", "slug": "my-org"}]}
@@ -44,6 +48,7 @@ class TestGetOrgId:
 
     def test_multiple_orgs_aborts_with_list(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {
@@ -57,6 +62,7 @@ class TestGetOrgId:
 
     def test_zero_orgs_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": []}
@@ -65,12 +71,14 @@ class TestGetOrgId:
 
     def test_no_client_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         with pytest.raises(click.Abort):
             get_org_id(config, None)
 
     def test_resolves_slug_to_id(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {
@@ -83,6 +91,7 @@ class TestGetOrgId:
 
     def test_resolves_slug_case_insensitively(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -91,6 +100,7 @@ class TestGetOrgId:
     def test_resolves_default_org_slug(self) -> None:
         # AVR_ORG can hold a slug; config.default_org flows through the same path.
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "alpha"
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -98,6 +108,7 @@ class TestGetOrgId:
 
     def test_org_id_skips_resolution_round_trip(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         assert get_org_id(config, "org-x", client=client) == "org-x"
@@ -105,6 +116,7 @@ class TestGetOrgId:
 
     def test_unknown_slug_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -114,12 +126,14 @@ class TestGetOrgId:
     def test_slug_without_client_passes_through(self) -> None:
         # No client means no resolution; the raw value goes to the backend.
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         assert get_org_id(config, "alpha") == "alpha"
 
     @staticmethod
     def _client_returning(status: int, *, host: str) -> tuple[MagicMock, ApiClient]:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         config.public_api_url = host
         config.get_api_headers.return_value = {}
@@ -355,6 +369,34 @@ class TestHandleHttpError:
             "Error: Failed to do thing (HTTP 422): grants[0].access_level: Input should be 'read'; "
             "limit: Field required; A token needs at least one grant or VM creation\n"
         ) in capsys.readouterr().err
+
+    @pytest.mark.parametrize("status", [403, 404, 409, 422, 429, 503, 418])
+    def test_status_hint_follows_the_error_it_is_keyed_on(self, capsys, status):
+        req = httpx.Request("POST", f"{CliConfig.DEFAULT_API_URL}/x")
+        resp = httpx.Response(status, request=req, json={"detail": "nope"})
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(
+                httpx.HTTPStatusError("err", request=req, response=resp), "do thing", hints={status: "try the other"}
+            )
+        assert excinfo.value.code == 1
+        lines = capsys.readouterr().err.splitlines()
+        assert f"HTTP {status}" in lines[0]
+        assert lines[-1] == "  Hint: try the other"
+
+    def test_status_hint_for_another_status_is_not_printed(self, capsys):
+        exc = self._exc(404, b'{"detail": "nope"}', "application/json")
+        with pytest.raises(SystemExit):
+            handle_http_error(exc, "do thing", hints={409: "try the other"})
+        assert "try the other" not in capsys.readouterr().err
+
+    def test_status_hint_never_replaces_the_auth_hint(self, capsys):
+        exc = self._exc(401, b"", "application/json")
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(exc, "do thing", hints={401: "try the other"})
+        assert excinfo.value.code == EXIT_AUTH_REQUIRED
+        err = capsys.readouterr().err
+        assert "avr auth login" in err
+        assert "try the other" not in err
 
 
 class TestFormatSize:

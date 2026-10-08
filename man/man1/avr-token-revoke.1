@@ -1,0 +1,35 @@
+.TH AVR\-TOKEN\-REVOKE 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-token-revoke \- Revoke a token.
+.SH SYNOPSIS
+.B avr token revoke
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Revoke a token.
+.PP
+Requests made with the token are refused from then on. Revoking a token that is already revoked succeeds.
+.PP
+.RS 4
+.nf
+Examples:
+    avr token revoke key-abc123
+    avr token revoke key-abc123 --yes
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-token (1),
+.BR avr-token-create (1),
+.BR avr-token-list (1),
+.BR avr-token-view (1)

@@ -62,8 +62,10 @@ class CliConfig:
         AVR_HOST    Full URL of the Avrea API. Highest precedence; if unset
                     the CLI falls through to the file's ``default_host``,
                     then to ``https://api.avrea.com``.
-        AVR_TOKEN   API key. Overrides whatever's stored for the resolved host.
+        AVR_TOKEN   API key or scoped token. Overrides whatever's stored for
+                    the resolved host.
         AVR_ORG     Default organization ID. Overrides the stored default.
+                    A scoped token works only with the ID, never a slug.
         AVR_REPO    Repository (org/name or rep-xxx). Consumed by command-
                     level resolvers in ``repo_context``.
     """
