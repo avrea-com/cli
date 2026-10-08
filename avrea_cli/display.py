@@ -37,9 +37,18 @@ def print_piped_header(columns: list[str]) -> None:
 def print_piped_row(values: list[object]) -> None:
     """Emit a single tab-separated row for piped consumers (cut, awk, grep).
 
-    None becomes an empty cell; everything else is str()'d. Numeric 0 stays
-    "0" — callers shouldn't replace it with "" upstream."""
-    click.echo("\t".join("" if v is None else str(v) for v in values))
+    None becomes an empty cell; controls are escaped so text cannot create
+    columns or rows. Numeric 0 stays "0"."""
+    click.echo("\t".join(escape_control_characters(v) for v in values))
+
+
+def escape_control_characters(value: object) -> str:
+    """Keep untrusted text in one display cell without terminal controls."""
+    text = "" if value is None else str(value)
+    escapes = {"\t": "\\t", "\n": "\\n", "\r": "\\r"}
+    return "".join(
+        escapes.get(char, f"\\x{ord(char):02x}") if ord(char) < 32 or 127 <= ord(char) <= 159 else char for char in text
+    )
 
 
 def page_output(content: str, *, bypass: bool = False) -> None:

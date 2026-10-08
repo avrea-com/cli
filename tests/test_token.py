@@ -2,11 +2,16 @@
 
 from avrea_cli.docs_gen import build_tree
 from avrea_cli.main import cli
+from uuid import UUID
 import json
 import pytest
 
 TOKENS = "/orgs/org-default/access-tokens"
 CREDENTIAL = "avs_0123456789abcdefghijklmnopqrstuv"
+TOKEN_ID = f"key-{UUID('019a0000-0000-7000-8000-000000000001').hex}"
+OTHER_TOKEN_ID = f"key-{UUID('019a0000-0000-7000-8000-000000000002').hex}"
+THIRD_TOKEN_ID = f"key-{UUID('019a0000-0000-7000-8000-000000000003').hex}"
+UNKNOWN_TOKEN_ID = f"key-{UUID('019a0000-0000-7000-8000-000000000009').hex}"
 
 REPO_GRANT = {"resource_type": "repository", "resource_id": "rep-aaa", "access_level": "read"}
 VM_GRANT = {"resource_type": "customer_vm", "resource_id": "cvm-1", "access_level": "admin"}
@@ -15,7 +20,7 @@ VM_GRANT = {"resource_type": "customer_vm", "resource_id": "cvm-1", "access_leve
 def _token(**overrides):
     """A token object as the API returns it from list and view."""
     token = {
-        "id": "key-1",
+        "id": TOKEN_ID,
         "organization_id": "org-default",
         "user_id": "usr-1",
         "name": "ci-read",
@@ -228,7 +233,15 @@ class TestTokenCreateOutput:
         assert f"export AVR_TOKEN={CREDENTIAL}" in lines
         assert "export AVR_ORG=org-default" in lines
         assert "once" in result.stdout
-        for expected in ("key-1", "ci-read", "2099-01-01", "rep-aaa", "read", "cvm-1", "admin"):
+        for expected in (
+            TOKEN_ID,
+            "ci-read",
+            "2099-01-01",
+            "rep-aaa",
+            "read",
+            "cvm-1",
+            "admin",
+        ):
             assert expected in result.stdout
 
     def test_export_names_the_organization_id_when_a_slug_was_given(self, runner, api):
@@ -258,7 +271,11 @@ class TestTokenCreateOutput:
         api.reply("POST", TOKENS, 201, json=_minted())
         result = _create(runner, "--repo", "rep-aaa", "--json", "token,id,expires_at")
         assert result.exit_code == 0, result.output
-        assert json.loads(result.stdout) == {"token": CREDENTIAL, "id": "key-1", "expires_at": "2099-01-01T00:00:00Z"}
+        assert json.loads(result.stdout) == {
+            "token": CREDENTIAL,
+            "id": TOKEN_ID,
+            "expires_at": "2099-01-01T00:00:00Z",
+        }
 
     def test_json_without_the_token_field_is_refused_before_minting(self, runner, api):
         """The credential is returned once; a field list that leaves it out
@@ -399,21 +416,35 @@ class TestTokenList:
     def test_table_lists_live_tokens(self, runner, api):
         rows = [
             _token(last_used_at="2020-01-01T00:00:00Z"),
-            _token(id="key-2", name="vm-admin", grants=[VM_GRANT], allow_vm_create=True, vm_create_limit=3),
+            _token(
+                id=OTHER_TOKEN_ID,
+                name="vm-admin",
+                grants=[VM_GRANT],
+                allow_vm_create=True,
+                vm_create_limit=3,
+            ),
         ]
         api.reply("GET", TOKENS, json={"data": rows, "pagination": {"next_cursor": None}})
         result = runner.invoke(cli, ["token", "list"])
         assert result.exit_code == 0, result.output
         (request,) = api.sent("GET", TOKENS)
         assert dict(request.url.params) == {"limit": "50"}
-        for expected in ("key-1", "ci-read", "key-2", "vm-admin", "2099-01-01", "never", "ago"):
+        for expected in (
+            TOKEN_ID,
+            "ci-read",
+            OTHER_TOKEN_ID,
+            "vm-admin",
+            "2099-01-01",
+            "never",
+            "ago",
+        ):
             assert expected in result.stdout
         # Everything listed belongs to one member, so no owner column.
         assert "Owner" not in result.stdout
         assert "usr-1" not in result.stdout
 
     def test_owner_column_when_other_members_tokens_are_listed(self, runner, api):
-        rows = [_token(), _token(id="key-2", user_id="usr-2")]
+        rows = [_token(), _token(id=OTHER_TOKEN_ID, user_id="usr-2")]
         api.reply("GET", TOKENS, json={"data": rows, "pagination": {"next_cursor": None}})
         result = runner.invoke(cli, ["token", "list"])
         assert result.exit_code == 0, result.output
@@ -436,18 +467,36 @@ class TestTokenList:
         assert "rep-bbb" not in result.stdout
 
     def test_follows_the_cursor_across_two_pages(self, runner, api):
-        api.reply("GET", TOKENS, json={"data": [_token(), _token(id="key-2")], "pagination": {"next_cursor": "page-2"}})
-        api.reply("GET", TOKENS, json={"data": [_token(id="key-3")], "pagination": {"next_cursor": None}})
+        api.reply(
+            "GET",
+            TOKENS,
+            json={
+                "data": [_token(), _token(id=OTHER_TOKEN_ID)],
+                "pagination": {"next_cursor": "page-2"},
+            },
+        )
+        api.reply(
+            "GET",
+            TOKENS,
+            json={"data": [_token(id=THIRD_TOKEN_ID)], "pagination": {"next_cursor": None}},
+        )
         result = runner.invoke(cli, ["token", "list", "--json", "id"])
         assert result.exit_code == 0, result.output
         first, second = api.sent("GET", TOKENS)
         assert dict(first.url.params) == {"limit": "50"}
         assert dict(second.url.params) == {"limit": "48", "cursor": "page-2"}
-        assert json.loads(result.stdout) == [{"id": "key-1"}, {"id": "key-2"}, {"id": "key-3"}]
+        assert json.loads(result.stdout) == [
+            {"id": TOKEN_ID},
+            {"id": OTHER_TOKEN_ID},
+            {"id": THIRD_TOKEN_ID},
+        ]
         assert "more" not in result.stderr.lower()
 
     def test_stops_at_the_limit_and_says_more_exist(self, runner, api):
-        page = {"data": [_token(), _token(id="key-2")], "pagination": {"next_cursor": "page-2"}}
+        page = {
+            "data": [_token(), _token(id=OTHER_TOKEN_ID)],
+            "pagination": {"next_cursor": "page-2"},
+        }
         api.reply("GET", TOKENS, json=page)
         result = runner.invoke(cli, ["token", "list", "--limit", "2"])
         assert result.exit_code == 0, result.output
@@ -467,11 +516,21 @@ class TestTokenList:
         assert len(json.loads(result.stdout)) == 250
 
     def test_a_page_longer_than_asked_is_cut_to_the_limit(self, runner, api):
-        page = {"data": [_token(), _token(id="key-2"), _token(id="key-3")], "pagination": {"next_cursor": None}}
+        page = {
+            "data": [
+                _token(),
+                _token(id=OTHER_TOKEN_ID),
+                _token(id=THIRD_TOKEN_ID),
+            ],
+            "pagination": {"next_cursor": None},
+        }
         api.reply("GET", TOKENS, json=page)
         result = runner.invoke(cli, ["token", "list", "--limit", "2", "--json", "id"])
         assert result.exit_code == 0, result.output
-        assert json.loads(result.stdout) == [{"id": "key-1"}, {"id": "key-2"}]
+        assert json.loads(result.stdout) == [
+            {"id": TOKEN_ID},
+            {"id": OTHER_TOKEN_ID},
+        ]
 
     def test_an_empty_page_ends_the_walk_even_with_a_cursor(self, runner, api):
         api.reply("GET", TOKENS, json={"data": [], "pagination": {"next_cursor": "stuck"}})
@@ -527,51 +586,65 @@ class TestTokenList:
 class TestTokenView:
     def test_shows_the_token_and_its_grants(self, runner, api):
         token = _token(grants=[REPO_GRANT, VM_GRANT], allow_vm_create=True, vm_create_limit=3, vm_create_count=1)
-        api.reply("GET", f"{TOKENS}/key-1", json=token)
-        result = runner.invoke(cli, ["token", "view", "key-1"])
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=token)
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID])
         assert result.exit_code == 0, result.output
-        for expected in ("key-1", "ci-read", "usr-1", "2099-01-01", "active", "rep-aaa", "read", "cvm-1", "admin"):
+        for expected in (
+            TOKEN_ID,
+            "ci-read",
+            "usr-1",
+            "2099-01-01",
+            "active",
+            "rep-aaa",
+            "read",
+            "cvm-1",
+            "admin",
+        ):
             assert expected in result.stdout
         assert "1 of 3" in result.stdout
 
     def test_grant_on_every_vm(self, runner, api):
         grant = {"resource_type": "customer_vm", "resource_id": None, "access_level": "admin"}
-        api.reply("GET", f"{TOKENS}/key-1", json=_token(grants=[grant]))
-        result = runner.invoke(cli, ["token", "view", "key-1"])
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=_token(grants=[grant]))
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID])
         assert result.exit_code == 0, result.output
         assert "every VM" in result.stdout
         assert "None" not in result.stdout
 
     def test_revoked_token(self, runner, api):
         token = _token(revoked_at="2026-10-07T11:00:00Z", revoked_reason="user_revoked")
-        api.reply("GET", f"{TOKENS}/key-1", json=token)
-        result = runner.invoke(cli, ["token", "view", "key-1"])
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=token)
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID])
         assert result.exit_code == 0, result.output
         assert "revoked" in result.stdout
         assert "user_revoked" in result.stdout
         assert "active" not in result.stdout
 
     def test_expired_token(self, runner, api):
-        api.reply("GET", f"{TOKENS}/key-1", json=_token(expires_at="2020-01-01T00:00:00Z"))
-        result = runner.invoke(cli, ["token", "view", "key-1"])
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=_token(expires_at="2020-01-01T00:00:00Z"))
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID])
         assert result.exit_code == 0, result.output
         assert "expired" in result.stdout
         assert "active" not in result.stdout
 
     def test_json(self, runner, api):
-        api.reply("GET", f"{TOKENS}/key-1", json=_token())
-        result = runner.invoke(cli, ["token", "view", "key-1", "--json", "*"])
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=_token())
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID, "--json", "*"])
         assert result.exit_code == 0, result.output
         assert json.loads(result.stdout) == _token()
 
     def test_org_option(self, runner, api):
-        api.reply("GET", "/orgs/org-other/access-tokens/key-1", json=_token(organization_id="org-other"))
-        result = runner.invoke(cli, ["token", "view", "key-1", "--org", "org-other"])
+        api.reply(
+            "GET",
+            f"/orgs/org-other/access-tokens/{TOKEN_ID}",
+            json=_token(organization_id="org-other"),
+        )
+        result = runner.invoke(cli, ["token", "view", TOKEN_ID, "--org", "org-other"])
         assert result.exit_code == 0, result.output
 
     def test_404_points_at_the_list(self, runner, api):
-        api.reply("GET", f"{TOKENS}/key-9", 404, json={"detail": "Not found"})
-        result = runner.invoke(cli, ["token", "view", "key-9"])
+        api.reply("GET", f"{TOKENS}/{UNKNOWN_TOKEN_ID}", 404, json={"detail": "Not found"})
+        result = runner.invoke(cli, ["token", "view", UNKNOWN_TOKEN_ID])
         assert result.exit_code == 1
         assert "HTTP 404" in result.stderr
         assert "avr token list" in result.stderr
@@ -584,38 +657,38 @@ class TestTokenView:
 
 class TestTokenRevoke:
     def test_yes_skips_the_prompt(self, runner, api):
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        result = runner.invoke(cli, ["token", "revoke", "key-1", "--yes"])
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID, "--yes"])
         assert result.exit_code == 0, result.output
-        assert len(api.sent("DELETE", f"{TOKENS}/key-1")) == 1
-        assert "key-1" in result.stdout
+        assert len(api.sent("DELETE", f"{TOKENS}/{TOKEN_ID}")) == 1
+        assert TOKEN_ID in result.stdout
         assert "revoked" in result.stdout
 
     def test_revoking_twice_succeeds(self, runner, api):
         # The API answers 204 for an already-revoked token as well.
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        first = runner.invoke(cli, ["token", "revoke", "key-1", "-y"])
-        second = runner.invoke(cli, ["token", "revoke", "key-1", "-y"])
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        first = runner.invoke(cli, ["token", "revoke", TOKEN_ID, "-y"])
+        second = runner.invoke(cli, ["token", "revoke", TOKEN_ID, "-y"])
         assert first.exit_code == 0, first.output
         assert second.exit_code == 0, second.output
         assert second.stdout == first.stdout
-        assert len(api.sent("DELETE", f"{TOKENS}/key-1")) == 2
+        assert len(api.sent("DELETE", f"{TOKENS}/{TOKEN_ID}")) == 2
 
     def test_confirmed_at_the_prompt(self, runner, api):
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        result = runner.invoke(cli, ["token", "revoke", "key-1"], input="y\n")
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID], input="y\n")
         assert result.exit_code == 0, result.output
-        assert len(api.sent("DELETE", f"{TOKENS}/key-1")) == 1
+        assert len(api.sent("DELETE", f"{TOKENS}/{TOKEN_ID}")) == 1
 
     def test_declined_at_the_prompt(self, runner, api):
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        result = runner.invoke(cli, ["token", "revoke", "key-1"], input="n\n")
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID], input="n\n")
         assert result.exit_code != 0
         assert api.requests == []
 
     def test_refuses_to_prompt_when_prompts_are_disabled(self, runner, api, monkeypatch):
         monkeypatch.setenv("AVR_PROMPT_DISABLED", "1")
-        result = runner.invoke(cli, ["token", "revoke", "key-1"])
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID])
         assert result.exit_code != 0
         assert "AVR_PROMPT_DISABLED" in result.stderr
         assert "--yes" in result.stderr
@@ -623,18 +696,18 @@ class TestTokenRevoke:
 
     def test_yes_works_when_prompts_are_disabled(self, runner, api, monkeypatch):
         monkeypatch.setenv("AVR_PROMPT_DISABLED", "1")
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        result = runner.invoke(cli, ["token", "revoke", "key-1", "--yes"])
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID, "--yes"])
         assert result.exit_code == 0, result.output
 
     def test_org_option(self, runner, api):
-        api.reply("DELETE", "/orgs/org-other/access-tokens/key-1", 204)
-        result = runner.invoke(cli, ["token", "revoke", "key-1", "--org", "org-other", "--yes"])
+        api.reply("DELETE", f"/orgs/org-other/access-tokens/{TOKEN_ID}", 204)
+        result = runner.invoke(cli, ["token", "revoke", TOKEN_ID, "--org", "org-other", "--yes"])
         assert result.exit_code == 0, result.output
 
     def test_404_points_at_the_list(self, runner, api):
-        api.reply("DELETE", f"{TOKENS}/key-9", 404, json={"detail": "Not found"})
-        result = runner.invoke(cli, ["token", "revoke", "key-9", "--yes"])
+        api.reply("DELETE", f"{TOKENS}/{UNKNOWN_TOKEN_ID}", 404, json={"detail": "Not found"})
+        result = runner.invoke(cli, ["token", "revoke", UNKNOWN_TOKEN_ID, "--yes"])
         assert result.exit_code == 1
         assert "HTTP 404" in result.stderr
         assert "avr token list" in result.stderr
@@ -650,14 +723,14 @@ class TestNotGatedOnTheFeature:
         assert [f"{r.method} {r.url.path}" for r in api.requests] == [f"GET {TOKENS}"]
 
     def test_view(self, runner, api):
-        api.reply("GET", f"{TOKENS}/key-1", json=_token())
-        assert runner.invoke(cli, ["token", "view", "key-1"]).exit_code == 0
-        assert [f"{r.method} {r.url.path}" for r in api.requests] == [f"GET {TOKENS}/key-1"]
+        api.reply("GET", f"{TOKENS}/{TOKEN_ID}", json=_token())
+        assert runner.invoke(cli, ["token", "view", TOKEN_ID]).exit_code == 0
+        assert [f"{r.method} {r.url.path}" for r in api.requests] == [f"GET {TOKENS}/{TOKEN_ID}"]
 
     def test_revoke(self, runner, api):
-        api.reply("DELETE", f"{TOKENS}/key-1", 204)
-        assert runner.invoke(cli, ["token", "revoke", "key-1", "--yes"]).exit_code == 0
-        assert [f"{r.method} {r.url.path}" for r in api.requests] == [f"DELETE {TOKENS}/key-1"]
+        api.reply("DELETE", f"{TOKENS}/{TOKEN_ID}", 204)
+        assert runner.invoke(cli, ["token", "revoke", TOKEN_ID, "--yes"]).exit_code == 0
+        assert [f"{r.method} {r.url.path}" for r in api.requests] == [f"DELETE {TOKENS}/{TOKEN_ID}"]
 
 
 class TestTokenGroup:

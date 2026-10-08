@@ -3,6 +3,7 @@
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
+from avrea_cli.display import escape_control_characters
 from avrea_cli.display import is_piped
 from avrea_cli.display import print_piped_header
 from avrea_cli.display import print_piped_row
@@ -27,11 +28,11 @@ from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo
 from datetime import UTC
 from datetime import datetime
-from subprocess import TimeoutExpired
 from typing import Any
 from typing import NoReturn
 import click
 import httpx
+import re
 import shlex
 import sys
 
@@ -47,6 +48,7 @@ _MAX_TTL_SECONDS = 7 * 24 * 3600
 _MAX_GRANTS = 100
 _PAGE_LIMIT = 200
 _LIVE_TOKEN_LIMIT = 20
+_TOKEN_ID_RE = re.compile(r"key-[0-9a-f]{32}")
 
 _GRANT_ORDER_HINT = (
     "grants[N] counts from 0 after resources are resolved and duplicates removed: "
@@ -75,6 +77,13 @@ _TOKEN_CREATE_FIELDS = make_schema(*_TOKEN_FIELDS, "token")
 _org_option = click.option(
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
+
+
+def _token_id(value: str) -> str:
+    """Reject path syntax before constructing a token view/revoke request."""
+    if not _TOKEN_ID_RE.fullmatch(value):
+        raise click.BadParameter("Expected a token ID: key- followed by 32 lowercase hexadecimal characters.")
+    return value
 
 
 @click.group(cls=GhGroup)
@@ -239,28 +248,41 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
         if exc.response.status_code == 404:
             _exit_create_unavailable(exc, names_vms=bool(vm_ids) or allow_vm_create)
         handle_http_error(exc, "create the token", hints=_create_hints(exc.response))
+    except httpx.RequestError, ValueError, KeyboardInterrupt:
+        raise click.ClickException(
+            "The creation response was not received. A token may have been created; "
+            "check `avr token list` before retrying."
+        ) from None
 
-    if json_fields is not None:
-        fields = split_fields(json_fields, _TOKEN_CREATE_FIELDS)
-        try:
-            emit_json_record(minted, fields, _TOKEN_CREATE_FIELDS, jq_expr)
-        except click.ClickException, TimeoutExpired:
-            # Minting committed; jq's error text may also quote the credential.
-            emit_json_record(minted, fields, _TOKEN_CREATE_FIELDS, None)
-            raise click.ClickException(
-                "jq output filtering failed. The token was created; stdout contains its unfiltered JSON. "
-                "Save the credential rather than retrying creation."
-            ) from None
-        return
-
-    _print_token(minted)
-    click.echo()
-    click.echo("The credential is shown only once. To use the token:")
-    click.echo()
-    # A scoped token cannot look its organization up by slug, so the consumer
-    # needs the ID alongside the credential.
-    click.echo(f"  export AVR_TOKEN={shlex.quote(minted['token'])}")
-    click.echo(f"  export AVR_ORG={shlex.quote(minted.get('organization_id') or org_id)}")
+    try:
+        if json_fields is not None:
+            fields = split_fields(json_fields, _TOKEN_CREATE_FIELDS)
+            emit_json_record(minted, fields, _TOKEN_CREATE_FIELDS, jq_expr, required_value=minted["token"])
+        else:
+            click.echo("The credential is shown only once. To use the token:")
+            click.echo(f"  export AVR_TOKEN={shlex.quote(minted['token'])}")
+            click.echo(f"  export AVR_ORG={shlex.quote(minted.get('organization_id') or org_id)}")
+            click.echo()
+            _print_token(minted)
+        sys.stdout.flush()
+    except Exception, KeyboardInterrupt:
+        # Minting committed. Neither jq diagnostics nor rendering exceptions
+        # can be printed safely: either may contain the credential.
+        message = "The token was created, but output failed."
+        if json_fields is not None:
+            try:
+                emit_json_record(minted, split_fields(json_fields, _TOKEN_CREATE_FIELDS), _TOKEN_CREATE_FIELDS, None)
+                sys.stdout.flush()
+            except Exception, KeyboardInterrupt:
+                pass
+            else:
+                message += " stdout contains its unfiltered JSON; save the credential rather than retrying."
+        token_id = minted.get("id")
+        if isinstance(token_id, str) and _TOKEN_ID_RE.fullmatch(token_id):
+            message += f" To discard it, run `avr token revoke {token_id} --org {shlex.quote(org_id)}`."
+        else:
+            message += " Check `avr token list` before retrying."
+        raise click.ClickException(message) from None
 
 
 @token.command("list")
@@ -333,6 +355,7 @@ def token_list(ctx, org_id, limit, json_fields, jq_expr):
         for t in tokens:
             t["grants_display"] = _grants_summary(t)
             if not piped:
+                t["name"] = escape_control_characters(t.get("name"))
                 t["expires_display"] = format_timestamp(t.get("expires_at"))
                 t["last_used_display"] = (
                     format_relative_timestamp(t["last_used_at"]) if t.get("last_used_at") else "never"
@@ -359,7 +382,7 @@ def token_list(ctx, org_id, limit, json_fields, jq_expr):
 
 
 @token.command("view")
-@click.argument("token_id")
+@click.argument("token_id", type=_token_id)
 @_org_option
 @json_options
 @click.pass_context
@@ -370,8 +393,8 @@ def token_view(ctx, token_id, org_id, json_fields, jq_expr):
 
     \b
     Examples:
-        avr token view key-abc123
-        avr token view key-abc123 --json grants
+        avr token view <token-id>
+        avr token view <token-id> --json grants
 
     \b
     JSON FIELDS
@@ -399,7 +422,7 @@ def token_view(ctx, token_id, org_id, json_fields, jq_expr):
 
 
 @token.command("revoke")
-@click.argument("token_id")
+@click.argument("token_id", type=_token_id)
 @_org_option
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
@@ -411,8 +434,8 @@ def token_revoke(ctx, token_id, org_id, yes):
 
     \b
     Examples:
-        avr token revoke key-abc123
-        avr token revoke key-abc123 --yes
+        avr token revoke <token-id>
+        avr token revoke <token-id> --yes
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -438,7 +461,7 @@ def _print_token(record: dict[str, Any]) -> None:
         format_key_value(
             {
                 "Token ID": record.get("id"),
-                "Name": record.get("name"),
+                "Name": escape_control_characters(record.get("name")),
                 "Owner": record.get("user_id"),
                 "Status": _status(record),
                 "Created": format_timestamp(record.get("created_at")),

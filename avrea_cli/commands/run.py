@@ -29,6 +29,7 @@ from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import parse_since
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.json_output import emit_json
@@ -453,6 +454,8 @@ def _run_reference_and_org(
 ) -> tuple[RunReference, str]:
     """Parse RUN and resolve/verify the organization embedded in a URL."""
     reference = parse_run_reference(value, api_url=config.public_api_url)
+    if reference.organization_slug is not None and is_scoped_token(config.auth_token):
+        raise click.ClickException("A scoped token cannot resolve a run URL's organization. Pass the run ID instead.")
     if reference.organization_slug is not None and org_id is None:
         org_id = reference.organization_slug
     resolved_org_id = get_org_id(config, org_id, client=client)

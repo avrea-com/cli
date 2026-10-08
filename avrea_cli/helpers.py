@@ -1,6 +1,7 @@
 """Shared helper functions for CLI command implementations."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.auth import is_scoped_token
 from avrea_cli.config import CliConfig
 from collections.abc import Mapping
 from datetime import UTC
@@ -26,8 +27,6 @@ _AUTH_HINT = (
 )
 
 
-# Scoped tokens (`avr token create`) carry this prefix; API keys carry `avk_`.
-_SCOPED_TOKEN_PREFIX = "avs_"
 SCOPED_TOKEN_ORG_HINT = "Pass that organization's ID with --org org-... or set AVR_ORG to it."
 
 _SCOPED_TOKEN_HINT = (
@@ -39,15 +38,6 @@ _SCOPED_TOKEN_REJECTED_HINT = (
     "ask a member of the organization to check the API's reason above. If a replacement is needed, "
     "create one with `avr token create` and set it as AVR_TOKEN."
 )
-
-
-def is_scoped_token(token: str | None) -> bool:
-    """True when the credential is a scoped token rather than an API key.
-
-    A scoped token is bound to one organization and has no user behind it as
-    far as the API is concerned: the profile and membership routes answer it
-    404, so the code paths that rely on them branch on this."""
-    return token is not None and token.startswith(_SCOPED_TOKEN_PREFIX)
 
 
 def exit_with_auth_hint() -> NoReturn:

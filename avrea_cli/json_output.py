@@ -169,16 +169,18 @@ def emit_json_record(
     fields: list[str],
     schema: dict[str, str],
     jq_expr: str | None,
+    *,
+    required_value: str | None = None,
 ) -> None:
     """Single-record variant for `view` commands. Output is a JSON object,
-    not an array — matches what users expect from `<thing> view --json`."""
+    not an array. ``required_value`` protects a one-time credential from
+    filters that discard it before output."""
     projected = select_fields([record], fields, schema)[0]
-    _write(projected, jq_expr)
+    _write(projected, jq_expr, required_value=required_value)
 
 
-def _write(data: Any, jq_expr: str | None) -> None:
-    if jq_expr:
-        sys.stdout.write(filter_with_jq(data, jq_expr))
-    else:
-        sys.stdout.write(json.dumps(data, indent=2, default=str))
-        sys.stdout.write("\n")
+def _write(data: Any, jq_expr: str | None, *, required_value: str | None = None) -> None:
+    output = filter_with_jq(data, jq_expr) if jq_expr else json.dumps(data, indent=2, default=str) + "\n"
+    if required_value is not None and required_value not in output:
+        raise click.ClickException("The output filter must retain the one-time credential.")
+    sys.stdout.write(output)

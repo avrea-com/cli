@@ -172,18 +172,25 @@ def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) ->
     that contain it, and the exact one is picked here."""
     wanted = repo.casefold()
     params: dict[str, str | int] = {"q": repo, "limit": 100}
+    seen_cursors: set[str] = set()
     while True:
         try:
             response = client.public_get(f"/orgs/{org_id}/repos", params=params)
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "resolve the repository")
         for row in response.get("data") or []:
-            if str(row.get("full_name") or "").casefold() == wanted:
+            if not isinstance(row, dict):
+                continue
+            repo_id = row.get("repository_id")
+            if isinstance(repo_id, str) and repo_id and str(row.get("full_name") or "").casefold() == wanted:
                 _warn_if_case_folded(repo, row["full_name"])
-                return row["repository_id"]
+                return repo_id
         cursor = (response.get("pagination") or {}).get("next_cursor")
         if not cursor:
             raise _RepoNotInOrgError(repo, scoped_token=True)
+        if not isinstance(cursor, str) or cursor in seen_cursors:
+            raise click.ClickException("Repository listing returned a cursor that does not advance.")
+        seen_cursors.add(cursor)
         params = {**params, "cursor": cursor}
 
 

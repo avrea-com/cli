@@ -6,6 +6,7 @@ from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import is_scoped_token
 from avrea_cli.main import cli
+from tests.test_token import TOKEN_ID
 from unittest.mock import MagicMock
 import click
 import httpx
@@ -417,8 +418,13 @@ class TestScopeHint:
     def test_revoked_scoped_token_gets_one_error_and_a_hint_that_fits(self, scoped, api):
         """Its holder is usually a script or an agent: logging in is not how it
         gets a new token, so the login hint is replaced."""
-        api.reply("GET", "/orgs/org-default/access-tokens/key-1", 401, json={"detail": "Scoped token has been revoked"})
-        result = scoped.invoke(cli, ["token", "view", "key-1"])
+        api.reply(
+            "GET",
+            f"/orgs/org-default/access-tokens/{TOKEN_ID}",
+            401,
+            json={"detail": "Scoped token has been revoked"},
+        )
+        result = scoped.invoke(cli, ["token", "view", TOKEN_ID])
         assert result.exit_code == 4
         assert result.stderr == (
             "Error: The scoped token was rejected (HTTP 401): Scoped token has been revoked\n" + self.NEW_TOKEN_HINT

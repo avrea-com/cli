@@ -1567,8 +1567,8 @@ that is already revoked succeeds.
 
 ```sh
 Examples:
-    avr token revoke key-abc123
-    avr token revoke key-abc123 --yes
+    avr token revoke <token-id>
+    avr token revoke <token-id> --yes
 ```
 
 **Arguments**
@@ -1592,8 +1592,8 @@ The credential itself is never shown again after `avr token create`.
 
 ```sh
 Examples:
-    avr token view key-abc123
-    avr token view key-abc123 --json grants
+    avr token view <token-id>
+    avr token view <token-id> --json grants
 ```
 
 ```sh
