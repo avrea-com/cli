@@ -91,6 +91,15 @@ def _print_config_status(ctx) -> None:
     click.echo(f"  - Default repo: {default_repo}")
 
 
+def _refuse_stored_org_for_scoped_token(cfg: CliConfig, verb: str) -> None:
+    """The stored default belongs to the host's own login: a scoped token never
+    reads it, and a change made while one is active would outlive the token."""
+    if is_scoped_token(cfg.auth_token):
+        click.echo(f"Error: A scoped token is bound to one organization and has no stored default to {verb}.", err=True)
+        click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
+        raise click.Abort()
+
+
 @click.group(cls=GhGroup, invoke_without_command=True)
 @click.pass_context
 def config(ctx):
@@ -121,12 +130,8 @@ def config_set(ctx, key: str, value: str):
     ensure_authenticated(cfg)
 
     if key == "org":
-        if is_scoped_token(cfg.auth_token):
-            # The stored default belongs to the host's own login and would
-            # outlive the token; the membership list below answers a token 404.
-            click.echo("Error: A scoped token is bound to one organization and has no stored default to set.", err=True)
-            click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
-            raise click.Abort()
+        # The membership list below also answers a scoped token 404.
+        _refuse_stored_org_for_scoped_token(cfg, "set")
         # Verify the org exists and the user has access. Accepts an ID or slug;
         # we always store the resolved ``org-...`` ID so the default is stable
         # even if the slug is later renamed.
@@ -187,6 +192,7 @@ def config_unset(ctx, key: str):
     """
     cfg: CliConfig = ctx.obj["config"]
     if key == "org":
+        _refuse_stored_org_for_scoped_token(cfg, "unset")
         # Match the brevity of `config set`: the host is implied by AVR_HOST
         # / the active default. Showing it would be redundant in the common
         # single-host install.

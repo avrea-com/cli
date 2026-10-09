@@ -10,10 +10,12 @@ from avrea_cli.display import print_piped_row
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
+from avrea_cli.helpers import extract_detail
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_duration_seconds
 from avrea_cli.helpers import retry_after_seconds
+from avrea_cli.json_output import FixedMessageError
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
@@ -53,6 +55,7 @@ _GRANT_ORDER_HINT = (
     "the --repo values first, then the --vm values, in the order given."
 )
 _NO_TOKEN_HINT = "Run `avr token list` to see the tokens visible to you."
+_UNKNOWN_OUTCOME = "A token may have been created; check `avr token list` before retrying."
 
 _TOKEN_FIELDS = make_schema(
     "id",
@@ -124,15 +127,29 @@ def _create_hints(response: httpx.Response, *, names_vms: bool) -> dict[int, str
     # A refused grant is reported by its position in the request body, which
     # the user only ever expressed as flags.
     grant_order = {403: _GRANT_ORDER_HINT, 422: _GRANT_ORDER_HINT} if "grants" in response.text else {}
+    # A 5xx can follow the insert, or come from a proxy that lost the answer.
+    # Only the API's own 503, a refusal it sends with a JSON detail before
+    # minting, says that nothing was created.
+    status = response.status_code
+    refused = status == 503 and bool(extract_detail(response))
+    server_error = {status: f"No token was created. {retry}" if refused else _UNKNOWN_OUTCOME} if status >= 500 else {}
     return {
         **grant_order,
+        **server_error,
         404: not_found,
         409: (
             f"A member can hold at most {_LIVE_TOKEN_LIMIT} live tokens per organization. "
             "Free one with `avr token list` and `avr token revoke <token-id>`."
         ),
-        503: f"No token was created. {retry}",
     }
+
+
+def _discard_hint(minted: Any, org_id: str) -> str:
+    """How to get rid of a token whose credential did not reach the user."""
+    token_id = minted.get("id") if isinstance(minted, dict) else None
+    if isinstance(token_id, str) and _TOKEN_ID_RE.fullmatch(token_id):
+        return f" To discard it, run `avr token revoke {token_id} --org {shlex.quote(org_id)}`."
+    return " Check `avr token list` before retrying."
 
 
 @token.command("create")
@@ -235,11 +252,14 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
             exc, "create the token", hints=_create_hints(exc.response, names_vms=bool(vm_ids) or allow_vm_create)
         )
     except httpx.RequestError, ValueError, KeyboardInterrupt:
+        raise click.ClickException(f"The creation response was not received. {_UNKNOWN_OUTCOME}") from None
+    if not (isinstance(minted, dict) and isinstance(minted.get("token"), str) and minted["token"]):
         raise click.ClickException(
-            "The creation response was not received. A token may have been created; "
-            "check `avr token list` before retrying."
-        ) from None
+            "The API reported success without a credential, so a token may exist that nothing can use."
+            + _discard_hint(minted, org_id)
+        )
 
+    exports_shown = False
     try:
         if json_fields is not None:
             fields = split_fields(json_fields, _TOKEN_CREATE_FIELDS)
@@ -248,27 +268,27 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
             click.echo("The credential is shown only once. To use the token:")
             click.echo(f"  export AVR_TOKEN={shlex.quote(minted['token'])}")
             click.echo(f"  export AVR_ORG={shlex.quote(minted.get('organization_id') or org_id)}")
+            exports_shown = True
             click.echo()
             _print_token(minted)
         sys.stdout.flush()
-    except Exception, KeyboardInterrupt:
+    except (Exception, KeyboardInterrupt) as exc:
         # Minting committed. Neither jq diagnostics nor rendering exceptions
-        # can be printed safely: either may contain the credential.
-        message = "The token was created, but output failed."
-        if json_fields is not None:
-            try:
+        # can be printed safely: either may contain the credential. Only a
+        # message that is fixed text names the reason.
+        message = "The token was created, but output failed"
+        message += f": {exc.format_message()}" if isinstance(exc, FixedMessageError) else "."
+        delivered = ""
+        try:
+            if json_fields is not None:
                 emit_json_record(minted, split_fields(json_fields, _TOKEN_CREATE_FIELDS), _TOKEN_CREATE_FIELDS, None)
-                sys.stdout.flush()
-            except Exception, KeyboardInterrupt:
-                pass
-            else:
-                message += " stdout contains its unfiltered JSON; save the credential rather than retrying."
-        token_id = minted.get("id")
-        if isinstance(token_id, str) and _TOKEN_ID_RE.fullmatch(token_id):
-            message += f" To discard it, run `avr token revoke {token_id} --org {shlex.quote(org_id)}`."
-        else:
-            message += " Check `avr token list` before retrying."
-        raise click.ClickException(message) from None
+                delivered = " stdout contains its unfiltered JSON; save the credential rather than retrying."
+            elif exports_shown:
+                delivered = " The export lines on stdout are complete and valid; only the token summary is missing."
+            sys.stdout.flush()
+        except Exception, KeyboardInterrupt:
+            delivered = ""
+        raise click.ClickException(message + delivered + _discard_hint(minted, org_id)) from None
 
 
 @token.command("list")
@@ -479,7 +499,7 @@ def _print_token(record: dict[str, Any]) -> None:
 
 def _status(record: dict[str, Any]) -> str:
     if record.get("revoked_at"):
-        reason = record.get("revoked_reason")
+        reason = escape_control_characters(record.get("revoked_reason"))
         return f"revoked {format_timestamp(record['revoked_at'])}" + (f" ({reason})" if reason else "")
     try:
         expires = datetime.fromisoformat(record.get("expires_at") or "")

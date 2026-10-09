@@ -3,6 +3,7 @@
 from avrea_cli.api_client import ApiClient
 from avrea_cli.auth import is_scoped_token
 from avrea_cli.config import CliConfig
+from avrea_cli.display import escape_control_characters
 from collections.abc import Mapping
 from datetime import UTC
 from datetime import datetime
@@ -339,7 +340,7 @@ def handle_http_error(
             # logging in is not how it gets a new one. One line carries the
             # API's reason (and the origin, when it isn't the default), then
             # the hint says where a replacement comes from.
-            reason = _extract_detail(exc.response)
+            reason = extract_detail(exc.response)
             rejected = f"{origin} rejected the scoped token" if origin else "The scoped token was rejected"
             click.echo(f"Error: {rejected} (HTTP 401){f': {reason}' if reason else '.'}", err=True)
             click.echo(f"  Hint: {_SCOPED_TOKEN_REJECTED_HINT}", err=True)
@@ -348,7 +349,7 @@ def handle_http_error(
             click.echo(f"Error: {origin} rejected your credentials (HTTP 401).", err=True)
         exit_with_auth_hint()
 
-    detail = _extract_detail(exc.response)
+    detail = extract_detail(exc.response)
     detail_suffix = f": {detail}" if detail else ""
 
     if status == 403:
@@ -429,22 +430,20 @@ def echo_api_url(exc: httpx.HTTPStatusError) -> None:
         click.echo(f"  API: {exc.request.url}", err=True)
 
 
-def _extract_detail(response: httpx.Response) -> str:
+def extract_detail(response: httpx.Response) -> str:
     """Pull the FastAPI-style ``detail`` field out of a JSON error body.
 
     A validation error carries a list of ``{loc, msg}`` items instead of a
-    string; those render as ``field: message``, joined with ``; ``."""
+    string; those render as ``field: message``, joined with ``; ``. The text
+    is the server's, so control characters are escaped before it is shown."""
     try:
         body = response.json()
     except ValueError:
         return ""
-    if isinstance(body, dict):
-        detail = body.get("detail")
-        if isinstance(detail, str):
-            return detail
-        if isinstance(detail, list):
-            return "; ".join(_format_validation_item(item) for item in detail if isinstance(item, dict))
-    return ""
+    detail = body.get("detail") if isinstance(body, dict) else None
+    if isinstance(detail, list):
+        detail = "; ".join(_format_validation_item(item) for item in detail if isinstance(item, dict))
+    return escape_control_characters(detail) if isinstance(detail, str) else ""
 
 
 def _format_validation_item(item: dict[str, Any]) -> str:

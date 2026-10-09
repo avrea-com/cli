@@ -17,6 +17,11 @@ import subprocess
 import sys
 
 
+class FixedMessageError(click.ClickException):
+    """An output failure whose message holds none of the data being written,
+    so a caller that must keep that data off stderr can still show it."""
+
+
 def json_options(func):
     """Decorator: add the standard ``--json`` and ``-q/--jq`` options.
 
@@ -150,7 +155,7 @@ def filter_with_jq(data: Any, expr: str) -> str:
             timeout=10,
         )
     except FileNotFoundError:
-        raise click.ClickException(
+        raise FixedMessageError(
             "`jq` is required for --jq but was not found on PATH. Install from https://stedolan.github.io/jq/"
         ) from None
     if result.returncode != 0:
@@ -182,5 +187,5 @@ def emit_json_record(
 def _write(data: Any, jq_expr: str | None, *, required_value: str | None = None) -> None:
     output = filter_with_jq(data, jq_expr) if jq_expr else json.dumps(data, indent=2, default=str) + "\n"
     if required_value is not None and required_value not in output:
-        raise click.ClickException("The output filter must retain the one-time credential.")
+        raise FixedMessageError("The output filter must retain the one-time credential.")
     sys.stdout.write(output)

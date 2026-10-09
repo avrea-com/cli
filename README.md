@@ -223,13 +223,13 @@ A scoped token is a short-lived credential (60 seconds to 7 days, 8 hours by def
 
 With a scoped token, a repository name (`--repo acme/api`, `AVR_REPO` or the checkout's remote) is matched against the repositories the token reaches; a `rep-...` ID works as well. For runs, use the run ID rather than an Avrea console URL, whose organization slug cannot be resolved with a scoped token. Token IDs for `view` and `revoke` are `key-` followed by 32 lowercase hexadecimal characters.
 
-Creation returns the credential only once. If `--jq` fails or removes it, the command falls back to the requested JSON without filtering and exits nonzero. Save the credential from that JSON. Output failures also report a revoke command on stderr without exposing the credential there. If the creation request is interrupted or its response is lost, a token may already exist: check `avr token list` before retrying.
+Creation returns the credential only once. If `--jq` fails or removes it, the command falls back to the requested JSON without filtering and exits nonzero. Save the credential from that JSON. Output failures also report a revoke command on stderr without exposing the credential there. If the creation request is interrupted, its response is lost, or the answer is a server error (5xx), a token may already exist: check `avr token list` before retrying. Only a 503 that carries the API's own reason means that no token was created.
 
 If `avr token create` returns a 404, check the API's reason, the organization and the API host. If scoped-token access is unavailable, contact support@avrea.com to request it. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
 
 **Pipe-aware output**
 
-When stdout isn't a TTY, list commands switch to tab-separated rows (no color, no truncation, ISO timestamps), so `avr run list | awk` works without flags. Control characters inside cells are escaped, keeping each item on one row with stable columns. JSON retains the original values. `avr run watch | jq -c .` automatically switches to NDJSON event mode.
+When stdout isn't a TTY, list commands switch to tab-separated rows (no color, no truncation, ISO timestamps), so `avr run list | awk` works without flags. Control characters, Unicode line separators and bidirectional controls inside cells are escaped (`\t`, `\x1b`, `\u2028`), keeping each item on one row with stable columns. The escaping is not reversible: a literal backslash is left as it is, so a cell that reads `a\tb` may hold either a tab or a backslash and a `t`. Use `--json` when the exact value matters; JSON retains the original values. `avr run watch | jq -c .` automatically switches to NDJSON event mode.
 
 ## Configuration
 

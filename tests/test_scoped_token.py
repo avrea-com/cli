@@ -272,6 +272,25 @@ class TestConfigSetOrg:
         assert api.requests == []
         assert stored == []
 
+    def test_unset_is_refused_without_clearing_the_login_default(self, scoped, api, monkeypatch):
+        cleared = []
+        monkeypatch.setattr("avrea_cli.auth.clear_default_org", lambda **kwargs: cleared.append(kwargs) or True)
+        result = scoped.invoke(cli, ["config", "unset", "org"])
+        assert result.exit_code == 1
+        assert "scoped token" in result.stderr
+        assert "no stored default to unset" in result.stderr
+        assert "Cleared" not in result.output
+        assert api.requests == []
+        assert cleared == []
+
+    def test_api_key_still_clears_the_organization(self, runner, monkeypatch):
+        cleared = []
+        monkeypatch.setattr("avrea_cli.auth.clear_default_org", lambda **kwargs: cleared.append(kwargs) or True)
+        result = runner.invoke(cli, ["config", "unset", "org"])
+        assert result.exit_code == 0, result.output
+        assert "Cleared default organization." in result.stdout
+        assert len(cleared) == 1
+
     def test_api_key_still_stores_the_organization(self, runner, api, monkeypatch):
         stored = []
         monkeypatch.setattr("avrea_cli.auth.store_default_org", lambda org_id, *, host: stored.append(org_id))

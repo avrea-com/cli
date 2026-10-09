@@ -38,17 +38,29 @@ def print_piped_row(values: list[object]) -> None:
     """Emit a single tab-separated row for piped consumers (cut, awk, grep).
 
     None becomes an empty cell; controls are escaped so text cannot create
-    columns or rows. Numeric 0 stays "0"."""
+    columns or rows. Numeric 0 stays "0". The escaping is one-way: a literal
+    backslash is left alone, so ``a\\tb`` and an escaped tab read the same.
+    ``--json`` carries exact values."""
     click.echo("\t".join(escape_control_characters(v) for v in values))
+
+
+# Named escapes for the controls a reader meets most; the rest render as hex.
+_CONTROL_ESCAPES: Final = {"\t": "\\t", "\n": "\\n", "\r": "\\r"}
+# C0, DEL and C1, then the Unicode line and paragraph separators, which
+# str.splitlines() and many terminals treat as a line break, and the bidi
+# embedding, override and isolate controls, which reorder the text around them.
+_UNSAFE_DISPLAY_CHARACTERS: Final = re.compile("[\x00-\x1f\x7f-\x9f\u2028-\u202e\u2066-\u2069]")
+
+
+def _escape_character(match: re.Match[str]) -> str:
+    char = match.group()
+    code = ord(char)
+    return _CONTROL_ESCAPES.get(char) or (f"\\x{code:02x}" if code < 256 else f"\\u{code:04x}")
 
 
 def escape_control_characters(value: object) -> str:
     """Keep untrusted text in one display cell without terminal controls."""
-    text = "" if value is None else str(value)
-    escapes = {"\t": "\\t", "\n": "\\n", "\r": "\\r"}
-    return "".join(
-        escapes.get(char, f"\\x{ord(char):02x}") if ord(char) < 32 or 127 <= ord(char) <= 159 else char for char in text
-    )
+    return _UNSAFE_DISPLAY_CHARACTERS.sub(_escape_character, "" if value is None else str(value))
 
 
 def page_output(content: str, *, bypass: bool = False) -> None:

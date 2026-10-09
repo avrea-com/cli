@@ -1,5 +1,6 @@
 """Token credential delivery, diagnostics and scripted output."""
 
+from avrea_cli.display import escape_control_characters
 from avrea_cli.display import print_piped_row
 from avrea_cli.main import cli
 from click.testing import CliRunner
@@ -23,6 +24,10 @@ OTHER_REPO = "rep-019a0000000070008000000000000003"
 TOKENS = f"/orgs/{ORG}/access-tokens"
 
 
+def _revoke_command(record: dict[str, Any]) -> str:
+    return f"`avr token revoke {record['id']} --org {ORG}`"
+
+
 @pytest.fixture
 def minted_record(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     monkeypatch.setenv("AVR_ORG", ORG)
@@ -42,8 +47,10 @@ def minted_record(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 def test_filter_failure_preserves_created_credential(
     runner: CliRunner, api: FakeApi, monkeypatch: pytest.MonkeyPatch, minted_record: dict[str, Any], failure: str
 ) -> None:
+    commands: list[list[str]] = []
+
     def run_jq(command: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
-        assert command[0] == "jq"
+        commands.append(command)
         if failure == "missing":
             raise FileNotFoundError
         if failure == "timeout":
@@ -70,7 +77,12 @@ def test_filter_failure_preserves_created_credential(
     assert minted_record["token"] not in result.stderr
     assert "token was created" in result.stderr.lower()
     assert "unfiltered" in result.stderr.lower()
-    assert f"avr token revoke {minted_record['id']}" in result.stderr
+    assert _revoke_command(minted_record) in result.stderr
+    # Only a message that is fixed text is repeated; jq's own may quote its input.
+    assert ("not found on PATH" in result.stderr) == (failure == "missing")
+    assert "parse error" not in result.stderr
+    assert "compile error" not in result.stderr
+    assert commands == [["jq", "-r", ".token"]]
     assert len(api.sent("POST", TOKENS)) == 1
 
 
@@ -174,7 +186,8 @@ def test_filter_cannot_discard_a_created_credential(
     )
     assert result.exit_code == 1
     assert json.loads(result.stdout) == {"token": minted_record["token"], "id": minted_record["id"]}
-    assert f"avr token revoke {minted_record['id']}" in result.stderr
+    assert "The output filter must retain the one-time credential." in result.stderr
+    assert _revoke_command(minted_record) in result.stderr
     assert minted_record["token"] not in result.stderr
     assert len(api.sent("POST", TOKENS)) == 1
 
@@ -187,7 +200,8 @@ def test_human_render_failure_keeps_the_exports_and_revoke_hint(
     assert result.exit_code == 1
     assert f"export AVR_TOKEN={minted_record['token']}" in result.stdout
     assert f"export AVR_ORG={ORG}" in result.stdout
-    assert f"avr token revoke {minted_record['id']}" in result.stderr
+    assert "The export lines on stdout are complete and valid" in result.stderr
+    assert _revoke_command(minted_record) in result.stderr
     assert minted_record["token"] not in result.stderr
 
 
@@ -215,9 +229,54 @@ def test_buffered_output_failure_reports_revoke_without_claiming_recovery(
         os.close(writer)
     assert child.returncode != 0
     errors = stderr.decode()
-    assert f"avr token revoke {minted_record['id']}" in errors
+    assert _revoke_command(minted_record) in errors
     assert "stdout contains" not in errors
+    assert "export lines" not in errors
     assert minted_record["token"] not in errors
+
+
+@pytest.mark.parametrize("json_output", [True, False])
+@pytest.mark.parametrize("body", ["list", "no_token", "null_token", "empty_token", "non_string_token"])
+def test_success_without_a_credential_is_reported_not_rendered(
+    runner: CliRunner, api: FakeApi, minted_record: dict[str, Any], body: str, json_output: bool
+) -> None:
+    record = {key: value for key, value in minted_record.items() if key != "token"}
+    reply: Any = {
+        "list": [minted_record],
+        "no_token": record,
+        "null_token": {**record, "token": None},
+        "empty_token": {**record, "token": ""},
+        "non_string_token": {**record, "token": {"value": "avs_nested_secret"}},
+    }[body]
+    api.reply("POST", TOKENS, 201, json=reply)
+    args = ["token", "create", "--name", "ci", "--repo", REPO, *(["--json", "token,id"] if json_output else [])]
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert result.stdout == ""
+    assert "without a credential" in result.stderr
+    assert "avs_nested_secret" not in result.output
+    assert minted_record["token"] not in result.output
+    if body == "list":
+        assert "Check `avr token list` before retrying." in result.stderr
+    else:
+        assert _revoke_command(minted_record) in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [(500, {"detail": "Internal Server Error"}), (502, None), (503, None), (504, None), (504, {"detail": "timeout"})],
+)
+def test_server_error_on_create_warns_that_a_token_may_exist(
+    runner: CliRunner, api: FakeApi, minted_record: dict[str, Any], status: int, body: dict[str, str] | None
+) -> None:
+    api.reply("POST", TOKENS, status, json=body, headers={"Retry-After": "30"})
+    result = runner.invoke(cli, ["token", "create", "--name", "ci", "--repo", REPO])
+    assert result.exit_code == 1
+    assert f"HTTP {status}" in result.stderr
+    assert "  Hint: A token may have been created; check `avr token list` before retrying." in result.stderr
+    assert "No token was created" not in result.stderr
+    assert len(api.sent("POST", TOKENS)) == 1
 
 
 @pytest.mark.parametrize("failure", [httpx.ReadTimeout, httpx.ConnectError, KeyboardInterrupt, ValueError])
@@ -257,13 +316,13 @@ def test_bad_token_id_sends_no_request(
 def test_token_names_cannot_forge_rows_or_terminal_controls(
     runner: CliRunner, api: FakeApi, monkeypatch: pytest.MonkeyPatch, minted_record: dict[str, Any], piped: bool
 ) -> None:
-    name = "safe\tforged\nrow\r\x1b[31m"
+    name = "safe\tforged\nrow\r\x1b[31m\x85next\u2028line"
     record = {key: value for key, value in minted_record.items() if key != "token"}
     api.reply("GET", TOKENS, json={"data": [{**record, "name": name}], "pagination": {}})
     monkeypatch.setattr("avrea_cli.commands.token.is_piped", lambda: piped)
     result = runner.invoke(cli, ["token", "list"], color=True)
     assert result.exit_code == 0, result.output
-    assert "safe\\tforged\\nrow\\r\\x1b[31m" in result.stdout
+    assert "safe\\tforged\\nrow\\r\\x1b[31m\\x85next\\u2028line" in result.stdout
     assert "\x1b[31m" not in result.stdout
     if piped:
         assert len(result.stdout.splitlines()) == 2
@@ -275,6 +334,71 @@ def test_token_names_cannot_forge_rows_or_terminal_controls(
 def test_shared_piped_rows_escape_controls(capsys: pytest.CaptureFixture[str]) -> None:
     print_piped_row([0, None, "a\tb\nc\x1b"])
     assert capsys.readouterr().out == "0\t\ta\\tb\\nc\\x1b\n"
+
+
+@pytest.mark.parametrize(
+    ("char", "escaped"),
+    [
+        ("\x00", "\\x00"),
+        ("\x1f", "\\x1f"),
+        ("\x7f", "\\x7f"),
+        ("\x85", "\\x85"),
+        ("\x9b", "\\x9b"),
+        ("\x9f", "\\x9f"),
+        ("\u2028", "\\u2028"),
+        ("\u2029", "\\u2029"),
+        ("\u202a", "\\u202a"),
+        ("\u202e", "\\u202e"),
+        ("\u2066", "\\u2066"),
+        ("\u2069", "\\u2069"),
+    ],
+)
+def test_line_breaking_and_reordering_characters_are_escaped(char: str, escaped: str) -> None:
+    text = escape_control_characters(f"a{char}b")
+    assert text == f"a{escaped}b"
+    assert text.splitlines() == [text]
+
+
+@pytest.mark.parametrize(
+    "text", ["plain", "C:\\temp\\new", "a\\tb", "caf\u00e9 \u65e5\u672c \u00a0\u2027\u202f\u2065\u206a", " ~"]
+)
+def test_ordinary_text_is_left_alone(text: str) -> None:
+    assert escape_control_characters(text) == text
+
+
+SERVER_TEXT = "ok\x9b31m\u2028forged\u202e\x1b[2J"
+SERVER_TEXT_ESCAPED = "ok\\x9b31m\\u2028forged\\u202e\\x1b[2J"
+
+
+@pytest.mark.parametrize("command", ["view", "create"])
+def test_token_details_escape_server_text(
+    runner: CliRunner, api: FakeApi, minted_record: dict[str, Any], command: str
+) -> None:
+    record = {**minted_record, "name": SERVER_TEXT, "revoked_at": "2026-10-08T06:00:00Z", "revoked_reason": SERVER_TEXT}
+    if command == "create":
+        api.reply("POST", TOKENS, 201, json=record)
+        result = runner.invoke(cli, ["token", "create", "--name", "ci", "--repo", REPO], color=True)
+    else:
+        del record["token"]
+        api.reply("GET", f"{TOKENS}/{record['id']}", json=record)
+        result = runner.invoke(cli, ["token", "view", record["id"]], color=True)
+    assert result.exit_code == 0, result.output
+    assert result.stdout.count(SERVER_TEXT_ESCAPED) == 2
+    for raw in ("\x9b", "\u2028", "\u202e", "\x1b"):
+        assert raw not in result.stdout
+
+
+@pytest.mark.parametrize("status", [401, 404, 422])
+def test_error_details_escape_server_text(
+    runner: CliRunner, api: FakeApi, monkeypatch: pytest.MonkeyPatch, minted_record: dict[str, Any], status: int
+) -> None:
+    monkeypatch.setenv("AVR_TOKEN", minted_record["token"])
+    api.reply("GET", f"{TOKENS}/{minted_record['id']}", status, json={"detail": SERVER_TEXT})
+    result = runner.invoke(cli, ["token", "view", minted_record["id"]], color=True)
+    assert result.exit_code != 0
+    assert SERVER_TEXT_ESCAPED in result.stderr
+    for raw in ("\x9b", "\u2028", "\u202e", "\x1b"):
+        assert raw not in result.stderr
 
 
 def test_scoped_token_does_not_borrow_the_login_organization(
@@ -294,16 +418,28 @@ def test_scoped_token_does_not_borrow_the_login_organization(
     assert runner.invoke(cli, ["cache", "list", "--repo", REPO, "--org", ORG]).exit_code == 0
 
 
+@pytest.mark.parametrize("organization", ["option", "environment", "none"])
 def test_scoped_run_url_refusal_explains_the_supported_reference(
-    runner: CliRunner, api: FakeApi, monkeypatch: pytest.MonkeyPatch, minted_record: dict[str, Any]
+    runner: CliRunner,
+    api: FakeApi,
+    monkeypatch: pytest.MonkeyPatch,
+    minted_record: dict[str, Any],
+    organization: str,
 ) -> None:
     monkeypatch.setenv("AVR_TOKEN", minted_record["token"])
+    if organization != "environment":
+        monkeypatch.delenv("AVR_ORG")
     result = runner.invoke(
         cli,
-        ["run", "view", "https://console.avrea.com/org/acme/runs/run-019a0000000070008000000000000009", "--org", ORG],
+        [
+            "run",
+            "view",
+            "https://console.avrea.com/org/acme/runs/run-019a0000000070008000000000000009",
+            *(["--org", ORG] if organization == "option" else []),
+        ],
     )
     assert result.exit_code == 1
-    assert "run ID" in result.stderr
+    assert result.stderr == "Error: A scoped token cannot resolve a run URL's organization. Pass the run ID instead.\n"
     assert api.requests == []
 
 
@@ -346,6 +482,24 @@ def test_scoped_repository_lookup_stops_a_repeated_cursor(
     assert result.exit_code == 1
     assert len(api.requests) == 2
     assert "cursor" in result.stderr
+
+
+@pytest.mark.parametrize("empty", [[], None])
+def test_scoped_repository_lookup_stops_an_empty_page_with_a_cursor(
+    runner: CliRunner,
+    api: FakeApi,
+    monkeypatch: pytest.MonkeyPatch,
+    minted_record: dict[str, Any],
+    empty: list[Any] | None,
+) -> None:
+    monkeypatch.setenv("AVR_TOKEN", minted_record["token"])
+    path = f"/orgs/{ORG}/repos"
+    for number in range(3):
+        api.reply("GET", path, json={"data": empty, "pagination": {"next_cursor": f"fresh-{number}"}})
+    result = runner.invoke(cli, ["cache", "list", "--repo", "acme/api"])
+    assert result.exit_code == 1
+    assert len(api.requests) == 1
+    assert "cursor that does not advance" in result.stderr
 
 
 def test_scoped_repository_lookup_skips_malformed_rows(

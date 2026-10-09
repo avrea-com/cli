@@ -178,7 +178,8 @@ def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) ->
             response = client.public_get(f"/orgs/{org_id}/repos", params=params)
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "resolve the repository")
-        for row in response.get("data") or []:
+        rows = response.get("data") or []
+        for row in rows:
             if not isinstance(row, dict):
                 continue
             repo_id = row.get("repository_id")
@@ -188,7 +189,10 @@ def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) ->
         cursor = (response.get("pagination") or {}).get("next_cursor")
         if not cursor:
             raise _RepoNotInOrgError(repo, scoped_token=True)
-        if not isinstance(cursor, str) or cursor in seen_cursors:
+        # An empty page that still names a next page is the same fault as a
+        # repeated cursor: the walk is not getting anywhere. It is reported
+        # rather than read as "not found", which the listing never said.
+        if not rows or not isinstance(cursor, str) or cursor in seen_cursors:
             raise click.ClickException("Repository listing returned a cursor that does not advance.")
         seen_cursors.add(cursor)
         params = {**params, "cursor": cursor}
