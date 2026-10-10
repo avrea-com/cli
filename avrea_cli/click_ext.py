@@ -207,7 +207,7 @@ class AliasGroup(GhHelpMixin, LazyGroup):
             if not isinstance(exc.__context__, KeyboardInterrupt):
                 raise
         click.echo("Aborted!", err=True)
-        ctx.exit(EXIT_INTERRUPTED)
+        raise click.exceptions.Exit(EXIT_INTERRUPTED)
 
     def add_command(self, cmd, name=None):
         super().add_command(cmd, name)
