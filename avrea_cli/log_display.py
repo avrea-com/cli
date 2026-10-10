@@ -1,6 +1,7 @@
 """Log fetching, formatting, and display for CLI commands."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.display import DIM_FG
 from avrea_cli.display import conclusion_to_exit_code
 from avrea_cli.display import hyperlink
@@ -15,6 +16,7 @@ from collections.abc import Callable
 from typing import Any
 import click
 import httpx
+import sys
 import time
 
 # Default sink — print one line. Callers wanting to buffer (e.g. for paging)
@@ -515,3 +517,4 @@ def follow_logs(
                 time.sleep(interval)
         except KeyboardInterrupt:
             click.echo("\nStopped following.")
+            sys.exit(EXIT_INTERRUPTED)

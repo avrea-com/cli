@@ -4,10 +4,12 @@ from avrea_cli import auth
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
+from avrea_cli.helpers import SCOPED_TOKEN_ORG_HINT
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import match_org
 from avrea_cli.repo_context import detect_repo_from_git
 from urllib.parse import urlparse
@@ -45,9 +47,13 @@ def _print_config_status(ctx) -> None:
 
     # Auth status line
     if cfg.auth_token:
-        me = _fetch_me(client)
         token_src = _src("AVR_TOKEN" if os.getenv("AVR_TOKEN") else "hosts.json")
-        if me and me.get("email"):
+        scoped = is_scoped_token(cfg.auth_token)
+        # A scoped token has no user profile: `/users/me` answers it 404.
+        me = None if scoped else _fetch_me(client)
+        if scoped:
+            click.echo(f"  - scoped token {token_src}, not checked against the API")
+        elif me and me.get("email"):
             click.echo(f"  {click.style('✓', fg='green')} authenticated as {me['email']} {token_src}")
         elif me:
             click.echo(f"  {click.style('✓', fg='green')} authenticated {token_src}")
@@ -85,6 +91,15 @@ def _print_config_status(ctx) -> None:
     click.echo(f"  - Default repo: {default_repo}")
 
 
+def _refuse_stored_org_for_scoped_token(cfg: CliConfig, verb: str) -> None:
+    """The stored default belongs to the host's own login: a scoped token never
+    reads it, and a change made while one is active would outlive the token."""
+    if is_scoped_token(cfg.auth_token):
+        click.echo(f"Error: A scoped token is bound to one organization and has no stored default to {verb}.", err=True)
+        click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
+        raise click.Abort()
+
+
 @click.group(cls=GhGroup, invoke_without_command=True)
 @click.pass_context
 def config(ctx):
@@ -115,6 +130,8 @@ def config_set(ctx, key: str, value: str):
     ensure_authenticated(cfg)
 
     if key == "org":
+        # The membership list below also answers a scoped token 404.
+        _refuse_stored_org_for_scoped_token(cfg, "set")
         # Verify the org exists and the user has access. Accepts an ID or slug;
         # we always store the resolved ``org-...`` ID so the default is stable
         # even if the slug is later renamed.
@@ -175,6 +192,7 @@ def config_unset(ctx, key: str):
     """
     cfg: CliConfig = ctx.obj["config"]
     if key == "org":
+        _refuse_stored_org_for_scoped_token(cfg, "unset")
         # Match the brevity of `config set`: the host is implied by AVR_HOST
         # / the active default. Showing it would be redundant in the common
         # single-host install.

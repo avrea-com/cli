@@ -1,10 +1,14 @@
 """Shared helper functions for CLI command implementations."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.auth import is_scoped_token
 from avrea_cli.config import CliConfig
+from avrea_cli.display import escape_control_characters
+from collections.abc import Mapping
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from typing import Any
 from typing import NoReturn
 import click
 import httpx
@@ -21,6 +25,19 @@ EXIT_AUTH_REQUIRED = 4
 _AUTH_HINT = (
     "To get started with Avrea CLI, please run:  avr auth login\n"
     "Alternatively, set the AVR_TOKEN environment variable to an Avrea API token."
+)
+
+
+SCOPED_TOKEN_ORG_HINT = "Pass that organization's ID with --org org-... or set AVR_ORG to it."
+
+_SCOPED_TOKEN_HINT = (
+    "a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
+)
+
+
+_SCOPED_TOKEN_REJECTED_HINT = (
+    "ask a member of the organization to check the API's reason above. If a replacement is needed, "
+    "create one with `avr token create` and set it as AVR_TOKEN."
 )
 
 
@@ -67,6 +84,12 @@ def get_org_id(config: CliConfig, org_option: str | None, *, client: ApiClient |
     the stored default, then auto-selects when the user belongs to exactly one
     org."""
     org_id = org_option or config.default_org
+    if not (org_id or "").startswith("org-") and is_scoped_token(config.auth_token):
+        # The membership list answers 404 to a scoped token, so for one neither
+        # a slug nor a missing organization can be resolved.
+        click.echo("Error: A scoped token is bound to one organization and cannot look it up.", err=True)
+        click.echo(SCOPED_TOKEN_ORG_HINT, err=True)
+        raise click.Abort()
     if org_id:
         # ``org-`` is the opaque-ID prefix (mirrors ``rep-`` for repos); treat
         # anything else as a slug to resolve. Skip the round-trip for IDs and
@@ -155,7 +178,10 @@ def get_org_slug(client: ApiClient, org_id: str) -> str:
     Best-effort: any failure (transport, malformed response, missing fields)
     returns the raw org_id. Console URLs still resolve with a UUID — slug is
     purely cosmetic, so we don't propagate errors up into the calling
-    command."""
+    command. A scoped token cannot read the membership list, so it gets the
+    org_id without a request."""
+    if is_scoped_token(client.config.auth_token):
+        return org_id
     try:
         response = client.public_get("/users/me/organizations")
     except (
@@ -237,6 +263,31 @@ def parse_since(since: str) -> datetime:
     return datetime.now(UTC) - timedelta(**{suffix_map[since[-1]]: int(since[:-1])})
 
 
+_DURATION_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+
+
+def parse_duration_seconds(value: str, *, minimum: int, maximum: int, param_hint: str) -> int:
+    """Parse a duration option into seconds, bounded to ``minimum..maximum``.
+
+    Accepts a bare integer (seconds) or a single-unit duration: ``90s``,
+    ``30m``, ``8h``, ``7d``. Raises ``click.BadParameter`` on malformed input
+    or a value outside the bounds."""
+    text = value.strip().lower()
+    number, unit = (text[:-1], text[-1]) if text[-1:] in _DURATION_UNITS else (text, "s")
+    if not (number.isascii() and number.isdigit()):
+        raise click.BadParameter(
+            f"invalid duration {value!r}: use e.g. 30m, 8h, 7d, or a number of seconds",
+            param_hint=param_hint,
+        )
+    seconds = int(number) * _DURATION_UNITS[unit]
+    if not (minimum <= seconds <= maximum):
+        raise click.BadParameter(
+            f"must be between {minimum}s and {maximum}s (got {seconds}s)",
+            param_hint=param_hint,
+        )
+    return seconds
+
+
 def format_size(size_bytes: int) -> str:
     """Format byte count as human-readable string."""
     value = float(size_bytes)
@@ -247,12 +298,20 @@ def format_size(size_bytes: int) -> str:
     return f"{value:.1f} PB"
 
 
-def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | None = None) -> NoReturn:
+def handle_http_error(
+    exc: httpx.HTTPStatusError,
+    action: str,
+    *,
+    hint: str | None = None,
+    hints: Mapping[int, str] | None = None,
+) -> NoReturn:
     """Format and display an HTTP error, then exit non-zero.
 
     Status-specific framing:
-        401 → auth-hint, exit 4 (matches ensure_authenticated)
-        403 → access-denied + suggest `avr org list`
+        401 → auth-hint, exit 4 (matches ensure_authenticated); a scoped
+              token gets the API's reason and where a new token comes from
+              instead, same exit code
+        403 → access-denied + suggest `avr org list` (not for a scoped token)
         404 → caller's hint takes over (e.g. "Run `avr run list`…")
         409 → surface the API's `detail` prominently — usually meaningful
               ("already cancelled", "already running")
@@ -261,23 +320,43 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
         429 → rate-limit hint
         5xx → "Avrea is having trouble" + suggest `avr health`
 
+    ``hints`` maps a status to one more hint line, for a command whose API
+    gives a status a specific meaning ("409: token limit reached"). Unlike
+    ``hint`` it applies to any status but 401.
+
+    A 403 or 404 answered to a scoped token also gets a line saying what such
+    a token can reach: for one, "not found" usually means "outside its scope".
+
     Every branch ends with the API origin when it isn't the public default.
     """
     status = exc.response.status_code
+    scoped = _sent_scoped_token(exc)
     if status == 401:
         # No "Error:" line precedes the auth hint, so the origin can't ride
         # along as an indented continuation here — say it as its own sentence.
         origin = _api_origin(exc)
+        if scoped:
+            # Whoever holds a scoped token is usually a script or an agent, and
+            # logging in is not how it gets a new one. One line carries the
+            # API's reason (and the origin, when it isn't the default), then
+            # the hint says where a replacement comes from.
+            reason = extract_detail(exc.response)
+            rejected = f"{origin} rejected the scoped token" if origin else "The scoped token was rejected"
+            click.echo(f"Error: {rejected} (HTTP 401){f': {reason}' if reason else '.'}", err=True)
+            click.echo(f"  Hint: {_SCOPED_TOKEN_REJECTED_HINT}", err=True)
+            sys.exit(EXIT_AUTH_REQUIRED)
         if origin:
             click.echo(f"Error: {origin} rejected your credentials (HTTP 401).", err=True)
         exit_with_auth_hint()
 
-    detail = _extract_detail(exc.response)
+    detail = extract_detail(exc.response)
     detail_suffix = f": {detail}" if detail else ""
 
     if status == 403:
         click.echo(f"Error: You don't have access to {action} (HTTP 403){detail_suffix}", err=True)
-        click.echo("  Hint: run `avr org list` to see available orgs, or pass --org.", err=True)
+        # A scoped token cannot list organizations, and another one would not help it.
+        if not scoped:
+            click.echo("  Hint: run `avr org list` to see available orgs, or pass --org.", err=True)
     elif status == 404:
         click.echo(f"Error: Not found while trying to {action} (HTTP 404){detail_suffix}", err=True)
         if hint:
@@ -305,8 +384,20 @@ def handle_http_error(exc: httpx.HTTPStatusError, action: str, *, hint: str | No
             click.echo(f"  Detail: {detail}", err=True)
     else:
         click.echo(f"Error: Failed to {action} (HTTP {status}){detail_suffix}", err=True)
-    _echo_api_url(exc)
+    if hints and status in hints:
+        click.echo(f"  Hint: {hints[status]}", err=True)
+    if scoped and status in (403, 404):
+        click.echo(f"  Hint: {_SCOPED_TOKEN_HINT}", err=True)
+    echo_api_url(exc)
     sys.exit(1)
+
+
+def _sent_scoped_token(exc: httpx.HTTPStatusError) -> bool:
+    """Whether the failed request carried a scoped token as its credential.
+
+    Read from the request rather than the config so the answer is about the
+    credential the API actually refused."""
+    return is_scoped_token(exc.request.headers.get("Authorization", "").removeprefix("Bearer "))
 
 
 def retry_after_seconds(response: httpx.Response) -> int | None:
@@ -330,7 +421,7 @@ def _api_origin(exc: httpx.HTTPStatusError) -> str:
     return "" if origin == CliConfig.DEFAULT_API_URL else origin
 
 
-def _echo_api_url(exc: httpx.HTTPStatusError) -> None:
+def echo_api_url(exc: httpx.HTTPStatusError) -> None:
     """Add the failing request URL under the error, for non-default APIs.
 
     Full URL rather than just the origin — the path identifies the endpoint for
@@ -339,14 +430,33 @@ def _echo_api_url(exc: httpx.HTTPStatusError) -> None:
         click.echo(f"  API: {exc.request.url}", err=True)
 
 
-def _extract_detail(response: httpx.Response) -> str:
-    """Pull the FastAPI-style ``detail`` field out of a JSON error body."""
+def extract_detail(response: httpx.Response) -> str:
+    """Pull the FastAPI-style ``detail`` field out of a JSON error body.
+
+    A validation error carries a list of ``{loc, msg}`` items instead of a
+    string; those render as ``field: message``, joined with ``; ``. The text
+    is the server's, so control characters are escaped before it is shown."""
     try:
         body = response.json()
     except ValueError:
         return ""
-    if isinstance(body, dict):
-        detail = body.get("detail")
-        if isinstance(detail, str):
-            return detail
-    return ""
+    detail = body.get("detail") if isinstance(body, dict) else None
+    if isinstance(detail, list):
+        detail = "; ".join(_format_validation_item(item) for item in detail if isinstance(item, dict))
+    return escape_control_characters(detail) if isinstance(detail, str) else ""
+
+
+def _format_validation_item(item: dict[str, Any]) -> str:
+    """Render one validation item, e.g. ``grants[0].access_level: Input should be 'read'``.
+
+    The leading ``body`` / ``query`` / ``path`` of ``loc`` says where the server
+    read the field from, which the CLI user never chose, so it is dropped."""
+    loc = item.get("loc")
+    parts = list(loc) if isinstance(loc, list) else []
+    if parts and parts[0] in ("body", "query", "path"):
+        parts = parts[1:]
+    field = ""
+    for part in parts:
+        field += f"[{part}]" if isinstance(part, int) else f".{part}" if field else str(part)
+    msg = str(item.get("msg") or "invalid")
+    return f"{field}: {msg}" if field else msg

@@ -1,6 +1,9 @@
 """Shared test fixtures for CLI unit tests."""
 
 from click.testing import CliRunner
+from collections.abc import Callable
+from typing import Any
+import httpx
 import pytest
 
 
@@ -39,6 +42,7 @@ def _force_tty_mode(monkeypatch):
         "avrea_cli.commands.job",
         "avrea_cli.commands.cache",
         "avrea_cli.commands.pr",
+        "avrea_cli.commands.token",
     ):
         monkeypatch.setattr(f"{mod}.is_piped", lambda: False, raising=False)
 
@@ -57,3 +61,39 @@ def runner(monkeypatch):
     # hosts.json and tests would silently depend on local state.
     monkeypatch.setattr("avrea_cli.auth.load_default_host", lambda: None)
     return CliRunner()
+
+
+class FakeApi:
+    """Transport-level API double. Records each request as sent (method, URL,
+    headers, body) and answers from a per-route queue, for tests that assert
+    on what reaches the wire rather than on ``ApiClient`` call arguments."""
+
+    def __init__(self) -> None:
+        self.requests: list[httpx.Request] = []
+        self._routes: dict[tuple[str, str], list[Callable[[], httpx.Response]]] = {}
+
+    def reply(
+        self, method: str, path: str, status: int = 200, *, json: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        """Queue a response for ``method path``. Responses are served in the
+        order queued; the last one repeats."""
+        self._routes.setdefault((method, path), []).append(lambda: httpx.Response(status, json=json, headers=headers))
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
+        queue = self._routes.get((request.method, request.url.path))
+        if not queue:
+            return httpx.Response(501, json={"detail": f"no fake reply for {request.method} {request.url.path}"})
+        return (queue.pop(0) if len(queue) > 1 else queue[0])()
+
+    def sent(self, method: str, path: str) -> list[httpx.Request]:
+        """The recorded requests for ``method path``, in order."""
+        return [r for r in self.requests if r.method == method and r.url.path == path]
+
+
+@pytest.fixture
+def api(monkeypatch) -> FakeApi:
+    """Route every request the CLI sends through a :class:`FakeApi`."""
+    fake = FakeApi()
+    monkeypatch.setattr("avrea_cli.api_client.CompressingTransport", lambda: httpx.MockTransport(fake))
+    return fake
