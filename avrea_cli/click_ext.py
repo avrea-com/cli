@@ -6,6 +6,9 @@ import importlib
 
 SECTION_ORDER = ["Core Commands", "Setup & Config", "Additional Commands"]
 
+# 128 + SIGINT, the shell convention for a command ended by Ctrl-C.
+EXIT_INTERRUPTED = 130
+
 LEARN_MORE = 'Use "avr <command> <subcommand> --help" for more information about a command.\nRead the docs at https://docs.avrea.com/cli'
 
 
@@ -187,6 +190,24 @@ class AliasGroup(GhHelpMixin, LazyGroup):
             yield
         finally:
             self._current_section = prev
+
+    def invoke(self, ctx: click.Context):
+        """Exit 130 when Ctrl-C ends the command.
+
+        Click reports an interrupt as exit 1, the same as a general failure.
+        A prompt turns the interrupt into ``click.Abort`` before it gets here,
+        so that case is recognised by the exception it replaced. An ``Abort``
+        raised for any other reason, end of input included, keeps exit 1.
+        """
+        try:
+            return super().invoke(ctx)
+        except KeyboardInterrupt:
+            click.echo(err=True)
+        except click.Abort as exc:
+            if not isinstance(exc.__context__, KeyboardInterrupt):
+                raise
+        click.echo("Aborted!", err=True)
+        ctx.exit(EXIT_INTERRUPTED)
 
     def add_command(self, cmd, name=None):
         super().add_command(cmd, name)

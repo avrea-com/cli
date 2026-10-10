@@ -190,7 +190,8 @@ class TestJobMetricsStatus:
 class TestJobMetricsLiveResilience:
     """``--live`` polls on a tight loop; transient httpx errors must not kill
     the watcher. We exit the loop after one iteration via KeyboardInterrupt
-    so we can assert the rendered frame's footer carries the error label."""
+    (exit 130) so we can assert the rendered frame's footer carries the error
+    label."""
 
     def _running_job(self):
         return _job_response(state="in_progress")
@@ -213,7 +214,7 @@ class TestJobMetricsLiveResilience:
             lambda _: (_ for _ in ()).throw(KeyboardInterrupt()),
         )
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
-        assert result.exit_code == 0, result.output
+        assert result.exit_code == 130, result.output
         assert "log fetch failed: TimeoutException" in result.output
 
     def test_metrics_fetch_failure_surfaces_in_footer(self, runner, monkeypatch):
@@ -234,7 +235,7 @@ class TestJobMetricsLiveResilience:
             lambda _: (_ for _ in ()).throw(KeyboardInterrupt()),
         )
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
-        assert result.exit_code == 0, result.output
+        assert result.exit_code == 130, result.output
         # 5xx is treated as soft (transient backend hiccup) — surface in
         # the footer with the status code, keep the watcher alive.
         assert "metrics fetch failed: HTTP 503" in result.output

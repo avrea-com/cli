@@ -70,7 +70,7 @@ def test_filter_failure_preserves_created_credential(
     result = runner.invoke(
         cli, ["token", "create", "--name", "ci", "--repo", REPO, "--json", "token,id", "--jq", ".token"]
     )
-    assert result.exit_code == 1
+    assert result.exit_code == (130 if failure == "interrupt" else 1)
     assert minted_record["token"] in result.stdout
     assert json.loads(result.stdout) == {"token": minted_record["token"], "id": minted_record["id"]}
     assert result.stdout.count(minted_record["token"]) == 1
@@ -291,7 +291,7 @@ def test_unknown_mint_outcome_warns_before_retry(
 
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", fail_post)
     result = runner.invoke(cli, ["token", "create", "--name", "ci", "--repo", REPO])
-    assert result.exit_code != 0
+    assert result.exit_code == (130 if failure is KeyboardInterrupt else 1)
     assert "may have been created" in result.stderr
     assert "avr token list" in result.stderr
     assert "before retrying" in result.stderr

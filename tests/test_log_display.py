@@ -1,6 +1,7 @@
 """Unit tests for log display module."""
 
 from avrea_cli.log_display import fetch_all_logs
+from avrea_cli.log_display import follow_logs
 from avrea_cli.log_display import format_log_line
 from avrea_cli.log_display import print_failed_step_logs
 from avrea_cli.log_display import print_logs_grouped
@@ -212,3 +213,13 @@ class TestPrintFailedStepLogs:
         joined = "\n".join(buf)
         assert "Test (failure)" in joined
         assert "bang" in joined
+
+
+class TestFollowLogs:
+    def test_stopped_by_ctrl_c_exits_130(self, capsys):
+        client = MagicMock()
+        client.public_post.side_effect = KeyboardInterrupt
+        with pytest.raises(SystemExit) as exit_info:
+            follow_logs(client, "org-1", "job-1")
+        assert exit_info.value.code == 130
+        assert "Stopped following." in capsys.readouterr().out

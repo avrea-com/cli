@@ -207,7 +207,8 @@ case $? in
 esac
 ```
 
-Exit code `4` is reserved for "auth required". `1` is general failure; `2` is a usage error.
+Exit code `4` is reserved for "auth required". `1` is general failure; `2` is a usage error. `130` means Ctrl-C
+ended the command, including a watch, a log follow or a tunnel that is stopped that way.
 
 **Scoped tokens for scripts and agents**
 

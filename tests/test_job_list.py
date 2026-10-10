@@ -47,6 +47,17 @@ SAMPLE_JOBS = {
 
 
 class TestJobList:
+    def test_watch_stopped_by_ctrl_c_exits_130(self, runner, monkeypatch):
+        def interrupt(_seconds: float) -> None:
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, **kw: SAMPLE_JOBS)
+        monkeypatch.setattr("avrea_cli.commands.job.time.sleep", interrupt)
+        result = runner.invoke(cli, ["job", "watch"])
+        assert result.exit_code == 130, result.output
+        assert "Stopped watching." in result.output
+        assert "Aborted!" not in result.output
+
     def test_renders_sectioned_table(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",

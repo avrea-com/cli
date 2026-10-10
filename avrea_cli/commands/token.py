@@ -1,6 +1,7 @@
 """Scoped access token CLI commands (avr token)."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
 from avrea_cli.display import escape_control_characters
@@ -152,6 +153,19 @@ def _discard_hint(minted: Any, org_id: str) -> str:
     return " Check `avr token list` before retrying."
 
 
+class _InterruptedCreateError(click.ClickException):
+    """A creation failure that Ctrl-C caused: same message, exit 130."""
+
+    exit_code = EXIT_INTERRUPTED
+
+
+def _create_error(message: str, cause: BaseException) -> click.ClickException:
+    """The error for a creation failure, by whether Ctrl-C caused it."""
+    if isinstance(cause, KeyboardInterrupt):
+        return _InterruptedCreateError(message)
+    return click.ClickException(message)
+
+
 @token.command("create")
 @click.option("--name", required=True, help="Token name (1-100 characters).")
 @click.option(
@@ -251,8 +265,8 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
         handle_http_error(
             exc, "create the token", hints=_create_hints(exc.response, names_vms=bool(vm_ids) or allow_vm_create)
         )
-    except httpx.RequestError, ValueError, KeyboardInterrupt:
-        raise click.ClickException(f"The creation response was not received. {_UNKNOWN_OUTCOME}") from None
+    except (httpx.RequestError, ValueError, KeyboardInterrupt) as exc:
+        raise _create_error(f"The creation response was not received. {_UNKNOWN_OUTCOME}", exc) from None
     if not (isinstance(minted, dict) and isinstance(minted.get("token"), str) and minted["token"]):
         raise click.ClickException(
             "The API reported success without a credential, so a token may exist that nothing can use."
@@ -288,7 +302,7 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
             sys.stdout.flush()
         except Exception, KeyboardInterrupt:
             delivered = ""
-        raise click.ClickException(message + delivered + _discard_hint(minted, org_id)) from None
+        raise _create_error(message + delivered + _discard_hint(minted, org_id), exc) from None
 
 
 @token.command("list")

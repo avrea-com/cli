@@ -1,6 +1,7 @@
 """Workflow run CLI commands."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
 from avrea_cli.display import DIM_FG
@@ -1133,6 +1134,7 @@ def watch_run_loop(
                 time.sleep(interval)
         except KeyboardInterrupt:
             click.echo("\nStopped watching.")
+            sys.exit(EXIT_INTERRUPTED)
 
 
 @run.command("watch")
