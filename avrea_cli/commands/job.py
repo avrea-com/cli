@@ -1,6 +1,7 @@
 """Avrea job CLI commands — inspect VMs that run CI work."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.commands.run import _STATUS_CHOICES
 from avrea_cli.commands.run import _split_status_values
@@ -406,6 +407,7 @@ def job_watch(ctx, org_id, repository_ids, job_names, interval, ndjson_output):
                 time.sleep(interval)
     except KeyboardInterrupt:
         click.echo("\nStopped watching.")
+        sys.exit(EXIT_INTERRUPTED)
 
 
 @job.command("ssh")
@@ -964,4 +966,4 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
             click.echo(frame)
             time.sleep(_LIVE_LOG_REFRESH_S)
     except KeyboardInterrupt:
-        pass
+        sys.exit(EXIT_INTERRUPTED)

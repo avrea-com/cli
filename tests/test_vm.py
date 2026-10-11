@@ -1940,7 +1940,8 @@ class TestTunnelHelpers:
             vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=lambda p: p.wait())
 
     def test_run_tunnel_clean_on_ctrl_c(self, monkeypatch):
-        # Ctrl-C during the hold is an intentional teardown: no error surfaced.
+        # Ctrl-C during the hold tears the tunnel down and exits 130, with no
+        # error surfaced.
         from avrea_cli import vm as vmmod
 
         proc = _FakeProc(None)
@@ -1952,8 +1953,10 @@ class TestTunnelHelpers:
         def _interrupt(_p):
             raise KeyboardInterrupt
 
-        vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=_interrupt)
-        assert proc.terminated  # torn down cleanly, no exception raised
+        with pytest.raises(SystemExit) as exit_info:
+            vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=_interrupt)
+        assert exit_info.value.code == 130
+        assert proc.terminated
 
     def test_run_tunnel_clean_on_client_teardown(self, monkeypatch):
         # --launch: the client exits with ssh still running; we terminate it and

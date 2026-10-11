@@ -13,6 +13,7 @@ stop/start semantics are a conscious opt-in.
 """
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
@@ -2018,7 +2019,7 @@ def _run_tunnel(
 ) -> None:
     """Open the SSH forward(s), wait for them all to listen, hand the live ssh
     process to ``on_ready`` (which holds or launches a client), then tear it
-    down. Ctrl-C closes cleanly."""
+    down. Ctrl-C tears it down and exits 130."""
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
     if known_hosts is None:
         click.echo(
@@ -2049,6 +2050,7 @@ def _run_tunnel(
                 raise click.ClickException(f"SSH tunnel exited unexpectedly (status {rc}); the connection was lost.")
         except KeyboardInterrupt:
             click.echo("\nClosing tunnel.", err=True)
+            sys.exit(EXIT_INTERRUPTED)
         finally:
             _terminate_tunnel(proc)
     finally:

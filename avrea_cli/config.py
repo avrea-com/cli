@@ -62,8 +62,11 @@ class CliConfig:
         AVR_HOST    Full URL of the Avrea API. Highest precedence; if unset
                     the CLI falls through to the file's ``default_host``,
                     then to ``https://api.avrea.com``.
-        AVR_TOKEN   API key. Overrides whatever's stored for the resolved host.
+        AVR_TOKEN   API key or scoped token. Overrides whatever's stored for
+                    the resolved host.
         AVR_ORG     Default organization ID. Overrides the stored default.
+                    Scoped tokens require this or --org; they never use the
+                    login's stored organization or resolve a slug.
         AVR_REPO    Repository (org/name or rep-xxx). Consumed by command-
                     level resolvers in ``repo_context``.
     """
@@ -74,7 +77,9 @@ class CliConfig:
         self.public_api_url = self._resolve_host()
 
         self.auth_token = os.getenv("AVR_TOKEN") or auth.load_token(host=self.public_api_url)
-        self.default_org = os.getenv("AVR_ORG") or auth.load_default_org(host=self.public_api_url)
+        self.default_org = os.getenv("AVR_ORG") or (
+            None if auth.is_scoped_token(self.auth_token) else auth.load_default_org(host=self.public_api_url)
+        )
         # AVR_REPO is read here so a single source-of-truth lives on the
         # config; ``repo_context`` reads ``config.repo_override`` instead of
         # touching os.environ directly, which keeps tests deterministic.

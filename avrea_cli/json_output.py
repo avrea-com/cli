@@ -17,6 +17,11 @@ import subprocess
 import sys
 
 
+class FixedMessageError(click.ClickException):
+    """An output failure whose message holds none of the data being written,
+    so a caller that must keep that data off stderr can still show it."""
+
+
 def json_options(func):
     """Decorator: add the standard ``--json`` and ``-q/--jq`` options.
 
@@ -150,7 +155,7 @@ def filter_with_jq(data: Any, expr: str) -> str:
             timeout=10,
         )
     except FileNotFoundError:
-        raise click.ClickException(
+        raise FixedMessageError(
             "`jq` is required for --jq but was not found on PATH. Install from https://stedolan.github.io/jq/"
         ) from None
     if result.returncode != 0:
@@ -169,16 +174,18 @@ def emit_json_record(
     fields: list[str],
     schema: dict[str, str],
     jq_expr: str | None,
+    *,
+    required_value: str | None = None,
 ) -> None:
     """Single-record variant for `view` commands. Output is a JSON object,
-    not an array — matches what users expect from `<thing> view --json`."""
+    not an array. ``required_value`` protects a one-time credential from
+    filters that discard it before output."""
     projected = select_fields([record], fields, schema)[0]
-    _write(projected, jq_expr)
+    _write(projected, jq_expr, required_value=required_value)
 
 
-def _write(data: Any, jq_expr: str | None) -> None:
-    if jq_expr:
-        sys.stdout.write(filter_with_jq(data, jq_expr))
-    else:
-        sys.stdout.write(json.dumps(data, indent=2, default=str))
-        sys.stdout.write("\n")
+def _write(data: Any, jq_expr: str | None, *, required_value: str | None = None) -> None:
+    output = filter_with_jq(data, jq_expr) if jq_expr else json.dumps(data, indent=2, default=str) + "\n"
+    if required_value is not None and required_value not in output:
+        raise FixedMessageError("The output filter must retain the one-time credential.")
+    sys.stdout.write(output)

@@ -3,8 +3,10 @@
 from avrea_cli.commands.run import _active_job_name
 from avrea_cli.commands.run import _emit_ndjson_event
 from avrea_cli.commands.run import _watch_title
+from avrea_cli.commands.run import watch_run_loop
 from avrea_cli.main import cli
 from io import StringIO
+from unittest.mock import MagicMock
 import click
 import httpx
 import json
@@ -311,6 +313,15 @@ class TestRunView:
 
 
 class TestRunWatch:
+    def test_stopped_by_ctrl_c_exits_130(self, capsys):
+        """Exit 0 would read as a successful run under --exit-status."""
+        client = MagicMock()
+        client.public_get.side_effect = KeyboardInterrupt
+        with pytest.raises(SystemExit) as exit_info:
+            watch_run_loop(client, "org-default", "run-abc123", interval=1, exit_status=True)
+        assert exit_info.value.code == 130
+        assert "Stopped watching." in capsys.readouterr().out
+
     def test_no_run_id_no_active_runs(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",

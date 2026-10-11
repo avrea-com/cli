@@ -42,6 +42,11 @@ _LOGO_SVG = (Path(__file__).parent / "assets" / "logo_mark.svg").read_text(encod
 HOSTS_FILE = PATHS.hosts_file
 
 
+def is_scoped_token(token: str | None) -> bool:
+    """Identify organization-bound credentials without making a request."""
+    return token is not None and token.startswith("avs_")
+
+
 def _read() -> dict[str, Any]:
     """Load the hosts file. Returns an empty wrapper if missing or malformed
     — callers treat absence as 'no credentials yet'."""
