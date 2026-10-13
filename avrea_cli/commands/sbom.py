@@ -199,7 +199,12 @@ def _overflow_line(hidden: int, omitted: int, noun: str, inventory_hint: str) ->
     more = hidden + omitted
     if not more:
         return None
-    where = f"see `{inventory_hint}`" if omitted else "use --full to list them"
+    if not omitted:
+        where = "use --full to list them"
+    elif hidden:
+        where = f"--full lists {hidden}; see `{inventory_hint}` for all"
+    else:
+        where = f"see `{inventory_hint}`"
     return f"… and {more} more{noun} ({where})"
 
 
@@ -823,7 +828,7 @@ def _echo_task_outcome(tracker: _TaskTracker) -> None:
         )
     else:
         click.echo(
-            f"Analysis task {task_id} completed. Its SBOM can take a moment to appear in `avr sbom list`; "
+            "Analysis completed. Its SBOM can take a moment to appear in `avr sbom list`; "
             "pass --ref <commit-sha> with --wait to wait for a specific commit's SBOM."
         )
 

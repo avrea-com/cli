@@ -361,7 +361,7 @@ class TestSbomView:
     def test_licence_overflow_counts_what_the_summary_left_out(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
-        assert f"… and 45 more licences (see `{INVENTORY_HINT}`)" in result.output
+        assert f"… and 45 more licences (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
 
     def test_full_still_reports_what_the_summary_left_out(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
@@ -397,7 +397,7 @@ class TestSbomView:
         calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
         assert "Copyleft      30" in result.output
-        assert f"… and 20 more (see `{INVENTORY_HINT}`)" in result.output
+        assert f"… and 20 more (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
 
     def test_full_still_reports_omitted_copyleft_names(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
@@ -652,7 +652,8 @@ class TestSbomGenerateWaitWithoutCommit:
         result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
         assert result.exit_code == 0, result.output
         assert "SBOM generated" not in result.output
-        assert "task task-1 completed" in result.output
+        assert "Analysis completed." in result.output
+        assert "task-1" not in result.output
         assert "--ref <commit-sha>" in result.output
 
     def test_ignores_state_of_another_task(self, runner, calls):
