@@ -69,6 +69,14 @@ HISTORY = {
 }
 HISTORY_LAST_PAGE = {**HISTORY, "pagination": {"next_cursor": None}}
 
+MANY_LICENSES = {f"LIC-{index:02d}": 100 - index for index in range(25)}
+MANY_COPYLEFT = [f"pkg-{index:02d}" for index in range(25)]
+INVENTORY_HINT = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
+
+
+def _snapshot_with(**summary: Any) -> dict[str, Any]:
+    return {**SNAPSHOT, "summary": {**SUMMARY, **summary}}
+
 
 def _http_error(status: int, detail: str = "", headers: dict[str, str] | None = None) -> httpx.HTTPStatusError:
     request = httpx.Request("GET", "https://api.avrea.io/x")
@@ -328,6 +336,75 @@ class TestSbomView:
         assert data["commit_sha"] == SHA
         assert data["summary"]["total_dependencies"] == 42
 
+    def test_short_breakdowns_are_listed_whole(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "NOASSERTION" in result.output
+        assert "more" not in result.output
+
+    def test_long_licence_list_shows_the_ten_most_common(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "LIC-00" in result.output
+        assert "LIC-09" in result.output
+        assert "LIC-10" not in result.output
+        assert "… and 15 more licences (use --full to list them)" in result.output
+
+    def test_full_lists_every_licence(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert result.exit_code == 0, result.output
+        assert "LIC-24" in result.output
+        assert "more" not in result.output
+
+    def test_licence_overflow_counts_what_the_summary_left_out(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"… and 45 more licences (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_full_still_reports_what_the_summary_left_out(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "LIC-24" in result.output
+        assert f"… and 30 more licences (see `{INVENTORY_HINT}`)" in result.output
+
+    @pytest.mark.parametrize("extra", [[], ["--full"]])
+    def test_licence_body_used_as_a_name_is_clipped_to_one_line(self, runner, calls, extra):
+        body = "MIT License\n        \n        Copyright (c) 2014-2025 Beartype authors.\n" + "Permission " * 500
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"MIT": 30, body: 1}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", *extra])
+        assert result.exit_code == 0, result.output
+        assert "MIT License Copyright (c) 2014-2025 Beartype authors." in result.output
+        assert max(len(line) for line in result.output.splitlines()) < 100
+
+    def test_long_copyleft_list_shows_the_first_ten(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Copyleft      25" in result.output
+        assert "pkg-09" in result.output
+        assert "pkg-10" not in result.output
+        assert "… and 15 more (use --full to list them)" in result.output
+
+    def test_full_lists_every_copyleft_name(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "pkg-24" in result.output
+        assert "more" not in result.output
+
+    def test_copyleft_overflow_counts_hidden_and_omitted_names(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      30" in result.output
+        assert f"… and 20 more (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_full_still_reports_omitted_copyleft_names(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "pkg-24" in result.output
+        assert f"… and 5 more (see `{INVENTORY_HINT}`)" in result.output
+
 
 class TestSbomDownload:
     def test_latest_cyclonedx_to_default_file(self, runner, calls, tmp_path, monkeypatch):
@@ -458,7 +535,18 @@ class TestSbomGenerate:
         result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
         assert result.exit_code == 0, result.output
         assert calls.log[-1][2] == {"scope": "sbom"}
-        assert "task-1" in result.output
+        assert "SBOM generation started." in result.output
+
+    def test_text_output_leaves_out_the_task_id(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert "task-1" not in result.output
+
+    def test_hint_points_at_view_and_wait(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert "avr sbom view" in result.stderr
+        assert "--wait" in result.stderr
 
     def test_passes_ref(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
@@ -469,7 +557,8 @@ class TestSbomGenerate:
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
         result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
         assert result.exit_code == 0
-        assert "already running" in result.output
+        assert "SBOM generation already running; joined it." in result.output
+        assert "task-1" not in result.output
 
     def test_cooldown_reports_retry_after(self, runner, calls):
         calls.route(
@@ -903,7 +992,7 @@ class TestSbomGenerateRefArgument:
         json_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123", "--json", "commit_sha"])
         human_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123"])
         assert json.loads(json_result.stdout) == {"commit_sha": NEW_SHA}
-        assert f"started for {NEW_SHA[:12]} (task task-1)" in human_result.output
+        assert f"SBOM generation started for {NEW_SHA[:12]}." in human_result.output
 
     @pytest.mark.parametrize("response", [{}, {"commit_sha": SHORT_NEW_SHA}])
     def test_reports_no_commit_without_a_valid_expansion(self, runner, calls, response):

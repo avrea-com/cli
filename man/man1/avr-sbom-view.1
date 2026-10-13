@@ -9,11 +9,14 @@ Show an SBOM's summary: dependency counts, licences, and artifacts.
 .PP
 COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix of at least 7 characters such as the one `avr sbom list` shows. Defaults to the latest SBOM.
 .PP
+The licence table shows the most common licences and the copyleft list its first names; --full lists all of them. Long licence names are clipped; the summary in --json carries them whole.
+.PP
 .RS 4
 .nf
 Examples:
     avr sbom view --repo acme/api
     avr sbom view 3f2c9a1b7d04 --repo acme/api
+    avr sbom view --repo acme/api --full
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 .fi
 .RE
@@ -39,6 +42,9 @@ Organization ID or slug. Uses default org if not specified (see: avr config set 
 .TP
 \fB\-\-commit\fR \fITEXT\fR
 Same as the COMMIT argument.
+.TP
+\fB\-\-full\fR
+List every licence and copyleft dependency in the summary, not the first 10.
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.

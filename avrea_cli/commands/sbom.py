@@ -43,6 +43,9 @@ _TERMINAL_TASK_STATUSES = frozenset({"COMPLETED", "FAILED"})
 _WAIT_DEFAULT_TIMEOUT = 900
 _WAIT_POLL_SECONDS = 5.0
 
+_VIEW_HEAD = 10
+_LICENSE_NAME_WIDTH = 60
+
 _NO_SBOM_HINT = "No SBOM is recorded for this repository or commit yet. Run `avr sbom generate` to create one."
 
 _repo_option = click.option(
@@ -179,6 +182,27 @@ def _count_breakdown(value: object) -> list[tuple[str, int]]:
     return sorted(counts, key=lambda kv: (-kv[1], kv[0]))
 
 
+def _one_line(name: str, width: int) -> str:
+    """``name`` on one line, clipped to ``width`` characters.
+
+    A licence name is normally an SPDX expression, but an SBOM can carry a whole
+    licence body there, newlines included, which would break the table."""
+    text = " ".join(name.split())
+    return text if len(text) <= width else f"{text[: width - 1]}…"
+
+
+def _overflow_line(hidden: int, omitted: int, noun: str, inventory_hint: str) -> str | None:
+    """The line accounting for entries that are not listed, or None when all are.
+
+    ``hidden`` entries are in the summary and --full lists them. ``omitted`` ones
+    were left out by the producer, so only the inventory artifact has them."""
+    more = hidden + omitted
+    if not more:
+        return None
+    where = f"see `{inventory_hint}`" if omitted else "use --full to list them"
+    return f"… and {more} more{noun} ({where})"
+
+
 @click.group(cls=GhGroup)
 @click.pass_context
 def sbom(ctx):
@@ -287,19 +311,30 @@ _SBOM_VIEW_FIELDS = make_schema(
 @_repo_option
 @_org_option
 @_commit_option
+@click.option(
+    "--full",
+    is_flag=True,
+    default=False,
+    help=f"List every licence and copyleft dependency in the summary, not the first {_VIEW_HEAD}.",
+)
 @json_options
 @click.pass_context
-def sbom_view(ctx, commit, repo_id, org_id, commit_option, json_fields, jq_expr):
+def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq_expr):
     """Show an SBOM's summary: dependency counts, licences, and artifacts.
 
     COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
     of at least 7 characters such as the one `avr sbom list` shows. Defaults to
     the latest SBOM.
 
+    The licence table shows the most common licences and the copyleft list its
+    first names; --full lists all of them. Long licence names are clipped; the
+    summary in --json carries them whole.
+
     \b
     Examples:
         avr sbom view --repo acme/api
         avr sbom view 3f2c9a1b7d04 --repo acme/api
+        avr sbom view --repo acme/api --full
         avr sbom view --repo acme/api --json summary --jq .summary.licenses
 
     \b
@@ -356,12 +391,21 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, json_fields, jq_expr)
 
     licenses = _count_breakdown(summary.get("licenses"))
     if licenses:
+        listed = licenses if full else licenses[:_VIEW_HEAD]
         click.echo()
         output_list(
-            [{"license": name, "count": count} for name, count in licenses],
+            [{"license": _one_line(name, _LICENSE_NAME_WIDTH), "count": count} for name, count in listed],
             columns=["license", "count"],
             column_labels=["License", "Count"],
         )
+        overflow = _overflow_line(
+            len(licenses) - len(listed),
+            _summary_count(summary, "licenses_omitted") or 0,
+            " licences",
+            inventory_hint,
+        )
+        if overflow:
+            click.echo(overflow)
 
     ecosystems = _count_breakdown(summary.get("ecosystems"))
     if ecosystems:
@@ -373,12 +417,18 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, json_fields, jq_expr)
         )
 
     if copyleft:
+        listed_names = copyleft if full else copyleft[:_VIEW_HEAD]
         click.echo("\nCopyleft dependencies:")
-        for name in copyleft:
+        for name in listed_names:
             click.echo(f"  {name}")
-        omitted = _summary_count(summary, "copyleft_omitted")
-        if omitted:
-            click.echo(f"  … and {omitted} more (see `{inventory_hint}`)")
+        overflow = _overflow_line(
+            len(copyleft) - len(listed_names),
+            _summary_count(summary, "copyleft_omitted") or 0,
+            "",
+            inventory_hint,
+        )
+        if overflow:
+            click.echo(f"  {overflow}")
 
     artifacts = snapshot.get("artifacts") or []
     if artifacts:
@@ -659,13 +709,17 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
             return
         target = f" for {commit_sha[:12]}" if commit_sha else ""
         if result["status"] == "already_running":
-            click.echo(f"SBOM generation already running{target} (task {task_id}); joined it.")
+            click.echo(f"SBOM generation already running{target}; joined it.")
         else:
-            click.echo(f"SBOM generation started{target} (task {task_id}).")
-        click.echo("Generation takes a few minutes; run `avr sbom view` afterwards to see the result.", err=True)
+            click.echo(f"SBOM generation started{target}.")
+        click.echo(
+            "Generation takes a few minutes; run `avr sbom view` afterwards to see the result, "
+            "or pass --wait to block until it finishes.",
+            err=True,
+        )
         return
 
-    click.echo(f"Waiting for SBOM generation (task {task_id})…", err=True)
+    click.echo("Waiting for SBOM generation…", err=True)
     poller = _Poller(client, deadline)
     tracker = _TaskTracker(poller, org_id, repo_id, task_id)
     waiter = _Wait(poller, tracker, wait_timeout, result, output)

@@ -140,10 +140,15 @@ COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
 of at least 7 characters such as the one `avr sbom list` shows. Defaults to
 the latest SBOM.
 
+The licence table shows the most common licences and the copyleft list its
+first names; --full lists all of them. Long licence names are clipped; the
+summary in --json carries them whole.
+
 ```sh
 Examples:
     avr sbom view --repo acme/api
     avr sbom view 3f2c9a1b7d04 --repo acme/api
+    avr sbom view --repo acme/api --full
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
@@ -162,5 +167,6 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;commit</code> <code class="cli-value">&lt;TEXT&gt;</code> — Same as the COMMIT argument.
+- <code class="cli-flag">&#x2D;&#x2D;full</code> — List every licence and copyleft dependency in the summary, not the first 10.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
