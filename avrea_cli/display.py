@@ -48,8 +48,9 @@ def print_piped_row(values: list[object]) -> None:
 _CONTROL_ESCAPES: Final = {"\t": "\\t", "\n": "\\n", "\r": "\\r"}
 # C0, DEL and C1, then the Unicode line and paragraph separators, which
 # str.splitlines() and many terminals treat as a line break, and the bidi
-# embedding, override and isolate controls, which reorder the text around them.
-_UNSAFE_DISPLAY_CHARACTERS: Final = re.compile("[\x00-\x1f\x7f-\x9f\u2028-\u202e\u2066-\u2069]")
+# marks and embedding, override and isolate controls, which reorder the text
+# around them.
+_UNSAFE_DISPLAY_CHARACTERS: Final = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]")
 
 
 def _escape_character(match: re.Match[str]) -> str:

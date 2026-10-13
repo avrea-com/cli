@@ -47,6 +47,7 @@ _WAIT_POLL_SECONDS = 5.0
 _VIEW_HEAD = 10
 _LICENSE_NAME_WIDTH = 60
 _LICENSE_NOUN = ("license", "licenses")
+_ECOSYSTEM_NOUN = ("ecosystem", "ecosystems")
 _COPYLEFT_NOUN = ("copyleft dependency", "copyleft dependencies")
 
 _NO_SBOM_HINT = "No SBOM is recorded for this repository or commit yet. Run `avr sbom generate` to create one."
@@ -174,17 +175,21 @@ def _copyleft_count(summary: dict[str, Any]) -> int | None:
     return len(names) + (_summary_count(summary, "copyleft_omitted") or 0)
 
 
-def _count_breakdown(value: object) -> list[tuple[str, int]]:
+def _count_breakdown(value: object) -> list[tuple[str, int | None]]:
     """A name -> count map from the opaque summary, largest first.
 
     The server passes the summary through unvalidated, so a map that is not a
-    dict yields nothing and an entry whose count is not an int is dropped."""
+    dict yields nothing and an entry whose count is not an int is dropped. A
+    negative number is not a count either, but the entry is real: it keeps its
+    row with an unknown count, after the counted ones."""
     if not isinstance(value, dict):
         return []
-    counts = [
-        (str(name), count) for name, count in value.items() if isinstance(count, int) and not isinstance(count, bool)
+    counts: list[tuple[str, int | None]] = [
+        (str(name), count if count >= 0 else None)
+        for name, count in value.items()
+        if isinstance(count, int) and not isinstance(count, bool)
     ]
-    return sorted(counts, key=lambda kv: (-kv[1], kv[0]))
+    return sorted(counts, key=lambda kv: (kv[1] is None, -(kv[1] or 0), kv[0]))
 
 
 def _one_line(name: str, width: int) -> str:
@@ -418,7 +423,8 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
             }
         )
     )
-    omitted_reason = summary.get("omitted")
+    raw_reason = summary.get("omitted")
+    omitted_reason = escape_control_characters(raw_reason) if isinstance(raw_reason, str) else ""
     if omitted_reason:
         click.echo(f"\nSummary unavailable ({omitted_reason}); run `{inventory_hint}` for the full dependency list.")
 
@@ -428,7 +434,7 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
     if listed:
         click.echo()
         output_list(
-            [{"license": _one_line(name, _LICENSE_NAME_WIDTH), "count": count} for name, count in listed],
+            [{"license": _one_line(name, _LICENSE_NAME_WIDTH), "count": _count(count)} for name, count in listed],
             columns=["license", "count"],
             column_labels=["License", "Count"],
         )
@@ -441,20 +447,28 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
             click.echo(f"\n{rest}")
 
     ecosystems = _count_breakdown(summary.get("ecosystems"))
+    ecosystems_omitted = _summary_count(summary, "ecosystems_omitted") or 0
     if ecosystems:
         click.echo()
         output_list(
-            [{"ecosystem": name, "count": count} for name, count in ecosystems],
+            [{"ecosystem": escape_control_characters(name), "count": _count(count)} for name, count in ecosystems],
             columns=["ecosystem", "count"],
             column_labels=["Ecosystem", "Count"],
         )
+        rest = _more_line(0, ecosystems_omitted, _ECOSYSTEM_NOUN, inventory_hint)
+        if rest:
+            click.echo(rest)
+    else:
+        rest = _left_out_line(ecosystems_omitted, _ECOSYSTEM_NOUN, inventory_hint)
+        if rest:
+            click.echo(f"\n{rest}")
 
     copyleft_omitted = _summary_count(summary, "copyleft_omitted") or 0
     if copyleft or copyleft_omitted:
         listed_names = _head(copyleft, full)
         click.echo("\nCopyleft dependencies:")
         for name in listed_names:
-            click.echo(f"  {escape_control_characters(name)}")
+            click.echo(f"  {escape_control_characters(str(name))}")
         if listed_names:
             rest = _more_line(len(copyleft) - len(listed_names), copyleft_omitted, None, inventory_hint)
         else:
@@ -559,12 +573,16 @@ class _TransientPollError(Exception):
         self.backoff = backoff
 
 
-def _echo_still_running(task_id: str) -> None:
+def _echo_stopped_waiting(task_id: str) -> None:
     """Name the task when a wait ends without reporting the task's outcome.
 
     The progress lines leave the id out, so this is where a user gets it for a
-    support request."""
-    click.echo(f"SBOM generation continues as task {task_id}; check `avr sbom list` later.", err=True)
+    support request. It says nothing about the task's state: the wait can stop
+    after the task was seen to finish, with only the SBOM delivery outstanding."""
+    click.echo(
+        f"Stopped waiting; SBOM generation was started as task {task_id}. Check `avr sbom list` later.",
+        err=True,
+    )
 
 
 class _Poller:
@@ -596,7 +614,7 @@ class _Poller:
                 self.last_error = None
                 return None
             if status < 500 and status not in _TRANSIENT_STATUSES:
-                _echo_still_running(self._task_id)
+                _echo_stopped_waiting(self._task_id)
                 handle_http_error(exc, action)
             retry_after = retry_after_seconds(exc.response) if status == 429 else None
             backoff = min(retry_after, _RETRY_AFTER_CAP_SECONDS) if retry_after is not None else _WAIT_POLL_SECONDS
@@ -778,7 +796,7 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
         view_command = shlex.join(["avr", "sbom", "view", commit_sha, "--org", org_id, "--repo", repo_id])
         _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at, view_command)
     except KeyboardInterrupt:
-        _echo_still_running(task_id)
+        _echo_stopped_waiting(task_id)
         raise
 
 
