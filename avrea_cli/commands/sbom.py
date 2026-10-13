@@ -3,6 +3,7 @@
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
+from avrea_cli.display import escape_control_characters
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import format_size
@@ -45,6 +46,8 @@ _WAIT_POLL_SECONDS = 5.0
 
 _VIEW_HEAD = 10
 _LICENSE_NAME_WIDTH = 60
+_LICENSE_NOUN = ("license", "licenses")
+_COPYLEFT_NOUN = ("copyleft dependency", "copyleft dependencies")
 
 _NO_SBOM_HINT = "No SBOM is recorded for this repository or commit yet. Run `avr sbom generate` to create one."
 
@@ -151,12 +154,14 @@ def _count(value: int | None) -> str:
 
 
 def _summary_count(summary: dict[str, Any], key: str) -> int | None:
-    """A count from the opaque summary, or None when it is absent or not an int.
+    """A count from the opaque summary, or None when it is absent or not a count.
 
     Mirrors the server's list projection: a missing count is unknown, never 0,
-    which covers the oversized/malformed summary replacements."""
+    which covers the oversized/malformed summary replacements. Stricter than
+    the server on sign: a negative number is not a count either, and added to a
+    list length it would cancel real entries."""
     value = summary.get(key)
-    if isinstance(value, bool) or not isinstance(value, int):
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         return None
     return value
 
@@ -183,16 +188,27 @@ def _count_breakdown(value: object) -> list[tuple[str, int]]:
 
 
 def _one_line(name: str, width: int) -> str:
-    """``name`` on one line, clipped to ``width`` characters.
+    """``name`` as one safe table cell, clipped to ``width`` characters.
 
-    A licence name is normally an SPDX expression, but an SBOM can carry a whole
-    licence body there, newlines included, which would break the table."""
-    text = " ".join(name.split())
+    A license name is normally an SPDX expression, but an SBOM can carry a whole
+    license body there, newlines included, which would break the table. It comes
+    from third-party package metadata, so terminal controls are escaped too."""
+    text = escape_control_characters(" ".join(name.split()))
     return text if len(text) <= width else f"{text[: width - 1]}…"
 
 
-def _overflow_line(hidden: int, omitted: int, noun: str, inventory_hint: str) -> str | None:
-    """The line accounting for entries that are not listed, or None when all are.
+def _head[T](entries: list[T], full: bool) -> list[T]:
+    """The entries to list: all of them with --full, else the first _VIEW_HEAD.
+
+    One entry over the limit is listed too: hiding it would cost the line that
+    says so."""
+    if full or len(entries) <= _VIEW_HEAD + 1:
+        return entries
+    return entries[:_VIEW_HEAD]
+
+
+def _more_line(hidden: int, omitted: int, noun: tuple[str, str] | None, inventory_hint: str) -> str | None:
+    """The line accounting for entries below a list, or None when all are listed.
 
     ``hidden`` entries are in the summary and --full lists them. ``omitted`` ones
     were left out by the producer, so only the inventory artifact has them."""
@@ -205,7 +221,15 @@ def _overflow_line(hidden: int, omitted: int, noun: str, inventory_hint: str) ->
         where = f"--full lists {hidden}; see `{inventory_hint}` for all"
     else:
         where = f"see `{inventory_hint}`"
-    return f"… and {more} more{noun} ({where})"
+    label = f" {noun[more != 1]}" if noun else ""
+    return f"… and {more} more{label} ({where})"
+
+
+def _left_out_line(omitted: int, noun: tuple[str, str], inventory_hint: str) -> str | None:
+    """The line for a summary that lists no entry but says some were left out."""
+    if not omitted:
+        return None
+    return f"{omitted} {noun[omitted != 1]} left out of the summary (see `{inventory_hint}`)"
 
 
 @click.group(cls=GhGroup)
@@ -320,20 +344,23 @@ _SBOM_VIEW_FIELDS = make_schema(
     "--full",
     is_flag=True,
     default=False,
-    help=f"List every licence and copyleft dependency in the summary, not the first {_VIEW_HEAD}.",
+    help=(
+        "List every license and copyleft dependency in the summary. Long lists are otherwise cut to "
+        f"the {_VIEW_HEAD} most common licenses and the first {_VIEW_HEAD} copyleft dependencies."
+    ),
 )
 @json_options
 @click.pass_context
 def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq_expr):
-    """Show an SBOM's summary: dependency counts, licences, and artifacts.
+    """Show an SBOM's summary: dependency counts, licenses, and artifacts.
 
     COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
     of at least 7 characters such as the one `avr sbom list` shows. Defaults to
     the latest SBOM.
 
-    The licence table shows the most common licences and the copyleft list its
-    first names; --full lists all of them. Long licence names are clipped; the
-    summary in --json carries them whole.
+    A long license table is cut to the most common licenses and a long copyleft
+    list to its first names; --full lists all of them. Long license names are
+    clipped; the summary in --json carries them whole.
 
     \b
     Examples:
@@ -362,7 +389,8 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
     summary = snapshot.get("summary")
     if not isinstance(summary, dict):
         summary = {}
-    copyleft = summary.get("copyleft") if isinstance(summary.get("copyleft"), list) else []
+    raw_copyleft = summary.get("copyleft")
+    copyleft: list[object] = raw_copyleft if isinstance(raw_copyleft, list) else []
     inventory_hint = shlex.join(
         [
             "avr",
@@ -395,22 +423,22 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
         click.echo(f"\nSummary unavailable ({omitted_reason}); run `{inventory_hint}` for the full dependency list.")
 
     licenses = _count_breakdown(summary.get("licenses"))
-    if licenses:
-        listed = licenses if full else licenses[:_VIEW_HEAD]
+    licenses_omitted = _summary_count(summary, "licenses_omitted") or 0
+    listed = _head(licenses, full)
+    if listed:
         click.echo()
         output_list(
             [{"license": _one_line(name, _LICENSE_NAME_WIDTH), "count": count} for name, count in listed],
             columns=["license", "count"],
             column_labels=["License", "Count"],
         )
-        overflow = _overflow_line(
-            len(licenses) - len(listed),
-            _summary_count(summary, "licenses_omitted") or 0,
-            " licences",
-            inventory_hint,
-        )
-        if overflow:
-            click.echo(overflow)
+        rest = _more_line(len(licenses) - len(listed), licenses_omitted, _LICENSE_NOUN, inventory_hint)
+        if rest:
+            click.echo(rest)
+    else:
+        rest = _left_out_line(licenses_omitted, _LICENSE_NOUN, inventory_hint)
+        if rest:
+            click.echo(f"\n{rest}")
 
     ecosystems = _count_breakdown(summary.get("ecosystems"))
     if ecosystems:
@@ -421,19 +449,18 @@ def sbom_view(ctx, commit, repo_id, org_id, commit_option, full, json_fields, jq
             column_labels=["Ecosystem", "Count"],
         )
 
-    if copyleft:
-        listed_names = copyleft if full else copyleft[:_VIEW_HEAD]
+    copyleft_omitted = _summary_count(summary, "copyleft_omitted") or 0
+    if copyleft or copyleft_omitted:
+        listed_names = _head(copyleft, full)
         click.echo("\nCopyleft dependencies:")
         for name in listed_names:
-            click.echo(f"  {name}")
-        overflow = _overflow_line(
-            len(copyleft) - len(listed_names),
-            _summary_count(summary, "copyleft_omitted") or 0,
-            "",
-            inventory_hint,
-        )
-        if overflow:
-            click.echo(f"  {overflow}")
+            click.echo(f"  {escape_control_characters(name)}")
+        if listed_names:
+            rest = _more_line(len(copyleft) - len(listed_names), copyleft_omitted, None, inventory_hint)
+        else:
+            rest = _left_out_line(copyleft_omitted, _COPYLEFT_NOUN, inventory_hint)
+        if rest:
+            click.echo(f"  {rest}")
 
     artifacts = snapshot.get("artifacts") or []
     if artifacts:
@@ -532,6 +559,14 @@ class _TransientPollError(Exception):
         self.backoff = backoff
 
 
+def _echo_still_running(task_id: str) -> None:
+    """Name the task when a wait ends without reporting the task's outcome.
+
+    The progress lines leave the id out, so this is where a user gets it for a
+    support request."""
+    click.echo(f"SBOM generation continues as task {task_id}; check `avr sbom list` later.", err=True)
+
+
 class _Poller:
     """Reads for a --wait loop, bounded by its deadline and retried when transient.
 
@@ -542,9 +577,10 @@ class _Poller:
     handle_http_error rather than hiding behind the rest of the wait. Only
     reads are retried: the generation request itself is never repeated."""
 
-    def __init__(self, client: ApiClient, deadline: float):
+    def __init__(self, client: ApiClient, deadline: float, task_id: str):
         self._client = client
         self._deadline = deadline
+        self._task_id = task_id
         self.last_error: str | None = None
 
     def get(
@@ -560,6 +596,7 @@ class _Poller:
                 self.last_error = None
                 return None
             if status < 500 and status not in _TRANSIENT_STATUSES:
+                _echo_still_running(self._task_id)
                 handle_http_error(exc, action)
             retry_after = retry_after_seconds(exc.response) if status == 429 else None
             backoff = min(retry_after, _RETRY_AFTER_CAP_SECONDS) if retry_after is not None else _WAIT_POLL_SECONDS
@@ -725,20 +762,24 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
         return
 
     click.echo("Waiting for SBOM generation…", err=True)
-    poller = _Poller(client, deadline)
+    poller = _Poller(client, deadline, task_id)
     tracker = _TaskTracker(poller, org_id, repo_id, task_id)
     waiter = _Wait(poller, tracker, wait_timeout, result, output)
-    if commit_sha is None:
-        _wait_for_task_outcome(waiter)
-        return
-    snapshot_path = f"{_sbom_path(org_id, repo_id)}/commits/{commit_sha}"
-    if expanded:
-        # The API expanded an abbreviated SHA, so the baseline is read only now,
-        # after the run has started; retry it like the wait's own reads.
-        baseline = _snapshot_after_request(waiter, snapshot_path, commit_sha)
-    baseline_recorded_at = baseline.get("recorded_at") if baseline else None
-    view_command = shlex.join(["avr", "sbom", "view", commit_sha, "--org", org_id, "--repo", repo_id])
-    _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at, view_command)
+    try:
+        if commit_sha is None:
+            _wait_for_task_outcome(waiter)
+            return
+        snapshot_path = f"{_sbom_path(org_id, repo_id)}/commits/{commit_sha}"
+        if expanded:
+            # The API expanded an abbreviated SHA, so the baseline is read only now,
+            # after the run has started; retry it like the wait's own reads.
+            baseline = _snapshot_after_request(waiter, snapshot_path, commit_sha)
+        baseline_recorded_at = baseline.get("recorded_at") if baseline else None
+        view_command = shlex.join(["avr", "sbom", "view", commit_sha, "--org", org_id, "--repo", repo_id])
+        _wait_for_commit_delivery(waiter, snapshot_path, commit_sha, baseline_recorded_at, view_command)
+    except KeyboardInterrupt:
+        _echo_still_running(task_id)
+        raise
 
 
 @dataclass(frozen=True)

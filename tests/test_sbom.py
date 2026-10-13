@@ -349,7 +349,7 @@ class TestSbomView:
         assert "LIC-00" in result.output
         assert "LIC-09" in result.output
         assert "LIC-10" not in result.output
-        assert "… and 15 more licences (use --full to list them)" in result.output
+        assert "… and 15 more licenses (use --full to list them)" in result.output
 
     def test_full_lists_every_licence(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES))
@@ -361,13 +361,13 @@ class TestSbomView:
     def test_licence_overflow_counts_what_the_summary_left_out(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
-        assert f"… and 45 more licences (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
+        assert f"… and 45 more licenses (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
 
     def test_full_still_reports_what_the_summary_left_out(self, runner, calls):
         calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
         assert "LIC-24" in result.output
-        assert f"… and 30 more licences (see `{INVENTORY_HINT}`)" in result.output
+        assert f"… and 30 more licenses (see `{INVENTORY_HINT}`)" in result.output
 
     @pytest.mark.parametrize("extra", [[], ["--full"]])
     def test_licence_body_used_as_a_name_is_clipped_to_one_line(self, runner, calls, extra):
@@ -404,6 +404,97 @@ class TestSbomView:
         result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
         assert "pkg-24" in result.output
         assert f"… and 5 more (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_ten_most_common_are_chosen_by_count_not_by_position(self, runner, calls):
+        counts = {f"LIC-{index:02d}": (index * 7) % 25 + 1 for index in range(25)}
+        shuffled = {name: counts[name] for name in sorted(counts, key=lambda n: (int(n[4:]) * 11) % 25)}
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=shuffled))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        shown = {name for name in counts if name in result.output}
+        assert shown == {name for name, count in counts.items() if count >= 16}
+
+    def test_equal_counts_are_listed_in_name_order(self, runner, calls):
+        tied = {f"TIE-{index:02d}": 5 for index in reversed(range(13))}
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=tied))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        shown = [name for name in sorted(tied) if name in result.output]
+        assert shown == [f"TIE-{index:02d}" for index in range(10)]
+
+    @pytest.mark.parametrize(("count", "listed", "more"), [(10, 10, None), (11, 11, None), (12, 10, 2)])
+    def test_a_list_is_cut_only_when_that_saves_lines(self, runner, calls, count, listed, more):
+        licenses = {f"LIC-{index:02d}": 100 - index for index in range(count)}
+        copyleft = [f"pkg-{index:02d}" for index in range(count)]
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=licenses, copyleft=copyleft))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert sum(name in result.output for name in licenses) == listed
+        assert sum(name in result.output for name in copyleft) == listed
+        assert ("more" in result.output) is (more is not None)
+        if more:
+            assert f"… and {more} more licenses (use --full to list them)" in result.output
+            assert f"… and {more} more (use --full to list them)" in result.output
+
+    def test_one_license_left_out_is_singular(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses_omitted=1))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"… and 1 more license (see `{INVENTORY_HINT}`)" in result.output
+
+    @pytest.mark.parametrize("omitted", [None, True, "5", 3.5, -1, -15, -30, {}, []])
+    def test_malformed_omitted_counts_are_not_used_as_numbers(self, runner, calls, omitted):
+        summary = _snapshot_with(
+            licenses=MANY_LICENSES, licenses_omitted=omitted, copyleft=MANY_COPYLEFT, copyleft_omitted=omitted
+        )
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Copyleft      25" in result.output
+        assert "… and 15 more licenses (use --full to list them)" in result.output
+        assert "… and 15 more (use --full to list them)" in result.output
+
+    @pytest.mark.parametrize("key", ["total_dependencies", "unresolved"])
+    def test_negative_counts_are_shown_as_unknown(self, runner, calls, key):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(**{key: -3}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "-3" not in result.output
+        assert "  ?" in result.output
+
+    def test_omitted_licenses_are_reported_when_none_are_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={}, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"30 licenses left out of the summary (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_omitted_copyleft_names_are_reported_when_none_are_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=[], copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      5" in result.output
+        assert f"5 copyleft dependencies left out of the summary (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_overflow_lines_are_part_of_the_result_on_stdout(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "… and 15 more licenses" in result.stdout
+        assert "… and 15 more (use" in result.stdout
+        assert "more" not in result.stderr
+
+    def test_license_name_is_clipped_past_sixty_characters(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"x" * 60: 2, "y" * 61: 1}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"| {'x' * 60} |" in result.output
+        assert f"| {'y' * 59}… |" in result.output
+
+    def test_control_characters_in_names_do_not_reach_the_terminal(self, runner, calls):
+        summary = _snapshot_with(
+            licenses={"\x1b[2J\x1b[31mEVIL": 3},
+            copyleft=["a\nb", "\x1b[31mred", "… and 99 more (fake)\r", "safe\u202egnp"],
+        )
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"], color=True)
+        assert result.exit_code == 0, result.output
+        assert "\x1b" not in result.output
+        assert "\r" not in result.output
+        assert "\u202e" not in result.output
+        assert "\\x1b[2J\\x1b[31mEVIL" in result.output
+        assert "  a\\nb\n" in result.output
+        assert "  \\x1b[31mred\n" in result.output
 
 
 class TestSbomDownload:
@@ -693,6 +784,7 @@ class TestSbomGenerateWaitWithoutCommit:
         assert result.exit_code == 1
         assert (code or "unknown error") in result.output
         assert "avr sbom list" in result.output
+        assert "task task-1 failed" in result.stderr
 
     def test_task_timeout(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
@@ -700,7 +792,26 @@ class TestSbomGenerateWaitWithoutCommit:
         result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait", "--wait-timeout", "250"])
         assert result.exit_code == 1
         assert "Timed out" in result.output
+        assert "task task-1" in result.stderr
         assert calls.now >= 250
+
+    @pytest.mark.parametrize("status", [401, 403, 404])
+    def test_permanent_poll_error_names_the_task_still_running(self, runner, calls, status):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, _http_error(status, "denied"))
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code != 0
+        assert "SBOM generation continues as task task-1" in result.stderr
+
+    def test_interrupted_wait_names_the_task_still_running(self, runner, calls):
+        def interrupt(_now):
+            raise KeyboardInterrupt
+
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, interrupt)
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 130
+        assert "SBOM generation continues as task task-1" in result.stderr
 
     def test_superseded_task_reports_unknown_outcome(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
