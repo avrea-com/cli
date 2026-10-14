@@ -619,13 +619,20 @@ response carries a one-time password for the VM's local account; save it
 now, it is never stored.
 ```
 
+```sh
+With --from-spawn-script it creates an agent sandbox for a coding-agent
+vendor's work order instead, for that vendor's controller to run. For
+example, as Claude Code's spawn-runner hook:
+    exec avr vm create --from-spawn-script claude-code --org <org-id>
+```
+
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `--name <TEXT>` — Human-readable VM name. _(required)_
-- `--os <CHOICE>` — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
+- `--name <TEXT>` — Human-readable VM name. Required unless --from-spawn-script.
+- `--os <CHOICE>` — Guest operating system. Required unless --from-spawn-script, which is always linux. _(choices: `linux`, `macos`, `windows`)_
 - `--os-version <CHOICE>` — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
-- `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
+- `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu`)_
 - `--ssh-key <TEXT>` — SSH public key, or @path to read one from a file. Repeatable. _(repeatable)_
 - `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
@@ -638,6 +645,7 @@ now, it is never stored.
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response (VM plus one-time password) as JSON.
+- `--from-spawn-script <CHOICE>` — Run as a coding-agent vendor controller's spawn script: read the work order the controller passes in its environment, create an agent sandbox that starts the vendor's worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or higher when refused. Needs an organization ID (org-...) from --org or the default org. _(choices: `claude-code`)_
 
 #### `avr vm delete`
 
