@@ -1327,7 +1327,7 @@ JSON FIELDS
 
 #### `avr sbom view`
 
-Show an SBOM's summary: dependency counts, licences, and artifacts.
+Show an SBOM's summary: dependency counts, licenses, and artifacts.
 
 ```sh
 avr sbom view [OPTIONS] [COMMIT]
@@ -1337,10 +1337,15 @@ COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
 of at least 7 characters such as the one `avr sbom list` shows. Defaults to
 the latest SBOM.
 
+A long license table is cut to the most common licenses and a long copyleft
+list to its first names; --full lists all of them. Long license names are
+clipped; the summary in --json carries them whole.
+
 ```sh
 Examples:
     avr sbom view --repo acme/api
     avr sbom view 3f2c9a1b7d04 --repo acme/api
+    avr sbom view --repo acme/api --full
     avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
@@ -1359,6 +1364,7 @@ JSON FIELDS
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--commit <TEXT>` — Same as the COMMIT argument.
+- `--full` — List every license and copyleft dependency in the summary. Long lists are otherwise cut to the 10 most common licenses and the first 10 copyleft dependencies.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

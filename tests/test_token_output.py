@@ -347,6 +347,9 @@ def test_shared_piped_rows_escape_controls(capsys: pytest.CaptureFixture[str]) -
         ("\x9f", "\\x9f"),
         ("\u2028", "\\u2028"),
         ("\u2029", "\\u2029"),
+        ("\u061c", "\\u061c"),
+        ("\u200e", "\\u200e"),
+        ("\u200f", "\\u200f"),
         ("\u202a", "\\u202a"),
         ("\u202e", "\\u202e"),
         ("\u2066", "\\u2066"),
@@ -360,7 +363,17 @@ def test_line_breaking_and_reordering_characters_are_escaped(char: str, escaped:
 
 
 @pytest.mark.parametrize(
-    "text", ["plain", "C:\\temp\\new", "a\\tb", "caf\u00e9 \u65e5\u672c \u00a0\u2027\u202f\u2065\u206a", " ~"]
+    "text",
+    [
+        "plain",
+        "C:\\temp\\new",
+        "a\\tb",
+        "caf\u00e9 \u65e5\u672c \u00a0\u2027\u202f\u2065\u206a",
+        " ~",
+        "\u05e9\u05dc\u05d5\u05dd \u0633\u0644\u0627\u0645 \u061b\u061d",
+        "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645 \U0001f468\u200d\U0001f469\u200d\U0001f467 a\u200bb",
+        "well\u2010known \u200d\u2010",
+    ],
 )
 def test_ordinary_text_is_left_alone(text: str) -> None:
     assert escape_control_characters(text) == text
