@@ -798,6 +798,13 @@ def sbom_generate(ctx, ref, repo_id, org_id, ref_option, wait, wait_timeout, jso
     except KeyboardInterrupt:
         _echo_stopped_waiting(task_id)
         raise
+    except click.ClickException:
+        raise
+    except Exception:
+        # Unexpected poll failures still propagate, but the progress line no
+        # longer carries the task ID the operator needs to identify this run.
+        _echo_stopped_waiting(task_id)
+        raise
 
 
 @dataclass(frozen=True)

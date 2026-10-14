@@ -904,6 +904,25 @@ class TestSbomGenerateWaitWithoutCommit:
         assert "Stopped waiting; SBOM generation was started as task task-1." in result.stderr
         assert result.stderr.count("task-1") == 1
 
+    @pytest.mark.parametrize("pinned", [False, True])
+    @pytest.mark.parametrize("failure", [json.JSONDecodeError("invalid JSON", "{", 1), AttributeError("not an object")])
+    def test_unexpected_poll_failure_names_the_task_once(self, runner, calls, pinned, failure):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        args = ["sbom", "generate", "--repo", "rep-123", "--wait"]
+        if pinned:
+            calls.route("GET", f"{BASE}/commits/{SHA}", [_http_error(404), failure])
+            calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+            args.extend(["--ref", SHA])
+        else:
+            calls.route("GET", STATE_PATH, failure)
+
+        result = runner.invoke(cli, args)
+
+        assert result.exception is failure
+        assert "Stopped waiting; SBOM generation was started as task task-1." in result.stderr
+        assert result.stderr.count("task-1") == 1
+        assert "task-1" not in result.stdout
+
     def test_transient_poll_error_does_not_announce_a_stopped_wait(self, runner, calls):
         calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
         calls.route("GET", STATE_PATH, [_http_error(503), {"ai_task_id": "task-1", "status": "COMPLETED"}])
