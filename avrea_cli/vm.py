@@ -18,12 +18,20 @@ from avrea_cli.config import CliConfig
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
+from avrea_cli.helpers import extract_detail
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import retry_after_seconds
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
+from avrea_cli.spawn_script import DEFAULT_SANDBOX_SIZE
+from avrea_cli.spawn_script import EXIT_REFUSED
+from avrea_cli.spawn_script import EXIT_RETRY
+from avrea_cli.spawn_script import SPAWN_PROVIDERS
+from avrea_cli.spawn_script import SpawnInputError
+from avrea_cli.spawn_script import exit_code_for_status
+from avrea_cli.spawn_script import read_spawn_order
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -590,8 +598,16 @@ def vm(ctx):
 
 @vm.command("create")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--name", "display_name", required=True, help="Human-readable VM name.")
-@click.option("--os", "os_type", type=click.Choice(_OS_CHOICES), required=True, help="Guest operating system.")
+@click.option(
+    "--name", "display_name", default=None, help="Human-readable VM name. Required unless --from-spawn-script."
+)
+@click.option(
+    "--os",
+    "os_type",
+    type=click.Choice(_OS_CHOICES),
+    default=None,
+    help="Guest operating system. Required unless --from-spawn-script, which is always linux.",
+)
 @click.option(
     "--os-version",
     "os_version",
@@ -602,8 +618,11 @@ def vm(ctx):
 @click.option(
     "--size",
     type=click.Choice(_SIZE_CHOICES),
-    required=True,
-    help="Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16.",
+    default=None,
+    help=(
+        "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. "
+        f"Required unless --from-spawn-script, which defaults to {DEFAULT_SANDBOX_SIZE}."
+    ),
 )
 @click.option(
     "--ssh-key",
@@ -685,6 +704,18 @@ def vm(ctx):
     help="Seconds to wait when --wait is set.",
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response (VM plus one-time password) as JSON.")
+@click.option(
+    "--from-spawn-script",
+    "spawn_provider",
+    type=click.Choice(list(SPAWN_PROVIDERS)),
+    default=None,
+    help=(
+        "Run as a coding-agent vendor controller's spawn script: read the work order the controller passes "
+        "in its environment, create an agent sandbox that starts the vendor's "
+        "worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or "
+        "higher when refused. Needs an organization ID (org-...) from --org or the default org."
+    ),
+)
 @click.pass_context
 def vm_create(
     ctx,
@@ -705,6 +736,7 @@ def vm_create(
     wait,
     wait_timeout,
     as_json,
+    spawn_provider,
 ):
     """Create a long-running VM.
 
@@ -714,7 +746,37 @@ def vm_create(
     print a ready-to-paste connect command with the password baked in. The
     response carries a one-time password for the VM's local account; save it
     now, it is never stored.
+
+    \b
+    With --from-spawn-script it creates an agent sandbox for a coding-agent
+    vendor's work order instead, for that vendor's controller to run. For
+    example, as Claude Code's spawn-runner hook:
+        exec avr vm create --from-spawn-script claude-code --org <org-id>
     """
+    if spawn_provider is not None:
+        _create_from_spawn_script(
+            ctx,
+            spawn_provider,
+            org_id=org_id,
+            display_name=display_name,
+            os_type=os_type,
+            os_version=os_version,
+            size=size,
+            ssh_keys=ssh_keys,
+            remote_desktop=remote_desktop,
+            ttl=ttl,
+            egress_rules_raw=egress_rules_raw,
+            repo=repo,
+            ref=ref,
+            fetch_depth=fetch_depth,
+            disable_cache=disable_cache,
+            wait=wait,
+            as_json=as_json,
+        )
+        return
+    for value, flag in ((display_name, "--name"), (os_type, "--os"), (size, "--size")):
+        if value is None:
+            raise click.UsageError(f"Missing option '{flag}'.")
     if not ephemeral:
         raise click.UsageError(
             "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
@@ -735,38 +797,26 @@ def vm_create(
             "Windows remote desktop is coming soon. Create the VM without --remote-desktop, "
             "or use --os linux / --os macos for a remote desktop now."
         )
-    ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
-    keys = _resolve_ssh_keys(ssh_keys)
-    egress_rules = _load_egress_rules(egress_rules_raw)
-    cache_overrides = _parse_disable_cache(disable_cache)
+    body = _create_body(
+        display_name=display_name,
+        os_type=os_type,
+        os_version=os_version,
+        size=size,
+        ssh_keys=ssh_keys,
+        remote_desktop=remote_desktop,
+        ttl=ttl,
+        egress_rules_raw=egress_rules_raw,
+        repo=repo,
+        ref=ref,
+        fetch_depth=fetch_depth,
+        disable_cache=disable_cache,
+    )
+    cache_overrides: dict[str, bool] = body.get("cache_setting_overrides", {})
 
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-
-    body: dict[str, Any] = {
-        "display_name": display_name,
-        "ephemeral": True,
-        "os_type": os_type,
-        "size": size,
-        "ssh_public_keys": keys,
-        "enable_remote_desktop": remote_desktop,
-        "ttl_seconds": ttl_seconds,
-    }
-    # os_version is optional; omit it so the server resolves the OS default.
-    if os_version is not None:
-        body["os_version"] = os_version
-    if egress_rules is not None:
-        body["egress_rules"] = egress_rules
-    if repo is not None:
-        body["repo"] = repo
-    if fetch_depth is not None:
-        body["fetch_depth"] = fetch_depth
-    if ref is not None:
-        body["ref"] = ref
-    if cache_overrides:
-        body["cache_setting_overrides"] = cache_overrides
 
     try:
         response = client.public_post(f"/orgs/{org_id}/vms", json=body)
@@ -815,6 +865,148 @@ def vm_create(
         click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
         click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
+
+
+def _create_body(
+    *,
+    display_name: str | None,
+    os_type: str,
+    os_version: str | None,
+    size: str,
+    ssh_keys: tuple[str, ...],
+    remote_desktop: bool,
+    ttl: str | None,
+    egress_rules_raw: str | None,
+    repo: str | None,
+    ref: str | None,
+    fetch_depth: int | None,
+    disable_cache: tuple[str, ...],
+) -> dict[str, Any]:
+    """The ``POST /orgs/{org_id}/vms`` body for ``vm create``'s options, for a
+    plain VM and an agent sandbox alike. Options read from files or parsed as
+    JSON fail here, before anything is sent."""
+    ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
+    keys = _resolve_ssh_keys(ssh_keys)
+    egress_rules = _load_egress_rules(egress_rules_raw)
+    cache_overrides = _parse_disable_cache(disable_cache)
+    body: dict[str, Any] = {
+        "ephemeral": True,
+        "os_type": os_type,
+        "size": size,
+        "ssh_public_keys": keys,
+        "enable_remote_desktop": remote_desktop,
+        "ttl_seconds": ttl_seconds,
+    }
+    # An agent sandbox's name is derived from its work order by the server.
+    if display_name is not None:
+        body["display_name"] = display_name
+    # os_version is optional; omit it so the server resolves the OS default.
+    if os_version is not None:
+        body["os_version"] = os_version
+    if egress_rules is not None:
+        body["egress_rules"] = egress_rules
+    if repo is not None:
+        body["repo"] = repo
+    if fetch_depth is not None:
+        body["fetch_depth"] = fetch_depth
+    if ref is not None:
+        body["ref"] = ref
+    if cache_overrides:
+        body["cache_setting_overrides"] = cache_overrides
+    return body
+
+
+def _create_from_spawn_script(
+    ctx,
+    provider: str,
+    *,
+    org_id: str | None,
+    display_name: str | None,
+    os_type: str | None,
+    os_version: str | None,
+    size: str | None,
+    ssh_keys: tuple[str, ...],
+    remote_desktop: bool,
+    ttl: str | None,
+    egress_rules_raw: str | None,
+    repo: str | None,
+    ref: str | None,
+    fetch_depth: int | None,
+    disable_cache: tuple[str, ...],
+    wait: bool,
+    as_json: bool,
+) -> None:
+    """``vm create --from-spawn-script``: see avrea_cli.spawn_script.
+
+    The vendor controller waits on this process, so it returns as soon as the
+    API answers and never waits for the VM. Output goes to stderr except the
+    sandbox ID, and the work order's credential is never printed.
+    """
+    if display_name is not None:
+        raise click.UsageError("--name is derived from the work order with --from-spawn-script.")
+    if os_type not in (None, "linux"):
+        raise click.UsageError("Agent sandboxes run linux; drop --os or pass --os linux.")
+    if remote_desktop:
+        raise click.UsageError("Agent sandboxes have no remote desktop.")
+    if wait or as_json:
+        raise click.UsageError("--from-spawn-script returns as soon as the sandbox is created; drop --wait and --json.")
+    config: CliConfig = ctx.obj["config"]
+    # A slug, or no organization, needs a membership lookup on every spawn,
+    # whose failures do not map onto the vendor's exit codes.
+    org_id = org_id or config.default_org
+    if org_id is None or not org_id.startswith("org-"):
+        raise click.UsageError("--from-spawn-script needs an organization ID (org-...) from --org or the default org.")
+    match provider:
+        case "claude-code":
+            # The runner clones each session's repository itself, so a
+            # preloaded checkout would go unused.
+            for value, flag in ((repo, "--repo"), (ref, "--ref"), (fetch_depth, "--fetch-depth")):
+                if value is not None:
+                    raise click.UsageError(f"Claude Code clones each session's repository itself; drop {flag}.")
+        case _:
+            raise NotImplementedError(f"no spawn script support for {provider}")
+    body = _create_body(
+        display_name=None,
+        os_type="linux",
+        os_version=os_version,
+        size=size or DEFAULT_SANDBOX_SIZE,
+        ssh_keys=ssh_keys,
+        remote_desktop=False,
+        ttl=ttl,
+        egress_rules_raw=egress_rules_raw,
+        repo=None,
+        ref=None,
+        fetch_depth=None,
+        disable_cache=disable_cache,
+    )
+    try:
+        order = read_spawn_order(provider, os.environ)
+    except SpawnInputError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(EXIT_REFUSED)
+    body["idempotency_key"] = order.idempotency_key
+    body["bootstrap"] = order.bootstrap
+
+    client: ApiClient = ctx.obj["client"]
+    ensure_authenticated(config)
+
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms", json=body)
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        click.echo(
+            f"Error: agent sandbox for {order.idempotency_key} not created "
+            f"(HTTP {status}): {extract_detail(exc.response)}",
+            err=True,
+        )
+        ctx.exit(exit_code_for_status(status))
+    except httpx.TransportError as exc:
+        click.echo(f"Error: agent sandbox for {order.idempotency_key} not created: {type(exc).__name__}", err=True)
+        ctx.exit(EXIT_RETRY)
+
+    vm_id = response["data"]["vm"]["customer_vm_id"]
+    click.echo(f"Agent sandbox {vm_id} serves {order.idempotency_key}", err=True)
+    click.echo(vm_id)
 
 
 @vm.command("list")
