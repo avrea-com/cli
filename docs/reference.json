@@ -8618,6 +8618,139 @@
                 "subcommands": []
               },
               {
+                "name": "create",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "create"
+                ],
+                "full": "avr repo mirror create",
+                "is_group": false,
+                "short_help": "Enable mirroring and place a connected repository at a location.",
+                "help": "Enable mirroring and place a connected repository at a location.\n\nREPOSITORY is an owner/repo name on GitHub or a namespace/repo name on\nGitLab (including nested groups). It must already be connected to the\nselected Avrea organization. Requires the organization admin role.\n\nSafe to repeat: existing placements and their source configuration are\npreserved. The initial sync runs asynchronously; use `mirror status`\nwith the returned repository ID to check progress.\n\n\b\nExamples:\n    avr repo mirror locations\n    avr repo mirror create acme/widgets --location gsc-fi\n    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror create [OPTIONS] REPOSITORY",
+                "params": [
+                  {
+                    "name": "repository",
+                    "kind": "argument",
+                    "opts": [
+                      "repository"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source hosting the repository.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
+                  },
+                  {
+                    "name": "location",
+                    "kind": "option",
+                    "opts": [
+                      "--location"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses the default organization.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
                 "name": "disable",
                 "path": [
                   "avr",
@@ -8688,6 +8821,28 @@
                     "hidden": false,
                     "show_default": false,
                     "default": false
+                  },
+                  {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform when resolving a repository name.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
                   },
                   {
                     "name": "json_fields",
@@ -8778,6 +8933,103 @@
                     "is_flag": false,
                     "envvar": null,
                     "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform when resolving a repository name.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "locations",
+                "path": [
+                  "avr",
+                  "repo",
+                  "mirror",
+                  "locations"
+                ],
+                "full": "avr repo mirror locations",
+                "is_group": false,
+                "short_help": "List available mirror locations and their cluster IDs.",
+                "help": "List available mirror locations and their cluster IDs.\n\nUse a cluster ID, datacenter ID, or unique name with `mirror create --location`.\n\n\b\nExamples:\n    avr repo mirror locations\n    avr repo mirror locations --json cluster_id,name\n\n\b\nJSON FIELDS\n    cluster_id, datacenter_id, name\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr repo mirror locations [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses the default organization.",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -8894,6 +9146,28 @@
                     "default": null
                   },
                   {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform when resolving a repository name.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
+                  },
+                  {
                     "name": "json_fields",
                     "kind": "option",
                     "opts": [
@@ -8985,6 +9259,28 @@
                     "hidden": false,
                     "show_default": false,
                     "default": null
+                  },
+                  {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform when resolving a repository name.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
                   },
                   {
                     "name": "json_fields",
@@ -9115,6 +9411,28 @@
                     "hidden": false,
                     "show_default": false,
                     "default": false
+                  },
+                  {
+                    "name": "source",
+                    "kind": "option",
+                    "opts": [
+                      "--source"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform when resolving a repository name.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
                   },
                   {
                     "name": "json_fields",

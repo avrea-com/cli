@@ -112,6 +112,30 @@ their remaining lifetime. Git tokens are never saved in the remote URL or
 repository configuration. Keep `avr` installed and logged in for later Git
 operations; the helper continues to use the API host used for the clone.
 
+**Create a mirror at a location**
+
+```sh
+avr repo mirror locations
+avr repo mirror create foo/faa --location gsc-fi
+avr repo mirror create group/subgroup/project --source gitlab --location gsc-fi
+avr repo mirror status --repo group/subgroup/project --source gitlab
+```
+
+`--source` defaults to `github`; `gitlab` supports nested group names. The
+repository must already be connected to your Avrea organization. Use `--org`
+to select an organization. Mirror management requires the organization's
+Git-mirror feature and an admin role.
+
+`--location` accepts a cluster ID, datacenter ID, or unique name from `locations`.
+The command enables mirroring and adds the placement, preserving existing
+placements. Sync runs asynchronously; use `status` to check it. Repeating
+`create` is safe, including when enabling succeeded but placement failed.
+`locations` and `create` also support `--json` and `--jq`.
+
+GitLab mirroring needs the corresponding backend implementation. The CLI
+passes the selected source to repository resolution; the current backend
+still restricts customer mirror management and syncing to GitHub.
+
 **Watch a run live**
 
 ```sh

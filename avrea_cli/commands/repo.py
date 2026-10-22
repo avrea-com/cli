@@ -28,10 +28,12 @@ from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
 from avrea_cli.json_output import json_options
 from avrea_cli.json_output import make_schema
+from avrea_cli.json_output import select_fields
 from avrea_cli.json_output import split_fields
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_timestamp
 from avrea_cli.output import output_list
+from avrea_cli.repo_context import resolve_repo
 from avrea_cli.repo_context import resolve_repo_or_detect
 from typing import Any
 from urllib.parse import quote
@@ -725,14 +727,128 @@ def mirror(ctx):
     ensure_ctx(ctx)
 
 
+def _mirror_location(clusters: list[dict[str, Any]], location: str) -> str:
+    # IDs take precedence over display names, which need not be unique.
+    for cluster in clusters:
+        if cluster.get("cluster_id") == location:
+            return location
+    matches = {
+        cluster["cluster_id"]
+        for cluster in clusters
+        if isinstance(cluster.get("cluster_id"), str)
+        and any(
+            isinstance(cluster.get(field), str) and cluster[field].casefold() == location.casefold()
+            for field in ("name", "datacenter_id")
+        )
+    }
+    if len(matches) == 1:
+        return matches.pop()
+    if matches:
+        raise click.ClickException(
+            f"Ambiguous mirror location {location!r}; use a cluster ID: {', '.join(sorted(matches))}."
+        )
+    raise click.ClickException(
+        f"Unknown mirror location {location!r}. Run `avr repo mirror locations` to list available locations."
+    )
+
+
+@mirror.command("create")
+@click.argument("repository")
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source hosting the repository.",
+)
+@click.option(
+    "--location", required=True, help="Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`."
+)
+@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization.")
+@json_options
+@click.pass_context
+def mirror_create(ctx, repository, source, location, org_id, json_fields, jq_expr):
+    """Enable mirroring and place a connected repository at a location.
+
+    REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on
+    GitLab (including nested groups). It must already be connected to the
+    selected Avrea organization. Requires the organization admin role.
+
+    Safe to repeat: existing placements and their source configuration are
+    preserved. The initial sync runs asynchronously; use `mirror status`
+    with the returned repository ID to check progress.
+
+    \b
+    Examples:
+        avr repo mirror locations
+        avr repo mirror create acme/widgets --location gsc-fi
+        avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
+
+    \b
+    JSON FIELDS
+        enabled, full_name, placements, repository_id
+    """
+    if handle_json_meta(json_fields, jq_expr, _GIT_MIRROR_FIELDS):
+        return
+    fields = split_fields(json_fields, _GIT_MIRROR_FIELDS) if json_fields is not None else None
+    if fields is not None:
+        select_fields([], fields, _GIT_MIRROR_FIELDS)
+    validate_repo_name(repository)
+    if source == "github" and repository.count("/") != 1:
+        raise click.BadParameter(
+            "GitHub repositories use owner/repo; for nested GitLab groups use --source gitlab.", param_hint="REPOSITORY"
+        )
+
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    repo_id = resolve_repo(client, config, org_id, repository, platform=source)
+    try:
+        cluster_id = _mirror_location(_git_clusters_list(client, org_id), location)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "list mirror locations")
+
+    base = _GIT_MIRROR_BASE.format(org_id=org_id, repo_id=repo_id)
+    state = _git_mirror_view(client, org_id, repo_id, "get git-mirror status")
+    if not state.get("enabled"):
+        try:
+            client.public_put(base, json={"enabled": True})
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "enable git mirroring")
+    try:
+        state = client.public_put(f"{base}/placements/{quote(cluster_id, safe='')}")
+    except httpx.HTTPStatusError as exc:
+        click.echo("Mirroring is enabled, but placement failed; rerun this create command to retry.", err=True)
+        handle_http_error(exc, "place the git mirror")
+    except httpx.HTTPError:
+        raise click.ClickException(
+            "Mirroring is enabled, but the placement response was lost. Rerun this create command to retry safely."
+        ) from None
+
+    if fields is not None:
+        emit_json_record(state, fields, _GIT_MIRROR_FIELDS, jq_expr)
+        return
+    _print_git_mirror(state)
+    click.echo(f"\nMirror configured at {cluster_id}. Sync runs asynchronously.")
+    click.echo(f"Check progress: avr repo mirror status --repo {repo_id} --org {org_id}")
+
+
 @mirror.command("status")
 @click.option("--repo", "repo_id", help="Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.")
 @click.option(
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source platform when resolving a repository name.",
+)
 @json_options
 @click.pass_context
-def mirror_status(ctx, repo_id, org_id, json_fields, jq_expr):
+def mirror_status(ctx, repo_id, org_id, source, json_fields, jq_expr):
     """Show the repository's git-mirror declaration and placements.
 
     \b
@@ -752,7 +868,7 @@ def mirror_status(ctx, repo_id, org_id, json_fields, jq_expr):
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True, platform=source)
 
     mirror = _git_mirror_view(client, org_id, repo_id, "get git-mirror status")
 
@@ -763,7 +879,7 @@ def mirror_status(ctx, repo_id, org_id, json_fields, jq_expr):
     _print_git_mirror(mirror)
 
 
-def _set_git_mirror_enabled(ctx, repo_id, org_id, json_fields, jq_expr, *, enabled: bool, yes: bool = True):
+def _set_git_mirror_enabled(ctx, repo_id, org_id, source, json_fields, jq_expr, *, enabled: bool, yes: bool = True):
     """Shared body of ``mirror enable`` / ``mirror disable``."""
     if handle_json_meta(json_fields, jq_expr, _GIT_MIRROR_FIELDS):
         return
@@ -772,7 +888,7 @@ def _set_git_mirror_enabled(ctx, repo_id, org_id, json_fields, jq_expr, *, enabl
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True, platform=source)
 
     if not yes:
         ensure_prompts_allowed("disabling the git mirror needs confirmation")
@@ -798,9 +914,16 @@ def _set_git_mirror_enabled(ctx, repo_id, org_id, json_fields, jq_expr, *, enabl
 @click.option(
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source platform when resolving a repository name.",
+)
 @json_options
 @click.pass_context
-def mirror_enable(ctx, repo_id, org_id, json_fields, jq_expr):
+def mirror_enable(ctx, repo_id, org_id, source, json_fields, jq_expr):
     """Declare the repository mirrored into avrea-git.
 
     Enabling makes existing placements active again; a freshly declared
@@ -816,7 +939,7 @@ def mirror_enable(ctx, repo_id, org_id, json_fields, jq_expr):
     JSON FIELDS
         enabled, full_name, placements, repository_id
     """
-    _set_git_mirror_enabled(ctx, repo_id, org_id, json_fields, jq_expr, enabled=True)
+    _set_git_mirror_enabled(ctx, repo_id, org_id, source, json_fields, jq_expr, enabled=True)
 
 
 @mirror.command("disable")
@@ -825,9 +948,16 @@ def mirror_enable(ctx, repo_id, org_id, json_fields, jq_expr):
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source platform when resolving a repository name.",
+)
 @json_options
 @click.pass_context
-def mirror_disable(ctx, repo_id, org_id, yes, json_fields, jq_expr):
+def mirror_disable(ctx, repo_id, org_id, yes, source, json_fields, jq_expr):
     """Stop mirroring the repository into avrea-git.
 
     Placements are kept but become inert, so re-enabling restores them.
@@ -842,7 +972,7 @@ def mirror_disable(ctx, repo_id, org_id, yes, json_fields, jq_expr):
     JSON FIELDS
         enabled, full_name, placements, repository_id
     """
-    _set_git_mirror_enabled(ctx, repo_id, org_id, json_fields, jq_expr, enabled=False, yes=yes)
+    _set_git_mirror_enabled(ctx, repo_id, org_id, source, json_fields, jq_expr, enabled=False, yes=yes)
 
 
 @mirror.command("place")
@@ -851,9 +981,16 @@ def mirror_disable(ctx, repo_id, org_id, yes, json_fields, jq_expr):
 @click.option(
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source platform when resolving a repository name.",
+)
 @json_options
 @click.pass_context
-def mirror_place(ctx, cluster_id, repo_id, org_id, json_fields, jq_expr):
+def mirror_place(ctx, cluster_id, repo_id, org_id, source, json_fields, jq_expr):
     """Place the repository's mirror in a git cluster.
 
     CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
@@ -876,7 +1013,7 @@ def mirror_place(ctx, cluster_id, repo_id, org_id, json_fields, jq_expr):
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True, platform=source)
 
     try:
         mirror = client.public_put(
@@ -903,9 +1040,16 @@ def mirror_place(ctx, cluster_id, repo_id, org_id, json_fields, jq_expr):
     "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
 )
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
+@click.option(
+    "--source",
+    type=click.Choice(["github", "gitlab"]),
+    default="github",
+    show_default=True,
+    help="Source platform when resolving a repository name.",
+)
 @json_options
 @click.pass_context
-def mirror_unplace(ctx, cluster_id, repo_id, org_id, yes, json_fields, jq_expr):
+def mirror_unplace(ctx, cluster_id, repo_id, org_id, yes, source, json_fields, jq_expr):
     """Remove the repository's mirror from a git cluster.
 
     The mirrored data in that cluster is dropped; other placements are
@@ -927,7 +1071,7 @@ def mirror_unplace(ctx, cluster_id, repo_id, org_id, yes, json_fields, jq_expr):
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True)
+    repo_id = resolve_repo_or_detect(client, config, org_id, repo_id, required=True, platform=source)
 
     if not yes:
         ensure_prompts_allowed("removing a git-mirror placement needs confirmation")
@@ -998,3 +1142,24 @@ def mirror_clusters(ctx, org_id, json_fields, jq_expr):
         columns=["cluster_id", "datacenter_id", "name"],
         column_labels=["Cluster", "Datacenter", "Name"],
     )
+
+
+@mirror.command("locations")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization.")
+@json_options
+@click.pass_context
+def mirror_locations(ctx, org_id, json_fields, jq_expr):
+    """List available mirror locations and their cluster IDs.
+
+    Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
+
+    \b
+    Examples:
+        avr repo mirror locations
+        avr repo mirror locations --json cluster_id,name
+
+    \b
+    JSON FIELDS
+        cluster_id, datacenter_id, name
+    """
+    ctx.invoke(mirror_clusters, org_id=org_id, json_fields=json_fields, jq_expr=jq_expr)

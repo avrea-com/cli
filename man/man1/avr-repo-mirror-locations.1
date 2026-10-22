@@ -1,0 +1,45 @@
+.TH AVR\-REPO\-MIRROR\-LOCATIONS 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-locations \- List available mirror locations and their cluster IDs.
+.SH SYNOPSIS
+.B avr repo mirror locations
+[OPTIONS]
+.SH DESCRIPTION
+List available mirror locations and their cluster IDs.
+.PP
+Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror locations
+    avr repo mirror locations --json cluster_id,name
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    cluster_id, datacenter_id, name
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses the default organization.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-create (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)

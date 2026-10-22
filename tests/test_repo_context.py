@@ -125,12 +125,24 @@ class TestParseRemoteUrl:
             "",
             "not a url",
             "https://github.com/acme",  # missing repo
-            "https://github.com/acme/cool/extra",  # too many segments
+            "https://gitlab.com/acme//cool",  # empty group
+            "https://gitlab.com/acme/../cool",  # traversal
             "ftp://github.com/acme/cool",  # unsupported scheme
         ],
     )
     def test_rejects_invalid(self, url):
         assert parse_remote_url(url) is None
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "git@gitlab.com:acme/team/widgets.git",
+            "https://gitlab.com/acme/team/widgets.git",
+            "ssh://git@gitlab.com/acme/team/widgets.git",
+        ],
+    )
+    def test_nested_gitlab_groups(self, url):
+        assert parse_remote_url(url) == "acme/team/widgets"
 
 
 class TestDetectRepoFromGit:

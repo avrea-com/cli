@@ -1,8 +1,10 @@
 """Unit tests for customer-facing git-mirror commands (avr repo mirror)."""
 
 from avrea_cli.main import cli
+from copy import deepcopy
 import httpx
 import json
+import pytest
 
 REPO_ID = "rep-1"
 ORG_ID = "org-default"
@@ -32,6 +34,207 @@ SAMPLE_CLUSTERS = {
 }
 
 MIRROR_PATH = f"/orgs/{ORG_ID}/repos/{REPO_ID}/git-mirrors"
+
+
+def _create_api(monkeypatch, *, enabled=False, clusters=SAMPLE_CLUSTERS, fail_at=None):
+    calls = []
+
+    def get(self, path, params=None):
+        calls.append(("GET", path, params))
+        if path.endswith("/repos/resolve"):
+            assert params is not None
+            return {"data": {"repository_id": REPO_ID, "full_name": params["name"]}}
+        if path.endswith("/git-clusters"):
+            return clusters
+        assert path == MIRROR_PATH
+        return {**json.loads(json.dumps(SAMPLE_MIRROR)), "enabled": enabled}
+
+    def put(self, path, json=None):
+        calls.append(("PUT", path, json))
+        if fail_at == path:
+            return _raise_status(503, "Temporary failure")(self, path, json)
+        return deepcopy(SAMPLE_MIRROR)
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", put)
+    return calls
+
+
+@pytest.mark.parametrize(
+    ("repository", "source_args", "platform"),
+    [
+        ("acme/widgets", [], "github"),
+        ("acme/widgets", ["--source", "github"], "github"),
+        ("acme/widgets", ["--source", "gitlab"], "gitlab"),
+        ("acme/team/widgets", ["--source", "gitlab"], "gitlab"),
+        ("rep-team/widgets", [], "github"),
+    ],
+)
+def test_create_resolves_source_and_enables_then_places(runner, monkeypatch, repository, source_args, platform):
+    calls = _create_api(monkeypatch)
+    result = runner.invoke(cli, ["repo", "mirror", "create", repository, "--location", "gsc-fi", *source_args])
+
+    assert result.exit_code == 0, result.output
+    assert calls == [
+        ("GET", f"/orgs/{ORG_ID}/repos/resolve", {"name": repository, "platform": platform}),
+        ("GET", f"/orgs/{ORG_ID}/git-clusters", {"limit": 1000, "order": "cluster_id.asc"}),
+        ("GET", MIRROR_PATH, None),
+        ("PUT", MIRROR_PATH, {"enabled": True}),
+        ("PUT", MIRROR_PATH + "/placements/gsc-fi", None),
+    ]
+    assert "Sync runs asynchronously" in result.output
+    assert f"status --repo {REPO_ID} --org {ORG_ID}" in result.output
+
+
+@pytest.mark.parametrize("location", ["gsc-fi", "dc-fi", "Finland", "finland"])
+def test_create_accepts_location_identifiers_and_skips_enabled_declaration(runner, monkeypatch, location):
+    calls = _create_api(monkeypatch, enabled=True)
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", location])
+    assert result.exit_code == 0, result.output
+    assert [c for c in calls if c[0] == "PUT"] == [("PUT", MIRROR_PATH + "/placements/gsc-fi", None)]
+
+
+@pytest.mark.parametrize("location", ["missing", "Finland"])
+def test_create_invalid_or_ambiguous_location_does_not_mutate(runner, monkeypatch, location):
+    clusters = {
+        "data": [
+            {"cluster_id": "gsc-one", "name": "Finland"},
+            {"cluster_id": "gsc-two", "name": "Finland"},
+        ],
+        "pagination": {"next_cursor": None},
+    }
+    calls = _create_api(monkeypatch, clusters=clusters)
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", location])
+    assert result.exit_code != 0
+    assert (
+        "Unknown mirror location" in result.output
+        if location == "missing"
+        else "Ambiguous mirror location" in result.output
+    )
+    assert not any(c[0] == "PUT" for c in calls)
+
+
+@pytest.mark.parametrize("failure", [MIRROR_PATH, MIRROR_PATH + "/placements/gsc-fi"])
+def test_create_failure_reports_partial_state_and_never_claims_success(runner, monkeypatch, failure):
+    calls = _create_api(monkeypatch, fail_at=failure)
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
+    assert result.exit_code != 0
+    assert "Mirror configured" not in result.output
+    if failure == MIRROR_PATH:
+        assert calls[-1] == ("PUT", MIRROR_PATH, {"enabled": True})
+        assert "Mirroring is enabled" not in result.output
+    else:
+        assert "Mirroring is enabled, but placement failed" in result.output
+        assert "rerun this create command" in result.output
+
+
+@pytest.mark.parametrize("json_fields", ["unknown", "?"])
+def test_create_json_validation_precedes_network(runner, monkeypatch, json_fields):
+    calls = _create_api(monkeypatch)
+    result = runner.invoke(
+        cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi", "--json", json_fields]
+    )
+    assert result.exit_code == (0 if json_fields == "?" else 1), result.output
+    assert calls == []
+
+
+def test_create_json_is_clean_and_jq_supported(runner, monkeypatch):
+    _create_api(monkeypatch)
+    result = runner.invoke(
+        cli,
+        [
+            "repo",
+            "mirror",
+            "create",
+            "acme/widgets",
+            "--location",
+            "gsc-fi",
+            "--json",
+            "repository_id,enabled",
+            "--jq",
+            ".repository_id",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == REPO_ID
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["acme/widgets"],
+        ["acme/widgets", "--location", "gsc-fi", "--source", "bitbucket"],
+        ["acme/team/widgets", "--location", "gsc-fi"],
+        ["acme/../widgets", "--location", "gsc-fi", "--source", "gitlab"],
+        ["https://gitlab.com/acme/widgets", "--location", "gsc-fi", "--source", "gitlab"],
+    ],
+)
+def test_create_bad_input_never_calls_api(runner, monkeypatch, args):
+    calls = _create_api(monkeypatch)
+    result = runner.invoke(cli, ["repo", "mirror", "create", *args])
+    assert result.exit_code != 0
+    assert calls == []
+
+
+def test_locations_lists_all_pages_and_supports_json(runner, monkeypatch):
+    cursors = []
+
+    def get(self, path, params=None):
+        assert path == f"/orgs/{ORG_ID}/git-clusters"
+        assert params is not None
+        cursors.append(params.get("cursor"))
+        if not params.get("cursor"):
+            return {"data": SAMPLE_CLUSTERS["data"][:1], "pagination": {"next_cursor": "next"}}
+        return {"data": SAMPLE_CLUSTERS["data"][1:], "pagination": {"next_cursor": None}}
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    result = runner.invoke(cli, ["repo", "mirror", "locations", "--json", "cluster_id,name"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == [
+        {"cluster_id": "gsc-fi", "name": "Finland"},
+        {"cluster_id": "gsc-rbx", "name": "Roubaix"},
+    ]
+    assert cursors == [None, "next"]
+
+
+def test_create_gitlab_missing_repo_does_not_fall_back_to_github(runner, monkeypatch):
+    calls = []
+
+    def get(self, path, params=None):
+        calls.append(params)
+        return _raise_status(404, "Repository not connected")(self, path)
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    result = runner.invoke(
+        cli, ["repo", "mirror", "create", "acme/widgets", "--source", "gitlab", "--location", "gsc-fi"]
+    )
+    assert result.exit_code != 0
+    assert calls == [{"name": "acme/widgets", "platform": "gitlab"}]
+    assert "Repository not connected" in result.output
+
+
+def test_create_lost_placement_response_explains_safe_retry(runner, monkeypatch):
+    _create_api(monkeypatch, enabled=True)
+
+    def put(self, path, json=None):
+        raise httpx.ReadTimeout("timed out")
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", put)
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
+    assert result.exit_code != 0
+    assert "placement response was lost" in result.output
+    assert "retry safely" in result.output
+
+
+@pytest.mark.parametrize(
+    "command", [["status"], ["enable"], ["disable", "--yes"], ["place", "gsc-fi"], ["unplace", "gsc-fi", "--yes"]]
+)
+def test_mirror_management_resolves_gitlab_names(runner, monkeypatch, command):
+    calls = _create_api(monkeypatch)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", lambda *args, **kwargs: SAMPLE_MIRROR)
+    result = runner.invoke(cli, ["repo", "mirror", *command, "--repo", "acme/team/widgets", "--source", "gitlab"])
+    assert result.exit_code == 0, result.output
+    assert calls[0] == ("GET", f"/orgs/{ORG_ID}/repos/resolve", {"name": "acme/team/widgets", "platform": "gitlab"})
 
 
 def _capture(captured, key, result):

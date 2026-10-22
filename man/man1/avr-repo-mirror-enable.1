@@ -31,6 +31,9 @@ Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 \fB\-\-org\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
+\fB\-\-source\fR \fICHOICE\fR
+Source platform when resolving a repository name. (choices: github, gitlab; default: github)
+.TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 .TP
@@ -40,7 +43,9 @@ Filter --json output through a jq expression.
 .BR avr (1),
 .BR avr-repo-mirror (1),
 .BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-create (1),
 .BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-locations (1),
 .BR avr-repo-mirror-place (1),
 .BR avr-repo-mirror-status (1),
 .BR avr-repo-mirror-unplace (1)

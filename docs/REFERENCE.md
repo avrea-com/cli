@@ -1965,6 +1965,46 @@ JSON FIELDS
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
+##### `avr repo mirror create`
+
+Enable mirroring and place a connected repository at a location.
+
+```sh
+avr repo mirror create [OPTIONS] REPOSITORY
+```
+
+REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on
+GitLab (including nested groups). It must already be connected to the
+selected Avrea organization. Requires the organization admin role.
+
+Safe to repeat: existing placements and their source configuration are
+preserved. The initial sync runs asynchronously; use `mirror status`
+with the returned repository ID to check progress.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror create acme/widgets --location gsc-fi
+    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `REPOSITORY`
+
+**Options**
+
+- `--source <CHOICE>` — Source hosting the repository. _(choices: `github`, `gitlab` · default: `github`)_
+- `--location <TEXT>` — Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. _(required)_
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ##### `avr repo mirror disable`
 
 Stop mirroring the repository into avrea-git.
@@ -1992,6 +2032,7 @@ JSON FIELDS
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
+- `--source <CHOICE>` — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2022,6 +2063,34 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror locations`
+
+List available mirror locations and their cluster IDs.
+
+```sh
+avr repo mirror locations [OPTIONS]
+```
+
+Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror locations --json cluster_id,name
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2056,6 +2125,7 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2083,6 +2153,7 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2117,6 +2188,7 @@ JSON FIELDS
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
+- `--source <CHOICE>` — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

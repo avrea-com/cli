@@ -1,0 +1,58 @@
+.TH AVR\-REPO\-MIRROR\-CREATE 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-repo-mirror-create \- Enable mirroring and place a connected repository at a location.
+.SH SYNOPSIS
+.B avr repo mirror create
+[OPTIONS] REPOSITORY
+.SH DESCRIPTION
+Enable mirroring and place a connected repository at a location.
+.PP
+REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on GitLab (including nested groups). It must already be connected to the selected Avrea organization. Requires the organization admin role.
+.PP
+Safe to repeat: existing placements and their source configuration are preserved. The initial sync runs asynchronously; use `mirror status` with the returned repository ID to check progress.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo mirror locations
+    avr repo mirror create acme/widgets --location gsc-fi
+    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIREPOSITORY\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-source\fR \fICHOICE\fR
+Source hosting the repository. (choices: github, gitlab; default: github)
+.TP
+\fB\-\-location\fR \fITEXT\fR
+Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. (required)
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses the default organization.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-disable (1),
+.BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-locations (1),
+.BR avr-repo-mirror-place (1),
+.BR avr-repo-mirror-status (1),
+.BR avr-repo-mirror-unplace (1)

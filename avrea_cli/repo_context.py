@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 
-_SCP_RE = re.compile(r"^[\w.-]+@[\w.-]+:([\w._-]+/[\w._-]+?)(?:\.git)?$")
+_SCP_RE = re.compile(r"^[\w.-]+@[\w.-]+:([\w._-]+(?:/[\w._-]+)+)$")
 
 _HINT_EMITTED: set[str] = set()
 """Hints emitted this process. Lives for one CLI invocation; the hint
@@ -85,19 +85,19 @@ class _RepoNotInOrgError(Exception):
         self.other_orgs = other_orgs
 
 
-def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -> str:
+def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str, *, platform: str | None = None) -> str:
     """Resolve a repo identifier to an Avrea repository ID.
 
     Accepts:
       - Avrea repo ID (rep-...): returned as-is
-      - GitHub full name (org/repo): resolved via API
+      - Platform full name (org/repo or group/subgroup/repo): resolved via API
 
     Aborts with a user-facing error if the repo isn't in the org. Callers
     that want to handle "not in org" specially should use
     :func:`_resolve_repo_strict` and catch :class:`_RepoNotInOrgError`.
     """
     try:
-        return _resolve_repo_strict(client, config, org_id, repo)
+        return _resolve_repo_strict(client, config, org_id, repo, platform=platform)
     except _RepoNotInOrgError as exc:
         _abort_repo_not_found(
             exc.repo,
@@ -109,7 +109,9 @@ def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -
         )
 
 
-def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo: str) -> str:
+def _resolve_repo_strict(
+    client: ApiClient, config: CliConfig, org_id: str, repo: str, *, platform: str | None = None
+) -> str:
     """Inner implementation: raises :class:`_RepoNotInOrgError` for missing
     repos instead of aborting. Auth/transport failures still raise
     ``click.Abort`` so the user sees the real cause.
@@ -117,7 +119,7 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
     The server's 404 body now carries ``nearby_full_names`` + ``other_orgs``,
     so a single round-trip is enough — no client-side list-and-filter needed.
     """
-    if repo.startswith("rep-"):
+    if repo.startswith("rep-") and "/" not in repo:
         return repo
 
     if "/" not in repo:
@@ -126,7 +128,10 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
         raise click.Abort()
 
     try:
-        result = client.public_get(f"/orgs/{org_id}/repos/resolve", params={"name": repo})
+        params = {"name": repo}
+        if platform is not None:
+            params["platform"] = platform
+        result = client.public_get(f"/orgs/{org_id}/repos/resolve", params=params)
         data = result.get("data") or {}
         _warn_if_case_folded(repo, data.get("full_name"))
         return data["repository_id"]
@@ -254,6 +259,7 @@ def resolve_repo_or_detect(
     required: Literal[True],
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str: ...
 
 
@@ -267,6 +273,7 @@ def resolve_repo_or_detect(
     required: Literal[False] = False,
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str | None: ...
 
 
@@ -279,6 +286,7 @@ def resolve_repo_or_detect(
     required: bool = False,
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str | None:
     """Resolve a repo with this precedence:
 
@@ -299,12 +307,15 @@ def resolve_repo_or_detect(
     None when no repo is detected at all. Writes use this: a checkout whose
     repo isn't connected is a mistake worth surfacing, but having no repo
     context at all just means org scope.
+
+    ``platform`` selects the source for name resolution. Repository IDs are
+    already unambiguous and do not need a platform lookup.
     """
     if repo:
-        return resolve_repo(client, config, org_id, repo)
+        return resolve_repo(client, config, org_id, repo, platform=platform)
     if config.repo_override:
         _emit_using_repo_hint(config.repo_override)
-        return resolve_repo(client, config, org_id, config.repo_override)
+        return resolve_repo(client, config, org_id, config.repo_override, platform=platform)
     if not detect_git:
         if required:
             raise click.ClickException(_no_repo_error_message())
@@ -313,7 +324,7 @@ def resolve_repo_or_detect(
     if detected:
         _emit_using_repo_hint(detected)
         if required or strict_detected:
-            return resolve_repo(client, config, org_id, detected)
+            return resolve_repo(client, config, org_id, detected, platform=platform)
         # Soft-detect: don't abort the command if the auto-detected repo
         # isn't in the org. Caller asked for a repo but is fine without one
         # (e.g. `avr status` falls back to org-wide), so treat the mismatch
@@ -321,7 +332,7 @@ def resolve_repo_or_detect(
         # so the user isn't silently routed to org-wide queries with a
         # broken token.
         try:
-            return _resolve_repo_strict(client, config, org_id, detected)
+            return _resolve_repo_strict(client, config, org_id, detected, platform=platform)
         except _RepoNotInOrgError:
             click.echo(
                 click.style(
@@ -456,7 +467,7 @@ def _no_repo_error_message() -> str:
 
 
 def parse_remote_url(url: str) -> str | None:
-    """Extract owner/repo from a git remote URL.
+    """Extract a repository name, including nested groups, from a git remote URL.
 
     Supports:
       - SSH SCP-like:  git@github.com:org/repo.git
@@ -472,22 +483,20 @@ def parse_remote_url(url: str) -> str | None:
 
     m = _SCP_RE.match(url)
     if m:
-        return m.group(1)
-
-    try:
-        parsed = urlparse(url)
-    except ValueError:
-        return None
-
-    if parsed.scheme not in ("ssh", "https", "http", "git"):
-        return None
-
-    path = parsed.path.lstrip("/")
+        path = m.group(1)
+    else:
+        try:
+            parsed = urlparse(url)
+        except ValueError:
+            return None
+        if parsed.scheme not in ("ssh", "https", "http", "git"):
+            return None
+        path = parsed.path.lstrip("/")
     if path.endswith(".git"):
         path = path[:-4]
 
     parts = path.split("/")
-    if len(parts) != 2 or not parts[0] or not parts[1]:
+    if len(parts) < 2 or any(part in {"", ".", ".."} for part in parts):
         return None
 
     return path

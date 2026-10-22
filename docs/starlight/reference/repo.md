@@ -108,6 +108,46 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
+#### `avr repo mirror create`
+
+Enable mirroring and place a connected repository at a location.
+
+```sh
+avr repo mirror create [OPTIONS] REPOSITORY
+```
+
+REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on
+GitLab (including nested groups). It must already be connected to the
+selected Avrea organization. Requires the organization admin role.
+
+Safe to repeat: existing placements and their source configuration are
+preserved. The initial sync runs asynchronously; use `mirror status`
+with the returned repository ID to check progress.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror create acme/widgets --location gsc-fi
+    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- <code class="cli-arg">REPOSITORY</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source hosting the repository. _(choices: `github`, `gitlab` · default: `github`)_
+- <code class="cli-flag">&#x2D;&#x2D;location</code> <code class="cli-value">&lt;TEXT&gt;</code> — Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. _(required)_
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses the default organization.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
 #### `avr repo mirror disable`
 
 Stop mirroring the repository into avrea-git.
@@ -135,6 +175,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -165,6 +206,34 @@ JSON FIELDS
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr repo mirror locations`
+
+List available mirror locations and their cluster IDs.
+
+```sh
+avr repo mirror locations [OPTIONS]
+```
+
+Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror locations --json cluster_id,name
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses the default organization.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -199,6 +268,7 @@ JSON FIELDS
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -226,6 +296,7 @@ JSON FIELDS
 
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -260,6 +331,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
+- <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform when resolving a repository name. _(choices: `github`, `gitlab` · default: `github`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
