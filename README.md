@@ -85,6 +85,28 @@ Auto-detection means most commands "just work" without `--repo`. Outside a git t
 
 ## Common workflows
 
+**Clone from a nearby Git mirror**
+
+```sh
+avr repo clone foo/faa
+avr repo clone foo/faa my-checkout --depth 1 --branch main
+avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+```
+
+Avrea discovers the repository's placements and picks the first mirror that
+responds successfully from your machine. `--placement` accepts an advertised
+mirror URL or hostname to select one explicitly. Use `--org` to override your
+default organization. The repository must already have Git mirroring enabled
+and a usable placement.
+
+`origin` stays on the selected mirror. The clone installs a repository-local
+credential helper so ordinary `git fetch`, `git pull`, and `git push` obtain
+fresh Git tokens through your Avrea login. Pushes require write permission.
+Tokens normally last one hour; scoped API keys are limited to ten minutes or
+their remaining lifetime. Git tokens are never saved in the remote URL or
+repository configuration. Keep `avr` installed and logged in for later Git
+operations; the helper continues to use the API host used for the clone.
+
 **Watch a run live**
 
 ```sh

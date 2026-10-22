@@ -1,0 +1,47 @@
+.TH AVR\-REPO\-CLONE 1 "" "avr 0.2.0" "Avrea CLI"
+.SH NAME
+avr-repo-clone \- Clone a repository from its nearest available Avrea mirror.
+.SH SYNOPSIS
+.B avr repo clone
+[OPTIONS] REPOSITORY [DIRECTORY]
+.SH DESCRIPTION
+Clone a repository from its nearest available Avrea mirror.
+.PP
+REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...). Available placements are raced from this client; the first to serve the repository wins. Use --placement to select an exact URL or hostname.
+.PP
+The origin remote stays on the selected mirror. A repository-local Avrea credential helper obtains fresh Git JWTs for subsequent fetch, pull, and push operations using your Avrea login. Tokens normally last one hour; scoped API keys have a shorter server-enforced lifetime. Tokens are never saved in the repository. Pushes require server-side write permission.
+.PP
+.RS 4
+.nf
+Examples:
+    avr repo clone foo/faa
+    avr repo clone foo/faa my-checkout --depth 1
+    avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIREPOSITORY\fR
+\&
+.TP
+[\fIDIRECTORY\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-placement\fR \fITEXT\fR
+Exact mirror URL or hostname from the repository's placements.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses the default organization if omitted.
+.TP
+\fB\-\-branch\fR, \fB\-b\fR \fITEXT\fR
+Branch or tag to check out.
+.TP
+\fB\-\-depth\fR \fIINTEGER RANGE\fR
+Create a shallow clone with this many commits.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-repo (1),
+.BR avr-repo-list (1),
+.BR avr-repo-mirror (1),
+.BR avr-repo-public-mirror (1)

@@ -11,6 +11,43 @@ avr repo [OPTIONS] COMMAND [ARGS]...
 
 ## Subcommands
 
+### `avr repo clone`
+
+Clone a repository from its nearest available Avrea mirror.
+
+```sh
+avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
+```
+
+REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
+Available placements are raced from this client; the first to serve the
+repository wins. Use --placement to select an exact URL or hostname.
+
+The origin remote stays on the selected mirror. A repository-local Avrea
+credential helper obtains fresh Git JWTs for subsequent fetch, pull, and
+push operations using your Avrea login. Tokens normally last one hour;
+scoped API keys have a shorter server-enforced lifetime. Tokens are never
+saved in the repository. Pushes require server-side write permission.
+
+```sh
+Examples:
+    avr repo clone foo/faa
+    avr repo clone foo/faa my-checkout --depth 1
+    avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+```
+
+**Arguments**
+
+- <code class="cli-arg">REPOSITORY</code>
+- <code class="cli-arg">[DIRECTORY]</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;placement</code> <code class="cli-value">&lt;TEXT&gt;</code> — Exact mirror URL or hostname from the repository's placements.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses the default organization if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;branch, -b</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch or tag to check out.
+- <code class="cli-flag">&#x2D;&#x2D;depth</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Create a shallow clone with this many commits.
+
 ### `avr repo list`
 
 List repositories you can access in an organization.

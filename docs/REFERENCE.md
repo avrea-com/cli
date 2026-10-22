@@ -1868,6 +1868,43 @@ Manage repositories, git mirrors, and public mirrors.
 avr repo [OPTIONS] COMMAND [ARGS]...
 ```
 
+#### `avr repo clone`
+
+Clone a repository from its nearest available Avrea mirror.
+
+```sh
+avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
+```
+
+REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
+Available placements are raced from this client; the first to serve the
+repository wins. Use --placement to select an exact URL or hostname.
+
+The origin remote stays on the selected mirror. A repository-local Avrea
+credential helper obtains fresh Git JWTs for subsequent fetch, pull, and
+push operations using your Avrea login. Tokens normally last one hour;
+scoped API keys have a shorter server-enforced lifetime. Tokens are never
+saved in the repository. Pushes require server-side write permission.
+
+```sh
+Examples:
+    avr repo clone foo/faa
+    avr repo clone foo/faa my-checkout --depth 1
+    avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+```
+
+**Arguments**
+
+- `REPOSITORY`
+- `[DIRECTORY]`
+
+**Options**
+
+- `--placement <TEXT>` — Exact mirror URL or hostname from the repository's placements.
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization if omitted.
+- `--branch, -b <TEXT>` — Branch or tag to check out.
+- `--depth <INTEGER RANGE>` — Create a shallow clone with this many commits.
+
 #### `avr repo list`
 
 List repositories you can access in an organization.

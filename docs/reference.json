@@ -8305,6 +8305,134 @@
         "params": [],
         "subcommands": [
           {
+            "name": "clone",
+            "path": [
+              "avr",
+              "repo",
+              "clone"
+            ],
+            "full": "avr repo clone",
+            "is_group": false,
+            "short_help": "Clone a repository from its nearest available Avrea mirror.",
+            "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nAvailable placements are raced from this client; the first to serve the\nrepository wins. Use --placement to select an exact URL or hostname.\n\nThe origin remote stays on the selected mirror. A repository-local Avrea\ncredential helper obtains fresh Git JWTs for subsequent fetch, pull, and\npush operations using your Avrea login. Tokens normally last one hour;\nscoped API keys have a shorter server-enforced lifetime. Tokens are never\nsaved in the repository. Pushes require server-side write permission.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]",
+            "params": [
+              {
+                "name": "repository",
+                "kind": "argument",
+                "opts": [
+                  "repository"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "directory",
+                "kind": "argument",
+                "opts": [
+                  "directory"
+                ],
+                "secondary_opts": [],
+                "type": "directory",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "placement",
+                "kind": "option",
+                "opts": [
+                  "--placement"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact mirror URL or hostname from the repository's placements.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses the default organization if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "branch",
+                "kind": "option",
+                "opts": [
+                  "--branch",
+                  "-b"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch or tag to check out.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "depth",
+                "kind": "option",
+                "opts": [
+                  "--depth"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Create a shallow clone with this many commits.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "list",
             "path": [
               "avr",

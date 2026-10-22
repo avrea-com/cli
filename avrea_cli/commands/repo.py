@@ -11,6 +11,12 @@ from avrea_cli.display import print_piped_header
 from avrea_cli.display import print_piped_row
 from avrea_cli.display import repo_url
 from avrea_cli.display import truncate
+from avrea_cli.git_mirror import clone_mirror
+from avrea_cli.git_mirror import git_token
+from avrea_cli.git_mirror import mirror_endpoint
+from avrea_cli.git_mirror import nearest_mirror
+from avrea_cli.git_mirror import select_placement
+from avrea_cli.git_mirror import validate_repo_name
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
@@ -29,8 +35,10 @@ from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo_or_detect
 from typing import Any
 from urllib.parse import quote
+import asyncio
 import click
 import httpx
+import shutil
 
 _REPO_LIST_FIELDS = make_schema("repository_id", "full_name", "platform", "platform_repository_id")
 _PUBLIC_MIRROR_REQUEST_FIELDS = make_schema(
@@ -162,6 +170,81 @@ def _print_repos_table(repos: list[dict[str, Any]], *, console_url: str = "", sl
 def repo(ctx):
     """Manage repositories, git mirrors, and public mirrors."""
     ensure_ctx(ctx)
+
+
+@repo.command("clone")
+@click.argument("repository")
+@click.argument("directory", required=False, type=click.Path(file_okay=False))
+@click.option("--placement", help="Exact mirror URL or hostname from the repository's placements.")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization if omitted.")
+@click.option("--branch", "-b", help="Branch or tag to check out.")
+@click.option("--depth", type=click.IntRange(min=1), help="Create a shallow clone with this many commits.")
+@click.pass_context
+def repo_clone(
+    ctx: click.Context,
+    repository: str,
+    directory: str | None,
+    placement: str | None,
+    org_id: str | None,
+    branch: str | None,
+    depth: int | None,
+) -> None:
+    """Clone a repository from its nearest available Avrea mirror.
+
+    REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
+    Available placements are raced from this client; the first to serve the
+    repository wins. Use --placement to select an exact URL or hostname.
+
+    The origin remote stays on the selected mirror. A repository-local Avrea
+    credential helper obtains fresh Git JWTs for subsequent fetch, pull, and
+    push operations using your Avrea login. Tokens normally last one hour;
+    scoped API keys have a shorter server-enforced lifetime. Tokens are never
+    saved in the repository. Pushes require server-side write permission.
+
+    \b
+    Examples:
+        avr repo clone foo/faa
+        avr repo clone foo/faa my-checkout --depth 1
+        avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+    """
+    if not repository.startswith("rep-"):
+        repository = validate_repo_name(repository.removesuffix(".git"))
+    if shutil.which("git") is None:
+        raise click.ClickException("Git is required. Install git and try again.")
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    try:
+        repo_id = resolve_repo_or_detect(client, config, org_id, repository, required=True)
+        session = client.public_get(f"/orgs/{quote(org_id, safe='')}/repos/{quote(repo_id, safe='')}/mirror/session")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "discover Git mirror placements")
+    except httpx.HTTPError:
+        raise click.ClickException("Could not reach Avrea to discover Git mirror placements.") from None
+    if not isinstance(session, dict) or not isinstance(session.get("browsable"), bool):
+        raise click.ClickException("Avrea returned an invalid Git mirror session.")
+    if not session["browsable"]:
+        if session.get("unavailable_reason") == "mirror_off":
+            raise click.ClickException(
+                f"Git mirroring is disabled. Enable it with `avr repo mirror enable --repo {repository}`."
+            )
+        raise click.ClickException("No Git mirror placement is ready. Check `avr repo mirror status` and try again.")
+    full_name = session.get("full_name")
+    endpoints = session.get("endpoints")
+    if not isinstance(full_name, str) or not isinstance(endpoints, list) or not endpoints:
+        raise click.ClickException("Avrea returned an incomplete Git mirror session.")
+    full_name = validate_repo_name(full_name)
+    if not all(isinstance(endpoint, str) for endpoint in endpoints):
+        raise click.ClickException("Avrea returned invalid Git mirror placements.")
+    endpoints = list(dict.fromkeys(mirror_endpoint(endpoint) for endpoint in endpoints))
+    endpoint = select_placement(endpoints, placement) if placement is not None else None
+    token, _ = git_token(client, full_name)
+    if endpoint is None:
+        click.echo("Finding the nearest available Git mirror…", err=True)
+        endpoint = asyncio.run(nearest_mirror(endpoints, full_name, token))
+    click.echo(f"Cloning {full_name} from {endpoint}", err=True)
+    ctx.exit(clone_mirror(config.public_api_url, endpoint, full_name, token, directory, branch=branch, depth=depth))
 
 
 @repo.command("list")
