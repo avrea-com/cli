@@ -42,6 +42,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
+- [`avr tests`](#avr-tests) — Inspect recorded tests, failures, and reporting status.
 - [`avr sbom`](#avr-sbom) — View, generate, and download repository SBOMs.
 - [`avr log`](#avr-log) — Search across runner execution logs.
 
@@ -1300,6 +1301,115 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr tests`
+
+Inspect recorded tests, failures, and reporting status.
+
+```sh
+avr tests [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr tests captures`
+
+List report deliveries, including missing, partial and failed captures.
+
+```sh
+avr tests captures [OPTIONS]
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the git remote.
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `-L, --limit <INTEGER RANGE>` — Rows per page (1-100). _(default: `50`)_
+- `--cursor <TEXT>` — Opaque next_cursor from the previous page. One page is read per invocation.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr tests history`
+
+Read recorded outcomes for one test and configuration, newest first.
+
+```sh
+avr tests history [OPTIONS] TEST_ID
+```
+
+**Arguments**
+
+- `TEST_ID`
+
+**Options**
+
+- `--configuration <TEXT>` — History grouping identifier returned by tests list; not a platform label. _(required)_
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the git remote.
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `-L, --limit <INTEGER RANGE>` — Rows per page (1-100). _(default: `50`)_
+- `--cursor <TEXT>` — Opaque next_cursor from the previous page. One page is read per invocation.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr tests list`
+
+List one page of test histories, grouped by test and configuration.
+
+```sh
+avr tests list [OPTIONS]
+```
+
+Counts describe each returned history window, not repository totals.
+Names appear when retained private detail is available; otherwise IDs are shown.
+Use --json '*' to retain status, pagination and repository context for agents.
+
+**Options**
+
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the git remote.
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `-L, --limit <INTEGER RANGE>` — Rows per page (1-100). _(default: `50`)_
+- `--cursor <TEXT>` — Opaque next_cursor from the previous page. One page is read per invocation.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr tests status`
+
+Read collection settings.
+
+```sh
+avr tests status [OPTIONS]
+```
+
+Read collection settings. Use --json for retained-history lifecycle details.
+
+**Options**
+
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the git remote.
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr tests view`
+
+Read the exact retained result, including available failure messages.
+
+```sh
+avr tests view [OPTIONS] TEST_ID
+```
+
+An expired or unrecorded result is never replaced with a different capture.
+A recorded test failure is data, not a CLI error. No tests are rerun.
+
+**Arguments**
+
+- `TEST_ID`
+
+**Options**
+
+- `--capture <TEXT>` — Exact capture from tests history. _(required)_
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the git remote.
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `-L, --limit <INTEGER RANGE>` — Occurrences to read (1-500). _(default: `50`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
