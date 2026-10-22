@@ -119,28 +119,26 @@ def _show(response: dict[str, Any], json_fields: str | None, jq_expr: str | None
                 column_labels=["Test", "Test ID", "Configuration", "Failed", "Errors", "Passed"],
             )
         else:
-            columns = [
-                key
-                for key in (
-                    "capture_id",
-                    "captured_at",
-                    "armed_at",
-                    "state",
-                    "detail_status",
-                    "commit_sha",
-                    "reason",
-                    "passed_count",
-                    "failed_count",
-                    "errored_count",
-                    "duration_total_ms",
-                )
-                if key in rows[0]
-            ]
+            labels = {
+                "capture_id": "Capture",
+                "captured_at": "Captured at",
+                "armed_at": "Armed at",
+                "state": "Delivery",
+                "detail_status": "Detail",
+                "commit_sha": "Commit",
+                "reason": "Reason",
+                "passed_count": "Passed",
+                "failed_count": "Failed",
+                "errored_count": "Errors",
+                "duration_total_ms": "Test time (ms)",
+                "duration_status": "Duration status",
+            }
+            columns = [key for key in labels if key in rows[0]]
             display_rows = [
                 {key: "-" if value is None else escape_control_characters(str(value)) for key, value in row.items()}
                 for row in rows
             ]
-            output_list(display_rows, columns=columns, column_labels=columns)
+            output_list(display_rows, columns=columns, column_labels=[labels[key] for key in columns])
     else:
         click.echo("No recorded results in this page. This does not establish that no tests ran.")
     next_cursor = (response.get("pagination") or {}).get("next_cursor")
