@@ -110,7 +110,7 @@ def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str, *
             click.echo(f'Error: This scoped token does not reach repository "{exc.repo}".', err=True)
             click.echo("  `avr repo list` shows the repositories it reaches.", err=True)
             raise click.Abort() from None
-        _abort_repo_not_found(
+        return _abort_repo_not_found(
             exc.repo,
             org_id,
             is_structured=exc.is_structured,

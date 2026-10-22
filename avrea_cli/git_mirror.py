@@ -99,6 +99,7 @@ async def nearest_mirror(endpoints: list[str], full_name: str, token: str) -> st
                     if endpoint := await result:
                         return endpoint
         except TimeoutError:
+            # Report the unfinished probes as timed out in the failure summary below.
             pass
         finally:
             for task in tasks:
