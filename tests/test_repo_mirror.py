@@ -237,6 +237,43 @@ def test_mirror_management_resolves_gitlab_names(runner, monkeypatch, command):
     assert calls[0] == ("GET", f"/orgs/{ORG_ID}/repos/resolve", {"name": "acme/team/widgets", "platform": "gitlab"})
 
 
+@pytest.mark.parametrize("source", ["github", "gitlab"])
+def test_scoped_mirror_resolution_keeps_sources_distinct(runner, monkeypatch, api, source):
+    monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
+    other_source = "gitlab" if source == "github" else "github"
+    api.reply(
+        "GET",
+        f"/orgs/{ORG_ID}/repos",
+        json={
+            "data": [
+                {"repository_id": "rep-other", "full_name": "acme/widgets", "platform": other_source},
+                {"repository_id": REPO_ID, "full_name": "acme/widgets", "platform": source},
+            ],
+            "pagination": {"next_cursor": None},
+        },
+    )
+    api.reply("GET", MIRROR_PATH, json=SAMPLE_MIRROR)
+    result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", "acme/widgets", "--source", source])
+    assert result.exit_code == 0, result.output
+    assert [r.url.path for r in api.requests] == [f"/orgs/{ORG_ID}/repos", MIRROR_PATH]
+
+
+def test_scoped_mirror_resolution_does_not_fall_back_to_other_source(runner, monkeypatch, api):
+    monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
+    api.reply(
+        "GET",
+        f"/orgs/{ORG_ID}/repos",
+        json={
+            "data": [{"repository_id": REPO_ID, "full_name": "acme/widgets", "platform": "github"}],
+            "pagination": {"next_cursor": None},
+        },
+    )
+    result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", "acme/widgets", "--source", "gitlab"])
+    assert result.exit_code != 0
+    assert "This scoped token does not reach repository" in result.stderr
+    assert [r.url.path for r in api.requests] == [f"/orgs/{ORG_ID}/repos"]
+
+
 def _capture(captured, key, result):
     def mock(self, path, json=None, params=None):
         captured[key] = path

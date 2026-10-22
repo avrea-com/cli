@@ -1,6 +1,6 @@
 {
   "program": "avr",
-  "version": "0.2.0",
+  "version": "0.4.1",
   "summary": "Avrea on the command line.",
   "global_options": [
     {
@@ -20,7 +20,7 @@
       "help": "Show the version and exit.",
       "hidden": false,
       "show_default": false,
-      "default": false
+      "default": null
     },
     {
       "name": "no_color",
@@ -87,7 +87,8 @@
     "orgs": "org",
     "logs": "log",
     "workflows": "workflow",
-    "vms": "vm"
+    "vms": "vm",
+    "tokens": "token"
   },
   "section_order": [
     "Core Commands",
@@ -181,7 +182,7 @@
             "help": "Output raw JSON.",
             "hidden": false,
             "show_default": false,
-            "default": false
+            "default": null
           }
         ],
         "subcommands": []
@@ -271,7 +272,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -344,7 +345,7 @@
                 "help": "Output the diagnostic report as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -638,7 +639,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -730,7 +731,7 @@
                 "help": "Tail logs as they appear (running jobs only).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "failed_only",
@@ -748,7 +749,7 @@
                 "help": "Show only logs from failed jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_all_levels",
@@ -766,7 +767,7 @@
                 "help": "Include diagnostic-level lines (off by default).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -784,7 +785,7 @@
                 "help": "Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -857,7 +858,7 @@
                 "help": "Re-run only the failed jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "yes",
@@ -876,7 +877,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -949,7 +950,7 @@
                 "help": "Expand each job to show its individual steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_log",
@@ -967,7 +968,7 @@
                 "help": "Print full logs for all jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "log_failed",
@@ -985,7 +986,7 @@
                 "help": "Print logs only for failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "job_name_filter",
@@ -1058,7 +1059,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -1076,7 +1077,7 @@
                 "help": "Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1167,7 +1168,7 @@
                 "help": "Exit non-zero if run failed.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "interval",
@@ -1203,7 +1204,7 @@
                 "help": "Force NDJSON event stream (default when stdout isn't a TTY).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1746,7 +1747,7 @@
                 "help": "Only show logs from failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "step_name",
@@ -1808,7 +1809,7 @@
                 "help": "Follow logs for in-progress jobs.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "all_levels",
@@ -1826,7 +1827,7 @@
                 "help": "Include diagnostic-level lines (hidden by default).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -1844,7 +1845,7 @@
                 "help": "Print directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -1981,7 +1982,7 @@
                 "help": "Refresh every 5 seconds (Ctrl-C to exit).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_output",
@@ -1999,7 +2000,7 @@
                 "help": "Output raw metrics responses as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2054,7 +2055,7 @@
                 "help": "Print the SSH command instead of connecting.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "show_password",
@@ -2072,7 +2073,7 @@
                 "help": "Display the SSH password (use with caution).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2145,7 +2146,7 @@
                 "help": "Print full logs for the job.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "log_failed",
@@ -2163,7 +2164,7 @@
                 "help": "Print logs only for failed steps.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -2218,7 +2219,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "no_pager",
@@ -2236,7 +2237,7 @@
                 "help": "Print logs directly to stdout instead of paging through `less`. Same as setting AVR_PAGER=''.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2345,7 +2346,7 @@
                 "help": "Emit one JSON object per refresh (default when stdout isn't a TTY).",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2619,7 +2620,7 @@
                 "help": "Print the ordered plan (secrets redacted) without running.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -2634,7 +2635,7 @@
             "full": "avr vm create",
             "is_group": false,
             "short_help": "Create a long-running VM.",
-            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show <id>` until the state is\nRUNNING and endpoints are populated, or pass --wait to block until then and\nprint a ready-to-paste connect command with the password baked in. The\nresponse carries a one-time password for the VM's local account; save it\nnow, it is never stored.\n",
+            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show <id>` until the state is\nRUNNING and endpoints are populated, or pass --wait to block until then and\nprint a ready-to-paste connect command with the password baked in. The\nresponse carries a one-time password for the VM's local account; save it\nnow, it is never stored.\n\n\b\nWith --from-spawn-script it creates an agent sandbox for a coding-agent\nvendor's work order instead, for that vendor's controller to run. For\nexample, as Claude Code's spawn-runner hook:\n    exec avr vm create --from-spawn-script claude-code --org <org-id>\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2666,12 +2667,12 @@
                 ],
                 "secondary_opts": [],
                 "type": "text",
-                "required": true,
+                "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Human-readable VM name.",
+                "help": "Human-readable VM name. Required unless --from-spawn-script.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2684,12 +2685,12 @@
                 ],
                 "secondary_opts": [],
                 "type": "choice",
-                "required": true,
+                "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Guest operating system.",
+                "help": "Guest operating system. Required unless --from-spawn-script, which is always linux.",
                 "hidden": false,
                 "show_default": false,
                 "default": null,
@@ -2732,12 +2733,12 @@
                 ],
                 "secondary_opts": [],
                 "type": "choice",
-                "required": true,
+                "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16.",
+                "help": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu.",
                 "hidden": false,
                 "show_default": false,
                 "default": null,
@@ -2861,6 +2862,24 @@
                 "default": null
               },
               {
+                "name": "fetch_depth",
+                "kind": "option",
+                "opts": [
+                  "--fetch-depth"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "disable_cache",
                 "kind": "option",
                 "opts": [
@@ -2948,7 +2967,28 @@
                 "help": "Emit the raw API response (VM plus one-time password) as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
+              },
+              {
+                "name": "spawn_provider",
+                "kind": "option",
+                "opts": [
+                  "--from-spawn-script"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Run as a coding-agent vendor controller's spawn script: read the work order the controller passes in its environment, create an agent sandbox that starts the vendor's worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or higher when refused. Needs an organization ID (org-...) from --org or the default org.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "claude-code"
+                ]
               }
             ],
             "subcommands": []
@@ -3022,7 +3062,7 @@
                 "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "wait",
@@ -3076,7 +3116,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3186,7 +3226,134 @@
                 "help": "Emit the VM list as JSON.",
                 "hidden": false,
                 "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "pause",
+            "path": [
+              "avr",
+              "vm",
+              "pause"
+            ],
+            "full": "avr vm pause",
+            "is_group": false,
+            "short_help": "Pause a RUNNING Linux VM while preserving its disk.",
+            "help": "Pause a RUNNING Linux VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm pause [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "memory",
+                "kind": "option",
+                "opts": [
+                  "--memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Include guest memory and device state so running processes continue on resume.",
+                "hidden": false,
+                "show_default": false,
                 "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM reaches PAUSED before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []
@@ -3314,7 +3481,7 @@
                 "help": "Print the ssh command and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3444,7 +3611,134 @@
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "resume",
+            "path": [
+              "avr",
+              "vm",
+              "resume"
+            ],
+            "full": "avr vm resume",
+            "is_group": false,
+            "short_help": "Resume a PAUSED VM from its preserved snapshot.",
+            "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains valid. If a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm resume [OPTIONS] VM_ID",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "discard_memory",
+                "kind": "option",
+                "opts": [
+                  "--discard-memory"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).",
+                "hidden": false,
+                "show_default": false,
                 "default": false
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until the VM is RUNNING and connectable.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []
@@ -3517,7 +3811,7 @@
                 "help": "Emit the full VM record (with egress rules) as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3663,7 +3957,7 @@
                 "help": "Print the ssh command instead of running it.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -3918,7 +4212,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4027,7 +4321,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4190,7 +4484,7 @@
                 "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4281,7 +4575,7 @@
                 "help": "Emit the usage report as JSON.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4411,7 +4705,7 @@
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -4687,7 +4981,7 @@
                 "help": "Read a JSON object of inputs from stdin.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "watch",
@@ -4727,7 +5021,7 @@
                 "help": "With --watch, exit non-zero if the run failed.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "interval",
@@ -4891,7 +5185,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5036,7 +5330,7 @@
                 "help": "Delete ALL cache entries for the repository.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "yes",
@@ -5055,7 +5349,7 @@
                 "help": "Skip confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5278,7 +5572,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -5334,6 +5628,595 @@
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "sbom",
+        "path": [
+          "avr",
+          "sbom"
+        ],
+        "full": "avr sbom",
+        "is_group": true,
+        "short_help": "View, generate, and download repository SBOMs.",
+        "help": "View, generate, and download repository SBOMs.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr sbom [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "download",
+            "path": [
+              "avr",
+              "sbom",
+              "download"
+            ],
+            "full": "avr sbom download",
+            "is_group": false,
+            "short_help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).",
+            "help": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\n\b\nExamples:\n    avr sbom download --repo acme/api\n    avr sbom download --repo acme/api --format spdx --out api.spdx.json\n    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom download [OPTIONS] [COMMIT]",
+            "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "commit_option",
+                "kind": "option",
+                "opts": [
+                  "--commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Same as the COMMIT argument.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "artifact_format",
+                "kind": "option",
+                "opts": [
+                  "--format"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Artifact to download.",
+                "hidden": false,
+                "show_default": true,
+                "default": "cyclonedx",
+                "choices": [
+                  "cyclonedx",
+                  "inventory",
+                  "spdx"
+                ]
+              },
+              {
+                "name": "out_path",
+                "kind": "option",
+                "opts": [
+                  "--out"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output file path, or \"-\" for stdout. Defaults to the artifact filename in the current directory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "generate",
+            "path": [
+              "avr",
+              "sbom",
+              "generate"
+            ],
+            "full": "avr sbom generate",
+            "is_group": false,
+            "short_help": "Start SBOM generation for a repository.",
+            "help": "Start SBOM generation for a repository.\n\nREF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such\nas the one `avr sbom list` shows works too. Defaults to the default-branch\ntip. Without --wait, commit_sha is the full SHA of the commit the run\nanalyses when REF is a full SHA or one the API expanded.\n\nOne analysis runs per repository at a time. A request for the same ref as\nthe analysis already running joins it; a request for a different ref is\nrejected (HTTP 409) until that analysis finishes. Once an SBOM has been\nrecorded for the repository, a new run is refused (HTTP 429) for a\ncooldown period, and the error says how many seconds remain.\n\nWith --wait and a REF that names a commit, success means a new SBOM for\nthat commit is downloadable, whatever the analysis task's own outcome\n(task_status); commit_sha and recorded_at identify it. A failed analysis\ncan still deliver its SBOM later, so such a wait runs to --wait-timeout\nbefore reporting failure. For a branch, tag, or the default branch the API\ndoes not say which commit the run resolved, so --wait reports the analysis\ntask's outcome only. Transient errors while waiting are retried until\n--wait-timeout; a wait that times out leaves the analysis running.\n\n\b\nExamples:\n    avr sbom generate --repo acme/api\n    avr sbom generate v1.4.0 --repo acme/api\n    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait\n\n\b\nJSON FIELDS\n    ai_task_id, commit_sha, error_code, recorded_at, status, task_status\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom generate [OPTIONS] [REF]",
+            "params": [
+              {
+                "name": "ref",
+                "kind": "argument",
+                "opts": [
+                  "ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ref_option",
+                "kind": "option",
+                "opts": [
+                  "--ref"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Same as the REF argument.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait until generation finishes before returning.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 900
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "sbom",
+              "list"
+            ],
+            "full": "avr sbom list",
+            "is_group": false,
+            "short_help": "List the repository's recorded SBOMs, newest first.",
+            "help": "List the repository's recorded SBOMs, newest first.\n\nCounts shown as \"?\" were not recorded by the SBOM's schema version.\n\n\b\nExamples:\n    avr sbom list --repo acme/api\n    avr sbom list --repo acme/api --json commit_sha,copyleft_count\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, copyleft_count, generated_at,\n    is_release, recorded_at, schema_version, total_dependencies,\n    unresolved\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom list [OPTIONS]",
+            "params": [
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max SBOMs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Opaque cursor from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "sbom",
+              "view"
+            ],
+            "full": "avr sbom view",
+            "is_group": false,
+            "short_help": "Show an SBOM's summary: dependency counts, licenses, and artifacts.",
+            "help": "Show an SBOM's summary: dependency counts, licenses, and artifacts.\n\nCOMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix\nof at least 7 characters such as the one `avr sbom list` shows. Defaults to\nthe latest SBOM.\n\nA long license table is cut to the most common licenses and a long copyleft\nlist to its first names; --full lists all of them. Long license names are\nclipped; the summary in --json carries them whole.\n\n\b\nExamples:\n    avr sbom view --repo acme/api\n    avr sbom view 3f2c9a1b7d04 --repo acme/api\n    avr sbom view --repo acme/api --full\n    avr sbom view --repo acme/api --json summary --jq .summary.licenses\n\n\b\nJSON FIELDS\n    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,\n    schema_version, summary\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr sbom view [OPTIONS] [COMMIT]",
+            "params": [
+              {
+                "name": "commit",
+                "kind": "argument",
+                "opts": [
+                  "commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "commit_option",
+                "kind": "option",
+                "opts": [
+                  "--commit"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Same as the COMMIT argument.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "full",
+                "kind": "option",
+                "opts": [
+                  "--full"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "List every license and copyleft dependency in the summary. Long lists are otherwise cut to the 10 most common licenses and the first 10 copyleft dependencies.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
               },
               {
                 "name": "json_fields",
@@ -5715,7 +6598,7 @@
                 "help": "Display the auth token in plain text.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -5797,6 +6680,465 @@
         ]
       },
       {
+        "name": "token",
+        "path": [
+          "avr",
+          "token"
+        ],
+        "full": "avr token",
+        "is_group": true,
+        "short_help": "Create and manage scoped access tokens.",
+        "help": "Create and manage scoped access tokens.\n\nA scoped access token is a credential bound to one organization that\nexpires within seven days. It reaches only the repositories and VMs it\nnames, and it cannot create further tokens. To use one, set AVR_TOKEN to\nthe credential and AVR_ORG to the organization ID.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr token [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "create",
+            "path": [
+              "avr",
+              "token",
+              "create"
+            ],
+            "full": "avr token create",
+            "is_group": false,
+            "short_help": "Create a scoped token and print its credential.",
+            "help": "Create a scoped token and print its credential.\n\nThe credential is shown once and cannot be retrieved later. A token needs\nat least one of --repo, --vm or --allow-vm-create. Repository grants are\nread-only and VM grants are admin; an optional level suffix\n(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n\n\b\nExamples:\n    avr token create --name ci-read --repo acme/api --repo acme/web\n    avr token create --name agent --vm cvm-abc123 --ttl 30m\n    avr token create --name sandbox --allow-vm-create --vm-create-limit 3\n    avr token create --name ci-read --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, token, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token create [OPTIONS]",
+            "params": [
+              {
+                "name": "name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Token name (1-100 characters).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant read access to a repository (org/repo or rep-xxx). Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "vms",
+                "kind": "option",
+                "opts": [
+                  "--vm"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant admin access to a VM, by VM ID. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "allow_vm_create",
+                "kind": "option",
+                "opts": [
+                  "--allow-vm-create"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Let the token create VMs.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "vm_create_limit",
+                "kind": "option",
+                "opts": [
+                  "--vm-create-limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max VMs the token may create; needs --allow-vm-create. The server default is 1.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ttl",
+                "kind": "option",
+                "opts": [
+                  "--ttl"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 7 days; the server default is 8 hours.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "token",
+              "list"
+            ],
+            "full": "avr token list",
+            "is_group": false,
+            "short_help": "List live tokens, newest first.",
+            "help": "List live tokens, newest first.\n\nShows your own tokens, or every member's when you are an organization\nadmin. Revoked and expired tokens are not listed; `avr token view` still\nreads them by ID.\n\n\b\nExamples:\n    avr token list\n    avr token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max tokens to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "revoke",
+            "path": [
+              "avr",
+              "token",
+              "revoke"
+            ],
+            "full": "avr token revoke",
+            "is_group": false,
+            "short_help": "Revoke a token.",
+            "help": "Revoke a token.\n\nRequests made with the token are refused from then on. Revoking a token\nthat is already revoked succeeds.\n\n\b\nExamples:\n    avr token revoke <token-id>\n    avr token revoke <token-id> --yes\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token revoke [OPTIONS] TOKEN_ID",
+            "params": [
+              {
+                "name": "token_id",
+                "kind": "argument",
+                "opts": [
+                  "token_id"
+                ],
+                "secondary_opts": [],
+                "type": "_token_id",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip the confirmation prompt.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "token",
+              "view"
+            ],
+            "full": "avr token view",
+            "is_group": false,
+            "short_help": "Show a token's details and grants, including a revoked or expired one.",
+            "help": "Show a token's details and grants, including a revoked or expired one.\n\nThe credential itself is never shown again after `avr token create`.\n\n\b\nExamples:\n    avr token view <token-id>\n    avr token view <token-id> --json grants\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, user_id,\n    vm_create_count, vm_create_limit\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr token view [OPTIONS] TOKEN_ID",
+            "params": [
+              {
+                "name": "token_id",
+                "kind": "argument",
+                "opts": [
+                  "token_id"
+                ],
+                "secondary_opts": [],
+                "type": "_token_id",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "config",
         "path": [
           "avr",
@@ -5809,7 +7151,7 @@
         "epilog": null,
         "deprecated": false,
         "hidden": false,
-        "usage": "avr config [OPTIONS] COMMAND [ARGS]...",
+        "usage": "avr config [OPTIONS] [COMMAND] [ARGS]...",
         "params": [],
         "subcommands": [
           {
@@ -6072,7 +7414,7 @@
                 "help": "Open in browser.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "json_fields",
@@ -6518,7 +7860,7 @@
                 "help": "Catch-all (default) rule.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "proto",
@@ -6743,7 +8085,7 @@
                 "help": "Show only summaries where the firewall blocked at least one flow.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               },
               {
                 "name": "limit",
@@ -6836,7 +8178,7 @@
                 "help": "Emit raw JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -6909,7 +8251,7 @@
                 "help": "Output rules as JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -7150,7 +8492,7 @@
                 "help": "Output resolved rules as JSON instead of a table.",
                 "hidden": false,
                 "show_default": false,
-                "default": false
+                "default": null
               }
             ],
             "subcommands": []
@@ -7742,7 +9084,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -8820,7 +10162,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "source",
@@ -9410,7 +10752,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "source",
@@ -9563,7 +10905,7 @@
                     "help": "Skip the confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "json_fields",
@@ -10290,7 +11632,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "domains",
@@ -10476,7 +11818,7 @@
                     "help": "Do not open browser automatically.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   },
                   {
                     "name": "wait_seconds",
@@ -10626,7 +11968,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -11161,7 +12503,7 @@
                     "help": "Skip confirmation prompt.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -11330,7 +12672,7 @@
                     "help": "Print the test URL without opening a browser.",
                     "hidden": false,
                     "show_default": false,
-                    "default": false
+                    "default": null
                   }
                 ],
                 "subcommands": []

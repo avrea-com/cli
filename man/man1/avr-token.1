@@ -1,0 +1,47 @@
+.TH AVR\-TOKEN 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-token \- Create and manage scoped access tokens.
+.SH SYNOPSIS
+.B avr token
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Create and manage scoped access tokens.
+.PP
+A scoped access token is a credential bound to one organization that expires within seven days. It reaches only the repositories and VMs it names, and it cannot create further tokens. To use one, set AVR_TOKEN to the credential and AVR_ORG to the organization ID.
+.SH COMMANDS
+.TP
+create
+Create a scoped token and print its credential.
+.TP
+list
+List live tokens, newest first.
+.TP
+revoke
+Revoke a token.
+.TP
+view
+Show a token's details and grants, including a revoked or expired one.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-token-create (1),
+.BR avr-token-list (1),
+.BR avr-token-revoke (1),
+.BR avr-token-view (1)

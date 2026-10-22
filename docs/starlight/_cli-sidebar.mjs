@@ -17,6 +17,7 @@ export default {
         { label: "avr vm", slug: "cli/reference/vm" },
         { label: "avr workflow", slug: "cli/reference/workflow" },
         { label: "avr cache", slug: "cli/reference/cache" },
+        { label: "avr sbom", slug: "cli/reference/sbom" },
         { label: "avr log", slug: "cli/reference/log" },
       ],
     },
@@ -25,6 +26,7 @@ export default {
       collapsed: false,
       items: [
         { label: "avr auth", slug: "cli/reference/auth" },
+        { label: "avr token", slug: "cli/reference/token" },
         { label: "avr config", slug: "cli/reference/config" },
         { label: "avr settings", slug: "cli/reference/settings" },
         { label: "avr firewall", slug: "cli/reference/firewall" },

@@ -1,4 +1,4 @@
-.TH AVR 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR 1 "" "avr 0.4.1" "Avrea CLI"
 .SH NAME
 avr \- Avrea on the command line.
 .SH SYNOPSIS
@@ -43,11 +43,17 @@ List and view workflow definitions.
 cache
 Inspect and manage the Avrea build cache.
 .TP
+sbom
+View, generate, and download repository SBOMs.
+.TP
 log
 Search across runner execution logs.
 .TP
 auth
 Authenticate and manage credentials.
+.TP
+token
+Create and manage scoped access tokens.
 .TP
 config
 View and manage CLI configuration.
@@ -80,8 +86,10 @@ Check Avrea platform status.
 .BR avr-vm (1),
 .BR avr-workflow (1),
 .BR avr-cache (1),
+.BR avr-sbom (1),
 .BR avr-log (1),
 .BR avr-auth (1),
+.BR avr-token (1),
 .BR avr-config (1),
 .BR avr-settings (1),
 .BR avr-firewall (1),

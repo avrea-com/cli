@@ -17,6 +17,11 @@ import subprocess
 import sys
 
 
+class FixedMessageError(click.ClickException):
+    """An output failure whose message holds none of the data being written,
+    so a caller that must keep that data off stderr can still show it."""
+
+
 def json_options(func):
     """Decorator: add the standard ``--json`` and ``-q/--jq`` options.
 
@@ -74,28 +79,43 @@ def get_path(obj: Any, path: str) -> Any:
     return obj
 
 
-def select_fields(records: list[dict[str, Any]], fields: list[str], schema: dict[str, str]) -> list[dict[str, Any]]:
-    """Pluck the requested fields from each record using the schema's path
-    mapping. Unknown fields raise a ClickException listing available ones."""
+def require_known_fields(fields: list[str], schema: dict[str, str]) -> None:
+    """Raise a ClickException listing available fields when any is unknown.
+
+    ``handle_json_meta`` runs this before a command does anything, and
+    ``select_fields`` again at output time, where a command may project onto a
+    narrower schema than the one it advertised (``auth status`` without
+    ``--show-token``)."""
     unknown = [f for f in fields if f not in schema]
     if unknown:
         avail = ", ".join(sorted(schema))
         raise click.ClickException(f"Unknown JSON field(s): {', '.join(unknown)}. Available: {avail}")
+
+
+def select_fields(records: list[dict[str, Any]], fields: list[str], schema: dict[str, str]) -> list[dict[str, Any]]:
+    """Pluck the requested fields from each record using the schema's path
+    mapping. Unknown fields raise a ClickException listing available ones."""
+    require_known_fields(fields, schema)
     return [{f: get_path(record, schema[f]) for f in fields} for record in records]
 
 
 def handle_json_meta(json_fields: str | None, jq_expr: str | None, schema: dict[str, str]) -> bool:
-    """Validate ``--jq`` requires ``--json`` and handle ``--json '?'`` discovery.
+    """Validate ``--jq`` requires ``--json``, handle ``--json '?'`` discovery,
+    and reject unknown ``--json`` fields.
 
     Returns True when the caller should ``return`` immediately (the ``?``
     discovery path printed and is done). Otherwise returns False so the
     command proceeds. Centralizes a preamble that was duplicated at every
-    ``--json``-bearing command's entry point."""
+    ``--json``-bearing command's entry point. Field names are checked here,
+    before any request, so a typo cannot start a mutating action and then
+    discard its result at output time."""
     if jq_expr and json_fields is None:
         raise click.UsageError("--jq requires --json")
     if json_fields == "?":
         print_available_fields(schema)
         return True
+    if json_fields is not None:
+        require_known_fields(split_fields(json_fields, schema), schema)
     return False
 
 
@@ -135,7 +155,7 @@ def filter_with_jq(data: Any, expr: str) -> str:
             timeout=10,
         )
     except FileNotFoundError:
-        raise click.ClickException(
+        raise FixedMessageError(
             "`jq` is required for --jq but was not found on PATH. Install from https://stedolan.github.io/jq/"
         ) from None
     if result.returncode != 0:
@@ -154,16 +174,18 @@ def emit_json_record(
     fields: list[str],
     schema: dict[str, str],
     jq_expr: str | None,
+    *,
+    required_value: str | None = None,
 ) -> None:
     """Single-record variant for `view` commands. Output is a JSON object,
-    not an array — matches what users expect from `<thing> view --json`."""
+    not an array. ``required_value`` protects a one-time credential from
+    filters that discard it before output."""
     projected = select_fields([record], fields, schema)[0]
-    _write(projected, jq_expr)
+    _write(projected, jq_expr, required_value=required_value)
 
 
-def _write(data: Any, jq_expr: str | None) -> None:
-    if jq_expr:
-        sys.stdout.write(filter_with_jq(data, jq_expr))
-    else:
-        sys.stdout.write(json.dumps(data, indent=2, default=str))
-        sys.stdout.write("\n")
+def _write(data: Any, jq_expr: str | None, *, required_value: str | None = None) -> None:
+    output = filter_with_jq(data, jq_expr) if jq_expr else json.dumps(data, indent=2, default=str) + "\n"
+    if required_value is not None and required_value not in output:
+        raise FixedMessageError("The output filter must retain the one-time credential.")
+    sys.stdout.write(output)

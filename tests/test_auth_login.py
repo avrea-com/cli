@@ -1,10 +1,12 @@
 """Smoke tests for the auth login output: it should show ✓, the user's
 email, and a next-step hint."""
 
+from avrea_cli import auth
 from avrea_cli.commands.auth_cmd import _format_token
 from avrea_cli.main import cli
 from click.testing import CliRunner
 import click
+import httpx
 import json
 import pytest
 
@@ -166,3 +168,64 @@ class TestAuthStatusOutput:
         assert result.exit_code == 0, result.output
         parsed = json.loads(result.output)
         assert parsed["token"] == "sk-live-1234567890abcdefghij"
+
+
+class TestApiKeyExchangeFailure:
+    """The last step of `avr auth login` swaps the browser session for an API
+    key. It can't use handle_http_error — a 401 here means the browser session
+    expired, not "go run `avr auth login`" — so its errors are its own and need
+    their own cover."""
+
+    @pytest.fixture()
+    def oauth_session(self, monkeypatch):
+        """Drive login() to the API-key exchange with no browser and no socket.
+
+        The fake server sets the session cookie the way a real callback would,
+        so everything before the exchange has already succeeded."""
+
+        class FakeServer:
+            timeout = 0
+
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def handle_request(self):
+                auth.OAuthCallbackHandler.session_cookie = "session-abc"
+
+            def server_close(self):
+                pass
+
+        monkeypatch.setattr(auth, "HTTPServer", FakeServer)
+        monkeypatch.setattr(auth.webbrowser, "open", lambda url: True)
+
+    def test_status_error_names_the_host_without_httpx_internals(self, oauth_session, monkeypatch, capsys):
+        """httpx's own exception string is two lines and ends in an MDN link.
+        The user gets the host and the status instead."""
+
+        def fake_post(url, **kwargs):
+            request = httpx.Request("POST", url)
+            httpx.Response(503, request=request).raise_for_status()
+
+        monkeypatch.setattr(auth.httpx, "post", fake_post)
+
+        with pytest.raises(click.Abort):
+            auth.login("https://avrea.internal.example.com")
+
+        err = capsys.readouterr().err
+        assert "Error: https://avrea.internal.example.com returned HTTP 503 when creating an API key." in err
+        assert "developer.mozilla.org" not in err
+
+    def test_transport_error_reports_the_host_as_unreachable(self, oauth_session, monkeypatch, capsys):
+        """A refused connection has no status to report, so it keeps httpx's
+        short reason — the branch a status error must not fall into."""
+
+        def fake_post(url, **kwargs):
+            raise httpx.ConnectError("connection refused")
+
+        monkeypatch.setattr(auth.httpx, "post", fake_post)
+
+        with pytest.raises(click.Abort):
+            auth.login("https://avrea.internal.example.com")
+
+        err = capsys.readouterr().err
+        assert "Error: Could not reach https://avrea.internal.example.com to create an API key" in err

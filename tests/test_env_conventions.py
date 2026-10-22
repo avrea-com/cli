@@ -1,16 +1,19 @@
 """Unit tests for cross-cutting CLI conventions:
 - Exit code 4 for auth-required failures
+- Exit code 130 when Ctrl-C ends a command
 - AVR_DEBUG=api as an env-driven equivalent of --verbose
 - AVR_PROMPT_DISABLED to refuse interactive prompts
 - AVR_PAGER / PAGER for paging long output
 """
 
+from avrea_cli.click_ext import AliasGroup
 from avrea_cli.display import page_output
 from avrea_cli.helpers import EXIT_AUTH_REQUIRED
 from avrea_cli.main import cli
 from click.testing import CliRunner
 from unittest.mock import MagicMock
 from unittest.mock import patch
+import click
 import httpx
 import os
 import pytest
@@ -74,6 +77,60 @@ class TestExitCodeAuthRequired:
         result = runner.invoke(cli, ["run", "list"])
         assert result.exit_code == 1
         assert "boom" in result.output
+
+
+# ----------------------------------------------------------------------------
+# Exit code 130: interrupted
+# ----------------------------------------------------------------------------
+
+
+@click.group(cls=AliasGroup)
+def _prompting_cli() -> None:
+    """A root group whose commands stop the way real ones do."""
+
+
+@_prompting_cli.command()
+def ask() -> None:
+    click.confirm("Proceed?", abort=True)
+
+
+@_prompting_cli.command()
+def refuse() -> None:
+    try:
+        raise ValueError("bad input")
+    except ValueError:
+        raise click.Abort() from None
+
+
+class TestExitCodeInterrupted:
+    """Ctrl-C exits 130 so a script can tell an interrupt from a failure,
+    which stays at 1."""
+
+    def test_interrupt_during_a_request_exits_130(self, runner, monkeypatch):
+        def interrupt(self, path, **kw):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", interrupt)
+        result = runner.invoke(cli, ["run", "list"])
+        assert result.exit_code == 130
+        assert "Aborted!" in result.stderr
+
+    @pytest.mark.parametrize(("answer", "exit_code"), [(KeyboardInterrupt, 130), (EOFError, 1)])
+    def test_only_an_interrupted_prompt_exits_130(self, monkeypatch, capsys, answer, exit_code):
+        def read_answer(_prompt: str) -> str:
+            raise answer
+
+        monkeypatch.setattr("click.termui.visible_prompt_func", read_answer)
+        with pytest.raises(SystemExit) as exit_info:
+            _prompting_cli.main(["ask"], prog_name="avr")
+        assert exit_info.value.code == exit_code
+        assert "Aborted!" in capsys.readouterr().err
+
+    def test_abort_for_another_reason_still_exits_1(self, capsys):
+        with pytest.raises(SystemExit) as exit_info:
+            _prompting_cli.main(["refuse"], prog_name="avr")
+        assert exit_info.value.code == 1
+        assert "Aborted!" in capsys.readouterr().err
 
 
 # ----------------------------------------------------------------------------

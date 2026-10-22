@@ -68,24 +68,33 @@ response carries a one-time password for the VM's local account; save it
 now, it is never stored.
 ```
 
+```sh
+With --from-spawn-script it creates an agent sandbox for a coding-agent
+vendor's work order instead, for that vendor's controller to run. For
+example, as Claude Code's spawn-runner hook:
+    exec avr vm create --from-spawn-script claude-code --org <org-id>
+```
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Human-readable VM name. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;os</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
+- <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Human-readable VM name. Required unless --from-spawn-script.
+- <code class="cli-flag">&#x2D;&#x2D;os</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest operating system. Required unless --from-spawn-script, which is always linux. _(choices: `linux`, `macos`, `windows`)_
 - <code class="cli-flag">&#x2D;&#x2D;os-version</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
-- <code class="cli-flag">&#x2D;&#x2D;size</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
+- <code class="cli-flag">&#x2D;&#x2D;size</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu`)_
 - <code class="cli-flag">&#x2D;&#x2D;ssh-key</code> <code class="cli-value">&lt;TEXT&gt;</code> — SSH public key, or @path to read one from a file. Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;remote-desktop / &#x2D;&#x2D;no-remote-desktop</code> — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - <code class="cli-flag">&#x2D;&#x2D;egress-rules</code> <code class="cli-value">&lt;TEXT&gt;</code> — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 - <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+- <code class="cli-flag">&#x2D;&#x2D;fetch-depth</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
 - <code class="cli-flag">&#x2D;&#x2D;disable-cache</code> <code class="cli-value">&lt;TEXT&gt;</code> — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;ephemeral</code> — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response (VM plus one-time password) as JSON.
+- <code class="cli-flag">&#x2D;&#x2D;from-spawn-script</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Run as a coding-agent vendor controller's spawn script: read the work order the controller passes in its environment, create an agent sandbox that starts the vendor's worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or higher when refused. Needs an organization ID (org-...) from --org or the default org. _(choices: `claude-code`)_
 
 ### `avr vm delete`
 
@@ -124,6 +133,30 @@ avr vm list [OPTIONS]
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max VMs to return. _(default: `50`)_
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Pagination cursor from a previous response.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the VM list as JSON.
+
+### `avr vm pause`
+
+Pause a RUNNING Linux VM while preserving its disk.
+
+```sh
+avr vm pause [OPTIONS] VM_ID
+```
+
+By default the snapshot is disk-only: the filesystem survives, but resume
+performs a fresh boot and running processes do not. Pass --memory to also
+preserve guest memory and continue processes from where they stopped.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;memory</code> — Include guest memory and device state so running processes continue on resume.
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM reaches PAUSED before returning.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm port-forward`
 
@@ -177,6 +210,30 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 - <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
 - <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local RDP client, instead of just printing the connect command.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.
+
+### `avr vm resume`
+
+Resume a PAUSED VM from its preserved snapshot.
+
+```sh
+avr vm resume [OPTIONS] VM_ID
+```
+
+The existing password remains valid. If a memory restore cannot complete,
+retry with --discard-memory to boot the preserved disk without restoring
+running processes.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;discard-memory</code> — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
+- <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait until the VM is RUNNING and connectable.
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
 ### `avr vm show`
 

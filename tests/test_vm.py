@@ -1,6 +1,7 @@
 """Unit tests for the `avr vm` long-running VM commands."""
 
 from avrea_cli.main import cli
+from typing import Any
 import httpx
 import json
 import os
@@ -65,6 +66,20 @@ RD_ROTATE_RESPONSE = {
     "data": {"vm": {**RD_VM, "state": "RUNNING", "endpoints": RD_ENDPOINTS}, "password": "hunter2hunter2"}
 }
 
+PAUSING_VM = {**SAMPLE_VM, "desired_state": "PAUSED", "state": "PAUSING", "endpoints": None}
+PAUSED_VM = {
+    **SAMPLE_VM,
+    "desired_state": "PAUSED",
+    "state": "PAUSED",
+    "state_reason": "user_pause",
+    "endpoints": None,
+    "snapshot": {
+        "memory_included": True,
+        "paused_at": "2026-06-15T05:00:00Z",
+        "archive_bytes": 123456,
+    },
+}
+
 
 def _capture(store):
     """Return a stub that records (path, json, params) and returns ``value``."""
@@ -102,7 +117,8 @@ class TestVmCreate:
         assert "ephemeral" in result.output.lower()
         assert called["n"] == 0  # never hit the API
 
-    def test_create_success(self, runner, monkeypatch):
+    @pytest.mark.parametrize("fetch_depth", [None, 0, 1, 500])
+    def test_create_success(self, runner, monkeypatch, fetch_depth: int | None) -> None:
         store = {"return": CREATE_RESPONSE}
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
         result = runner.invoke(
@@ -125,6 +141,7 @@ class TestVmCreate:
                 "--ref",
                 "main",
                 "--ephemeral",
+                *(["--fetch-depth", str(fetch_depth)] if fetch_depth is not None else []),
             ],
         )
         assert result.exit_code == 0
@@ -138,6 +155,10 @@ class TestVmCreate:
         # the optional precheckout repo/branch ride the body verbatim
         assert body["repo"] == "owner/repo"
         assert body["ref"] == "main"
+        if fetch_depth is None:
+            assert "fetch_depth" not in body
+        else:
+            assert body["fetch_depth"] == fetch_depth
         # os_version is omitted so the server resolves the OS default
         assert "os_version" not in body
         # the server derives cpu/memory/disk from the size tier; the CLI must not send them
@@ -248,6 +269,18 @@ class TestVmCreate:
         assert result.exit_code != 0
         assert "--ref requires --repo" in result.output
         assert called["n"] == 0  # never hit the API
+
+    @pytest.mark.parametrize("args", [["--fetch-depth", "0"], ["--repo", "owner/repo", "--fetch-depth", "-1"]])
+    def test_invalid_fetch_depth_errors(self, runner, monkeypatch, args: list[str]) -> None:
+        store = {"return": CREATE_RESPONSE}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+        result = runner.invoke(
+            cli,
+            ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--ephemeral", *args],
+        )
+        assert result.exit_code == 2
+        assert "--fetch-depth" in result.output
+        assert "path" not in store
 
     def test_ttl_out_of_range_rejected(self, runner):
         result = runner.invoke(
@@ -854,8 +887,17 @@ class TestVmShow:
         # on rendered CLI output, not URL validation).
         assert re.search(r"\bgithub\.com\b", result.output)
 
-    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch):
-        detail = {"data": {**SAMPLE_VM, "egress_rules": [], "precheckout_ref": "main", "preload_status": "preloaded"}}
+    @pytest.mark.parametrize("fetch_depth", [None, 0, 1, 500])
+    def test_shows_preload_when_precheckout_configured(self, runner, monkeypatch, fetch_depth: int | None) -> None:
+        detail = {
+            "data": {
+                **SAMPLE_VM,
+                "egress_rules": [],
+                "precheckout_ref": "main",
+                "preload_status": "preloaded",
+                **({"fetch_depth": fetch_depth} if fetch_depth is not None else {}),
+            }
+        }
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: detail,
@@ -864,6 +906,13 @@ class TestVmShow:
         assert result.exit_code == 0
         assert "Preload" in result.output
         assert "main (preloaded)" in result.output
+        if fetch_depth is None:
+            assert "Fetch depth" not in result.output
+        else:
+            assert "Fetch depth" in result.output
+            assert str(fetch_depth) in result.output
+            if fetch_depth == 0:
+                assert "all branches and tags" in result.output
 
     def test_no_preload_row_without_precheckout(self, runner, monkeypatch):
         detail = {"data": {**SAMPLE_VM, "egress_rules": []}}
@@ -916,6 +965,108 @@ class TestVmPower:
         result = runner.invoke(cli, ["vm", "stop", "cvm-abc123"])
         assert result.exit_code == 0
         assert store["json"] == {"desired_state": "STOPPED"}
+
+
+class TestVmPauseResume:
+    def test_pause_posts_disk_only_request_by_default(self, runner, monkeypatch):
+        store = {"return": {"data": PAUSING_VM}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123"])
+
+        assert result.exit_code == 0
+        assert store["path"] == "/orgs/org-default/vms/cvm-abc123/pause"
+        assert store["json"] == {"memory": False}
+        assert "PAUSING" in result.output
+
+    def test_pause_memory_flag_is_forwarded(self, runner, monkeypatch):
+        store = {"return": {"data": PAUSING_VM}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--memory"])
+
+        assert result.exit_code == 0
+        assert store["json"] == {"memory": True}
+
+    def test_resume_posts_restore_request_by_default(self, runner, monkeypatch):
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        store = {"return": {"data": pending}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123"])
+
+        assert result.exit_code == 0
+        assert store["path"] == "/orgs/org-default/vms/cvm-abc123/resume"
+        assert store["json"] == {"discard_memory": False}
+        assert "PENDING" in result.output
+
+    def test_resume_discard_memory_flag_is_forwarded(self, runner, monkeypatch):
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        store = {"return": {"data": pending}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123", "--discard-memory"])
+
+        assert result.exit_code == 0
+        assert store["json"] == {"discard_memory": True}
+
+    def test_pause_wait_blocks_until_paused_and_shows_snapshot(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: {"data": PAUSING_VM},
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: {"data": PAUSED_VM}
+        )
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--memory", "--wait"])
+
+        assert result.exit_code == 0
+        assert "PAUSED" in result.output
+        assert "memory + disk" in result.output
+        assert "2026-06-15T05:00:00Z" in result.output
+
+    def test_resume_wait_blocks_until_connectable(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post", lambda self, path, json=None, timeout=None: {"data": pending}
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
+        )
+
+        result = runner.invoke(cli, ["vm", "resume", "cvm-abc123", "--wait"])
+
+        assert result.exit_code == 0
+        assert "RUNNING" in result.output
+        assert "runner@203.0.113.1 -p 30022" in result.output
+
+    def test_pause_wait_detects_return_to_running_as_failure(self, runner, monkeypatch):
+        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda self, path, json=None, timeout=None: {"data": PAUSING_VM},
+        )
+        failed = {"data": {**SAMPLE_VM, "state": "RUNNING", "state_reason": "pause_failed"}}
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: failed)
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--wait"])
+
+        assert result.exit_code == 1
+        assert "pause_failed" in result.output
+
+    def test_json_emits_raw_api_response(self, runner, monkeypatch):
+        response = {"data": PAUSING_VM}
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post", lambda self, path, json=None, timeout=None: response
+        )
+
+        result = runner.invoke(cli, ["vm", "pause", "cvm-abc123", "--json"])
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == response
 
 
 class TestVmDelete:
@@ -972,7 +1123,7 @@ class TestVmUsage:
                 "total_memory_mb_seconds": 7372800,
             }
         }
-        store = {"return": report}
+        store: dict[str, Any] = {"return": report}
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: store.__setitem__("params", params) or store["return"],
@@ -1789,7 +1940,8 @@ class TestTunnelHelpers:
             vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=lambda p: p.wait())
 
     def test_run_tunnel_clean_on_ctrl_c(self, monkeypatch):
-        # Ctrl-C during the hold is an intentional teardown: no error surfaced.
+        # Ctrl-C during the hold tears the tunnel down and exits 130, with no
+        # error surfaced.
         from avrea_cli import vm as vmmod
 
         proc = _FakeProc(None)
@@ -1801,8 +1953,10 @@ class TestTunnelHelpers:
         def _interrupt(_p):
             raise KeyboardInterrupt
 
-        vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=_interrupt)
-        assert proc.terminated  # torn down cleanly, no exception raised
+        with pytest.raises(SystemExit) as exit_info:
+            vmmod._run_tunnel(ep, forwards=[(40000, 22)], identity_file=None, on_ready=_interrupt)
+        assert exit_info.value.code == 130
+        assert proc.terminated
 
     def test_run_tunnel_clean_on_client_teardown(self, monkeypatch):
         # --launch: the client exits with ssh still running; we terminate it and

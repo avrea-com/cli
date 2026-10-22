@@ -2,6 +2,7 @@
 
 from avrea_cli.api_client import ApiClient
 from avrea_cli.config import CliConfig
+from avrea_cli.helpers import EXIT_AUTH_REQUIRED
 from avrea_cli.helpers import format_size
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_verified_org_slug
@@ -20,21 +21,25 @@ import pytest
 class TestGetOrgId:
     def test_returns_explicit_option(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         assert get_org_id(config, "org-explicit") == "org-explicit"
 
     def test_returns_default_org(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "org-default"
         assert get_org_id(config, None) == "org-default"
 
     def test_option_overrides_default(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "org-default"
         assert get_org_id(config, "org-override") == "org-override"
 
     def test_auto_selects_single_org(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-only", "slug": "my-org"}]}
@@ -43,6 +48,7 @@ class TestGetOrgId:
 
     def test_multiple_orgs_aborts_with_list(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {
@@ -56,6 +62,7 @@ class TestGetOrgId:
 
     def test_zero_orgs_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": []}
@@ -64,12 +71,14 @@ class TestGetOrgId:
 
     def test_no_client_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         with pytest.raises(click.Abort):
             get_org_id(config, None)
 
     def test_resolves_slug_to_id(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {
@@ -82,6 +91,7 @@ class TestGetOrgId:
 
     def test_resolves_slug_case_insensitively(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -90,6 +100,7 @@ class TestGetOrgId:
     def test_resolves_default_org_slug(self) -> None:
         # AVR_ORG can hold a slug; config.default_org flows through the same path.
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = "alpha"
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -97,6 +108,7 @@ class TestGetOrgId:
 
     def test_org_id_skips_resolution_round_trip(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         assert get_org_id(config, "org-x", client=client) == "org-x"
@@ -104,6 +116,7 @@ class TestGetOrgId:
 
     def test_unknown_slug_aborts(self) -> None:
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         client = MagicMock()
         client.public_get.return_value = {"data": [{"organization_id": "org-a", "slug": "alpha"}]}
@@ -113,8 +126,78 @@ class TestGetOrgId:
     def test_slug_without_client_passes_through(self) -> None:
         # No client means no resolution; the raw value goes to the backend.
         config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
         config.default_org = None
         assert get_org_id(config, "alpha") == "alpha"
+
+    @staticmethod
+    def _client_returning(status: int, *, host: str) -> tuple[MagicMock, ApiClient]:
+        config = MagicMock(spec=CliConfig)
+        config.auth_token = "avk_test"
+        config.default_org = None
+        config.public_api_url = host
+        config.get_api_headers.return_value = {}
+        transport = httpx.MockTransport(lambda request: httpx.Response(status, request=request))
+        return config, ApiClient(config, http_client=httpx.Client(transport=transport))
+
+    def test_http_failure_names_a_non_default_api(self, capsys) -> None:
+        """A self-hosted or staging host is configurable, so a bare status doesn't
+        say which API failed. Name it, or the user debugs the wrong endpoint."""
+        config, client = self._client_returning(500, host="https://avrea.internal.example.com")
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_org_id(config, None, client=client)
+
+        assert exc_info.value.code == 1
+        err = capsys.readouterr().err
+        assert "Error: Avrea is having trouble (HTTP 500)" in err
+        assert "  API: https://avrea.internal.example.com/users/me/organizations" in err
+
+    def test_http_failure_stays_quiet_about_the_default_api(self, capsys) -> None:
+        """On the public default the URL is noise on every error — suppress it."""
+        config, client = self._client_returning(500, host=CliConfig.DEFAULT_API_URL)
+
+        with pytest.raises(SystemExit):
+            get_org_id(config, None, client=client)
+
+        assert "  API:" not in capsys.readouterr().err
+
+    def test_expired_token_stays_quiet_about_the_default_api(self, capsys) -> None:
+        """The 401 branch has its own way of naming the API, so it needs its own
+        check that the default host stays unnamed."""
+        config, client = self._client_returning(401, host=CliConfig.DEFAULT_API_URL)
+
+        with pytest.raises(SystemExit):
+            get_org_id(config, None, client=client)
+
+        assert "rejected your credentials" not in capsys.readouterr().err
+
+    def test_expired_token_gets_the_auth_hint_and_exit_4(self, capsys) -> None:
+        """Org resolution is usually the first authenticated request, so it is
+        where a stale token surfaces. It must tell the user to log in and exit 4
+        like every other API call, not report a raw 401."""
+        config, client = self._client_returning(401, host=CliConfig.DEFAULT_API_URL)
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_org_id(config, None, client=client)
+
+        assert exc_info.value.code == EXIT_AUTH_REQUIRED
+        assert "avr auth login" in capsys.readouterr().err
+
+    def test_expired_token_names_a_non_default_api(self, capsys) -> None:
+        """Holding a token for one API while pointed at another is the confusing
+        case, and the auth hint alone doesn't say which API did the rejecting.
+        The 401 path has no "Error:" line to hang an indented note under, so the
+        API gets named in a sentence of its own."""
+        config, client = self._client_returning(401, host="https://avrea.internal.example.com")
+
+        with pytest.raises(SystemExit) as exc_info:
+            get_org_id(config, None, client=client)
+
+        assert exc_info.value.code == EXIT_AUTH_REQUIRED
+        err = capsys.readouterr().err
+        assert "Error: https://avrea.internal.example.com rejected your credentials (HTTP 401)." in err
+        assert "avr auth login" in err
 
 
 def test_verified_org_slug_handles_successful_non_json_response() -> None:
@@ -126,6 +209,23 @@ def test_verified_org_slug_handles_successful_non_json_response() -> None:
 
     with pytest.raises(click.ClickException, match="Could not verify the selected organization"):
         get_verified_org_slug(client, "org-acme")
+
+
+def test_verified_org_slug_expired_token_gets_the_auth_hint_and_exit_4(capsys) -> None:
+    """When --org is already an org- ID, get_org_id skips its round-trip and this
+    is the first authenticated request. A stale token has to reach the same auth
+    hint and exit 4 as everywhere else, not a generic "could not verify"."""
+    config = MagicMock(spec=CliConfig)
+    config.public_api_url = CliConfig.DEFAULT_API_URL
+    config.get_api_headers.return_value = {}
+    transport = httpx.MockTransport(lambda request: httpx.Response(401, request=request))
+    client = ApiClient(config, http_client=httpx.Client(transport=transport))
+
+    with pytest.raises(SystemExit) as exc_info:
+        get_verified_org_slug(client, "org-acme")
+
+    assert exc_info.value.code == EXIT_AUTH_REQUIRED
+    assert "avr auth login" in capsys.readouterr().err
 
 
 class TestMatchOrg:
@@ -226,6 +326,77 @@ class TestHandleHttpError:
             handle_http_error(exc, "x")
         err = capsys.readouterr().err
         assert "HTTP 503" in err
+
+    def test_rate_limit_names_retry_after_seconds(self, capsys):
+        req = httpx.Request("POST", "https://api.example/x")
+        resp = httpx.Response(429, request=req, json={"detail": "cooldown"}, headers={"Retry-After": "312"})
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "generate SBOM")
+        assert excinfo.value.code == 1
+        err = capsys.readouterr().err
+        assert "HTTP 429" in err
+        assert "Retry in 312s" in err
+        assert "few seconds" not in err
+
+    @pytest.mark.parametrize("header", [{}, {"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}])
+    def test_rate_limit_without_numeric_retry_after(self, capsys, header):
+        req = httpx.Request("GET", "https://api.example/x")
+        resp = httpx.Response(429, request=req, json={}, headers=header)
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "x")
+        assert "Try again in a few seconds" in capsys.readouterr().err
+
+    def test_rate_limit_names_non_default_api(self, capsys):
+        req = httpx.Request("GET", "https://api.staging.example/x")
+        resp = httpx.Response(429, request=req, json={}, headers={"Retry-After": "5"})
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "x")
+        assert "API: https://api.staging.example/x" in capsys.readouterr().err
+
+    def test_validation_list_detail_names_each_field(self, capsys):
+        """The API answers a validation failure with a list of ``{loc, msg}``
+        items, not a string; dropping it left a bare "HTTP 422"."""
+        detail = [
+            {"type": "literal_error", "loc": ["body", "grants", 0, "access_level"], "msg": "Input should be 'read'"},
+            {"type": "missing", "loc": ["query", "limit"], "msg": "Field required"},
+            {"type": "value_error", "msg": "A token needs at least one grant or VM creation"},
+        ]
+        req = httpx.Request("POST", "https://api.example/x")
+        resp = httpx.Response(422, request=req, json={"detail": detail})
+        with pytest.raises(SystemExit):
+            handle_http_error(httpx.HTTPStatusError("err", request=req, response=resp), "do thing")
+        assert (
+            "Error: Failed to do thing (HTTP 422): grants[0].access_level: Input should be 'read'; "
+            "limit: Field required; A token needs at least one grant or VM creation\n"
+        ) in capsys.readouterr().err
+
+    @pytest.mark.parametrize("status", [403, 404, 409, 422, 429, 503, 418])
+    def test_status_hint_follows_the_error_it_is_keyed_on(self, capsys, status):
+        req = httpx.Request("POST", f"{CliConfig.DEFAULT_API_URL}/x")
+        resp = httpx.Response(status, request=req, json={"detail": "nope"})
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(
+                httpx.HTTPStatusError("err", request=req, response=resp), "do thing", hints={status: "try the other"}
+            )
+        assert excinfo.value.code == 1
+        lines = capsys.readouterr().err.splitlines()
+        assert f"HTTP {status}" in lines[0]
+        assert lines[-1] == "  Hint: try the other"
+
+    def test_status_hint_for_another_status_is_not_printed(self, capsys):
+        exc = self._exc(404, b'{"detail": "nope"}', "application/json")
+        with pytest.raises(SystemExit):
+            handle_http_error(exc, "do thing", hints={409: "try the other"})
+        assert "try the other" not in capsys.readouterr().err
+
+    def test_status_hint_never_replaces_the_auth_hint(self, capsys):
+        exc = self._exc(401, b"", "application/json")
+        with pytest.raises(SystemExit) as excinfo:
+            handle_http_error(exc, "do thing", hints={401: "try the other"})
+        assert excinfo.value.code == EXIT_AUTH_REQUIRED
+        err = capsys.readouterr().err
+        assert "avr auth login" in err
+        assert "try the other" not in err
 
 
 class TestFormatSize:

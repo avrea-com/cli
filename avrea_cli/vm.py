@@ -1,26 +1,37 @@
 """Long-running customer VM management CLI commands.
 
 Customer VMs are durable, org-scoped machines reachable over SSH (all OSes)
-plus RDP (Windows) or VNC (macOS Screen Sharing). Creation, start and stop
-are asynchronous: the API records intent and the resource reaches RUNNING
-(with connection endpoints) once the control plane places it on a node.
+plus RDP (Windows) or VNC (macOS Screen Sharing). Lifecycle transitions are
+asynchronous: the API records intent and the resource moves through an
+intermediate state before reaching its target state.
 
 Disks are ephemeral today: stopping a VM (or losing its node) discards the
-disk, and a restart boots fresh from the image. ``create`` therefore requires
-an explicit ``--ephemeral`` acknowledgement so the no-persistence semantics
-are a conscious opt-in.
+disk, and a restart boots fresh from the image. Pausing is the exception: it
+archives the disk (and optionally memory) for a later resume. ``create``
+therefore requires an explicit ``--ephemeral`` acknowledgement so the normal
+stop/start semantics are a conscious opt-in.
 """
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
+from avrea_cli.helpers import extract_detail
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
+from avrea_cli.helpers import retry_after_seconds
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
+from avrea_cli.spawn_script import DEFAULT_SANDBOX_SIZE
+from avrea_cli.spawn_script import EXIT_REFUSED
+from avrea_cli.spawn_script import EXIT_RETRY
+from avrea_cli.spawn_script import SPAWN_PROVIDERS
+from avrea_cli.spawn_script import SpawnInputError
+from avrea_cli.spawn_script import exit_code_for_status
+from avrea_cli.spawn_script import read_spawn_order
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -296,6 +307,14 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
     ref = vm.get("precheckout_ref")
     if ref:
         summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
+    fetch_depth = vm.get("fetch_depth")
+    if fetch_depth is not None:
+        summary["Fetch depth"] = "0 (all branches and tags)" if fetch_depth == 0 else str(fetch_depth)
+    snapshot = vm.get("snapshot")
+    if snapshot:
+        summary["Snapshot"] = "memory + disk" if snapshot.get("memory_included") else "disk only"
+        if snapshot.get("paused_at"):
+            summary["Paused at"] = snapshot["paused_at"]
     summary["Auto-stop at"] = vm.get("stop_at")
     summary["Created"] = vm.get("created_at")
     return summary
@@ -469,6 +488,7 @@ def _wait_for_vm(
     is_ready: Callable[[dict[str, Any]], bool],
     *,
     gone_is_ready: bool = False,
+    is_failed: Callable[[dict[str, Any]], bool] | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     """Poll a VM until ``is_ready`` holds, it enters an ERROR/FAILED state, it is
     gone (a 404, when ``gone_is_ready`` is set, e.g. delete), or the timeout
@@ -479,7 +499,9 @@ def _wait_for_vm(
     Transient poll errors (connection resets, timeouts, 5xx) are retried until
     the deadline rather than aborting the wait; only a 404 with ``gone_is_ready``
     is a definitive answer. Only the unambiguous ERROR/FAILED markers count as
-    failure: STOPPED/DELETING are legitimate targets or progress for stop/delete."""
+    general failure: STOPPED/DELETING are legitimate targets or progress for
+    stop/delete. ``is_failed`` can additionally identify operation-specific
+    terminal states, such as a failed pause returning the VM to RUNNING."""
     deadline = time.monotonic() + timeout
     vm: dict[str, Any] | None = None
     last_state: str | None = None
@@ -506,9 +528,9 @@ def _wait_for_vm(
                 return vm, "timeout"
             sleep_for: float = _WAIT_POLL_SECONDS
             if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
-                retry_after = (exc.response.headers.get("Retry-After") or "").strip()
-                if retry_after.isdigit():
-                    sleep_for = min(int(retry_after), _WAIT_RETRY_AFTER_CAP)
+                retry_after = retry_after_seconds(exc.response)
+                if retry_after is not None:
+                    sleep_for = min(retry_after, _WAIT_RETRY_AFTER_CAP)
             time.sleep(min(sleep_for, remaining))
             continue
         vm = resp["data"]
@@ -518,7 +540,7 @@ def _wait_for_vm(
             last_state = state
         if is_ready(vm):
             return vm, "ready"
-        if "ERROR" in state or "FAIL" in state:
+        if (is_failed is not None and is_failed(vm)) or "ERROR" in state or "FAIL" in state:
             return vm, "failed"
         if time.monotonic() >= deadline:
             return vm, "timeout"
@@ -576,8 +598,16 @@ def vm(ctx):
 
 @vm.command("create")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--name", "display_name", required=True, help="Human-readable VM name.")
-@click.option("--os", "os_type", type=click.Choice(_OS_CHOICES), required=True, help="Guest operating system.")
+@click.option(
+    "--name", "display_name", default=None, help="Human-readable VM name. Required unless --from-spawn-script."
+)
+@click.option(
+    "--os",
+    "os_type",
+    type=click.Choice(_OS_CHOICES),
+    default=None,
+    help="Guest operating system. Required unless --from-spawn-script, which is always linux.",
+)
 @click.option(
     "--os-version",
     "os_version",
@@ -588,8 +618,11 @@ def vm(ctx):
 @click.option(
     "--size",
     type=click.Choice(_SIZE_CHOICES),
-    required=True,
-    help="Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16.",
+    default=None,
+    help=(
+        "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. "
+        f"Required unless --from-spawn-script, which defaults to {DEFAULT_SANDBOX_SIZE}."
+    ),
 )
 @click.option(
     "--ssh-key",
@@ -632,6 +665,15 @@ def vm(ctx):
     ),
 )
 @click.option(
+    "--fetch-depth",
+    type=click.IntRange(min=0),
+    default=None,
+    help=(
+        "Git history to preload with --repo, like actions/checkout fetch-depth: "
+        "1 (default) = branch tip, N = N commits, 0 = all branches and tags."
+    ),
+)
+@click.option(
     "--disable-cache",
     "disable_cache",
     metavar="CACHE",
@@ -662,6 +704,18 @@ def vm(ctx):
     help="Seconds to wait when --wait is set.",
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response (VM plus one-time password) as JSON.")
+@click.option(
+    "--from-spawn-script",
+    "spawn_provider",
+    type=click.Choice(list(SPAWN_PROVIDERS)),
+    default=None,
+    help=(
+        "Run as a coding-agent vendor controller's spawn script: read the work order the controller passes "
+        "in its environment, create an agent sandbox that starts the vendor's "
+        "worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or "
+        "higher when refused. Needs an organization ID (org-...) from --org or the default org."
+    ),
+)
 @click.pass_context
 def vm_create(
     ctx,
@@ -676,11 +730,13 @@ def vm_create(
     egress_rules_raw,
     repo,
     ref,
+    fetch_depth: int | None,
     disable_cache,
     ephemeral,
     wait,
     wait_timeout,
     as_json,
+    spawn_provider,
 ):
     """Create a long-running VM.
 
@@ -690,7 +746,37 @@ def vm_create(
     print a ready-to-paste connect command with the password baked in. The
     response carries a one-time password for the VM's local account; save it
     now, it is never stored.
+
+    \b
+    With --from-spawn-script it creates an agent sandbox for a coding-agent
+    vendor's work order instead, for that vendor's controller to run. For
+    example, as Claude Code's spawn-runner hook:
+        exec avr vm create --from-spawn-script claude-code --org <org-id>
     """
+    if spawn_provider is not None:
+        _create_from_spawn_script(
+            ctx,
+            spawn_provider,
+            org_id=org_id,
+            display_name=display_name,
+            os_type=os_type,
+            os_version=os_version,
+            size=size,
+            ssh_keys=ssh_keys,
+            remote_desktop=remote_desktop,
+            ttl=ttl,
+            egress_rules_raw=egress_rules_raw,
+            repo=repo,
+            ref=ref,
+            fetch_depth=fetch_depth,
+            disable_cache=disable_cache,
+            wait=wait,
+            as_json=as_json,
+        )
+        return
+    for value, flag in ((display_name, "--name"), (os_type, "--os"), (size, "--size")):
+        if value is None:
+            raise click.UsageError(f"Missing option '{flag}'.")
     if not ephemeral:
         raise click.UsageError(
             "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
@@ -698,6 +784,8 @@ def vm_create(
         )
     if ref and not repo:
         raise click.UsageError("--ref requires --repo.")
+    if fetch_depth is not None and not repo:
+        raise click.UsageError("--fetch-depth requires --repo.")
     if ref:
         ref = _validate_branch_ref(ref)
     # Windows remote desktop is not available yet (coming soon). Gate it at the
@@ -709,36 +797,26 @@ def vm_create(
             "Windows remote desktop is coming soon. Create the VM without --remote-desktop, "
             "or use --os linux / --os macos for a remote desktop now."
         )
-    ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
-    keys = _resolve_ssh_keys(ssh_keys)
-    egress_rules = _load_egress_rules(egress_rules_raw)
-    cache_overrides = _parse_disable_cache(disable_cache)
+    body = _create_body(
+        display_name=display_name,
+        os_type=os_type,
+        os_version=os_version,
+        size=size,
+        ssh_keys=ssh_keys,
+        remote_desktop=remote_desktop,
+        ttl=ttl,
+        egress_rules_raw=egress_rules_raw,
+        repo=repo,
+        ref=ref,
+        fetch_depth=fetch_depth,
+        disable_cache=disable_cache,
+    )
+    cache_overrides: dict[str, bool] = body.get("cache_setting_overrides", {})
 
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
-
-    body: dict[str, Any] = {
-        "display_name": display_name,
-        "ephemeral": True,
-        "os_type": os_type,
-        "size": size,
-        "ssh_public_keys": keys,
-        "enable_remote_desktop": remote_desktop,
-        "ttl_seconds": ttl_seconds,
-    }
-    # os_version is optional; omit it so the server resolves the OS default.
-    if os_version is not None:
-        body["os_version"] = os_version
-    if egress_rules is not None:
-        body["egress_rules"] = egress_rules
-    if repo is not None:
-        body["repo"] = repo
-    if ref is not None:
-        body["ref"] = ref
-    if cache_overrides:
-        body["cache_setting_overrides"] = cache_overrides
 
     try:
         response = client.public_post(f"/orgs/{org_id}/vms", json=body)
@@ -787,6 +865,148 @@ def vm_create(
         click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
         click.echo()
     click.echo(f"Provisioning started. Poll status with: avr vm show {vm_id}")
+
+
+def _create_body(
+    *,
+    display_name: str | None,
+    os_type: str,
+    os_version: str | None,
+    size: str,
+    ssh_keys: tuple[str, ...],
+    remote_desktop: bool,
+    ttl: str | None,
+    egress_rules_raw: str | None,
+    repo: str | None,
+    ref: str | None,
+    fetch_depth: int | None,
+    disable_cache: tuple[str, ...],
+) -> dict[str, Any]:
+    """The ``POST /orgs/{org_id}/vms`` body for ``vm create``'s options, for a
+    plain VM and an agent sandbox alike. Options read from files or parsed as
+    JSON fail here, before anything is sent."""
+    ttl_seconds = _parse_ttl(ttl) if ttl is not None else _DEFAULT_TTL_SECONDS
+    keys = _resolve_ssh_keys(ssh_keys)
+    egress_rules = _load_egress_rules(egress_rules_raw)
+    cache_overrides = _parse_disable_cache(disable_cache)
+    body: dict[str, Any] = {
+        "ephemeral": True,
+        "os_type": os_type,
+        "size": size,
+        "ssh_public_keys": keys,
+        "enable_remote_desktop": remote_desktop,
+        "ttl_seconds": ttl_seconds,
+    }
+    # An agent sandbox's name is derived from its work order by the server.
+    if display_name is not None:
+        body["display_name"] = display_name
+    # os_version is optional; omit it so the server resolves the OS default.
+    if os_version is not None:
+        body["os_version"] = os_version
+    if egress_rules is not None:
+        body["egress_rules"] = egress_rules
+    if repo is not None:
+        body["repo"] = repo
+    if fetch_depth is not None:
+        body["fetch_depth"] = fetch_depth
+    if ref is not None:
+        body["ref"] = ref
+    if cache_overrides:
+        body["cache_setting_overrides"] = cache_overrides
+    return body
+
+
+def _create_from_spawn_script(
+    ctx,
+    provider: str,
+    *,
+    org_id: str | None,
+    display_name: str | None,
+    os_type: str | None,
+    os_version: str | None,
+    size: str | None,
+    ssh_keys: tuple[str, ...],
+    remote_desktop: bool,
+    ttl: str | None,
+    egress_rules_raw: str | None,
+    repo: str | None,
+    ref: str | None,
+    fetch_depth: int | None,
+    disable_cache: tuple[str, ...],
+    wait: bool,
+    as_json: bool,
+) -> None:
+    """``vm create --from-spawn-script``: see avrea_cli.spawn_script.
+
+    The vendor controller waits on this process, so it returns as soon as the
+    API answers and never waits for the VM. Output goes to stderr except the
+    sandbox ID, and the work order's credential is never printed.
+    """
+    if display_name is not None:
+        raise click.UsageError("--name is derived from the work order with --from-spawn-script.")
+    if os_type not in (None, "linux"):
+        raise click.UsageError("Agent sandboxes run linux; drop --os or pass --os linux.")
+    if remote_desktop:
+        raise click.UsageError("Agent sandboxes have no remote desktop.")
+    if wait or as_json:
+        raise click.UsageError("--from-spawn-script returns as soon as the sandbox is created; drop --wait and --json.")
+    config: CliConfig = ctx.obj["config"]
+    # A slug, or no organization, needs a membership lookup on every spawn,
+    # whose failures do not map onto the vendor's exit codes.
+    org_id = org_id or config.default_org
+    if org_id is None or not org_id.startswith("org-"):
+        raise click.UsageError("--from-spawn-script needs an organization ID (org-...) from --org or the default org.")
+    match provider:
+        case "claude-code":
+            # The runner clones each session's repository itself, so a
+            # preloaded checkout would go unused.
+            for value, flag in ((repo, "--repo"), (ref, "--ref"), (fetch_depth, "--fetch-depth")):
+                if value is not None:
+                    raise click.UsageError(f"Claude Code clones each session's repository itself; drop {flag}.")
+        case _:
+            raise NotImplementedError(f"no spawn script support for {provider}")
+    body = _create_body(
+        display_name=None,
+        os_type="linux",
+        os_version=os_version,
+        size=size or DEFAULT_SANDBOX_SIZE,
+        ssh_keys=ssh_keys,
+        remote_desktop=False,
+        ttl=ttl,
+        egress_rules_raw=egress_rules_raw,
+        repo=None,
+        ref=None,
+        fetch_depth=None,
+        disable_cache=disable_cache,
+    )
+    try:
+        order = read_spawn_order(provider, os.environ)
+    except SpawnInputError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        ctx.exit(EXIT_REFUSED)
+    body["idempotency_key"] = order.idempotency_key
+    body["bootstrap"] = order.bootstrap
+
+    client: ApiClient = ctx.obj["client"]
+    ensure_authenticated(config)
+
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms", json=body)
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        click.echo(
+            f"Error: agent sandbox for {order.idempotency_key} not created "
+            f"(HTTP {status}): {extract_detail(exc.response)}",
+            err=True,
+        )
+        ctx.exit(exit_code_for_status(status))
+    except httpx.TransportError as exc:
+        click.echo(f"Error: agent sandbox for {order.idempotency_key} not created: {type(exc).__name__}", err=True)
+        ctx.exit(EXIT_RETRY)
+
+    vm_id = response["data"]["vm"]["customer_vm_id"]
+    click.echo(f"Agent sandbox {vm_id} serves {order.idempotency_key}", err=True)
+    click.echo(vm_id)
 
 
 @vm.command("list")
@@ -1197,6 +1417,145 @@ def vm_start(ctx, vm_id, org_id, wait, wait_timeout, as_json):
 def vm_stop(ctx, vm_id, org_id, wait, wait_timeout, as_json):
     """Stop a running VM. The ephemeral disk is discarded."""
     _set_desired_state(ctx, vm_id, org_id, "STOPPED", as_json, action="stop VM", wait=wait, wait_timeout=wait_timeout)
+
+
+@vm.command("pause")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--memory",
+    is_flag=True,
+    default=False,
+    help="Include guest memory and device state so running processes continue on resume.",
+)
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM reaches PAUSED before returning.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
+@click.pass_context
+def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
+    """Pause a RUNNING Linux VM while preserving its disk.
+
+    By default the snapshot is disk-only: the filesystem survives, but resume
+    performs a fresh boot and running processes do not. Pass --memory to also
+    preserve guest memory and continue processes from where they stopped.
+    """
+    _post_vm_transition(
+        ctx,
+        vm_id,
+        org_id,
+        "pause",
+        {"memory": memory},
+        "PAUSED",
+        as_json,
+        action="pause VM",
+        wait=wait,
+        wait_timeout=wait_timeout,
+        is_ready=_state_is("PAUSED"),
+        in_progress_states={"PAUSING", "PAUSED"},
+    )
+
+
+@vm.command("resume")
+@click.argument("vm_id")
+@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
+@click.option(
+    "--discard-memory",
+    is_flag=True,
+    default=False,
+    help="Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).",
+)
+@click.option("--wait", is_flag=True, default=False, help="Wait until the VM is RUNNING and connectable.")
+@click.option(
+    "--wait-timeout",
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    type=int,
+    help="Seconds to wait when --wait is set.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
+@click.pass_context
+def vm_resume(ctx, vm_id, org_id, discard_memory, wait, wait_timeout, as_json):
+    """Resume a PAUSED VM from its preserved snapshot.
+
+    The existing password remains valid. If a memory restore cannot complete,
+    retry with --discard-memory to boot the preserved disk without restoring
+    running processes.
+    """
+    _post_vm_transition(
+        ctx,
+        vm_id,
+        org_id,
+        "resume",
+        {"discard_memory": discard_memory},
+        "RUNNING",
+        as_json,
+        action="resume VM",
+        wait=wait,
+        wait_timeout=wait_timeout,
+        is_ready=_endpoints_ready,
+        in_progress_states={"PENDING", "STARTING", "RUNNING"},
+    )
+
+
+def _post_vm_transition(
+    ctx,
+    vm_id: str,
+    org_id: str | None,
+    endpoint: str,
+    body: dict[str, Any],
+    target_state: str,
+    as_json: bool,
+    *,
+    action: str,
+    wait: bool,
+    wait_timeout: int,
+    is_ready: Callable[[dict[str, Any]], bool],
+    in_progress_states: set[str],
+) -> None:
+    """Shared POST lifecycle transition used by pause and resume."""
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms/{vm_id}/{endpoint}", json=body)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
+
+    data = (response or {}).get("data") or {}
+    if wait:
+        click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become {target_state}...", err=True)
+        vm_state, disposition = _wait_for_vm(
+            client,
+            org_id,
+            vm_id,
+            wait_timeout,
+            is_ready,
+            is_failed=lambda record: (record.get("state") or "").upper() not in in_progress_states,
+        )
+        shown = vm_state or data
+        if as_json:
+            _emit_wait_json(ctx, shown, None, disposition)
+            return
+        if shown:
+            click.echo()
+            _print_vm(shown)
+        _wait_exit(ctx, vm_state, disposition, target_state, wait_timeout, vm_id)
+        return
+
+    if as_json:
+        click.echo(json.dumps(response, indent=2, default=str))
+        return
+
+    if data:
+        _print_vm(data)
 
 
 def _set_desired_state(
@@ -1852,7 +2211,7 @@ def _run_tunnel(
 ) -> None:
     """Open the SSH forward(s), wait for them all to listen, hand the live ssh
     process to ``on_ready`` (which holds or launches a client), then tear it
-    down. Ctrl-C closes cleanly."""
+    down. Ctrl-C tears it down and exits 130."""
     known_hosts = _write_known_hosts(ssh_ep.get("host_key"), ssh_ep["external_ip"], ssh_ep["external_port"])
     if known_hosts is None:
         click.echo(
@@ -1883,6 +2242,7 @@ def _run_tunnel(
                 raise click.ClickException(f"SSH tunnel exited unexpectedly (status {rc}); the connection was lost.")
         except KeyboardInterrupt:
             click.echo("\nClosing tunnel.", err=True)
+            sys.exit(EXIT_INTERRUPTED)
         finally:
             _terminate_tunnel(proc)
     finally:

@@ -1,0 +1,1450 @@
+"""Unit tests for the `avr sbom` command group."""
+
+from avrea_cli.main import cli
+from typing import Any
+import httpx
+import json
+import pytest
+
+SHA = "a" * 40
+OTHER_SHA = "b" * 40
+BASE = "/orgs/org-default/repos/rep-123/analysis/sbom"
+
+ARTIFACTS = [
+    {"filename": "bom.cyclonedx.json", "media_type": "application/vnd.cyclonedx+json", "raw_bytes": 2048},
+    {"filename": "bom.spdx.json", "media_type": "application/spdx+json", "raw_bytes": 4096},
+    {"filename": "inventory.json", "media_type": "application/json", "raw_bytes": 1024},
+]
+
+SUMMARY = {
+    "total_dependencies": 42,
+    "unresolved": 3,
+    "lookup_failed": 0,
+    "copyleft": ["gpl-thing"],
+    "copyleft_omitted": 0,
+    "licenses": {"MIT": 30, "Apache-2.0": 9, "NOASSERTION": 3},
+    "ecosystems": {"python": 40, "docker": 2},
+}
+
+SNAPSHOT = {
+    "type": "sbom",
+    "commit_sha": SHA,
+    "branch": "main",
+    "is_release": False,
+    "schema_version": 1,
+    "generated_at": "2026-09-01T10:00:00Z",
+    "recorded_at": "2026-09-01T10:05:00Z",
+    "artifacts": ARTIFACTS,
+    "summary": SUMMARY,
+}
+
+HISTORY = {
+    "data": [
+        {
+            "commit_sha": SHA,
+            "branch": "main",
+            "is_release": True,
+            "schema_version": 1,
+            "generated_at": "2026-09-01T10:00:00Z",
+            "recorded_at": "2026-09-01T10:05:00Z",
+            "total_dependencies": 42,
+            "unresolved": 3,
+            "copyleft_count": 1,
+            "artifacts": ARTIFACTS,
+        },
+        {
+            "commit_sha": OTHER_SHA,
+            "branch": "main",
+            "is_release": False,
+            "schema_version": 1,
+            "generated_at": "2026-08-01T10:00:00Z",
+            "recorded_at": "2026-08-01T10:05:00Z",
+            "total_dependencies": None,
+            "unresolved": None,
+            "copyleft_count": None,
+            "artifacts": [],
+        },
+    ],
+    "pagination": {"next_cursor": "Y3Vyc29y"},
+}
+HISTORY_LAST_PAGE = {**HISTORY, "pagination": {"next_cursor": None}}
+
+MANY_LICENSES = {f"LIC-{index:02d}": 100 - index for index in range(25)}
+MANY_COPYLEFT = [f"pkg-{index:02d}" for index in range(25)]
+INVENTORY_HINT = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
+
+
+def _snapshot_with(**summary: Any) -> dict[str, Any]:
+    return {**SNAPSHOT, "summary": {**SUMMARY, **summary}}
+
+
+def _http_error(status: int, detail: str = "", headers: dict[str, str] | None = None) -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", "https://api.avrea.io/x")
+    response = httpx.Response(status, json={"detail": detail}, headers=headers, request=request)
+    return httpx.HTTPStatusError("err", request=request, response=response)
+
+
+@pytest.fixture
+def calls(monkeypatch):
+    recorded: list[tuple[str, str, dict | None]] = []
+    timeouts: list[tuple[str, float | None]] = []
+    routes: dict[tuple[str, str], Any] = {}
+
+    clock = {"now": 0.0}
+
+    def get(path, params=None, timeout=None):
+        timeouts.append((path, timeout))
+        return respond("GET", path, params)
+
+    def respond(method, path, payload):
+        recorded.append((method, path, payload))
+        result = routes[(method, path)]
+        if isinstance(result, list):
+            result = result.pop(0) if len(result) > 1 else result[0]
+        if callable(result):
+            result = result(clock["now"])
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    def sleep(seconds):
+        clock["now"] += seconds
+
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, params=None, timeout=None: get(path, params, timeout),
+    )
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get_bytes",
+        lambda self, path, params=None: respond("GET_BYTES", path, params),
+    )
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_post",
+        lambda self, path, json=None, timeout=None, **_: respond("POST", path, json),
+    )
+    monkeypatch.setattr("avrea_cli.commands.sbom.time.sleep", sleep)
+    monkeypatch.setattr("avrea_cli.commands.sbom.time.monotonic", lambda: clock["now"])
+
+    class Calls:
+        log = recorded
+        request_timeouts = timeouts
+
+        @property
+        def now(self):
+            return clock["now"]
+
+        def route(self, method, path, result):
+            routes[(method, path)] = result
+
+    return Calls()
+
+
+class TestSbomList:
+    def test_table_output(self, runner, calls):
+        calls.route("GET", BASE, HISTORY)
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert SHA[:12] in result.output
+        assert OTHER_SHA[:12] in result.output
+        assert "42" in result.output
+        assert "?" in result.output
+
+    def test_next_cursor_hint(self, runner, calls):
+        calls.route("GET", BASE, HISTORY)
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123"])
+        assert "--cursor Y3Vyc29y" in result.output
+
+    def test_passes_limit_and_cursor(self, runner, calls):
+        calls.route("GET", BASE, {"data": [], "pagination": {"next_cursor": None}})
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123", "-L", "5", "--cursor", "abc"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][2] == {"limit": 5, "cursor": "abc"}
+
+    def test_rejects_whitespace_cursor(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123", "--cursor", " abc"])
+        assert result.exit_code == 2
+        assert calls.log == []
+
+    def test_json_output(self, runner, calls):
+        calls.route("GET", BASE, HISTORY)
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123", "--json", "commit_sha,copyleft_count"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == [
+            {"commit_sha": SHA, "copyleft_count": 1},
+            {"commit_sha": OTHER_SHA, "copyleft_count": None},
+        ]
+
+    def test_json_reports_next_cursor_on_stderr(self, runner, calls):
+        calls.route("GET", BASE, HISTORY)
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123", "--json", "commit_sha"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == [{"commit_sha": SHA}, {"commit_sha": OTHER_SHA}]
+        assert "next_cursor: Y3Vyc29y" in result.stderr
+
+    def test_json_without_next_page_is_silent_on_stderr(self, runner, calls):
+        calls.route("GET", BASE, {**HISTORY, "pagination": {"next_cursor": None}})
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123", "--json", "commit_sha"])
+        assert result.stderr == ""
+
+    def test_empty_history(self, runner, calls):
+        calls.route("GET", BASE, {"data": [], "pagination": {"next_cursor": None}})
+        result = runner.invoke(cli, ["sbom", "list", "--repo", "rep-123"])
+        assert result.exit_code == 0
+        assert "No data found." in result.output
+
+
+class TestSbomView:
+    def test_latest_summary(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert SHA in result.output
+        assert "Apache-2.0" in result.output
+        assert "python" in result.output
+        assert "gpl-thing" in result.output
+        assert "bom.spdx.json" in result.output
+
+    def test_specific_commit(self, runner, calls):
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", SHA.upper()])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    def test_commit_as_argument(self, runner, calls):
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    def test_short_commit_resolves_through_history(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA[:12], "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    @pytest.mark.parametrize("commit", ["abc123", "xyz1234567", "a" * 65, " "])
+    def test_rejects_invalid_commit(self, runner, calls, commit):
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", commit])
+        assert result.exit_code == 2
+        assert "at least 7" in result.output
+        assert calls.log == []
+
+    def test_rejects_conflicting_commit_argument_and_option(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123", "--commit", OTHER_SHA])
+        assert result.exit_code == 2
+        assert "--commit" in result.output
+        assert calls.log == []
+
+    def test_accepts_same_commit_as_argument_and_option(self, runner, calls):
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA, "--repo", "rep-123", "--commit", SHA.upper()])
+        assert result.exit_code == 0, result.output
+
+    def test_not_found_hints_generate(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _http_error(404, "analysis result not found"))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "avr sbom generate" in result.output
+
+    def test_omitted_summary_shows_unknown_counts(self, runner, calls):
+        calls.route(
+            "GET",
+            f"{BASE}/latest",
+            {**SNAPSHOT, "summary": {"omitted": "oversized", "serialized_bytes": 143362}},
+        )
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Dependencies  ?" in result.output
+        assert "Unresolved    ?" in result.output
+        assert "Copyleft      ?" in result.output
+        assert "oversized" in result.output
+        assert "--format inventory" in result.output
+
+    def test_empty_summary_shows_unknown_counts(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": {}})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Dependencies  ?" in result.output
+        assert "Copyleft      ?" in result.output
+
+    def test_empty_copyleft_list_is_zero(self, runner, calls):
+        summary = {**SUMMARY, "copyleft": [], "copyleft_omitted": 0}
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      0" in result.output
+
+    def test_copyleft_count_includes_omitted(self, runner, calls):
+        summary = {**SUMMARY, "copyleft": ["a", "b"], "copyleft_omitted": 7}
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      9" in result.output
+        assert "and 7 more" in result.output
+
+    def test_inventory_hints_pin_the_viewed_snapshot(self, runner, calls):
+        omitted = {"omitted": "oversized", "serialized_bytes": 143362}
+        calls.route("GET", f"{BASE}/commits/{SHA}", {**SNAPSHOT, "summary": omitted})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--commit", SHA])
+        expected = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
+        assert expected in result.output
+
+    def test_copyleft_overflow_hint_pins_the_viewed_snapshot(self, runner, calls):
+        summary = {**SUMMARY, "copyleft": ["a"], "copyleft_omitted": 3}
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        expected = f"avr sbom download {SHA} --org org-default --repo rep-123 --format inventory"
+        assert expected in result.output
+
+    def test_inventory_hint_quotes_values_for_the_shell(self, runner, calls):
+        omitted = {"omitted": "oversized"}
+        calls.route("GET", "/orgs/org-a b/repos/rep-123/analysis/sbom/latest", {**SNAPSHOT, "summary": omitted})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--org", "org-a b"])
+        assert result.exit_code == 0, result.output
+        assert "--org 'org-a b' --repo rep-123" in result.output
+
+    @pytest.mark.parametrize(
+        ("licenses", "ecosystems"),
+        [
+            (["MIT", "Apache-2.0"], "python"),
+            ({"MIT": None, "Apache-2.0": "9", "BSD-3-Clause": True}, {"python": [1]}),
+            (None, None),
+        ],
+    )
+    def test_malformed_breakdowns_are_skipped(self, runner, calls, licenses, ecosystems):
+        summary = {**SUMMARY, "licenses": licenses, "ecosystems": ecosystems}
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "License" not in result.output
+        assert "Ecosystem" not in result.output
+
+    def test_breakdown_keeps_valid_entries_among_malformed_ones(self, runner, calls):
+        summary = {**SUMMARY, "licenses": {"MIT": 30, "GPL-3.0": None}, "ecosystems": {"python": 40, "go": "x"}}
+        calls.route("GET", f"{BASE}/latest", {**SNAPSHOT, "summary": summary})
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "MIT" in result.output
+        assert "GPL-3.0" not in result.output
+        assert "python" in result.output
+        assert "| go " not in result.output
+
+    def test_json_summary(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--json", "commit_sha,summary"])
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["commit_sha"] == SHA
+        assert data["summary"]["total_dependencies"] == 42
+
+    def test_short_breakdowns_are_listed_whole(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "NOASSERTION" in result.output
+        assert "more" not in result.output
+
+    def test_long_licence_list_shows_the_ten_most_common(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "LIC-00" in result.output
+        assert "LIC-09" in result.output
+        assert "LIC-10" not in result.output
+        assert "… and 15 more licenses (use --full to list them)" in result.output
+
+    def test_full_lists_every_licence(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert result.exit_code == 0, result.output
+        assert "LIC-24" in result.output
+        assert "more" not in result.output
+
+    def test_licence_overflow_counts_what_the_summary_left_out(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"… and 45 more licenses (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
+
+    def test_full_still_reports_what_the_summary_left_out(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "LIC-24" in result.output
+        assert f"… and 30 more licenses (see `{INVENTORY_HINT}`)" in result.output
+
+    @pytest.mark.parametrize("extra", [[], ["--full"]])
+    def test_licence_body_used_as_a_name_is_clipped_to_one_line(self, runner, calls, extra):
+        body = "MIT License\n        \n        Copyright (c) 2014-2025 Beartype authors.\n" + "Permission " * 500
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"MIT": 30, body: 1}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", *extra])
+        assert result.exit_code == 0, result.output
+        assert "MIT License Copyright (c) 2014-2025 Beartype authors." in result.output
+        assert max(len(line) for line in result.output.splitlines()) < 100
+
+    def test_long_copyleft_list_shows_the_first_ten(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Copyleft      25" in result.output
+        assert "pkg-09" in result.output
+        assert "pkg-10" not in result.output
+        assert "… and 15 more (use --full to list them)" in result.output
+
+    def test_full_lists_every_copyleft_name(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "pkg-24" in result.output
+        assert "more" not in result.output
+
+    def test_copyleft_overflow_counts_hidden_and_omitted_names(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      30" in result.output
+        assert f"… and 20 more (--full lists 15; see `{INVENTORY_HINT}` for all)" in result.output
+
+    def test_full_still_reports_omitted_copyleft_names(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=MANY_COPYLEFT, copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123", "--full"])
+        assert "pkg-24" in result.output
+        assert f"… and 5 more (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_ten_most_common_are_chosen_by_count_not_by_position(self, runner, calls):
+        counts = {f"LIC-{index:02d}": (index * 7) % 25 + 1 for index in range(25)}
+        shuffled = {name: counts[name] for name in sorted(counts, key=lambda n: (int(n[4:]) * 11) % 25)}
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=shuffled))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        shown = {name for name in counts if name in result.output}
+        assert shown == {name for name, count in counts.items() if count >= 16}
+
+    def test_equal_counts_are_listed_in_name_order(self, runner, calls):
+        tied = {f"TIE-{index:02d}": 5 for index in sorted(range(13), key=lambda i: (i * 5) % 13)}
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=tied))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        shown = [name for name in sorted(tied) if name in result.output]
+        assert shown == [f"TIE-{index:02d}" for index in range(10)]
+        positions = [result.output.index(name) for name in shown]
+        assert positions == sorted(positions)
+
+    def test_licenses_are_listed_most_common_first(self, runner, calls):
+        counts = {"rare": 1, "common": 50, "middling": 7}
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=counts))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        positions = [result.output.index(name) for name in ("common", "middling", "rare")]
+        assert positions == sorted(positions)
+
+    def test_zero_counts_are_shown_as_zero(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(total_dependencies=0, unresolved=0))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Dependencies  0" in result.output
+        assert "Unresolved    0" in result.output
+
+    def test_one_entry_left_out_is_singular_and_on_stdout(self, runner, calls):
+        summary = _snapshot_with(licenses={}, licenses_omitted=1, copyleft=[], copyleft_omitted=1)
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"1 license left out of the summary (see `{INVENTORY_HINT}`)" in result.stdout
+        assert f"1 copyleft dependency left out of the summary (see `{INVENTORY_HINT}`)" in result.stdout
+        assert "left out" not in result.stderr
+
+    def test_negative_count_in_a_breakdown_keeps_its_row_as_unknown(self, runner, calls):
+        summary = _snapshot_with(licenses={"BAD-LICENSE": -2, "MIT": 30}, ecosystems={"go": -3, "python": 40})
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "| MIT         | 30    |" in result.output
+        assert "| BAD-LICENSE | ?     |" in result.output
+        assert "| python    | 40    |" in result.output
+        assert "| go        | ?     |" in result.output
+        assert "-2" not in result.output
+        assert "-3" not in result.output
+        assert result.output.index("MIT") < result.output.index("BAD-LICENSE")
+
+    def test_breakdown_of_only_negative_counts_is_still_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"A-LICENSE": -1, "B-LICENSE": -2}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "A-LICENSE" in result.output
+        assert "B-LICENSE" in result.output
+
+    def test_zero_count_in_a_breakdown_is_listed(self, runner, calls):
+        summary = _snapshot_with(licenses={"MIT": 30, "ZERO-LICENSE": 0}, ecosystems={"python": 40, "idle": 0})
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "| ZERO-LICENSE | 0     |" in result.output
+        assert "| idle      | 0     |" in result.output
+
+    @pytest.mark.parametrize("omitted", [0, False, [], {}, 0.0, True, {"reason": "x"}, 7])
+    def test_omitted_reason_that_is_not_text_is_not_shown(self, runner, calls, omitted):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(omitted=omitted))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Summary unavailable" not in result.output
+
+    def test_ecosystems_the_summary_left_out_are_counted(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(ecosystems_omitted=4))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"… and 4 more ecosystems (see `{INVENTORY_HINT}`)" in result.stdout
+
+    def test_ecosystems_left_out_are_reported_when_none_are_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(ecosystems={}, ecosystems_omitted=1))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"1 ecosystem left out of the summary (see `{INVENTORY_HINT}`)" in result.stdout
+
+    def test_escaped_name_is_clipped_after_escaping(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"a" * 58 + "\x1bzzzz": 1}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"], color=True)
+        assert f"| {'a' * 58}\\… |" in result.output
+        assert "\x1b" not in result.output
+
+    def test_copyleft_entry_that_is_not_a_string_keeps_its_row(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=[None, 7]))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "  None\n" in result.output
+        assert "  7\n" in result.output
+
+    def test_other_summary_text_is_escaped_too(self, runner, calls):
+        summary = _snapshot_with(ecosystems={"py\x1b[2Jthon": 3}, omitted="over\x1b[31msized\nError: forged")
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"], color=True)
+        assert result.exit_code == 0, result.output
+        assert "\x1b" not in result.output
+        assert "py\\x1b[2Jthon" in result.output
+        assert "\nError: forged" not in result.output
+
+    @pytest.mark.parametrize(("count", "listed", "more"), [(10, 10, None), (11, 11, None), (12, 10, 2)])
+    def test_a_list_is_cut_only_when_that_saves_lines(self, runner, calls, count, listed, more):
+        licenses = {f"LIC-{index:02d}": 100 - index for index in range(count)}
+        copyleft = [f"pkg-{index:02d}" for index in range(count)]
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=licenses, copyleft=copyleft))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert sum(name in result.output for name in licenses) == listed
+        assert sum(name in result.output for name in copyleft) == listed
+        assert ("more" in result.output) is (more is not None)
+        if more:
+            assert f"… and {more} more licenses (use --full to list them)" in result.output
+            assert f"… and {more} more (use --full to list them)" in result.output
+
+    def test_one_license_left_out_is_singular(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses_omitted=1))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"… and 1 more license (see `{INVENTORY_HINT}`)" in result.output
+
+    @pytest.mark.parametrize("omitted", [None, True, "5", 3.5, -1, -15, -30, {}, []])
+    def test_malformed_omitted_counts_are_not_used_as_numbers(self, runner, calls, omitted):
+        summary = _snapshot_with(
+            licenses=MANY_LICENSES, licenses_omitted=omitted, copyleft=MANY_COPYLEFT, copyleft_omitted=omitted
+        )
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert "Copyleft      25" in result.output
+        assert "… and 15 more licenses (use --full to list them)" in result.output
+        assert "… and 15 more (use --full to list them)" in result.output
+
+    @pytest.mark.parametrize("key", ["total_dependencies", "unresolved"])
+    def test_negative_counts_are_shown_as_unknown(self, runner, calls, key):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(**{key: -3}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "-3" not in result.output
+        assert "  ?" in result.output
+
+    def test_omitted_licenses_are_reported_when_none_are_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={}, licenses_omitted=30))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"30 licenses left out of the summary (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_omitted_copyleft_names_are_reported_when_none_are_listed(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(copyleft=[], copyleft_omitted=5))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "Copyleft      5" in result.output
+        assert f"5 copyleft dependencies left out of the summary (see `{INVENTORY_HINT}`)" in result.output
+
+    def test_overflow_lines_are_part_of_the_result_on_stdout(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses=MANY_LICENSES, copyleft=MANY_COPYLEFT))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert "… and 15 more licenses" in result.stdout
+        assert "… and 15 more (use" in result.stdout
+        assert "more" not in result.stderr
+
+    def test_license_name_is_clipped_past_sixty_characters(self, runner, calls):
+        calls.route("GET", f"{BASE}/latest", _snapshot_with(licenses={"x" * 60: 2, "y" * 61: 1}))
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"])
+        assert f"| {'x' * 60} |" in result.output
+        assert f"| {'y' * 59}… |" in result.output
+
+    def test_control_characters_in_names_do_not_reach_the_terminal(self, runner, calls):
+        summary = _snapshot_with(
+            licenses={"\x1b[2J\x1b[31mEVIL": 3},
+            copyleft=["a\nb", "\x1b[31mred", "… and 99 more (fake)\r", "safe\u202egnp"],
+        )
+        calls.route("GET", f"{BASE}/latest", summary)
+        result = runner.invoke(cli, ["sbom", "view", "--repo", "rep-123"], color=True)
+        assert result.exit_code == 0, result.output
+        assert "\x1b" not in result.output
+        assert "\r" not in result.output
+        assert "\u202e" not in result.output
+        assert "\\x1b[2J\\x1b[31mEVIL" in result.output
+        assert "  a\\nb\n" in result.output
+        assert "  \\x1b[31mred\n" in result.output
+
+
+class TestSbomDownload:
+    def test_latest_cyclonedx_to_default_file(self, runner, calls, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        calls.route("GET", f"{BASE}/latest", SNAPSHOT)
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b'{"bomFormat":"CycloneDX"}')
+        result = runner.invoke(cli, ["sbom", "download", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert (tmp_path / "bom.cyclonedx.json").read_bytes() == b'{"bomFormat":"CycloneDX"}'
+
+    @pytest.mark.parametrize(
+        ("fmt", "filename"),
+        [("spdx", "bom.spdx.json"), ("inventory", "inventory.json")],
+    )
+    def test_format_selects_artifact(self, runner, calls, tmp_path, fmt, filename):
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/{filename}", b"{}")
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            cli, ["sbom", "download", "--repo", "rep-123", "--commit", SHA, "--format", fmt, "--out", str(out)]
+        )
+        assert result.exit_code == 0, result.output
+        assert out.read_bytes() == b"{}"
+        assert [c[0] for c in calls.log] == ["GET_BYTES"]
+
+    def test_out_dash_writes_stdout(self, runner, calls):
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b'{"ok":true}')
+        result = runner.invoke(cli, ["sbom", "download", "--repo", "rep-123", "--commit", SHA, "--out", "-"])
+        assert result.exit_code == 0, result.output
+        assert result.stdout == '{"ok":true}'
+
+    def test_missing_artifact(self, runner, calls, tmp_path):
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.spdx.json", _http_error(404, "no artifact"))
+        result = runner.invoke(
+            cli,
+            [
+                "sbom",
+                "download",
+                "--repo",
+                "rep-123",
+                "--commit",
+                SHA,
+                "--format",
+                "spdx",
+                "--out",
+                str(tmp_path / "x"),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "no artifact" in result.output
+        assert not (tmp_path / "x").exists()
+
+    def test_short_commit_argument_downloads_the_resolved_commit(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b'{"ok":true}')
+        result = runner.invoke(cli, ["sbom", "download", SHA[:12], "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        assert result.stdout == '{"ok":true}'
+        assert calls.log[-1] == ("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", None)
+
+
+AMBIGUOUS_SHA = "a" * 12 + "f" * 28
+
+
+def _history_page(*shas: str, next_cursor: str | None = None) -> dict[str, Any]:
+    return {"data": [{"commit_sha": sha} for sha in shas], "pagination": {"next_cursor": next_cursor}}
+
+
+class TestSbomCommitPrefix:
+    def test_full_commit_skips_history(self, runner, calls):
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA, "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        assert [c[0] for c in calls.log] == ["GET_BYTES"]
+
+    def test_prefix_is_case_insensitive(self, runner, calls):
+        calls.route("GET", BASE, HISTORY_LAST_PAGE)
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7].upper(), "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+
+    def test_resolution_pages_through_history(self, runner, calls):
+        calls.route("GET", BASE, [_history_page(OTHER_SHA, next_cursor="page2"), _history_page(SHA)])
+        calls.route("GET_BYTES", f"{BASE}/commits/{SHA}/artifacts/bom.cyclonedx.json", b"{}")
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7], "--repo", "rep-123", "--out", "-"])
+        assert result.exit_code == 0, result.output
+        history_params = [c[2] for c in calls.log if c[:2] == ("GET", BASE)]
+        assert history_params == [{"limit": 1000}, {"limit": 1000, "cursor": "page2"}]
+
+    def test_unknown_prefix_names_the_list_command(self, runner, calls):
+        calls.route("GET", BASE, _history_page(OTHER_SHA))
+        result = runner.invoke(cli, ["sbom", "download", SHA[:7], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert SHA[:7] in result.output
+        assert "avr sbom list" in result.output
+        assert [c[0] for c in calls.log] == ["GET"]
+
+    def test_ambiguous_prefix_lists_candidates(self, runner, calls):
+        calls.route("GET", BASE, [_history_page(SHA, next_cursor="page2"), _history_page(AMBIGUOUS_SHA)])
+        result = runner.invoke(cli, ["sbom", "view", SHA[:10], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "ambiguous" in result.output
+        assert SHA in result.output
+        assert AMBIGUOUS_SHA in result.output
+
+    def test_longer_prefix_disambiguates(self, runner, calls):
+        calls.route("GET", BASE, _history_page(SHA, AMBIGUOUS_SHA))
+        calls.route("GET", f"{BASE}/commits/{SHA}", SNAPSHOT)
+        result = runner.invoke(cli, ["sbom", "view", SHA[:13], "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][1] == f"{BASE}/commits/{SHA}"
+
+    def test_history_error_is_reported(self, runner, calls):
+        calls.route("GET", BASE, _http_error(403, "forbidden"))
+        result = runner.invoke(cli, ["sbom", "view", SHA[:7], "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "forbidden" in result.output
+
+
+STATE_PATH = "/orgs/org-default/repos/rep-123/ai-task/state"
+LATEST = f"{BASE}/latest"
+NEW_SHA = "c" * 40
+NEW_SNAPSHOT = {**SNAPSHOT, "commit_sha": NEW_SHA, "recorded_at": "2026-10-05T12:00:00Z"}
+
+
+class TestSbomGenerate:
+    def test_requests_sbom_scope_only(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][2] == {"scope": "sbom"}
+        assert "SBOM generation started." in result.output
+
+    def test_text_output_leaves_out_the_task_id(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert "task-1" not in result.output
+
+    def test_hint_points_at_view_and_wait(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert "avr sbom view" in result.stderr
+        assert "--wait" in result.stderr
+
+    def test_passes_ref(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", "v1.2.0"])
+        assert calls.log[-1][2] == {"scope": "sbom", "ref": "v1.2.0"}
+
+    def test_already_running(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert result.exit_code == 0
+        assert "SBOM generation already running; joined it." in result.output
+        assert "task-1" not in result.output
+
+    def test_cooldown_reports_retry_after(self, runner, calls):
+        calls.route(
+            "POST",
+            f"{BASE}/generate",
+            _http_error(429, "scanned 10 minutes ago; retry in 312s.", headers={"Retry-After": "312"}),
+        )
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "312s" in result.output
+
+    def test_conflict_surfaces_detail(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", _http_error(409, "Another analysis is already running"))
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123"])
+        assert result.exit_code == 1
+        assert "Another analysis is already running" in result.output
+
+    def test_json_output(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--json", "*"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "ai_task_id": "task-1",
+            "commit_sha": None,
+            "error_code": None,
+            "recorded_at": None,
+            "status": "generating",
+            "task_status": None,
+        }
+
+    @pytest.mark.parametrize("extra", [[], ["--wait"]])
+    def test_unknown_json_field_rejected_before_request(self, runner, calls, extra):
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--json", "task_id", *extra])
+        assert result.exit_code != 0
+        assert "Unknown JSON field(s): task_id" in result.output
+        assert calls.log == []
+
+
+COMMIT_PATH = f"{BASE}/commits/{NEW_SHA}"
+PRIOR_FOR_COMMIT = {**SNAPSHOT, "commit_sha": NEW_SHA, "recorded_at": "2026-09-20T08:00:00Z"}
+UNRELATED_ARRIVAL = {**SNAPSHOT, "commit_sha": OTHER_SHA, "recorded_at": "2026-10-05T11:59:00Z"}
+
+
+def _delivered_at(seconds: float):
+    return lambda now: NEW_SNAPSHOT if now >= seconds else PRIOR_FOR_COMMIT
+
+
+def _pinned_wait(*extra: str) -> list[str]:
+    return [
+        "sbom",
+        "generate",
+        "--repo",
+        "rep-123",
+        "--ref",
+        NEW_SHA,
+        "--wait",
+        "--json",
+        "status,task_status,error_code,commit_sha",
+        *extra,
+    ]
+
+
+class TestSbomGenerateWaitWithoutCommit:
+    def test_reports_task_outcome_without_claiming_a_snapshot(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route(
+            "GET",
+            STATE_PATH,
+            [
+                {"ai_task_id": "task-1", "status": "PENDING"},
+                {"ai_task_id": "task-1", "status": "RUNNING"},
+                {"ai_task_id": "task-1", "status": "COMPLETED"},
+            ],
+        )
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait", "--json", "*"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "ai_task_id": "task-1",
+            "commit_sha": None,
+            "error_code": None,
+            "recorded_at": None,
+            "status": "completed",
+            "task_status": "completed",
+        }
+        assert [c[1] for c in calls.log] == [f"{BASE}/generate", STATE_PATH, STATE_PATH, STATE_PATH]
+        assert calls.log[1][2] == {"scope": "sbom"}
+
+    def test_human_output_points_to_commit_pinned_wait(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 0, result.output
+        assert "SBOM generated" not in result.output
+        assert "Analysis completed." in result.output
+        assert "task-1" not in result.output
+        assert "--ref <commit-sha>" in result.output
+
+    def test_ignores_state_of_another_task(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route(
+            "GET",
+            STATE_PATH,
+            [{"ai_task_id": "task-0", "status": "COMPLETED"}, {"ai_task_id": "task-1", "status": "COMPLETED"}],
+        )
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 0, result.output
+        assert len([c for c in calls.log if c[1] == STATE_PATH]) == 2
+
+    def test_branch_ref_is_not_treated_as_commit(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", "main", "--wait"])
+        assert result.exit_code == 0, result.output
+        assert all("/commits/" not in c[1] for c in calls.log)
+
+    @pytest.mark.parametrize("code", ["enrichment_unavailable", "vm_response_invalid", "clone_failed", None])
+    def test_failed_task_is_reported_as_failed(self, runner, calls, code):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": code})
+        result = runner.invoke(
+            cli, ["sbom", "generate", "--repo", "rep-123", "--wait", "--json", "status,task_status,error_code"]
+        )
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {"status": "failed", "task_status": "failed", "error_code": code}
+        assert all("/analysis/sbom/latest" not in c[1] and "/commits/" not in c[1] for c in calls.log)
+
+    @pytest.mark.parametrize("code", ["enrichment_unavailable", "clone_failed", None])
+    def test_failed_task_human_output(self, runner, calls, code):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": code})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 1
+        assert (code or "unknown error") in result.output
+        assert "avr sbom list" in result.output
+        assert "task task-1 failed" in result.stderr
+        assert "Stopped waiting" not in result.stderr
+
+    def test_task_timeout(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait", "--wait-timeout", "250"])
+        assert result.exit_code == 1
+        assert "Timed out" in result.output
+        assert "task task-1" in result.stderr
+        assert "Stopped waiting" not in result.stderr
+        assert calls.now >= 250
+
+    @pytest.mark.parametrize("status", [401, 403, 404])
+    def test_permanent_poll_error_names_the_task_once(self, runner, calls, status):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, _http_error(status, "denied"))
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code != 0
+        assert "Stopped waiting; SBOM generation was started as task task-1." in result.stderr
+        assert result.stderr.count("task-1") == 1
+        assert "task-1" not in result.stdout
+
+    def test_interrupted_wait_names_the_task_once(self, runner, calls):
+        def interrupt(_now):
+            raise KeyboardInterrupt
+
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, interrupt)
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 130
+        assert "Stopped waiting; SBOM generation was started as task task-1." in result.stderr
+        assert result.stderr.count("task-1") == 1
+
+    @pytest.mark.parametrize("pinned", [False, True])
+    @pytest.mark.parametrize("failure", [json.JSONDecodeError("invalid JSON", "{", 1), AttributeError("not an object")])
+    def test_unexpected_poll_failure_names_the_task_once(self, runner, calls, pinned, failure):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        args = ["sbom", "generate", "--repo", "rep-123", "--wait"]
+        if pinned:
+            calls.route("GET", f"{BASE}/commits/{SHA}", [_http_error(404), failure])
+            calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+            args.extend(["--ref", SHA])
+        else:
+            calls.route("GET", STATE_PATH, failure)
+
+        result = runner.invoke(cli, args)
+
+        assert result.exception is failure
+        assert "Stopped waiting; SBOM generation was started as task task-1." in result.stderr
+        assert result.stderr.count("task-1") == 1
+        assert "task-1" not in result.stdout
+
+    def test_transient_poll_error_does_not_announce_a_stopped_wait(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [_http_error(503), {"ai_task_id": "task-1", "status": "COMPLETED"}])
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 0, result.output
+        assert "Stopped waiting" not in result.stderr
+        assert "task-1" not in result.output
+
+    def test_superseded_task_reports_unknown_outcome(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route(
+            "GET",
+            STATE_PATH,
+            [{"ai_task_id": "task-1", "status": "RUNNING"}, {"ai_task_id": "task-2", "status": "PENDING"}],
+        )
+        result = runner.invoke(
+            cli, ["sbom", "generate", "--repo", "rep-123", "--wait", "--json", "status,task_status,error_code"]
+        )
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {"status": "unknown", "task_status": "unknown", "error_code": None}
+        assert calls.now < 60
+
+    def test_superseded_task_human_output(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route(
+            "GET",
+            STATE_PATH,
+            [{"ai_task_id": "task-1", "status": "RUNNING"}, {"ai_task_id": "task-2", "status": "PENDING"}],
+        )
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--wait"])
+        assert result.exit_code == 1
+        assert "task task-1 was superseded by task task-2" in result.stderr
+
+
+class TestSbomGenerateWaitForCommit:
+    def test_reads_commit_baseline_before_request(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"])
+        assert [c[0:2] for c in calls.log[:2]] == [("GET", COMMIT_PATH), ("POST", f"{BASE}/generate")]
+
+    def test_reports_delivered_snapshot_for_requested_commit(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(
+            cli,
+            [
+                "sbom",
+                "generate",
+                "--repo",
+                "rep-123",
+                "--ref",
+                NEW_SHA,
+                "--wait",
+                "--json",
+                "status,commit_sha,recorded_at",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "status": "completed",
+            "commit_sha": NEW_SHA,
+            "recorded_at": NEW_SNAPSHOT["recorded_at"],
+        }
+
+    def test_first_sbom_for_commit(self, runner, calls):
+        not_found = _http_error(404, "analysis result not found")
+        calls.route("GET", COMMIT_PATH, [not_found, not_found, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"])
+        assert result.exit_code == 0, result.output
+        assert f"SBOM generated for {NEW_SHA[:12]}" in result.output
+        assert f"avr sbom view {NEW_SHA} --org org-default --repo rep-123" in result.output
+
+    def test_unrelated_snapshot_arrival_does_not_satisfy_wait(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("GET", LATEST, UNRELATED_ARRIVAL)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait", "--wait-timeout", "250"]
+        )
+        assert result.exit_code == 1
+        assert "SBOM generated" not in result.output
+        assert f"no new SBOM for {NEW_SHA[:12]}" in result.output
+        assert all(c[1] != LATEST for c in calls.log)
+
+    @pytest.mark.parametrize("code", ["enrichment_unavailable", "vm_response_invalid", None])
+    def test_failed_task_with_delivered_sbom_succeeds(self, runner, calls, code):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": code})
+        result = runner.invoke(
+            cli,
+            [
+                "sbom",
+                "generate",
+                "--repo",
+                "rep-123",
+                "--ref",
+                NEW_SHA,
+                "--wait",
+                "--json",
+                "status,task_status,error_code,commit_sha",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "status": "completed",
+            "task_status": "failed",
+            "error_code": code,
+            "commit_sha": NEW_SHA,
+        }
+
+    def test_failed_task_delivery_after_two_minutes_succeeds(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, _delivered_at(150))
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route(
+            "GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": "vm_response_invalid"}
+        )
+        result = runner.invoke(cli, _pinned_wait("--wait-timeout", "600"))
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "status": "completed",
+            "task_status": "failed",
+            "error_code": "vm_response_invalid",
+            "commit_sha": NEW_SHA,
+        }
+        assert 150 <= calls.now < 600
+
+    @pytest.mark.parametrize("code", ["enrichment_unavailable", "clone_failed"])
+    def test_failed_task_without_delivery_uses_full_budget(self, runner, calls, code):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": code})
+        result = runner.invoke(cli, _pinned_wait("--wait-timeout", "600"))
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {
+            "status": "failed",
+            "task_status": "failed",
+            "error_code": code,
+            "commit_sha": None,
+        }
+        assert calls.now >= 600
+
+    def test_superseded_task_still_waits_for_commit_delivery(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, _delivered_at(10))
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route(
+            "GET",
+            STATE_PATH,
+            [{"ai_task_id": "task-1", "status": "RUNNING"}, {"ai_task_id": "task-2", "status": "PENDING"}],
+        )
+        result = runner.invoke(cli, _pinned_wait("--wait-timeout", "600"))
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {
+            "status": "completed",
+            "task_status": "unknown",
+            "error_code": None,
+            "commit_sha": NEW_SHA,
+        }
+        assert calls.now < 60
+
+    def test_delivery_before_task_finishes_succeeds(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, _delivered_at(5))
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(cli, _pinned_wait())
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout)["task_status"] == "running"
+
+    def test_timeout_without_delivery_while_task_running(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait", "--wait-timeout", "250"]
+        )
+        assert result.exit_code == 1
+        assert "Timed out" in result.output
+
+    @pytest.mark.parametrize(
+        ("state", "phrase"),
+        [
+            ({"ai_task_id": "task-1", "status": "FAILED", "error_code": "clone_failed"}, "task task-1 failed"),
+            ({"ai_task_id": "task-1", "status": "COMPLETED"}, "task task-1 completed"),
+            (
+                [{"ai_task_id": "task-1", "status": "RUNNING"}, {"ai_task_id": "task-2", "status": "PENDING"}],
+                "task task-1 was superseded by task task-2",
+            ),
+        ],
+    )
+    def test_undelivered_sbom_message_names_the_task(self, runner, calls, state, phrase):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, state)
+        result = runner.invoke(
+            cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait", "--wait-timeout", "600"]
+        )
+        assert result.exit_code == 1
+        assert phrase in result.stderr
+        assert "Stopped waiting" not in result.stderr
+
+    def test_failed_task_note_after_delivery_names_the_task(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "FAILED", "error_code": "clone_failed"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"])
+        assert result.exit_code == 0, result.output
+        assert "analysis task task-1 failed (clone_failed) after producing the SBOM" in result.stderr
+        assert "Stopped waiting" not in result.output
+
+    def test_commit_pinned_success_does_not_announce_a_stopped_wait(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"])
+        assert result.exit_code == 0, result.output
+        assert f"SBOM generated for {NEW_SHA[:12]}" in result.stdout
+        assert "Stopped waiting" not in result.output
+        assert "task-1" not in result.output
+
+    def test_uppercase_sha_is_normalised(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA.upper(), "--wait"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[1][2] == {"scope": "sbom", "ref": NEW_SHA}
+
+    def test_padded_sha_is_trimmed_and_pinned(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", f"  {NEW_SHA}\n", "--wait"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[0][1] == COMMIT_PATH
+        assert calls.log[1][2] == {"scope": "sbom", "ref": NEW_SHA}
+        assert f"SBOM generated for {NEW_SHA[:12]}" in result.output
+
+    def test_padded_branch_is_trimmed_with_case_preserved(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", " Release/V2 "])
+        assert calls.log[-1][2] == {"scope": "sbom", "ref": "Release/V2"}
+
+    def test_blank_ref_rejected_before_request(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "generate", "--repo", "rep-123", "--ref", "   "])
+        assert result.exit_code == 2
+        assert "--ref" in result.output
+        assert calls.log == []
+
+
+SHORT_NEW_SHA = NEW_SHA[:12]
+
+
+class TestSbomGenerateRefArgument:
+    def test_usage_shows_ref_as_optional(self, runner):
+        result = runner.invoke(cli, ["sbom", "generate", "--help"])
+        assert "generate [OPTIONS] [REF]" in result.output
+
+    def test_ref_as_argument(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", "v1.2.0", "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log[-1][2] == {"scope": "sbom", "ref": "v1.2.0"}
+
+    def test_rejects_conflicting_ref_argument_and_option(self, runner, calls):
+        result = runner.invoke(cli, ["sbom", "generate", "v1.2.0", "--repo", "rep-123", "--ref", "main"])
+        assert result.exit_code == 2
+        assert "REF argument or with --ref, not both" in result.output
+        assert calls.log == []
+
+    def test_short_sha_is_sent_for_the_api_to_expand(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        result = runner.invoke(cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123"])
+        assert result.exit_code == 0, result.output
+        assert calls.log == [("POST", f"{BASE}/generate", {"scope": "sbom", "ref": SHORT_NEW_SHA})]
+
+    def test_wait_follows_the_commit_the_api_expanded(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [_http_error(404, "analysis result not found"), NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": NEW_SHA}
+        assert [c[1] for c in calls.log[:2]] == [f"{BASE}/generate", COMMIT_PATH]
+
+    def test_wait_for_an_expanded_commit_needs_a_new_delivery(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "recorded_at"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"recorded_at": NEW_SNAPSHOT["recorded_at"]}
+
+    @pytest.mark.parametrize("expanded", [{}, {"commit_sha": None}, {"commit_sha": SHORT_NEW_SHA}])
+    def test_wait_follows_the_task_without_an_expanded_commit(self, runner, calls, expanded):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **expanded})
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "COMPLETED"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "status,commit_sha"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed", "commit_sha": None}
+        assert all("/commits/" not in c[1] for c in calls.log)
+
+    @pytest.mark.parametrize("failure", [_http_error(503), httpx.ConnectError("connection reset")])
+    def test_baseline_after_the_request_retries_transient_errors(self, runner, calls, failure):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, [failure, PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("GET", STATE_PATH, {"ai_task_id": "task-1", "status": "RUNNING"})
+        result = runner.invoke(
+            cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--json", "recorded_at"]
+        )
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"recorded_at": NEW_SNAPSHOT["recorded_at"]}
+
+    def test_baseline_after_the_request_that_never_succeeds_times_out(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", "commit_sha": NEW_SHA})
+        calls.route("GET", COMMIT_PATH, _http_error(503))
+        args = ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--wait", "--wait-timeout", "30"]
+        result = runner.invoke(cli, args)
+        assert result.exit_code == 1
+        assert f"the SBOM for {SHORT_NEW_SHA} could not be checked" in result.output
+        assert calls.now >= 30
+        assert all(c[1] != STATE_PATH for c in calls.log)
+
+    @pytest.mark.parametrize(("ref", "response"), [(SHORT_NEW_SHA, {"commit_sha": NEW_SHA}), (NEW_SHA, {})])
+    def test_reports_the_pinned_commit_without_wait(self, runner, calls, ref, response):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **response})
+        json_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123", "--json", "commit_sha"])
+        human_result = runner.invoke(cli, ["sbom", "generate", ref, "--repo", "rep-123"])
+        assert json.loads(json_result.stdout) == {"commit_sha": NEW_SHA}
+        assert f"SBOM generation started for {NEW_SHA[:12]}." in human_result.output
+
+    @pytest.mark.parametrize("response", [{}, {"commit_sha": SHORT_NEW_SHA}])
+    def test_reports_no_commit_without_a_valid_expansion(self, runner, calls, response):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating", **response})
+        result = runner.invoke(cli, ["sbom", "generate", SHORT_NEW_SHA, "--repo", "rep-123", "--json", "commit_sha"])
+        assert json.loads(result.stdout) == {"commit_sha": None}
+
+
+RUNNING = {"ai_task_id": "task-1", "status": "RUNNING"}
+COMPLETED = {"ai_task_id": "task-1", "status": "COMPLETED"}
+UNPINNED_WAIT = ["sbom", "generate", "--repo", "rep-123", "--wait"]
+PINNED_WAIT = ["sbom", "generate", "--repo", "rep-123", "--ref", NEW_SHA, "--wait"]
+TRANSIENT_ERRORS = [
+    _http_error(500),
+    _http_error(502),
+    _http_error(503),
+    _http_error(408),
+    _http_error(429, headers={"Retry-After": "7"}),
+    httpx.ConnectError("connection reset"),
+    httpx.ReadTimeout("read timed out"),
+]
+
+
+def _posts(calls) -> int:
+    return len([c for c in calls.log if c[0] == "POST"])
+
+
+def _timeouts_for(calls, path: str) -> list[float | None]:
+    return [t for p, t in calls.request_timeouts if p == path]
+
+
+class TestSbomGenerateWaitTransientErrors:
+    @pytest.mark.parametrize("error", TRANSIENT_ERRORS)
+    def test_task_state_error_is_retried(self, runner, calls, error):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [error, COMPLETED])
+        result = runner.invoke(cli, UNPINNED_WAIT)
+        assert result.exit_code == 0, result.output
+        assert len([c for c in calls.log if c[1] == STATE_PATH]) == 2
+        assert _posts(calls) == 1
+
+    @pytest.mark.parametrize("error", TRANSIENT_ERRORS)
+    def test_commit_snapshot_error_is_retried(self, runner, calls, error):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, error, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, COMPLETED)
+        result = runner.invoke(cli, PINNED_WAIT)
+        assert result.exit_code == 0, result.output
+        assert f"SBOM generated for {NEW_SHA[:12]}" in result.output
+        assert _posts(calls) == 1
+
+    @pytest.mark.parametrize("error", TRANSIENT_ERRORS)
+    def test_task_state_error_does_not_stop_pinned_delivery(self, runner, calls, error):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, PRIOR_FOR_COMMIT, NEW_SNAPSHOT])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [error, COMPLETED])
+        result = runner.invoke(cli, PINNED_WAIT)
+        assert result.exit_code == 0, result.output
+        assert _posts(calls) == 1
+
+    def test_retry_after_sets_the_backoff(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [_http_error(429, headers={"Retry-After": "12"}), COMPLETED])
+        result = runner.invoke(cli, UNPINNED_WAIT)
+        assert result.exit_code == 0, result.output
+        assert calls.now == 12
+
+    def test_retry_after_is_capped(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [_http_error(429, headers={"Retry-After": "3600"}), COMPLETED])
+        result = runner.invoke(cli, UNPINNED_WAIT)
+        assert result.exit_code == 0, result.output
+        assert calls.now == 30
+
+    def test_transient_error_is_reported_on_stderr(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, [_http_error(503), COMPLETED])
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--json", "status"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout) == {"status": "completed"}
+        assert "HTTP 503" in result.stderr
+        assert "retrying" in result.stderr
+
+    def test_permanent_task_state_error_stops_the_wait(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, _http_error(403, "access revoked"))
+        result = runner.invoke(cli, PINNED_WAIT)
+        assert result.exit_code == 1
+        assert "access revoked" in result.output
+        assert calls.now == 0
+
+    def test_permanent_snapshot_error_stops_the_wait(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, [PRIOR_FOR_COMMIT, _http_error(403, "access revoked")])
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, PINNED_WAIT)
+        assert result.exit_code == 1
+        assert "access revoked" in result.output
+        assert calls.now == 0
+
+    def test_persistent_errors_time_out_naming_the_last_error(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, _http_error(503))
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "20"])
+        assert result.exit_code == 1
+        assert "Timed out after 20s" in result.output
+        assert "last error: HTTP 503" in result.output
+        assert calls.now == 20
+
+
+class TestSbomGenerateWaitBudget:
+    def test_unpinned_wait_stops_at_the_timeout(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "7"])
+        assert result.exit_code == 1
+        assert calls.now == 7
+
+    def test_pinned_delivery_after_the_timeout_is_not_reported(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, _delivered_at(5))
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, [*PINNED_WAIT, "--wait-timeout", "1"])
+        assert result.exit_code == 1
+        assert "SBOM generated" not in result.output
+        assert calls.now == 1
+
+    def test_poll_requests_are_bounded_by_the_remaining_budget(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "12"])
+        assert _timeouts_for(calls, STATE_PATH) == [12.0, 7.0, 2.0, 1.0]
+
+    def test_long_budget_keeps_the_client_request_timeout(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, COMPLETED)
+        runner.invoke(cli, UNPINNED_WAIT)
+        assert _timeouts_for(calls, STATE_PATH) == [30.0]
+
+    def test_pinned_snapshot_polls_are_bounded_too(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        runner.invoke(cli, [*PINNED_WAIT, "--wait-timeout", "8"])
+        assert _timeouts_for(calls, COMMIT_PATH) == [None, 8.0, 3.0, 1.0]
+
+
+class TestSbomGenerateWaitTimeoutOutput:
+    def test_unpinned_timeout_emits_json(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "10", "--json", "*"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {
+            "ai_task_id": "task-1",
+            "commit_sha": None,
+            "error_code": None,
+            "recorded_at": None,
+            "status": "timeout",
+            "task_status": "running",
+        }
+
+    def test_pinned_timeout_emits_json(self, runner, calls):
+        calls.route("GET", COMMIT_PATH, PRIOR_FOR_COMMIT)
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "already_running"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, [*PINNED_WAIT, "--wait-timeout", "10", "--json", "ai_task_id,status,task_status"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {"ai_task_id": "task-1", "status": "timeout", "task_status": "running"}
+
+    def test_timeout_before_the_task_is_observed_reports_unknown(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, _http_error(503))
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "10", "--json", "status,task_status"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout) == {"status": "timeout", "task_status": "unknown"}
+
+    def test_human_timeout_says_the_task_was_not_cancelled(self, runner, calls):
+        calls.route("POST", f"{BASE}/generate", {"ai_task_id": "task-1", "status": "generating"})
+        calls.route("GET", STATE_PATH, RUNNING)
+        result = runner.invoke(cli, [*UNPINNED_WAIT, "--wait-timeout", "10"])
+        assert result.exit_code == 1
+        assert "not cancelled" in result.output

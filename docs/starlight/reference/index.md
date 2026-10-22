@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: "Reference for the avr command-line client (v0.2.0)."
+description: "Reference for the avr command-line client (v0.4.1)."
 ---
 
 `avr` is the Avrea command-line client. Avrea on the command line.
@@ -29,11 +29,13 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](./vm/) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
 - [`avr cache`](./cache/) — Inspect and manage the Avrea build cache.
+- [`avr sbom`](./sbom/) — View, generate, and download repository SBOMs.
 - [`avr log`](./log/) — Search across runner execution logs.
 
 ### Setup & Config
 
 - [`avr auth`](./auth/) — Authenticate and manage credentials.
+- [`avr token`](./token/) — Create and manage scoped access tokens.
 - [`avr config`](./config/) — View and manage CLI configuration.
 - [`avr settings`](./settings/) — View and toggle cache and runner settings.
 - [`avr firewall`](./firewall/) — Manage the egress firewall rule list for orgs and repositories.
@@ -53,5 +55,6 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `orgs` → [`org`](./org/)
 - `prs` → [`pr`](./pr/)
 - `repos` → [`repo`](./repo/)
+- `tokens` → [`token`](./token/)
 - `vms` → [`vm`](./vm/)
 - `workflows` → [`workflow`](./workflow/)

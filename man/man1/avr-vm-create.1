@@ -1,4 +1,4 @@
-.TH AVR\-VM\-CREATE 1 "" "avr 0.2.0" "Avrea CLI"
+.TH AVR\-VM\-CREATE 1 "" "avr 0.4.1" "Avrea CLI"
 .SH NAME
 avr-vm-create \- Create a long-running VM.
 .SH SYNOPSIS
@@ -16,22 +16,31 @@ response carries a one-time password for the VM's local account; save it
 now, it is never stored.
 .fi
 .RE
+.PP
+.RS 4
+.nf
+With --from-spawn-script it creates an agent sandbox for a coding-agent
+vendor's work order instead, for that vendor's controller to run. For
+example, as Claude Code's spawn-runner hook:
+    exec avr vm create --from-spawn-script claude-code --org <org-id>
+.fi
+.RE
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-name\fR \fITEXT\fR
-Human-readable VM name. (required)
+Human-readable VM name. Required unless --from-spawn-script.
 .TP
 \fB\-\-os\fR \fICHOICE\fR
-Guest operating system. (choices: linux, macos, windows; required)
+Guest operating system. Required unless --from-spawn-script, which is always linux. (choices: linux, macos, windows)
 .TP
 \fB\-\-os\-version\fR \fICHOICE\fR
 Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. (choices: ubuntu-22.04, ubuntu-24.04, ubuntu-26.04, macos-26, windows-2025)
 .TP
 \fB\-\-size\fR \fICHOICE\fR
-Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. (choices: 1-vcpu, 2-vcpu, 4-vcpu, 8-vcpu, 16-vcpu, 32-vcpu; required)
+Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu. (choices: 1-vcpu, 2-vcpu, 4-vcpu, 8-vcpu, 16-vcpu, 32-vcpu)
 .TP
 \fB\-\-ssh\-key\fR \fITEXT\fR
 SSH public key, or @path to read one from a file. Repeatable. (repeatable)
@@ -51,6 +60,9 @@ Git repository (owner/repo) to preload into the VM at boot. Best-effort; the che
 \fB\-\-ref\fR \fITEXT\fR
 Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 .TP
+\fB\-\-fetch\-depth\fR \fIINTEGER RANGE\fR
+Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
+.TP
 \fB\-\-disable\-cache\fR \fITEXT\fR
 Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo. (repeatable)
 .TP
@@ -65,14 +77,19 @@ Seconds to wait when --wait is set. (default: 300)
 .TP
 \fB\-\-json\fR
 Emit the raw API response (VM plus one-time password) as JSON.
+.TP
+\fB\-\-from\-spawn\-script\fR \fICHOICE\fR
+Run as a coding-agent vendor controller's spawn script: read the work order the controller passes in its environment, create an agent sandbox that starts the vendor's worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or higher when refused. Needs an organization ID (org-...) from --org or the default org. (choices: claude-code)
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
 .BR avr-vm-delete (1),
 .BR avr-vm-list (1),
+.BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
+.BR avr-vm-resume (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),

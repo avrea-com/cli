@@ -1,6 +1,6 @@
 # avr(1) — Avrea command-line client
 
-Reference for `avr` v0.2.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
+Reference for `avr` v0.4.1. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
 
 ## Name
 
@@ -26,6 +26,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `orgs` → `org`
 - `prs` → `pr`
 - `repos` → `repo`
+- `tokens` → `token`
 - `vms` → `vm`
 - `workflows` → `workflow`
 
@@ -40,11 +41,13 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
+- [`avr sbom`](#avr-sbom) — View, generate, and download repository SBOMs.
 - [`avr log`](#avr-log) — Search across runner execution logs.
 
 ### Setup & Config
 
 - [`avr auth`](#avr-auth) — Authenticate and manage credentials.
+- [`avr token`](#avr-token) — Create and manage scoped access tokens.
 - [`avr config`](#avr-config) — View and manage CLI configuration.
 - [`avr settings`](#avr-settings) — View and toggle cache and runner settings.
 - [`avr firewall`](#avr-firewall) — Manage the egress firewall rule list for orgs and repositories.
@@ -616,24 +619,33 @@ response carries a one-time password for the VM's local account; save it
 now, it is never stored.
 ```
 
+```sh
+With --from-spawn-script it creates an agent sandbox for a coding-agent
+vendor's work order instead, for that vendor's controller to run. For
+example, as Claude Code's spawn-runner hook:
+    exec avr vm create --from-spawn-script claude-code --org <org-id>
+```
+
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `--name <TEXT>` — Human-readable VM name. _(required)_
-- `--os <CHOICE>` — Guest operating system. _(choices: `linux`, `macos`, `windows` · required)_
+- `--name <TEXT>` — Human-readable VM name. Required unless --from-spawn-script.
+- `--os <CHOICE>` — Guest operating system. Required unless --from-spawn-script, which is always linux. _(choices: `linux`, `macos`, `windows`)_
 - `--os-version <CHOICE>` — Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os. _(choices: `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-26.04`, `macos-26`, `windows-2025`)_
-- `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · required)_
+- `--size <CHOICE>` — Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu. _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu`)_
 - `--ssh-key <TEXT>` — SSH public key, or @path to read one from a file. Repeatable. _(repeatable)_
 - `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - `--ttl <TEXT>` — Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - `--repo <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 - `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+- `--fetch-depth <INTEGER RANGE>` — Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
 - `--disable-cache <TEXT>` — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
 - `--ephemeral` — Required: acknowledge that the VM's disk is ephemeral (discarded on stop).
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response (VM plus one-time password) as JSON.
+- `--from-spawn-script <CHOICE>` — Run as a coding-agent vendor controller's spawn script: read the work order the controller passes in its environment, create an agent sandbox that starts the vendor's worker, print its ID, and exit 0 when created or already created, 1 to have the vendor retry, 2 or higher when refused. Needs an organization ID (org-...) from --org or the default org. _(choices: `claude-code`)_
 
 #### `avr vm delete`
 
@@ -672,6 +684,30 @@ avr vm list [OPTIONS]
 - `-L, --limit <INTEGER RANGE>` — Max VMs to return. _(default: `50`)_
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
 - `--json` — Emit the VM list as JSON.
+
+#### `avr vm pause`
+
+Pause a RUNNING Linux VM while preserving its disk.
+
+```sh
+avr vm pause [OPTIONS] VM_ID
+```
+
+By default the snapshot is disk-only: the filesystem survives, but resume
+performs a fresh boot and running processes do not. Pass --memory to also
+preserve guest memory and continue processes from where they stopped.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--memory` — Include guest memory and device state so running processes continue on resume.
+- `--wait` — Wait until the VM reaches PAUSED before returning.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
 
 #### `avr vm port-forward`
 
@@ -725,6 +761,30 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
+#### `avr vm resume`
+
+Resume a PAUSED VM from its preserved snapshot.
+
+```sh
+avr vm resume [OPTIONS] VM_ID
+```
+
+The existing password remains valid. If a memory restore cannot complete,
+retry with --discard-memory to boot the preserved disk without restoring
+running processes.
+
+**Arguments**
+
+- `VM_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--discard-memory` — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
+- `--wait` — Wait until the VM is RUNNING and connectable.
+- `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
+- `--json` — Emit the raw API response as JSON.
 
 #### `avr vm show`
 
@@ -1148,6 +1208,174 @@ JSON FIELDS
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
+### `avr sbom`
+
+View, generate, and download repository SBOMs.
+
+```sh
+avr sbom [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr sbom download`
+
+Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+
+```sh
+avr sbom download [OPTIONS] [COMMIT]
+```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
+
+```sh
+Examples:
+    avr sbom download --repo acme/api
+    avr sbom download --repo acme/api --format spdx --out api.spdx.json
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
+```
+
+**Arguments**
+
+- `[COMMIT]`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--commit <TEXT>` — Same as the COMMIT argument.
+- `--format <CHOICE>` — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
+- `--out <TEXT>` — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
+
+#### `avr sbom generate`
+
+Start SBOM generation for a repository.
+
+```sh
+avr sbom generate [OPTIONS] [REF]
+```
+
+REF is the branch, tag, or commit SHA to analyse; an abbreviated SHA such
+as the one `avr sbom list` shows works too. Defaults to the default-branch
+tip. Without --wait, commit_sha is the full SHA of the commit the run
+analyses when REF is a full SHA or one the API expanded.
+
+One analysis runs per repository at a time. A request for the same ref as
+the analysis already running joins it; a request for a different ref is
+rejected (HTTP 409) until that analysis finishes. Once an SBOM has been
+recorded for the repository, a new run is refused (HTTP 429) for a
+cooldown period, and the error says how many seconds remain.
+
+With --wait and a REF that names a commit, success means a new SBOM for
+that commit is downloadable, whatever the analysis task's own outcome
+(task_status); commit_sha and recorded_at identify it. A failed analysis
+can still deliver its SBOM later, so such a wait runs to --wait-timeout
+before reporting failure. For a branch, tag, or the default branch the API
+does not say which commit the run resolved, so --wait reports the analysis
+task's outcome only. Transient errors while waiting are retried until
+--wait-timeout; a wait that times out leaves the analysis running.
+
+```sh
+Examples:
+    avr sbom generate --repo acme/api
+    avr sbom generate v1.4.0 --repo acme/api
+    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
+```
+
+```sh
+JSON FIELDS
+    ai_task_id, commit_sha, error_code, recorded_at, status, task_status
+```
+
+**Arguments**
+
+- `[REF]`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--ref <TEXT>` — Same as the REF argument.
+- `--wait` — Wait until generation finishes before returning.
+- `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `900`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr sbom list`
+
+List the repository's recorded SBOMs, newest first.
+
+```sh
+avr sbom list [OPTIONS]
+```
+
+Counts shown as "?" were not recorded by the SBOM's schema version.
+
+```sh
+Examples:
+    avr sbom list --repo acme/api
+    avr sbom list --repo acme/api --json commit_sha,copyleft_count
+```
+
+```sh
+JSON FIELDS
+    artifacts, branch, commit_sha, copyleft_count, generated_at,
+    is_release, recorded_at, schema_version, total_dependencies,
+    unresolved
+```
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-L, --limit <INTEGER RANGE>` — Max SBOMs to return. _(default: `50`)_
+- `--cursor <TEXT>` — Opaque cursor from a previous response's next_cursor.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr sbom view`
+
+Show an SBOM's summary: dependency counts, licenses, and artifacts.
+
+```sh
+avr sbom view [OPTIONS] [COMMIT]
+```
+
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
+of at least 7 characters such as the one `avr sbom list` shows. Defaults to
+the latest SBOM.
+
+A long license table is cut to the most common licenses and a long copyleft
+list to its first names; --full lists all of them. Long license names are
+clipped; the summary in --json carries them whole.
+
+```sh
+Examples:
+    avr sbom view --repo acme/api
+    avr sbom view 3f2c9a1b7d04 --repo acme/api
+    avr sbom view --repo acme/api --full
+    avr sbom view --repo acme/api --json summary --jq .summary.licenses
+```
+
+```sh
+JSON FIELDS
+    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
+    schema_version, summary
+```
+
+**Arguments**
+
+- `[COMMIT]`
+
+**Options**
+
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--commit <TEXT>` — Same as the COMMIT argument.
+- `--full` — List every license and copyleft dependency in the summary. Long lists are otherwise cut to the 10 most common licenses and the first 10 copyleft dependencies.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ### `avr log`
 
 Search across runner execution logs.
@@ -1255,12 +1483,156 @@ Examples:
 
 - `[HOST]`
 
+### `avr token`
+
+Create and manage scoped access tokens.
+
+```sh
+avr token [OPTIONS] COMMAND [ARGS]...
+```
+
+A scoped access token is a credential bound to one organization that
+expires within seven days. It reaches only the repositories and VMs it
+names, and it cannot create further tokens. To use one, set AVR_TOKEN to
+the credential and AVR_ORG to the organization ID.
+
+#### `avr token create`
+
+Create a scoped token and print its credential.
+
+```sh
+avr token create [OPTIONS]
+```
+
+The credential is shown once and cannot be retrieved later. A token needs
+at least one of --repo, --vm or --allow-vm-create. Repository grants are
+read-only and VM grants are admin; an optional level suffix
+(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.
+
+```sh
+Examples:
+    avr token create --name ci-read --repo acme/api --repo acme/web
+    avr token create --name agent --vm cvm-abc123 --ttl 30m
+    avr token create --name sandbox --allow-vm-create --vm-create-limit 3
+    avr token create --name ci-read --repo acme/api --json token --jq .token
+```
+
+```sh
+JSON FIELDS
+    allow_vm_create, created_at, expires_at, grants, id, last_used_at,
+    name, organization_id, revoked_at, revoked_reason, token, user_id,
+    vm_create_count, vm_create_limit
+```
+
+**Options**
+
+- `--name <TEXT>` — Token name (1-100 characters). _(required)_
+- `--repo <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- `--vm <TEXT>` — Grant admin access to a VM, by VM ID. Repeatable. _(repeatable)_
+- `--allow-vm-create` — Let the token create VMs.
+- `--vm-create-limit <INTEGER RANGE>` — Max VMs the token may create; needs --allow-vm-create. The server default is 1.
+- `--ttl <TEXT>` — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 7 days; the server default is 8 hours.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr token list`
+
+List live tokens, newest first.
+
+```sh
+avr token list [OPTIONS]
+```
+
+Shows your own tokens, or every member's when you are an organization
+admin. Revoked and expired tokens are not listed; `avr token view` still
+reads them by ID.
+
+```sh
+Examples:
+    avr token list
+    avr token list --json id,name,expires_at
+```
+
+```sh
+JSON FIELDS
+    allow_vm_create, created_at, expires_at, grants, id, last_used_at,
+    name, organization_id, revoked_at, revoked_reason, user_id,
+    vm_create_count, vm_create_limit
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-L, --limit <INTEGER RANGE>` — Max tokens to return. _(default: `50`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr token revoke`
+
+Revoke a token.
+
+```sh
+avr token revoke [OPTIONS] TOKEN_ID
+```
+
+Requests made with the token are refused from then on. Revoking a token
+that is already revoked succeeds.
+
+```sh
+Examples:
+    avr token revoke <token-id>
+    avr token revoke <token-id> --yes
+```
+
+**Arguments**
+
+- `TOKEN_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+
+#### `avr token view`
+
+Show a token's details and grants, including a revoked or expired one.
+
+```sh
+avr token view [OPTIONS] TOKEN_ID
+```
+
+The credential itself is never shown again after `avr token create`.
+
+```sh
+Examples:
+    avr token view <token-id>
+    avr token view <token-id> --json grants
+```
+
+```sh
+JSON FIELDS
+    allow_vm_create, created_at, expires_at, grants, id, last_used_at,
+    name, organization_id, revoked_at, revoked_reason, user_id,
+    vm_create_count, vm_create_limit
+```
+
+**Arguments**
+
+- `TOKEN_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ### `avr config`
 
 View and manage CLI configuration.
 
 ```sh
-avr config [OPTIONS] COMMAND [ARGS]...
+avr config [OPTIONS] [COMMAND] [ARGS]...
 ```
 
 #### `avr config get`

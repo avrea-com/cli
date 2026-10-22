@@ -1,0 +1,47 @@
+.TH AVR\-TOKEN\-VIEW 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-token-view \- Show a token's details and grants, including a revoked or expired one.
+.SH SYNOPSIS
+.B avr token view
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Show a token's details and grants, including a revoked or expired one.
+.PP
+The credential itself is never shown again after `avr token create`.
+.PP
+.RS 4
+.nf
+Examples:
+    avr token view <token-id>
+    avr token view <token-id> --json grants
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    allow_vm_create, created_at, expires_at, grants, id, last_used_at,
+    name, organization_id, revoked_at, revoked_reason, user_id,
+    vm_create_count, vm_create_limit
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-token (1),
+.BR avr-token-create (1),
+.BR avr-token-list (1),
+.BR avr-token-revoke (1)

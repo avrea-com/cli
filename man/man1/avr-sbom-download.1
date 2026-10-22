@@ -1,0 +1,45 @@
+.TH AVR\-SBOM\-DOWNLOAD 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-sbom-download \- Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.SH SYNOPSIS
+.B avr sbom download
+[OPTIONS] [COMMIT]
+.SH DESCRIPTION
+Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).
+.PP
+COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix of at least 7 characters such as the one `avr sbom list` shows. Defaults to the latest SBOM.
+.PP
+.RS 4
+.nf
+Examples:
+    avr sbom download --repo acme/api
+    avr sbom download --repo acme/api --format spdx --out api.spdx.json
+    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fICOMMIT\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-commit\fR \fITEXT\fR
+Same as the COMMIT argument.
+.TP
+\fB\-\-format\fR \fICHOICE\fR
+Artifact to download. (choices: cyclonedx, inventory, spdx; default: cyclonedx)
+.TP
+\fB\-\-out\fR \fITEXT\fR
+Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-sbom (1),
+.BR avr-sbom-generate (1),
+.BR avr-sbom-list (1),
+.BR avr-sbom-view (1)
