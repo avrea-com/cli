@@ -130,3 +130,12 @@ def test_empty_capture_page_and_partial_detail_are_explicit(runner: CliRunner, a
     assert result.exit_code == 0, result.output
     assert "This result is partial" in result.output
     assert "Increase --limit" not in result.output
+
+
+@pytest.mark.parametrize("duration_status", ["expired_detail", "unavailable"])
+def test_history_text_explains_missing_duration(runner: CliRunner, api: FakeApi, duration_status: str) -> None:
+    row = {"capture_id": CAPTURE, "duration_total_ms": None, "duration_status": duration_status}
+    api.reply("GET", f"{BASE}/history/{TEST}", json={**PAGE, "data": [row]})
+    result = runner.invoke(cli, ["tests", "history", TEST, "--configuration", CONFIG, *SCOPE])
+    assert result.exit_code == 0, result.output
+    assert duration_status in result.output
