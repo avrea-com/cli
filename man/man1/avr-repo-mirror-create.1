@@ -7,7 +7,7 @@ avr-repo-mirror-create \- Enable mirroring and place a connected repository at a
 .SH DESCRIPTION
 Enable mirroring and place a connected repository at a location.
 .PP
-REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on GitLab (including nested groups). It must already be connected to the selected Avrea organization. Requires the organization admin role.
+REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on GitLab (including nested groups). GitLab repositories cannot be mirrored until GitLab mirroring is enabled for your organization. The repository must already be connected to the selected Avrea organization. Requires the organization admin role.
 .PP
 Safe to repeat: existing placements and their source configuration are preserved. The initial sync runs asynchronously; use `mirror status` with the returned repository ID to check progress.
 .PP
@@ -33,7 +33,7 @@ JSON FIELDS
 .SH OPTIONS
 .TP
 \fB\-\-source\fR \fICHOICE\fR
-Source hosting the repository. (choices: github, gitlab; default: github)
+Source platform. GitLab requires GitLab mirroring to be enabled for your organization. (choices: github, gitlab; default: github)
 .TP
 \fB\-\-location\fR \fITEXT\fR
 Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. (required)

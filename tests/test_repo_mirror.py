@@ -106,6 +106,7 @@ def test_create_invalid_or_ambiguous_location_does_not_mutate(runner, monkeypatc
     calls = _create_api(monkeypatch, clusters=clusters)
     result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", location])
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert (
         "Unknown mirror location" in result.output
         if location == "missing"
@@ -119,6 +120,7 @@ def test_create_failure_reports_partial_state_and_never_claims_success(runner, m
     calls = _create_api(monkeypatch, fail_at=failure)
     result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert "Mirror configured" not in result.output
     if failure == MIRROR_PATH:
         assert calls[-1] == ("PUT", MIRROR_PATH, {"enabled": True})
@@ -173,6 +175,7 @@ def test_create_bad_input_never_calls_api(runner, monkeypatch, args):
     calls = _create_api(monkeypatch)
     result = runner.invoke(cli, ["repo", "mirror", "create", *args])
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert calls == []
 
 
@@ -209,6 +212,7 @@ def test_create_gitlab_missing_repo_does_not_fall_back_to_github(runner, monkeyp
         cli, ["repo", "mirror", "create", "acme/widgets", "--source", "gitlab", "--location", "gsc-fi"]
     )
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert calls == [{"name": "acme/widgets", "platform": "gitlab"}]
     assert "Repository not connected" in result.output
 
@@ -222,6 +226,7 @@ def test_create_lost_placement_response_explains_safe_retry(runner, monkeypatch)
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", put)
     result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert "placement response was lost" in result.output
     assert "retry safely" in result.output
 
@@ -270,6 +275,7 @@ def test_scoped_mirror_resolution_does_not_fall_back_to_other_source(runner, mon
     )
     result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", "acme/widgets", "--source", "gitlab"])
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert "This scoped token does not reach repository" in result.stderr
     assert [r.url.path for r in api.requests] == [f"/orgs/{ORG_ID}/repos"]
 
@@ -347,6 +353,7 @@ def test_status_surfaces_flag_off_404(runner, monkeypatch):
     result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", REPO_ID])
 
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert "Not found while trying to get git-mirror status (HTTP 404)" in result.stderr
 
 
@@ -427,6 +434,7 @@ def test_place_conflict_when_not_declared(runner, monkeypatch):
     result = runner.invoke(cli, ["repo", "mirror", "place", "gsc-fi", "--repo", REPO_ID])
 
     assert result.exit_code != 0
+    assert isinstance(result.exception, SystemExit)
     assert "enable it first" in result.stderr
 
 
@@ -537,6 +545,7 @@ def test_clusters_rejects_malformed_response(runner, monkeypatch):
         result = runner.invoke(cli, ["repo", "mirror", "clusters"])
 
         assert result.exit_code != 0
+        assert isinstance(result.exception, SystemExit)
         assert "Unexpected" in result.stderr
         assert "git clusters" in result.stderr
 
@@ -548,3 +557,56 @@ def test_json_meta_lists_fields(runner):
     listed = result.output.split()
     assert "enabled" in listed
     assert "placements" in listed
+
+
+@pytest.mark.parametrize("failure", ["resolve", "clusters", "status", "enable"])
+def test_create_transport_errors_are_actionable(runner, monkeypatch, failure):
+    calls = _create_api(monkeypatch)
+    from avrea_cli.api_client import ApiClient
+
+    original_get, original_put = ApiClient.public_get, ApiClient.public_put
+    get_path = {"resolve": "/repos/resolve", "clusters": "/git-clusters", "status": "/git-mirrors"}.get(failure)
+
+    def get(self, path, params=None):
+        if get_path and path.endswith(get_path):
+            raise httpx.ConnectError("private transport details")
+        return original_get(self, path, params=params)
+
+    def put(self, path, json=None):
+        if failure == "enable":
+            raise httpx.ReadTimeout("private transport details")
+        return original_put(self, path, json=json)
+
+    monkeypatch.setattr(ApiClient, "public_get", get)
+    monkeypatch.setattr(ApiClient, "public_put", put)
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "Could not reach Avrea" in result.stderr
+    assert "private transport details" not in result.stderr
+    assert "Mirror configured" not in result.output
+    assert not any("/placements/" in call[1] for call in calls)
+    if failure == "enable":
+        assert "may have been applied" in result.stderr
+
+
+@pytest.mark.parametrize("status", [403, 409, 422, 429, 503])
+def test_create_placement_retry_hint_only_for_transient_status(runner, monkeypatch, status):
+    _create_api(monkeypatch, enabled=True)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_put", _raise_status(status, "Placement refused"))
+    result = runner.invoke(cli, ["repo", "mirror", "create", "acme/widgets", "--location", "gsc-fi"])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "Mirroring is enabled, but placement failed" in result.stderr
+    assert ("rerun this create command" in result.stderr) == (status in {429, 503})
+    assert f"HTTP {status}" in result.stderr
+
+
+def test_gitlab_mirror_404_explains_availability(runner, monkeypatch):
+    _create_api(monkeypatch)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _raise_status(404, "Repository not found"))
+    result = runner.invoke(cli, ["repo", "mirror", "status", "--repo", REPO_ID, "--source", "gitlab"])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "GitLab repositories cannot be mirrored until" in result.stderr
+    assert "Repository not found" in result.stderr

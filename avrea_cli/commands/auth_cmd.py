@@ -143,12 +143,17 @@ def auth_group(ctx):
 @click.pass_context
 def git_credential(ctx: click.Context, url: str, full_name: str, operation: str) -> None:
     """Git credential protocol adapter, installed by `avr repo clone`."""
-    if operation != "get":
-        return  # Short-lived credentials are never persisted by this helper.
+    match operation:
+        case "get":
+            pass  # Continue with the exact repository check before minting.
+        case "store" | "erase":
+            return  # Short-lived credentials are never persisted by this helper.
+        case _:
+            raise click.ClickException(f"Unsupported Git credential operation: {operation!r}.")
     full_name = validate_repo_name(full_name)
     parts = urlsplit(url)
     mirror_endpoint(f"{parts.scheme}://{parts.netloc}")
-    if parts.path != f"/{full_name}.git" or parts.query or parts.fragment:
+    if parts.path != f"/{full_name}.git" or "?" in url or "#" in url:
         raise click.ClickException("Invalid repository URL for the Git credential helper.")
     fields: dict[str, str] = {}
     capabilities: list[str] = []
@@ -172,8 +177,13 @@ def git_credential(ctx: click.Context, url: str, full_name: str, operation: str)
     ):
         return
     config: CliConfig = ctx.obj["config"]
-    ensure_authenticated(config)
-    token, expires_at = git_token(ctx.obj["client"], full_name)
+    try:
+        ensure_authenticated(config)
+        token, expires_at = git_token(ctx.obj["client"], full_name)
+    except click.ClickException, click.Abort, SystemExit:
+        # Git must not fall back to a password dialog for an Avrea Git JWT.
+        click.echo("quit=1\n")
+        raise
     if "authtype" in capabilities:
         click.echo(f"capability[]=authtype\nauthtype=Bearer\ncredential={token}\nephemeral=true\n")
     else:

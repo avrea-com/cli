@@ -1,7 +1,7 @@
 """Clone from a nearby mirror and supply short-lived credentials to native Git."""
 
 from avrea_cli.api_client import ApiClient
-from avrea_cli.config import _require_secure_host
+from avrea_cli.config import require_secure_host
 from avrea_cli.helpers import handle_http_error
 from datetime import UTC
 from datetime import datetime
@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 import asyncio
 import click
 import httpx
+import ipaddress
 import os
 import re
 import shlex
@@ -30,9 +31,29 @@ def validate_repo_name(value: str) -> str:
 def mirror_endpoint(value: str) -> str:
     """Only server-advertised secure origins may receive a Git JWT."""
     try:
-        value = _require_secure_host(value).rstrip("/")
+        value = require_secure_host(value).rstrip("/")
         parts = urlsplit(value)
-        if parts.path or parts.query or parts.fragment or parts.username is not None or "\\" in value:
+        if parts.path or "?" in value or "#" in value or parts.username is not None or "\\" in value:
+            raise ValueError
+        host = parts.hostname or ""
+        if ":" in host:
+            if "%" in host:
+                raise ValueError
+            ipaddress.IPv6Address(host)
+            authority = f"[{host}]"
+        else:
+            # DNS names are ASCII LDH labels. Validate A-labels as well: a
+            # malformed xn-- label can otherwise raise inside httpx's probe.
+            if len(host) > 253 or not all(
+                re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
+                for label in host.rstrip(".").split(".")
+            ):
+                raise ValueError
+            host.encode("ascii").decode("idna")
+            authority = host
+        if parts.port is not None:
+            authority += f":{parts.port}"
+        if parts.netloc.lower() != authority:
             raise ValueError
     except ValueError, click.ClickException:
         raise click.ClickException("The API returned an invalid or insecure mirror endpoint.") from None
@@ -106,7 +127,19 @@ async def nearest_mirror(endpoints: list[str], full_name: str, token: str) -> st
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
     detail = "; ".join(f"{endpoint}: {failures.get(endpoint, 'timed out')}" for endpoint in endpoints)
-    raise click.ClickException(f"No mirror could serve this repository ({detail}). Try again after it has synced.")
+    reasons = set(failures.values())
+    hints = []
+    if reasons & {"HTTP 401", "HTTP 403"}:
+        hints.append("Check your Avrea login and repository permissions.")
+    if "HTTP 404" in reasons:
+        hints.append("Check `avr repo mirror status` and retry after the repository has synced.")
+    if len(failures) < len(endpoints) or any(
+        reason.startswith("HTTP 5") or not reason.startswith("HTTP ") for reason in reasons
+    ):
+        hints.append("Some mirrors are unreachable or unavailable; check connectivity and `avr health`.")
+    if not hints:
+        hints.append("The mirrors did not return a Git advertisement; check `avr health`.")
+    raise click.ClickException(f"No mirror could serve this repository ({detail}). {' '.join(hints)}")
 
 
 def select_placement(endpoints: list[str], placement: str) -> str:
@@ -121,9 +154,15 @@ def select_placement(endpoints: list[str], placement: str) -> str:
 
 def credential_config(api_host: str, url: str, full_name: str) -> list[str]:
     """Persist only a helper command, scoped to this mirror and repository."""
-    helper = f"!AVR_HOST={shlex.quote(api_host)} " + shlex.join(
-        [shutil.which("avr") or "avr", "auth", "git-credential", "--url", url, "--repo", full_name]
+    executable = shutil.which("avr")
+    # Git invokes helpers from the checkout, not the directory of `repo clone`.
+    executable = os.path.abspath(executable) if executable else "avr"
+    command = f"AVR_HOST={shlex.quote(api_host)} " + shlex.join(
+        [executable, "auth", "git-credential", "--url", url, "--repo", full_name]
     )
+    # Also fail closed if the installed executable has since moved or startup
+    # fails before the credential adapter runs. Git appends the operation.
+    helper = f'!f() {{ {command} "$@" || {{ printf "quit=1\\n\\n"; exit 1; }}; }}; f'
     return [
         # Reset inherited helpers for this URL, so they neither supply stale
         # JWTs nor store the temporary credentials returned by our helper.
@@ -138,7 +177,6 @@ def clone_mirror(
     api_host: str,
     endpoint: str,
     full_name: str,
-    token: str,
     directory: str | None,
     *,
     branch: str | None,
@@ -150,15 +188,10 @@ def clone_mirror(
     for key in list(env):
         if key.startswith("GIT_TRACE") or key == "GIT_CURL_VERBOSE":
             del env[key]
-    env["AVR_GIT_AUTHORIZATION"] = f"Authorization: Bearer {token}"
     env["GIT_TERMINAL_PROMPT"] = "0"
-    argv = [
-        "git",
-        "-c",
-        f"http.{url}.extraHeader=",
-        f"--config-env=http.{url}.extraHeader=AVR_GIT_AUTHORIZATION",
-        "clone",
-    ]
+    env["GIT_ASKPASS"] = ""
+    env["SSH_ASKPASS"] = ""
+    argv = ["git", "-c", f"http.{url}.extraHeader=", "clone"]
     for setting in credential_config(api_host, url, full_name):
         argv.extend(["--config", setting])
     if branch is not None:

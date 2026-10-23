@@ -12,7 +12,7 @@ import os
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
-def _require_secure_host(host: str) -> str:
+def require_secure_host(host: str) -> str:
     """Reject a resolved host that can't safely carry the API key.
 
     A complete ``https://`` URL is required; ``http://`` is allowed only for
@@ -90,11 +90,11 @@ class CliConfig:
         """``AVR_HOST`` → file ``default_host`` → built-in default."""
         env = os.getenv("AVR_HOST")
         if env:
-            return _require_secure_host(env.rstrip("/"))
+            return require_secure_host(env.rstrip("/"))
         stored = auth.load_default_host()
         if stored:
             try:
-                return _require_secure_host(stored.rstrip("/"))
+                return require_secure_host(stored.rstrip("/"))
             except click.ClickException as exc:
                 # The bad host is the stored default in hosts.json, which is
                 # resolved before any subcommand runs, so the plain message

@@ -99,9 +99,16 @@ mirror URL or hostname to select one explicitly. Use `--org` to override your
 default organization. The repository must already have Git mirroring enabled
 and a usable placement.
 
-`origin` stays on the selected mirror. The clone installs a repository-local
-credential helper so ordinary `git fetch`, `git pull`, and `git push` obtain
-fresh Git tokens through your Avrea login. Pushes require write permission.
+`origin` stays on the selected read-only mirror. The clone installs a
+repository-local credential helper so ordinary `git fetch` and `git pull`
+obtain fresh Git tokens through your Avrea login. Push changes to the source
+repository using a separate remote, for example:
+
+```sh
+git remote add upstream git@github.com:foo/faa.git
+git push upstream HEAD
+```
+
 Tokens normally last one hour; scoped API keys are limited to ten minutes or
 their remaining lifetime. Git tokens are never saved in the remote URL or
 repository configuration. Keep `avr` installed and logged in for later Git
@@ -127,9 +134,11 @@ placements. Sync runs asynchronously; use `status` to check it. Repeating
 `create` is safe, including when enabling succeeded but placement failed.
 `locations` and `create` also support `--json` and `--jq`.
 
-GitLab mirroring needs the corresponding backend implementation. The CLI
-passes the selected source to repository resolution; the current backend
-still restricts customer mirror management and syncing to GitHub.
+GitLab repositories cannot be mirrored until GitLab mirroring is enabled
+for your organization. `--source gitlab` is available for deployments that
+support it, including repositories in nested groups. If a GitLab repository
+returns “not found,” check its connection to Avrea, your access, and whether
+GitLab mirroring is enabled.
 
 **Watch a run live**
 

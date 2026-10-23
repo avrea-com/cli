@@ -153,6 +153,9 @@ def _resolve_repo_strict(
         if exc.response.status_code != 404:
             handle_http_error(exc, "resolve the repository")
         is_miss, message, nearby, other_orgs = _parse_resolve_404_detail(exc)
+        if platform == "gitlab":
+            hint = "Check the GitLab repository connection, your access, and whether GitLab support is enabled."
+            message = f"{message} {hint}" if message else hint
         # Always raise _RepoNotInOrgError on 404 so the soft-detect path
         # (resolve_repo_or_detect) can fall back to org-wide queries. Whether
         # the 404 carried the structured "miss" payload or a free-form detail
@@ -166,6 +169,8 @@ def _resolve_repo_strict(
             nearby=nearby,
             other_orgs=other_orgs,
         ) from None
+    except httpx.HTTPError:
+        raise click.ClickException("Could not reach Avrea to resolve the repository.") from None
 
 
 def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str, *, platform: str | None = None) -> str:
@@ -183,6 +188,8 @@ def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str, *,
             response = client.public_get(f"/orgs/{org_id}/repos", params=params)
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "resolve the repository")
+        except httpx.HTTPError:
+            raise click.ClickException("Could not reach Avrea to resolve the repository.") from None
         rows = response.get("data") or []
         for row in rows:
             if not isinstance(row, dict):
@@ -379,8 +386,10 @@ def resolve_repo_or_detect(
         if required:
             raise click.ClickException(_no_repo_error_message())
         return None
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if detected:
+        platform = platform or (context[1] if context else None)
         _emit_using_repo_hint(detected)
         if required or strict_detected:
             return resolve_repo(client, config, org_id, detected, platform=platform)
@@ -422,17 +431,19 @@ def resolve_repos_or_detect(
     if config.repo_override:
         _emit_using_repo_hint(config.repo_override)
         return [resolve_repo(client, config, org_id, config.repo_override)]
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if not detected:
         return []
+    platform = context[1] if context else None
     _emit_using_repo_hint(detected)
     if soft_detect:
         try:
-            return [_resolve_repo_strict(client, config, org_id, detected)]
+            return [_resolve_repo_strict(client, config, org_id, detected, platform=platform)]
         except _RepoNotInOrgError as exc:
             _echo_soft_detect_miss(exc, detected)
             return []
-    return [resolve_repo(client, config, org_id, detected)]
+    return [resolve_repo(client, config, org_id, detected, platform=platform)]
 
 
 def resolve_repo_named(
@@ -452,18 +463,26 @@ def resolve_repo_named(
         _emit_using_repo_hint(config.repo_override)
         rid = resolve_repo(client, config, org_id, config.repo_override)
         return rid, config.repo_override
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if detected:
         _emit_using_repo_hint(detected)
-        rid = resolve_repo(client, config, org_id, detected)
+        rid = resolve_repo(client, config, org_id, detected, platform=context[1] if context else None)
         return rid, detected
     raise click.ClickException(_no_repo_error_message())
 
 
 def detect_repo_from_git() -> str | None:
-    """Detect owner/repo from the current git directory's origin remote.
+    """Return the detected repository name for display-only callers."""
+    context = detect_repo_context_from_git()
+    return context[0] if context else None
 
-    Returns 'owner/repo' string or None if detection fails.
+
+def detect_repo_context_from_git() -> tuple[str, str | None] | None:
+    """Detect the repository name and known source platform from origin.
+
+    Custom hosts and Avrea mirrors carry no inferred provider; explicit
+    --source remains authoritative when available.
     """
     try:
         result = subprocess.run(
@@ -474,7 +493,16 @@ def detect_repo_from_git() -> str | None:
         )
         if result.returncode != 0:
             return None
-        return parse_remote_url(result.stdout.strip())
+        url = result.stdout.strip().removeprefix("git+")
+        name = parse_remote_url(url)
+        if name is None:
+            return None
+        if _SCP_RE.match(url):
+            host = url.split("@", 1)[1].split(":", 1)[0].lower()
+        else:
+            host = urlparse(url).hostname
+        platform = {"github.com": "github", "gitlab.com": "gitlab"}.get(host or "")
+        return name, platform
     except subprocess.TimeoutExpired, FileNotFoundError:
         return None
 

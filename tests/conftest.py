@@ -14,7 +14,7 @@ def _disable_git_repo_detect(monkeypatch):
     silently fire a real API call (or hit a mocked one with the wrong shape).
     Tests that want to exercise auto-detect can override the fixture with
     their own monkeypatch."""
-    monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+    monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
 
 
 @pytest.fixture(autouse=True)
