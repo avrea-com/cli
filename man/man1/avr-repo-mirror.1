@@ -12,11 +12,17 @@ Manage this repository's avrea-git mirror (feature-flagged).
 clusters
 List the git clusters a mirror can be placed in.
 .TP
+create
+Enable mirroring and place a connected repository at a location.
+.TP
 disable
 Stop mirroring the repository into avrea-git.
 .TP
 enable
 Declare the repository mirrored into avrea-git.
+.TP
+locations
+List available mirror locations and their cluster IDs.
 .TP
 place
 Place the repository's mirror in a git cluster.
@@ -29,11 +35,14 @@ Remove the repository's mirror from a git cluster.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-repo (1),
+.BR avr-repo-clone (1),
 .BR avr-repo-list (1),
 .BR avr-repo-public-mirror (1),
 .BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-create (1),
 .BR avr-repo-mirror-disable (1),
 .BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-locations (1),
 .BR avr-repo-mirror-place (1),
 .BR avr-repo-mirror-status (1),
 .BR avr-repo-mirror-unplace (1)

@@ -2240,6 +2240,43 @@ Manage repositories, git mirrors, and public mirrors.
 avr repo [OPTIONS] COMMAND [ARGS]...
 ```
 
+#### `avr repo clone`
+
+Clone a repository from its nearest available Avrea mirror.
+
+```sh
+avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
+```
+
+REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
+Available placements are raced from this client; the first to serve the
+repository wins. Use --placement to select an exact URL or hostname.
+
+The origin remote stays on the selected read-only mirror. A repository-local
+Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
+operations using your Avrea login. Push changes to the source repository
+using a separate remote. Tokens normally last one hour; scoped API keys have
+a shorter server-enforced lifetime. Tokens are never saved in the repository.
+
+```sh
+Examples:
+    avr repo clone foo/faa
+    avr repo clone foo/faa my-checkout --depth 1
+    avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+```
+
+**Arguments**
+
+- `REPOSITORY`
+- `[DIRECTORY]`
+
+**Options**
+
+- `--placement <TEXT>` — Exact mirror URL or hostname from the repository's placements.
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization if omitted.
+- `--branch, -b <TEXT>` — Branch or tag to check out.
+- `--depth <INTEGER RANGE>` — Create a shallow clone with this many commits.
+
 #### `avr repo list`
 
 List repositories you can access in an organization.
@@ -2300,6 +2337,48 @@ JSON FIELDS
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
+##### `avr repo mirror create`
+
+Enable mirroring and place a connected repository at a location.
+
+```sh
+avr repo mirror create [OPTIONS] REPOSITORY
+```
+
+REPOSITORY is an owner/repo name on GitHub or a namespace/repo name on
+GitLab (including nested groups). GitLab repositories cannot be mirrored
+until GitLab mirroring is enabled for your organization. The repository
+must already be connected to the
+selected Avrea organization. Requires the organization admin role.
+
+Safe to repeat: existing placements and their source configuration are
+preserved. The initial sync runs asynchronously; use `mirror status`
+with the returned repository ID to check progress.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror create acme/widgets --location gsc-fi
+    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
+```
+
+```sh
+JSON FIELDS
+    enabled, full_name, placements, repository_id
+```
+
+**Arguments**
+
+- `REPOSITORY`
+
+**Options**
+
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
+- `--location <TEXT>` — Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. _(required)_
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ##### `avr repo mirror disable`
 
 Stop mirroring the repository into avrea-git.
@@ -2327,6 +2406,7 @@ JSON FIELDS
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2357,6 +2437,34 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr repo mirror locations`
+
+List available mirror locations and their cluster IDs.
+
+```sh
+avr repo mirror locations [OPTIONS]
+```
+
+Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
+
+```sh
+Examples:
+    avr repo mirror locations
+    avr repo mirror locations --json cluster_id,name
+```
+
+```sh
+JSON FIELDS
+    cluster_id, datacenter_id, name
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2391,6 +2499,7 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2418,6 +2527,7 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2452,6 +2562,7 @@ JSON FIELDS
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
+- `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

@@ -73,7 +73,7 @@ class TestSettingsList:
         and shows its effective values."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             captured["path"] = path
@@ -91,7 +91,7 @@ class TestSettingsList:
         even inside a checkout."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             captured["path"] = path
@@ -108,7 +108,7 @@ class TestSettingsList:
         isn't connected, `list` shows org-wide results instead of erroring."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             if path.endswith("/repos/resolve"):
@@ -223,7 +223,7 @@ class TestSettingsSet:
         that 422'd because --org didn't suppress repo auto-detection."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_put(self, path, json=None):
             assert json is not None
@@ -241,7 +241,7 @@ class TestSettingsSet:
         """Like gh/glab: a bare `set` inside a checkout writes a repo override."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
@@ -294,7 +294,7 @@ class TestSettingsSet:
     def test_set_422_autodetected_repo_hint(self, runner, monkeypatch):
         """An org-only key hit via an auto-detected repo hints to use --org
         (the user never typed --repo, so 'drop --repo' would be wrong)."""
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
@@ -321,7 +321,7 @@ class TestSettingsSet:
         auto-detected repo isn't connected to the org — it errors instead."""
         put_called = []
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             request = httpx.Request("GET", "https://api.avrea.com" + path)
@@ -343,7 +343,7 @@ class TestSettingsSet:
         (uses the default org) instead of erroring."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
 
         def mock_put(self, path, json=None):
             assert json is not None
@@ -434,7 +434,7 @@ class TestSettingsReset:
         """`reset --org` targets org scope and ignores the git remote."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
@@ -450,7 +450,7 @@ class TestSettingsReset:
         """A bare `reset` inside a checkout clears the repo override."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             return {"data": {"repository_id": "rep-detected", "full_name": "acme/web"}}
@@ -470,7 +470,7 @@ class TestSettingsReset:
         scope instead of erroring."""
         captured = {}
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
@@ -486,7 +486,7 @@ class TestSettingsReset:
         rather than clearing the org-wide value by surprise."""
         delete_called = []
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/web")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/web", None))
 
         def mock_get(self, path, params=None):
             request = httpx.Request("GET", "https://api.avrea.com" + path)

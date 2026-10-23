@@ -4,6 +4,9 @@ from avrea_cli import auth
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
+from avrea_cli.git_mirror import git_token
+from avrea_cli.git_mirror import mirror_endpoint
+from avrea_cli.git_mirror import validate_repo_name
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import handle_http_error
@@ -14,6 +17,7 @@ from avrea_cli.json_output import json_options
 from avrea_cli.json_output import make_schema
 from avrea_cli.json_output import split_fields
 from avrea_cli.output import format_key_value
+from urllib.parse import urlsplit
 import click
 import httpx
 import sys
@@ -130,6 +134,62 @@ def _do_logout(ctx):
 def auth_group(ctx):
     """Authenticate and manage credentials."""
     ensure_ctx(ctx)
+
+
+@auth_group.command("git-credential", hidden=True)
+@click.option("--url", required=True, help="Exact clone URL this helper may authenticate.")
+@click.option("--repo", "full_name", required=True, help="Repository whose Git token to request.")
+@click.argument("operation", type=click.Choice(["get", "store", "erase"]))
+@click.pass_context
+def git_credential(ctx: click.Context, url: str, full_name: str, operation: str) -> None:
+    """Git credential protocol adapter, installed by `avr repo clone`."""
+    match operation:
+        case "get":
+            pass  # Continue with the exact repository check before minting.
+        case "store" | "erase":
+            return  # Short-lived credentials are never persisted by this helper.
+        case _:
+            raise click.ClickException(f"Unsupported Git credential operation: {operation!r}.")
+    full_name = validate_repo_name(full_name)
+    parts = urlsplit(url)
+    mirror_endpoint(f"{parts.scheme}://{parts.netloc}")
+    if parts.path != f"/{full_name}.git" or "?" in url or "#" in url:
+        raise click.ClickException("Invalid repository URL for the Git credential helper.")
+    fields: dict[str, str] = {}
+    capabilities: list[str] = []
+    for line in sys.stdin:
+        line = line.rstrip("\n")
+        if not line:
+            break
+        key, separator, value = line.partition("=")
+        if not separator or "\x00" in line or "\r" in line or len(line) > 65535:
+            raise click.ClickException("Invalid Git credential request.")
+        if key == "capability[]":
+            capabilities.append(value)
+        else:
+            fields[key] = value
+    # useHttpPath is configured during clone. Requiring it here prevents this
+    # repo's credentials from being handed to another path or remote host.
+    if (fields.get("protocol"), fields.get("host"), fields.get("path")) != (
+        parts.scheme,
+        parts.netloc,
+        parts.path.lstrip("/"),
+    ):
+        return
+    config: CliConfig = ctx.obj["config"]
+    try:
+        ensure_authenticated(config)
+        token, expires_at = git_token(ctx.obj["client"], full_name)
+    except click.ClickException, click.Abort, SystemExit:
+        # Git must not fall back to a password dialog for an Avrea Git JWT.
+        click.echo("quit=1\n")
+        raise
+    if "authtype" in capabilities:
+        click.echo(f"capability[]=authtype\nauthtype=Bearer\ncredential={token}\nephemeral=true\n")
+    else:
+        # Older Git versions use Basic auth; avrea-git accepts the JWT as the
+        # password. The URL-scoped helper reset keeps other helpers from saving it.
+        click.echo(f"username=x-access-token\npassword={token}\npassword_expiry_utc={int(expires_at.timestamp())}\n")
 
 
 @auth_group.command("login")

@@ -2,7 +2,7 @@
 
 from avrea_cli.config import CliConfig
 from avrea_cli.helpers import EXIT_AUTH_REQUIRED
-from avrea_cli.repo_context import detect_repo_from_git
+from avrea_cli.repo_context import detect_repo_context_from_git
 from avrea_cli.repo_context import parse_remote_url
 from avrea_cli.repo_context import resolve_repo
 from avrea_cli.repo_context import resolve_repo_or_detect
@@ -126,12 +126,24 @@ class TestParseRemoteUrl:
             "",
             "not a url",
             "https://github.com/acme",  # missing repo
-            "https://github.com/acme/cool/extra",  # too many segments
+            "https://gitlab.com/acme//cool",  # empty group
+            "https://gitlab.com/acme/../cool",  # traversal
             "ftp://github.com/acme/cool",  # unsupported scheme
         ],
     )
     def test_rejects_invalid(self, url):
         assert parse_remote_url(url) is None
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "git@gitlab.com:acme/team/widgets.git",
+            "https://gitlab.com/acme/team/widgets.git",
+            "ssh://git@gitlab.com/acme/team/widgets.git",
+        ],
+    )
+    def test_nested_gitlab_groups(self, url):
+        assert parse_remote_url(url) == "acme/team/widgets"
 
 
 class TestDetectRepoFromGit:
@@ -140,12 +152,12 @@ class TestDetectRepoFromGit:
     def test_returns_none_when_git_fails(self, monkeypatch):
         result_obj = MagicMock(returncode=1, stdout="")
         monkeypatch.setattr("subprocess.run", lambda *a, **kw: result_obj)
-        assert detect_repo_from_git() is None
+        assert detect_repo_context_from_git() is None
 
     def test_parses_origin_remote(self, monkeypatch):
         result_obj = MagicMock(returncode=0, stdout="git@github.com:acme/cool.git\n")
         monkeypatch.setattr("subprocess.run", lambda *a, **kw: result_obj)
-        assert detect_repo_from_git() == "acme/cool"
+        assert detect_repo_context_from_git() == ("acme/cool", "github")
 
 
 class TestResolveRepoOrDetect:
@@ -157,30 +169,30 @@ class TestResolveRepoOrDetect:
 
         # Even if git would resolve, an explicit flag wins.
         def _git_should_not_run() -> str | None:
-            raise AssertionError("detect_repo_from_git should not run when --repo is passed")
+            raise AssertionError("detect_repo_context_from_git should not run when --repo is passed")
 
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", _git_should_not_run)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", _git_should_not_run)
         result = resolve_repo_or_detect(client, config, "org-1", "acme/explicit")
         assert result == "rep-from-flag"
 
     def test_falls_back_to_git_remote(self, config, monkeypatch):
         client = MagicMock()
         client.public_get.return_value = {"data": {"repository_id": "rep-from-git"}}
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/cool")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/cool", None))
         result = resolve_repo_or_detect(client, config, "org-1", None)
         assert result == "rep-from-git"
 
     def test_returns_none_when_optional_and_no_git(self, config, monkeypatch):
         """Optional callers (status, settings) get None — they decide what to do."""
         client = MagicMock()
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
         result = resolve_repo_or_detect(client, config, "org-1", None)
         assert result is None
         client.public_get.assert_not_called()
 
     def test_required_raises_when_no_git_and_no_flag(self, config, monkeypatch):
         client = MagicMock()
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
         with pytest.raises(click.ClickException, match="Could not determine repository"):
             resolve_repo_or_detect(client, config, "org-1", None, required=True)
 
@@ -194,7 +206,7 @@ class TestResolveRepoOrDetect:
             _http_404(),  # /orgs/{org}/repos/resolve
             {"data": [{"repository_id": "rep-other", "full_name": "acme/other"}]},
         ]
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/foreign")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/foreign", None))
         result = resolve_repo_or_detect(client, config, "org-1", None)
         assert result is None
         err = capsys.readouterr().err
@@ -211,7 +223,7 @@ class TestResolveRepoOrDetect:
         request = httpx.Request("GET", "https://api.example.com/x")
         response = httpx.Response(401, request=request, json={"detail": "unauthorized"})
         client.public_get.side_effect = httpx.HTTPStatusError("unauthorized", request=request, response=response)
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/foreign")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/foreign", None))
         with pytest.raises(SystemExit) as exc_info:
             resolve_repo_or_detect(client, config, "org-1", None)
         assert exc_info.value.code == EXIT_AUTH_REQUIRED
@@ -227,7 +239,7 @@ class TestResolveRepoOrDetect:
         request = httpx.Request("GET", "https://api.example.com/x")
         response = httpx.Response(503, request=request, json={"detail": "upstream down"})
         client.public_get.side_effect = httpx.HTTPStatusError("unavailable", request=request, response=response)
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/foreign")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/foreign", None))
         with pytest.raises(SystemExit) as exc_info:
             resolve_repo_or_detect(client, config, "org-1", None)
         assert exc_info.value.code == 1
@@ -243,21 +255,42 @@ class TestResolveReposOrDetect:
     def test_returns_resolved_explicit_list(self, config, monkeypatch):
         client = MagicMock()
         client.public_get.return_value = {"data": {"repository_id": "rep-x"}}
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "should/not-be-used")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("should/not-be-used", None))
         result = resolve_repos_or_detect(client, config, "org-1", ("rep-a", "rep-b"))
         assert result == ["rep-a", "rep-b"]  # rep-xxx forms pass through
 
     def test_auto_detects_when_empty_and_in_git(self, config, monkeypatch):
         client = MagicMock()
         client.public_get.return_value = {"data": {"repository_id": "rep-auto"}}
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/cool")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/cool", None))
         result = resolve_repos_or_detect(client, config, "org-1", ())
         assert result == ["rep-auto"]
 
     def test_returns_empty_when_no_repos_and_not_in_git(self, config, monkeypatch):
         """Outside a git tree, the list-style commands list everything."""
         client = MagicMock()
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
         result = resolve_repos_or_detect(client, config, "org-1", ())
         assert result == []
         client.public_get.assert_not_called()
+
+
+@pytest.mark.parametrize("remote", ["git@gitlab.com:acme/team/widgets.git", "https://gitlab.com/acme/team/widgets.git"])
+@pytest.mark.parametrize("mode", ["single", "multiple", "named"])
+def test_gitlab_autodetection_preserves_platform(monkeypatch, config, remote, mode):
+    from avrea_cli import repo_context
+    from subprocess import CompletedProcess
+
+    monkeypatch.setattr(repo_context, "detect_repo_context_from_git", detect_repo_context_from_git)
+    monkeypatch.setattr(repo_context.subprocess, "run", lambda *args, **kwargs: CompletedProcess([], 0, remote))
+    client = MagicMock()
+    client.public_get.return_value = {"data": {"repository_id": "rep-gitlab", "full_name": "acme/team/widgets"}}
+    if mode == "single":
+        assert resolve_repo_or_detect(client, config, "org-1", None, required=True) == "rep-gitlab"
+    elif mode == "multiple":
+        assert resolve_repos_or_detect(client, config, "org-1", (), soft_detect=True) == ["rep-gitlab"]
+    else:
+        assert repo_context.resolve_repo_named(client, config, "org-1", None) == ("rep-gitlab", "acme/team/widgets")
+    client.public_get.assert_called_once_with(
+        "/orgs/org-1/repos/resolve", params={"name": "acme/team/widgets", "platform": "gitlab"}
+    )

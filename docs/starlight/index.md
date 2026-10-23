@@ -90,6 +90,61 @@ Auto-detection means most commands "just work" without `--repo`. Outside a git t
 
 ## Common workflows
 
+**Clone from a nearby Git mirror**
+
+```sh
+avr repo clone foo/faa
+avr repo clone foo/faa my-checkout --depth 1 --branch main
+avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+```
+
+Avrea discovers the repository's placements and picks the first mirror that
+responds successfully from your machine. `--placement` accepts an advertised
+mirror URL or hostname to select one explicitly. Use `--org` to override your
+default organization. The repository must already have Git mirroring enabled
+and a usable placement.
+
+`origin` stays on the selected read-only mirror. The clone installs a
+repository-local credential helper so ordinary `git fetch` and `git pull`
+obtain fresh Git tokens through your Avrea login. Push changes to the source
+repository using a separate remote, for example:
+
+```sh
+git remote add upstream git@github.com:foo/faa.git
+git push upstream HEAD
+```
+
+Tokens normally last one hour; scoped API keys are limited to ten minutes or
+their remaining lifetime. Git tokens are never saved in the remote URL or
+repository configuration. Keep `avr` installed and logged in for later Git
+operations; the helper continues to use the API host used for the clone.
+
+**Create a mirror at a location**
+
+```sh
+avr repo mirror locations
+avr repo mirror create foo/faa --location gsc-fi
+avr repo mirror create group/subgroup/project --source gitlab --location gsc-fi
+avr repo mirror status --repo group/subgroup/project --source gitlab
+```
+
+`--source` defaults to `github`; `gitlab` supports nested group names. The
+repository must already be connected to your Avrea organization. Use `--org`
+to select an organization. Mirror management requires the organization's
+Git-mirror feature and an admin role.
+
+`--location` accepts a cluster ID, datacenter ID, or unique name from `locations`.
+The command enables mirroring and adds the placement, preserving existing
+placements. Sync runs asynchronously; use `status` to check it. Repeating
+`create` is safe, including when enabling succeeded but placement failed.
+`locations` and `create` also support `--json` and `--jq`.
+
+GitLab repositories cannot be mirrored until GitLab mirroring is enabled
+for your organization. `--source gitlab` is available for deployments that
+support it, including repositories in nested groups. If a GitLab repository
+returns “not found,” check its connection to Avrea, your access, and whether
+GitLab mirroring is enabled.
+
 **Watch a run live**
 
 ```sh

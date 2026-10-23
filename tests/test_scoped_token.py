@@ -216,7 +216,7 @@ class TestRepositoryNames:
         assert "avr repo list" not in result.stderr
 
     def test_checkout_of_a_reached_repository_narrows_the_listing(self, scoped, api, monkeypatch):
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/api")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/api", None))
         api.reply("GET", REPOS, json=_repos(("acme/api", "rep-api")))
         api.reply("GET", RUNS, json={"data": [], "pagination": {}})
         result = scoped.invoke(cli, ["run", "list"])
@@ -225,7 +225,7 @@ class TestRepositoryNames:
         assert runs.url.params.get_list("repository_ids") == ["rep-api"]
 
     def test_checkout_of_an_unreached_repository_says_what_is_listed(self, scoped, api, monkeypatch):
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/elsewhere")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/elsewhere", None))
         api.reply("GET", REPOS, json=_repos())
         api.reply("GET", RUNS, json={"data": [], "pagination": {}})
         result = scoped.invoke(cli, ["run", "list"])
@@ -248,7 +248,7 @@ class TestRepositoryNames:
         assert [r.url.path for r in api.requests] == [RESOLVE, NAMED_ENTRIES]
 
     def test_api_key_checkout_miss_keeps_its_message(self, runner, api, monkeypatch):
-        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_from_git", lambda: "acme/elsewhere")
+        monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: ("acme/elsewhere", None))
         api.reply("GET", RESOLVE, 404, json={"detail": {"message": "not found", "nearby_full_names": []}})
         api.reply("GET", RUNS, json={"data": [], "pagination": {}})
         result = runner.invoke(cli, ["run", "list"])

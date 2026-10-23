@@ -38,6 +38,9 @@ Organization ID or slug. Uses default org if not specified (see: avr config set 
 \fB\-\-yes\fR, \fB\-y\fR
 Skip the confirmation prompt.
 .TP
+\fB\-\-source\fR \fICHOICE\fR
+Source platform. GitLab requires GitLab mirroring to be enabled for your organization. (choices: github, gitlab; default: github)
+.TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 .TP
@@ -47,7 +50,9 @@ Filter --json output through a jq expression.
 .BR avr (1),
 .BR avr-repo-mirror (1),
 .BR avr-repo-mirror-clusters (1),
+.BR avr-repo-mirror-create (1),
 .BR avr-repo-mirror-disable (1),
 .BR avr-repo-mirror-enable (1),
+.BR avr-repo-mirror-locations (1),
 .BR avr-repo-mirror-place (1),
 .BR avr-repo-mirror-status (1)

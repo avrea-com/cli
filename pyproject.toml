@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
   "anyio>=4.14.2",  # security floor for HTTPX's transitive dependency
+  "certifi>=2026.10.19",  # exclude the compromised emSign CA bundle (GHSA-6q48-6c7w-9gw2)
   "click>=8.3.1",
   "httpx>=0.28.1",
   "platformdirs>=4.0",
@@ -56,6 +57,9 @@ Repository = "https://github.com/avrea-com/cli"
 required-version = ">=0.11.11"
 package = true
 exclude-newer = "P3D"
+# The certifi CA-revocation fix was uploaded Oct 20; admit it before the
+# default three-day cooldown without relaxing the cutoff for other packages.
+exclude-newer-package = { certifi = "P2D" }
 
 [tool.ty.environment]
 python-version = "3.14"

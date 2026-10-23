@@ -15,7 +15,7 @@ import re
 import subprocess
 import sys
 
-_SCP_RE = re.compile(r"^[\w.-]+@[\w.-]+:([\w._-]+/[\w._-]+?)(?:\.git)?$")
+_SCP_RE = re.compile(r"^[\w.-]+@[\w.-]+:([\w._-]+(?:/[\w._-]+)+)$")
 
 _HINT_EMITTED: set[str] = set()
 """Hints emitted this process. Lives for one CLI invocation; the hint
@@ -92,25 +92,25 @@ class _RepoNotInOrgError(Exception):
         self.scoped_token = scoped_token
 
 
-def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -> str:
+def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str, *, platform: str | None = None) -> str:
     """Resolve a repo identifier to an Avrea repository ID.
 
     Accepts:
       - Avrea repo ID (rep-...): returned as-is
-      - GitHub full name (org/repo): resolved via API
+      - Platform full name (org/repo or group/subgroup/repo): resolved via API
 
     Aborts with a user-facing error if the repo isn't in the org. Callers
     that want to handle "not in org" specially should use
     :func:`_resolve_repo_strict` and catch :class:`_RepoNotInOrgError`.
     """
     try:
-        return _resolve_repo_strict(client, config, org_id, repo)
+        return _resolve_repo_strict(client, config, org_id, repo, platform=platform)
     except _RepoNotInOrgError as exc:
         if exc.scoped_token:
             click.echo(f'Error: This scoped token does not reach repository "{exc.repo}".', err=True)
             click.echo("  `avr repo list` shows the repositories it reaches.", err=True)
             raise click.Abort() from None
-        _abort_repo_not_found(
+        return _abort_repo_not_found(
             exc.repo,
             org_id,
             is_structured=exc.is_structured,
@@ -120,7 +120,9 @@ def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str) -
         )
 
 
-def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo: str) -> str:
+def _resolve_repo_strict(
+    client: ApiClient, config: CliConfig, org_id: str, repo: str, *, platform: str | None = None
+) -> str:
     """Inner implementation: raises :class:`_RepoNotInOrgError` for missing
     repos instead of aborting. Auth/transport failures still raise
     ``click.Abort`` so the user sees the real cause.
@@ -128,7 +130,7 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
     The server's 404 body now carries ``nearby_full_names`` + ``other_orgs``,
     so a single round-trip is enough — no client-side list-and-filter needed.
     """
-    if repo.startswith("rep-"):
+    if repo.startswith("rep-") and "/" not in repo:
         return repo
 
     if "/" not in repo:
@@ -137,10 +139,13 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
         raise click.Abort()
 
     if is_scoped_token(config.auth_token):
-        return _resolve_repo_for_scoped_token(client, org_id, repo)
+        return _resolve_repo_for_scoped_token(client, org_id, repo, platform=platform)
 
     try:
-        result = client.public_get(f"/orgs/{org_id}/repos/resolve", params={"name": repo})
+        params = {"name": repo}
+        if platform is not None:
+            params["platform"] = platform
+        result = client.public_get(f"/orgs/{org_id}/repos/resolve", params=params)
         data = result.get("data") or {}
         _warn_if_case_folded(repo, data.get("full_name"))
         return data["repository_id"]
@@ -148,6 +153,9 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
         if exc.response.status_code != 404:
             handle_http_error(exc, "resolve the repository")
         is_miss, message, nearby, other_orgs = _parse_resolve_404_detail(exc)
+        if platform == "gitlab":
+            hint = "Check the GitLab repository connection, your access, and whether GitLab support is enabled."
+            message = f"{message} {hint}" if message else hint
         # Always raise _RepoNotInOrgError on 404 so the soft-detect path
         # (resolve_repo_or_detect) can fall back to org-wide queries. Whether
         # the 404 carried the structured "miss" payload or a free-form detail
@@ -161,9 +169,11 @@ def _resolve_repo_strict(client: ApiClient, config: CliConfig, org_id: str, repo
             nearby=nearby,
             other_orgs=other_orgs,
         ) from None
+    except httpx.HTTPError:
+        raise click.ClickException("Could not reach Avrea to resolve the repository.") from None
 
 
-def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) -> str:
+def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str, *, platform: str | None = None) -> str:
     """Match ``repo`` against the repositories a scoped token reaches.
 
     The resolve endpoint answers a scoped token 404 whatever the name. The
@@ -178,9 +188,13 @@ def _resolve_repo_for_scoped_token(client: ApiClient, org_id: str, repo: str) ->
             response = client.public_get(f"/orgs/{org_id}/repos", params=params)
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "resolve the repository")
+        except httpx.HTTPError:
+            raise click.ClickException("Could not reach Avrea to resolve the repository.") from None
         rows = response.get("data") or []
         for row in rows:
             if not isinstance(row, dict):
+                continue
+            if platform is not None and row.get("platform") != platform:
                 continue
             repo_id = row.get("repository_id")
             if isinstance(repo_id, str) and repo_id and str(row.get("full_name") or "").casefold() == wanted:
@@ -311,6 +325,7 @@ def resolve_repo_or_detect(
     required: Literal[True],
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str: ...
 
 
@@ -324,6 +339,7 @@ def resolve_repo_or_detect(
     required: Literal[False] = False,
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str | None: ...
 
 
@@ -336,6 +352,7 @@ def resolve_repo_or_detect(
     required: bool = False,
     detect_git: bool = True,
     strict_detected: bool = False,
+    platform: str | None = None,
 ) -> str | None:
     """Resolve a repo with this precedence:
 
@@ -356,21 +373,26 @@ def resolve_repo_or_detect(
     None when no repo is detected at all. Writes use this: a checkout whose
     repo isn't connected is a mistake worth surfacing, but having no repo
     context at all just means org scope.
+
+    ``platform`` selects the source for name resolution. Repository IDs are
+    already unambiguous and do not need a platform lookup.
     """
     if repo:
-        return resolve_repo(client, config, org_id, repo)
+        return resolve_repo(client, config, org_id, repo, platform=platform)
     if config.repo_override:
         _emit_using_repo_hint(config.repo_override)
-        return resolve_repo(client, config, org_id, config.repo_override)
+        return resolve_repo(client, config, org_id, config.repo_override, platform=platform)
     if not detect_git:
         if required:
             raise click.ClickException(_no_repo_error_message())
         return None
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if detected:
+        platform = platform or (context[1] if context else None)
         _emit_using_repo_hint(detected)
         if required or strict_detected:
-            return resolve_repo(client, config, org_id, detected)
+            return resolve_repo(client, config, org_id, detected, platform=platform)
         # Soft-detect: don't abort the command if the auto-detected repo
         # isn't in the org. Caller asked for a repo but is fine without one
         # (e.g. `avr status` falls back to org-wide), so treat the mismatch
@@ -378,7 +400,7 @@ def resolve_repo_or_detect(
         # so the user isn't silently routed to org-wide queries with a
         # broken token.
         try:
-            return _resolve_repo_strict(client, config, org_id, detected)
+            return _resolve_repo_strict(client, config, org_id, detected, platform=platform)
         except _RepoNotInOrgError as exc:
             _echo_soft_detect_miss(exc, detected)
             return None
@@ -409,17 +431,19 @@ def resolve_repos_or_detect(
     if config.repo_override:
         _emit_using_repo_hint(config.repo_override)
         return [resolve_repo(client, config, org_id, config.repo_override)]
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if not detected:
         return []
+    platform = context[1] if context else None
     _emit_using_repo_hint(detected)
     if soft_detect:
         try:
-            return [_resolve_repo_strict(client, config, org_id, detected)]
+            return [_resolve_repo_strict(client, config, org_id, detected, platform=platform)]
         except _RepoNotInOrgError as exc:
             _echo_soft_detect_miss(exc, detected)
             return []
-    return [resolve_repo(client, config, org_id, detected)]
+    return [resolve_repo(client, config, org_id, detected, platform=platform)]
 
 
 def resolve_repo_named(
@@ -439,18 +463,26 @@ def resolve_repo_named(
         _emit_using_repo_hint(config.repo_override)
         rid = resolve_repo(client, config, org_id, config.repo_override)
         return rid, config.repo_override
-    detected = detect_repo_from_git()
+    context = detect_repo_context_from_git()
+    detected = context[0] if context else None
     if detected:
         _emit_using_repo_hint(detected)
-        rid = resolve_repo(client, config, org_id, detected)
+        rid = resolve_repo(client, config, org_id, detected, platform=context[1] if context else None)
         return rid, detected
     raise click.ClickException(_no_repo_error_message())
 
 
 def detect_repo_from_git() -> str | None:
-    """Detect owner/repo from the current git directory's origin remote.
+    """Return the detected repository name for display-only callers."""
+    context = detect_repo_context_from_git()
+    return context[0] if context else None
 
-    Returns 'owner/repo' string or None if detection fails.
+
+def detect_repo_context_from_git() -> tuple[str, str | None] | None:
+    """Detect the repository name and known source platform from origin.
+
+    Custom hosts and Avrea mirrors carry no inferred provider; explicit
+    --source remains authoritative when available.
     """
     try:
         result = subprocess.run(
@@ -461,7 +493,16 @@ def detect_repo_from_git() -> str | None:
         )
         if result.returncode != 0:
             return None
-        return parse_remote_url(result.stdout.strip())
+        url = result.stdout.strip().removeprefix("git+")
+        name = parse_remote_url(url)
+        if name is None:
+            return None
+        if _SCP_RE.match(url):
+            host = url.split("@", 1)[1].split(":", 1)[0].lower()
+        else:
+            host = urlparse(url).hostname
+        platform = {"github.com": "github", "gitlab.com": "gitlab"}.get(host or "")
+        return name, platform
     except subprocess.TimeoutExpired, FileNotFoundError:
         return None
 
@@ -501,7 +542,7 @@ def _no_repo_error_message() -> str:
 
 
 def parse_remote_url(url: str) -> str | None:
-    """Extract owner/repo from a git remote URL.
+    """Extract a repository name, including nested groups, from a git remote URL.
 
     Supports:
       - SSH SCP-like:  git@github.com:org/repo.git
@@ -517,22 +558,20 @@ def parse_remote_url(url: str) -> str | None:
 
     m = _SCP_RE.match(url)
     if m:
-        return m.group(1)
-
-    try:
-        parsed = urlparse(url)
-    except ValueError:
-        return None
-
-    if parsed.scheme not in ("ssh", "https", "http", "git"):
-        return None
-
-    path = parsed.path.lstrip("/")
+        path = m.group(1)
+    else:
+        try:
+            parsed = urlparse(url)
+        except ValueError:
+            return None
+        if parsed.scheme not in ("ssh", "https", "http", "git"):
+            return None
+        path = parsed.path.lstrip("/")
     if path.endswith(".git"):
         path = path[:-4]
 
     parts = path.split("/")
-    if len(parts) != 2 or not parts[0] or not parts[1]:
+    if len(parts) < 2 or any(part in {"", ".", ".."} for part in parts):
         return None
 
     return path
