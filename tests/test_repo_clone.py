@@ -373,7 +373,7 @@ def git_server(tmp_path, monkeypatch):
         def git_backend(self):
             if controls["redirect"]:
                 self.send_response(302)
-                self.send_header("Location", controls["redirect"] + self.path)
+                self.send_header("Location", controls["redirect"])
                 self.end_headers()
                 return
             authorization = self.headers.get("Authorization", "")
