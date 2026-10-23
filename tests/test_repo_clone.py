@@ -553,7 +553,10 @@ def test_helper_path_is_absolute_when_found_through_relative_path(tmp_path, monk
     monkeypatch.setenv("PATH", ".")
     assert shutil.which("avr") is not None
     settings = credential_config("https://api.avrea.com", ENDPOINTS[0] + "/foo/faa.git", "foo/faa")
-    assert shlex.quote(str(executable)) in settings[1]
+    helper_args = shlex.split(settings[1].split("=", 1)[1])
+    # Windows which() uses PATHEXT's casing (typically .EXE), even when
+    # the file was created with a lowercase extension.
+    assert any(os.path.isabs(arg) and os.path.normcase(arg) == os.path.normcase(str(executable)) for arg in helper_args)
 
 
 @pytest.mark.parametrize("endpoint", ["https://h?", "https://a b", "https://a=b", "https://xn--a", "https://[v1.x]"])
