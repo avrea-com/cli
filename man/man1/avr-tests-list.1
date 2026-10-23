@@ -1,0 +1,36 @@
+.TH AVR\-TESTS\-LIST 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-tests-list \- List one page of test histories, grouped by test and configuration.
+.SH SYNOPSIS
+.B avr tests list
+[OPTIONS]
+.SH DESCRIPTION
+List one page of test histories, grouped by test and configuration.
+.PP
+Counts describe each returned history window, not repository totals. Names appear when retained private detail is available; otherwise IDs are shown. Use --json '*' to retain status, pagination and repository context for agents.
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the git remote.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Rows per page (1-100). (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Opaque next_cursor from the previous page. One page is read per invocation.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1),
+.BR avr-tests-captures (1),
+.BR avr-tests-history (1),
+.BR avr-tests-status (1),
+.BR avr-tests-view (1)

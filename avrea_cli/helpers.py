@@ -225,13 +225,13 @@ def get_verified_org_slug(client: ApiClient, org_id: str) -> str:
     raise click.ClickException("Could not verify the selected organization for this Avrea run URL.")
 
 
-# Opaque base64 cursors are short — Avrea's cursors are well under 200 chars.
+# Most list cursors are short; endpoints with snapshot cursors can set a larger bound.
 # 512 leaves headroom for protocol changes while still rejecting paste-mistakes
 # (e.g. a whole file pasted into --cursor) before they hit the server.
 _MAX_CURSOR_LEN = 512
 
 
-def validate_cursor(cursor: str | None) -> str | None:
+def validate_cursor(cursor: str | None, *, max_length: int = _MAX_CURSOR_LEN) -> str | None:
     """Bound a user-supplied pagination cursor at the CLI boundary.
 
     Cursors are opaque base64 from a previous response, so the only useful
@@ -242,9 +242,9 @@ def validate_cursor(cursor: str | None) -> str | None:
     through."""
     if cursor is None:
         return None
-    if not cursor or cursor.strip() != cursor or len(cursor) > _MAX_CURSOR_LEN:
+    if not cursor or cursor.strip() != cursor or len(cursor) > max_length:
         raise click.BadParameter(
-            f"cursor must be 1..{_MAX_CURSOR_LEN} chars and not surrounded by whitespace (got {len(cursor)} chars)",
+            f"cursor must be 1..{max_length} chars and not surrounded by whitespace (got {len(cursor)} chars)",
             param_hint="--cursor",
         )
     return cursor

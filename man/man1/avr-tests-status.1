@@ -1,0 +1,30 @@
+.TH AVR\-TESTS\-STATUS 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-tests-status \- Read collection settings.
+.SH SYNOPSIS
+.B avr tests status
+[OPTIONS]
+.SH DESCRIPTION
+Read collection settings.
+.PP
+Read collection settings. Use --json for retained-history lifecycle details.
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the git remote.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1),
+.BR avr-tests-captures (1),
+.BR avr-tests-history (1),
+.BR avr-tests-list (1),
+.BR avr-tests-view (1)
