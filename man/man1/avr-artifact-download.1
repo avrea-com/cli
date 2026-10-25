@@ -1,0 +1,35 @@
+.TH AVR\-ARTIFACT\-DOWNLOAD 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-artifact-download \- Download ART_ID and verify its size and SHA-256 before replacing the destination.
+.SH SYNOPSIS
+.B avr artifact download
+[OPTIONS] ART_ID
+.SH DESCRIPTION
+Download ART_ID and verify its size and SHA-256 before replacing the destination.
+.PP
+.SH ARGUMENTS
+.TP
+\fIARTIFACT_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug; defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository name or ID; defaults to the current git repository.
+.TP
+\fB\-\-path\fR \fIPATH\fR
+Destination directory or filename. ZIPs stay archived. (default: .)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-artifact-delete (1),
+.BR avr-artifact-get (1),
+.BR avr-artifact-list (1)

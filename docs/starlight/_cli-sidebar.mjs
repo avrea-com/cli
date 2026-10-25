@@ -10,6 +10,7 @@ export default {
       label: "Core Commands",
       collapsed: false,
       items: [
+        { label: "avr artifact", slug: "cli/reference/artifact" },
         { label: "avr status", slug: "cli/reference/status" },
         { label: "avr run", slug: "cli/reference/run" },
         { label: "avr pr", slug: "cli/reference/pr" },

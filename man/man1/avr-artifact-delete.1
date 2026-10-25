@@ -1,0 +1,35 @@
+.TH AVR\-ARTIFACT\-DELETE 1 "" "avr 0.4.1" "Avrea CLI"
+.SH NAME
+avr-artifact-delete \- Delete ART_ID from the selected repository.
+.SH SYNOPSIS
+.B avr artifact delete
+[OPTIONS] ART_ID
+.SH DESCRIPTION
+Delete ART_ID from the selected repository.
+.PP
+.SH ARGUMENTS
+.TP
+\fIARTIFACT_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug; defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository name or ID; defaults to the current git repository.
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip confirmation.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-artifact-download (1),
+.BR avr-artifact-get (1),
+.BR avr-artifact-list (1)
