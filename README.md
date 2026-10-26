@@ -95,8 +95,7 @@ avr repo clone foo/faa --placement https://git.fi.a.avrea.io
 
 Avrea discovers the repository's placements and picks the first mirror that
 responds successfully from your machine. `--placement` accepts an advertised
-mirror URL or hostname to select one explicitly. Give the
-`owner/repository` name; no Avrea organization configuration is needed.
+mirror URL or hostname to select one explicitly. Give the `owner/repository` name.
 The repository must already have Git mirroring enabled and a usable placement.
 
 `origin` stays on the selected read-only mirror. The clone installs a
@@ -277,7 +276,7 @@ avr token revoke <token-id>
 
 A scoped token is a short-lived credential (60 seconds to 7 days, 8 hours by default) bound to one organization. Repository grants are read-only and VM grants are admin: it reads only the repositories it names, has admin access to only the VMs it names, and cannot create further tokens. `create` prints the `export AVR_TOKEN=...` and `export AVR_ORG=...` lines for whatever will use the token. Scoped tokens require the `org-...` ID in `AVR_ORG` or `--org`; they ignore the login's stored organization and cannot resolve a slug. `avr auth status` reports this configuration without checking whether the token is still live. A 403 or 404 comes with a reminder that the token reaches only what it names.
 
-`avr repo clone acme/api` uses the `owner/repository` name directly and does not need `AVR_ORG` or `--org`.
+`avr repo clone acme/api` uses the `owner/repository` name directly.
 
 With a scoped token, a repository name (`--repo acme/api`, `AVR_REPO` or the checkout's remote) is matched against the repositories the token reaches; a `rep-...` ID works as well. For runs, use the run ID rather than an Avrea console URL, whose organization slug cannot be resolved with a scoped token. Token IDs for `view` and `revoke` are `key-` followed by 32 lowercase hexadecimal characters.
 

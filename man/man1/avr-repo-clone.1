@@ -7,7 +7,7 @@ avr-repo-clone \- Clone a repository from its nearest available Avrea mirror.
 .SH DESCRIPTION
 Clone a repository from its nearest available Avrea mirror.
 .PP
-REPOSITORY is an owner/repository name. No Avrea organization configuration is needed. Available placements are raced from this client; the first to serve the repository wins. Use --placement to select an exact URL or hostname.
+REPOSITORY is an owner/repository name. Available placements are raced from this client; the first to serve the repository wins. Use --placement to select an exact URL or hostname.
 .PP
 The origin remote stays on the selected read-only mirror. A repository-local Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull operations using your Avrea login. Push changes to the source repository using a separate remote. Tokens normally last one hour; scoped API keys have a shorter server-enforced lifetime. Tokens are never saved in the repository.
 .PP
