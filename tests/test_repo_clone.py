@@ -137,6 +137,22 @@ def test_clone_infers_organization_without_using_default(runner, monkeypatch, cl
     assert clone_process
 
 
+def test_clone_repository_id_uses_resolved_organization(runner, monkeypatch, api, clone_process):
+    monkeypatch.setenv("AVR_ORG", "org-unrelated")
+    api.reply(
+        "GET",
+        "/repos/resolve",
+        json={"data": {"repository_id": REPO_ID, "organization_id": "org-resolved", "full_name": "foo/faa"}},
+    )
+    session_path = f"/orgs/org-resolved/repos/{REPO_ID}/mirror/session"
+    api.reply("GET", session_path, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
+    result = runner.invoke(cli, ["repo", "clone", REPO_ID, "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 0, result.output
+    assert [request.url.path for request in api.requests] == ["/repos/resolve", session_path]
+    assert dict(api.requests[0].url.params) == {"name": REPO_ID, "platform": "github"}
+    assert clone_process
+
+
 def test_explicit_organization_keeps_scoped_resolution(runner, clone_api, clone_process):
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--org", "org-default", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
@@ -144,6 +160,7 @@ def test_explicit_organization_keeps_scoped_resolution(runner, clone_api, clone_
 
 
 def test_ambiguous_clone_names_organization_choices_without_cloning(runner, monkeypatch, clone_process):
+    monkeypatch.setenv("AVR_ORG", "org-one")
     calls = []
 
     def get(self, path, params=None):
@@ -153,10 +170,10 @@ def test_ambiguous_clone_names_organization_choices_without_cloning(runner, monk
             request=httpx.Request("GET", "https://api.avrea.com/repos/resolve"),
             json={
                 "detail": {
-                    "message": "Repository matches multiple organizations; specify --org",
+                    "message": "Multiple accessible repositories match; specify an organization or platform.",
                     "organizations": [
-                        {"organization_id": "org-one", "slug": "one"},
-                        {"organization_id": "org-two", "slug": "two"},
+                        {"organization_id": "org-one", "slug": "one", "platform": "github"},
+                        {"organization_id": "org-two", "slug": "two", "platform": "github"},
                     ],
                 }
             },
@@ -674,6 +691,40 @@ def test_clone_does_not_fall_back_to_default_after_resolution_failure(runner, ap
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 1
     assert {request.url.path for request in api.requests} == {"/repos/resolve"}
+    assert not clone_process
+
+
+def test_resolution_authentication_failure_exits_with_auth_required(runner, api, clone_process):
+    api.reply("GET", "/repos/resolve", 401, json={"detail": "Unauthorized"})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 4
+    assert "avr auth login" in result.stderr
+    assert [request.url.path for request in api.requests] == ["/repos/resolve"]
+    assert not clone_process
+
+
+def test_resolution_network_failure_is_readable(runner, monkeypatch, clone_process):
+    requests = []
+
+    def fail(request):
+        requests.append(request)
+        raise httpx.ConnectError("unavailable", request=request)
+
+    monkeypatch.setattr("avrea_cli.api_client.CompressingTransport", lambda: httpx.MockTransport(fail))
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 1
+    assert "Could not reach Avrea to resolve the repository." in result.stderr
+    assert {request.url.path for request in requests} == {"/repos/resolve"}
+    assert not clone_process
+
+
+@pytest.mark.parametrize("data", [{"repository_id": REPO_ID}, {"organization_id": "org-resolved"}])
+def test_incomplete_resolution_does_not_clone(runner, api, clone_process, data):
+    api.reply("GET", "/repos/resolve", json={"data": data})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 1
+    assert "Avrea returned an incomplete repository resolution." in result.stderr
+    assert [request.url.path for request in api.requests] == ["/repos/resolve"]
     assert not clone_process
 
 

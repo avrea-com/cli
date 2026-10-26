@@ -95,8 +95,9 @@ avr repo clone foo/faa --placement https://git.fi.a.avrea.io
 
 Avrea discovers the repository's placements and picks the first mirror that
 responds successfully from your machine. `--placement` accepts an advertised
-mirror URL or hostname to select one explicitly. Use `--org` to override your
-default organization. The repository must already have Git mirroring enabled
+mirror URL or hostname to select one explicitly. The organization is inferred
+from your repository access. Pass `--org` explicitly when multiple organizations
+match. The repository must already have Git mirroring enabled
 and a usable placement.
 
 `origin` stays on the selected read-only mirror. The clone installs a
