@@ -35,7 +35,6 @@ from avrea_cli.output import format_timestamp
 from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo
 from avrea_cli.repo_context import resolve_repo_or_detect
-from avrea_cli.repo_context import resolve_repo_organization
 from typing import Any
 from urllib.parse import quote
 import asyncio
@@ -179,7 +178,6 @@ def repo(ctx):
 @click.argument("repository")
 @click.argument("directory", required=False, type=click.Path(file_okay=False))
 @click.option("--placement", help="Exact mirror URL or hostname from the repository's placements.")
-@click.option("--org", "org_id", help="Organization ID or slug. Inferred from repository access if omitted.")
 @click.option("--branch", "-b", help="Branch or tag to check out.")
 @click.option("--depth", type=click.IntRange(min=1), help="Create a shallow clone with this many commits.")
 @click.pass_context
@@ -188,16 +186,13 @@ def repo_clone(
     repository: str,
     directory: str | None,
     placement: str | None,
-    org_id: str | None,
     branch: str | None,
     depth: int | None,
 ) -> None:
     """Clone a repository from its nearest available Avrea mirror.
 
-    REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
-    The organization is inferred from your repository access, independently of
-    your configured default. Use --org only to select between ambiguous matches
-    or explicitly constrain the lookup to one organization.
+    REPOSITORY is a GitHub owner/repository name. No Avrea organization
+    configuration is needed.
     Available placements are raced from this client; the first to serve the
     repository wins. Use --placement to select an exact URL or hostname.
 
@@ -213,20 +208,16 @@ def repo_clone(
         avr repo clone foo/faa my-checkout --depth 1
         avr repo clone foo/faa --placement https://git.fi.a.avrea.io
     """
-    if not (repository.startswith("rep-") and "/" not in repository):
-        repository = validate_repo_name(repository.removesuffix(".git"))
+    repository = validate_repo_name(repository.removesuffix(".git"))
+    if repository.count("/") != 1:
+        raise click.BadParameter("must be a GitHub owner/repository name", param_hint="REPOSITORY")
     if shutil.which("git") is None:
         raise click.ClickException("Git is required. Install git and try again.")
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
     try:
-        if org_id is None:
-            org_id, repo_id = resolve_repo_organization(client, repository, platform="github")
-        else:
-            org_id = get_org_id(config, org_id, client=client)
-            repo_id = resolve_repo_or_detect(client, config, org_id, repository, required=True, platform="github")
-        session = client.public_get(f"/orgs/{quote(org_id, safe='')}/repos/{quote(repo_id, safe='')}/mirror/session")
+        session = client.public_get(f"/repos/{quote(repository, safe='/')}/mirror/session")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "discover Git mirror placements")
     except httpx.HTTPError:
