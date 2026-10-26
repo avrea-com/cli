@@ -191,7 +191,7 @@ def repo_clone(
 ) -> None:
     """Clone a repository from its nearest available Avrea mirror.
 
-    REPOSITORY is a GitHub owner/repository name. No Avrea organization
+    REPOSITORY is an owner/repository name. No Avrea organization
     configuration is needed.
     Available placements are raced from this client; the first to serve the
     repository wins. Use --placement to select an exact URL or hostname.
