@@ -132,12 +132,35 @@ def test_clone_uses_full_name_without_organization_configuration(
     assert clone_process
 
 
-@pytest.mark.parametrize("args", [[REPO_ID], ["foo/faa", "--org", "org-default"]])
-def test_clone_requires_only_a_full_name_not_avrea_identifiers(runner, api, clone_process, args):
+@pytest.mark.parametrize("args", [["rep-invalid"], ["foo/faa", "--org", "org-default"]])
+def test_clone_rejects_invalid_id_and_organization_option(runner, api, clone_process, args):
     result = runner.invoke(cli, ["repo", "clone", *args])
     assert result.exit_code == 2
     assert not api.requests
     assert not clone_process
+
+
+@pytest.mark.parametrize("scoped", [True, False])
+@pytest.mark.parametrize("default_org", [None, "org-unrelated"])
+def test_clone_by_id_uses_canonical_name(runner, monkeypatch, api, clone_process, scoped, default_org):
+    if scoped:
+        monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
+    if default_org is None:
+        monkeypatch.delenv("AVR_ORG")
+    else:
+        monkeypatch.setenv("AVR_ORG", default_org)
+    path = f"/repos/{REPO_ID}/mirror/session"
+    api.reply("GET", path, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
+    api.reply("POST", "/tokens/git", json=token_response())
+    nearest = AsyncMock(return_value=ENDPOINTS[0])
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
+    result = runner.invoke(cli, ["repo", "clone", REPO_ID])
+    assert result.exit_code == 0, result.output
+    assert [(r.method, r.url.path) for r in api.requests] == [("GET", path), ("POST", "/tokens/git")]
+    assert json.loads(api.requests[1].content) == {"repos": ["foo/faa"]}
+    nearest.assert_awaited_once_with(ENDPOINTS, "foo/faa", TOKEN)
+    assert clone_process[0][0][-3:] == ["--", ENDPOINTS[0] + "/foo/faa.git", "faa"]
+    assert REPO_ID not in " ".join(clone_process[0][0])
 
 
 @pytest.mark.parametrize(
@@ -373,7 +396,7 @@ def git_server(tmp_path, monkeypatch):
             self.wfile.write(json.dumps(data).encode())
 
         def do_GET(self):
-            if self.path == SESSION_PATH:
+            if self.path in {SESSION_PATH, f"/repos/{REPO_ID}/mirror/session"}:
                 self.send_json({"browsable": True, "full_name": "foo/faa", "endpoints": [base_url]})
             else:
                 self.git_backend()
@@ -454,7 +477,8 @@ def git_server(tmp_path, monkeypatch):
         thread.join()
 
 
-def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_path, git_server):
+@pytest.mark.parametrize("repository", ["foo/faa", REPO_ID])
+def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_path, git_server, repository):
     base_url, issued, authenticated, _ = git_server
     monkeypatch.setenv("AVR_HOST", base_url)
     stored_credentials = tmp_path / "stored credentials"
@@ -466,7 +490,7 @@ def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_pa
     )
     global_config = (tmp_path / "global-config").read_text()
     destination = tmp_path / "checkout with spaces"
-    result = runner.invoke(cli, ["repo", "clone", "foo/faa", str(destination)])
+    result = runner.invoke(cli, ["repo", "clone", repository, str(destination)])
     assert result.exit_code == 0, result.output
     assert (destination / "README").read_text() == "mirror content\n"
     origin = subprocess.check_output(["git", "-C", str(destination), "remote", "get-url", "origin"], text=True).strip()

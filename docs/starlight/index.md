@@ -100,7 +100,8 @@ avr repo clone foo/faa --placement https://git.fi.a.avrea.io
 
 Avrea discovers the repository's placements and picks the first mirror that
 responds successfully from your machine. `--placement` accepts an advertised
-mirror URL or hostname to select one explicitly. Give the `owner/repository` name.
+mirror URL or hostname to select one explicitly. Give the `owner/repository` name
+or an Avrea repository ID (`rep-...`).
 The repository must already have Git mirroring enabled and a usable placement.
 
 `origin` stays on the selected read-only mirror. The clone installs a

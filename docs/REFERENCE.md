@@ -2248,7 +2248,7 @@ Clone a repository from its nearest available Avrea mirror.
 avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
 ```
 
-REPOSITORY is an owner/repository name.
+REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
 Available placements are raced from this client; the first to serve the
 repository wins. Use --placement to select an exact URL or hostname.
 

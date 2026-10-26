@@ -40,6 +40,7 @@ from urllib.parse import quote
 import asyncio
 import click
 import httpx
+import re
 import shutil
 
 _REPO_LIST_FIELDS = make_schema("repository_id", "full_name", "platform", "platform_repository_id")
@@ -191,7 +192,7 @@ def repo_clone(
 ) -> None:
     """Clone a repository from its nearest available Avrea mirror.
 
-    REPOSITORY is an owner/repository name.
+    REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
     Available placements are raced from this client; the first to serve the
     repository wins. Use --placement to select an exact URL or hostname.
 
@@ -207,9 +208,15 @@ def repo_clone(
         avr repo clone foo/faa my-checkout --depth 1
         avr repo clone foo/faa --placement https://git.fi.a.avrea.io
     """
-    repository = validate_repo_name(repository.removesuffix(".git"))
-    if repository.count("/") != 1:
-        raise click.BadParameter("must be a GitHub owner/repository name", param_hint="REPOSITORY")
+    if "/" not in repository:
+        if not re.fullmatch(r"rep-[0-9a-f]{32}", repository):
+            raise click.BadParameter(
+                "must be an owner/repository name or an Avrea repository ID (rep-...)", param_hint="REPOSITORY"
+            )
+    else:
+        repository = validate_repo_name(repository.removesuffix(".git"))
+        if repository.count("/") != 1:
+            raise click.BadParameter("must be an owner/repository name", param_hint="REPOSITORY")
     if shutil.which("git") is None:
         raise click.ClickException("Git is required. Install git and try again.")
     client: ApiClient = ctx.obj["client"]
