@@ -65,8 +65,9 @@ class CliConfig:
         AVR_TOKEN   API key or scoped token. Overrides whatever's stored for
                     the resolved host.
         AVR_ORG     Default organization ID. Overrides the stored default.
-                    Scoped tokens require this or --org; they never use the
-                    login's stored organization or resolve a slug.
+                    Scoped tokens require this or --org except for repo clone;
+                    they never use the login's stored organization or resolve
+                    a slug.
         AVR_REPO    Repository (org/name or rep-xxx). Consumed by command-
                     level resolvers in ``repo_context``.
     """

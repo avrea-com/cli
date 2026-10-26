@@ -120,6 +120,42 @@ def resolve_repo(client: ApiClient, config: CliConfig, org_id: str, repo: str, *
         )
 
 
+def resolve_repo_organization(client: ApiClient, repo: str, *, platform: str) -> tuple[str, str]:
+    """Resolve an unambiguous accessible repository and its organization together."""
+    try:
+        result = client.public_get("/repos/resolve", params={"name": repo, "platform": platform})
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409:
+            try:
+                payload = exc.response.json()
+                detail = payload.get("detail", {}) if isinstance(payload, dict) else {}
+                choices = detail.get("organizations", []) if isinstance(detail, dict) else []
+            except ValueError:
+                choices = []
+            options = (
+                [
+                    f"--org {choice['slug']}"
+                    for choice in choices
+                    if isinstance(choice, dict) and isinstance(choice.get("slug"), str) and choice["slug"]
+                ]
+                if isinstance(choices, list)
+                else []
+            )
+            hint = f" Use {' or '.join(options)}." if options else " Specify --org <slug|id>."
+            raise click.ClickException(f"Repository {repo!r} matches multiple organizations.{hint}") from None
+        handle_http_error(exc, "resolve the repository")
+    except httpx.HTTPError:
+        raise click.ClickException("Could not reach Avrea to resolve the repository.") from None
+    data = result.get("data") if isinstance(result, dict) else None
+    if not isinstance(data, dict):
+        raise click.ClickException("Avrea returned an invalid repository resolution.")
+    org_id, repo_id = data.get("organization_id"), data.get("repository_id")
+    if not isinstance(org_id, str) or not org_id or not isinstance(repo_id, str) or not repo_id:
+        raise click.ClickException("Avrea returned an incomplete repository resolution.")
+    _warn_if_case_folded(repo, data.get("full_name") if "/" in repo else None)
+    return org_id, repo_id
+
+
 def _resolve_repo_strict(
     client: ApiClient, config: CliConfig, org_id: str, repo: str, *, platform: str | None = None
 ) -> str:

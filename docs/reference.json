@@ -9656,7 +9656,7 @@
             "full": "avr repo clone",
             "is_group": false,
             "short_help": "Clone a repository from its nearest available Avrea mirror.",
-            "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nAvailable placements are raced from this client; the first to serve the\nrepository wins. Use --placement to select an exact URL or hostname.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
+            "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nThe organization is inferred from your repository access, independently of\nyour configured default. Use --org only to select between ambiguous matches\nor explicitly constrain the lookup to one organization.\nAvailable placements are raced from this client; the first to serve the\nrepository wins. Use --placement to select an exact URL or hostname.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -9729,7 +9729,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Organization ID or slug. Uses the default organization if omitted.",
+                "help": "Organization ID or slug. Inferred from repository access if omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

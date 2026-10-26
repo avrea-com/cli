@@ -20,6 +20,9 @@ avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
 ```
 
 REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
+The organization is inferred from your repository access, independently of
+your configured default. Use --org only to select between ambiguous matches
+or explicitly constrain the lookup to one organization.
 Available placements are raced from this client; the first to serve the
 repository wins. Use --placement to select an exact URL or hostname.
 
@@ -44,7 +47,7 @@ Examples:
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;placement</code> <code class="cli-value">&lt;TEXT&gt;</code> — Exact mirror URL or hostname from the repository's placements.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses the default organization if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Inferred from repository access if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;branch, -b</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch or tag to check out.
 - <code class="cli-flag">&#x2D;&#x2D;depth</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Create a shallow clone with this many commits.
 

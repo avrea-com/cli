@@ -49,6 +49,8 @@ def clone_api(monkeypatch):
 
     def get(self, path, params=None):
         calls.append(("GET", path, params))
+        if path == "/repos/resolve":
+            return {"data": {"repository_id": REPO_ID, "full_name": "foo/faa", "organization_id": "org-default"}}
         if path.endswith("/repos/resolve"):
             return {"data": {"repository_id": REPO_ID, "full_name": "foo/faa"}}
         assert path == SESSION_PATH
@@ -82,7 +84,7 @@ def test_clone_resolves_repo_and_races_advertised_placements(runner, monkeypatch
     assert result.exit_code == 0, result.output
     _, calls = clone_api
     assert calls == [
-        ("GET", "/orgs/org-default/repos/resolve", {"name": "Foo/Faa", "platform": "github"}),
+        ("GET", "/repos/resolve", {"name": "Foo/Faa", "platform": "github"}),
         ("GET", SESSION_PATH, None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
@@ -104,7 +106,10 @@ def test_explicit_placement_skips_race(runner, monkeypatch, clone_api, clone_pro
     result = runner.invoke(cli, ["repo", "clone", REPO_ID, "--placement", placement])
     assert result.exit_code == 0, result.output
     assert clone_process[0][0][-3:] == ["--", ENDPOINTS[0] + "/foo/faa.git", "faa"]
-    assert clone_api[1] == [("GET", SESSION_PATH, None)]
+    assert clone_api[1] == [
+        ("GET", "/repos/resolve", {"name": REPO_ID, "platform": "github"}),
+        ("GET", SESSION_PATH, None),
+    ]
     nearest.assert_not_called()
 
 
@@ -114,6 +119,56 @@ def test_unknown_placement_fails_before_minting_token(runner, clone_api, clone_p
     assert "Available placements" in result.output
     assert ENDPOINTS[0] in result.output
     assert not any(call[0] == "POST" for call in clone_api[1])
+    assert not clone_process
+
+
+@pytest.mark.parametrize("default_org", [None, "org-unrelated"])
+def test_clone_infers_organization_without_using_default(runner, monkeypatch, clone_api, clone_process, default_org):
+    if default_org is None:
+        monkeypatch.delenv("AVR_ORG")
+    else:
+        monkeypatch.setenv("AVR_ORG", default_org)
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 0, result.output
+    assert clone_api[1][:2] == [
+        ("GET", "/repos/resolve", {"name": "foo/faa", "platform": "github"}),
+        ("GET", SESSION_PATH, None),
+    ]
+    assert clone_process
+
+
+def test_explicit_organization_keeps_scoped_resolution(runner, clone_api, clone_process):
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--org", "org-default", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 0, result.output
+    assert clone_api[1][0] == ("GET", "/orgs/org-default/repos/resolve", {"name": "foo/faa", "platform": "github"})
+
+
+def test_ambiguous_clone_names_organization_choices_without_cloning(runner, monkeypatch, clone_process):
+    calls = []
+
+    def get(self, path, params=None):
+        calls.append(path)
+        response = httpx.Response(
+            409,
+            request=httpx.Request("GET", "https://api.avrea.com/repos/resolve"),
+            json={
+                "detail": {
+                    "message": "Repository matches multiple organizations; specify --org",
+                    "organizations": [
+                        {"organization_id": "org-one", "slug": "one"},
+                        {"organization_id": "org-two", "slug": "two"},
+                    ],
+                }
+            },
+        )
+        response.raise_for_status()
+
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 1
+    assert "--org one" in result.output
+    assert "--org two" in result.output
+    assert calls == ["/repos/resolve"]
     assert not clone_process
 
 
@@ -348,8 +403,10 @@ def git_server(tmp_path, monkeypatch):
             self.wfile.write(json.dumps(data).encode())
 
         def do_GET(self):
-            if self.path.startswith("/orgs/org-default/repos/resolve?"):
-                self.send_json({"data": {"repository_id": REPO_ID, "full_name": "foo/faa"}})
+            if self.path.startswith("/repos/resolve?"):
+                self.send_json(
+                    {"data": {"repository_id": REPO_ID, "full_name": "foo/faa", "organization_id": "org-default"}}
+                )
             elif self.path == SESSION_PATH:
                 self.send_json({"browsable": True, "full_name": "foo/faa", "endpoints": [base_url]})
             else:
@@ -590,9 +647,34 @@ def test_clone_scoped_resolution_defaults_to_github(runner, monkeypatch, api, cl
         },
     )
     api.reply("GET", SESSION_PATH, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
-    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--org", "org-default", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
     assert [request.url.path for request in api.requests] == ["/orgs/org-default/repos", SESSION_PATH]
+
+
+def test_scoped_clone_without_org_uses_token_bound_api_resolution(runner, monkeypatch, api, clone_process):
+    monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
+    monkeypatch.delenv("AVR_ORG")
+    api.reply(
+        "GET",
+        "/repos/resolve",
+        json={"data": {"repository_id": REPO_ID, "organization_id": "org-default", "full_name": "foo/faa"}},
+    )
+    api.reply("GET", SESSION_PATH, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 0, result.output
+    assert [request.url.path for request in api.requests] == ["/repos/resolve", SESSION_PATH]
+    assert dict(api.requests[0].url.params) == {"name": "foo/faa", "platform": "github"}
+    assert api.requests[0].headers["Authorization"] == "Bearer avs_test-token"
+
+
+@pytest.mark.parametrize("status", [404, 503])
+def test_clone_does_not_fall_back_to_default_after_resolution_failure(runner, api, clone_process, status):
+    api.reply("GET", "/repos/resolve", status, json={"detail": "Cannot resolve repository"})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 1
+    assert {request.url.path for request in api.requests} == {"/repos/resolve"}
+    assert not clone_process
 
 
 @pytest.mark.asyncio
