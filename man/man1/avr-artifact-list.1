@@ -1,0 +1,38 @@
+.TH AVR\-ARTIFACT\-LIST 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-artifact-list \- List artifacts in REPO, optionally restricted to one run.
+.SH SYNOPSIS
+.B avr artifact list
+[OPTIONS] REPO
+.SH DESCRIPTION
+List artifacts in REPO, optionally restricted to one run.
+.PP
+.SH ARGUMENTS
+.TP
+\fIREPO\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug.
+.TP
+\fB\-\-run\-id\fR \fITEXT\fR
+Numeric GitHub run ID, run- ID, or native awr- ID.
+.TP
+\fB\-\-limit\fR \fIINTEGER RANGE\fR
+Maximum artifacts per page. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Continue from a previous page's cursor.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-artifact-delete (1),
+.BR avr-artifact-download (1),
+.BR avr-artifact-get (1)

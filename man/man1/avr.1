@@ -1,4 +1,4 @@
-.TH AVR 1 "" "avr 0.4.1" "Avrea CLI"
+.TH AVR 1 "" "avr 0.5.0" "Avrea CLI"
 .SH NAME
 avr \- Avrea on the command line.
 .SH SYNOPSIS
@@ -21,6 +21,9 @@ Show debug information including HTTP requests.
 \fB\-\-links\fR / \fB\-\-no\-links\fR
 Make IDs clickable via OSC 8 hyperlinks. Auto-disabled off-TTY. Also honors AVR_LINKS=0. (default: True; env: AVR_LINKS)
 .SH COMMANDS
+.TP
+artifact
+Manage workflow artifacts.
 .TP
 status
 Show recent runs, performance stats, and cache health.
@@ -79,6 +82,7 @@ Manage organizations and installations.
 health
 Check Avrea platform status.
 .SH SEE ALSO
+.BR avr-artifact (1),
 .BR avr-status (1),
 .BR avr-run (1),
 .BR avr-pr (1),

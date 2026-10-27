@@ -24,6 +24,7 @@ _VERSION_MESSAGE = "%(prog)s version %(version)s" if IS_RELEASE_BUILD else "%(pr
 LazyCommandSpec = tuple[str, str, str, str | None, str | None]
 
 LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
+    ("artifact", "avrea_cli.commands.artifact", "artifact", "Manage workflow artifacts.", "Core Commands"),
     (
         "status",
         "avrea_cli.commands.status",

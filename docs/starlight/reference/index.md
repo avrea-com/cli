@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: "Reference for the avr command-line client (v0.4.1)."
+description: "Reference for the avr command-line client (v0.5.0)."
 ---
 
 `avr` is the Avrea command-line client. Avrea on the command line.
@@ -22,6 +22,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Core Commands
 
+- [`avr artifact`](./artifact/) — Manage workflow artifacts.
 - [`avr status`](./status/) — Show recent runs, performance stats, and cache health.
 - [`avr run`](./run/) — View and manage GitHub workflow runs.
 - [`avr pr`](./pr/) — View pull requests.

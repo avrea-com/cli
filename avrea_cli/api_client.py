@@ -2,6 +2,7 @@
 
 from avrea_cli.config import CliConfig
 from avrea_cli.transport import CompressingTransport
+from collections.abc import Iterator
 from typing import Any
 import click
 import httpx
@@ -75,6 +76,32 @@ class ApiClient:
         self._log("GET", str(response.request.url), response.status_code)
         response.raise_for_status()
         return response.content
+
+    def public_download(self, path: str) -> Iterator[bytes]:
+        """Stream an authenticated response without following credential redirects."""
+        url = f"{self.config.public_api_url}{path}"
+        with self._http.stream(
+            "GET",
+            url,
+            headers={**self.config.get_api_headers(), "Accept-Encoding": "identity"},
+            timeout=self.timeout,
+            follow_redirects=False,
+        ) as response:
+            self._log("GET", str(response.request.url), response.status_code)
+            if not response.is_success:
+                # Error formatting needs a buffered body, but a failed download
+                # must not buffer an arbitrarily large response.
+                body = bytearray()
+                for chunk in response.iter_bytes(chunk_size=4096):
+                    body.extend(chunk)
+                    if len(body) > 64 * 1024:
+                        body.clear()
+                        break
+                headers = {"Retry-After": response.headers["Retry-After"]} if "Retry-After" in response.headers else {}
+                httpx.Response(
+                    response.status_code, headers=headers, content=bytes(body), request=response.request
+                ).raise_for_status()
+            yield from response.iter_bytes(chunk_size=1024 * 1024)
 
     def public_post(
         self,

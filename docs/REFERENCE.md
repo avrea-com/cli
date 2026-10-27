@@ -1,6 +1,6 @@
 # avr(1) — Avrea command-line client
 
-Reference for `avr` v0.4.1. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
+Reference for `avr` v0.5.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
 
 ## Name
 
@@ -34,6 +34,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ### Core Commands
 
+- [`avr artifact`](#avr-artifact) — Manage workflow artifacts.
 - [`avr status`](#avr-status) — Show recent runs, performance stats, and cache health.
 - [`avr run`](#avr-run) — View and manage GitHub workflow runs.
 - [`avr pr`](#avr-pr) — View pull requests.
@@ -61,6 +62,94 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr health`](#avr-health) — Check Avrea platform status.
 
 ## Reference
+
+### `avr artifact`
+
+Manage workflow artifacts.
+
+```sh
+avr artifact [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr artifact delete`
+
+Delete ART_ID from the selected repository.
+
+```sh
+avr artifact delete [OPTIONS] ART_ID
+```
+
+**Arguments**
+
+- `ARTIFACT_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--yes, -y` — Skip confirmation.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr artifact download`
+
+Download ART_ID and verify its size and SHA-256 before replacing the destination.
+
+```sh
+avr artifact download [OPTIONS] ART_ID
+```
+
+**Arguments**
+
+- `ARTIFACT_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--path <PATH>` — Destination directory or filename. ZIPs stay archived. _(default: `.`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr artifact get`
+
+Get metadata for ART_ID in the selected repository.
+
+```sh
+avr artifact get [OPTIONS] ART_ID
+```
+
+**Arguments**
+
+- `ARTIFACT_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr artifact list`
+
+List artifacts in REPO, optionally restricted to one run.
+
+```sh
+avr artifact list [OPTIONS] REPO
+```
+
+**Arguments**
+
+- `REPO`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug.
+- `--run-id <TEXT>` — Numeric GitHub run ID, run- ID, or native awr- ID.
+- `--limit <INTEGER RANGE>` — Maximum artifacts per page. _(default: `50`)_
+- `--cursor <TEXT>` — Continue from a previous page's cursor.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 ### `avr status`
 

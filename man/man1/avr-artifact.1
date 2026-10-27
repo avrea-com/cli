@@ -1,0 +1,47 @@
+.TH AVR\-ARTIFACT 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-artifact \- Manage workflow artifacts.
+.SH SYNOPSIS
+.B avr artifact
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage workflow artifacts.
+.PP
+.SH COMMANDS
+.TP
+delete
+Delete ART_ID from the selected repository.
+.TP
+download
+Download ART_ID and verify its size and SHA-256 before replacing the destination.
+.TP
+get
+Get metadata for ART_ID in the selected repository.
+.TP
+list
+List artifacts in REPO, optionally restricted to one run.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-artifact-delete (1),
+.BR avr-artifact-download (1),
+.BR avr-artifact-get (1),
+.BR avr-artifact-list (1)
