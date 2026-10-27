@@ -1,6 +1,7 @@
 """Artifact commands use repository-scoped, authenticated APIs and atomic files."""
 
 from avrea_cli.main import cli
+from avrea_cli.transport import CompressingTransport
 from click.testing import CliRunner
 from collections.abc import Iterator
 from pathlib import Path
@@ -81,13 +82,47 @@ def test_download_bounds_error_body(runner: CliRunner, monkeypatch: Any, tmp_pat
 
     def respond(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/download"):
+            assert request.headers["accept-encoding"] == "identity"
             return httpx.Response(503, stream=OversizedError())
         return httpx.Response(200, json={"data": ROW})
 
-    monkeypatch.setattr("avrea_cli.api_client.CompressingTransport", lambda: httpx.MockTransport(respond))
+    monkeypatch.setattr(
+        "avrea_cli.api_client.CompressingTransport", lambda: CompressingTransport(httpx.MockTransport(respond))
+    )
     result = runner.invoke(cli, ["artifact", "download", ART, "--repo", REPO, "--path", str(tmp_path)])
     assert result.exit_code == 1
     assert "HTTP 503" in result.stderr
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("encoding", ["zstd", "gzip", "deflate"])
+def test_download_rejects_unsolicited_compression_before_reading(
+    runner: CliRunner, monkeypatch: Any, tmp_path: Path, encoding: str
+) -> None:
+    class UnreadError(httpx.SyncByteStream):
+        closed = False
+
+        def __iter__(self) -> Iterator[bytes]:
+            pytest.fail("download buffered an unsolicited compressed response")
+            yield b""  # Make this a stream without reading any of its body.
+
+        def close(self) -> None:
+            self.closed = True
+
+    body = UnreadError()
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/download"):
+            return httpx.Response(503, headers={"Content-Encoding": encoding}, stream=body)
+        return httpx.Response(200, json={"data": ROW})
+
+    monkeypatch.setattr(
+        "avrea_cli.api_client.CompressingTransport", lambda: CompressingTransport(httpx.MockTransport(respond))
+    )
+    result = runner.invoke(cli, ["artifact", "download", ART, "--repo", REPO, "--path", str(tmp_path)])
+    assert result.exit_code == 1, result.output
+    assert "Artifact request failed" in result.stderr
+    assert body.closed
     assert not list(tmp_path.iterdir())
 
 

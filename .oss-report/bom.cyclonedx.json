@@ -400,10 +400,15 @@
   "dependencies": [
     {
       "dependsOn": [
+        "pkg:pypi/anyio@4.15.1",
+        "pkg:pypi/certifi@2026.10.19",
+        "pkg:pypi/click@8.5.0",
         "pkg:pypi/httpx@0.28.1",
+        "pkg:pypi/idna@3.20",
         "pkg:pypi/platformdirs@4.11.10",
         "pkg:pypi/prettytable@3.18.0",
-        "pkg:pypi/pydantic@2.13.5"
+        "pkg:pypi/pydantic@2.13.5",
+        "pkg:pypi/typing-extensions@4.16.0"
       ],
       "ref": "Avrea CLI@0.5.0"
     },

@@ -10,9 +10,9 @@ import httpx
 
 
 def _ensure_accept_encoding(request: httpx.Request) -> None:
-    """Prepend zstd to Accept-Encoding (httpx auto-fills 'gzip, deflate' for us)."""
+    """Advertise zstd unless the caller explicitly requires an identity stream."""
     existing = request.headers.get("Accept-Encoding", "")
-    if "zstd" in existing.lower():
+    if existing.strip().lower() == "identity" or "zstd" in existing.lower():
         return
     request.headers["Accept-Encoding"] = f"zstd, {existing}" if existing else "zstd, gzip"
 
@@ -63,6 +63,13 @@ class CompressingTransport(httpx.BaseTransport):
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         _ensure_accept_encoding(request)
         response = self._inner.handle_request(request)
+        # Streaming downloads opt out of compression so neither this transport
+        # nor httpx can buffer an unbounded decoded chunk before the caller's limit.
+        if request.headers.get("Accept-Encoding", "").strip().lower() == "identity":
+            if response.headers.get("Content-Encoding", "").strip().lower() not in {"", "identity"}:
+                response.close()
+                raise httpx.DecodingError("Compressed response to an identity request", request=request)
+            return response
         if not _needs_zstd_decode(response):
             return response
         return _build_decoded_response(response, response.read(), request)

@@ -83,7 +83,7 @@ class ApiClient:
         with self._http.stream(
             "GET",
             url,
-            headers=self.config.get_api_headers(),
+            headers={**self.config.get_api_headers(), "Accept-Encoding": "identity"},
             timeout=self.timeout,
             follow_redirects=False,
         ) as response:
