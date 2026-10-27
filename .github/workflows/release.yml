@@ -124,13 +124,15 @@ jobs:
 
       - name: Package archive
         shell: bash
-        # Windows ships a .zip; bsdtar builds it from the .zip extension.
+        # Git Bash can put GNU tar first on PATH; it writes a tar archive even
+        # with a .zip suffix. Python's ZIP writer is available on every runner.
         # macOS/Linux ship a .tar.gz with the completions dir.
         run: |
           version="${{ steps.version.outputs.value }}"
           target="${{ matrix.target }}"
           if [ "${{ runner.os }}" = "Windows" ]; then
-            tar -a -cf "avr_${version}_${target}.zip" -C out avr.exe
+            python -m zipfile --create "avr_${version}_${target}.zip" out/avr.exe
+            python -m zipfile --test "avr_${version}_${target}.zip"
           else
             tar -czf "avr_${version}_${target}.tar.gz" -C out .
           fi
