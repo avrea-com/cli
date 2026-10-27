@@ -17,6 +17,12 @@
         }
       ],
       "name": "annotated-types",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/annotated-types@0.7.0",
       "type": "library",
       "version": "0.7.0"
@@ -32,6 +38,12 @@
         }
       ],
       "name": "anyio",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/anyio@4.15.1",
       "type": "library",
       "version": "4.15.1"
@@ -52,6 +64,12 @@
         }
       ],
       "name": "certifi",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/certifi@2026.10.19",
       "type": "library",
       "version": "2026.10.19"
@@ -73,6 +91,12 @@
         }
       ],
       "name": "click",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/click@8.5.0",
       "type": "library",
       "version": "8.5.0"
@@ -94,6 +118,12 @@
         }
       ],
       "name": "h11",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/h11@0.16.0",
       "type": "library",
       "version": "0.16.0"
@@ -115,6 +145,12 @@
         }
       ],
       "name": "httpcore",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/httpcore@1.0.9",
       "type": "library",
       "version": "1.0.9"
@@ -136,6 +172,12 @@
         }
       ],
       "name": "httpx",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/httpx@0.28.1",
       "type": "library",
       "version": "0.28.1"
@@ -157,6 +199,12 @@
         }
       ],
       "name": "idna",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/idna@3.20",
       "type": "library",
       "version": "3.20"
@@ -178,6 +226,12 @@
         }
       ],
       "name": "platformdirs",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/platformdirs@4.11.10",
       "type": "library",
       "version": "4.11.10"
@@ -198,30 +252,15 @@
         }
       ],
       "name": "prettytable",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/prettytable@3.18.0",
       "type": "library",
       "version": "3.18.0"
-    },
-    {
-      "bom-ref": "pkg:pypi/pydantic@2.13.5",
-      "copyright": "Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://github.com/pydantic/pydantic"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "pydantic",
-      "purl": "pkg:pypi/pydantic@2.13.5",
-      "type": "library",
-      "version": "2.13.5"
     },
     {
       "bom-ref": "pkg:pypi/pydantic-core@2.46.5",
@@ -240,9 +279,42 @@
         }
       ],
       "name": "pydantic_core",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/pydantic-core@2.46.5",
       "type": "library",
       "version": "2.46.5"
+    },
+    {
+      "bom-ref": "pkg:pypi/pydantic@2.13.5",
+      "copyright": "Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/pydantic/pydantic"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pydantic",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
+      "purl": "pkg:pypi/pydantic@2.13.5",
+      "type": "library",
+      "version": "2.13.5"
     },
     {
       "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
@@ -260,6 +332,12 @@
         }
       ],
       "name": "typing-extensions",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/typing-extensions@4.16.0",
       "type": "library",
       "version": "4.16.0"
@@ -281,6 +359,12 @@
         }
       ],
       "name": "typing-inspection",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/typing-inspection@0.4.2",
       "type": "library",
       "version": "0.4.2"
@@ -302,6 +386,12 @@
         }
       ],
       "name": "wcwidth",
+      "properties": [
+        {
+          "name": "oss-report:dependency-scopes",
+          "value": "production"
+        }
+      ],
       "purl": "pkg:pypi/wcwidth@0.7.0",
       "type": "library",
       "version": "0.7.0"
@@ -310,28 +400,24 @@
   "dependencies": [
     {
       "dependsOn": [
-        "pkg:pypi/annotated-types@0.7.0",
-        "pkg:pypi/anyio@4.15.1",
-        "pkg:pypi/certifi@2026.10.19",
-        "pkg:pypi/click@8.5.0",
-        "pkg:pypi/h11@0.16.0",
-        "pkg:pypi/httpcore@1.0.9",
         "pkg:pypi/httpx@0.28.1",
-        "pkg:pypi/idna@3.20",
         "pkg:pypi/platformdirs@4.11.10",
         "pkg:pypi/prettytable@3.18.0",
-        "pkg:pypi/pydantic-core@2.46.5",
-        "pkg:pypi/pydantic@2.13.5",
-        "pkg:pypi/typing-extensions@4.16.0",
-        "pkg:pypi/typing-inspection@0.4.2",
-        "pkg:pypi/wcwidth@0.7.0"
+        "pkg:pypi/pydantic@2.13.5"
       ],
-      "ref": "Avrea CLI@0.4.1"
+      "ref": "Avrea CLI@0.5.0"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
       "ref": "pkg:pypi/annotated-types@0.7.0"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/idna@3.20",
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
       "ref": "pkg:pypi/anyio@4.15.1"
     },
     {
@@ -344,9 +430,21 @@
       "ref": "pkg:pypi/h11@0.16.0"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.15.1",
+        "pkg:pypi/certifi@2026.10.19",
+        "pkg:pypi/h11@0.16.0"
+      ],
       "ref": "pkg:pypi/httpcore@1.0.9"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/anyio@4.15.1",
+        "pkg:pypi/certifi@2026.10.19",
+        "pkg:pypi/click@8.5.0",
+        "pkg:pypi/httpcore@1.0.9",
+        "pkg:pypi/idna@3.20"
+      ],
       "ref": "pkg:pypi/httpx@0.28.1"
     },
     {
@@ -356,18 +454,33 @@
       "ref": "pkg:pypi/platformdirs@4.11.10"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/wcwidth@0.7.0"
+      ],
       "ref": "pkg:pypi/prettytable@3.18.0"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
       "ref": "pkg:pypi/pydantic-core@2.46.5"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/annotated-types@0.7.0",
+        "pkg:pypi/pydantic-core@2.46.5",
+        "pkg:pypi/typing-extensions@4.16.0",
+        "pkg:pypi/typing-inspection@0.4.2"
+      ],
       "ref": "pkg:pypi/pydantic@2.13.5"
     },
     {
       "ref": "pkg:pypi/typing-extensions@4.16.0"
     },
     {
+      "dependsOn": [
+        "pkg:pypi/typing-extensions@4.16.0"
+      ],
       "ref": "pkg:pypi/typing-inspection@0.4.2"
     },
     {
@@ -376,7 +489,7 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "Avrea CLI@0.4.1",
+      "bom-ref": "Avrea CLI@0.5.0",
       "licenses": [
         {
           "license": {
@@ -386,9 +499,9 @@
       ],
       "name": "Avrea CLI",
       "type": "application",
-      "version": "0.4.1"
+      "version": "0.5.0"
     },
-    "timestamp": "2026-10-22T00:00:00+00:00",
+    "timestamp": "2026-10-27T00:00:00+00:00",
     "tools": {
       "components": [
         {
@@ -399,7 +512,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:794ba380-877e-5686-82e6-a2655d07ec04",
+  "serialNumber": "urn:uuid:9fc5a013-81d0-5a54-a6d1-a3c6ab4e7cc2",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",

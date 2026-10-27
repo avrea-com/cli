@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: "Reference for the avr command-line client (v0.4.1)."
+description: "Reference for the avr command-line client (v0.5.0)."
 ---
 
 `avr` is the Avrea command-line client. Avrea on the command line.
