@@ -2273,7 +2273,6 @@ Examples:
 **Options**
 
 - `--placement <TEXT>` — Exact mirror URL or hostname from the repository's placements.
-- `--org <TEXT>` — Organization ID or slug. Uses the default organization if omitted.
 - `--branch, -b <TEXT>` — Branch or tag to check out.
 - `--depth <INTEGER RANGE>` — Create a shallow clone with this many commits.
 

@@ -9717,24 +9717,6 @@
                 "default": null
               },
               {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID or slug. Uses the default organization if omitted.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
                 "name": "branch",
                 "kind": "option",
                 "opts": [

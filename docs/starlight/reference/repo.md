@@ -44,7 +44,6 @@ Examples:
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;placement</code> <code class="cli-value">&lt;TEXT&gt;</code> — Exact mirror URL or hostname from the repository's placements.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses the default organization if omitted.
 - <code class="cli-flag">&#x2D;&#x2D;branch, -b</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch or tag to check out.
 - <code class="cli-flag">&#x2D;&#x2D;depth</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Create a shallow clone with this many commits.
 

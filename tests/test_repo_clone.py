@@ -28,7 +28,7 @@ import shutil
 import subprocess
 
 REPO_ID = "rep-0123456789abcdef0123456789abcdef"
-SESSION_PATH = f"/orgs/org-default/repos/{REPO_ID}/mirror/session"
+SESSION_PATH = "/repos/foo/faa/mirror/session"
 ENDPOINTS = ["https://git.fi.example.com", "https://git.us.example.com"]
 TOKEN = "secret-git-jwt"
 
@@ -49,9 +49,7 @@ def clone_api(monkeypatch):
 
     def get(self, path, params=None):
         calls.append(("GET", path, params))
-        if path.endswith("/repos/resolve"):
-            return {"data": {"repository_id": REPO_ID, "full_name": "foo/faa"}}
-        assert path == SESSION_PATH
+        assert path.lower() == SESSION_PATH
         return session
 
     def post(self, path, json=None):
@@ -75,15 +73,14 @@ def clone_process(monkeypatch):
     return calls
 
 
-def test_clone_resolves_repo_and_races_advertised_placements(runner, monkeypatch, clone_api, clone_process):
+def test_clone_requests_mirrors_by_name_and_races_advertised_placements(runner, monkeypatch, clone_api, clone_process):
     nearest = AsyncMock(return_value=ENDPOINTS[1])
     monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
     result = runner.invoke(cli, ["repo", "clone", "Foo/Faa", "my checkout", "--depth", "1", "-b", "main"])
     assert result.exit_code == 0, result.output
     _, calls = clone_api
     assert calls == [
-        ("GET", "/orgs/org-default/repos/resolve", {"name": "Foo/Faa", "platform": "github"}),
-        ("GET", SESSION_PATH, None),
+        ("GET", "/repos/Foo/Faa/mirror/session", None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
     nearest.assert_awaited_once_with(ENDPOINTS, "foo/faa", TOKEN)
@@ -101,10 +98,12 @@ def test_clone_resolves_repo_and_races_advertised_placements(runner, monkeypatch
 def test_explicit_placement_skips_race(runner, monkeypatch, clone_api, clone_process, placement):
     nearest = AsyncMock(side_effect=AssertionError("must not race explicit placements"))
     monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
-    result = runner.invoke(cli, ["repo", "clone", REPO_ID, "--placement", placement])
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", placement])
     assert result.exit_code == 0, result.output
     assert clone_process[0][0][-3:] == ["--", ENDPOINTS[0] + "/foo/faa.git", "faa"]
-    assert clone_api[1] == [("GET", SESSION_PATH, None)]
+    assert clone_api[1] == [
+        ("GET", SESSION_PATH, None),
+    ]
     nearest.assert_not_called()
 
 
@@ -115,6 +114,53 @@ def test_unknown_placement_fails_before_minting_token(runner, clone_api, clone_p
     assert ENDPOINTS[0] in result.output
     assert not any(call[0] == "POST" for call in clone_api[1])
     assert not clone_process
+
+
+@pytest.mark.parametrize("default_org", [None, "org-unrelated"])
+def test_clone_uses_full_name_without_organization_configuration(
+    runner, monkeypatch, clone_api, clone_process, default_org
+):
+    if default_org is None:
+        monkeypatch.delenv("AVR_ORG")
+    else:
+        monkeypatch.setenv("AVR_ORG", default_org)
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 0, result.output
+    assert clone_api[1][:2] == [
+        ("GET", SESSION_PATH, None),
+    ]
+    assert clone_process
+
+
+@pytest.mark.parametrize("args", [["rep-invalid"], ["foo/faa", "--org", "org-default"]])
+def test_clone_rejects_invalid_id_and_organization_option(runner, api, clone_process, args):
+    result = runner.invoke(cli, ["repo", "clone", *args])
+    assert result.exit_code == 2
+    assert not api.requests
+    assert not clone_process
+
+
+@pytest.mark.parametrize("scoped", [True, False])
+@pytest.mark.parametrize("default_org", [None, "org-unrelated"])
+def test_clone_by_id_uses_canonical_name(runner, monkeypatch, api, clone_process, scoped, default_org):
+    if scoped:
+        monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
+    if default_org is None:
+        monkeypatch.delenv("AVR_ORG")
+    else:
+        monkeypatch.setenv("AVR_ORG", default_org)
+    path = f"/repos/{REPO_ID}/mirror/session"
+    api.reply("GET", path, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
+    api.reply("POST", "/tokens/git", json=token_response())
+    nearest = AsyncMock(return_value=ENDPOINTS[0])
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
+    result = runner.invoke(cli, ["repo", "clone", REPO_ID])
+    assert result.exit_code == 0, result.output
+    assert [(r.method, r.url.path) for r in api.requests] == [("GET", path), ("POST", "/tokens/git")]
+    assert json.loads(api.requests[1].content) == {"repos": ["foo/faa"]}
+    nearest.assert_awaited_once_with(ENDPOINTS, "foo/faa", TOKEN)
+    assert clone_process[0][0][-3:] == ["--", ENDPOINTS[0] + "/foo/faa.git", "faa"]
+    assert REPO_ID not in " ".join(clone_process[0][0])
 
 
 @pytest.mark.parametrize(
@@ -138,7 +184,9 @@ def test_unavailable_mirror_does_not_mint_token(runner, clone_api, clone_process
     assert not clone_process
 
 
-@pytest.mark.parametrize("name", ["../repo", "foo/..", "foo//repo", "foo/repo?x", "https://github.com/foo/faa"])
+@pytest.mark.parametrize(
+    "name", ["../repo", "foo/..", "foo//repo", "foo/repo?x", "https://github.com/foo/faa", "group/subgroup/repo"]
+)
 def test_invalid_repository_rejected_locally(runner, clone_api, name):
     result = runner.invoke(cli, ["repo", "clone", name])
     assert result.exit_code == 2
@@ -348,9 +396,7 @@ def git_server(tmp_path, monkeypatch):
             self.wfile.write(json.dumps(data).encode())
 
         def do_GET(self):
-            if self.path.startswith("/orgs/org-default/repos/resolve?"):
-                self.send_json({"data": {"repository_id": REPO_ID, "full_name": "foo/faa"}})
-            elif self.path == SESSION_PATH:
+            if self.path in {SESSION_PATH, f"/repos/{REPO_ID}/mirror/session"}:
                 self.send_json({"browsable": True, "full_name": "foo/faa", "endpoints": [base_url]})
             else:
                 self.git_backend()
@@ -431,7 +477,8 @@ def git_server(tmp_path, monkeypatch):
         thread.join()
 
 
-def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_path, git_server):
+@pytest.mark.parametrize("repository", ["foo/faa", REPO_ID])
+def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_path, git_server, repository):
     base_url, issued, authenticated, _ = git_server
     monkeypatch.setenv("AVR_HOST", base_url)
     stored_credentials = tmp_path / "stored credentials"
@@ -443,7 +490,7 @@ def test_real_clone_and_later_fetch_use_fresh_tokens(runner, monkeypatch, tmp_pa
     )
     global_config = (tmp_path / "global-config").read_text()
     destination = tmp_path / "checkout with spaces"
-    result = runner.invoke(cli, ["repo", "clone", "foo/faa", str(destination)])
+    result = runner.invoke(cli, ["repo", "clone", repository, str(destination)])
     assert result.exit_code == 0, result.output
     assert (destination / "README").read_text() == "mirror content\n"
     origin = subprocess.check_output(["git", "-C", str(destination), "remote", "get-url", "origin"], text=True).strip()
@@ -570,29 +617,55 @@ def test_valid_dns_and_ip_endpoints(endpoint):
     assert mirror_endpoint(endpoint) == endpoint
 
 
-def test_clone_strips_git_suffix_from_rep_prefixed_owner(runner, clone_api, clone_process):
+def test_clone_strips_git_suffix_from_rep_prefixed_owner(runner, api, clone_process):
+    path = "/repos/rep-acme/bar/mirror/session"
+    api.reply("GET", path, json={"browsable": True, "full_name": "rep-acme/bar", "endpoints": ENDPOINTS})
     result = runner.invoke(cli, ["repo", "clone", "rep-acme/bar.git", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
-    assert clone_api[1][0][2] == {"name": "rep-acme/bar", "platform": "github"}
+    assert [(r.method, r.url.path) for r in api.requests] == [("GET", path)]
 
 
-def test_clone_scoped_resolution_defaults_to_github(runner, monkeypatch, api, clone_process):
+def test_scoped_clone_uses_full_name_without_org(runner, monkeypatch, api, clone_process):
     monkeypatch.setenv("AVR_TOKEN", "avs_test-token")
-    api.reply(
-        "GET",
-        "/orgs/org-default/repos",
-        json={
-            "data": [
-                {"repository_id": "rep-other", "full_name": "foo/faa", "platform": "gitlab"},
-                {"repository_id": REPO_ID, "full_name": "foo/faa", "platform": "github"},
-            ],
-            "pagination": {"next_cursor": None},
-        },
-    )
+    monkeypatch.delenv("AVR_ORG")
     api.reply("GET", SESSION_PATH, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
-    assert [request.url.path for request in api.requests] == ["/orgs/org-default/repos", SESSION_PATH]
+    assert [request.url.path for request in api.requests] == [SESSION_PATH]
+    assert api.requests[0].headers["Authorization"] == "Bearer avs_test-token"
+
+
+@pytest.mark.parametrize("status", [404, 503])
+def test_clone_discovery_failure_does_not_clone(runner, api, clone_process, status):
+    api.reply("GET", SESSION_PATH, status, json={"detail": "Cannot access repository"})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
+    assert result.exit_code == 1
+    assert {request.url.path for request in api.requests} == {SESSION_PATH}
+    assert not clone_process
+
+
+def test_discovery_authentication_failure_exits_with_auth_required(runner, api, clone_process):
+    api.reply("GET", SESSION_PATH, 401, json={"detail": "Unauthorized"})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 4
+    assert "avr auth login" in result.stderr
+    assert [request.url.path for request in api.requests] == [SESSION_PATH]
+    assert not clone_process
+
+
+def test_discovery_network_failure_is_readable(runner, monkeypatch, clone_process):
+    requests = []
+
+    def fail(request):
+        requests.append(request)
+        raise httpx.ConnectError("unavailable", request=request)
+
+    monkeypatch.setattr("avrea_cli.api_client.CompressingTransport", lambda: httpx.MockTransport(fail))
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 1
+    assert "Could not reach Avrea to discover Git mirror placements." in result.stderr
+    assert {request.url.path for request in requests} == {SESSION_PATH}
+    assert not clone_process
 
 
 @pytest.mark.asyncio

@@ -40,6 +40,7 @@ from urllib.parse import quote
 import asyncio
 import click
 import httpx
+import re
 import shutil
 
 _REPO_LIST_FIELDS = make_schema("repository_id", "full_name", "platform", "platform_repository_id")
@@ -178,7 +179,6 @@ def repo(ctx):
 @click.argument("repository")
 @click.argument("directory", required=False, type=click.Path(file_okay=False))
 @click.option("--placement", help="Exact mirror URL or hostname from the repository's placements.")
-@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization if omitted.")
 @click.option("--branch", "-b", help="Branch or tag to check out.")
 @click.option("--depth", type=click.IntRange(min=1), help="Create a shallow clone with this many commits.")
 @click.pass_context
@@ -187,7 +187,6 @@ def repo_clone(
     repository: str,
     directory: str | None,
     placement: str | None,
-    org_id: str | None,
     branch: str | None,
     depth: int | None,
 ) -> None:
@@ -209,17 +208,22 @@ def repo_clone(
         avr repo clone foo/faa my-checkout --depth 1
         avr repo clone foo/faa --placement https://git.fi.a.avrea.io
     """
-    if not (repository.startswith("rep-") and "/" not in repository):
+    if "/" not in repository:
+        if not re.fullmatch(r"rep-[0-9a-f]{32}", repository):
+            raise click.BadParameter(
+                "must be an owner/repository name or an Avrea repository ID (rep-...)", param_hint="REPOSITORY"
+            )
+    else:
         repository = validate_repo_name(repository.removesuffix(".git"))
+        if repository.count("/") != 1:
+            raise click.BadParameter("must be an owner/repository name", param_hint="REPOSITORY")
     if shutil.which("git") is None:
         raise click.ClickException("Git is required. Install git and try again.")
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    org_id = get_org_id(config, org_id, client=client)
     try:
-        repo_id = resolve_repo_or_detect(client, config, org_id, repository, required=True, platform="github")
-        session = client.public_get(f"/orgs/{quote(org_id, safe='')}/repos/{quote(repo_id, safe='')}/mirror/session")
+        session = client.public_get(f"/repos/{quote(repository, safe='/')}/mirror/session")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "discover Git mirror placements")
     except httpx.HTTPError:
