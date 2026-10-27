@@ -1,0 +1,70 @@
+name: Repair CLI 0.5.0 Windows archive
+
+on:
+  push:
+    branches: [release/repair-windows-0.5.0]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.repository == 'avrea-com/cli'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify the original release and repackage its exact executable
+        shell: bash
+        run: |
+          mkdir original corrected
+          curl -fsSL --retry 3 --max-time 300 \
+            https://github.com/avrea-com/cli/releases/download/v0.5.0/avr_0.5.0_windows_amd64.zip \
+            -o original/avr_0.5.0_windows_amd64.zip
+          echo 'd62eae25cdb2f403b0571d87fea1558fee3cf3190988d5a94f977f02851109c0  original/avr_0.5.0_windows_amd64.zip' | sha256sum -c -
+          gh attestation verify original/avr_0.5.0_windows_amd64.zip \
+            --repo avrea-com/cli \
+            --signer-workflow avrea-com/cli/.github/workflows/release.yml \
+            --source-ref refs/tags/v0.5.0 \
+            --source-digest 620a47d50c11e7e1905980829c01fe2d974fe837 \
+            --deny-self-hosted-runners
+          python3 - <<'PY'
+          import hashlib
+          import tarfile
+          import zipfile
+          from pathlib import Path
+
+          with tarfile.open('original/avr_0.5.0_windows_amd64.zip') as source:
+              members = source.getmembers()
+              assert len(members) == 1 and members[0].name == 'avr.exe' and members[0].isfile()
+              with source.extractfile(members[0]) as executable:
+                  payload = executable.read()
+          assert hashlib.sha256(payload).hexdigest() == '2c4e64744a0939fbc1c34b5955c1afb50f5c782c087298b5d9b15d0937dfa1ee'
+          output = Path('corrected/avr_0.5.0_windows_amd64.zip')
+          with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+              archive.writestr('avr.exe', payload)
+          with zipfile.ZipFile(output) as archive:
+              assert archive.namelist() == ['avr.exe']
+              assert archive.testzip() is None and archive.read('avr.exe') == payload
+          print('Corrected archive SHA-256:', hashlib.sha256(output.read_bytes()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: corrected-windows-0.5.0
+          path: corrected/avr_0.5.0_windows_amd64.zip
+          if-no-files-found: error
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: corrected/avr_0.5.0_windows_amd64.zip
+      - name: Replace only the malformed Windows asset
+        run: gh release upload v0.5.0 corrected/avr_0.5.0_windows_amd64.zip --repo avrea-com/cli --clobber
