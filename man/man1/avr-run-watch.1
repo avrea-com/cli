@@ -15,6 +15,8 @@ Pass --repo (repeatable) to scope the auto-select to specific repositories.
 .fi
 .RE
 .PP
+NDJSON job and run completion events include ci_provider (github_actions, gitlab_ci, or avrea_ci). Native jobs have a null platform_job_id; correlate events using run_id and avrea_job_id.
+.PP
 .RS 4
 .nf
 Examples:

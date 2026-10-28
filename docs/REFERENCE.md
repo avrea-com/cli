@@ -402,6 +402,10 @@ RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
+NDJSON job and run completion events include ci_provider
+(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+platform_job_id; correlate events using run_id and avrea_job_id.
+
 ```sh
 Examples:
     avr run watch

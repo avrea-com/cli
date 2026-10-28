@@ -883,11 +883,14 @@ def _emit_ndjson_event(event: dict[str, Any]) -> None:
         raise SystemExit(0) from None
 
 
-def _job_event_payload(event: str, run_id: str, job: dict[str, Any], timestamp: str) -> dict[str, Any]:
+def _job_event_payload(
+    event: str, run_id: str, job: dict[str, Any], timestamp: str, ci_provider: str
+) -> dict[str, Any]:
     return {
         "event": event,
         "timestamp": timestamp,
         "run_id": run_id,
+        "ci_provider": ci_provider,
         "avrea_job_id": job.get("job_id"),
         "platform_job_id": job.get("platform_job_id"),
         "job_name": job.get("job_name"),
@@ -903,12 +906,12 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
     event kinds, with intentionally different payloads:
 
     - ``job_started`` / ``job_completed`` — emitted via ``_job_event_payload``
-      and share the keys ``event``, ``timestamp``, ``run_id``,
+      and share the keys ``event``, ``timestamp``, ``run_id``, ``ci_provider``,
       ``avrea_job_id``, ``platform_job_id``, ``job_name``, ``state``,
       ``conclusion``. ``conclusion`` is ``null`` until ``job_completed``.
 
     - ``run_completed`` — top-level run summary; carries ``event``,
-      ``timestamp``, ``run_id``, ``status``, ``conclusion``,
+      ``timestamp``, ``run_id``, ``ci_provider``, ``status``, ``conclusion``,
       ``duration_seconds``. It deliberately omits the per-job fields —
       consumers correlate via ``run_id`` to the preceding ``job_*`` events.
 
@@ -965,6 +968,7 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
             continue
 
         now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        ci_provider = run_data.get("ci_provider", "github_actions")
         for j in run_data.get("jobs") or []:
             j_id = j.get("job_id")
             if not j_id:
@@ -974,9 +978,9 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
             if prev != j_state:
                 last_state[j_id] = j_state
                 if j_state == "in_progress":
-                    _emit_ndjson_event(_job_event_payload("job_started", run_id, j, now))
+                    _emit_ndjson_event(_job_event_payload("job_started", run_id, j, now, ci_provider))
                 elif j_state == "completed":
-                    _emit_ndjson_event(_job_event_payload("job_completed", run_id, j, now))
+                    _emit_ndjson_event(_job_event_payload("job_completed", run_id, j, now, ci_provider))
 
         status = run_data.get("status", "unknown")
         if status == "completed":
@@ -985,6 +989,7 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
                     "event": "run_completed",
                     "timestamp": now,
                     "run_id": run_id,
+                    "ci_provider": ci_provider,
                     "status": status,
                     "conclusion": run_data.get("conclusion"),
                     "duration_seconds": run_data.get("duration_seconds"),
@@ -1187,6 +1192,10 @@ def run_watch(
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`. Without RUN, auto-selects the latest in-progress run.
     Pass --repo (repeatable) to scope the auto-select to specific repositories.
+
+    NDJSON job and run completion events include ci_provider
+    (github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+    platform_job_id; correlate events using run_id and avrea_job_id.
 
     \b
     Examples:

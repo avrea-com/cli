@@ -1623,7 +1623,7 @@
             "full": "avr run watch",
             "is_group": false,
             "short_help": "Watch a workflow run until it completes.",
-            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
+            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\nNDJSON job and run completion events include ci_provider\n(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null\nplatform_job_id; correlate events using run_id and avrea_job_id.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
