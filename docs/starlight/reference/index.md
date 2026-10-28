@@ -30,7 +30,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](./vm/) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
 - [`avr cache`](./cache/) — Inspect and manage the Avrea build cache.
-- [`avr tests`](./tests/) — Inspect recorded tests, failures, and reporting status.
+- [`avr tests`](./tests/) — Read a job's tests, timings and recorded failure messages.
 - [`avr sbom`](./sbom/) — View, generate, and download repository SBOMs.
 - [`avr log`](./log/) — Search across runner execution logs.
 

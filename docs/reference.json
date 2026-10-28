@@ -6256,308 +6256,14 @@
         ],
         "full": "avr tests",
         "is_group": true,
-        "short_help": "Inspect recorded tests, failures, and reporting status.",
-        "help": "Inspect recorded tests, failures, and reporting status.",
+        "short_help": "Read a job's tests, timings and recorded failure messages.",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from\navr job list. No report capture ID or configuration digest is required.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
         "usage": "avr tests [OPTIONS] COMMAND [ARGS]...",
         "params": [],
         "subcommands": [
-          {
-            "name": "captures",
-            "path": [
-              "avr",
-              "tests",
-              "captures"
-            ],
-            "full": "avr tests captures",
-            "is_group": false,
-            "short_help": "List report deliveries, including missing, partial and failed captures.",
-            "help": "List report deliveries, including missing, partial and failed captures.",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr tests captures [OPTIONS]",
-            "params": [
-              {
-                "name": "repo_id",
-                "kind": "option",
-                "opts": [
-                  "--repo"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Repository (owner/name or rep-ID). Defaults to the git remote.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID or slug. Defaults to the configured organization.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "limit",
-                "kind": "option",
-                "opts": [
-                  "-L",
-                  "--limit"
-                ],
-                "secondary_opts": [],
-                "type": "integer range",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Rows per page (1-100).",
-                "hidden": false,
-                "show_default": true,
-                "default": 50
-              },
-              {
-                "name": "cursor",
-                "kind": "option",
-                "opts": [
-                  "--cursor"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Opaque next_cursor from the previous page. One page is read per invocation.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "json_fields",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "jq_expr",
-                "kind": "option",
-                "opts": [
-                  "-q",
-                  "--jq"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Filter --json output through a jq expression.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
-          {
-            "name": "history",
-            "path": [
-              "avr",
-              "tests",
-              "history"
-            ],
-            "full": "avr tests history",
-            "is_group": false,
-            "short_help": "Read recorded outcomes for one test and configuration, newest first.",
-            "help": "Read recorded outcomes for one test and configuration, newest first.",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr tests history [OPTIONS] TEST_ID",
-            "params": [
-              {
-                "name": "test_id",
-                "kind": "argument",
-                "opts": [
-                  "test_id"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": true,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": null,
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "configuration_digest",
-                "kind": "option",
-                "opts": [
-                  "--configuration"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": true,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "History grouping identifier returned by tests list; not a platform label.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "repo_id",
-                "kind": "option",
-                "opts": [
-                  "--repo"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Repository (owner/name or rep-ID). Defaults to the git remote.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID or slug. Defaults to the configured organization.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "limit",
-                "kind": "option",
-                "opts": [
-                  "-L",
-                  "--limit"
-                ],
-                "secondary_opts": [],
-                "type": "integer range",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Rows per page (1-100).",
-                "hidden": false,
-                "show_default": true,
-                "default": 50
-              },
-              {
-                "name": "cursor",
-                "kind": "option",
-                "opts": [
-                  "--cursor"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Opaque next_cursor from the previous page. One page is read per invocation.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "json_fields",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "jq_expr",
-                "kind": "option",
-                "opts": [
-                  "-q",
-                  "--jq"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Filter --json output through a jq expression.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
           {
             "name": "list",
             "path": [
@@ -6567,239 +6273,18 @@
             ],
             "full": "avr tests list",
             "is_group": false,
-            "short_help": "List one page of test histories, grouped by test and configuration.",
-            "help": "List one page of test histories, grouped by test and configuration.\n\nCounts describe each returned history window, not repository totals.\nNames appear when retained private detail is available; otherwise IDs are shown.\nUse --json '*' to retain status, pagination and repository context for agents.\n",
+            "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
+            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --output json for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr tests list [OPTIONS]",
+            "usage": "avr tests list [OPTIONS] JOB",
             "params": [
               {
-                "name": "repo_id",
-                "kind": "option",
-                "opts": [
-                  "--repo"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Repository (owner/name or rep-ID). Defaults to the git remote.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID or slug. Defaults to the configured organization.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "limit",
-                "kind": "option",
-                "opts": [
-                  "-L",
-                  "--limit"
-                ],
-                "secondary_opts": [],
-                "type": "integer range",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Rows per page (1-100).",
-                "hidden": false,
-                "show_default": true,
-                "default": 50
-              },
-              {
-                "name": "cursor",
-                "kind": "option",
-                "opts": [
-                  "--cursor"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Opaque next_cursor from the previous page. One page is read per invocation.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "json_fields",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "jq_expr",
-                "kind": "option",
-                "opts": [
-                  "-q",
-                  "--jq"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Filter --json output through a jq expression.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
-          {
-            "name": "status",
-            "path": [
-              "avr",
-              "tests",
-              "status"
-            ],
-            "full": "avr tests status",
-            "is_group": false,
-            "short_help": "Read collection settings.",
-            "help": "Read collection settings. Use --json for retained-history lifecycle details.",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr tests status [OPTIONS]",
-            "params": [
-              {
-                "name": "repo_id",
-                "kind": "option",
-                "opts": [
-                  "--repo"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Repository (owner/name or rep-ID). Defaults to the git remote.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID or slug. Defaults to the configured organization.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "json_fields",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "jq_expr",
-                "kind": "option",
-                "opts": [
-                  "-q",
-                  "--jq"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Filter --json output through a jq expression.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
-          {
-            "name": "view",
-            "path": [
-              "avr",
-              "tests",
-              "view"
-            ],
-            "full": "avr tests view",
-            "is_group": false,
-            "short_help": "Read the exact retained result, including available failure messages.",
-            "help": "Read the exact retained result, including available failure messages.\n\nAn expired or unrecorded result is never replaced with a different capture.\nA recorded test failure is data, not a CLI error. No tests are rerun.\n",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr tests view [OPTIONS] TEST_ID",
-            "params": [
-              {
-                "name": "test_id",
+                "name": "job",
                 "kind": "argument",
                 "opts": [
-                  "test_id"
+                  "job"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6814,42 +6299,6 @@
                 "default": null
               },
               {
-                "name": "capture_id",
-                "kind": "option",
-                "opts": [
-                  "--capture"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": true,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Exact capture from tests history.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "repo_id",
-                "kind": "option",
-                "opts": [
-                  "--repo"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Repository (owner/name or rep-ID). Defaults to the git remote.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
@@ -6868,6 +6317,24 @@
                 "default": null
               },
               {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to the job's repository.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "limit",
                 "kind": "option",
                 "opts": [
@@ -6881,10 +6348,50 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Occurrences to read (1-500).",
+                "help": "Maximum occurrences to return; short pages are followed, up to 20 result pages.",
                 "hidden": false,
                 "show_default": true,
-                "default": 50
+                "default": 100
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Continue from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "output",
+                "kind": "option",
+                "opts": [
+                  "--output"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output format. JSON includes status, context and the next cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "text",
+                  "json"
+                ]
               },
               {
                 "name": "json_fields",

@@ -1,28 +1,17 @@
 .TH AVR\-TESTS 1 "" "avr 0.4.1" "Avrea CLI"
 .SH NAME
-avr-tests \- Inspect recorded tests, failures, and reporting status.
+avr-tests \- Read a job's tests, timings and recorded failure messages.
 .SH SYNOPSIS
 .B avr tests
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Inspect recorded tests, failures, and reporting status.
+Read a job's tests, timings and recorded failure messages.
 .PP
+Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from avr job list. No report capture ID or configuration digest is required.
 .SH COMMANDS
 .TP
-captures
-List report deliveries, including missing, partial and failed captures.
-.TP
-history
-Read recorded outcomes for one test and configuration, newest first.
-.TP
 list
-List one page of test histories, grouped by test and configuration.
-.TP
-status
-Read collection settings.
-.TP
-view
-Read the exact retained result, including available failure messages.
+Read the latest confirmed execution of JOB, including repeated tests.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-status (1),
@@ -44,8 +33,4 @@ Read the exact retained result, including available failure messages.
 .BR avr-repo (1),
 .BR avr-org (1),
 .BR avr-health (1),
-.BR avr-tests-captures (1),
-.BR avr-tests-history (1),
-.BR avr-tests-list (1),
-.BR avr-tests-status (1),
-.BR avr-tests-view (1)
+.BR avr-tests-list (1)

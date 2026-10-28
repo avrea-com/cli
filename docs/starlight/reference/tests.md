@@ -1,113 +1,46 @@
 ---
 title: avr tests
-description: "Inspect recorded tests, failures, and reporting status."
+description: "Read a job's tests, timings and recorded failure messages."
 ---
 
-Inspect recorded tests, failures, and reporting status.
+Read a job's tests, timings and recorded failure messages.
 
 ```sh
 avr tests [OPTIONS] COMMAND [ARGS]...
 ```
 
+Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from
+avr job list. No report capture ID or configuration digest is required.
+
 ## Subcommands
-
-### `avr tests captures`
-
-List report deliveries, including missing, partial and failed captures.
-
-```sh
-avr tests captures [OPTIONS]
-```
-
-**Options**
-
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the git remote.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
-- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Rows per page (1-100). _(default: `50`)_
-- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Opaque next_cursor from the previous page. One page is read per invocation.
-- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
-- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
-
-### `avr tests history`
-
-Read recorded outcomes for one test and configuration, newest first.
-
-```sh
-avr tests history [OPTIONS] TEST_ID
-```
-
-**Arguments**
-
-- <code class="cli-arg">TEST_ID</code>
-
-**Options**
-
-- <code class="cli-flag">&#x2D;&#x2D;configuration</code> <code class="cli-value">&lt;TEXT&gt;</code> — History grouping identifier returned by tests list; not a platform label. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the git remote.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
-- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Rows per page (1-100). _(default: `50`)_
-- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Opaque next_cursor from the previous page. One page is read per invocation.
-- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
-- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
 ### `avr tests list`
 
-List one page of test histories, grouped by test and configuration.
+Read the latest confirmed execution of JOB, including repeated tests.
 
 ```sh
-avr tests list [OPTIONS]
+avr tests list [OPTIONS] JOB
 ```
 
-Counts describe each returned history window, not repository totals.
-Names appear when retained private detail is available; otherwise IDs are shown.
-Use --json '*' to retain status, pagination and repository context for agents.
+Names, outcomes, recorded durations and available failure messages are
+shown together. A failed test is data, not a command error. Missing,
+pending, partial and expired evidence are reported explicitly; an older
+execution is never substituted. Complete describes collected reports.
 
-**Options**
-
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the git remote.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
-- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Rows per page (1-100). _(default: `50`)_
-- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Opaque next_cursor from the previous page. One page is read per invocation.
-- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
-- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
-
-### `avr tests status`
-
-Read collection settings.
-
-```sh
-avr tests status [OPTIONS]
-```
-
-Read collection settings. Use --json for retained-history lifecycle details.
-
-**Options**
-
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the git remote.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
-- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
-- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
-
-### `avr tests view`
-
-Read the exact retained result, including available failure messages.
-
-```sh
-avr tests view [OPTIONS] TEST_ID
-```
-
-An expired or unrecorded result is never replaced with a different capture.
-A recorded test failure is data, not a CLI error. No tests are rerun.
+Use --output json for the complete response or --json FIELDS to select
+fields. Continue with --cursor when pagination.next_cursor is present.
+API refusal or a changed report fails the command without partial output.
 
 **Arguments**
 
-- <code class="cli-arg">TEST_ID</code>
+- <code class="cli-arg">JOB</code>
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;capture</code> <code class="cli-value">&lt;TEXT&gt;</code> — Exact capture from tests history. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the git remote.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
-- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Occurrences to read (1-500). _(default: `50`)_
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the job's repository.
+- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
+- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Continue from a previous response's next_cursor.
+- <code class="cli-flag">&#x2D;&#x2D;output</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Output format. JSON includes status, context and the next cursor. _(choices: `text`, `json`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.

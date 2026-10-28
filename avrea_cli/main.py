@@ -42,7 +42,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
         "tests",
         "avrea_cli.commands.tests",
         "tests",
-        "Inspect recorded tests, failures, and reporting status.",
+        "Read a job's tests, timings and recorded failure messages.",
         "Core Commands",
     ),
     ("sbom", "avrea_cli.commands.sbom", "sbom", "View, generate, and download repository SBOMs.", "Core Commands"),

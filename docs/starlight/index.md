@@ -162,6 +162,27 @@ avr run logs <run-id>                  # full log dump, paginated
 avr job logs <job-id> --follow         # tail one job in real time
 ```
 
+**Read a job's recorded tests**
+
+```sh
+avr tests <job-id>                    # names, outcomes, timings and failure messages
+avr tests <job-id> --output json      # results with reporting state and pagination
+avr tests <job-id> --limit 500         # follow short pages up to the requested count
+avr tests <job-id> --cursor '<cursor>' # continue with pagination.next_cursor
+```
+
+Use the Avrea job ID from `avr job list`; the repository is resolved from that
+job. `avr tests list <job-id>` is equivalent. `--json FIELDS` and `--jq` also
+work. Each invocation reads at most 1,000 occurrences and 20 result pages,
+preserving repeated tests and returning a cursor when more results remain.
+Missing or expired reports are distinct from a retained report containing zero
+tests. A report marked complete does not establish that every expected test ran.
+
+This requires an API deployment supporting job test results and access to the
+repository's test evidence. Only Avrea job IDs are supported in this first
+slice. Provider job IDs/URLs, immutable result links and anchored test history
+follow separately; this command does not rerun tests or change collection.
+
 **Trigger a workflow_dispatch**
 
 ```sh

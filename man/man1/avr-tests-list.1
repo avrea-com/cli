@@ -1,26 +1,35 @@
 .TH AVR\-TESTS\-LIST 1 "" "avr 0.4.1" "Avrea CLI"
 .SH NAME
-avr-tests-list \- List one page of test histories, grouped by test and configuration.
+avr-tests-list \- Read the latest confirmed execution of JOB, including repeated tests.
 .SH SYNOPSIS
 .B avr tests list
-[OPTIONS]
+[OPTIONS] JOB
 .SH DESCRIPTION
-List one page of test histories, grouped by test and configuration.
+Read the latest confirmed execution of JOB, including repeated tests.
 .PP
-Counts describe each returned history window, not repository totals. Names appear when retained private detail is available; otherwise IDs are shown. Use --json '*' to retain status, pagination and repository context for agents.
-.SH OPTIONS
+Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
+.PP
+Use --output json for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. API refusal or a changed report fails the command without partial output.
+.SH ARGUMENTS
 .TP
-\fB\-\-repo\fR \fITEXT\fR
-Repository (owner/name or rep-ID). Defaults to the git remote.
+\fIJOB\fR
+\&
+.SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
 Organization ID or slug. Defaults to the configured organization.
 .TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the job's repository.
+.TP
 \fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
-Rows per page (1-100). (default: 50)
+Maximum occurrences to return; short pages are followed, up to 20 result pages. (default: 100)
 .TP
 \fB\-\-cursor\fR \fITEXT\fR
-Opaque next_cursor from the previous page. One page is read per invocation.
+Continue from a previous response's next_cursor.
+.TP
+\fB\-\-output\fR \fICHOICE\fR
+Output format. JSON includes status, context and the next cursor. (choices: text, json)
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -29,8 +38,4 @@ Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to lis
 Filter --json output through a jq expression.
 .SH SEE ALSO
 .BR avr (1),
-.BR avr-tests (1),
-.BR avr-tests-captures (1),
-.BR avr-tests-history (1),
-.BR avr-tests-status (1),
-.BR avr-tests-view (1)
+.BR avr-tests (1)
