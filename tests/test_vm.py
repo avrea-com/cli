@@ -476,33 +476,6 @@ class TestVmCreate:
         assert result.exit_code == 2
         assert "3-vcpu" in result.output
 
-    def test_windows_remote_desktop_blocked(self, runner, monkeypatch):
-        # Windows remote desktop is gated as "coming soon"; the CLI blocks it
-        # before any API call. Remove with the vm.py block when it ships.
-        called = {"n": 0}
-        monkeypatch.setattr(
-            "avrea_cli.api_client.ApiClient.public_post",
-            lambda self, path, json=None, timeout=None: called.__setitem__("n", called["n"] + 1) or CREATE_RESPONSE,
-        )
-        result = runner.invoke(
-            cli,
-            ["vm", "create", "--name", "w", "--os", "windows", "--size", "4-vcpu", "--ephemeral", "--remote-desktop"],
-        )
-        assert result.exit_code != 0
-        assert "remote desktop" in result.output.lower()
-        assert called["n"] == 0  # blocked before the API call
-
-    def test_windows_without_remote_desktop_allowed(self, runner, monkeypatch):
-        # The gate is scoped to --remote-desktop; a plain Windows VM still works.
-        store = {"return": CREATE_RESPONSE}
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
-        result = runner.invoke(
-            cli,
-            ["vm", "create", "--name", "w", "--os", "windows", "--size", "4-vcpu", "--ephemeral"],
-        )
-        assert result.exit_code == 0
-        assert store["json"]["enable_remote_desktop"] is False
-
 
 class TestVmCreateWait:
     """`avr vm create --wait` polls until the VM is connectable, then prints a

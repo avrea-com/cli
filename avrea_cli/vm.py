@@ -788,15 +788,6 @@ def vm_create(
         raise click.UsageError("--fetch-depth requires --repo.")
     if ref:
         ref = _validate_branch_ref(ref)
-    # Windows remote desktop is not available yet (coming soon). Gate it at the
-    # CLI so `--remote-desktop --os windows` reports "coming soon" rather than
-    # provisioning. Delete this block (and its test) to enable it; Linux and
-    # macOS remote desktop are unaffected.
-    if remote_desktop and os_type == "windows":
-        raise click.ClickException(
-            "Windows remote desktop is coming soon. Create the VM without --remote-desktop, "
-            "or use --os linux / --os macos for a remote desktop now."
-        )
     body = _create_body(
         display_name=display_name,
         os_type=os_type,
