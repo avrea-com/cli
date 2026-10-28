@@ -193,8 +193,9 @@ def repo_clone(
     """Clone a repository from its nearest available Avrea mirror.
 
     REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
-    Available placements are raced from this client; the first to serve the
-    repository wins. Use --placement to select an exact URL or hostname.
+    When several placements are available, the first to serve the repository
+    wins. A single placement is used directly. Use --placement to select an
+    exact URL or hostname.
 
     The origin remote stays on the selected read-only mirror. A repository-local
     Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
@@ -253,12 +254,16 @@ def repo_clone(
         raise click.ClickException("Avrea returned invalid Git mirror placements.")
     endpoints = list(dict.fromkeys(mirror_endpoint(endpoint) for endpoint in endpoints))
     endpoint = select_placement(endpoints, placement) if placement is not None else None
+    if endpoint is None and len(endpoints) == 1:
+        endpoint = endpoints[0]
+    token, _ = git_token(client, full_name)
     if endpoint is None:
-        token, _ = git_token(client, full_name)
         click.echo("Finding the nearest available Git mirror…", err=True)
         endpoint = asyncio.run(nearest_mirror(endpoints, full_name, token))
     click.echo(f"Cloning {full_name} from {endpoint}", err=True)
-    ctx.exit(clone_mirror(config.public_api_url, endpoint, full_name, directory, branch=branch, depth=depth))
+    ctx.exit(
+        clone_mirror(config.public_api_url, endpoint, full_name, directory, token=token, branch=branch, depth=depth)
+    )
 
 
 @repo.command("list")

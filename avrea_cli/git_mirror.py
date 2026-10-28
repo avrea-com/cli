@@ -162,7 +162,10 @@ def credential_config(api_host: str, url: str, full_name: str) -> list[str]:
     )
     # Also fail closed if the installed executable has since moved or startup
     # fails before the credential adapter runs. Git appends the operation.
-    helper = f'!f() {{ {command} "$@" || {{ printf "quit=1\\n\\n"; exit 1; }}; }}; f'
+    helper = (
+        '!f() { case "$1" in store|erase) return 0;; esac; '
+        f'{command} "$@" || {{ printf "quit=1\\n\\n"; exit 1; }}; }}; f'
+    )
     return [
         # Reset inherited helpers for this URL, so they neither supply stale
         # JWTs nor store the temporary credentials returned by our helper.
@@ -179,6 +182,7 @@ def clone_mirror(
     full_name: str,
     directory: str | None,
     *,
+    token: str,
     branch: str | None,
     depth: int | None,
 ) -> int:
@@ -191,7 +195,21 @@ def clone_mirror(
     env["GIT_TERMINAL_PROMPT"] = "0"
     env["GIT_ASKPASS"] = ""
     env["SSH_ASKPASS"] = ""
-    argv = ["git", "-c", f"http.{url}.extraHeader=", "clone"]
+    # Reuse the initial token without persisting it or exposing it in argv.
+    # These process-only overrides also keep Git from invoking any credential
+    # helper during this clone; the repository-local helper serves later fetches.
+    env["AVR_GIT_CLONE_AUTHORIZATION"] = f"Authorization: Bearer {token}"
+    argv = [
+        "git",
+        "-c",
+        f"http.{url}.extraHeader=",
+        f"--config-env=http.{url}.extraHeader=AVR_GIT_CLONE_AUTHORIZATION",
+        "-c",
+        f"credential.{url}.helper=",
+        "-c",
+        f"http.{url}.followRedirects=false",
+        "clone",
+    ]
     for setting in credential_config(api_host, url, full_name):
         argv.extend(["--config", setting])
     if branch is not None:
