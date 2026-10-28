@@ -1100,10 +1100,12 @@ def watch_run_loop(
                 now_str = datetime.now(UTC).strftime("%H:%M:%S UTC")
                 title = run_data.get("display_title", "")
                 run_number = run_data.get("run_number", "?")
+                run_label = f"#{run_number}" if run_number is not None else run_id
+                ci_provider = run_data.get("ci_provider", "github_actions")
                 status = run_data.get("status", "unknown")
                 conclusion = run_data.get("conclusion")
 
-                header = f"Watching run #{run_number}: {title} -- {now_str}"
+                header = f"Watching run {run_label}: {title} [{ci_provider}] -- {now_str}"
                 if console_url and slug:
                     header = hyperlink(header, run_url(console_url, slug, run_id))
                 click.echo(header + "\n")
@@ -1111,27 +1113,33 @@ def watch_run_loop(
                 run_jobs = run_data.get("jobs") or []
                 if run_jobs:
                     _print_run_jobs(run_jobs, console_url=console_url, slug=slug)
-                    # Hints for drilling into a job. Static lines (job ids
-                    # vary across rows), but the verbs are the demo flow.
                     click.echo()
-                    click.echo(
-                        click.style(
-                            "  → avr job logs --follow <job-id>    # tail logs of a running job",
-                            fg=DIM_FG,
-                        )
-                    )
-                    click.echo(
-                        click.style(
-                            "  → avr job metrics --watch <job-id>  # live CPU/mem/IO gauges",
-                            fg=DIM_FG,
-                        )
-                    )
-                    click.echo(
-                        click.style(
-                            "  → avr job ssh <job-id>              # ssh into the runner VM",
-                            fg=DIM_FG,
-                        )
-                    )
+                    match ci_provider:
+                        case "avrea_ci":
+                            click.echo(
+                                click.style("  Native job logs, metrics, and SSH are not available yet.", fg=DIM_FG)
+                            )
+                        case "github_actions" | "gitlab_ci":
+                            click.echo(
+                                click.style(
+                                    "  → avr job logs --follow <job-id>    # tail logs of a running job",
+                                    fg=DIM_FG,
+                                )
+                            )
+                            click.echo(
+                                click.style(
+                                    "  → avr job metrics --watch <job-id>  # live CPU/mem/IO gauges",
+                                    fg=DIM_FG,
+                                )
+                            )
+                            click.echo(
+                                click.style(
+                                    "  → avr job ssh <job-id>              # ssh into the runner VM",
+                                    fg=DIM_FG,
+                                )
+                            )
+                        case _:
+                            raise ValueError(f"Unsupported CI provider: {ci_provider}")
                 else:
                     click.echo("  No jobs yet.")
 
@@ -1142,13 +1150,13 @@ def watch_run_loop(
                 if status == "completed":
                     dur = format_duration(run_data.get("duration_seconds"))
                     conclusion_str = format_conclusion_colored(status, conclusion)
-                    click.echo(f"\nRun #{run_number} completed: {conclusion_str} ({dur})")
+                    click.echo(f"\nRun {run_label} completed: {conclusion_str} ({dur})")
                     # Reset title to bare ``avr ▸ <workflow>`` before notify
                     # so the conclusion isn't echoed twice (once via Ghostty's
                     # source line, once in the notification body).
                     wf_name = ((run_data.get("workflow") or {}).get("name") or "run").strip()
                     term_title.set(f"avr ▸ {wf_name}")
-                    notify(f"Run #{run_number} {title}: {conclusion or 'completed'}")
+                    notify(f"Run {run_label} {title}: {conclusion or 'completed'}")
                     if exit_status and conclusion != "success":
                         sys.exit(1)
                     return

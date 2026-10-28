@@ -316,6 +316,44 @@ class TestRunView:
 
 
 class TestRunWatch:
+    @pytest.mark.parametrize("provider", ["github_actions", "gitlab_ci", "avrea_ci"])
+    def test_watch_labels_and_hints_match_provider(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, provider: str
+    ) -> None:
+        native = provider == "avrea_ci"
+        run_id = f"{'awr' if native else 'run'}-019e5a2e474e72d711642b726b044016"
+        run_label = run_id if native else "#42"
+        client = MagicMock()
+        client.public_get.return_value = {
+            "data": {
+                "run_id": run_id,
+                "ci_provider": provider,
+                "run_number": None if native else 42,
+                "display_title": "Build",
+                "status": "completed",
+                "conclusion": "success",
+                "jobs": [
+                    {
+                        "job_id": f"{'awj' if native else 'job'}-{'1' * 32}",
+                        "job_name": "Build",
+                        "state": "completed",
+                    }
+                ],
+            }
+        }
+        notify = MagicMock()
+        monkeypatch.setattr("avrea_cli.commands.run.notify", notify)
+
+        watch_run_loop(client, "org-default", run_id, interval=1, exit_status=False)
+
+        output = capsys.readouterr().out
+        assert f"Watching run {run_label}: Build" in output
+        assert provider in output
+        assert f"Run {run_label} completed:" in output
+        notify.assert_called_once_with(f"Run {run_label} Build: success")
+        for command in ("avr job logs", "avr job metrics", "avr job ssh"):
+            assert (command in output) is (not native)
+
     def test_stopped_by_ctrl_c_exits_130(self, capsys):
         """Exit 0 would read as a successful run under --exit-status."""
         client = MagicMock()
