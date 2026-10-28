@@ -2400,31 +2400,6 @@ Manage this repository's avrea-git mirror (feature-flagged).
 avr repo mirror [OPTIONS] COMMAND [ARGS]...
 ```
 
-##### `avr repo mirror clusters`
-
-List the git clusters a mirror can be placed in.
-
-```sh
-avr repo mirror clusters [OPTIONS]
-```
-
-```sh
-Examples:
-    avr repo mirror clusters
-    avr repo mirror clusters --json cluster_id,datacenter_id
-```
-
-```sh
-JSON FIELDS
-    cluster_id, datacenter_id, name
-```
-
-**Options**
-
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
-- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
-
 ##### `avr repo mirror create`
 
 Enable mirroring and place a connected repository at a location.
@@ -2564,7 +2539,7 @@ Place the repository's mirror in a git cluster.
 avr repo mirror place [OPTIONS] CLUSTER_ID
 ```
 
-CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
+CLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is
 idempotent; a new placement syncs from the upstream platform copy.
 Mirroring must be enabled first. Requires the organization admin role.
 

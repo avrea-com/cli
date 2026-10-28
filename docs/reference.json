@@ -10398,81 +10398,6 @@
             "params": [],
             "subcommands": [
               {
-                "name": "clusters",
-                "path": [
-                  "avr",
-                  "repo",
-                  "mirror",
-                  "clusters"
-                ],
-                "full": "avr repo mirror clusters",
-                "is_group": false,
-                "short_help": "List the git clusters a mirror can be placed in.",
-                "help": "List the git clusters a mirror can be placed in.\n\n\b\nExamples:\n    avr repo mirror clusters\n    avr repo mirror clusters --json cluster_id,datacenter_id\n\n\b\nJSON FIELDS\n    cluster_id, datacenter_id, name\n",
-                "epilog": null,
-                "deprecated": false,
-                "hidden": false,
-                "usage": "avr repo mirror clusters [OPTIONS]",
-                "params": [
-                  {
-                    "name": "org_id",
-                    "kind": "option",
-                    "opts": [
-                      "--org"
-                    ],
-                    "secondary_opts": [],
-                    "type": "text",
-                    "required": false,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "json_fields",
-                    "kind": "option",
-                    "opts": [
-                      "--json"
-                    ],
-                    "secondary_opts": [],
-                    "type": "text",
-                    "required": false,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "jq_expr",
-                    "kind": "option",
-                    "opts": [
-                      "-q",
-                      "--jq"
-                    ],
-                    "secondary_opts": [],
-                    "type": "text",
-                    "required": false,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Filter --json output through a jq expression.",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  }
-                ],
-                "subcommands": []
-              },
-              {
                 "name": "create",
                 "path": [
                   "avr",
@@ -10940,7 +10865,7 @@
                 "full": "avr repo mirror place",
                 "is_group": false,
                 "short_help": "Place the repository's mirror in a git cluster.",
-                "help": "Place the repository's mirror in a git cluster.\n\nCLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is\nidempotent; a new placement syncs from the upstream platform copy.\nMirroring must be enabled first. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror place gsc-fi\n    avr repo mirror place gsc-fi --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
+                "help": "Place the repository's mirror in a git cluster.\n\nCLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is\nidempotent; a new placement syncs from the upstream platform copy.\nMirroring must be enabled first. Requires the organization admin role.\n\n\b\nExamples:\n    avr repo mirror place gsc-fi\n    avr repo mirror place gsc-fi --repo acme/widgets\n\n\b\nJSON FIELDS\n    enabled, full_name, placements, repository_id\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
