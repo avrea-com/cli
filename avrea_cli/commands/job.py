@@ -645,7 +645,6 @@ def job_view(
             click.echo(f"  {s_indicator}  {step.get('name', '?')}{s_dur}")
 
     if show_log or log_failed:
-        require_external_ci(job_data, "Logs")
         # OSC 8 link target for per-line timestamps.
         log_links_enabled = ctx.obj.get("links_enabled", False)
         log_url: str | None = None
@@ -661,7 +660,7 @@ def job_view(
             entries = fetch_all_logs(client, job_id)
             print_logs_grouped(entries, emit=log_buf.append, link_url=log_url, steps=steps)
         page_output("\n".join(log_buf), bypass=no_pager)
-    elif _job_ci_provider(job_data) != "avrea_ci":
+    else:
         click.echo(f"\nTo see the full job log, try: avr job logs {job_id}", err=True)
 
     slug = get_org_slug(client, org_id)
@@ -725,7 +724,6 @@ def job_logs(
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "get job")
 
-    require_external_ci(job_data, "Logs")
     steps = job_data.get("steps") or []
 
     started_at = job_data.get("started_at")

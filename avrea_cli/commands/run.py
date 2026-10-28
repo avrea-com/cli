@@ -751,7 +751,6 @@ def run_view(
         _print_run_jobs(run_jobs, verbose=show_steps, console_url=link_console_url, slug=link_slug)
 
     if show_log or log_failed:
-        require_external_ci(run_data, "Logs")
         log_links_enabled = ctx.obj.get("links_enabled", False)
         log_console_url = get_console_url(config.public_api_url) if log_links_enabled else ""
         log_slug = get_org_slug(client, org_id) if log_links_enabled else ""
@@ -1119,7 +1118,12 @@ def watch_run_loop(
                     click.echo()
                     match ci_provider:
                         case "avrea_ci":
-                            click.echo(click.style("  Native job logs and metrics are not available yet.", fg=DIM_FG))
+                            click.echo(
+                                click.style(
+                                    "  → avr job logs --follow <job-id>    # tail logs of a running job", fg=DIM_FG
+                                )
+                            )
+                            click.echo(click.style("  Native job metrics are not available yet.", fg=DIM_FG))
                         case "github_actions" | "gitlab_ci":
                             click.echo(
                                 click.style(
@@ -1490,7 +1494,6 @@ def run_logs(
         include=["jobs"],
     )
 
-    require_external_ci(run_data, "Logs")
     jobs_list: list[dict[str, Any]] = run_data.get("jobs") or []
     if job_name_filter:
         needle = job_name_filter.lower()

@@ -351,7 +351,8 @@ class TestRunWatch:
         assert provider in output
         assert f"Run {run_label} completed:" in output
         notify.assert_called_once_with(f"Run {run_label} Build: success")
-        for command in ("avr job logs", "avr job metrics", "avr job ssh"):
+        assert "avr job logs" in output
+        for command in ("avr job metrics", "avr job ssh"):
             assert (command in output) is (not native)
 
     def test_stopped_by_ctrl_c_exits_130(self, capsys):

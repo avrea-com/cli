@@ -146,16 +146,7 @@ def test_native_list_json_provider(runner: CliRunner, monkeypatch: MonkeyPatch, 
 @pytest.mark.parametrize(
     "args,data,feature",
     [
-        (["job", "logs", _JOB], _JOB_DATA, "Logs"),
-        (["job", "logs", _JOB, "--failed"], _JOB_DATA, "Logs"),
-        (["job", "logs", _JOB, "--follow"], _JOB_DATA, "Logs"),
-        (["job", "view", _JOB, "--log"], _JOB_DATA, "Logs"),
-        (["job", "view", _JOB, "--log-failed"], _JOB_DATA, "Logs"),
         (["job", "metrics", _JOB], _JOB_DATA, "Metrics"),
-        (["run", "logs", _RUN], _RUN_DATA, "Logs"),
-        (["run", "logs", _RUN, "--failed"], _RUN_DATA, "Logs"),
-        (["run", "view", _RUN, "--log"], _RUN_DATA, "Logs"),
-        (["run", "view", _RUN, "--log-failed"], _RUN_DATA, "Logs"),
         (["run", "diagnose", _RUN], _RUN_DATA, "Diagnostics"),
         (["run", "rerun", _RUN, "--yes"], _RUN_DATA, "Reruns"),
     ],
@@ -174,11 +165,53 @@ def test_native_unsupported_operations_are_explicit(
     post.assert_not_called()
 
 
-def test_native_job_view_does_not_offer_unavailable_logs(runner: CliRunner, monkeypatch: MonkeyPatch) -> None:
+def test_native_job_view_offers_logs(runner: CliRunner, monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda *args, **kwargs: {"data": _JOB_DATA})
     result = runner.invoke(cli, ["job", "view", _JOB])
     assert result.exit_code == 0, result.output
-    assert "avr job logs" not in result.output
+    assert "avr job logs" in result.output
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["job", "logs", _JOB],
+        ["job", "view", _JOB, "--log"],
+        ["run", "logs", _RUN],
+        ["run", "view", _RUN, "--log"],
+        ["job", "logs", _JOB, "--failed"],
+        ["job", "view", _JOB, "--log-failed"],
+        ["run", "logs", _RUN, "--failed"],
+        ["run", "view", _RUN, "--log-failed"],
+    ],
+)
+def test_native_log_commands_use_public_logs_and_stable_failed_step_identity(
+    runner: CliRunner, monkeypatch: MonkeyPatch, args: list[str]
+) -> None:
+    step = {"number": 1, "name": "Build", "status": "completed", "conclusion": "failure", "log_record_id": "first"}
+    job = {**_JOB_DATA, "steps": [step], "conclusion": "failure"}
+    run = {**_RUN_DATA, "jobs": [job], "conclusion": "failure"}
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        lambda self, path, **kwargs: {"data": run if "/workflow-runs/" in path else job},
+    )
+    monkeypatch.setattr("avrea_cli.commands.run.get_org_slug", lambda *args: "acme")
+    monkeypatch.setattr("avrea_cli.commands.job.get_org_slug", lambda *args: "acme")
+    post = MagicMock(
+        return_value={
+            "results": [
+                {"line_number": 1, "step_name": "Build", "step_record_id": "first", "content": "native failed output"},
+                {"line_number": 2, "step_name": "Build", "step_record_id": "second", "content": "other step output"},
+            ],
+            "has_more": False,
+        }
+    )
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0, result.exception
+    assert "native failed output" in result.output
+    assert ("other step output" in result.output) is not any("failed" in arg for arg in args)
+    assert all(call.args[0] == "/logs/search" and call.kwargs["json"]["job_id"] == _JOB for call in post.call_args_list)
 
 
 @pytest.mark.parametrize("platform,provider", [("github", "github_actions"), ("gitlab", "gitlab_ci")])
