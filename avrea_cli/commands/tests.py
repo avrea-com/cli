@@ -57,9 +57,10 @@ def _job_id(_ctx: click.Context, param: click.Parameter, value: str) -> str:
 
 def _get(client: ApiClient, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     try:
-        return client.public_get(path, params=params)
+        response = client.public_get(path, params=params)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "read job test results")
+    return response
 
 
 def _job_repository(client: ApiClient, organization: str, job: str) -> str:
