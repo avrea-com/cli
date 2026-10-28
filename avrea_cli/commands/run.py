@@ -83,6 +83,9 @@ _PLATFORM_CONCLUSIONS = frozenset(
 
 _RUN_LIST_FIELDS = make_schema(
     "run_id",
+    "ci_provider",
+    "workflow_name",
+    "workflow_path",
     "platform_run_id",
     "display_title",
     "status",
@@ -134,7 +137,7 @@ def _split_status_values(values: tuple[str, ...]) -> tuple[list[str], list[str]]
 @click.group(cls=GhGroup)
 @click.pass_context
 def run(ctx):
-    """View and manage GitHub workflow runs."""
+    """View and manage CI workflow runs."""
     ensure_ctx(ctx)
 
 
@@ -225,7 +228,7 @@ def run_list(
 
     \b
     JSON FIELDS
-        conclusion, created_at, display_title, duration_seconds, event,
+        ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
         head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
         run_number, status, triggering_actor, updated_at, workflow, workflow_id
     """
@@ -314,7 +317,17 @@ def run_list(
         # Tab-separated output for cut/awk/grep, with a header row so scripts
         # can index by column name rather than memorizing positional order.
         print_piped_header(
-            ["status", "title", "workflow", "branch", "event", "run_id", "duration_seconds", "created_at"]
+            [
+                "status",
+                "title",
+                "workflow",
+                "branch",
+                "event",
+                "run_id",
+                "duration_seconds",
+                "created_at",
+                "ci_provider",
+            ]
         )
         for r in runs:
             status = r.get("conclusion") or r.get("status") or "unknown"
@@ -322,12 +335,13 @@ def run_list(
                 [
                     status,
                     r.get("display_title", ""),
-                    (r.get("workflow") or {}).get("name", ""),
+                    (r.get("workflow") or {}).get("name") or r.get("workflow_name") or "",
                     r.get("head_branch") or "",
                     r.get("event", ""),
                     r.get("run_id", ""),
                     r.get("duration_seconds"),
                     r.get("created_at", ""),
+                    r.get("ci_provider", "github_actions"),
                 ]
             )
         return
@@ -341,7 +355,7 @@ def run_list(
     click.echo(
         f"  {_hdr('TITLE', W['title'])}{s}{_hdr('WORKFLOW', W['wf'])}{s}{_hdr('BRANCH', W['branch'])}{s}"
         f"{_hdr('EVENT', W['event'])}{s}{_hdr('ID', W['id'])}{s}"
-        f"{_hdr('ELAPSED', W['elapsed'])}{s}{_hdr('AGE', W['age'])}"
+        f"{_hdr('ELAPSED', W['elapsed'])}{s}{_hdr('AGE', W['age'])}{s}CI"
     )
     # OSC 8 link context — slug lookup is best-effort, one extra API call.
     links_enabled = ctx.obj.get("links_enabled", False)
@@ -350,7 +364,8 @@ def run_list(
     for r in runs:
         ind = status_indicator(r.get("status", "unknown"), r.get("conclusion"))
         title = f"{_truncate(r.get('display_title', ''), W['title'] - 2):{W['title']}s}"
-        wf = f"{_truncate((r.get('workflow') or {}).get('name', ''), W['wf'] - 2):{W['wf']}s}"
+        workflow_name = (r.get("workflow") or {}).get("name") or r.get("workflow_name") or ""
+        wf = f"{_truncate(workflow_name, W['wf'] - 2):{W['wf']}s}"
         head_branch = r.get("head_branch") or ""
         br = f"{_truncate(head_branch, W['branch'] - 2):{W['branch']}s}"
         event = f"{r.get('event', ''):{W['event']}s}"
@@ -369,14 +384,14 @@ def run_list(
             title_cell = hyperlink(title, url)
             wf_cell = hyperlink(wf_cell, url)
             r_id_cell = hyperlink(r_id_cell, url)
-        if links_enabled and head_branch and repo_full and "/" in repo_full:
+        if links_enabled and r.get("ci_provider") != "avrea_ci" and head_branch and repo_full and "/" in repo_full:
             br_cell = hyperlink(br_cell, f"https://github.com/{repo_full}/tree/{head_branch}")
         click.echo(
             f"{ind} {title_cell}{s}"
             f"{wf_cell}{s}"
             f"{br_cell}{s}"
             f"{event}{s}{r_id_cell}{s}"
-            f"{elapsed}{s}{click.style(age, dim=True)}"
+            f"{elapsed}{s}{click.style(age, dim=True)}{s}{r.get('ci_provider', 'github_actions')}"
         )
 
     next_cursor = (response.get("pagination") or {}).get("next_cursor")
@@ -568,18 +583,18 @@ def run_view(
     \b
     Examples:
         avr run view
-        avr run view run-abc123
+        avr run view run-019e5a2e474e71c297e452279d4bcdea
         avr run view 123456789
         avr run view https://github.com/acme/widgets/actions/runs/123456789
-        avr run view run-abc123 --steps
-        avr run view run-abc123 --log-failed
-        avr run view run-abc123 --job Build
-        avr run view run-abc123 --json conclusion,jobs
-        avr run view run-abc123 --json '*' --jq '.jobs[].job_name'
+        avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
+        avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
+        avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
+        avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
+        avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
 
     \b
     JSON FIELDS
-        conclusion, created_at, display_title, duration_seconds, event,
+        ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
         head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
         run_id, run_number, status, triggering_actor, updated_at, workflow,
         workflow_id
@@ -668,19 +683,20 @@ def run_view(
     actor_data = run_data.get("triggering_actor") or {}
     actor = actor_data.get("login") or actor_data.get("platform_login") or "-"
     wf_data = run_data.get("workflow") or {}
-    wf_name = wf_data.get("name", "")
-    wf_path = (wf_data.get("path") or "").rsplit("/", 1)[-1]  # e.g. ".github/workflows/build.yml" → "build.yml"
+    wf_name = wf_data.get("name") or run_data.get("workflow_name") or ""
+    wf_path = (wf_data.get("path") or run_data.get("workflow_path") or "").rsplit("/", 1)[
+        -1
+    ]  # e.g. ".github/workflows/build.yml" → "build.yml"
     workflow = f"{wf_name} ({wf_path})" if wf_name and wf_path else wf_name
     run_number = run_data.get("run_number", "?")
     run_attempt = run_data.get("run_attempt", 1)
 
-    # OSC 8 link context. Github repos always have an `org/name` shape;
-    # gate platform-specific links on `/` so a future non-github repo
-    # skips them gracefully.
+    # Native runs may use any source host; the run response does not carry
+    # a canonical source URL, so only external GitHub runs get source links.
     links_enabled = ctx.obj.get("links_enabled", False)
     link_console_url = get_console_url(config.public_api_url) if links_enabled else ""
     link_slug = get_org_slug(client, org_id) if links_enabled else ""
-    is_github = repo and "/" in repo
+    is_github = run_data.get("ci_provider") != "avrea_ci" and repo and "/" in repo
 
     title_text = run_data.get("display_title", "-")
     branch_cell = branch
@@ -710,7 +726,8 @@ def run_view(
                 "Event": run_data.get("event", "-"),
                 "Actor": actor,
                 "Duration": format_duration(run_data.get("duration_seconds")),
-                "Run": f"#{run_number} (attempt {run_attempt})",
+                "Run": f"#{run_number} (attempt {run_attempt})" if run_number is not None else run_id,
+                "CI": run_data.get("ci_provider", "github_actions"),
                 "Workflow": workflow_cell,
                 "Repository": repo_cell,
             }
@@ -785,7 +802,7 @@ def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
 
     \b
     Examples:
-        avr run diagnose run-abc123
+        avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
         avr run diagnose 123456789 --json
         avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
     """
@@ -1176,8 +1193,8 @@ def run_watch(
         avr run watch
         avr run watch --repo acme/web
         avr run watch --repo a/x --repo b/y
-        avr run watch run-abc123 --exit-status
-        avr run watch run-abc123 --ndjson | jq -c .
+        avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status
+        avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -1330,9 +1347,9 @@ def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
 
     \b
     Examples:
-        avr run rerun run-abc123
-        avr run rerun run-abc123 --failed
-        avr run rerun run-abc123 --yes
+        avr run rerun run-019e5a2e474e71c297e452279d4bcdea
+        avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
+        avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -1434,10 +1451,10 @@ def run_logs(
 
     \b
     Examples:
-        avr run logs run-abc123
-        avr run logs run-abc123 --failed
-        avr run logs run-abc123 --job test
-        avr run logs run-abc123 --follow
+        avr run logs run-019e5a2e474e71c297e452279d4bcdea
+        avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed
+        avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test
+        avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow
     """
     if follow and failed_only:
         raise click.UsageError("--follow and --failed cannot be combined")
@@ -1542,8 +1559,8 @@ def run_cancel(ctx, run: str, org_id, yes: bool):
 
     \b
     Examples:
-        avr run cancel run-abc123
-        avr run cancel run-abc123 --yes
+        avr run cancel run-019e5a2e474e71c297e452279d4bcdea
+        avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]

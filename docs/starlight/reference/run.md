@@ -1,9 +1,9 @@
 ---
 title: avr run
-description: "View and manage GitHub workflow runs."
+description: "View and manage CI workflow runs."
 ---
 
-View and manage GitHub workflow runs.
+View and manage CI workflow runs.
 
 ```sh
 avr run [OPTIONS] COMMAND [ARGS]...
@@ -24,8 +24,8 @@ RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 
 ```sh
 Examples:
-    avr run cancel run-abc123
-    avr run cancel run-abc123 --yes
+    avr run cancel run-019e5a2e474e71c297e452279d4bcdea
+    avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes
 ```
 
 **Arguments**
@@ -52,7 +52,7 @@ prior-success workflow baseline.
 
 ```sh
 Examples:
-    avr run diagnose run-abc123
+    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
     avr run diagnose 123456789 --json
     avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
 ```
@@ -88,7 +88,7 @@ Examples:
 
 ```sh
 JSON FIELDS
-    conclusion, created_at, display_title, duration_seconds, event,
+    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
     head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
     run_number, status, triggering_actor, updated_at, workflow, workflow_id
 ```
@@ -127,10 +127,10 @@ specific job when a run has many.
 
 ```sh
 Examples:
-    avr run logs run-abc123
-    avr run logs run-abc123 --failed
-    avr run logs run-abc123 --job test
-    avr run logs run-abc123 --follow
+    avr run logs run-019e5a2e474e71c297e452279d4bcdea
+    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed
+    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test
+    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow
 ```
 
 **Arguments**
@@ -159,9 +159,9 @@ RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 
 ```sh
 Examples:
-    avr run rerun run-abc123
-    avr run rerun run-abc123 --failed
-    avr run rerun run-abc123 --yes
+    avr run rerun run-019e5a2e474e71c297e452279d4bcdea
+    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
+    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
 ```
 
 **Arguments**
@@ -191,19 +191,19 @@ runs.
 ```sh
 Examples:
     avr run view
-    avr run view run-abc123
+    avr run view run-019e5a2e474e71c297e452279d4bcdea
     avr run view 123456789
     avr run view https://github.com/acme/widgets/actions/runs/123456789
-    avr run view run-abc123 --steps
-    avr run view run-abc123 --log-failed
-    avr run view run-abc123 --job Build
-    avr run view run-abc123 --json conclusion,jobs
-    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
 ```
 
 ```sh
 JSON FIELDS
-    conclusion, created_at, display_title, duration_seconds, event,
+    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
     head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
     run_id, run_number, status, triggering_actor, updated_at, workflow,
     workflow_id
@@ -244,8 +244,8 @@ Examples:
     avr run watch
     avr run watch --repo acme/web
     avr run watch --repo a/x --repo b/y
-    avr run watch run-abc123 --exit-status
-    avr run watch run-abc123 --ndjson | jq -c .
+    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status
+    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .
 ```
 
 **Arguments**

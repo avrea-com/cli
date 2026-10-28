@@ -45,13 +45,15 @@ class TestRunRerunPoll:
 
         def fake_get(self, path, params=None):
             get_calls.append(path)
-            if path == "/orgs/org-default/workflow-runs/run-old":
-                return {"data": {"run_id": "run-old", "platform_run_id": 42, "run_attempt": 1}}
+            if path == "/orgs/org-default/workflow-runs/run-019e5a2e474e7cba06b5736faf67e54b":
+                return {
+                    "data": {"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "platform_run_id": 42, "run_attempt": 1}
+                }
             if path == "/orgs/org-default/workflow-runs":
                 return {
                     "data": [
-                        {"run_id": "run-new", "platform_run_id": 42, "run_attempt": 2},
-                        {"run_id": "run-old", "platform_run_id": 42, "run_attempt": 1},
+                        {"run_id": "run-019e5a2e474e711507a0e2f5e69d5dfa", "platform_run_id": 42, "run_attempt": 2},
+                        {"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "platform_run_id": 42, "run_attempt": 1},
                     ]
                 }
             raise AssertionError(f"unexpected GET: {path}")
@@ -62,14 +64,14 @@ class TestRunRerunPoll:
             lambda self, path, **kw: {"status": "rerun_requested"},
         )
 
-        result = runner.invoke(cli, ["run", "rerun", "run-old", "--yes"])
+        result = runner.invoke(cli, ["run", "rerun", "run-019e5a2e474e7cba06b5736faf67e54b", "--yes"])
 
         assert result.exit_code == 0, result.output
         assert "Re-run requested" in result.output
-        assert "run-new" in result.output
+        assert "run-019e5a2e474e711507a0e2f5e69d5dfa" in result.output
         assert "attempt 2" in result.output
         # And the console URL hint should point at the *new* run, not the old one
-        assert "/runs/run-new" in result.output
+        assert "/runs/run-019e5a2e474e711507a0e2f5e69d5dfa" in result.output
 
     def test_failed_only_passes_through_to_post(self, runner, monkeypatch):
         post_bodies: list[dict] = []
@@ -82,13 +84,17 @@ class TestRunRerunPoll:
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, params=None: (
-                {"data": {"run_id": "run-old", "platform_run_id": 42, "run_attempt": 1}}
-                if path.endswith("/run-old")
-                else {"data": [{"run_id": "run-new", "platform_run_id": 42, "run_attempt": 2}]}
+                {"data": {"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "platform_run_id": 42, "run_attempt": 1}}
+                if path.endswith("/run-019e5a2e474e7cba06b5736faf67e54b")
+                else {
+                    "data": [
+                        {"run_id": "run-019e5a2e474e711507a0e2f5e69d5dfa", "platform_run_id": 42, "run_attempt": 2}
+                    ]
+                }
             ),
         )
 
-        result = runner.invoke(cli, ["run", "rerun", "run-old", "--failed", "--yes"])
+        result = runner.invoke(cli, ["run", "rerun", "run-019e5a2e474e7cba06b5736faf67e54b", "--failed", "--yes"])
         assert result.exit_code == 0
         assert post_bodies and post_bodies[0] == {"failed_only": True}
 
@@ -97,10 +103,14 @@ class TestRunRerunPoll:
         with a hint instead of failing or hanging forever."""
 
         def fake_get(self, path, params=None):
-            if path == "/orgs/org-default/workflow-runs/run-old":
-                return {"data": {"run_id": "run-old", "platform_run_id": 42, "run_attempt": 1}}
+            if path == "/orgs/org-default/workflow-runs/run-019e5a2e474e7cba06b5736faf67e54b":
+                return {
+                    "data": {"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "platform_run_id": 42, "run_attempt": 1}
+                }
             # Poll always returns only the old attempt
-            return {"data": [{"run_id": "run-old", "platform_run_id": 42, "run_attempt": 1}]}
+            return {
+                "data": [{"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "platform_run_id": 42, "run_attempt": 1}]
+            }
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
         monkeypatch.setattr(
@@ -110,12 +120,12 @@ class TestRunRerunPoll:
         # Force the poll to time out immediately
         monkeypatch.setattr("avrea_cli.commands.run._poll_for_new_attempt", lambda *a, **kw: None)
 
-        result = runner.invoke(cli, ["run", "rerun", "run-old", "--yes"])
+        result = runner.invoke(cli, ["run", "rerun", "run-019e5a2e474e7cba06b5736faf67e54b", "--yes"])
 
         assert result.exit_code == 0
         assert "not yet visible" in result.output
         # Console URL hint falls back to the old run_id
-        assert "/runs/run-old" in result.output
+        assert "/runs/run-019e5a2e474e7cba06b5736faf67e54b" in result.output
 
     def test_transient_network_error_retries_until_attempt_appears(self, monkeypatch):
         """Network blips during the rerun poll must not abort the command —
@@ -130,11 +140,11 @@ class TestRunRerunPoll:
         client.public_get.side_effect = [
             httpx.ConnectError("dns blip", request=request),
             httpx.ReadTimeout("read timeout", request=request),
-            {"data": [{"run_id": "run-new", "platform_run_id": 42, "run_attempt": 2}]},
+            {"data": [{"run_id": "run-019e5a2e474e711507a0e2f5e69d5dfa", "platform_run_id": 42, "run_attempt": 2}]},
         ]
         run = _poll_for_new_attempt(client, "org-1", platform_run_id=42, current_attempt=1, timeout=10.0)
         assert run is not None
-        assert run["run_id"] == "run-new"
+        assert run["run_id"] == "run-019e5a2e474e711507a0e2f5e69d5dfa"
         assert client.public_get.call_count == 3
 
     def test_skips_poll_when_no_platform_run_id(self, runner, monkeypatch):
@@ -148,7 +158,9 @@ class TestRunRerunPoll:
 
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
-            lambda self, path, params=None: {"data": {"run_id": "run-old", "run_attempt": 1}},
+            lambda self, path, params=None: {
+                "data": {"run_id": "run-019e5a2e474e7cba06b5736faf67e54b", "run_attempt": 1}
+            },
         )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
@@ -156,7 +168,7 @@ class TestRunRerunPoll:
         )
         monkeypatch.setattr("avrea_cli.commands.run._poll_for_new_attempt", fake_poll)
 
-        result = runner.invoke(cli, ["run", "rerun", "run-old", "--yes"])
+        result = runner.invoke(cli, ["run", "rerun", "run-019e5a2e474e7cba06b5736faf67e54b", "--yes"])
         assert result.exit_code == 0
         assert polled is False
         assert "Re-run requested" in result.output
@@ -170,10 +182,10 @@ class TestRunRerunPoll:
 class TestRunViewOtherAttempts:
     def test_lists_sibling_attempts(self, runner, monkeypatch):
         def fake_get(self, path, params=None):
-            if path == "/orgs/org-default/workflow-runs/run-2":
+            if path == "/orgs/org-default/workflow-runs/run-019e5a2e474e7d4735e3a265e16eee03":
                 return {
                     "data": {
-                        "run_id": "run-2",
+                        "run_id": "run-019e5a2e474e7d4735e3a265e16eee03",
                         "platform_run_id": 42,
                         "run_attempt": 2,
                         "status": "completed",
@@ -190,11 +202,11 @@ class TestRunViewOtherAttempts:
                     }
                 }
             if path == "/orgs/org-default/workflow-runs":
-                # Three attempts; viewing run-2 — expect run-1 and run-3 listed
+                # Other attempts appear without repeating the currently viewed run.
                 return {
                     "data": [
                         {
-                            "run_id": "run-3",
+                            "run_id": "run-019e5a2e474e74e07408562bedb8b60c",
                             "platform_run_id": 42,
                             "run_attempt": 3,
                             "status": "completed",
@@ -202,7 +214,7 @@ class TestRunViewOtherAttempts:
                             "duration_seconds": 230,
                         },
                         {
-                            "run_id": "run-2",
+                            "run_id": "run-019e5a2e474e7d4735e3a265e16eee03",
                             "platform_run_id": 42,
                             "run_attempt": 2,
                             "status": "completed",
@@ -210,7 +222,7 @@ class TestRunViewOtherAttempts:
                             "duration_seconds": 240,
                         },
                         {
-                            "run_id": "run-1",
+                            "run_id": "run-019e5a2e474e76b86b273ff34fce19d6",
                             "platform_run_id": 42,
                             "run_attempt": 1,
                             "status": "completed",
@@ -223,13 +235,13 @@ class TestRunViewOtherAttempts:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
 
-        result = runner.invoke(cli, ["run", "view", "run-2"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e7d4735e3a265e16eee03"])
 
         assert result.exit_code == 0, result.output
         assert "OTHER ATTEMPTS" in result.output
-        # run-1 and run-3 are siblings; run-2 (the one being viewed) must not appear in the section
-        assert "run-1" in result.output
-        assert "run-3" in result.output
+        # Other attempts appear without repeating the currently viewed run.
+        assert "run-019e5a2e474e76b86b273ff34fce19d6" in result.output
+        assert "run-019e5a2e474e74e07408562bedb8b60c" in result.output
         assert "attempt 1" in result.output
         assert "attempt 3" in result.output
         # The being-viewed run shouldn't appear *as a bullet* under OTHER
@@ -238,14 +250,14 @@ class TestRunViewOtherAttempts:
         # run on Avrea") and check there.
         after_header = result.output.split("OTHER ATTEMPTS", 1)[1]
         bullets = after_header.split("View this run on Avrea", 1)[0]
-        assert "run-2" not in bullets
+        assert "run-019e5a2e474e7d4735e3a265e16eee03" not in bullets
 
     def test_no_siblings_skips_section(self, runner, monkeypatch):
         def fake_get(self, path, params=None):
-            if path == "/orgs/org-default/workflow-runs/run-only":
+            if path == "/orgs/org-default/workflow-runs/run-019e5a2e474e7f905b19542ed08c9a9c":
                 return {
                     "data": {
-                        "run_id": "run-only",
+                        "run_id": "run-019e5a2e474e7f905b19542ed08c9a9c",
                         "platform_run_id": 99,
                         "run_attempt": 1,
                         "status": "completed",
@@ -259,12 +271,16 @@ class TestRunViewOtherAttempts:
                     }
                 }
             if path == "/orgs/org-default/workflow-runs":
-                return {"data": [{"run_id": "run-only", "platform_run_id": 99, "run_attempt": 1}]}
+                return {
+                    "data": [
+                        {"run_id": "run-019e5a2e474e7f905b19542ed08c9a9c", "platform_run_id": 99, "run_attempt": 1}
+                    ]
+                }
             raise AssertionError(f"unexpected GET: {path}")
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
 
-        result = runner.invoke(cli, ["run", "view", "run-only"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e7f905b19542ed08c9a9c"])
 
         assert result.exit_code == 0
         assert "OTHER ATTEMPTS" not in result.output
@@ -276,10 +292,10 @@ class TestRunViewOtherAttempts:
 
         def fake_get(self, path, params=None):
             nonlocal sibling_lookup_called
-            if path.endswith("/run-x"):
+            if path.endswith("/run-019e5a2e474e72d711642b726b044016"):
                 return {
                     "data": {
-                        "run_id": "run-x",
+                        "run_id": "run-019e5a2e474e72d711642b726b044016",
                         # platform_run_id intentionally missing
                         "run_attempt": 1,
                         "status": "completed",
@@ -297,7 +313,7 @@ class TestRunViewOtherAttempts:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
 
-        result = runner.invoke(cli, ["run", "view", "run-x"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e72d711642b726b044016"])
 
         assert result.exit_code == 0
         assert sibling_lookup_called is False
@@ -324,10 +340,10 @@ class TestRunViewOtherAttempts:
         crash the whole command."""
 
         def fake_get(self, path, params=None):
-            if path.endswith("/run-2"):
+            if path.endswith("/run-019e5a2e474e7d4735e3a265e16eee03"):
                 return {
                     "data": {
-                        "run_id": "run-2",
+                        "run_id": "run-019e5a2e474e7d4735e3a265e16eee03",
                         "platform_run_id": 42,
                         "run_attempt": 1,
                         "status": "completed",
@@ -345,7 +361,7 @@ class TestRunViewOtherAttempts:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
 
-        result = runner.invoke(cli, ["run", "view", "run-2"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e7d4735e3a265e16eee03"])
 
         # Primary record still rendered.
         assert result.exit_code == 0, result.output

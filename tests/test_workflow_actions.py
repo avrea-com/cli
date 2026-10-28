@@ -32,10 +32,12 @@ class TestRunCancelResponse:
     def test_cancel_requested_branch(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
-            lambda self, path, **kw: {"data": {"run_id": "run-1", "status": "cancel_requested"}},
+            lambda self, path, **kw: {
+                "data": {"run_id": "run-019e5a2e474e76b86b273ff34fce19d6", "status": "cancel_requested"}
+            },
         )
         # public_get is hit by get_org_slug; the override above bypasses it.
-        result = runner.invoke(cli, ["run", "cancel", "run-1", "--yes"])
+        result = runner.invoke(cli, ["run", "cancel", "run-019e5a2e474e76b86b273ff34fce19d6", "--yes"])
         assert result.exit_code == 0
         assert "Cancel requested" in result.output
         assert "had already finished" not in result.output
@@ -43,9 +45,11 @@ class TestRunCancelResponse:
     def test_already_terminal_branch(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
-            lambda self, path, **kw: {"data": {"run_id": "run-1", "status": "already_terminal"}},
+            lambda self, path, **kw: {
+                "data": {"run_id": "run-019e5a2e474e76b86b273ff34fce19d6", "status": "already_terminal"}
+            },
         )
-        result = runner.invoke(cli, ["run", "cancel", "run-1", "--yes"])
+        result = runner.invoke(cli, ["run", "cancel", "run-019e5a2e474e76b86b273ff34fce19d6", "--yes"])
         assert result.exit_code == 0
         assert "had already finished" in result.output
         assert "Cancel requested" not in result.output
@@ -57,7 +61,7 @@ class TestRunCancelResponse:
             "avrea_cli.api_client.ApiClient.public_post",
             lambda self, path, **kw: {},
         )
-        result = runner.invoke(cli, ["run", "cancel", "run-1", "--yes"])
+        result = runner.invoke(cli, ["run", "cancel", "run-019e5a2e474e76b86b273ff34fce19d6", "--yes"])
         assert result.exit_code == 0
         assert "Cancel requested" in result.output
 
@@ -72,8 +76,16 @@ class TestPollForRun:
         dispatch_time = datetime(2026, 5, 4, 10, 0, 0, tzinfo=UTC)
         client.public_get.return_value = {
             "data": [
-                {"run_id": "run-x", "platform_workflow_id": 200, "created_at": "2026-05-04T10:00:03Z"},
-                {"run_id": "run-old", "platform_workflow_id": 200, "created_at": "2026-05-04T09:55:00Z"},
+                {
+                    "run_id": "run-019e5a2e474e72d711642b726b044016",
+                    "platform_workflow_id": 200,
+                    "created_at": "2026-05-04T10:00:03Z",
+                },
+                {
+                    "run_id": "run-019e5a2e474e7cba06b5736faf67e54b",
+                    "platform_workflow_id": 200,
+                    "created_at": "2026-05-04T09:55:00Z",
+                },
             ]
         }
 
@@ -86,7 +98,11 @@ class TestPollForRun:
             timeout=5.0,
         )
 
-        assert run == {"run_id": "run-x", "platform_workflow_id": 200, "created_at": "2026-05-04T10:00:03Z"}
+        assert run == {
+            "run_id": "run-019e5a2e474e72d711642b726b044016",
+            "platform_workflow_id": 200,
+            "created_at": "2026-05-04T10:00:03Z",
+        }
         client.public_get.assert_called_once_with(
             "/orgs/org-1/workflow-runs",
             params={"repository_ids": ["rep-abc"], "limit": 100, "order": "created_at.desc"},
@@ -97,7 +113,11 @@ class TestPollForRun:
         dispatch_time = datetime(2026, 5, 4, 10, 0, 0, tzinfo=UTC)
         client.public_get.return_value = {
             "data": [
-                {"run_id": "run-other", "platform_workflow_id": 999, "created_at": "2026-05-04T10:00:05Z"},
+                {
+                    "run_id": "run-019e5a2e474e7d9298a10d1b0735837d",
+                    "platform_workflow_id": 999,
+                    "created_at": "2026-05-04T10:00:05Z",
+                },
             ]
         }
         monkeypatch.setattr("time.sleep", lambda _: None)
@@ -117,7 +137,11 @@ class TestPollForRun:
         dispatch_time = datetime(2026, 5, 4, 10, 0, 0, tzinfo=UTC)
         client.public_get.return_value = {
             "data": [
-                {"run_id": "run-old", "platform_workflow_id": 200, "created_at": "2026-05-04T09:00:00Z"},
+                {
+                    "run_id": "run-019e5a2e474e7cba06b5736faf67e54b",
+                    "platform_workflow_id": 200,
+                    "created_at": "2026-05-04T09:00:00Z",
+                },
             ]
         }
         monkeypatch.setattr("time.sleep", lambda _: None)

@@ -65,6 +65,8 @@ import webbrowser
 
 _JOB_LIST_FIELDS = make_schema(
     "job_id",
+    "ci_provider",
+    "run_id",
     "platform_job_id",
     "job_name",
     "state",
@@ -103,6 +105,14 @@ def _hdr_cell(label: str, width: int) -> str:
     return click.style(f"{label:{width}s}", fg=DIM_FG, underline=True)
 
 
+def _job_ci_provider(job: dict[str, Any]) -> str:
+    if provider := job.get("ci_provider"):
+        return str(provider)
+    # Older control revisions omit ci_provider. Source platform still
+    # distinguishes external jobs during a rolling deploy.
+    return {"github": "github_actions", "gitlab": "gitlab_ci"}.get(job.get("platform", "github"), "unknown")
+
+
 def _print_jobs_table(jobs_data: list[dict[str, Any]], *, console_url: str = "", slug: str = "") -> None:
     """Sectioned-table renderer shared by `avr job list` and `avr job watch`.
 
@@ -114,7 +124,9 @@ def _print_jobs_table(jobs_data: list[dict[str, Any]], *, console_url: str = "",
     truncation, ISO timestamps) when stdout isn't a TTY — the standard
     scriptability convention."""
     if is_piped():
-        print_piped_header(["status", "job_name", "repository", "on_avrea", "job_id", "duration_seconds", "created_at"])
+        print_piped_header(
+            ["status", "job_name", "repository", "on_avrea", "job_id", "duration_seconds", "created_at", "ci_provider"]
+        )
         for j in jobs_data:
             state = j.get("state", "unknown")
             conclusion = j.get("conclusion")
@@ -128,6 +140,7 @@ def _print_jobs_table(jobs_data: list[dict[str, Any]], *, console_url: str = "",
                     j.get("job_id", ""),
                     j.get("duration_seconds"),
                     j.get("created_at", ""),
+                    _job_ci_provider(j),
                 ]
             )
         return
@@ -137,7 +150,7 @@ def _print_jobs_table(jobs_data: list[dict[str, Any]], *, console_url: str = "",
     click.echo(
         f"  {_hdr_cell('NAME', w['name'])}{s}{_hdr_cell('REPOSITORY', w['repo'])}{s}"
         f"{_hdr_cell('STATUS', w['status'])}{s}{_hdr_cell('ON', w['on'])}{s}"
-        f"{_hdr_cell('AGE', w['age'])}{s}{_hdr_cell('ID', w['id'])}"
+        f"{_hdr_cell('AGE', w['age'])}{s}{_hdr_cell('ID', w['id'])}{s}CI"
     )
     for j in jobs_data:
         state = j.get("state", "unknown")
@@ -168,7 +181,7 @@ def _print_jobs_table(jobs_data: list[dict[str, Any]], *, console_url: str = "",
             f"{click.style(repo, dim=True)}{s}"
             f"{status_cell}{s}{on_cell}{s}"
             f"{click.style(age, dim=True)}{s}"
-            f"{job_id_cell}"
+            f"{job_id_cell}{s}{_job_ci_provider(j)}"
         )
 
 
@@ -248,7 +261,7 @@ def job_list(
 
     \b
     JSON FIELDS
-        completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+        ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
         platform_run_id, job_id, job_name, labels, repository, repository_id,
         running_on_avrea, started_at, state
     """
@@ -501,7 +514,7 @@ def job_view(
 
     \b
     JSON FIELDS
-        completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+        ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
         platform_run_id, job_id, job_name, labels, repository, repository_id,
         running_on_avrea, started_at, state, steps, workflow_run
     """
@@ -551,7 +564,11 @@ def job_view(
     run_id_full = ""
     if wf_run:
         run_id_full = wf_run.get("run_id", "")
-        run_display = f"#{wf_run.get('run_number', '?')} ({short_id(run_id_full)})"
+        run_display = (
+            f"#{wf_run['run_number']} ({short_id(run_id_full)})"
+            if wf_run.get("run_number") is not None
+            else run_id_full
+        )
 
     repo_full = job_data.get("repository_full_name", "-")
     repo_id = job_data.get("repository_id")
@@ -575,6 +592,7 @@ def job_view(
         format_key_value(
             {
                 "Job": job_cell,
+                "CI": _job_ci_provider(job_data),
                 "Name": job_data.get("job_name", "-"),
                 "Repository": repo_cell,
                 "Run": run_cell,

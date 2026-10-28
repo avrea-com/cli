@@ -19,21 +19,21 @@ runs.
 .nf
 Examples:
     avr run view
-    avr run view run-abc123
+    avr run view run-019e5a2e474e71c297e452279d4bcdea
     avr run view 123456789
     avr run view https://github.com/acme/widgets/actions/runs/123456789
-    avr run view run-abc123 --steps
-    avr run view run-abc123 --log-failed
-    avr run view run-abc123 --job Build
-    avr run view run-abc123 --json conclusion,jobs
-    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
+    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
 .fi
 .RE
 .PP
 .RS 4
 .nf
 JSON FIELDS
-    conclusion, created_at, display_title, duration_seconds, event,
+    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
     head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
     run_id, run_number, status, triggering_actor, updated_at, workflow,
     workflow_id

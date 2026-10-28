@@ -25,7 +25,7 @@ def runner(monkeypatch):
 
 
 def _run_with_jobs(jobs: list[dict]) -> dict:
-    return {"data": {"run_id": "run-1", "jobs": jobs}}
+    return {"data": {"run_id": "run-019e5a2e474e76b86b273ff34fce19d6", "jobs": jobs}}
 
 
 class TestRunLogsFiltering:
@@ -46,7 +46,7 @@ class TestRunLogsFiltering:
         )
         monkeypatch.setattr("avrea_cli.commands.run.print_logs_grouped", lambda entries, **kw: None)
 
-        result = runner.invoke(cli, ["run", "logs", "run-1"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6"])
 
         assert result.exit_code == 0, result.output
         assert called == ["job-a", "job-b"]
@@ -81,7 +81,7 @@ class TestRunLogsFiltering:
             lambda client, jid, steps, **kw: called.append(jid),
         )
 
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--failed"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--failed"])
 
         assert result.exit_code == 0, result.output
         assert called == ["job-b"]
@@ -95,7 +95,7 @@ class TestRunLogsFiltering:
                 [{"job_id": "job-a", "job_name": "build", "repository_id": "rep-1", "conclusion": "success"}]
             ),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--failed"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--failed"])
         assert result.exit_code == 0
         assert "No failed jobs" in result.output
 
@@ -116,13 +116,13 @@ class TestRunLogsFiltering:
         )
         monkeypatch.setattr("avrea_cli.commands.run.print_logs_grouped", lambda entries, **kw: None)
 
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--job", "test"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--job", "test"])
 
         assert result.exit_code == 0, result.output
         assert called == ["job-b"]
 
     def test_follow_and_failed_are_mutually_exclusive(self, runner):
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--follow", "--failed"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--follow", "--failed"])
         assert result.exit_code != 0
         assert "cannot be combined" in result.output
 
@@ -131,7 +131,7 @@ class TestRunLogsFiltering:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: _run_with_jobs([]),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6"])
         assert result.exit_code == 0
         assert "No matching jobs" in result.output
 
@@ -154,7 +154,7 @@ class TestRunLogsFollow:
             "avrea_cli.commands.run.follow_logs",
             lambda client, org_id, job_id, **kw: followed.append(job_id),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--follow"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--follow"])
         assert result.exit_code == 0, result.output
         assert followed == ["job-b"]
 
@@ -170,7 +170,7 @@ class TestRunLogsFollow:
             "avrea_cli.commands.run.follow_logs",
             lambda client, org_id, job_id, **kw: followed.append(job_id),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--follow"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--follow"])
         assert result.exit_code == 0, result.output
         assert followed == ["job-a"]
 
@@ -211,7 +211,7 @@ class TestFailedConclusionsContract:
                 ]
             ),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--failed"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--failed"])
         assert result.exit_code == 0, result.output
         assert setup, f"--failed should have included a job with conclusion={conclusion!r}"
 
@@ -231,7 +231,7 @@ class TestFailedConclusionsContract:
                 ]
             ),
         )
-        result = runner.invoke(cli, ["run", "logs", "run-1", "--failed"])
+        result = runner.invoke(cli, ["run", "logs", "run-019e5a2e474e76b86b273ff34fce19d6", "--failed"])
         assert result.exit_code == 0
         assert not setup, f"--failed should NOT have included conclusion={conclusion!r}"
         assert "No failed jobs" in result.output

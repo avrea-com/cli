@@ -148,6 +148,7 @@ class TestRunListPiped:
             "run_id",
             "duration_seconds",
             "created_at",
+            "ci_provider",
         ]
         cols = lines[1].split("\t")
         assert cols[0] == "success"
@@ -194,6 +195,7 @@ class TestJobListPiped:
             "job_id",
             "duration_seconds",
             "created_at",
+            "ci_provider",
         ]
         assert lines[1].split("\t") == [
             "success",
@@ -203,6 +205,7 @@ class TestJobListPiped:
             "job-019d7776b3cd789da094cef01d28f6a2",
             "134",
             "2026-04-12T12:03:14Z",
+            "github_actions",
         ]
 
 
