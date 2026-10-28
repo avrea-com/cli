@@ -258,3 +258,45 @@ class TestJobMetricsLiveResilience:
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
         assert result.exit_code != 0, result.output
         assert "metrics fetch failed: HTTP" not in result.output  # never reached the soft-fail branch
+
+
+@pytest.mark.parametrize("detail,pending", [("No execution found for job", True), ("Job not found", False)])
+def test_native_metrics_watch_waits_for_vm_but_preserves_denial(runner, monkeypatch, detail, pending):
+    job_id = "awj-019d9533fc2f7b59948243a10b312d2e"
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_get",
+        _make_get(
+            {
+                f"/orgs/org-default/jobs/{job_id}/metrics/cpu": CPU_RESPONSE,
+                f"/orgs/org-default/jobs/{job_id}/metrics/memory": MEMORY_RESPONSE,
+                f"/orgs/org-default/jobs/{job_id}": _job_response(state="queued"),
+            }
+        ),
+    )
+    request = httpx.Request("GET", "https://api.example/logs")
+    response = httpx.Response(404, json={"detail": detail}, request=request)
+    calls = []
+
+    def fetch(*args, **kwargs):
+        calls.append(kwargs["after_line"])
+        if len(calls) == 1:
+            raise httpx.HTTPStatusError("404", request=request, response=response)
+        return ([{"content": "VM started", "line_number": 1}], 1)
+
+    def sleep(_):
+        if len(calls) == 2:
+            raise KeyboardInterrupt()
+        assert pending, "authorization failure must exit before polling"
+
+    monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", fetch)
+    monkeypatch.setattr("avrea_cli.commands.job.time.sleep", sleep)
+    result = runner.invoke(cli, ["job", "metrics", job_id, "--watch"])
+    if pending:
+        assert result.exit_code == 130, result.output
+        assert calls == [None, None]
+        assert "VM started" in result.output
+        assert "log fetch failed" not in result.output
+    else:
+        assert result.exit_code != 0
+        assert calls == [None]
+        assert "Job not found" in result.output

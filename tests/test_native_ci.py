@@ -146,7 +146,6 @@ def test_native_list_json_provider(runner: CliRunner, monkeypatch: MonkeyPatch, 
 @pytest.mark.parametrize(
     "args,data,feature",
     [
-        (["job", "metrics", _JOB], _JOB_DATA, "Metrics"),
         (["run", "diagnose", _RUN], _RUN_DATA, "Diagnostics"),
         (["run", "rerun", _RUN, "--yes"], _RUN_DATA, "Reruns"),
     ],
@@ -238,3 +237,12 @@ def test_native_runs_do_not_guess_github_source_links(
     assert result.exit_code == 0, result.output
     assert "https://github.com/" not in result.output
     assert "https://console.avrea.com/" in result.output
+
+
+def test_native_job_metrics_use_the_public_vm_metrics_route(runner: CliRunner, monkeypatch: MonkeyPatch) -> None:
+    get = MagicMock(side_effect=[{"data": _JOB_DATA}, {"unit": "ratio", "series": []}])
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    result = runner.invoke(cli, ["job", "metrics", _JOB, "--source", "cpu", "--json"])
+    assert result.exit_code == 0, result.output
+    assert '"cpu"' in result.output
+    assert get.call_args.args[0].endswith(f"/jobs/{_JOB}/metrics/cpu")

@@ -1117,14 +1117,7 @@ def watch_run_loop(
                     _print_run_jobs(run_jobs, console_url=console_url, slug=slug)
                     click.echo()
                     match ci_provider:
-                        case "avrea_ci":
-                            click.echo(
-                                click.style(
-                                    "  → avr job logs --follow <job-id>    # tail logs of a running job", fg=DIM_FG
-                                )
-                            )
-                            click.echo(click.style("  Native job metrics are not available yet.", fg=DIM_FG))
-                        case "github_actions" | "gitlab_ci":
+                        case "avrea_ci" | "github_actions" | "gitlab_ci":
                             click.echo(
                                 click.style(
                                     "  → avr job logs --follow <job-id>    # tail logs of a running job",

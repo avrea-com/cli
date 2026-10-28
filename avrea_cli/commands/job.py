@@ -25,11 +25,11 @@ from avrea_cli.display import terminal_title
 from avrea_cli.display import truncate as _truncate
 from avrea_cli.helpers import ensure_authenticated
 from avrea_cli.helpers import ensure_ctx
+from avrea_cli.helpers import extract_detail
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_since
-from avrea_cli.helpers import require_external_ci
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
@@ -803,6 +803,10 @@ def _format_job_status(job_data: dict[str, Any]) -> str:
     return f"{indicator} {label} ({duration})"
 
 
+def _runtime_pending(response: httpx.Response) -> bool:
+    return response.status_code == 404 and extract_detail(response) == "No execution found for job"
+
+
 def _fetch_metrics_sources(
     client: ApiClient,
     org_id: str,
@@ -814,7 +818,7 @@ def _fetch_metrics_sources(
 ) -> dict[str, dict[str, Any]]:
     """Fetch metrics for each source.
 
-    404 is treated as "no execution yet" (queued job) so the user still sees
+    A missing execution is treated as pending (queued job) so the user still sees
     a partial pane. Other failures propagate — the caller decides whether to
     abort (static path) or render the error in the footer (live path)."""
     params: dict[str, Any] = {}
@@ -828,7 +832,7 @@ def _fetch_metrics_sources(
         try:
             response = client.public_get(f"/orgs/{org_id}/jobs/{job_id}/metrics/{src}", params=params or None)
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if _runtime_pending(exc.response):
                 # Job has no execution yet (queued) — keep going so partial sources still render.
                 out[src] = {"series": [], "_error": "no execution"}
                 continue
@@ -889,7 +893,6 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "get job")
 
-    require_external_ci(job_data, "Metrics")
     vm_cpus, vm_ram_bytes, vm_label = _resolve_vm_specs(job_data)
     job_finished = job_data.get("state") == "completed" or bool(job_data.get("conclusion"))
 
@@ -975,10 +978,11 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
                 new_entries, new_cursor = fetch_logs_after(client, job_id, after_line=last_log_line)
             except httpx.HTTPStatusError as exc:
                 code = exc.response.status_code
-                if 400 <= code < 500 and code != 429:
+                pending = _runtime_pending(exc.response)
+                if 400 <= code < 500 and code != 429 and not pending:
                     handle_http_error(exc, "fetch logs")
                 new_entries, new_cursor = [], last_log_line
-                log_error = f"log fetch failed: HTTP {code}"
+                log_error = None if pending else f"log fetch failed: HTTP {code}"
             except (httpx.ConnectError, httpx.TimeoutException) as exc:
                 # Live mode polls on a tight loop — a transient API blip
                 # shouldn't kill the watcher. Surface it in the LOGS pane so

@@ -353,7 +353,7 @@ class TestRunWatch:
         notify.assert_called_once_with(f"Run {run_label} Build: success")
         assert "avr job logs" in output
         for command in ("avr job metrics", "avr job ssh"):
-            assert (command in output) is (not native)
+            assert command in output
 
     def test_stopped_by_ctrl_c_exits_130(self, capsys):
         """Exit 0 would read as a successful run under --exit-status."""
