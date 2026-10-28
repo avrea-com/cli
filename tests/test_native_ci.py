@@ -5,7 +5,9 @@ from avrea_cli.main import cli
 from avrea_cli.run_refs import RunReferenceKind
 from avrea_cli.run_refs import parse_run_reference
 from click.testing import CliRunner
+from pathlib import Path
 from pytest import MonkeyPatch
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 import json
 import pytest
@@ -41,6 +43,54 @@ _JOB_DATA = {
     "running_on_avrea": True,
     "workflow_run": {"run_id": _RUN, "run_number": None, "run_attempt": None},
 }
+
+
+@pytest.mark.parametrize("job_id", [_JOB, "job-019e5a2e474e71c297e452279d4bcdea"])
+@pytest.mark.parametrize("exit_code", [0, 23])
+def test_job_ssh_pins_the_returned_host_key(
+    runner: CliRunner, monkeypatch: MonkeyPatch, job_id: str, exit_code: int
+) -> None:
+    response = {
+        "host": "127.0.0.1",
+        "port": 2222,
+        "username": "runner",
+        "host_key": "ssh-ed25519 AAAA",
+        "ssh_keys_installed": True,
+    }
+    post = MagicMock(return_value=response)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+    paths: list[Path] = []
+
+    def connect(argv: list[str]) -> SimpleNamespace:
+        assert "StrictHostKeyChecking=yes" in argv
+        path = Path(next(arg.split("=", 1)[1] for arg in argv if arg.startswith("UserKnownHostsFile=")))
+        assert path.read_text() == "[127.0.0.1]:2222 ssh-ed25519 AAAA\n"
+        paths.append(path)
+        return SimpleNamespace(returncode=exit_code)
+
+    monkeypatch.setattr("avrea_cli.commands.job.subprocess.run", connect)
+    result = runner.invoke(cli, ["job", "ssh", job_id])
+    assert result.exit_code == exit_code, result.exception
+    post.assert_called_once_with("/vms/ssh-forwarding", json={"job_id": job_id}, timeout=60.0)
+    assert paths and not paths[0].exists()
+
+
+def test_native_job_ssh_refuses_a_missing_host_key(runner: CliRunner, monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "avrea_cli.api_client.ApiClient.public_post",
+        lambda *args, **kwargs: {
+            "host": "127.0.0.1",
+            "port": 2222,
+            "username": "runner",
+            "ssh_keys_installed": True,
+        },
+    )
+    connect = MagicMock()
+    monkeypatch.setattr("avrea_cli.commands.job.subprocess.run", connect)
+    result = runner.invoke(cli, ["job", "ssh", _JOB])
+    assert result.exit_code == 1
+    assert "refusing an unverified connection" in result.output
+    connect.assert_not_called()
 
 
 @pytest.mark.parametrize("reference", [_RUN, f"https://console.avrea.com/org/acme/runs/{_RUN}"])

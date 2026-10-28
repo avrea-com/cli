@@ -50,6 +50,7 @@ from avrea_cli.output import format_relative_timestamp
 from avrea_cli.output import format_timestamp
 from avrea_cli.output import short_id
 from avrea_cli.repo_context import resolve_repos_or_detect
+from avrea_cli.vm import _write_known_hosts
 from collections import deque
 from datetime import UTC
 from datetime import datetime
@@ -446,7 +447,7 @@ def job_ssh(ctx, job_id: str, print_command: bool, show_password: bool):
     password = result.get("password")
     ssh_keys_installed = result.get("ssh_keys_installed", False)
 
-    ssh_opts = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
+    ssh_opts = ["-o", "StrictHostKeyChecking=accept-new"]
     ssh_exec = ["ssh", *ssh_opts, "-p", str(port), f"{username}@{host}"]
     ssh_cmd = shlex.join(ssh_exec)
 
@@ -471,7 +472,23 @@ def job_ssh(ctx, job_id: str, print_command: bool, show_password: bool):
         else:
             click.echo("Password: ******** (hidden; re-run with --show-password to reveal)", err=True)
 
-    sys.exit(subprocess.run(ssh_exec).returncode)
+    known_hosts = _write_known_hosts(result.get("host_key"), host, port)
+    if known_hosts is None:
+        raise click.ClickException("The VM did not return an SSH host key; refusing an unverified connection.")
+    try:
+        ssh_exec = [
+            "ssh",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            f"UserKnownHostsFile={known_hosts}",
+            "-p",
+            str(port),
+            f"{username}@{host}",
+        ]
+        sys.exit(subprocess.run(ssh_exec).returncode)
+    finally:
+        known_hosts.unlink(missing_ok=True)
 
 
 @job.command("view")

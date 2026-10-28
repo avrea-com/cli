@@ -1119,9 +1119,7 @@ def watch_run_loop(
                     click.echo()
                     match ci_provider:
                         case "avrea_ci":
-                            click.echo(
-                                click.style("  Native job logs, metrics, and SSH are not available yet.", fg=DIM_FG)
-                            )
+                            click.echo(click.style("  Native job logs and metrics are not available yet.", fg=DIM_FG))
                         case "github_actions" | "gitlab_ci":
                             click.echo(
                                 click.style(
