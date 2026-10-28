@@ -708,7 +708,7 @@ def _put_git_mirror_placement(
         handle_http_error(
             exc,
             "place the git mirror",
-            hint="run `avr repo mirror clusters` to list valid cluster ids",
+            hint="run `avr repo mirror locations` to list valid cluster ids",
             hints={404: hint} if (hint := _gitlab_mirror_hint(source)) else None,
         )
     except httpx.HTTPError:
@@ -742,20 +742,20 @@ def _git_clusters_list(client: ApiClient, org_id: str) -> list[dict[str, Any]]:
         except httpx.HTTPError:
             raise click.ClickException("Could not reach Avrea to list mirror locations.") from None
         if not isinstance(response, dict):
-            raise click.ClickException("Unexpected response while listing git clusters.")
+            raise click.ClickException("Unexpected response while listing mirror locations.")
         page = response.get("data")
         if not isinstance(page, list) or not all(isinstance(item, dict) for item in page):
-            raise click.ClickException("Unexpected response while listing git clusters.")
+            raise click.ClickException("Unexpected response while listing mirror locations.")
         clusters.extend(page)
 
         pagination = response.get("pagination")
         if not isinstance(pagination, dict) or "next_cursor" not in pagination:
-            raise click.ClickException("Unexpected pagination response while listing git clusters.")
+            raise click.ClickException("Unexpected pagination response while listing mirror locations.")
         next_cursor = pagination["next_cursor"]
         if next_cursor is None:
             return clusters
         if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:
-            raise click.ClickException("Unexpected pagination response while listing git clusters.")
+            raise click.ClickException("Unexpected pagination response while listing mirror locations.")
         seen_cursors.add(next_cursor)
         cursor = next_cursor
 
@@ -1027,7 +1027,7 @@ def mirror_disable(ctx, repo_id, org_id, yes, source, json_fields, jq_expr):
 def mirror_place(ctx, cluster_id, repo_id, org_id, source, json_fields, jq_expr):
     """Place the repository's mirror in a git cluster.
 
-    CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is
+    CLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is
     idempotent; a new placement syncs from the upstream platform copy.
     Mirroring must be enabled first. Requires the organization admin role.
 
@@ -1122,19 +1122,19 @@ def mirror_unplace(ctx, cluster_id, repo_id, org_id, yes, source, json_fields, j
     _print_git_mirror(mirror)
 
 
-@mirror.command("clusters")
-@click.option(
-    "--org", "org_id", help="Organization ID or slug. Uses default org if not specified (see: avr config set org)."
-)
+@mirror.command("locations")
+@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization.")
 @json_options
 @click.pass_context
-def mirror_clusters(ctx, org_id, json_fields, jq_expr):
-    """List the git clusters a mirror can be placed in.
+def mirror_locations(ctx, org_id, json_fields, jq_expr):
+    """List available mirror locations and their cluster IDs.
+
+    Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
 
     \b
     Examples:
-        avr repo mirror clusters
-        avr repo mirror clusters --json cluster_id,datacenter_id
+        avr repo mirror locations
+        avr repo mirror locations --json cluster_id,name
 
     \b
     JSON FIELDS
@@ -1155,7 +1155,7 @@ def mirror_clusters(ctx, org_id, json_fields, jq_expr):
         return
 
     if not clusters:
-        click.echo("No git clusters available.")
+        click.echo("No mirror locations available.")
         return
 
     output_list(
@@ -1163,24 +1163,3 @@ def mirror_clusters(ctx, org_id, json_fields, jq_expr):
         columns=["cluster_id", "datacenter_id", "name"],
         column_labels=["Cluster", "Datacenter", "Name"],
     )
-
-
-@mirror.command("locations")
-@click.option("--org", "org_id", help="Organization ID or slug. Uses the default organization.")
-@json_options
-@click.pass_context
-def mirror_locations(ctx, org_id, json_fields, jq_expr):
-    """List available mirror locations and their cluster IDs.
-
-    Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
-
-    \b
-    Examples:
-        avr repo mirror locations
-        avr repo mirror locations --json cluster_id,name
-
-    \b
-    JSON FIELDS
-        cluster_id, datacenter_id, name
-    """
-    ctx.invoke(mirror_clusters, org_id=org_id, json_fields=json_fields, jq_expr=jq_expr)

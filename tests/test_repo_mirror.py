@@ -465,14 +465,25 @@ def test_unplace_tolerates_empty_body(runner, monkeypatch):
     assert "Removed the git-mirror placement in gsc-fi." in result.output
 
 
-def test_clusters_lists_targets(runner, monkeypatch):
+def test_clusters_command_is_removed(runner):
+    help_result = runner.invoke(cli, ["repo", "mirror", "--help"])
+    assert help_result.exit_code == 0, help_result.output
+    assert "locations" in help_result.output
+    assert "clusters" not in help_result.output
+
+    result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+    assert result.exit_code == 2, result.output
+    assert "No such command 'clusters'" in result.output
+
+
+def test_locations_lists_targets(runner, monkeypatch):
     captured = {}
     monkeypatch.setattr(
         "avrea_cli.api_client.ApiClient.public_get",
         _capture(captured, "get", lambda: json.loads(json.dumps(SAMPLE_CLUSTERS))),
     )
 
-    result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+    result = runner.invoke(cli, ["repo", "mirror", "locations"])
 
     assert result.exit_code == 0, result.output
     assert captured["get"] == f"/orgs/{ORG_ID}/git-clusters"
@@ -481,19 +492,19 @@ def test_clusters_lists_targets(runner, monkeypatch):
     assert "Roubaix" in result.output
 
 
-def test_clusters_json(runner, monkeypatch):
+def test_locations_json(runner, monkeypatch):
     monkeypatch.setattr(
         "avrea_cli.api_client.ApiClient.public_get",
         lambda self, path, params=None: json.loads(json.dumps(SAMPLE_CLUSTERS)),
     )
 
-    result = runner.invoke(cli, ["repo", "mirror", "clusters", "--json", "cluster_id"])
+    result = runner.invoke(cli, ["repo", "mirror", "locations", "--json", "cluster_id"])
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == [{"cluster_id": "gsc-fi"}, {"cluster_id": "gsc-rbx"}]
 
 
-def test_clusters_follows_pagination(runner, monkeypatch):
+def test_locations_follows_pagination(runner, monkeypatch):
     calls = []
 
     def mock_get(self, path, params=None):
@@ -511,7 +522,7 @@ def test_clusters_follows_pagination(runner, monkeypatch):
 
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
 
-    result = runner.invoke(cli, ["repo", "mirror", "clusters", "--json", "cluster_id"])
+    result = runner.invoke(cli, ["repo", "mirror", "locations", "--json", "cluster_id"])
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == [{"cluster_id": "gsc-fi"}, {"cluster_id": "gsc-rbx"}]
@@ -527,7 +538,7 @@ def test_clusters_follows_pagination(runner, monkeypatch):
     ]
 
 
-def test_clusters_rejects_malformed_response(runner, monkeypatch):
+def test_locations_rejects_malformed_response(runner, monkeypatch):
     responses = (
         [],
         {"data": "not-a-list", "pagination": {"next_cursor": None}},
@@ -542,12 +553,12 @@ def test_clusters_rejects_malformed_response(runner, monkeypatch):
             lambda self, path, params=None, response=response: response,
         )
 
-        result = runner.invoke(cli, ["repo", "mirror", "clusters"])
+        result = runner.invoke(cli, ["repo", "mirror", "locations"])
 
         assert result.exit_code != 0
         assert isinstance(result.exception, SystemExit)
         assert "Unexpected" in result.stderr
-        assert "git clusters" in result.stderr
+        assert "mirror locations" in result.stderr
 
 
 def test_json_meta_lists_fields(runner):

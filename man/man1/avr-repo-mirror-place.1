@@ -7,7 +7,7 @@ avr-repo-mirror-place \- Place the repository's mirror in a git cluster.
 .SH DESCRIPTION
 Place the repository's mirror in a git cluster.
 .PP
-CLUSTER_ID is one of the ids from `avr repo mirror clusters`. Placing is idempotent; a new placement syncs from the upstream platform copy. Mirroring must be enabled first. Requires the organization admin role.
+CLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is idempotent; a new placement syncs from the upstream platform copy. Mirroring must be enabled first. Requires the organization admin role.
 .PP
 .RS 4
 .nf
@@ -46,7 +46,6 @@ Filter --json output through a jq expression.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-repo-mirror (1),
-.BR avr-repo-mirror-clusters (1),
 .BR avr-repo-mirror-create (1),
 .BR avr-repo-mirror-disable (1),
 .BR avr-repo-mirror-enable (1),
