@@ -6,6 +6,7 @@ from avrea_cli.run_refs import RunReferenceKind
 from avrea_cli.run_refs import parse_run_reference
 from click.testing import CliRunner
 from pytest import MonkeyPatch
+from unittest.mock import MagicMock
 import json
 import pytest
 
@@ -75,6 +76,44 @@ def test_native_list_json_provider(runner: CliRunner, monkeypatch: MonkeyPatch, 
     result = runner.invoke(cli, [command, "list", "--json", "ci_provider"])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == [{"ci_provider": "avrea_ci"}]
+
+
+@pytest.mark.parametrize(
+    "args,data,feature",
+    [
+        (["job", "logs", _JOB], _JOB_DATA, "Logs"),
+        (["job", "logs", _JOB, "--failed"], _JOB_DATA, "Logs"),
+        (["job", "logs", _JOB, "--follow"], _JOB_DATA, "Logs"),
+        (["job", "view", _JOB, "--log"], _JOB_DATA, "Logs"),
+        (["job", "view", _JOB, "--log-failed"], _JOB_DATA, "Logs"),
+        (["job", "metrics", _JOB], _JOB_DATA, "Metrics"),
+        (["run", "logs", _RUN], _RUN_DATA, "Logs"),
+        (["run", "logs", _RUN, "--failed"], _RUN_DATA, "Logs"),
+        (["run", "view", _RUN, "--log"], _RUN_DATA, "Logs"),
+        (["run", "view", _RUN, "--log-failed"], _RUN_DATA, "Logs"),
+        (["run", "diagnose", _RUN], _RUN_DATA, "Diagnostics"),
+        (["run", "rerun", _RUN, "--yes"], _RUN_DATA, "Reruns"),
+    ],
+)
+def test_native_unsupported_operations_are_explicit(
+    runner: CliRunner, monkeypatch: MonkeyPatch, args: list[str], data: dict, feature: str
+) -> None:
+    get = MagicMock(return_value={"data": data})
+    post = MagicMock(return_value={"data": []})
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 1, result.output
+    assert f"{feature} are not available for Avrea CI yet" in result.output
+    assert get.call_count == 1
+    post.assert_not_called()
+
+
+def test_native_job_view_does_not_offer_unavailable_logs(runner: CliRunner, monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda *args, **kwargs: {"data": _JOB_DATA})
+    result = runner.invoke(cli, ["job", "view", _JOB])
+    assert result.exit_code == 0, result.output
+    assert "avr job logs" not in result.output
 
 
 @pytest.mark.parametrize("platform,provider", [("github", "github_actions"), ("gitlab", "gitlab_ci")])

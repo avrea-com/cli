@@ -29,6 +29,7 @@ from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_since
+from avrea_cli.helpers import require_external_ci
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
@@ -627,6 +628,7 @@ def job_view(
             click.echo(f"  {s_indicator}  {step.get('name', '?')}{s_dur}")
 
     if show_log or log_failed:
+        require_external_ci(job_data, "Logs")
         # OSC 8 link target for per-line timestamps.
         log_links_enabled = ctx.obj.get("links_enabled", False)
         log_url: str | None = None
@@ -642,7 +644,7 @@ def job_view(
             entries = fetch_all_logs(client, job_id)
             print_logs_grouped(entries, emit=log_buf.append, link_url=log_url, steps=steps)
         page_output("\n".join(log_buf), bypass=no_pager)
-    else:
+    elif _job_ci_provider(job_data) != "avrea_ci":
         click.echo(f"\nTo see the full job log, try: avr job logs {job_id}", err=True)
 
     slug = get_org_slug(client, org_id)
@@ -706,6 +708,7 @@ def job_logs(
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "get job")
 
+    require_external_ci(job_data, "Logs")
     steps = job_data.get("steps") or []
 
     started_at = job_data.get("started_at")
@@ -871,6 +874,7 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "get job")
 
+    require_external_ci(job_data, "Metrics")
     vm_cpus, vm_ram_bytes, vm_label = _resolve_vm_specs(job_data)
     job_finished = job_data.get("state") == "completed" or bool(job_data.get("conclusion"))
 

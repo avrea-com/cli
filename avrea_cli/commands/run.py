@@ -32,6 +32,7 @@ from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import parse_since
+from avrea_cli.helpers import require_external_ci
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
@@ -750,6 +751,7 @@ def run_view(
         _print_run_jobs(run_jobs, verbose=show_steps, console_url=link_console_url, slug=link_slug)
 
     if show_log or log_failed:
+        require_external_ci(run_data, "Logs")
         log_links_enabled = ctx.obj.get("links_enabled", False)
         log_console_url = get_console_url(config.public_api_url) if log_links_enabled else ""
         log_slug = get_org_slug(client, org_id) if log_links_enabled else ""
@@ -820,6 +822,7 @@ def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
     )
 
     try:
+        require_external_ci(resolved, "Diagnostics")
         report = build_run_diagnostics(client, org_id, resolved)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "diagnose workflow run")
@@ -1380,6 +1383,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
         action="look up workflow run before rerun",
     )
 
+    require_external_ci(existing_data, "Reruns")
     if not yes:
         scope = "failed jobs only" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
@@ -1457,7 +1461,7 @@ def run_logs(
     show_all_levels: bool,
     no_pager: bool,
 ):
-    """Fetch logs for a workflow run's GitHub jobs.
+    """Fetch logs for a workflow run's jobs.
 
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`.
@@ -1488,6 +1492,7 @@ def run_logs(
         include=["jobs"],
     )
 
+    require_external_ci(run_data, "Logs")
     jobs_list: list[dict[str, Any]] = run_data.get("jobs") or []
     if job_name_filter:
         needle = job_name_filter.lower()

@@ -275,7 +275,7 @@ JSON FIELDS
 
 #### `avr run logs`
 
-Fetch logs for a workflow run's GitHub jobs.
+Fetch logs for a workflow run's jobs.
 
 ```sh
 avr run logs [OPTIONS] RUN
