@@ -12,6 +12,7 @@ from datetime import timedelta
 from http.server import BaseHTTPRequestHandler
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from threading import Barrier
 from threading import Thread
 from typing import TypedDict
 from unittest.mock import AsyncMock
@@ -75,14 +76,72 @@ def clone_process(monkeypatch):
     return calls
 
 
+def test_clone_overlaps_discovery_and_token_requests(runner, monkeypatch, clone_process):
+    requests_started = Barrier(2, timeout=3)
+    completed = set()
+
+    def respond(request):
+        assert not clone_process
+        requests_started.wait()
+        completed.add(request.url.path)
+        if request.method == "GET":
+            return httpx.Response(200, json={"browsable": True, "full_name": "foo/faa", "endpoints": ENDPOINTS})
+        assert request.url.path == "/tokens/git"
+        assert json.loads(request.content) == {"repos": ["foo/faa"]}
+        return httpx.Response(200, json=token_response())
+
+    async def nearest(endpoints, full_name, token):
+        assert completed == {SESSION_PATH, "/tokens/git"}
+        assert token == TOKEN
+        return endpoints[0]
+
+    monkeypatch.setattr("avrea_cli.api_client.CompressingTransport", lambda: httpx.MockTransport(respond))
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 0, result.output
+    assert len(clone_process) == 1
+
+
+@pytest.mark.parametrize("original", ["Foo/Faa", "old/name"])
+@pytest.mark.parametrize("speculative_status", [200, 403])
+def test_clone_refreshes_token_if_discovery_changes_name(runner, api, clone_process, original, speculative_status):
+    api.reply(
+        "GET",
+        f"/repos/{original}/mirror/session",
+        json={"browsable": True, "full_name": "foo/faa", "endpoints": [ENDPOINTS[0]]},
+    )
+    api.reply("POST", "/tokens/git", speculative_status, json=token_response("old-name-token"))
+    api.reply("POST", "/tokens/git", json=token_response())
+    result = runner.invoke(cli, ["repo", "clone", original])
+    assert result.exit_code == 0, result.output
+    assert [json.loads(request.content) for request in api.sent("POST", "/tokens/git")] == [
+        {"repos": [original]},
+        {"repos": ["foo/faa"]},
+    ]
+    assert clone_process[0][1]["env"]["AVR_GIT_CLONE_AUTHORIZATION"] == f"Authorization: Bearer {TOKEN}"
+    assert "old-name-token" not in result.output
+    assert "Error:" not in result.output
+
+
+def test_discovery_error_takes_precedence_over_concurrent_token_error(runner, api, clone_process):
+    api.reply("GET", SESSION_PATH, 404, json={"detail": "repository missing"})
+    api.reply("POST", "/tokens/git", 401, json={"detail": "token request failed"})
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 1
+    assert "repository missing" in result.stderr
+    assert "token request failed" not in result.stderr
+    assert "avr auth login" not in result.stderr
+    assert not clone_process
+
+
 def test_clone_requests_mirrors_by_name_and_races_advertised_placements(runner, monkeypatch, clone_api, clone_process):
     nearest = AsyncMock(return_value=ENDPOINTS[1])
     monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
-    result = runner.invoke(cli, ["repo", "clone", "Foo/Faa", "my checkout", "--depth", "1", "-b", "main"])
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", "my checkout", "--depth", "1", "-b", "main"])
     assert result.exit_code == 0, result.output
     _, calls = clone_api
-    assert calls == [
-        ("GET", "/repos/Foo/Faa/mirror/session", None),
+    assert sorted(calls, key=lambda call: call[0]) == [
+        ("GET", SESSION_PATH, None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
     nearest.assert_awaited_once_with(ENDPOINTS, "foo/faa", TOKEN)
@@ -102,7 +161,7 @@ def test_explicit_placement_skips_race(runner, monkeypatch, clone_api, clone_pro
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", placement])
     assert result.exit_code == 0, result.output
     assert clone_process[0][0][-3:] == ["--", ENDPOINTS[0] + "/foo/faa.git", "faa"]
-    assert clone_api[1] == [
+    assert sorted(clone_api[1], key=lambda call: call[0]) == [
         ("GET", SESSION_PATH, None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
@@ -116,7 +175,7 @@ def test_single_mirror_skips_probe_and_mints_one_clone_token(runner, monkeypatch
     monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
     result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
     assert result.exit_code == 0, result.output
-    assert clone_api[1] == [
+    assert sorted(clone_api[1], key=lambda call: call[0]) == [
         ("GET", SESSION_PATH, None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
@@ -124,12 +183,15 @@ def test_single_mirror_skips_probe_and_mints_one_clone_token(runner, monkeypatch
     assert clone_process[0][1]["env"]["AVR_GIT_CLONE_AUTHORIZATION"] == f"Authorization: Bearer {TOKEN}"
 
 
-def test_unknown_placement_fails_before_minting_token(runner, clone_api, clone_process):
+def test_unknown_placement_fails_before_using_token(runner, monkeypatch, clone_api, clone_process):
+    nearest = AsyncMock()
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", "https://untrusted.example"])
     assert result.exit_code == 2
     assert "Available placements" in result.output
     assert ENDPOINTS[0] in result.output
-    assert not any(call[0] == "POST" for call in clone_api[1])
+    nearest.assert_not_called()
+    assert TOKEN not in result.output
     assert not clone_process
 
 
@@ -143,7 +205,7 @@ def test_clone_uses_full_name_without_organization_configuration(
         monkeypatch.setenv("AVR_ORG", default_org)
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
-    assert clone_api[1][:2] == [
+    assert sorted(clone_api[1], key=lambda call: call[0]) == [
         ("GET", SESSION_PATH, None),
         ("POST", "/tokens/git", {"repos": ["foo/faa"]}),
     ]
@@ -191,14 +253,17 @@ def test_clone_by_id_uses_canonical_name(runner, monkeypatch, api, clone_process
         ({"browsable": True, "full_name": "foo/faa", "endpoints": [None]}, "invalid Git mirror placements"),
     ],
 )
-def test_unavailable_mirror_does_not_mint_token(runner, clone_api, clone_process, session, message):
+def test_unavailable_mirror_does_not_use_token(runner, monkeypatch, clone_api, clone_process, session, message):
+    nearest = AsyncMock()
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
     clone_api[0].clear()
     clone_api[0].update(session)
     result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
     assert result.exit_code == 1
     assert isinstance(result.exception, SystemExit)
     assert message in result.output
-    assert not any(call[0] == "POST" for call in clone_api[1])
+    nearest.assert_not_called()
+    assert TOKEN not in result.output
     assert not clone_process
 
 
@@ -229,9 +294,11 @@ def test_mirror_endpoints_must_be_secure_origins(url):
         mirror_endpoint(url)
 
 
-@pytest.mark.parametrize("status", [401, 403, 503])
+@pytest.mark.parametrize("status", [401, 403, 503, "connection"])
 def test_token_errors_are_actionable(runner, monkeypatch, clone_api, clone_process, status):
     def post(self, path, json=None):
+        if status == "connection":
+            raise httpx.ConnectError("private transport details")
         response = httpx.Response(status, request=httpx.Request("POST", "https://api.avrea.com/tokens/git"))
         response.raise_for_status()
 
@@ -240,6 +307,9 @@ def test_token_errors_are_actionable(runner, monkeypatch, clone_api, clone_proce
     assert isinstance(result.exception, SystemExit)
     assert ("avr auth login" if status == 401 else "Error:") in result.stderr
     assert result.exit_code == (4 if status == 401 else 1)
+    if status == "connection":
+        assert "Could not reach Avrea to issue a Git token." in result.stderr
+        assert "private transport details" not in result.stderr
     assert not clone_process
 
 
@@ -582,16 +652,18 @@ def test_clone_mirror_handles_missing_git(monkeypatch):
         ("full_name", "foo/faa?secret"),
     ],
 )
-def test_clone_rejects_unsafe_session_before_any_credential_use(
+def test_clone_rejects_unsafe_session_before_sending_credentials_to_mirror(
     runner, monkeypatch, clone_api, clone_process, field, value
 ):
-    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", AsyncMock(return_value=ENDPOINTS[0]))
+    nearest = AsyncMock()
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
     clone_api[0][field] = value
     result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
     assert result.exit_code != 0
     assert isinstance(result.exception, SystemExit)
     assert "Error:" in result.stderr
-    assert all(call[0] != "POST" for call in clone_api[1])
+    nearest.assert_not_called()
+    assert TOKEN not in result.output
     assert not clone_process
 
 
@@ -672,7 +744,7 @@ def test_clone_strips_git_suffix_from_rep_prefixed_owner(runner, api, clone_proc
     api.reply("POST", "/tokens/git", json=token_response())
     result = runner.invoke(cli, ["repo", "clone", "rep-acme/bar.git", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
-    assert [(r.method, r.url.path) for r in api.requests] == [("GET", path), ("POST", "/tokens/git")]
+    assert sorted((r.method, r.url.path) for r in api.requests) == [("GET", path), ("POST", "/tokens/git")]
 
 
 def test_scoped_clone_uses_full_name_without_org(runner, monkeypatch, api, clone_process):
@@ -682,25 +754,29 @@ def test_scoped_clone_uses_full_name_without_org(runner, monkeypatch, api, clone
     api.reply("POST", "/tokens/git", json=token_response())
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 0, result.output
-    assert [request.url.path for request in api.requests] == [SESSION_PATH, "/tokens/git"]
-    assert api.requests[0].headers["Authorization"] == "Bearer avs_test-token"
+    assert sorted(request.url.path for request in api.requests) == [SESSION_PATH, "/tokens/git"]
+    assert all(request.headers["Authorization"] == "Bearer avs_test-token" for request in api.requests)
 
 
 @pytest.mark.parametrize("status", [404, 503])
 def test_clone_discovery_failure_does_not_clone(runner, api, clone_process, status):
     api.reply("GET", SESSION_PATH, status, json={"detail": "Cannot access repository"})
+    api.reply("POST", "/tokens/git", json=token_response())
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 1
-    assert {request.url.path for request in api.requests} == {SESSION_PATH}
+    assert {request.url.path for request in api.requests} == {SESSION_PATH, "/tokens/git"}
+    assert TOKEN not in result.output
     assert not clone_process
 
 
 def test_discovery_authentication_failure_exits_with_auth_required(runner, api, clone_process):
     api.reply("GET", SESSION_PATH, 401, json={"detail": "Unauthorized"})
+    api.reply("POST", "/tokens/git", 401, json={"detail": "Unauthorized"})
     result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
     assert result.exit_code == 4
     assert "avr auth login" in result.stderr
-    assert [request.url.path for request in api.requests] == [SESSION_PATH]
+    assert {request.url.path for request in api.requests} == {SESSION_PATH, "/tokens/git"}
+    assert result.stderr.count("avr auth login") == 1
     assert not clone_process
 
 
@@ -715,7 +791,7 @@ def test_discovery_network_failure_is_readable(runner, monkeypatch, clone_proces
     result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
     assert result.exit_code == 1
     assert "Could not reach Avrea to discover Git mirror placements." in result.stderr
-    assert {request.url.path for request in requests} == {SESSION_PATH}
+    assert {request.url.path for request in requests} == {SESSION_PATH, "/tokens/git"}
     assert not clone_process
 
 

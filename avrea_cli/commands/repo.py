@@ -35,6 +35,7 @@ from avrea_cli.output import format_timestamp
 from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo
 from avrea_cli.repo_context import resolve_repo_or_detect
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from urllib.parse import quote
 import asyncio
@@ -223,40 +224,55 @@ def repo_clone(
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    try:
-        session = client.public_get(f"/repos/{quote(repository, safe='/')}/mirror/session")
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "discover Git mirror placements")
-    except httpx.HTTPError:
-        raise click.ClickException("Could not reach Avrea to discover Git mirror placements.") from None
-    if not isinstance(session, dict) or not isinstance(session.get("browsable"), bool):
-        raise click.ClickException("Avrea returned an invalid Git mirror session.")
-    if not session["browsable"]:
-        match session.get("unavailable_reason"):
-            case "mirror_off":
-                name = repository if "/" in repository else "OWNER/REPO"
-                raise click.ClickException(
-                    "Git mirroring is disabled. List locations with `avr repo mirror locations`, then run "
-                    f"`avr repo mirror create {name} --location <cluster-id>`."
-                )
-            case "not_ready":
-                raise click.ClickException(
-                    "No Git mirror placement is ready. Check `avr repo mirror status` and try again."
-                )
-            case reason:
-                raise click.ClickException(f"Avrea reported an unknown mirror unavailability reason: {reason!r}.")
-    full_name = session.get("full_name")
-    endpoints = session.get("endpoints")
-    if not isinstance(full_name, str) or not isinstance(endpoints, list) or not endpoints:
-        raise click.ClickException("Avrea returned an incomplete Git mirror session.")
-    full_name = validate_repo_name(full_name)
-    if not all(isinstance(endpoint, str) for endpoint in endpoints):
-        raise click.ClickException("Avrea returned invalid Git mirror placements.")
-    endpoints = list(dict.fromkeys(mirror_endpoint(endpoint) for endpoint in endpoints))
-    endpoint = select_placement(endpoints, placement) if placement is not None else None
-    if endpoint is None and len(endpoints) == 1:
-        endpoint = endpoints[0]
-    token, _ = git_token(client, full_name)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        # Names can be authorized while discovery runs. IDs need discovery's
+        # canonical name first. Only HTTP I/O runs in the worker so discovery
+        # errors take precedence over a speculative token request's errors.
+        pending = (
+            executor.submit(client.public_post, "/tokens/git", json={"repos": [repository]})
+            if "/" in repository
+            else None
+        )
+        try:
+            session = client.public_get(f"/repos/{quote(repository, safe='/')}/mirror/session")
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "discover Git mirror placements")
+        except httpx.HTTPError:
+            raise click.ClickException("Could not reach Avrea to discover Git mirror placements.") from None
+        if not isinstance(session, dict) or not isinstance(session.get("browsable"), bool):
+            raise click.ClickException("Avrea returned an invalid Git mirror session.")
+        if not session["browsable"]:
+            match session.get("unavailable_reason"):
+                case "mirror_off":
+                    name = repository if "/" in repository else "OWNER/REPO"
+                    raise click.ClickException(
+                        "Git mirroring is disabled. List locations with `avr repo mirror locations`, then run "
+                        f"`avr repo mirror create {name} --location <cluster-id>`."
+                    )
+                case "not_ready":
+                    raise click.ClickException(
+                        "No Git mirror placement is ready. Check `avr repo mirror status` and try again."
+                    )
+                case reason:
+                    raise click.ClickException(f"Avrea reported an unknown mirror unavailability reason: {reason!r}.")
+        full_name = session.get("full_name")
+        endpoints = session.get("endpoints")
+        if not isinstance(full_name, str) or not isinstance(endpoints, list) or not endpoints:
+            raise click.ClickException("Avrea returned an incomplete Git mirror session.")
+        full_name = validate_repo_name(full_name)
+        if not all(isinstance(endpoint, str) for endpoint in endpoints):
+            raise click.ClickException("Avrea returned invalid Git mirror placements.")
+        endpoints = list(dict.fromkeys(mirror_endpoint(endpoint) for endpoint in endpoints))
+        endpoint = select_placement(endpoints, placement) if placement is not None else None
+        if endpoint is None and len(endpoints) == 1:
+            endpoint = endpoints[0]
+        if pending is not None and full_name != repository:
+            # Finish and discard the speculative request, including any error.
+            # A renamed or recased repository needs credentials for its exact
+            # advertised name; never send the old name's token to the mirror.
+            pending.exception()
+            pending = None
+        token, _ = git_token(client, full_name, pending=pending)
     if endpoint is None:
         click.echo("Finding the nearest available Git mirror…", err=True)
         endpoint = asyncio.run(nearest_mirror(endpoints, full_name, token))
