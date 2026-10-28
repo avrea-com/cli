@@ -45,6 +45,21 @@ _JOB_DATA = {
 }
 
 
+@pytest.mark.parametrize("run_id", [_RUN, "run-019e5a2e474e71c297e452279d4bcdea"])
+@pytest.mark.parametrize("status", ["cancel_requested", "already_terminal"])
+def test_run_cancel_preserves_public_route_and_provider_neutral_output(
+    runner: CliRunner, monkeypatch: MonkeyPatch, run_id: str, status: str
+) -> None:
+    post = MagicMock(return_value={"data": {"run_id": run_id, "status": status}})
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+    monkeypatch.setattr("avrea_cli.commands.run.get_org_slug", lambda *args: "acme")
+    result = runner.invoke(cli, ["run", "cancel", run_id, "--yes"])
+    assert result.exit_code == 0, result.output
+    post.assert_called_once_with(f"/orgs/org-default/workflow-runs/{run_id}/cancel")
+    assert ("Cancel requested" if status == "cancel_requested" else "already finished") in result.output
+    assert (f"avr run watch {run_id}" in result.output) is (status == "cancel_requested")
+
+
 @pytest.mark.parametrize("job_id", [_JOB, "job-019e5a2e474e71c297e452279d4bcdea"])
 @pytest.mark.parametrize("exit_code", [0, 23])
 def test_job_ssh_pins_the_returned_host_key(
