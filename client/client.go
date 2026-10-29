@@ -73,6 +73,15 @@ func New(cfg config.Config, transport *http.Client, userAgent string) *Client {
 }
 
 func (c *Client) Do(ctx context.Context, method, path string, body any) (map[string]any, error) {
+	data, err := c.Raw(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	return decodeObject(data)
+}
+
+// Raw retains JSON member order for Python-compatible key/value output.
+func (c *Client) Raw(ctx context.Context, method, path string, body any) ([]byte, error) {
 	headers := make(http.Header)
 	if c.Config.Token != "" {
 		headers.Set("Authorization", "Bearer "+c.Config.Token)
@@ -83,10 +92,14 @@ func (c *Client) Do(ctx context.Context, method, path string, body any) (map[str
 // Request supports session-cookie requests during login. It does not inherit the
 // API key: callers explicitly select the authentication for each request.
 func (c *Client) Request(ctx context.Context, method, path string, body any, headers http.Header) (map[string]any, error) {
-	return c.request(ctx, method, path, body, headers, false)
+	data, err := c.request(ctx, method, path, body, headers, false)
+	if err != nil {
+		return nil, err
+	}
+	return decodeObject(data)
 }
 
-func (c *Client) request(ctx context.Context, method, path string, body any, headers http.Header, trace bool) (map[string]any, error) {
+func (c *Client) request(ctx context.Context, method, path string, body any, headers http.Header, trace bool) ([]byte, error) {
 	if err := config.ValidateHost(c.Config.Host); err != nil {
 		return nil, err
 	}
@@ -178,6 +191,10 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		detail := errorDetail(payload["detail"])
 		return nil, &HTTPError{Path: path, Status: resp.StatusCode, Detail: detail, RetryAfter: resp.Header.Get("Retry-After"), Payload: payload}
 	}
+	return data, nil
+}
+
+func decodeObject(data []byte) (map[string]any, error) {
 	if len(data) == 0 {
 		return map[string]any{}, nil
 	}

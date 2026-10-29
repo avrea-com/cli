@@ -474,6 +474,54 @@ func (e RerunWorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for WorkflowArtifactRunKind.
+const (
+	WorkflowArtifactRunKindAvrea  WorkflowArtifactRunKind = "avrea"
+	WorkflowArtifactRunKindGithub WorkflowArtifactRunKind = "github"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowArtifactRunKind enum.
+func (e WorkflowArtifactRunKind) Valid() bool {
+	switch e {
+	case WorkflowArtifactRunKindAvrea:
+		return true
+	case WorkflowArtifactRunKindGithub:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowArtifactState.
+const (
+	Complete  WorkflowArtifactState = "complete"
+	Deleted   WorkflowArtifactState = "deleted"
+	Deleting  WorkflowArtifactState = "deleting"
+	Expired   WorkflowArtifactState = "expired"
+	Lost      WorkflowArtifactState = "lost"
+	Uploading WorkflowArtifactState = "uploading"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowArtifactState enum.
+func (e WorkflowArtifactState) Valid() bool {
+	switch e {
+	case Complete:
+		return true
+	case Deleted:
+		return true
+	case Deleting:
+		return true
+	case Expired:
+		return true
+	case Lost:
+		return true
+	case Uploading:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WorkflowRunConclusion.
 const (
 	WorkflowRunConclusionActionRequired WorkflowRunConclusion = "action_required"
@@ -1097,6 +1145,11 @@ type APIResponseOrganizationRepositoryResponse struct {
 // APIResponseRerunWorkflowRunResponse defines model for APIResponse_RerunWorkflowRunResponse_.
 type APIResponseRerunWorkflowRunResponse struct {
 	Data RerunWorkflowRunResponse `json:"data"`
+}
+
+// APIResponseWorkflowArtifact defines model for APIResponse_WorkflowArtifact_.
+type APIResponseWorkflowArtifact struct {
+	Data WorkflowArtifact `json:"data"`
 }
 
 // APIResponseWorkflowRunResponse defines model for APIResponse_WorkflowRunResponse_.
@@ -1723,6 +1776,14 @@ type PagedResponseOrganizationListItem struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponseWorkflowArtifactView defines model for PagedResponse_WorkflowArtifactView_.
+type PagedResponseWorkflowArtifactView struct {
+	Data []WorkflowArtifactView `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PaginationMeta Pagination metadata. “next_cursor“ is None on the final page.
 type PaginationMeta struct {
 	NextCursor nullable.Nullable[string] `json:"next_cursor,omitempty"`
@@ -1951,6 +2012,57 @@ type Workflow struct {
 	State                string                 `json:"state"`
 	WorkflowId           string                 `json:"workflow_id"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// WorkflowArtifact defines model for WorkflowArtifact.
+type WorkflowArtifact struct {
+	Archived             bool                         `json:"archived"`
+	CompletedAt          nullable.Nullable[time.Time] `json:"completed_at"`
+	CreatedAt            time.Time                    `json:"created_at"`
+	DigestSha256         nullable.Nullable[string]    `json:"digest_sha256"`
+	ExpiresAt            time.Time                    `json:"expires_at"`
+	FileCount            int                          `json:"file_count"`
+	FileName             string                       `json:"file_name"`
+	Id                   string                       `json:"id"`
+	Name                 string                       `json:"name"`
+	OrganizationId       string                       `json:"organization_id"`
+	RepositoryId         string                       `json:"repository_id"`
+	RunAttempt           int                          `json:"run_attempt"`
+	RunKind              WorkflowArtifactRunKind      `json:"run_kind"`
+	RunLabel             nullable.Nullable[string]    `json:"run_label,omitempty"`
+	SizeBytes            nullable.Nullable[int]       `json:"size_bytes"`
+	State                WorkflowArtifactState        `json:"state"`
+	WorkflowRunId        string                       `json:"workflow_run_id"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
+}
+
+// WorkflowArtifactRunKind defines model for WorkflowArtifactRunKind.
+type WorkflowArtifactRunKind string
+
+// WorkflowArtifactState defines model for WorkflowArtifactState.
+type WorkflowArtifactState string
+
+// WorkflowArtifactView defines model for WorkflowArtifactView.
+type WorkflowArtifactView struct {
+	Archived             bool                         `json:"archived"`
+	CanDelete            bool                         `json:"can_delete"`
+	CompletedAt          nullable.Nullable[time.Time] `json:"completed_at"`
+	CreatedAt            time.Time                    `json:"created_at"`
+	DigestSha256         nullable.Nullable[string]    `json:"digest_sha256"`
+	ExpiresAt            time.Time                    `json:"expires_at"`
+	FileCount            int                          `json:"file_count"`
+	FileName             string                       `json:"file_name"`
+	Id                   string                       `json:"id"`
+	Name                 string                       `json:"name"`
+	OrganizationId       string                       `json:"organization_id"`
+	RepositoryId         string                       `json:"repository_id"`
+	RunAttempt           int                          `json:"run_attempt"`
+	RunKind              WorkflowArtifactRunKind      `json:"run_kind"`
+	RunLabel             nullable.Nullable[string]    `json:"run_label,omitempty"`
+	SizeBytes            nullable.Nullable[int]       `json:"size_bytes"`
+	State                WorkflowArtifactState        `json:"state"`
+	WorkflowRunId        string                       `json:"workflow_run_id"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
 // WorkflowRun Workflow run sub-object for embedding in job responses (no jobs).
@@ -2401,6 +2513,31 @@ type ResolveOrganizationRepositoryParamsPlatform string
 
 // GetOrganizationRepositoryParams defines parameters for GetOrganizationRepository.
 type GetOrganizationRepositoryParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListArtifactsParams defines parameters for ListArtifacts.
+type ListArtifactsParams struct {
+	Limit        *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor       *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	RunId        *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+	Name         *string `form:"name,omitempty" json:"name,omitempty"`
+	State        *string `form:"state,omitempty" json:"state,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DeleteArtifactParams defines parameters for DeleteArtifact.
+type DeleteArtifactParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetArtifactParams defines parameters for GetArtifact.
+type GetArtifactParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ArtifactDownloadParams defines parameters for ArtifactDownload.
+type ArtifactDownloadParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -10701,6 +10838,571 @@ func (a Workflow) MarshalJSON() ([]byte, error) {
 	object["workflow_id"], err = json.Marshal(a.WorkflowId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowArtifact. Returns the specified
+// element and whether it was found
+func (a WorkflowArtifact) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowArtifact
+func (a *WorkflowArtifact) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowArtifact to handle AdditionalProperties
+func (a *WorkflowArtifact) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["archived"]; found {
+		err = json.Unmarshal(raw, &a.Archived)
+		if err != nil {
+			return fmt.Errorf("error reading 'archived': %w", err)
+		}
+		delete(object, "archived")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["digest_sha256"]; found {
+		err = json.Unmarshal(raw, &a.DigestSha256)
+		if err != nil {
+			return fmt.Errorf("error reading 'digest_sha256': %w", err)
+		}
+		delete(object, "digest_sha256")
+	}
+
+	if raw, found := object["expires_at"]; found {
+		err = json.Unmarshal(raw, &a.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'expires_at': %w", err)
+		}
+		delete(object, "expires_at")
+	}
+
+	if raw, found := object["file_count"]; found {
+		err = json.Unmarshal(raw, &a.FileCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'file_count': %w", err)
+		}
+		delete(object, "file_count")
+	}
+
+	if raw, found := object["file_name"]; found {
+		err = json.Unmarshal(raw, &a.FileName)
+		if err != nil {
+			return fmt.Errorf("error reading 'file_name': %w", err)
+		}
+		delete(object, "file_name")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["run_attempt"]; found {
+		err = json.Unmarshal(raw, &a.RunAttempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_attempt': %w", err)
+		}
+		delete(object, "run_attempt")
+	}
+
+	if raw, found := object["run_kind"]; found {
+		err = json.Unmarshal(raw, &a.RunKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_kind': %w", err)
+		}
+		delete(object, "run_kind")
+	}
+
+	if raw, found := object["run_label"]; found {
+		err = json.Unmarshal(raw, &a.RunLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_label': %w", err)
+		}
+		delete(object, "run_label")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["workflow_run_id"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_run_id': %w", err)
+		}
+		delete(object, "workflow_run_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowArtifact to handle AdditionalProperties
+func (a WorkflowArtifact) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["archived"], err = json.Marshal(a.Archived)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'archived': %w", err)
+	}
+
+	object["completed_at"], err = json.Marshal(a.CompletedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["digest_sha256"], err = json.Marshal(a.DigestSha256)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'digest_sha256': %w", err)
+	}
+
+	object["expires_at"], err = json.Marshal(a.ExpiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
+	}
+
+	object["file_count"], err = json.Marshal(a.FileCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'file_count': %w", err)
+	}
+
+	object["file_name"], err = json.Marshal(a.FileName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'file_name': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	object["run_attempt"], err = json.Marshal(a.RunAttempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_attempt': %w", err)
+	}
+
+	object["run_kind"], err = json.Marshal(a.RunKind)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_kind': %w", err)
+	}
+
+	if a.RunLabel != nil {
+		object["run_label"], err = json.Marshal(a.RunLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_label': %w", err)
+		}
+	}
+
+	object["size_bytes"], err = json.Marshal(a.SizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["workflow_run_id"], err = json.Marshal(a.WorkflowRunId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_run_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowArtifactView. Returns the specified
+// element and whether it was found
+func (a WorkflowArtifactView) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowArtifactView
+func (a *WorkflowArtifactView) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowArtifactView to handle AdditionalProperties
+func (a *WorkflowArtifactView) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["archived"]; found {
+		err = json.Unmarshal(raw, &a.Archived)
+		if err != nil {
+			return fmt.Errorf("error reading 'archived': %w", err)
+		}
+		delete(object, "archived")
+	}
+
+	if raw, found := object["can_delete"]; found {
+		err = json.Unmarshal(raw, &a.CanDelete)
+		if err != nil {
+			return fmt.Errorf("error reading 'can_delete': %w", err)
+		}
+		delete(object, "can_delete")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["digest_sha256"]; found {
+		err = json.Unmarshal(raw, &a.DigestSha256)
+		if err != nil {
+			return fmt.Errorf("error reading 'digest_sha256': %w", err)
+		}
+		delete(object, "digest_sha256")
+	}
+
+	if raw, found := object["expires_at"]; found {
+		err = json.Unmarshal(raw, &a.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'expires_at': %w", err)
+		}
+		delete(object, "expires_at")
+	}
+
+	if raw, found := object["file_count"]; found {
+		err = json.Unmarshal(raw, &a.FileCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'file_count': %w", err)
+		}
+		delete(object, "file_count")
+	}
+
+	if raw, found := object["file_name"]; found {
+		err = json.Unmarshal(raw, &a.FileName)
+		if err != nil {
+			return fmt.Errorf("error reading 'file_name': %w", err)
+		}
+		delete(object, "file_name")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["run_attempt"]; found {
+		err = json.Unmarshal(raw, &a.RunAttempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_attempt': %w", err)
+		}
+		delete(object, "run_attempt")
+	}
+
+	if raw, found := object["run_kind"]; found {
+		err = json.Unmarshal(raw, &a.RunKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_kind': %w", err)
+		}
+		delete(object, "run_kind")
+	}
+
+	if raw, found := object["run_label"]; found {
+		err = json.Unmarshal(raw, &a.RunLabel)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_label': %w", err)
+		}
+		delete(object, "run_label")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["workflow_run_id"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_run_id': %w", err)
+		}
+		delete(object, "workflow_run_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowArtifactView to handle AdditionalProperties
+func (a WorkflowArtifactView) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["archived"], err = json.Marshal(a.Archived)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'archived': %w", err)
+	}
+
+	object["can_delete"], err = json.Marshal(a.CanDelete)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'can_delete': %w", err)
+	}
+
+	object["completed_at"], err = json.Marshal(a.CompletedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["digest_sha256"], err = json.Marshal(a.DigestSha256)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'digest_sha256': %w", err)
+	}
+
+	object["expires_at"], err = json.Marshal(a.ExpiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
+	}
+
+	object["file_count"], err = json.Marshal(a.FileCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'file_count': %w", err)
+	}
+
+	object["file_name"], err = json.Marshal(a.FileName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'file_name': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	object["run_attempt"], err = json.Marshal(a.RunAttempt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_attempt': %w", err)
+	}
+
+	object["run_kind"], err = json.Marshal(a.RunKind)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_kind': %w", err)
+	}
+
+	if a.RunLabel != nil {
+		object["run_label"], err = json.Marshal(a.RunLabel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_label': %w", err)
+		}
+	}
+
+	object["size_bytes"], err = json.Marshal(a.SizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["workflow_run_id"], err = json.Marshal(a.WorkflowRunId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_run_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
