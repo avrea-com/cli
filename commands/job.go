@@ -17,8 +17,8 @@ var jobViewFields = append(append([]string{}, jobFields...), "steps", "workflow_
 // NewJob returns independently owned job inspection and connection commands.
 func NewJob(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	cmd := &cobra.Command{Use: "job", Short: "Inspect Avrea job VMs (SSH, logs)."}
-	cmd.AddCommand(newJobList(d), newJobView(d), newJobLogs(d), newJobSSH(d))
+	cmd := &cobra.Command{Use: "job", Aliases: []string{"jobs"}, Short: "Inspect Avrea job VMs (SSH, logs)."}
+	cmd.AddCommand(newJobList(d), newJobView(d), newJobLogs(d), newJobSSH(d), newJobWatch(d))
 	return cmd
 }
 
@@ -56,7 +56,7 @@ func newJobList(d Dependencies) *cobra.Command {
 	var org, since, cursor, order string
 	var repos, names, statuses, workflows []string
 	var limit int
-	var on, shadow bool
+	var on bool
 	c := &cobra.Command{Use: "list", Short: "List jobs for an organization.", Args: cobra.NoArgs}
 	o.flags(c)
 	f := c.Flags()
@@ -66,7 +66,9 @@ func newJobList(d Dependencies) *cobra.Command {
 	f.StringArrayVar(&statuses, "status", nil, "State or conclusion (repeatable).")
 	f.StringArrayVarP(&workflows, "workflow", "w", nil, "Workflow ID (repeatable).")
 	f.BoolVar(&on, "on-avrea", false, "Show jobs running on Avrea.")
-	f.BoolVar(&shadow, "shadowing", false, "Show shadowing jobs.")
+	f.Var(inverseBool{&on}, "shadowing", "Show shadowing jobs.")
+	f.Lookup("shadowing").NoOptDefVal = "true"
+	f.Lookup("shadowing").DefValue = "false"
 	f.StringVar(&since, "since", "", "Relative time window, e.g. 7d, 24h or 30m.")
 	f.StringVar(&cursor, "cursor", "", "Pagination cursor.")
 	f.StringVar(&order, "order", "created_at.desc", "Sort order.")
@@ -117,7 +119,7 @@ func newJobList(d Dependencies) *cobra.Command {
 			query.Add(key, v)
 		}
 		if f.Changed("on-avrea") || f.Changed("shadowing") {
-			query.Set("running_on_avrea", strconv.FormatBool(on && !shadow))
+			query.Set("running_on_avrea", strconv.FormatBool(on))
 		}
 		if since != "" {
 			v, e := sinceTimestamp(since, d.Now())

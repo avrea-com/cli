@@ -256,7 +256,9 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	}
 	if ctx.Err() != nil {
 		code = 130
-		err = &ExitError{130, "Interrupted."}
+		if exit == nil || exit.Code != 130 {
+			err = &ExitError{130, "Interrupted."}
+		}
 	}
 	if err.Error() != "" {
 		_, _ = fmt.Fprintln(stderr, err)
