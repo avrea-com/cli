@@ -1,0 +1,31 @@
+{
+  "repository": "https://github.com/avrea-com/avrea-core",
+  "commit": "d08ef5b1aaf7e521c51068b68ea116e3f54ddfc8",
+  "path": "control/openapi/public.json",
+  "sha256": "5171fde336d479b37cd1f3e503a3d7d9af5a0252b8f5bcef4bdb3590131461b8",
+  "operations": [
+    "list_user_organizations",
+    "list_organization_repositories",
+    "resolve_organization_repository",
+    "list_workflow_runs",
+    "get_workflow_run",
+    "get_workflow_run_by_platform_id",
+    "search_logs",
+    "list_jobs",
+    "get_job",
+    "ssh_forwarding"
+  ],
+  "generator": {
+    "module": "github.com/oapi-codegen/oapi-codegen/v2",
+    "version": "v2.8.1",
+    "released": "2026-10-24T00:20:07Z"
+  },
+  "runtime": {
+    "version": "v1.8.0",
+    "released": "2026-10-23T06:27:01Z"
+  },
+  "nullable": {
+    "version": "v1.2.0",
+    "released": "2026-06-22T15:02:30Z"
+  }
+}

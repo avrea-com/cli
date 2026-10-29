@@ -1,6 +1,6 @@
 # Go migration plan for avr and avr-admin
 
-Status: planning only. Implementation has not started.
+Status: auth and CI inspection milestones complete locally; full migration in progress.
 Updated: 2026-10-29.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
@@ -33,6 +33,100 @@ public release must run help, version, and completions after offline unpacking
 without installing a runtime or fetching dependencies. API commands still
 require network access. Establish latency targets from the measured baseline
 before claiming performance improvements.
+
+## Auth preview checkpoint (2026-10-29)
+
+The first implementation checkpoint is the standalone Go auth preview:
+login, status, switch, logout, their existing aliases, and the hidden Git
+credential helper. It includes shared exported packages, direct gojq, a pinned
+Python-versus-Go auth runner, and build/test/lint/parity CI. See
+[GO-AUTH-PREVIEW.md](GO-AUTH-PREVIEW.md) for usage, validation, dependencies, and
+explicit differences.
+
+This was the basic-auth checkpoint, not completion of Phase 1. The inspection
+checkpoint below adds the schema gate and actual admin composition. Release
+cutover remains later work. Python and repo-intel are unchanged.
+
+## CI inspection checkpoint (2026-10-29)
+
+The Go preview now includes `org list`, `repo list`, `run list`, `run view`,
+and `run watch`. Shared client boundaries use generated public wire types.
+The released oapi-codegen 2.8.1 gate passed against both complete OpenAPI 3.1
+schemas from core commit `d08ef5b1aaf7e521c51068b68ea116e3f54ddfc8`.
+Preparation hoists referenced nested definitions, preserves implicit open
+objects, and uses float64 for unformatted numbers; it does not downgrade
+the schema. Generation drift is checked in public CI.
+
+The fixture runner compares data and types, requests, exit codes, selected
+terminal information, logs, polling events, retries, interruption, and closed
+consumers. Raw captures and comparison reports live under ignored `build/go`.
+Terminal layouts, status symbols, colors, underlines, emphasis, and truncation
+follow Python closely. Harmless trailing padding and redraw sequences may differ. Go uses direct child-process argument parsing
+for configured pagers instead of evaluating shell expressions. Run references
+use canonical UUIDv7 IDs; retired short IDs are not supported.
+
+The minimal admin executable lives in core's `cli-go` module on
+`cli/go-inspection-admin`. It composes fresh public commands, preserves admin
+environment resolution, and shares the execution/exit-code boundary. Since
+the public Go module is not published yet, the preview requires an explicit
+local workspace:
+
+```sh
+make -C /path/to/avrea-core cli-go-check AVR_CLI_DIR=/path/to/cli
+/path/to/avrea-core/cli-go/build/avr-admin run list --json '*'
+```
+
+The final public CLI and real admin executable each passed all 143 paired
+inspection cases with zero meaningful differences. The public auth suite passed
+all 65 cases. The refreshed fixture reports record hashes matching the rebuilt
+binaries. Five read-only staging comparisons passed at the original inspection
+checkpoint for organization/repository listing and completed-run list, view, and
+watch across Python and both Go executables; those staging captures predate the
+terminal styling follow-up.
+
+The admin module is wired into core's root Make test/lint graph. The
+`Go admin preview` workflow accepts an explicit public CLI ref and runs the
+paired checks; it has passed actionlint locally but has not been dispatched.
+The generated local workspace is replaced atomically when AVR_CLI_DIR changes.
+
+This milestone is complete locally. A terminal-fidelity follow-up adds 33 PTY
+presentation cases, including color-enabled output and no-color opt-outs, and
+comparator regressions for missing styles and changed layouts. A live comparison
+against installed Python 0.4.1 matched all 42 repo rows in visible layout and glyph
+styles. Terminal coverage includes visible labels,
+run/branch hyperlinks and opt-outs, colored log readability, early pipe closure,
+and pager early exit and graceful interruption. Pager interruption exits 0;
+watch interruption exits 130. Local source review and final executable validation
+are complete. Public Go checks (race tests, lint, generation, differential checks,
+and vulnerability scan), core cli-go-check, Python lint, and all 1,560 Python
+tests pass. See GO-AUTH-PREVIEW.md for the handoff and intentional differences.
+
+Native three-OS CI remains a release gate and has not run remotely. CodeRabbit
+is installed but signed out, so no external CodeRabbit review has run. No
+release cutover, publishing, or server changes have occurred. The full Phase 1
+gate still requires an admin-only extension and native packaging/platform
+validation. Job SSH now exercises the representative process/connection boundary.
+
+## Job inspection checkpoint (2026-10-29)
+
+The preview adds `job list`, `job view`, `job logs --follow`, `run logs`,
+and `job ssh` to both executables through the shared public command tree.
+Generated wire models now include the pinned job list/detail and SSH forwarding
+operations. No additional runtime dependency was needed.
+
+The job corpus compares both executables with the pinned Python reference:
+79 scenarios, including 21 color-enabled/no-color terminal presentation cases.
+The scope includes JSON field aliases, status/filter/pagination requests,
+long-name truncation, links, grouped logs, raw cursors through hidden diagnostics,
+completion and delayed log draining, real interruption, and stubbed SSH process
+arguments/exit codes. Go tests additionally cover child-process cleanup and
+invalid endpoint/control-character handling. Static log bodies preserve tabs
+and newlines while escaping unsafe controls.
+
+OpenSSH is invoked with the existing Python job-SSH options. The compatibility
+tests do not establish a real runner connection or alter forwarding on staging.
+Read-only staging validation covers job listing, job details, and static logs.
+Native remote CI and a real interactive runner SSH session remain unverified.
 
 ## Decisions and boundaries
 
@@ -167,8 +261,9 @@ raw content for downloads and structured output where required.
 
 Human-facing terminal output is the primary comparison surface: the same useful
 information, understandable statuses and errors, recognizable tables and prompts,
-and comparable workflows. Exact bytes, spacing, border characters, color shades,
-wrapping, progress animation, and redraw sequences may differ. Do not build
+and comparable workflows. Match normal layouts, colors, underlines, emphasis,
+and truncation closely. Exact escape bytes, trailing padding, wrapping during
+resizing, progress animation, and redraw sequences may differ. Do not build
 exhaustive resize, mouse-event, or suspend/resume parity suites. Use representative
 interactive smoke checks for usability, interruption, and leaving the terminal
 usable after exit.
@@ -281,8 +376,9 @@ explicit text-output contract requires it; array order and null/missing
 differences remain significant. Preserve numeric precision in the comparator.
 
 For human output, compare normalized visible text and key information, and review
-representative rendered captures for readability. Ignore harmless whitespace,
-ANSI styling, table borders, and wrapping differences by policy. Keep original
+representative rendered captures for readability. Compare colors, bold/dim and
+underline attributes on visible text, plus representative layouts and truncation.
+Normalize equivalent ANSI encodings, trailing padding, and moving clocks. Keep original
 captures available so normalization cannot conceal lost or unreadable content.
 Human wording may differ if meaning and useful detail remain equivalent. Reserve
 exact output assertions for actual protocols and narrowly justified contracts.
@@ -306,7 +402,7 @@ retry behavior, or ordering must still be explained.
   malformed responses, timeouts, and connection failures.
 - JSON field discovery/projection and jq success/failure behavior.
 - Representative TTY and piped output, noninteractive prompts, and readable
-  no-color output; presentation need not match exactly.
+  no-color output; normal terminal styling and layouts should closely match.
 - Downloads, streaming, interrupted watches, broken pipes, and child cleanup.
 - Public commands invoked through admin, admin overrides, nested extensions,
   and legacy routing.
@@ -326,7 +422,7 @@ Classify meaningful differences after applying the agreed presentation policy:
    test; document why Go intentionally differs.
 
 The presentation policy is a shared allowance; do not create a waiver or test
-for every changed space, border, color, or wrap. Behavior and machine-contract
+for every harmless trailing space, equivalent escape encoding, or resize wrap. Behavior and machine-contract
 exceptions must remain narrow, explained, and tested. No blanket allowance for
 missing information, incorrect results, or broken workflows.
 
