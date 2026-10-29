@@ -24,6 +24,7 @@ type Record[T any] struct {
 }
 
 type Page[T any] struct {
+	Fields     map[string]any
 	Items      []Record[T]
 	NextCursor string
 }
@@ -48,7 +49,7 @@ func decodeRecord[T any](fields map[string]any) (Record[T], error) {
 }
 
 func decodePage[T any](body map[string]any) (Page[T], error) {
-	page := Page[T]{Items: []Record[T]{}}
+	page := Page[T]{Fields: body, Items: []Record[T]{}}
 	raw, ok := body["data"].([]any)
 	if !ok && body["data"] != nil {
 		return page, errors.New("unexpected API response: expected a data array")
@@ -223,4 +224,19 @@ func (c *Client) JobMetrics(ctx context.Context, org, id, source string, query u
 		return Record[wire.MetricsQueryResponse]{}, err
 	}
 	return decodeRecord[wire.MetricsQueryResponse](body)
+}
+
+func (c *Client) RunJobs(ctx context.Context, org, id string, query url.Values) (Record[wire.JobsListResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/jobs", query)
+	if err != nil {
+		return Record[wire.JobsListResponse]{}, err
+	}
+	return decodeRecord[wire.JobsListResponse](body)
+}
+func (c *Client) RunMetrics(ctx context.Context, org, id string, query url.Values) (Record[wire.WorkflowRunMetricsResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/metrics", query)
+	if err != nil {
+		return Record[wire.WorkflowRunMetricsResponse]{}, err
+	}
+	return decodeRecord[wire.WorkflowRunMetricsResponse](body)
 }

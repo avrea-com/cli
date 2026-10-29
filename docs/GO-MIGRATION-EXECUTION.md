@@ -138,9 +138,41 @@ The stronger style comparator also passes 186 previously captured presentation
 cases across both binaries. The 23 comparator tests, Go race tests, lint,
 generation checks and paired admin build pass.
 
+## Run diagnostics batch
+
+Added run diagnose, shared with avr-admin.
+Job metrics checkpoints: public d62000a, admin 38910a6b3f.
+
+Decisions:
+- Reuse validated run references, including GitHub numeric IDs and URLs.
+- Match Python's bounds: 100 jobs, 1,000 steps across the report, ten failed
+  jobs with logs, 100 lines and 25 KiB of UTF-8 log content per failed job.
+- Fetch jobs, metrics and the prior-success baseline concurrently, then fetch
+  eligible log excerpts concurrently. Preserve deterministic report order.
+- Keep auxiliary HTTP failures and malformed data as structured warnings.
+  A jobs fetch failure remains fatal. Cancellation never becomes a successful
+  partial report. Already-started fetches share cancellation and timeouts.
+- Preserve queue/execution/start-offset timing, clock-skew warnings, p95
+  interpolation and counter-reset totals. Keep raw API fields and numeric
+  precision, including whole-number float values in the generated report.
+- Retain raw page envelopes so the diagnostics baseline can distinguish
+  missing data from a valid empty result.
+- Normalize only independently verified elapsed-time fields, generation time
+  and concurrent request arrival order in parity checks. Request bodies,
+  counts, authorization and all other evidence remain strict.
+- No new dependencies or remote mutations.
+
+Validation: 53 differential cases per executable, including four terminal
+cases. Coverage includes source failures, malformed data, truncation, UTF-8
+bounds, clock skew, active timing, references and partial-report colors.
+Two malformed-response regressions were reproduced before fixing them.
+Five comparator tests protect evidence and request checking. Go tests cover
+concurrent requests, cancellation and a generation-based baseline window;
+Go race tests, lint, generation checks and paired admin checks pass.
+
 ## Remaining work
 
-Run diagnose, PR/status, artifacts,
+PR/status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.

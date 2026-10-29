@@ -846,6 +846,30 @@ func (e AggregateWorkflowRunsParamsTimeBucket) Valid() bool {
 	}
 }
 
+// Defines values for ListWorkflowRunJobsParamsOrder.
+const (
+	ListWorkflowRunJobsParamsOrderCreatedAtAsc        ListWorkflowRunJobsParamsOrder = "created_at.asc"
+	ListWorkflowRunJobsParamsOrderCreatedAtDesc       ListWorkflowRunJobsParamsOrder = "created_at.desc"
+	ListWorkflowRunJobsParamsOrderDurationSecondsAsc  ListWorkflowRunJobsParamsOrder = "duration_seconds.asc"
+	ListWorkflowRunJobsParamsOrderDurationSecondsDesc ListWorkflowRunJobsParamsOrder = "duration_seconds.desc"
+)
+
+// Valid indicates whether the value is a known member of the ListWorkflowRunJobsParamsOrder enum.
+func (e ListWorkflowRunJobsParamsOrder) Valid() bool {
+	switch e {
+	case ListWorkflowRunJobsParamsOrderCreatedAtAsc:
+		return true
+	case ListWorkflowRunJobsParamsOrderCreatedAtDesc:
+		return true
+	case ListWorkflowRunJobsParamsOrderDurationSecondsAsc:
+		return true
+	case ListWorkflowRunJobsParamsOrderDurationSecondsDesc:
+		return true
+	default:
+		return false
+	}
+}
+
 // APIResponseCancelWorkflowRunResponse defines model for APIResponse_CancelWorkflowRunResponse_.
 type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
@@ -1048,6 +1072,17 @@ type JobAggregation struct {
 	TimedOutTotalDurationSeconds        nullable.Nullable[float64] `json:"timed_out_total_duration_seconds,omitempty"`
 	TotalDurationSeconds                nullable.Nullable[float64] `json:"total_duration_seconds"`
 	AdditionalProperties                map[string]interface{}     `json:"-"`
+}
+
+// JobMetricsEntry defines model for JobMetricsEntry.
+type JobMetricsEntry struct {
+	// Error Set when this job has no metrics to return. Currently only 'no_execution' (job hasn't been picked up by a runner).
+	Error nullable.Nullable[string] `json:"error,omitempty"`
+	JobId string                    `json:"job_id"`
+
+	// Metrics Per-source MetricsQueryResponse, present iff the job has a usable execution. Absent when `error` is set.
+	Metrics              nullable.Nullable[map[string]MetricsQueryResponse] `json:"metrics,omitempty"`
+	AdditionalProperties map[string]interface{}                             `json:"-"`
 }
 
 // JobQueueWait defines model for JobQueueWait.
@@ -1557,6 +1592,13 @@ type WorkflowRunHeadCommitAuthor struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// WorkflowRunMetricsResponse defines model for WorkflowRunMetricsResponse.
+type WorkflowRunMetricsResponse struct {
+	// Data One entry per job in the run that the caller can see; jobs without an execution are flagged via `error`.
+	Data                 []JobMetricsEntry      `json:"data"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // WorkflowRunPullRequest defines model for WorkflowRunPullRequest.
 type WorkflowRunPullRequest struct {
 	BaseBranch           nullable.Nullable[string] `json:"base_branch,omitempty"`
@@ -1991,6 +2033,35 @@ type GetWorkflowRunParams struct {
 
 // CancelWorkflowRunEndpointParams defines parameters for CancelWorkflowRunEndpoint.
 type CancelWorkflowRunEndpointParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListWorkflowRunJobsParams defines parameters for ListWorkflowRunJobs.
+type ListWorkflowRunJobsParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for next page
+	Cursor *string                         `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Order  *ListWorkflowRunJobsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Include Sub-objects to include (default: steps)
+	Include      *[]string `form:"include,omitempty" json:"include,omitempty"`
+	AvreaSession *string   `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListWorkflowRunJobsParamsOrder defines parameters for ListWorkflowRunJobs.
+type ListWorkflowRunJobsParamsOrder string
+
+// GetWorkflowRunMetricsParams defines parameters for GetWorkflowRunMetrics.
+type GetWorkflowRunMetricsParams struct {
+	// Source Repeat for each source you want.
+	Source []MetricSource `form:"source" json:"source"`
+
+	// Start Start time (Unix seconds). Defaults per-job to execution start.
+	Start *int `form:"start,omitempty" json:"start,omitempty"`
+
+	// End End time (Unix seconds). Defaults per-job to execution end or now.
+	End          *int    `form:"end,omitempty" json:"end,omitempty"`
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -3771,6 +3842,102 @@ func (a JobAggregation) MarshalJSON() ([]byte, error) {
 	object["total_duration_seconds"], err = json.Marshal(a.TotalDurationSeconds)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'total_duration_seconds': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for JobMetricsEntry. Returns the specified
+// element and whether it was found
+func (a JobMetricsEntry) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for JobMetricsEntry
+func (a *JobMetricsEntry) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for JobMetricsEntry to handle AdditionalProperties
+func (a *JobMetricsEntry) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["error"]; found {
+		err = json.Unmarshal(raw, &a.Error)
+		if err != nil {
+			return fmt.Errorf("error reading 'error': %w", err)
+		}
+		delete(object, "error")
+	}
+
+	if raw, found := object["job_id"]; found {
+		err = json.Unmarshal(raw, &a.JobId)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_id': %w", err)
+		}
+		delete(object, "job_id")
+	}
+
+	if raw, found := object["metrics"]; found {
+		err = json.Unmarshal(raw, &a.Metrics)
+		if err != nil {
+			return fmt.Errorf("error reading 'metrics': %w", err)
+		}
+		delete(object, "metrics")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for JobMetricsEntry to handle AdditionalProperties
+func (a JobMetricsEntry) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Error != nil {
+		object["error"], err = json.Marshal(a.Error)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error': %w", err)
+		}
+	}
+
+	object["job_id"], err = json.Marshal(a.JobId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job_id': %w", err)
+	}
+
+	if a.Metrics != nil {
+		object["metrics"], err = json.Marshal(a.Metrics)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metrics': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -8835,6 +9002,74 @@ func (a WorkflowRunHeadCommitAuthor) MarshalJSON() ([]byte, error) {
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowRunMetricsResponse. Returns the specified
+// element and whether it was found
+func (a WorkflowRunMetricsResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowRunMetricsResponse
+func (a *WorkflowRunMetricsResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowRunMetricsResponse to handle AdditionalProperties
+func (a *WorkflowRunMetricsResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowRunMetricsResponse to handle AdditionalProperties
+func (a WorkflowRunMetricsResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

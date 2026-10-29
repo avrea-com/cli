@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel, and workflow list/view/run in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, and workflow list/view/run in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -22,6 +22,8 @@ make go-build
 ./build/go/avr run list --repo OWNER/REPO
 ./build/go/avr run view RUN --steps
 ./build/go/avr run view RUN --log-failed
+./build/go/avr run diagnose RUN
+./build/go/avr run diagnose RUN --json
 ./build/go/avr run watch RUN --exit-status
 ./build/go/avr run watch RUN --ndjson
 ./build/go/avr job list --status failure
@@ -95,6 +97,9 @@ Inspection commands:
   logs, paging, browser links, other attempts, JSON, and gojq. Run references
   accept canonical Avrea IDs, GitHub numeric IDs/URLs, and matching-environment
   Avrea console URLs. Without RUN, show recent runs.
+- `run diagnose RUN`: bounded failed-step/log evidence, queue/execution timing,
+  CPU/memory/I/O summaries, and a prior-success workflow baseline. Raw JSON and
+  styled human output both expose missing or truncated evidence.
 - `run watch [RUN]`: explicit or automatic run selection, terminal progress,
   NDJSON job/run events, transient retries, interruption, and failure exit codes.
 
