@@ -16,6 +16,7 @@ import (
 type workflowInput struct {
 	text, repr string
 	fields     map[string]string
+	order      []string
 }
 
 func pythonQuote(value string) string {
@@ -105,6 +106,7 @@ func readWorkflowInput(decoder *json.Decoder, depth int) (workflowInput, error) 
 			if _, err := decoder.Token(); err != nil {
 				return value, err
 			}
+			value.order = order
 			for _, key := range order {
 				entries = append(entries, pythonQuote(key)+": "+representations[key])
 			}

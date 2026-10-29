@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // CellText keeps untrusted text in one terminal/TSV cell. JSON retains the
@@ -88,6 +90,8 @@ func Table(w io.Writer, headers []string, rows [][]string, piped bool, targets .
 }
 
 // Grid preserves the bordered organization table used by both TTY and pipes.
+var gridWidth = &runewidth.Condition{EastAsianWidth: false, StrictEmojiNeutral: true}
+
 func Grid(w io.Writer, headers []string, rows [][]string) error {
 	widths := make([]int, len(headers))
 	all := make([][]string, 0, len(rows)+1)
@@ -95,7 +99,7 @@ func Grid(w io.Writer, headers []string, rows [][]string) error {
 	all = append(all, rows...)
 	for _, row := range all {
 		for i, text := range row {
-			if n := utf8.RuneCountInString(CellText(text)); n > widths[i] {
+			if n := gridWidth.StringWidth(CellText(text)); n > widths[i] {
 				widths[i] = n
 			}
 		}
@@ -114,7 +118,7 @@ func Grid(w io.Writer, headers []string, rows [][]string) error {
 		b.WriteByte('|')
 		for i, text := range row {
 			text = CellText(text)
-			b.WriteString(" " + text + strings.Repeat(" ", widths[i]-utf8.RuneCountInString(text)) + " |")
+			b.WriteString(" " + text + strings.Repeat(" ", widths[i]-gridWidth.StringWidth(text)) + " |")
 		}
 		b.WriteByte('\n')
 		if index == 0 {

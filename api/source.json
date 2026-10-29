@@ -26,7 +26,11 @@
     "get_org_feature_flag",
     "list_org_pulls",
     "aggregate_jobs",
-    "get_cache_usage"
+    "get_cache_usage",
+    "list_artifacts",
+    "get_artifact",
+    "artifact_download",
+    "delete_artifact"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

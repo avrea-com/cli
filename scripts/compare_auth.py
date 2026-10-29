@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from compression import zstd
 from pathlib import Path
+from typing import Any
+from typing import cast
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlsplit
@@ -49,6 +51,8 @@ def canonical_path(path):
 
 
 class Fixture(http.server.BaseHTTPRequestHandler):
+    server: Any
+
     def log_message(self, *_):
         pass
 
@@ -83,12 +87,15 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                 (self.command, urlsplit(self.path).path), (200, USER)
             )
         if isinstance(response, list):
-            status, payload = response.pop(0) if len(response) > 1 else response[0]
-        else:
-            status, payload = response
+            response = response.pop(0) if len(response) > 1 else response[0]
+        status, payload, *extra = response
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        data = json.dumps(payload).encode()
+        self.send_header(
+            "Content-Type", "application/octet-stream" if isinstance(payload, bytes) else "application/json"
+        )
+        for key, value in (extra[0] if extra else {}).items():
+            self.send_header(key, value)
+        data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
         if self.server.encoding:
             self.send_header("Content-Encoding", self.server.encoding)
             data = gzip.compress(data) if self.server.encoding == "gzip" else zstd.compress(data)
@@ -101,6 +108,14 @@ def run(executable, scenario, root, host):
         home = Path(directory)
         cfg = home / "config"
         cfg.mkdir()
+        for name in scenario.get("fixture_dirs", []):
+            (home / name).mkdir(parents=True, exist_ok=True)
+        for name, data in scenario.get("fixture_files", {}).items():
+            target = home / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            if os.name != "nt":
+                target.chmod(0o644)
         hosts = copy.deepcopy(scenario.get("hosts"))
         if hosts is not None:
             hosts = json.loads(json.dumps(hosts).replace("FIXTURE_HOST", host))
@@ -142,7 +157,7 @@ def run(executable, scenario, root, host):
                 executable_stub.write_text(script)
                 executable_stub.chmod(0o700)
             env["PATH"] = str(stub) + os.pathsep + env["PATH"]
-        args = [a.replace("FIXTURE_HOST", host) for a in scenario["args"]]
+        args = [a.replace("FIXTURE_HOST", host).replace("FIXTURE_HOME", directory) for a in scenario["args"]]
         if remote := scenario.get("git_remote"):
             subprocess.run(["git", "init", "-q", directory], env=env, check=True, capture_output=True, timeout=5)
             subprocess.run(
@@ -244,6 +259,7 @@ def run(executable, scenario, root, host):
                 stderr=subprocess.PIPE,
                 text=True,
             )
+            assert process.stdout is not None
             watchdog = threading.Timer(15, process.kill)
             watchdog.start()
             try:
@@ -284,11 +300,30 @@ def run(executable, scenario, root, host):
             if callback_errors:
                 raise RuntimeError(callback_errors)
         path = cfg / "hosts.json"
+        captured = {}
+        for name in scenario.get("capture_files", []):
+            target = home / name
+            candidates = sorted(target.rglob("*")) if target.is_dir() else [target]
+            for item in candidates:
+                if item.is_file():
+                    data = item.read_bytes()
+                    captured[item.relative_to(home).as_posix()] = {
+                        "size": len(data),
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                        "mode": item.stat().st_mode & 0o777 if os.name != "nt" else None,
+                    }
+        stdout, stderr = result.stdout, result.stderr
+        if "capture_files" in scenario:
+            # JSON strings escape Windows separators; normalize that representation too.
+            escaped = json.dumps(directory)[1:-1]
+            stdout = stdout.replace(escaped, "<home>").replace(directory, "<home>")
+            stderr = stderr.replace(escaped, "<home>").replace(directory, "<home>")
         return {
+            **({"files": captured} if "capture_files" in scenario else {}),
             "exit": result.returncode,
             "browser": browser_target.read_text() if browser_target.exists() else None,
-            "stdout": result.stdout.replace(str(cfg), "<config>"),
-            "stderr": result.stderr.replace(str(cfg), "<config>"),
+            "stdout": stdout.replace(str(cfg), "<config>"),
+            "stderr": stderr.replace(str(cfg), "<config>"),
             "hosts": json.loads(path.read_text()) if path.exists() else None,
             "mode": (path.stat().st_mode & 0o777) if path.exists() and os.name != "nt" else None,
         }
@@ -660,7 +695,7 @@ def main(case_factory=scenarios, compare_results=compare, default_report="build/
     with tempfile.TemporaryDirectory(prefix="avr-oracle-") as oracle:
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(oracle, filter="data")
-        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Fixture)
+        server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), Fixture))
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         host = f"http://127.0.0.1:{server.server_port}"
