@@ -23,7 +23,7 @@ var workflowViewFields = append(append([]string{}, workflowFields...), "p95_dura
 func NewWorkflow(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	group := &cobra.Command{Use: "workflow", Aliases: []string{"workflows"}, Short: "List and view workflow definitions."}
-	group.AddCommand(newWorkflowList(d), newWorkflowView(d))
+	group.AddCommand(newWorkflowList(d), newWorkflowView(d), newWorkflowRun(d))
 	return group
 }
 

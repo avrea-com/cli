@@ -56,9 +56,36 @@ Validation: 72 Python/Go cases per executable, including 12 presentation cases,
 repository lookup errors, Git context, pagination, ambiguous names, empty
 results, field discovery, jq, sorting/limits, relative windows and browser mode.
 
+## Workflow dispatch batch
+
+Added workflow run with all Python options, including raw fields, JSON stdin,
+ref/default-branch selection, watch/no-watch toggles, exit-status and interval.
+Workflow inspection checkpoints: public 1bbbc77, admin 78f1192d67.
+
+Decisions:
+- Preserve default watch behavior and last-option-wins for -w/-W and
+  --watch/--no-watch.
+- Retain Python string conversion for JSON input values, including booleans,
+  null, integers, floats and nested containers with insertion order.
+- Validate inputs before network access. Bound JSON input to 16 MiB and 100
+  nested levels, and allow interruption while reading stdin.
+- Never guess a default branch. Require an explicit ref when it is unknown.
+- Poll for up to 90 seconds using creation time with Python's five-second
+  clock-skew allowance and the platform workflow ID when known.
+- Retry transient network failures during dispatch polling, following the
+  Python helper's documented intent; its current body only catches HTTP errors.
+- Reuse the existing run watcher, preserving the human-readable piped output
+  of workflow run. Fixed cursor/title escapes leaking into that pipe.
+- All dispatch mutations in validation target local fixtures.
+
+Validation: 43 differential cases per executable, including six terminal
+cases. Go tests cover temporal matching, poll deadlines, cancellation,
+stdin limits and refusal to read JSON from a terminal. The existing inspection
+parity suite is rerun because the shared watch renderer changed.
+
 ## Remaining work
 
-Workflow run, run diagnose, job metrics/watch, PR/status, artifacts,
+Run diagnose, job metrics/watch, PR/status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 all aliases, and a final per-command flag/argument/behavior coverage audit.

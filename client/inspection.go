@@ -195,3 +195,24 @@ func (c *Client) RepositoryWorkflows(ctx context.Context, org, repo string, quer
 	}
 	return decodePage[wire.CIWorkflowResponse](body)
 }
+
+func (c *Client) Repository(ctx context.Context, org, id string) (Record[Repository], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(id), nil)
+	if err != nil {
+		return Record[Repository]{}, err
+	}
+	fields, _ := body["data"].(map[string]any)
+	return decodeRecord[Repository](fields)
+}
+func (c *Client) DispatchWorkflow(ctx context.Context, org, repo, file, ref string, inputs map[string]string) (Record[wire.DispatchWorkflowResponse], error) {
+	request := wire.DispatchWorkflowRequest{Workflow: file, Ref: ref}
+	if len(inputs) > 0 {
+		request.Inputs.Set(inputs)
+	}
+	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/dispatch-workflow", request)
+	if err != nil {
+		return Record[wire.DispatchWorkflowResponse]{}, err
+	}
+	fields, _ := body["data"].(map[string]any)
+	return decodeRecord[wire.DispatchWorkflowResponse](fields)
+}

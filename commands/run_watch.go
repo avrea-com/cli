@@ -155,7 +155,7 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 		event["run_id"] = runID
 		return encoder.Encode(event)
 	}
-	if !streaming {
+	if !streaming && d.IsTerminal() {
 		// Push/pop terminal title, and always restore the visible cursor on exit.
 		_, _ = fmt.Fprint(d.Out, "\x1b[22;0t\x1b[?25l")
 		defer func() { _, _ = fmt.Fprint(d.Out, "\x1b[23;0t\x1b[?25h") }()
@@ -276,7 +276,11 @@ func renderWatch(d Dependencies, cfg config.Config, fields map[string]any, runID
 	if slug != "" {
 		header = linkCell(header, consoleURL(cfg.Host)+"/org/"+url.PathEscape(slug)+"/runs/"+url.PathEscape(runID))
 	}
-	_, err := fmt.Fprintf(d.Out, "\x1b[2J\x1b[H\x1b]2;avr ▸ %s: %s\x07%s\n\n", output.CellText(title), output.CellText(stage), header)
+	prefix := ""
+	if d.IsTerminal() {
+		prefix = fmt.Sprintf("\x1b[2J\x1b[H\x1b]2;avr ▸ %s: %s\x07", output.CellText(title), output.CellText(stage))
+	}
+	_, err := fmt.Fprintf(d.Out, "%s%s\n\n", prefix, header)
 	if err != nil {
 		return err
 	}

@@ -14,6 +14,19 @@
         "title": "APIResponse[CancelWorkflowRunResponse]",
         "type": "object"
       },
+      "APIResponse_DispatchWorkflowResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DispatchWorkflowResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[DispatchWorkflowResponse]",
+        "type": "object"
+      },
       "APIResponse_JobResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -287,6 +300,85 @@
           "status"
         ],
         "title": "CancelWorkflowRunResponse",
+        "type": "object"
+      },
+      "DispatchWorkflowRequest": {
+        "description": "Request body for dispatching a workflow.",
+        "properties": {
+          "inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional workflow input parameters",
+            "title": "Inputs"
+          },
+          "ref": {
+            "description": "Branch or tag name to run the workflow at",
+            "minLength": 1,
+            "title": "Ref",
+            "type": "string"
+          },
+          "workflow": {
+            "description": "Workflow filename (e.g. 'build.yml') or platform workflow_id; no path segments",
+            "minLength": 1,
+            "title": "Workflow",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow",
+          "ref"
+        ],
+        "title": "DispatchWorkflowRequest",
+        "type": "object"
+      },
+      "DispatchWorkflowResponse": {
+        "description": "Response for a workflow dispatch.\n\n`platform_run_id` is the GitHub workflow run ID (always present with\napi-version 2026-03-10; degrades to None if GitHub returns 204).\n`run_id` is the Avrea `run-xxx` ID, which is None at dispatch time\nbecause the run record is created asynchronously from the\nworkflow_run webhook \u2014 clients can poll workflow-runs by\n`platform_run_id` to bridge the gap.",
+        "properties": {
+          "platform_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Run Id"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "workflow": {
+            "title": "Workflow",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow",
+          "ref"
+        ],
+        "title": "DispatchWorkflowResponse",
         "type": "object"
       },
       "GovernanceHoldReason": {
@@ -4817,6 +4909,168 @@
           }
         ],
         "summary": "Resolve Organization Repository",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}": {
+      "get": {
+        "description": "Look up a single repository by Avrea ``rep-xxx`` ID.\n\nReturns 404 if the repository is not in the organization or the caller\nlacks source-platform access. Mirrors the authorization model of\n:func:`resolve_organization_repository` so the org-listing fallback in\nclients (status, workflow lookup) can collapse to a single round-trip.",
+        "operationId": "get_organization_repository",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_OrganizationRepositoryResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Organization Repository",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/dispatch-workflow": {
+      "post": {
+        "description": "Trigger a workflow_dispatch event for a workflow in the repo.\n\nLooks up the installation from the repo record, fetches an installation token,\nand calls GitHub's /actions/workflows/{file}/dispatches endpoint.",
+        "operationId": "dispatch_workflow_endpoint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchWorkflowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_DispatchWorkflowResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization or not accessible, the repository has no installation, or GitHub reported the workflow as not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dispatch Workflow Endpoint",
         "tags": [
           "organization-installations"
         ]
