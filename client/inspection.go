@@ -255,3 +255,19 @@ func (c *Client) PullRequests(ctx context.Context, org string, query url.Values)
 	}
 	return decodePage[wire.OrgPullRequestSummary](body)
 }
+
+func (c *Client) JobAggregates(ctx context.Context, org string, query url.Values) (Page[wire.JobAggregateBucket], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs/aggregate", query)
+	if err != nil {
+		return Page[wire.JobAggregateBucket]{}, err
+	}
+	return decodePage[wire.JobAggregateBucket](body)
+}
+func (c *Client) CacheUsage(ctx context.Context, org, repo string) (Record[wire.CacheUsageSummary], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/cache", nil)
+	if err != nil {
+		return Record[wire.CacheUsageSummary]{}, err
+	}
+	fields, _ := body["data"].(map[string]any)
+	return decodeRecord[wire.CacheUsageSummary](fields)
+}
