@@ -984,6 +984,29 @@
                 "default": null
               },
               {
+                "name": "ci_provider",
+                "kind": "option",
+                "opts": [
+                  "--ci-provider"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by CI engine.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "github_actions",
+                  "gitlab_ci",
+                  "avrea_ci"
+                ]
+              },
+              {
                 "name": "workflow_ids",
                 "kind": "option",
                 "opts": [
@@ -997,7 +1020,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2075,6 +2098,29 @@
                 "default": null
               },
               {
+                "name": "ci_provider",
+                "kind": "option",
+                "opts": [
+                  "--ci-provider"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by CI engine.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "github_actions",
+                  "gitlab_ci",
+                  "avrea_ci"
+                ]
+              },
+              {
                 "name": "workflow_ids",
                 "kind": "option",
                 "opts": [
@@ -2088,7 +2134,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null

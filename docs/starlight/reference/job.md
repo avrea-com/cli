@@ -43,7 +43,8 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by job name (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;on-avrea / &#x2D;&#x2D;shadowing</code> — Filter by Avrea-run vs shadowing jobs.
-- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;ci-provider</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
+- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl- or awf-, repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;since</code> <code class="cli-value">&lt;TEXT&gt;</code> — Relative time window: '7d', '24h', etc.
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max jobs to return. _(default: `20`)_
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Pagination cursor from a previous response.
