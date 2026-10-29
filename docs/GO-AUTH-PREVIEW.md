@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, and the status dashboard in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, and artifact management in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -21,6 +21,10 @@ make go-build
 ./build/go/avr status --repo OWNER/REPO
 ./build/go/avr status --since 24h --json
 ./build/go/avr repo list --org ORG
+./build/go/avr artifact list OWNER/REPO
+./build/go/avr artifact get ART_ID --repo OWNER/REPO
+./build/go/avr artifact download ART_ID --repo OWNER/REPO --path ./downloads/
+./build/go/avr artifact delete ART_ID --repo OWNER/REPO
 ./build/go/avr pr list --scope authored
 ./build/go/avr pr list --repo OWNER/REPO --state all --json number,title
 ./build/go/avr run list --repo OWNER/REPO
@@ -395,3 +399,11 @@ Reproduce the local overhead check with:
 ```sh
 go test ./client -run '^$' -bench BenchmarkRequestTiming -benchtime=1s -count=3
 ```
+
+Artifact downloads require complete metadata with a valid size and SHA-256.
+They stream into a private temporary file next to the destination and replace
+the destination only after verification. Existing directories receive the
+artifact's filename; a nonexistent --path is treated as a filename, matching
+Python. ZIP artifacts remain archived. Redirects and compressed responses to
+the identity download request are rejected. Delete requires confirmation unless
+--yes is supplied.

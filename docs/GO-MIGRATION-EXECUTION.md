@@ -225,9 +225,48 @@ four new comparator/fixture tests reject wrong windows and dropped periods.
 All 42 comparator regression tests, Go race tests, lint, schema generation,
 fixture typing, workflow validation and paired admin checks pass.
 
+## Artifact batch
+
+Added artifact list/get/download/delete, shared with avr-admin.
+Status checkpoints: public 5b6e159, admin e46f28d6d9.
+
+Decisions:
+- Preserve positional repository selection for list; required repository/Git
+  context for get/download/delete; ID checks, filters, pagination, JSON/jq,
+  field discovery, confirmation and prompt-disable behavior.
+- Keep metadata member order and Python-style null/boolean/container strings
+  in human output. JSON keeps exact numbers and values.
+- Stream downloads with an inactivity timeout, a 10 GiB metadata limit and
+  bounded error responses. Require identity encoding and refuse redirects.
+- Verify exact size and SHA-256 in a private temporary file, then replace the
+  destination. Preserve existing files and remove temporary files on failure
+  or cancellation. Do not extract archives.
+- Retain terminal-control escaping as an intentional safety improvement for
+  untrusted human-readable cells; JSON retains original values.
+- Fix bordered-table Unicode display widths after a failing differential case.
+  Use MIT-licensed [go-runewidth](https://github.com/mattn/go-runewidth), pinned
+  to v0.0.24, with its runtime dependencies included in generated notices.
+- Extend local fixtures explicitly for binary bodies, response headers and
+  file effects. Compare filenames, size, SHA-256, permissions and temporary
+  cleanup against independently declared expected results, so matching bugs
+  in both executables do not pass.
+- No live deletions, remote mutations, archive extraction or publishing.
+
+Validation: 92 artifact cases per executable, including eight terminal cases.
+All 781 public differential cases pass after the shared transport/table changes.
+The admin artifact, inspection, shared-auth and workflow-run regressions pass
+(342 cases, with the intentional host-resolution exclusion described below). Go race tests, lint,
+schema generation, vulnerability scan, Python comparator tests (46), fixture
+typing and workflow validation pass. Report hashes match the tested binaries.
+
+The public-auth stored-default-host scenario is intentionally inapplicable to
+admin: Python AdminCliConfig and Go adminconfig both derive the host from the
+admin environment when AVR_HOST is absent. Its default/override precedence is
+covered by the admin configuration tests; 64 other shared-auth cases pass.
+Native Windows/Linux execution remains a CI gate, not a locally verified claim.
+
 ## Remaining work
 
-Artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
