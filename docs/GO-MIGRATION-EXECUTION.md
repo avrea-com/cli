@@ -265,9 +265,36 @@ admin environment when AVR_HOST is absent. Its default/override precedence is
 covered by the admin configuration tests; 64 other shared-auth cases pass.
 Native Windows/Linux execution remains a CI gate, not a locally verified claim.
 
+## Cache batch
+
+Added cache list/usage/delete, shared with avr-admin.
+Artifact checkpoints: public f938f16, admin d98d4084c7.
+
+Decisions:
+- Match list's exact TSV columns in pipes and bordered human table in terminals,
+  including Unicode widths, size/timestamp formatting and terminal-only offset
+  pagination hints. JSON returns the schema-selected original fields.
+- Preserve lowercasing for list's type filter and the original type value for
+  deletion, matching Python's request behavior.
+- Match usage summaries, quota percentages and per-type tables; JSON unwraps
+  the data envelope before field projection.
+- Require exactly one of key or all for deletion, with a type for key deletion.
+  Preserve authentication/validation order, default-no confirmation, prompt
+  disable behavior and the original human repository label, including Git.
+- Match piped browser URLs and terminal Opening output; capture the browser
+  invocation through a local stub without starting a login callback.
+- Keep unknown terminal controls escaped in human cells; JSON retains raw data.
+- No new dependencies and no live cache deletions.
+
+Validation: 72 Python/Go cases per executable, including 11 terminal cases.
+Checks include exact request scopes, cancellation without mutation, browser
+target/output and file-free prompt refusal. Go race tests, lint, generated-code
+checks, paired admin checks, fixture typing, comparator tests and workflow
+validation pass. Report hashes match both tested executables.
+
 ## Remaining work
 
-cache/log search/SBOM, configuration/tokens/settings, organization and repository
+Log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;

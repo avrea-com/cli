@@ -30,7 +30,10 @@
     "list_artifacts",
     "get_artifact",
     "artifact_download",
-    "delete_artifact"
+    "delete_artifact",
+    "list_cache_entries",
+    "delete_cache_entries_by_key",
+    "purge_repo_cache"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

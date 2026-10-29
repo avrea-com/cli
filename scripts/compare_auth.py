@@ -170,13 +170,15 @@ def run(executable, scenario, root, host):
         callback_errors = []
         callback_worker = None
         browser_target = home / "browser-target"
-        if scenario.get("login"):
+        if scenario.get("login") or scenario.get("browser_capture"):
             browser = home / "browser.py"
             browser.write_text(
                 "import pathlib,sys; pathlib.Path(" + repr(str(browser_target)) + ").write_text(sys.argv[1])"
             )
             env["AVR_BROWSER"] = '"' + sys.executable + '" "' + str(browser) + '" %s'
             env["BROWSER"] = env["AVR_BROWSER"]
+
+        if scenario.get("login"):
 
             def callback():
                 deadline = time.monotonic() + 15
