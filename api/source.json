@@ -36,7 +36,8 @@
     "purge_repo_cache",
     "list_sboms",
     "get_analysis_for_commit",
-    "get_latest_analysis"
+    "get_latest_analysis",
+    "download_analysis_artifact"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
