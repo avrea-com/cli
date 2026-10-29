@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH, run rerun/cancel, and workflow list/view/run in Go,
+job SSH/watch/metrics, run rerun/cancel, and workflow list/view/run in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -28,6 +28,9 @@ make go-build
 ./build/go/avr job watch --repo OWNER/REPO
 ./build/go/avr job watch --ndjson
 ./build/go/avr job view JOB_ID
+./build/go/avr job metrics JOB_ID
+./build/go/avr job metrics JOB_ID --watch
+./build/go/avr job metrics JOB_ID --source cpu --source network --json
 ./build/go/avr job logs JOB_ID --follow
 ./build/go/avr run logs RUN --job test
 ./build/go/avr job ssh JOB_ID --print-command
@@ -107,6 +110,9 @@ Job commands:
 - `run logs RUN`: job-name filtering, failed jobs, diagnostic opt-in, and paging.
   `--follow` chooses one queued/running job, falling back to the first job,
   matching Python; it does not multiplex every job.
+- `job metrics JOB_ID`: resource gauges with average, peak and last values;
+  repeated source selection, start/end timestamps, raw JSON, and live metrics
+  with a 12-line log tail. Finished jobs use the static view even with --watch.
 - `job ssh JOB_ID`: forwarding setup and system OpenSSH with inherited streams,
   child exit status, cancellation, `--print-command`, and explicit
   `--show-password`. Passwords remain masked by default and are not passed to
