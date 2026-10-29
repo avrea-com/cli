@@ -66,6 +66,93 @@
         "title": "APIResponse[WorkflowRunResponse]",
         "type": "object"
       },
+      "APIResponse_list_WorkflowRunAggregateBucket__": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WorkflowRunAggregateBucket"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[list[WorkflowRunAggregateBucket]]",
+        "type": "object"
+      },
+      "AggregateJobRef": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "AggregateJobRef",
+        "type": "object"
+      },
+      "AggregateStepRef": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "AggregateStepRef",
+        "type": "object"
+      },
+      "AggregateWorkflow": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "platform": {
+            "const": "github",
+            "default": "github",
+            "title": "Platform",
+            "type": "string"
+          },
+          "platform_id": {
+            "title": "Platform Id",
+            "type": "integer"
+          },
+          "repository_full_name": {
+            "title": "Repository Full Name",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "workflow_id": {
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "platform_id",
+          "name",
+          "path",
+          "state",
+          "repository_full_name"
+        ],
+        "title": "AggregateWorkflow",
+        "type": "object"
+      },
       "CIProvider": {
         "enum": [
           "github_actions",
@@ -74,6 +161,111 @@
         ],
         "title": "CIProvider",
         "type": "string"
+      },
+      "CIWorkflowResponse": {
+        "description": "Catalog records distinguish repository platform from execution provider.",
+        "properties": {
+          "attribution_context_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution Context Group Id"
+          },
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "default": "github_actions"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dispatchable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatchable"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/Platform"
+          },
+          "platform_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Id"
+          },
+          "platform_workflow_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Workflow Id"
+          },
+          "repository_full_name": {
+            "title": "Repository Full Name",
+            "type": "string"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workflow_id": {
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "repository_id",
+          "repository_full_name",
+          "name",
+          "path",
+          "state",
+          "created_at",
+          "updated_at",
+          "platform",
+          "platform_id",
+          "platform_workflow_id"
+        ],
+        "title": "CIWorkflowResponse",
+        "type": "object"
       },
       "CancelWorkflowRunResponse": {
         "properties": {
@@ -115,6 +307,574 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobAggregation": {
+        "properties": {
+          "action_required_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Avg Duration Seconds"
+          },
+          "action_required_count": {
+            "title": "Action Required Count",
+            "type": "integer"
+          },
+          "action_required_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Median Duration Seconds"
+          },
+          "action_required_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required P95 Duration Seconds"
+          },
+          "action_required_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Total Duration Seconds"
+          },
+          "avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Duration Seconds"
+          },
+          "cancelled_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Avg Duration Seconds"
+          },
+          "cancelled_count": {
+            "title": "Cancelled Count",
+            "type": "integer"
+          },
+          "cancelled_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Median Duration Seconds"
+          },
+          "cancelled_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled P95 Duration Seconds"
+          },
+          "cancelled_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Total Duration Seconds"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Avg Duration Seconds"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Median Duration Seconds"
+          },
+          "failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure P95 Duration Seconds"
+          },
+          "failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Total Duration Seconds"
+          },
+          "flaked_count": {
+            "title": "Flaked Count",
+            "type": "integer"
+          },
+          "job": {
+            "$ref": "#/components/schemas/AggregateJobRef"
+          },
+          "median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Duration Seconds"
+          },
+          "neutral_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Avg Duration Seconds"
+          },
+          "neutral_count": {
+            "title": "Neutral Count",
+            "type": "integer"
+          },
+          "neutral_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Median Duration Seconds"
+          },
+          "neutral_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral P95 Duration Seconds"
+          },
+          "neutral_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Total Duration Seconds"
+          },
+          "p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Duration Seconds"
+          },
+          "skipped_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Avg Duration Seconds"
+          },
+          "skipped_count": {
+            "title": "Skipped Count",
+            "type": "integer"
+          },
+          "skipped_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Median Duration Seconds"
+          },
+          "skipped_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped P95 Duration Seconds"
+          },
+          "skipped_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Total Duration Seconds"
+          },
+          "stale_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Avg Duration Seconds"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "stale_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Median Duration Seconds"
+          },
+          "stale_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale P95 Duration Seconds"
+          },
+          "stale_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Total Duration Seconds"
+          },
+          "startup_failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Avg Duration Seconds"
+          },
+          "startup_failure_count": {
+            "title": "Startup Failure Count",
+            "type": "integer"
+          },
+          "startup_failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Median Duration Seconds"
+          },
+          "startup_failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure P95 Duration Seconds"
+          },
+          "startup_failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Total Duration Seconds"
+          },
+          "steps": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StepAggregation"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "success_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Avg Duration Seconds"
+          },
+          "success_count": {
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "success_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Median Duration Seconds"
+          },
+          "success_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success P95 Duration Seconds"
+          },
+          "success_run_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run Median Duration Seconds"
+          },
+          "success_run_median_offset_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run Median Offset Seconds"
+          },
+          "success_run_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run P95 Duration Seconds"
+          },
+          "success_run_p95_offset_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run P95 Offset Seconds"
+          },
+          "success_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Total Duration Seconds"
+          },
+          "timed_out_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Avg Duration Seconds"
+          },
+          "timed_out_count": {
+            "title": "Timed Out Count",
+            "type": "integer"
+          },
+          "timed_out_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Median Duration Seconds"
+          },
+          "timed_out_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out P95 Duration Seconds"
+          },
+          "timed_out_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Total Duration Seconds"
+          },
+          "total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Duration Seconds"
+          }
+        },
+        "required": [
+          "count",
+          "completed_count",
+          "flaked_count",
+          "median_duration_seconds",
+          "avg_duration_seconds",
+          "p95_duration_seconds",
+          "total_duration_seconds",
+          "success_count",
+          "failure_count",
+          "neutral_count",
+          "cancelled_count",
+          "skipped_count",
+          "timed_out_count",
+          "action_required_count",
+          "stale_count",
+          "startup_failure_count",
+          "job"
+        ],
+        "title": "JobAggregation",
         "type": "object"
       },
       "JobQueueWait": {
@@ -1184,6 +1944,16 @@
         "title": "PaginationMeta",
         "type": "object"
       },
+      "Platform": {
+        "enum": [
+          "github",
+          "gitlab",
+          "public_git",
+          "avrea"
+        ],
+        "title": "Platform",
+        "type": "string"
+      },
       "RerunWorkflowRunRequest": {
         "description": "Request body for rerunning a workflow run.",
         "properties": {
@@ -1287,6 +2057,566 @@
           "host_key"
         ],
         "title": "SSHForwardingResponse",
+        "type": "object"
+      },
+      "StepAggregation": {
+        "properties": {
+          "action_required_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Avg Duration Seconds"
+          },
+          "action_required_count": {
+            "title": "Action Required Count",
+            "type": "integer"
+          },
+          "action_required_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Median Duration Seconds"
+          },
+          "action_required_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required P95 Duration Seconds"
+          },
+          "action_required_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Total Duration Seconds"
+          },
+          "avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Duration Seconds"
+          },
+          "cancelled_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Avg Duration Seconds"
+          },
+          "cancelled_count": {
+            "title": "Cancelled Count",
+            "type": "integer"
+          },
+          "cancelled_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Median Duration Seconds"
+          },
+          "cancelled_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled P95 Duration Seconds"
+          },
+          "cancelled_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Total Duration Seconds"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Avg Duration Seconds"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Median Duration Seconds"
+          },
+          "failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure P95 Duration Seconds"
+          },
+          "failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Total Duration Seconds"
+          },
+          "flaked_count": {
+            "title": "Flaked Count",
+            "type": "integer"
+          },
+          "median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Duration Seconds"
+          },
+          "neutral_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Avg Duration Seconds"
+          },
+          "neutral_count": {
+            "title": "Neutral Count",
+            "type": "integer"
+          },
+          "neutral_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Median Duration Seconds"
+          },
+          "neutral_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral P95 Duration Seconds"
+          },
+          "neutral_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Total Duration Seconds"
+          },
+          "p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Duration Seconds"
+          },
+          "skipped_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Avg Duration Seconds"
+          },
+          "skipped_count": {
+            "title": "Skipped Count",
+            "type": "integer"
+          },
+          "skipped_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Median Duration Seconds"
+          },
+          "skipped_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped P95 Duration Seconds"
+          },
+          "skipped_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Total Duration Seconds"
+          },
+          "stale_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Avg Duration Seconds"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "stale_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Median Duration Seconds"
+          },
+          "stale_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale P95 Duration Seconds"
+          },
+          "stale_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Total Duration Seconds"
+          },
+          "startup_failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Avg Duration Seconds"
+          },
+          "startup_failure_count": {
+            "title": "Startup Failure Count",
+            "type": "integer"
+          },
+          "startup_failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Median Duration Seconds"
+          },
+          "startup_failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure P95 Duration Seconds"
+          },
+          "startup_failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Total Duration Seconds"
+          },
+          "step": {
+            "$ref": "#/components/schemas/AggregateStepRef"
+          },
+          "success_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Avg Duration Seconds"
+          },
+          "success_count": {
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "success_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Median Duration Seconds"
+          },
+          "success_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success P95 Duration Seconds"
+          },
+          "success_run_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run Median Duration Seconds"
+          },
+          "success_run_median_offset_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run Median Offset Seconds"
+          },
+          "success_run_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run P95 Duration Seconds"
+          },
+          "success_run_p95_offset_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Run P95 Offset Seconds"
+          },
+          "success_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Total Duration Seconds"
+          },
+          "timed_out_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Avg Duration Seconds"
+          },
+          "timed_out_count": {
+            "title": "Timed Out Count",
+            "type": "integer"
+          },
+          "timed_out_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Median Duration Seconds"
+          },
+          "timed_out_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out P95 Duration Seconds"
+          },
+          "timed_out_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Total Duration Seconds"
+          },
+          "total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Duration Seconds"
+          }
+        },
+        "required": [
+          "count",
+          "completed_count",
+          "flaked_count",
+          "median_duration_seconds",
+          "avg_duration_seconds",
+          "p95_duration_seconds",
+          "total_duration_seconds",
+          "success_count",
+          "failure_count",
+          "neutral_count",
+          "cancelled_count",
+          "skipped_count",
+          "timed_out_count",
+          "action_required_count",
+          "stale_count",
+          "startup_failure_count",
+          "step"
+        ],
+        "title": "StepAggregation",
         "type": "object"
       },
       "ValidationError": {
@@ -1507,6 +2837,575 @@
           "updated_at"
         ],
         "title": "WorkflowRun",
+        "type": "object"
+      },
+      "WorkflowRunAggregateBucket": {
+        "properties": {
+          "action_required_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Avg Duration Seconds"
+          },
+          "action_required_count": {
+            "title": "Action Required Count",
+            "type": "integer"
+          },
+          "action_required_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Median Duration Seconds"
+          },
+          "action_required_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required P95 Duration Seconds"
+          },
+          "action_required_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Required Total Duration Seconds"
+          },
+          "avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Duration Seconds"
+          },
+          "cancelled_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Avg Duration Seconds"
+          },
+          "cancelled_count": {
+            "title": "Cancelled Count",
+            "type": "integer"
+          },
+          "cancelled_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Median Duration Seconds"
+          },
+          "cancelled_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled P95 Duration Seconds"
+          },
+          "cancelled_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled Total Duration Seconds"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "end_datetime": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Datetime"
+          },
+          "failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Avg Duration Seconds"
+          },
+          "failure_count": {
+            "title": "Failure Count",
+            "type": "integer"
+          },
+          "failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Median Duration Seconds"
+          },
+          "failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure P95 Duration Seconds"
+          },
+          "failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Total Duration Seconds"
+          },
+          "flaked_count": {
+            "title": "Flaked Count",
+            "type": "integer"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/JobAggregation"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Duration Seconds"
+          },
+          "neutral_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Avg Duration Seconds"
+          },
+          "neutral_count": {
+            "title": "Neutral Count",
+            "type": "integer"
+          },
+          "neutral_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Median Duration Seconds"
+          },
+          "neutral_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral P95 Duration Seconds"
+          },
+          "neutral_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutral Total Duration Seconds"
+          },
+          "p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Duration Seconds"
+          },
+          "skipped_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Avg Duration Seconds"
+          },
+          "skipped_count": {
+            "title": "Skipped Count",
+            "type": "integer"
+          },
+          "skipped_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Median Duration Seconds"
+          },
+          "skipped_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped P95 Duration Seconds"
+          },
+          "skipped_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Total Duration Seconds"
+          },
+          "stale_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Avg Duration Seconds"
+          },
+          "stale_count": {
+            "title": "Stale Count",
+            "type": "integer"
+          },
+          "stale_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Median Duration Seconds"
+          },
+          "stale_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale P95 Duration Seconds"
+          },
+          "stale_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Total Duration Seconds"
+          },
+          "start_datetime": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Datetime"
+          },
+          "startup_failure_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Avg Duration Seconds"
+          },
+          "startup_failure_count": {
+            "title": "Startup Failure Count",
+            "type": "integer"
+          },
+          "startup_failure_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Median Duration Seconds"
+          },
+          "startup_failure_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure P95 Duration Seconds"
+          },
+          "startup_failure_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startup Failure Total Duration Seconds"
+          },
+          "success_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Avg Duration Seconds"
+          },
+          "success_count": {
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "success_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Median Duration Seconds"
+          },
+          "success_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success P95 Duration Seconds"
+          },
+          "success_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Total Duration Seconds"
+          },
+          "timed_out_avg_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Avg Duration Seconds"
+          },
+          "timed_out_count": {
+            "title": "Timed Out Count",
+            "type": "integer"
+          },
+          "timed_out_median_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Median Duration Seconds"
+          },
+          "timed_out_p95_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out P95 Duration Seconds"
+          },
+          "timed_out_total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timed Out Total Duration Seconds"
+          },
+          "total_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Duration Seconds"
+          },
+          "workflow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AggregateWorkflow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          }
+        },
+        "required": [
+          "count",
+          "completed_count",
+          "flaked_count",
+          "median_duration_seconds",
+          "avg_duration_seconds",
+          "p95_duration_seconds",
+          "total_duration_seconds",
+          "success_count",
+          "failure_count",
+          "neutral_count",
+          "cancelled_count",
+          "skipped_count",
+          "timed_out_count",
+          "action_required_count",
+          "stale_count",
+          "startup_failure_count",
+          "start_datetime",
+          "end_datetime",
+          "workflow_id",
+          "workflow",
+          "jobs"
+        ],
+        "title": "WorkflowRunAggregateBucket",
         "type": "object"
       },
       "WorkflowRunHeadCommit": {
@@ -1967,6 +3866,26 @@
           "pagination"
         ],
         "title": "WorkflowRunsListResponse",
+        "type": "object"
+      },
+      "WorkflowsListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CIWorkflowResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "WorkflowsListResponse",
         "type": "object"
       }
     },
@@ -2903,6 +4822,98 @@
         ]
       }
     },
+    "/orgs/{org_id}/repos/{repo_id}/workflows": {
+      "get": {
+        "description": "List tracked GitHub Actions and observed Avrea CI workflows for a repository.\n\nNative identity follows the file path across revisions. Observed entries retain\nhistory after deletion or rename; they do not assert current source availability.",
+        "operationId": "list_repository_workflows_indexed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ci_provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CIProvider"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ci Provider"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowsListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Repository Workflows Indexed",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
     "/orgs/{org_id}/workflow-runs": {
       "get": {
         "description": "List workflow runs for an organization.\n\nResults are filtered through the 24-hour dashboard permission snapshot,\nwith live GitHub fallback for missing or stale private-repository snapshots.\nUses cursor-based pagination: pass next_cursor from the previous response to fetch the next page.\nUse the same order (and filters) when following next_cursor.",
@@ -3416,6 +5427,446 @@
           }
         ],
         "summary": "List Workflow Runs",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/aggregate": {
+      "get": {
+        "description": "Aggregate statistics for workflow runs grouped by workflow and time bucket.\n\nWith no lower time bound at all, results cover the last 7 days rather than\nthe org's whole history (see `AGGREGATE_DEFAULT_WINDOW`). Passing\n`started_after` counts as a bound and suppresses the default.\n\nRun statistics count every attempt. Job and step statistics leave out\n\"Re-run failed jobs\" copies, which repeat a job an earlier attempt already\nran.",
+        "operationId": "aggregate_workflow_runs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "repository_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repository Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "statuses",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "queued",
+                      "pending",
+                      "in_progress",
+                      "completed",
+                      "waiting"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Statuses"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conclusions",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "success",
+                      "failure",
+                      "neutral",
+                      "cancelled",
+                      "skipped",
+                      "timed_out",
+                      "action_required",
+                      "stale",
+                      "startup_failure"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Conclusions"
+            }
+          },
+          {
+            "in": "query",
+            "name": "head_branches",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Head Branches"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triggering_actor_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triggering Actor Platform Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Platform Ids"
+            }
+          },
+          {
+            "description": "Filter runs with at least one job targeting Avrea runners (true) or none (false)",
+            "in": "query",
+            "name": "running_on_avrea",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with at least one job targeting Avrea runners (true) or none (false)",
+              "title": "Running On Avrea"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "started_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "started_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started Before"
+            }
+          },
+          {
+            "description": "Filter runs with duration > value",
+            "in": "query",
+            "name": "duration_seconds.gt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration > value",
+              "title": "Duration Seconds.Gt"
+            }
+          },
+          {
+            "description": "Filter runs with duration >= value",
+            "in": "query",
+            "name": "duration_seconds.gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration >= value",
+              "title": "Duration Seconds.Gte"
+            }
+          },
+          {
+            "description": "Filter runs with duration < value",
+            "in": "query",
+            "name": "duration_seconds.lt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration < value",
+              "title": "Duration Seconds.Lt"
+            }
+          },
+          {
+            "description": "Filter runs with duration <= value",
+            "in": "query",
+            "name": "duration_seconds.lte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration <= value",
+              "title": "Duration Seconds.Lte"
+            }
+          },
+          {
+            "description": "Time bucket granularity",
+            "in": "query",
+            "name": "time_bucket",
+            "required": false,
+            "schema": {
+              "default": "total",
+              "description": "Time bucket granularity",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "total"
+              ],
+              "title": "Time Bucket",
+              "type": "string"
+            }
+          },
+          {
+            "description": "IANA timezone for time bucket boundaries (e.g. America/New_York)",
+            "in": "query",
+            "name": "timezone",
+            "required": false,
+            "schema": {
+              "default": "UTC",
+              "description": "IANA timezone for time bucket boundaries (e.g. America/New_York)",
+              "title": "Timezone",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: jobs, steps)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: jobs, steps)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_list_WorkflowRunAggregateBucket__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aggregate Workflow Runs",
         "tags": [
           "organization-installations"
         ]

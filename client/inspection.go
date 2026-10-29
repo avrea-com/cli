@@ -180,3 +180,18 @@ func (c *Client) Rerun(ctx context.Context, org, id string, failed bool) error {
 	_, err = decodeRecord[wire.RerunWorkflowRunResponse](fields)
 	return err
 }
+
+func (c *Client) WorkflowAggregates(ctx context.Context, org string, query url.Values) (Page[wire.WorkflowRunAggregateBucket], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/aggregate", query)
+	if err != nil {
+		return Page[wire.WorkflowRunAggregateBucket]{}, err
+	}
+	return decodePage[wire.WorkflowRunAggregateBucket](body)
+}
+func (c *Client) RepositoryWorkflows(ctx context.Context, org, repo string, query url.Values) (Page[wire.CIWorkflowResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/workflows", query)
+	if err != nil {
+		return Page[wire.CIWorkflowResponse]{}, err
+	}
+	return decodePage[wire.CIWorkflowResponse](body)
+}

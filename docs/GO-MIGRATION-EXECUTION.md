@@ -37,9 +37,28 @@ Validation:
 - Go tests cover the poll deadline, cancellation and decline without writes.
 - Race tests, vet/lint, schema generation checks and Python tooling checks.
 
+## Workflow inspection batch
+
+Added workflow list/view and the workflows alias, shared with avr-admin.
+The run-control checkpoints are public efa6ea0 and admin cf8eb2ac4d.
+
+Decisions:
+- Preserve sorting before limiting, nested JSON aliases, missing/null values,
+  large platform IDs, repository detection, and the 50-page resolution bound.
+- Match Python's fixed-width tables in terminals and pipes, including colors,
+  underlined headers, per-job sorting, recent runs, hyperlinks and hints.
+- Treat a failed recent-runs fetch as an auxiliary warning after displaying the
+  primary aggregate statistics, as Python does.
+- Keep elapsed-time tolerance limited to the relative cutoff itself; validate
+  that it represents the requested window before normalizing it.
+
+Validation: 72 Python/Go cases per executable, including 12 presentation cases,
+repository lookup errors, Git context, pagination, ambiguous names, empty
+results, field discovery, jq, sorting/limits, relative windows and browser mode.
+
 ## Remaining work
 
-Workflow list/view/run, run diagnose, job metrics/watch, PR/status, artifacts,
+Workflow run, run diagnose, job metrics/watch, PR/status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 all aliases, and a final per-command flag/argument/behavior coverage audit.
