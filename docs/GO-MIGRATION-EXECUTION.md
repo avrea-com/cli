@@ -197,9 +197,37 @@ cases per executable. Go race tests, lint, generated-code checks, paired admin
 checks, fixture typing and workflow validation pass. Report hashes match the
 tested executables.
 
+## Status dashboard batch
+
+Added status, shared with avr-admin.
+Pull-request checkpoints: public c28778e, admin 59ae4cae54.
+
+Decisions:
+- Preserve org/repository/Git selection and the four current/previous aggregate
+  queries. Keep the recent-run query independent of the stats window.
+- Retain success-only medians, minimum sample counts, stable sorting and
+  five-item panel limits. JSON retains all current aggregates; human slowest
+  panels filter them, matching Python.
+- Keep auxiliary aggregate/cache/metadata HTTP and transport failures as
+  visible warnings. Run-list failure remains fatal, and cancellation exits 130.
+- Match panel widths, alignment, colors, underlines, links, cache sizes,
+  repository footer and status legend, including piped human output.
+- Validate the current lookback, previous-period length, shared workflow/job
+  cutoffs and contiguous boundaries before normalizing clock differences.
+- Add explicit dynamic-query fixture endpoints only for moving-window tests.
+  Exact routes take precedence and every original request query is retained.
+  Existing fixtures retain their prior matching behavior.
+- No new dependencies, remote mutations or request-parallelism change.
+
+Validation: 44 Python/Go cases per executable, including nine terminal cases.
+Focused tests cover transport warnings, fixed-clock bounds and cancellation;
+four new comparator/fixture tests reject wrong windows and dropped periods.
+All 42 comparator regression tests, Go race tests, lint, schema generation,
+fixture typing, workflow validation and paired admin checks pass.
+
 ## Remaining work
 
-Status, artifacts,
+Artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.

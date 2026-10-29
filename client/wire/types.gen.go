@@ -441,6 +441,24 @@ func (e PullMergeabilityStatus) Valid() bool {
 	}
 }
 
+// Defines values for RepoCachePurgeStatusState.
+const (
+	RepoCachePurgeStatusStateQueued  RepoCachePurgeStatusState = "queued"
+	RepoCachePurgeStatusStateRunning RepoCachePurgeStatusState = "running"
+)
+
+// Valid indicates whether the value is a known member of the RepoCachePurgeStatusState enum.
+func (e RepoCachePurgeStatusState) Valid() bool {
+	switch e {
+	case RepoCachePurgeStatusStateQueued:
+		return true
+	case RepoCachePurgeStatusStateRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RerunWorkflowRunResponseStatus.
 const (
 	RerunRequested RerunWorkflowRunResponseStatus = "rerun_requested"
@@ -663,6 +681,87 @@ func (e ListJobsParamsOrder) Valid() bool {
 	case ListJobsParamsOrderDurationSecondsAsc:
 		return true
 	case ListJobsParamsOrderDurationSecondsDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AggregateJobsParamsStates.
+const (
+	AggregateJobsParamsStatesCompleted  AggregateJobsParamsStates = "completed"
+	AggregateJobsParamsStatesInProgress AggregateJobsParamsStates = "in_progress"
+	AggregateJobsParamsStatesQueued     AggregateJobsParamsStates = "queued"
+	AggregateJobsParamsStatesWaiting    AggregateJobsParamsStates = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the AggregateJobsParamsStates enum.
+func (e AggregateJobsParamsStates) Valid() bool {
+	switch e {
+	case AggregateJobsParamsStatesCompleted:
+		return true
+	case AggregateJobsParamsStatesInProgress:
+		return true
+	case AggregateJobsParamsStatesQueued:
+		return true
+	case AggregateJobsParamsStatesWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AggregateJobsParamsConclusions.
+const (
+	AggregateJobsParamsConclusionsActionRequired AggregateJobsParamsConclusions = "action_required"
+	AggregateJobsParamsConclusionsCancelled      AggregateJobsParamsConclusions = "cancelled"
+	AggregateJobsParamsConclusionsFailure        AggregateJobsParamsConclusions = "failure"
+	AggregateJobsParamsConclusionsNeutral        AggregateJobsParamsConclusions = "neutral"
+	AggregateJobsParamsConclusionsSkipped        AggregateJobsParamsConclusions = "skipped"
+	AggregateJobsParamsConclusionsSuccess        AggregateJobsParamsConclusions = "success"
+	AggregateJobsParamsConclusionsTimedOut       AggregateJobsParamsConclusions = "timed_out"
+)
+
+// Valid indicates whether the value is a known member of the AggregateJobsParamsConclusions enum.
+func (e AggregateJobsParamsConclusions) Valid() bool {
+	switch e {
+	case AggregateJobsParamsConclusionsActionRequired:
+		return true
+	case AggregateJobsParamsConclusionsCancelled:
+		return true
+	case AggregateJobsParamsConclusionsFailure:
+		return true
+	case AggregateJobsParamsConclusionsNeutral:
+		return true
+	case AggregateJobsParamsConclusionsSkipped:
+		return true
+	case AggregateJobsParamsConclusionsSuccess:
+		return true
+	case AggregateJobsParamsConclusionsTimedOut:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AggregateJobsParamsTimeBucket.
+const (
+	AggregateJobsParamsTimeBucketDay   AggregateJobsParamsTimeBucket = "day"
+	AggregateJobsParamsTimeBucketMonth AggregateJobsParamsTimeBucket = "month"
+	AggregateJobsParamsTimeBucketTotal AggregateJobsParamsTimeBucket = "total"
+	AggregateJobsParamsTimeBucketWeek  AggregateJobsParamsTimeBucket = "week"
+)
+
+// Valid indicates whether the value is a known member of the AggregateJobsParamsTimeBucket enum.
+func (e AggregateJobsParamsTimeBucket) Valid() bool {
+	switch e {
+	case AggregateJobsParamsTimeBucketDay:
+		return true
+	case AggregateJobsParamsTimeBucketMonth:
+		return true
+	case AggregateJobsParamsTimeBucketTotal:
+		return true
+	case AggregateJobsParamsTimeBucketWeek:
 		return true
 	default:
 		return false
@@ -920,22 +1019,22 @@ func (e AggregateWorkflowRunsParamsConclusions) Valid() bool {
 
 // Defines values for AggregateWorkflowRunsParamsTimeBucket.
 const (
-	Day   AggregateWorkflowRunsParamsTimeBucket = "day"
-	Month AggregateWorkflowRunsParamsTimeBucket = "month"
-	Total AggregateWorkflowRunsParamsTimeBucket = "total"
-	Week  AggregateWorkflowRunsParamsTimeBucket = "week"
+	AggregateWorkflowRunsParamsTimeBucketDay   AggregateWorkflowRunsParamsTimeBucket = "day"
+	AggregateWorkflowRunsParamsTimeBucketMonth AggregateWorkflowRunsParamsTimeBucket = "month"
+	AggregateWorkflowRunsParamsTimeBucketTotal AggregateWorkflowRunsParamsTimeBucket = "total"
+	AggregateWorkflowRunsParamsTimeBucketWeek  AggregateWorkflowRunsParamsTimeBucket = "week"
 )
 
 // Valid indicates whether the value is a known member of the AggregateWorkflowRunsParamsTimeBucket enum.
 func (e AggregateWorkflowRunsParamsTimeBucket) Valid() bool {
 	switch e {
-	case Day:
+	case AggregateWorkflowRunsParamsTimeBucketDay:
 		return true
-	case Month:
+	case AggregateWorkflowRunsParamsTimeBucketMonth:
 		return true
-	case Total:
+	case AggregateWorkflowRunsParamsTimeBucketTotal:
 		return true
-	case Week:
+	case AggregateWorkflowRunsParamsTimeBucketWeek:
 		return true
 	default:
 		return false
@@ -1005,6 +1104,11 @@ type APIResponseWorkflowRunResponse struct {
 	Data WorkflowRunResponse `json:"data"`
 }
 
+// APIResponseListJobAggregateBucket defines model for APIResponse_list_JobAggregateBucket__.
+type APIResponseListJobAggregateBucket struct {
+	Data []JobAggregateBucket `json:"data"`
+}
+
 // APIResponseListWorkflowRunAggregateBucket defines model for APIResponse_list_WorkflowRunAggregateBucket__.
 type APIResponseListWorkflowRunAggregateBucket struct {
 	Data []WorkflowRunAggregateBucket `json:"data"`
@@ -1057,6 +1161,43 @@ type CIWorkflowResponse struct {
 	UpdatedAt                 time.Time                 `json:"updated_at"`
 	WorkflowId                string                    `json:"workflow_id"`
 	AdditionalProperties      map[string]interface{}    `json:"-"`
+}
+
+// CacheLruEviction The repository's most recent quota-driven (least-recently-used) eviction.
+//
+// Entries last used at or before `cutoff_accessed_at` were deleted at
+// `evicted_at`, so the gap between the two is how long an unused entry
+// stayed cached. Entries never accessed since upload count from upload.
+type CacheLruEviction struct {
+	CutoffAccessedAt     time.Time              `json:"cutoff_accessed_at"`
+	EvictedAt            time.Time              `json:"evicted_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CacheUsageByTypeResponse defines model for CacheUsageByTypeResponse.
+type CacheUsageByTypeResponse struct {
+	CacheType            string                       `json:"cache_type"`
+	EntryCount           int                          `json:"entry_count"`
+	LastReconciledAt     nullable.Nullable[time.Time] `json:"last_reconciled_at"`
+	SizeBytes            int                          `json:"size_bytes"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
+}
+
+// CacheUsageResponse defines model for CacheUsageResponse.
+type CacheUsageResponse struct {
+	Data                 CacheUsageSummary      `json:"data"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CacheUsageSummary defines model for CacheUsageSummary.
+type CacheUsageSummary struct {
+	ByType               []CacheUsageByTypeResponse              `json:"by_type"`
+	LruEviction          nullable.Nullable[CacheLruEviction]     `json:"lru_eviction,omitempty"`
+	OverQuota            bool                                    `json:"over_quota"`
+	Purge                nullable.Nullable[RepoCachePurgeStatus] `json:"purge,omitempty"`
+	QuotaBytes           int                                     `json:"quota_bytes"`
+	TotalSizeBytes       int                                     `json:"total_size_bytes"`
+	AdditionalProperties map[string]interface{}                  `json:"-"`
 }
 
 // CancelWorkflowRunResponse defines model for CancelWorkflowRunResponse.
@@ -1112,6 +1253,67 @@ type GovernanceHoldReason string
 type HTTPValidationError struct {
 	Detail               *[]ValidationError     `json:"detail,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// JobAggregateBucket defines model for JobAggregateBucket.
+type JobAggregateBucket struct {
+	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64]   `json:"action_required_avg_duration_seconds,omitempty"`
+	ActionRequiredCount                 int                          `json:"action_required_count"`
+	ActionRequiredMedianDurationSeconds nullable.Nullable[float64]   `json:"action_required_median_duration_seconds,omitempty"`
+	ActionRequiredP95DurationSeconds    nullable.Nullable[float64]   `json:"action_required_p95_duration_seconds,omitempty"`
+	ActionRequiredTotalDurationSeconds  nullable.Nullable[float64]   `json:"action_required_total_duration_seconds,omitempty"`
+	AvgDurationSeconds                  nullable.Nullable[float64]   `json:"avg_duration_seconds"`
+	CancelledAvgDurationSeconds         nullable.Nullable[float64]   `json:"cancelled_avg_duration_seconds,omitempty"`
+	CancelledCount                      int                          `json:"cancelled_count"`
+	CancelledMedianDurationSeconds      nullable.Nullable[float64]   `json:"cancelled_median_duration_seconds,omitempty"`
+	CancelledP95DurationSeconds         nullable.Nullable[float64]   `json:"cancelled_p95_duration_seconds,omitempty"`
+	CancelledTotalDurationSeconds       nullable.Nullable[float64]   `json:"cancelled_total_duration_seconds,omitempty"`
+	CompletedCount                      int                          `json:"completed_count"`
+	Count                               int                          `json:"count"`
+	EndDatetime                         nullable.Nullable[time.Time] `json:"end_datetime"`
+	FailureAvgDurationSeconds           nullable.Nullable[float64]   `json:"failure_avg_duration_seconds,omitempty"`
+	FailureCount                        int                          `json:"failure_count"`
+	FailureMedianDurationSeconds        nullable.Nullable[float64]   `json:"failure_median_duration_seconds,omitempty"`
+	FailureP95DurationSeconds           nullable.Nullable[float64]   `json:"failure_p95_duration_seconds,omitempty"`
+	FailureTotalDurationSeconds         nullable.Nullable[float64]   `json:"failure_total_duration_seconds,omitempty"`
+	FlakedCount                         int                          `json:"flaked_count"`
+	Job                                 AggregateJobRef              `json:"job"`
+	MedianDurationSeconds               nullable.Nullable[float64]   `json:"median_duration_seconds"`
+	NeutralAvgDurationSeconds           nullable.Nullable[float64]   `json:"neutral_avg_duration_seconds,omitempty"`
+	NeutralCount                        int                          `json:"neutral_count"`
+	NeutralMedianDurationSeconds        nullable.Nullable[float64]   `json:"neutral_median_duration_seconds,omitempty"`
+	NeutralP95DurationSeconds           nullable.Nullable[float64]   `json:"neutral_p95_duration_seconds,omitempty"`
+	NeutralTotalDurationSeconds         nullable.Nullable[float64]   `json:"neutral_total_duration_seconds,omitempty"`
+	P95DurationSeconds                  nullable.Nullable[float64]   `json:"p95_duration_seconds"`
+	SkippedAvgDurationSeconds           nullable.Nullable[float64]   `json:"skipped_avg_duration_seconds,omitempty"`
+	SkippedCount                        int                          `json:"skipped_count"`
+	SkippedMedianDurationSeconds        nullable.Nullable[float64]   `json:"skipped_median_duration_seconds,omitempty"`
+	SkippedP95DurationSeconds           nullable.Nullable[float64]   `json:"skipped_p95_duration_seconds,omitempty"`
+	SkippedTotalDurationSeconds         nullable.Nullable[float64]   `json:"skipped_total_duration_seconds,omitempty"`
+	StaleAvgDurationSeconds             nullable.Nullable[float64]   `json:"stale_avg_duration_seconds,omitempty"`
+	StaleCount                          int                          `json:"stale_count"`
+	StaleMedianDurationSeconds          nullable.Nullable[float64]   `json:"stale_median_duration_seconds,omitempty"`
+	StaleP95DurationSeconds             nullable.Nullable[float64]   `json:"stale_p95_duration_seconds,omitempty"`
+	StaleTotalDurationSeconds           nullable.Nullable[float64]   `json:"stale_total_duration_seconds,omitempty"`
+	StartDatetime                       nullable.Nullable[time.Time] `json:"start_datetime"`
+	StartupFailureAvgDurationSeconds    nullable.Nullable[float64]   `json:"startup_failure_avg_duration_seconds,omitempty"`
+	StartupFailureCount                 int                          `json:"startup_failure_count"`
+	StartupFailureMedianDurationSeconds nullable.Nullable[float64]   `json:"startup_failure_median_duration_seconds,omitempty"`
+	StartupFailureP95DurationSeconds    nullable.Nullable[float64]   `json:"startup_failure_p95_duration_seconds,omitempty"`
+	StartupFailureTotalDurationSeconds  nullable.Nullable[float64]   `json:"startup_failure_total_duration_seconds,omitempty"`
+	Steps                               []StepAggregation            `json:"steps"`
+	SuccessAvgDurationSeconds           nullable.Nullable[float64]   `json:"success_avg_duration_seconds,omitempty"`
+	SuccessCount                        int                          `json:"success_count"`
+	SuccessMedianDurationSeconds        nullable.Nullable[float64]   `json:"success_median_duration_seconds,omitempty"`
+	SuccessP95DurationSeconds           nullable.Nullable[float64]   `json:"success_p95_duration_seconds,omitempty"`
+	SuccessTotalDurationSeconds         nullable.Nullable[float64]   `json:"success_total_duration_seconds,omitempty"`
+	TimedOutAvgDurationSeconds          nullable.Nullable[float64]   `json:"timed_out_avg_duration_seconds,omitempty"`
+	TimedOutCount                       int                          `json:"timed_out_count"`
+	TimedOutMedianDurationSeconds       nullable.Nullable[float64]   `json:"timed_out_median_duration_seconds,omitempty"`
+	TimedOutP95DurationSeconds          nullable.Nullable[float64]   `json:"timed_out_p95_duration_seconds,omitempty"`
+	TimedOutTotalDurationSeconds        nullable.Nullable[float64]   `json:"timed_out_total_duration_seconds,omitempty"`
+	TotalDurationSeconds                nullable.Nullable[float64]   `json:"total_duration_seconds"`
+	AdditionalProperties                map[string]interface{}       `json:"-"`
 }
 
 // JobAggregation defines model for JobAggregation.
@@ -1597,6 +1799,30 @@ type PullMergeability struct {
 // PullMergeabilityStatus defines model for PullMergeability.Status.
 type PullMergeabilityStatus string
 
+// RepoCachePurgeStatus Live state of this repository's cache purge.
+//
+// Deliberately not a deleted count: the purge runs in the cache worker, so
+// nothing has been deleted when the DELETE returns.
+//
+// Only two states are observable, and the absent case carries the most
+// weight. `queued` means enqueued but not yet leased by a worker; `running`
+// means a worker holds the lease. No status at all means the purge
+// finished -- the cache worker only ever marks a task completed, and only on
+// success, so nothing else takes a row out of the live window.
+//
+// A purge that keeps failing is not observable here: it stays leased and is
+// re-dispatched every visibility timeout, forever, without ever recording a
+// retry count or an error. `requested_at` growing far past the timeout is
+// the only stuck signal that exists.
+type RepoCachePurgeStatus struct {
+	RequestedAt          time.Time                 `json:"requested_at"`
+	State                RepoCachePurgeStatusState `json:"state"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// RepoCachePurgeStatusState defines model for RepoCachePurgeStatus.State.
+type RepoCachePurgeStatusState string
+
 // RerunWorkflowRunRequest Request body for rerunning a workflow run.
 type RerunWorkflowRunRequest struct {
 	// FailedOnly If true, re-run only the failed jobs
@@ -2016,6 +2242,87 @@ type ListJobsParamsDurationSecondsLte1 = string
 // ListJobsParamsOrder defines parameters for ListJobs.
 type ListJobsParamsOrder string
 
+// AggregateJobsParams defines parameters for AggregateJobs.
+type AggregateJobsParams struct {
+	RepositoryIds *[]string                         `form:"repository_ids,omitempty" json:"repository_ids,omitempty"`
+	JobNames      *[]string                         `form:"job_names,omitempty" json:"job_names,omitempty"`
+	States        *[]AggregateJobsParamsStates      `form:"states,omitempty" json:"states,omitempty"`
+	Conclusions   *[]AggregateJobsParamsConclusions `form:"conclusions,omitempty" json:"conclusions,omitempty"`
+
+	// RunningOnAvrea Filter by whether the job targets Avrea runners (true) or other runners (false)
+	RunningOnAvrea             *bool      `form:"running_on_avrea,omitempty" json:"running_on_avrea,omitempty"`
+	TriggeringActorPlatformIds *[]int     `form:"triggering_actor_platform_ids,omitempty" json:"triggering_actor_platform_ids,omitempty"`
+	WorkflowIds                *[]string  `form:"workflow_ids,omitempty" json:"workflow_ids,omitempty"`
+	WorkflowPlatformIds        *[]int     `form:"workflow_platform_ids,omitempty" json:"workflow_platform_ids,omitempty"`
+	WorkflowRunIds             *[]string  `form:"workflow_run_ids,omitempty" json:"workflow_run_ids,omitempty"`
+	WorkflowRunPlatformIds     *[]int     `form:"workflow_run_platform_ids,omitempty" json:"workflow_run_platform_ids,omitempty"`
+	CreatedAfter               *time.Time `form:"created_after,omitempty" json:"created_after,omitempty"`
+	CreatedBefore              *time.Time `form:"created_before,omitempty" json:"created_before,omitempty"`
+
+	// DurationSecondsGt Filter jobs with duration > value
+	DurationSecondsGt *struct {
+		union json.RawMessage
+	} `form:"duration_seconds.gt,omitempty" json:"duration_seconds.gt,omitempty"`
+
+	// DurationSecondsGte Filter jobs with duration >= value
+	DurationSecondsGte *struct {
+		union json.RawMessage
+	} `form:"duration_seconds.gte,omitempty" json:"duration_seconds.gte,omitempty"`
+
+	// DurationSecondsLt Filter jobs with duration < value
+	DurationSecondsLt *struct {
+		union json.RawMessage
+	} `form:"duration_seconds.lt,omitempty" json:"duration_seconds.lt,omitempty"`
+
+	// DurationSecondsLte Filter jobs with duration <= value
+	DurationSecondsLte *struct {
+		union json.RawMessage
+	} `form:"duration_seconds.lte,omitempty" json:"duration_seconds.lte,omitempty"`
+
+	// TimeBucket Time bucket granularity
+	TimeBucket *AggregateJobsParamsTimeBucket `form:"time_bucket,omitempty" json:"time_bucket,omitempty"`
+
+	// Timezone IANA timezone for time bucket boundaries (e.g. America/New_York)
+	Timezone *string `form:"timezone,omitempty" json:"timezone,omitempty"`
+
+	// Include Sub-objects to include (default: steps)
+	Include      *[]string `form:"include,omitempty" json:"include,omitempty"`
+	AvreaSession *string   `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// AggregateJobsParamsStates defines parameters for AggregateJobs.
+type AggregateJobsParamsStates string
+
+// AggregateJobsParamsConclusions defines parameters for AggregateJobs.
+type AggregateJobsParamsConclusions string
+
+// AggregateJobsParamsDurationSecondsGt0 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsGt0 = float64
+
+// AggregateJobsParamsDurationSecondsGt1 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsGt1 = string
+
+// AggregateJobsParamsDurationSecondsGte0 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsGte0 = float64
+
+// AggregateJobsParamsDurationSecondsGte1 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsGte1 = string
+
+// AggregateJobsParamsDurationSecondsLt0 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsLt0 = float64
+
+// AggregateJobsParamsDurationSecondsLt1 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsLt1 = string
+
+// AggregateJobsParamsDurationSecondsLte0 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsLte0 = float64
+
+// AggregateJobsParamsDurationSecondsLte1 defines parameters for AggregateJobs.
+type AggregateJobsParamsDurationSecondsLte1 = string
+
+// AggregateJobsParamsTimeBucket defines parameters for AggregateJobs.
+type AggregateJobsParamsTimeBucket string
+
 // GetJobParams defines parameters for GetJob.
 type GetJobParams struct {
 	// Include Sub-objects to include (default: steps)
@@ -2094,6 +2401,11 @@ type ResolveOrganizationRepositoryParamsPlatform string
 
 // GetOrganizationRepositoryParams defines parameters for GetOrganizationRepository.
 type GetOrganizationRepositoryParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetCacheUsageParams defines parameters for GetCacheUsage.
+type GetCacheUsageParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -2878,6 +3190,393 @@ func (a CIWorkflowResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for CacheLruEviction. Returns the specified
+// element and whether it was found
+func (a CacheLruEviction) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheLruEviction
+func (a *CacheLruEviction) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheLruEviction to handle AdditionalProperties
+func (a *CacheLruEviction) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cutoff_accessed_at"]; found {
+		err = json.Unmarshal(raw, &a.CutoffAccessedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'cutoff_accessed_at': %w", err)
+		}
+		delete(object, "cutoff_accessed_at")
+	}
+
+	if raw, found := object["evicted_at"]; found {
+		err = json.Unmarshal(raw, &a.EvictedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'evicted_at': %w", err)
+		}
+		delete(object, "evicted_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheLruEviction to handle AdditionalProperties
+func (a CacheLruEviction) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cutoff_accessed_at"], err = json.Marshal(a.CutoffAccessedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cutoff_accessed_at': %w", err)
+	}
+
+	object["evicted_at"], err = json.Marshal(a.EvictedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'evicted_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheUsageByTypeResponse. Returns the specified
+// element and whether it was found
+func (a CacheUsageByTypeResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheUsageByTypeResponse
+func (a *CacheUsageByTypeResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheUsageByTypeResponse to handle AdditionalProperties
+func (a *CacheUsageByTypeResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cache_type"]; found {
+		err = json.Unmarshal(raw, &a.CacheType)
+		if err != nil {
+			return fmt.Errorf("error reading 'cache_type': %w", err)
+		}
+		delete(object, "cache_type")
+	}
+
+	if raw, found := object["entry_count"]; found {
+		err = json.Unmarshal(raw, &a.EntryCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'entry_count': %w", err)
+		}
+		delete(object, "entry_count")
+	}
+
+	if raw, found := object["last_reconciled_at"]; found {
+		err = json.Unmarshal(raw, &a.LastReconciledAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_reconciled_at': %w", err)
+		}
+		delete(object, "last_reconciled_at")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheUsageByTypeResponse to handle AdditionalProperties
+func (a CacheUsageByTypeResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cache_type"], err = json.Marshal(a.CacheType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cache_type': %w", err)
+	}
+
+	object["entry_count"], err = json.Marshal(a.EntryCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'entry_count': %w", err)
+	}
+
+	object["last_reconciled_at"], err = json.Marshal(a.LastReconciledAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'last_reconciled_at': %w", err)
+	}
+
+	object["size_bytes"], err = json.Marshal(a.SizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheUsageResponse. Returns the specified
+// element and whether it was found
+func (a CacheUsageResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheUsageResponse
+func (a *CacheUsageResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheUsageResponse to handle AdditionalProperties
+func (a *CacheUsageResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheUsageResponse to handle AdditionalProperties
+func (a CacheUsageResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["data"], err = json.Marshal(a.Data)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'data': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheUsageSummary. Returns the specified
+// element and whether it was found
+func (a CacheUsageSummary) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheUsageSummary
+func (a *CacheUsageSummary) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheUsageSummary to handle AdditionalProperties
+func (a *CacheUsageSummary) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["by_type"]; found {
+		err = json.Unmarshal(raw, &a.ByType)
+		if err != nil {
+			return fmt.Errorf("error reading 'by_type': %w", err)
+		}
+		delete(object, "by_type")
+	}
+
+	if raw, found := object["lru_eviction"]; found {
+		err = json.Unmarshal(raw, &a.LruEviction)
+		if err != nil {
+			return fmt.Errorf("error reading 'lru_eviction': %w", err)
+		}
+		delete(object, "lru_eviction")
+	}
+
+	if raw, found := object["over_quota"]; found {
+		err = json.Unmarshal(raw, &a.OverQuota)
+		if err != nil {
+			return fmt.Errorf("error reading 'over_quota': %w", err)
+		}
+		delete(object, "over_quota")
+	}
+
+	if raw, found := object["purge"]; found {
+		err = json.Unmarshal(raw, &a.Purge)
+		if err != nil {
+			return fmt.Errorf("error reading 'purge': %w", err)
+		}
+		delete(object, "purge")
+	}
+
+	if raw, found := object["quota_bytes"]; found {
+		err = json.Unmarshal(raw, &a.QuotaBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'quota_bytes': %w", err)
+		}
+		delete(object, "quota_bytes")
+	}
+
+	if raw, found := object["total_size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.TotalSizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_size_bytes': %w", err)
+		}
+		delete(object, "total_size_bytes")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheUsageSummary to handle AdditionalProperties
+func (a CacheUsageSummary) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ByType != nil {
+		object["by_type"], err = json.Marshal(a.ByType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'by_type': %w", err)
+		}
+	}
+
+	if a.LruEviction != nil {
+		object["lru_eviction"], err = json.Marshal(a.LruEviction)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'lru_eviction': %w", err)
+		}
+	}
+
+	object["over_quota"], err = json.Marshal(a.OverQuota)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'over_quota': %w", err)
+	}
+
+	if a.Purge != nil {
+		object["purge"], err = json.Marshal(a.Purge)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'purge': %w", err)
+		}
+	}
+
+	object["quota_bytes"], err = json.Marshal(a.QuotaBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'quota_bytes': %w", err)
+	}
+
+	object["total_size_bytes"], err = json.Marshal(a.TotalSizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_size_bytes': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for CancelWorkflowRunResponse. Returns the specified
 // element and whether it was found
 func (a CancelWorkflowRunResponse) Get(fieldName string) (value interface{}, found bool) {
@@ -3296,6 +3995,861 @@ func (a HTTPValidationError) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'detail': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for JobAggregateBucket. Returns the specified
+// element and whether it was found
+func (a JobAggregateBucket) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for JobAggregateBucket
+func (a *JobAggregateBucket) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for JobAggregateBucket to handle AdditionalProperties
+func (a *JobAggregateBucket) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["action_required_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.ActionRequiredAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'action_required_avg_duration_seconds': %w", err)
+		}
+		delete(object, "action_required_avg_duration_seconds")
+	}
+
+	if raw, found := object["action_required_count"]; found {
+		err = json.Unmarshal(raw, &a.ActionRequiredCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'action_required_count': %w", err)
+		}
+		delete(object, "action_required_count")
+	}
+
+	if raw, found := object["action_required_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.ActionRequiredMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'action_required_median_duration_seconds': %w", err)
+		}
+		delete(object, "action_required_median_duration_seconds")
+	}
+
+	if raw, found := object["action_required_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.ActionRequiredP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'action_required_p95_duration_seconds': %w", err)
+		}
+		delete(object, "action_required_p95_duration_seconds")
+	}
+
+	if raw, found := object["action_required_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.ActionRequiredTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'action_required_total_duration_seconds': %w", err)
+		}
+		delete(object, "action_required_total_duration_seconds")
+	}
+
+	if raw, found := object["avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.AvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'avg_duration_seconds': %w", err)
+		}
+		delete(object, "avg_duration_seconds")
+	}
+
+	if raw, found := object["cancelled_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.CancelledAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancelled_avg_duration_seconds': %w", err)
+		}
+		delete(object, "cancelled_avg_duration_seconds")
+	}
+
+	if raw, found := object["cancelled_count"]; found {
+		err = json.Unmarshal(raw, &a.CancelledCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancelled_count': %w", err)
+		}
+		delete(object, "cancelled_count")
+	}
+
+	if raw, found := object["cancelled_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.CancelledMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancelled_median_duration_seconds': %w", err)
+		}
+		delete(object, "cancelled_median_duration_seconds")
+	}
+
+	if raw, found := object["cancelled_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.CancelledP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancelled_p95_duration_seconds': %w", err)
+		}
+		delete(object, "cancelled_p95_duration_seconds")
+	}
+
+	if raw, found := object["cancelled_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.CancelledTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'cancelled_total_duration_seconds': %w", err)
+		}
+		delete(object, "cancelled_total_duration_seconds")
+	}
+
+	if raw, found := object["completed_count"]; found {
+		err = json.Unmarshal(raw, &a.CompletedCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_count': %w", err)
+		}
+		delete(object, "completed_count")
+	}
+
+	if raw, found := object["count"]; found {
+		err = json.Unmarshal(raw, &a.Count)
+		if err != nil {
+			return fmt.Errorf("error reading 'count': %w", err)
+		}
+		delete(object, "count")
+	}
+
+	if raw, found := object["end_datetime"]; found {
+		err = json.Unmarshal(raw, &a.EndDatetime)
+		if err != nil {
+			return fmt.Errorf("error reading 'end_datetime': %w", err)
+		}
+		delete(object, "end_datetime")
+	}
+
+	if raw, found := object["failure_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.FailureAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'failure_avg_duration_seconds': %w", err)
+		}
+		delete(object, "failure_avg_duration_seconds")
+	}
+
+	if raw, found := object["failure_count"]; found {
+		err = json.Unmarshal(raw, &a.FailureCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'failure_count': %w", err)
+		}
+		delete(object, "failure_count")
+	}
+
+	if raw, found := object["failure_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.FailureMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'failure_median_duration_seconds': %w", err)
+		}
+		delete(object, "failure_median_duration_seconds")
+	}
+
+	if raw, found := object["failure_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.FailureP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'failure_p95_duration_seconds': %w", err)
+		}
+		delete(object, "failure_p95_duration_seconds")
+	}
+
+	if raw, found := object["failure_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.FailureTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'failure_total_duration_seconds': %w", err)
+		}
+		delete(object, "failure_total_duration_seconds")
+	}
+
+	if raw, found := object["flaked_count"]; found {
+		err = json.Unmarshal(raw, &a.FlakedCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'flaked_count': %w", err)
+		}
+		delete(object, "flaked_count")
+	}
+
+	if raw, found := object["job"]; found {
+		err = json.Unmarshal(raw, &a.Job)
+		if err != nil {
+			return fmt.Errorf("error reading 'job': %w", err)
+		}
+		delete(object, "job")
+	}
+
+	if raw, found := object["median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.MedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'median_duration_seconds': %w", err)
+		}
+		delete(object, "median_duration_seconds")
+	}
+
+	if raw, found := object["neutral_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.NeutralAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'neutral_avg_duration_seconds': %w", err)
+		}
+		delete(object, "neutral_avg_duration_seconds")
+	}
+
+	if raw, found := object["neutral_count"]; found {
+		err = json.Unmarshal(raw, &a.NeutralCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'neutral_count': %w", err)
+		}
+		delete(object, "neutral_count")
+	}
+
+	if raw, found := object["neutral_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.NeutralMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'neutral_median_duration_seconds': %w", err)
+		}
+		delete(object, "neutral_median_duration_seconds")
+	}
+
+	if raw, found := object["neutral_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.NeutralP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'neutral_p95_duration_seconds': %w", err)
+		}
+		delete(object, "neutral_p95_duration_seconds")
+	}
+
+	if raw, found := object["neutral_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.NeutralTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'neutral_total_duration_seconds': %w", err)
+		}
+		delete(object, "neutral_total_duration_seconds")
+	}
+
+	if raw, found := object["p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.P95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'p95_duration_seconds': %w", err)
+		}
+		delete(object, "p95_duration_seconds")
+	}
+
+	if raw, found := object["skipped_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SkippedAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'skipped_avg_duration_seconds': %w", err)
+		}
+		delete(object, "skipped_avg_duration_seconds")
+	}
+
+	if raw, found := object["skipped_count"]; found {
+		err = json.Unmarshal(raw, &a.SkippedCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'skipped_count': %w", err)
+		}
+		delete(object, "skipped_count")
+	}
+
+	if raw, found := object["skipped_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SkippedMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'skipped_median_duration_seconds': %w", err)
+		}
+		delete(object, "skipped_median_duration_seconds")
+	}
+
+	if raw, found := object["skipped_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SkippedP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'skipped_p95_duration_seconds': %w", err)
+		}
+		delete(object, "skipped_p95_duration_seconds")
+	}
+
+	if raw, found := object["skipped_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SkippedTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'skipped_total_duration_seconds': %w", err)
+		}
+		delete(object, "skipped_total_duration_seconds")
+	}
+
+	if raw, found := object["stale_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StaleAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale_avg_duration_seconds': %w", err)
+		}
+		delete(object, "stale_avg_duration_seconds")
+	}
+
+	if raw, found := object["stale_count"]; found {
+		err = json.Unmarshal(raw, &a.StaleCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale_count': %w", err)
+		}
+		delete(object, "stale_count")
+	}
+
+	if raw, found := object["stale_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StaleMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale_median_duration_seconds': %w", err)
+		}
+		delete(object, "stale_median_duration_seconds")
+	}
+
+	if raw, found := object["stale_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StaleP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale_p95_duration_seconds': %w", err)
+		}
+		delete(object, "stale_p95_duration_seconds")
+	}
+
+	if raw, found := object["stale_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StaleTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale_total_duration_seconds': %w", err)
+		}
+		delete(object, "stale_total_duration_seconds")
+	}
+
+	if raw, found := object["start_datetime"]; found {
+		err = json.Unmarshal(raw, &a.StartDatetime)
+		if err != nil {
+			return fmt.Errorf("error reading 'start_datetime': %w", err)
+		}
+		delete(object, "start_datetime")
+	}
+
+	if raw, found := object["startup_failure_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StartupFailureAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'startup_failure_avg_duration_seconds': %w", err)
+		}
+		delete(object, "startup_failure_avg_duration_seconds")
+	}
+
+	if raw, found := object["startup_failure_count"]; found {
+		err = json.Unmarshal(raw, &a.StartupFailureCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'startup_failure_count': %w", err)
+		}
+		delete(object, "startup_failure_count")
+	}
+
+	if raw, found := object["startup_failure_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StartupFailureMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'startup_failure_median_duration_seconds': %w", err)
+		}
+		delete(object, "startup_failure_median_duration_seconds")
+	}
+
+	if raw, found := object["startup_failure_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StartupFailureP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'startup_failure_p95_duration_seconds': %w", err)
+		}
+		delete(object, "startup_failure_p95_duration_seconds")
+	}
+
+	if raw, found := object["startup_failure_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.StartupFailureTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'startup_failure_total_duration_seconds': %w", err)
+		}
+		delete(object, "startup_failure_total_duration_seconds")
+	}
+
+	if raw, found := object["steps"]; found {
+		err = json.Unmarshal(raw, &a.Steps)
+		if err != nil {
+			return fmt.Errorf("error reading 'steps': %w", err)
+		}
+		delete(object, "steps")
+	}
+
+	if raw, found := object["success_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SuccessAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'success_avg_duration_seconds': %w", err)
+		}
+		delete(object, "success_avg_duration_seconds")
+	}
+
+	if raw, found := object["success_count"]; found {
+		err = json.Unmarshal(raw, &a.SuccessCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'success_count': %w", err)
+		}
+		delete(object, "success_count")
+	}
+
+	if raw, found := object["success_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SuccessMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'success_median_duration_seconds': %w", err)
+		}
+		delete(object, "success_median_duration_seconds")
+	}
+
+	if raw, found := object["success_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SuccessP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'success_p95_duration_seconds': %w", err)
+		}
+		delete(object, "success_p95_duration_seconds")
+	}
+
+	if raw, found := object["success_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.SuccessTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'success_total_duration_seconds': %w", err)
+		}
+		delete(object, "success_total_duration_seconds")
+	}
+
+	if raw, found := object["timed_out_avg_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TimedOutAvgDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'timed_out_avg_duration_seconds': %w", err)
+		}
+		delete(object, "timed_out_avg_duration_seconds")
+	}
+
+	if raw, found := object["timed_out_count"]; found {
+		err = json.Unmarshal(raw, &a.TimedOutCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'timed_out_count': %w", err)
+		}
+		delete(object, "timed_out_count")
+	}
+
+	if raw, found := object["timed_out_median_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TimedOutMedianDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'timed_out_median_duration_seconds': %w", err)
+		}
+		delete(object, "timed_out_median_duration_seconds")
+	}
+
+	if raw, found := object["timed_out_p95_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TimedOutP95DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'timed_out_p95_duration_seconds': %w", err)
+		}
+		delete(object, "timed_out_p95_duration_seconds")
+	}
+
+	if raw, found := object["timed_out_total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TimedOutTotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'timed_out_total_duration_seconds': %w", err)
+		}
+		delete(object, "timed_out_total_duration_seconds")
+	}
+
+	if raw, found := object["total_duration_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TotalDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_duration_seconds': %w", err)
+		}
+		delete(object, "total_duration_seconds")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for JobAggregateBucket to handle AdditionalProperties
+func (a JobAggregateBucket) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActionRequiredAvgDurationSeconds != nil {
+		object["action_required_avg_duration_seconds"], err = json.Marshal(a.ActionRequiredAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'action_required_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["action_required_count"], err = json.Marshal(a.ActionRequiredCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'action_required_count': %w", err)
+	}
+
+	if a.ActionRequiredMedianDurationSeconds != nil {
+		object["action_required_median_duration_seconds"], err = json.Marshal(a.ActionRequiredMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'action_required_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.ActionRequiredP95DurationSeconds != nil {
+		object["action_required_p95_duration_seconds"], err = json.Marshal(a.ActionRequiredP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'action_required_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.ActionRequiredTotalDurationSeconds != nil {
+		object["action_required_total_duration_seconds"], err = json.Marshal(a.ActionRequiredTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'action_required_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["avg_duration_seconds"], err = json.Marshal(a.AvgDurationSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'avg_duration_seconds': %w", err)
+	}
+
+	if a.CancelledAvgDurationSeconds != nil {
+		object["cancelled_avg_duration_seconds"], err = json.Marshal(a.CancelledAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancelled_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["cancelled_count"], err = json.Marshal(a.CancelledCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cancelled_count': %w", err)
+	}
+
+	if a.CancelledMedianDurationSeconds != nil {
+		object["cancelled_median_duration_seconds"], err = json.Marshal(a.CancelledMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancelled_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.CancelledP95DurationSeconds != nil {
+		object["cancelled_p95_duration_seconds"], err = json.Marshal(a.CancelledP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancelled_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.CancelledTotalDurationSeconds != nil {
+		object["cancelled_total_duration_seconds"], err = json.Marshal(a.CancelledTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cancelled_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["completed_count"], err = json.Marshal(a.CompletedCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'completed_count': %w", err)
+	}
+
+	object["count"], err = json.Marshal(a.Count)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'count': %w", err)
+	}
+
+	object["end_datetime"], err = json.Marshal(a.EndDatetime)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'end_datetime': %w", err)
+	}
+
+	if a.FailureAvgDurationSeconds != nil {
+		object["failure_avg_duration_seconds"], err = json.Marshal(a.FailureAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failure_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["failure_count"], err = json.Marshal(a.FailureCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'failure_count': %w", err)
+	}
+
+	if a.FailureMedianDurationSeconds != nil {
+		object["failure_median_duration_seconds"], err = json.Marshal(a.FailureMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failure_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.FailureP95DurationSeconds != nil {
+		object["failure_p95_duration_seconds"], err = json.Marshal(a.FailureP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failure_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.FailureTotalDurationSeconds != nil {
+		object["failure_total_duration_seconds"], err = json.Marshal(a.FailureTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failure_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["flaked_count"], err = json.Marshal(a.FlakedCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'flaked_count': %w", err)
+	}
+
+	object["job"], err = json.Marshal(a.Job)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job': %w", err)
+	}
+
+	object["median_duration_seconds"], err = json.Marshal(a.MedianDurationSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'median_duration_seconds': %w", err)
+	}
+
+	if a.NeutralAvgDurationSeconds != nil {
+		object["neutral_avg_duration_seconds"], err = json.Marshal(a.NeutralAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'neutral_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["neutral_count"], err = json.Marshal(a.NeutralCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'neutral_count': %w", err)
+	}
+
+	if a.NeutralMedianDurationSeconds != nil {
+		object["neutral_median_duration_seconds"], err = json.Marshal(a.NeutralMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'neutral_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.NeutralP95DurationSeconds != nil {
+		object["neutral_p95_duration_seconds"], err = json.Marshal(a.NeutralP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'neutral_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.NeutralTotalDurationSeconds != nil {
+		object["neutral_total_duration_seconds"], err = json.Marshal(a.NeutralTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'neutral_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["p95_duration_seconds"], err = json.Marshal(a.P95DurationSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'p95_duration_seconds': %w", err)
+	}
+
+	if a.SkippedAvgDurationSeconds != nil {
+		object["skipped_avg_duration_seconds"], err = json.Marshal(a.SkippedAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'skipped_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["skipped_count"], err = json.Marshal(a.SkippedCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'skipped_count': %w", err)
+	}
+
+	if a.SkippedMedianDurationSeconds != nil {
+		object["skipped_median_duration_seconds"], err = json.Marshal(a.SkippedMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'skipped_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.SkippedP95DurationSeconds != nil {
+		object["skipped_p95_duration_seconds"], err = json.Marshal(a.SkippedP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'skipped_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.SkippedTotalDurationSeconds != nil {
+		object["skipped_total_duration_seconds"], err = json.Marshal(a.SkippedTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'skipped_total_duration_seconds': %w", err)
+		}
+	}
+
+	if a.StaleAvgDurationSeconds != nil {
+		object["stale_avg_duration_seconds"], err = json.Marshal(a.StaleAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stale_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["stale_count"], err = json.Marshal(a.StaleCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stale_count': %w", err)
+	}
+
+	if a.StaleMedianDurationSeconds != nil {
+		object["stale_median_duration_seconds"], err = json.Marshal(a.StaleMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stale_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.StaleP95DurationSeconds != nil {
+		object["stale_p95_duration_seconds"], err = json.Marshal(a.StaleP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stale_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.StaleTotalDurationSeconds != nil {
+		object["stale_total_duration_seconds"], err = json.Marshal(a.StaleTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stale_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["start_datetime"], err = json.Marshal(a.StartDatetime)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'start_datetime': %w", err)
+	}
+
+	if a.StartupFailureAvgDurationSeconds != nil {
+		object["startup_failure_avg_duration_seconds"], err = json.Marshal(a.StartupFailureAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'startup_failure_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["startup_failure_count"], err = json.Marshal(a.StartupFailureCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'startup_failure_count': %w", err)
+	}
+
+	if a.StartupFailureMedianDurationSeconds != nil {
+		object["startup_failure_median_duration_seconds"], err = json.Marshal(a.StartupFailureMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'startup_failure_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.StartupFailureP95DurationSeconds != nil {
+		object["startup_failure_p95_duration_seconds"], err = json.Marshal(a.StartupFailureP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'startup_failure_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.StartupFailureTotalDurationSeconds != nil {
+		object["startup_failure_total_duration_seconds"], err = json.Marshal(a.StartupFailureTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'startup_failure_total_duration_seconds': %w", err)
+		}
+	}
+
+	if a.Steps != nil {
+		object["steps"], err = json.Marshal(a.Steps)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'steps': %w", err)
+		}
+	}
+
+	if a.SuccessAvgDurationSeconds != nil {
+		object["success_avg_duration_seconds"], err = json.Marshal(a.SuccessAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'success_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["success_count"], err = json.Marshal(a.SuccessCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'success_count': %w", err)
+	}
+
+	if a.SuccessMedianDurationSeconds != nil {
+		object["success_median_duration_seconds"], err = json.Marshal(a.SuccessMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'success_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.SuccessP95DurationSeconds != nil {
+		object["success_p95_duration_seconds"], err = json.Marshal(a.SuccessP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'success_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.SuccessTotalDurationSeconds != nil {
+		object["success_total_duration_seconds"], err = json.Marshal(a.SuccessTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'success_total_duration_seconds': %w", err)
+		}
+	}
+
+	if a.TimedOutAvgDurationSeconds != nil {
+		object["timed_out_avg_duration_seconds"], err = json.Marshal(a.TimedOutAvgDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timed_out_avg_duration_seconds': %w", err)
+		}
+	}
+
+	object["timed_out_count"], err = json.Marshal(a.TimedOutCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'timed_out_count': %w", err)
+	}
+
+	if a.TimedOutMedianDurationSeconds != nil {
+		object["timed_out_median_duration_seconds"], err = json.Marshal(a.TimedOutMedianDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timed_out_median_duration_seconds': %w", err)
+		}
+	}
+
+	if a.TimedOutP95DurationSeconds != nil {
+		object["timed_out_p95_duration_seconds"], err = json.Marshal(a.TimedOutP95DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timed_out_p95_duration_seconds': %w", err)
+		}
+	}
+
+	if a.TimedOutTotalDurationSeconds != nil {
+		object["timed_out_total_duration_seconds"], err = json.Marshal(a.TimedOutTotalDurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timed_out_total_duration_seconds': %w", err)
+		}
+	}
+
+	object["total_duration_seconds"], err = json.Marshal(a.TotalDurationSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_duration_seconds': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -7563,6 +9117,85 @@ func (a PullMergeability) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'up_to_date': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RepoCachePurgeStatus. Returns the specified
+// element and whether it was found
+func (a RepoCachePurgeStatus) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RepoCachePurgeStatus
+func (a *RepoCachePurgeStatus) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RepoCachePurgeStatus to handle AdditionalProperties
+func (a *RepoCachePurgeStatus) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["requested_at"]; found {
+		err = json.Unmarshal(raw, &a.RequestedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'requested_at': %w", err)
+		}
+		delete(object, "requested_at")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RepoCachePurgeStatus to handle AdditionalProperties
+func (a RepoCachePurgeStatus) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["requested_at"], err = json.Marshal(a.RequestedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'requested_at': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
