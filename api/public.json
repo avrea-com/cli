@@ -196,6 +196,95 @@
         "title": "AggregateWorkflow",
         "type": "object"
       },
+      "AnalysisArtifact": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "media_type": {
+            "title": "Media Type",
+            "type": "string"
+          },
+          "raw_bytes": {
+            "description": "Uncompressed artifact size; the size of the bytes a download returns.",
+            "title": "Raw Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filename",
+          "media_type",
+          "raw_bytes"
+        ],
+        "title": "AnalysisArtifact",
+        "type": "object"
+      },
+      "AnalysisTaskResponse": {
+        "properties": {
+          "artifacts": {
+            "description": "Downloadable artifact files for this result.",
+            "items": {
+              "$ref": "#/components/schemas/AnalysisArtifact"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "commit_sha": {
+            "title": "Commit Sha",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "includes_dev": {
+            "default": false,
+            "title": "Includes Dev",
+            "type": "boolean"
+          },
+          "is_release": {
+            "title": "Is Release",
+            "type": "boolean"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "description": "Type-specific structured summary the console renders inline.",
+            "title": "Summary",
+            "type": "object"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "commit_sha",
+          "branch",
+          "is_release",
+          "schema_version",
+          "generated_at",
+          "recorded_at",
+          "summary"
+        ],
+        "title": "AnalysisTaskResponse",
+        "type": "object"
+      },
       "CIProvider": {
         "enum": [
           "github_actions",
@@ -3731,6 +3820,132 @@
           "host_key"
         ],
         "title": "SSHForwardingResponse",
+        "type": "object"
+      },
+      "SbomListItem": {
+        "description": "One completed SBOM in the repository's history.\n\nTrimmed on purpose: the full `summary` carries the license and ecosystem\nmaps and the copyleft *names*, which is a large body to repeat per row for a\ntable that shows counts. The per-commit route serves the whole summary.",
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisArtifact"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "commit_sha": {
+            "title": "Commit Sha",
+            "type": "string"
+          },
+          "copyleft_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copyleft Count"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "includes_dev": {
+            "default": false,
+            "title": "Includes Dev",
+            "type": "boolean"
+          },
+          "is_release": {
+            "title": "Is Release",
+            "type": "boolean"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "total_dependencies": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Dependencies"
+          },
+          "unresolved": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unresolved"
+          }
+        },
+        "required": [
+          "commit_sha",
+          "branch",
+          "is_release",
+          "schema_version",
+          "generated_at",
+          "recorded_at",
+          "total_dependencies",
+          "unresolved",
+          "copyleft_count"
+        ],
+        "title": "SbomListItem",
+        "type": "object"
+      },
+      "SbomListPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "SbomListPagination",
+        "type": "object"
+      },
+      "SbomListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SbomListItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/SbomListPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "SbomListResponse",
         "type": "object"
       },
       "StepAggregation": {
@@ -7684,6 +7899,334 @@
         "summary": "Get Organization Repository",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/analysis/sbom": {
+      "get": {
+        "description": "The repository's SBOM history, keyset-paginated on (recorded_at, id).\n\nLiteral `sbom` rather than the `{type}` template the sibling routes use:\n`SbomListItem` carries SBOM-only counts, and serving those under a generic\ntype parameter would answer a `repo_intel` request with fields that cannot\nmean anything for it. Generalise behind a discriminated response if a second\ntype ever produces rows.\n\nOnly completed results are listed, so every row here is downloadable. A run\nthat failed, or one still in flight, is reported by the analysis-state\nendpoint instead, including the interval after analysis completion while a\nretained terminal result is still retrying SBOM delivery.",
+        "operationId": "list_sboms",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "List only SBOMs with development-inclusive artifacts, using their counts.",
+            "in": "query",
+            "name": "include_dev",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "List only SBOMs with development-inclusive artifacts, using their counts.",
+              "title": "Include Dev",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SbomListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List the repository's completed SBOMs, newest first",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/analysis/{type}/commits/{commit_sha}": {
+      "get": {
+        "description": "Analysis result metadata + summary pinned to one commit.",
+        "operationId": "get_analysis_for_commit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:sbom|repo_intel)$",
+              "title": "Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_sha",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+              "title": "Commit Sha",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.",
+            "in": "query",
+            "name": "include_dev",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.",
+              "title": "Include Dev",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisTaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or analysis result not found"
+          },
+          "409": {
+            "description": "Requested dependency scope unavailable; regenerate the SBOM"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Analysis result metadata + summary for a specific commit",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/analysis/{type}/latest": {
+      "get": {
+        "description": "Latest analysis result metadata + summary for the repository and type.",
+        "operationId": "get_latest_analysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:sbom|repo_intel)$",
+              "title": "Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.",
+            "in": "query",
+            "name": "include_dev",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.",
+              "title": "Include Dev",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisTaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or analysis result not found"
+          },
+          "409": {
+            "description": "Requested dependency scope unavailable; regenerate the SBOM"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Latest Analysis",
+        "tags": [
+          "analysis"
         ]
       }
     },

@@ -1224,6 +1224,34 @@ type AggregateWorkflow struct {
 // AggregateWorkflowPlatform defines model for AggregateWorkflow.Platform.
 type AggregateWorkflowPlatform string
 
+// AnalysisArtifact defines model for AnalysisArtifact.
+type AnalysisArtifact struct {
+	Filename  string `json:"filename"`
+	MediaType string `json:"media_type"`
+
+	// RawBytes Uncompressed artifact size; the size of the bytes a download returns.
+	RawBytes             int                    `json:"raw_bytes"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// AnalysisTaskResponse defines model for AnalysisTaskResponse.
+type AnalysisTaskResponse struct {
+	// Artifacts Downloadable artifact files for this result.
+	Artifacts     *[]AnalysisArtifact `json:"artifacts,omitempty"`
+	Branch        string              `json:"branch"`
+	CommitSha     string              `json:"commit_sha"`
+	GeneratedAt   time.Time           `json:"generated_at"`
+	IncludesDev   *bool               `json:"includes_dev,omitempty"`
+	IsRelease     bool                `json:"is_release"`
+	RecordedAt    time.Time           `json:"recorded_at"`
+	SchemaVersion int                 `json:"schema_version"`
+
+	// Summary Type-specific structured summary the console renders inline.
+	Summary              map[string]interface{} `json:"summary"`
+	Type                 string                 `json:"type"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // CIProvider defines model for CIProvider.
 type CIProvider string
 
@@ -1986,6 +2014,39 @@ type SSHForwardingResponse struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// SbomListItem One completed SBOM in the repository's history.
+//
+// Trimmed on purpose: the full `summary` carries the license and ecosystem
+// maps and the copyleft *names*, which is a large body to repeat per row for a
+// table that shows counts. The per-commit route serves the whole summary.
+type SbomListItem struct {
+	Artifacts            *[]AnalysisArtifact    `json:"artifacts,omitempty"`
+	Branch               string                 `json:"branch"`
+	CommitSha            string                 `json:"commit_sha"`
+	CopyleftCount        nullable.Nullable[int] `json:"copyleft_count"`
+	GeneratedAt          time.Time              `json:"generated_at"`
+	IncludesDev          *bool                  `json:"includes_dev,omitempty"`
+	IsRelease            bool                   `json:"is_release"`
+	RecordedAt           time.Time              `json:"recorded_at"`
+	SchemaVersion        int                    `json:"schema_version"`
+	TotalDependencies    nullable.Nullable[int] `json:"total_dependencies"`
+	Unresolved           nullable.Nullable[int] `json:"unresolved"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SbomListPagination defines model for SbomListPagination.
+type SbomListPagination struct {
+	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// SbomListResponse defines model for SbomListResponse.
+type SbomListResponse struct {
+	Data                 []SbomListItem         `json:"data"`
+	Pagination           SbomListPagination     `json:"pagination"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // StepAggregation defines model for StepAggregation.
 type StepAggregation struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64] `json:"action_required_avg_duration_seconds,omitempty"`
@@ -2579,6 +2640,30 @@ type ResolveOrganizationRepositoryParamsPlatform string
 
 // GetOrganizationRepositoryParams defines parameters for GetOrganizationRepository.
 type GetOrganizationRepositoryParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListSbomsParams defines parameters for ListSboms.
+type ListSbomsParams struct {
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// IncludeDev List only SBOMs with development-inclusive artifacts, using their counts.
+	IncludeDev   *bool   `form:"include_dev,omitempty" json:"include_dev,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetAnalysisForCommitParams defines parameters for GetAnalysisForCommit.
+type GetAnalysisForCommitParams struct {
+	// IncludeDev Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.
+	IncludeDev   *bool   `form:"include_dev,omitempty" json:"include_dev,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetLatestAnalysisParams defines parameters for GetLatestAnalysis.
+type GetLatestAnalysisParams struct {
+	// IncludeDev Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.
+	IncludeDev   *bool   `form:"include_dev,omitempty" json:"include_dev,omitempty"`
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -3182,6 +3267,287 @@ func (a AggregateWorkflow) MarshalJSON() ([]byte, error) {
 	object["workflow_id"], err = json.Marshal(a.WorkflowId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AnalysisArtifact. Returns the specified
+// element and whether it was found
+func (a AnalysisArtifact) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AnalysisArtifact
+func (a *AnalysisArtifact) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AnalysisArtifact to handle AdditionalProperties
+func (a *AnalysisArtifact) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["filename"]; found {
+		err = json.Unmarshal(raw, &a.Filename)
+		if err != nil {
+			return fmt.Errorf("error reading 'filename': %w", err)
+		}
+		delete(object, "filename")
+	}
+
+	if raw, found := object["media_type"]; found {
+		err = json.Unmarshal(raw, &a.MediaType)
+		if err != nil {
+			return fmt.Errorf("error reading 'media_type': %w", err)
+		}
+		delete(object, "media_type")
+	}
+
+	if raw, found := object["raw_bytes"]; found {
+		err = json.Unmarshal(raw, &a.RawBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'raw_bytes': %w", err)
+		}
+		delete(object, "raw_bytes")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AnalysisArtifact to handle AdditionalProperties
+func (a AnalysisArtifact) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["filename"], err = json.Marshal(a.Filename)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'filename': %w", err)
+	}
+
+	object["media_type"], err = json.Marshal(a.MediaType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'media_type': %w", err)
+	}
+
+	object["raw_bytes"], err = json.Marshal(a.RawBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'raw_bytes': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AnalysisTaskResponse. Returns the specified
+// element and whether it was found
+func (a AnalysisTaskResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AnalysisTaskResponse
+func (a *AnalysisTaskResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AnalysisTaskResponse to handle AdditionalProperties
+func (a *AnalysisTaskResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["artifacts"]; found {
+		err = json.Unmarshal(raw, &a.Artifacts)
+		if err != nil {
+			return fmt.Errorf("error reading 'artifacts': %w", err)
+		}
+		delete(object, "artifacts")
+	}
+
+	if raw, found := object["branch"]; found {
+		err = json.Unmarshal(raw, &a.Branch)
+		if err != nil {
+			return fmt.Errorf("error reading 'branch': %w", err)
+		}
+		delete(object, "branch")
+	}
+
+	if raw, found := object["commit_sha"]; found {
+		err = json.Unmarshal(raw, &a.CommitSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'commit_sha': %w", err)
+		}
+		delete(object, "commit_sha")
+	}
+
+	if raw, found := object["generated_at"]; found {
+		err = json.Unmarshal(raw, &a.GeneratedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'generated_at': %w", err)
+		}
+		delete(object, "generated_at")
+	}
+
+	if raw, found := object["includes_dev"]; found {
+		err = json.Unmarshal(raw, &a.IncludesDev)
+		if err != nil {
+			return fmt.Errorf("error reading 'includes_dev': %w", err)
+		}
+		delete(object, "includes_dev")
+	}
+
+	if raw, found := object["is_release"]; found {
+		err = json.Unmarshal(raw, &a.IsRelease)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_release': %w", err)
+		}
+		delete(object, "is_release")
+	}
+
+	if raw, found := object["recorded_at"]; found {
+		err = json.Unmarshal(raw, &a.RecordedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'recorded_at': %w", err)
+		}
+		delete(object, "recorded_at")
+	}
+
+	if raw, found := object["schema_version"]; found {
+		err = json.Unmarshal(raw, &a.SchemaVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'schema_version': %w", err)
+		}
+		delete(object, "schema_version")
+	}
+
+	if raw, found := object["summary"]; found {
+		err = json.Unmarshal(raw, &a.Summary)
+		if err != nil {
+			return fmt.Errorf("error reading 'summary': %w", err)
+		}
+		delete(object, "summary")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AnalysisTaskResponse to handle AdditionalProperties
+func (a AnalysisTaskResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Artifacts != nil {
+		object["artifacts"], err = json.Marshal(a.Artifacts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'artifacts': %w", err)
+		}
+	}
+
+	object["branch"], err = json.Marshal(a.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'branch': %w", err)
+	}
+
+	object["commit_sha"], err = json.Marshal(a.CommitSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'commit_sha': %w", err)
+	}
+
+	object["generated_at"], err = json.Marshal(a.GeneratedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'generated_at': %w", err)
+	}
+
+	if a.IncludesDev != nil {
+		object["includes_dev"], err = json.Marshal(a.IncludesDev)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'includes_dev': %w", err)
+		}
+	}
+
+	object["is_release"], err = json.Marshal(a.IsRelease)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_release': %w", err)
+	}
+
+	object["recorded_at"], err = json.Marshal(a.RecordedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'recorded_at': %w", err)
+	}
+
+	object["schema_version"], err = json.Marshal(a.SchemaVersion)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'schema_version': %w", err)
+	}
+
+	if a.Summary != nil {
+		object["summary"], err = json.Marshal(a.Summary)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'summary': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -10248,6 +10614,355 @@ func (a SSHForwardingResponse) MarshalJSON() ([]byte, error) {
 	object["username"], err = json.Marshal(a.Username)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'username': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SbomListItem. Returns the specified
+// element and whether it was found
+func (a SbomListItem) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SbomListItem
+func (a *SbomListItem) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SbomListItem to handle AdditionalProperties
+func (a *SbomListItem) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["artifacts"]; found {
+		err = json.Unmarshal(raw, &a.Artifacts)
+		if err != nil {
+			return fmt.Errorf("error reading 'artifacts': %w", err)
+		}
+		delete(object, "artifacts")
+	}
+
+	if raw, found := object["branch"]; found {
+		err = json.Unmarshal(raw, &a.Branch)
+		if err != nil {
+			return fmt.Errorf("error reading 'branch': %w", err)
+		}
+		delete(object, "branch")
+	}
+
+	if raw, found := object["commit_sha"]; found {
+		err = json.Unmarshal(raw, &a.CommitSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'commit_sha': %w", err)
+		}
+		delete(object, "commit_sha")
+	}
+
+	if raw, found := object["copyleft_count"]; found {
+		err = json.Unmarshal(raw, &a.CopyleftCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'copyleft_count': %w", err)
+		}
+		delete(object, "copyleft_count")
+	}
+
+	if raw, found := object["generated_at"]; found {
+		err = json.Unmarshal(raw, &a.GeneratedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'generated_at': %w", err)
+		}
+		delete(object, "generated_at")
+	}
+
+	if raw, found := object["includes_dev"]; found {
+		err = json.Unmarshal(raw, &a.IncludesDev)
+		if err != nil {
+			return fmt.Errorf("error reading 'includes_dev': %w", err)
+		}
+		delete(object, "includes_dev")
+	}
+
+	if raw, found := object["is_release"]; found {
+		err = json.Unmarshal(raw, &a.IsRelease)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_release': %w", err)
+		}
+		delete(object, "is_release")
+	}
+
+	if raw, found := object["recorded_at"]; found {
+		err = json.Unmarshal(raw, &a.RecordedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'recorded_at': %w", err)
+		}
+		delete(object, "recorded_at")
+	}
+
+	if raw, found := object["schema_version"]; found {
+		err = json.Unmarshal(raw, &a.SchemaVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'schema_version': %w", err)
+		}
+		delete(object, "schema_version")
+	}
+
+	if raw, found := object["total_dependencies"]; found {
+		err = json.Unmarshal(raw, &a.TotalDependencies)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_dependencies': %w", err)
+		}
+		delete(object, "total_dependencies")
+	}
+
+	if raw, found := object["unresolved"]; found {
+		err = json.Unmarshal(raw, &a.Unresolved)
+		if err != nil {
+			return fmt.Errorf("error reading 'unresolved': %w", err)
+		}
+		delete(object, "unresolved")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SbomListItem to handle AdditionalProperties
+func (a SbomListItem) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Artifacts != nil {
+		object["artifacts"], err = json.Marshal(a.Artifacts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'artifacts': %w", err)
+		}
+	}
+
+	object["branch"], err = json.Marshal(a.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'branch': %w", err)
+	}
+
+	object["commit_sha"], err = json.Marshal(a.CommitSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'commit_sha': %w", err)
+	}
+
+	object["copyleft_count"], err = json.Marshal(a.CopyleftCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'copyleft_count': %w", err)
+	}
+
+	object["generated_at"], err = json.Marshal(a.GeneratedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'generated_at': %w", err)
+	}
+
+	if a.IncludesDev != nil {
+		object["includes_dev"], err = json.Marshal(a.IncludesDev)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'includes_dev': %w", err)
+		}
+	}
+
+	object["is_release"], err = json.Marshal(a.IsRelease)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_release': %w", err)
+	}
+
+	object["recorded_at"], err = json.Marshal(a.RecordedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'recorded_at': %w", err)
+	}
+
+	object["schema_version"], err = json.Marshal(a.SchemaVersion)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'schema_version': %w", err)
+	}
+
+	object["total_dependencies"], err = json.Marshal(a.TotalDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_dependencies': %w", err)
+	}
+
+	object["unresolved"], err = json.Marshal(a.Unresolved)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'unresolved': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SbomListPagination. Returns the specified
+// element and whether it was found
+func (a SbomListPagination) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SbomListPagination
+func (a *SbomListPagination) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SbomListPagination to handle AdditionalProperties
+func (a *SbomListPagination) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.NextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_cursor': %w", err)
+		}
+		delete(object, "next_cursor")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SbomListPagination to handle AdditionalProperties
+func (a SbomListPagination) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NextCursor != nil {
+		object["next_cursor"], err = json.Marshal(a.NextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SbomListResponse. Returns the specified
+// element and whether it was found
+func (a SbomListResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SbomListResponse
+func (a *SbomListResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SbomListResponse to handle AdditionalProperties
+func (a *SbomListResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["pagination"]; found {
+		err = json.Unmarshal(raw, &a.Pagination)
+		if err != nil {
+			return fmt.Errorf("error reading 'pagination': %w", err)
+		}
+		delete(object, "pagination")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SbomListResponse to handle AdditionalProperties
+func (a SbomListResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

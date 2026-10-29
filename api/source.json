@@ -33,7 +33,10 @@
     "delete_artifact",
     "list_cache_entries",
     "delete_cache_entries_by_key",
-    "purge_repo_cache"
+    "purge_repo_cache",
+    "list_sboms",
+    "get_analysis_for_commit",
+    "get_latest_analysis"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
