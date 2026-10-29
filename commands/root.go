@@ -206,7 +206,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	root.PersistentFlags().Bool("links", linksDefault, "Enable links where supported.")
 	root.PersistentFlags().Bool("no-links", false, "Disable terminal links.")
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d))
+	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)
