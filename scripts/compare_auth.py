@@ -73,7 +73,15 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                 "body": json.loads(body) if body else None,
             }
         )
-        response = self.server.responses.get((self.command, canonical_path(self.path)), (200, USER))
+        key = (self.command, canonical_path(self.path))
+        if key in self.server.responses:
+            response = self.server.responses[key]
+        else:
+            # Explicit opt-in for fixtures with moving time-window queries.
+            # The full query remains in requests for semantic validation.
+            response = getattr(self.server, "dynamic_responses", {}).get(
+                (self.command, urlsplit(self.path).path), (200, USER)
+            )
         if isinstance(response, list):
             status, payload = response.pop(0) if len(response) > 1 else response[0]
         else:
@@ -667,6 +675,7 @@ def main(case_factory=scenarios, compare_results=compare, default_report="build/
                             for (method, path), response in scenario.get("responses", {}).items()
                         }
                     )
+                    server.dynamic_responses = copy.deepcopy(scenario.get("dynamic_responses", {}))
                     server.encoding = scenario.get("encoding")
                     result = run(executable, scenario, Path(oracle), host)
                     result["requests"] = copy.deepcopy(server.requests)

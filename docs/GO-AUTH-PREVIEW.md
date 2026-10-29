@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, and PR listing in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, and the status dashboard in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -18,6 +18,8 @@ make go-build
 ./build/go/avr auth status
 ./build/go/avr auth status --json email,host --jq .email
 ./build/go/avr org list
+./build/go/avr status --repo OWNER/REPO
+./build/go/avr status --since 24h --json
 ./build/go/avr repo list --org ORG
 ./build/go/avr pr list --scope authored
 ./build/go/avr pr list --repo OWNER/REPO --state all --json number,title
@@ -91,6 +93,9 @@ Run control and workflow discovery:
 
 Inspection commands:
 
+- `status`: recent runs, slowest workflows/jobs, period-over-period slowdowns,
+  cache usage and repository links, with raw JSON and styled human output.
+  Auxiliary failures produce warnings while retaining the available panels.
 - `pr list`: organization availability check, repository/Git selection,
   scope/state filters, pagination, fixed terminal tables and links, piped TSV,
   JSON field selection and embedded gojq. `prs` is an alias.

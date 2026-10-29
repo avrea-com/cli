@@ -24,7 +24,9 @@
     "list_workflow_run_jobs",
     "get_workflow_run_metrics",
     "get_org_feature_flag",
-    "list_org_pulls"
+    "list_org_pulls",
+    "aggregate_jobs",
+    "get_cache_usage"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
