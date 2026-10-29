@@ -216,3 +216,11 @@ func (c *Client) DispatchWorkflow(ctx context.Context, org, repo, file, ref stri
 	fields, _ := body["data"].(map[string]any)
 	return decodeRecord[wire.DispatchWorkflowResponse](fields)
 }
+
+func (c *Client) JobMetrics(ctx context.Context, org, id, source string, query url.Values) (Record[wire.MetricsQueryResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs/"+url.PathEscape(id)+"/metrics/"+url.PathEscape(source), query)
+	if err != nil {
+		return Record[wire.MetricsQueryResponse]{}, err
+	}
+	return decodeRecord[wire.MetricsQueryResponse](body)
+}

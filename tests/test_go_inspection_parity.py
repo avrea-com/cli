@@ -119,3 +119,22 @@ def test_terminal_comparison_detects_bad_indentation_and_truncation():
     assert "terminal layout" in compare(scenario, python, go)
     go["stdout"] = "  REPOSITORY\n  long-repository-name\n"
     assert "terminal text/styles" in compare(scenario, python, go)
+
+
+@pytest.mark.parametrize("codes", ["90", "90;41", "90;100;49"])
+def test_terminal_comparison_detects_missing_or_wrong_background(codes):
+    python = capture({})
+    python["stdout"] = "\x1b[90;100m░\x1b[0m"
+    go = deepcopy(python)
+    go["stdout"] = f"\x1b[{codes}m░\x1b[0m"
+    scenario = {"name": "metric track", "args": ["job", "metrics"], "presentation": True}
+    assert "terminal text/styles" in compare(scenario, python, go)
+
+
+def test_terminal_comparison_accepts_equivalent_background_encoding():
+    python = capture({})
+    python["stdout"] = "\x1b[90;100m░\x1b[0mX"
+    go = deepcopy(python)
+    go["stdout"] = "\x1b[38;5;8;48;5;8m░\x1b[39;49mX"
+    scenario = {"name": "metric track", "args": ["job", "metrics"], "presentation": True}
+    assert not compare(scenario, python, go)

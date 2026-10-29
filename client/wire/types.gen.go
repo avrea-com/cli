@@ -312,6 +312,39 @@ func (e LogStream) Valid() bool {
 	}
 }
 
+// Defines values for MetricSource.
+const (
+	Cpu        MetricSource = "cpu"
+	DiskIo     MetricSource = "disk-io"
+	DiskOps    MetricSource = "disk-ops"
+	Filesystem MetricSource = "filesystem"
+	Load       MetricSource = "load"
+	Memory     MetricSource = "memory"
+	Network    MetricSource = "network"
+)
+
+// Valid indicates whether the value is a known member of the MetricSource enum.
+func (e MetricSource) Valid() bool {
+	switch e {
+	case Cpu:
+		return true
+	case DiskIo:
+		return true
+	case DiskOps:
+		return true
+	case Filesystem:
+		return true
+	case Load:
+		return true
+	case Memory:
+		return true
+	case Network:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrganizationRepositoryResponsePlatform.
 const (
 	OrganizationRepositoryResponsePlatformAvrea  OrganizationRepositoryResponsePlatform = "avrea"
@@ -1203,6 +1236,35 @@ type LogSearchResult struct {
 // LogStream Log output stream type.
 type LogStream string
 
+// MetricSource defines model for MetricSource.
+type MetricSource string
+
+// MetricsQueryResponse defines model for MetricsQueryResponse.
+type MetricsQueryResponse struct {
+	// RateUnit Unit of each series' `rates` entry. Present only for counter sources (disk-io, disk-ops, network); omitted from gauge responses.
+	RateUnit nullable.Nullable[string] `json:"rate_unit,omitempty"`
+
+	// Series Time series matching the query
+	Series []MetricsSeries `json:"series"`
+
+	// Unit Unit of each sample's value: one of 'ratio' (0..1), 'bytes', 'operations', 'count'. Fixed per source.
+	Unit                 string                 `json:"unit"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// MetricsSeries Examples: {"labels":{"cpu":"cpu0","state":"user"},"values":[[1711756800,0.42],[1711756815,0.38]]}, {"labels":{"device":"eth0","direction":"receive"},"rates":[[1711756805,204.8]],"values":[[1711756800,104857600],[1711756805,104858624]]}
+type MetricsSeries struct {
+	// Labels Metric labels (key-value pairs)
+	Labels map[string]string `json:"labels"`
+
+	// Rates Per-scrape rates derived from `values`. Present only on series from counter sources (disk-io, disk-ops, network); omitted from gauge responses. Length is `len(values) - 1` — the first sample has no previous point to diff against. Each rate is emitted at the trailing timestamp.
+	Rates nullable.Nullable[[][]interface{}] `json:"rates,omitempty"`
+
+	// Values Array of [timestamp, value] pairs
+	Values               [][]interface{}        `json:"values"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // OrganizationListItem defines model for OrganizationListItem.
 type OrganizationListItem struct {
 	Name                       string                 `json:"name"`
@@ -1677,6 +1739,16 @@ type GetJobParams struct {
 	// Include Sub-objects to include (default: steps)
 	Include      *[]string `form:"include,omitempty" json:"include,omitempty"`
 	AvreaSession *string   `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetJobMetricsParams defines parameters for GetJobMetrics.
+type GetJobMetricsParams struct {
+	// Start Start time (Unix seconds). Defaults to execution start.
+	Start *int `form:"start,omitempty" json:"start,omitempty"`
+
+	// End End time (Unix seconds). Defaults to execution end or now.
+	End          *int    `form:"end,omitempty" json:"end,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
 // ListOrganizationRepositoriesParams defines parameters for ListOrganizationRepositories.
@@ -5314,6 +5386,200 @@ func (a LogSearchResult) MarshalJSON() ([]byte, error) {
 	object["vm_id"], err = json.Marshal(a.VmId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'vm_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MetricsQueryResponse. Returns the specified
+// element and whether it was found
+func (a MetricsQueryResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MetricsQueryResponse
+func (a *MetricsQueryResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MetricsQueryResponse to handle AdditionalProperties
+func (a *MetricsQueryResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["rate_unit"]; found {
+		err = json.Unmarshal(raw, &a.RateUnit)
+		if err != nil {
+			return fmt.Errorf("error reading 'rate_unit': %w", err)
+		}
+		delete(object, "rate_unit")
+	}
+
+	if raw, found := object["series"]; found {
+		err = json.Unmarshal(raw, &a.Series)
+		if err != nil {
+			return fmt.Errorf("error reading 'series': %w", err)
+		}
+		delete(object, "series")
+	}
+
+	if raw, found := object["unit"]; found {
+		err = json.Unmarshal(raw, &a.Unit)
+		if err != nil {
+			return fmt.Errorf("error reading 'unit': %w", err)
+		}
+		delete(object, "unit")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MetricsQueryResponse to handle AdditionalProperties
+func (a MetricsQueryResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.RateUnit != nil {
+		object["rate_unit"], err = json.Marshal(a.RateUnit)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rate_unit': %w", err)
+		}
+	}
+
+	if a.Series != nil {
+		object["series"], err = json.Marshal(a.Series)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'series': %w", err)
+		}
+	}
+
+	object["unit"], err = json.Marshal(a.Unit)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'unit': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MetricsSeries. Returns the specified
+// element and whether it was found
+func (a MetricsSeries) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MetricsSeries
+func (a *MetricsSeries) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MetricsSeries to handle AdditionalProperties
+func (a *MetricsSeries) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["labels"]; found {
+		err = json.Unmarshal(raw, &a.Labels)
+		if err != nil {
+			return fmt.Errorf("error reading 'labels': %w", err)
+		}
+		delete(object, "labels")
+	}
+
+	if raw, found := object["rates"]; found {
+		err = json.Unmarshal(raw, &a.Rates)
+		if err != nil {
+			return fmt.Errorf("error reading 'rates': %w", err)
+		}
+		delete(object, "rates")
+	}
+
+	if raw, found := object["values"]; found {
+		err = json.Unmarshal(raw, &a.Values)
+		if err != nil {
+			return fmt.Errorf("error reading 'values': %w", err)
+		}
+		delete(object, "values")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MetricsSeries to handle AdditionalProperties
+func (a MetricsSeries) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Labels != nil {
+		object["labels"], err = json.Marshal(a.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
+		}
+	}
+
+	if a.Rates != nil {
+		object["rates"], err = json.Marshal(a.Rates)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rates': %w", err)
+		}
+	}
+
+	if a.Values != nil {
+		object["values"], err = json.Marshal(a.Values)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'values': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

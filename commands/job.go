@@ -18,7 +18,7 @@ var jobViewFields = append(append([]string{}, jobFields...), "steps", "workflow_
 func NewJob(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	cmd := &cobra.Command{Use: "job", Aliases: []string{"jobs"}, Short: "Inspect Avrea job VMs (SSH, logs)."}
-	cmd.AddCommand(newJobList(d), newJobView(d), newJobLogs(d), newJobSSH(d), newJobWatch(d))
+	cmd.AddCommand(newJobList(d), newJobView(d), newJobLogs(d), newJobSSH(d), newJobWatch(d), newJobMetrics(d))
 	return cmd
 }
 

@@ -19,7 +19,8 @@
     "aggregate_workflow_runs",
     "list_repository_workflows_indexed",
     "get_organization_repository",
-    "dispatch_workflow_endpoint"
+    "dispatch_workflow_endpoint",
+    "get_job_metrics"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

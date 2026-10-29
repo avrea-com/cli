@@ -109,9 +109,38 @@ orders. Go tests cover blocked-request cancellation, transport retries and
 integer preservation. Three comparator tests prove that semantic differences
 still fail. The existing 79 job cases are rerun for both executables.
 
+## Job metrics batch
+
+Added job metrics, shared with avr-admin.
+Active-job watch checkpoints: public 08ced1c, admin aa09500499.
+
+Decisions:
+- Preserve all seven sources, repeated source order, start/end bounds
+  (including zero), default CPU/memory selection and raw JSON output.
+- Match CPU idle-based utilization, memory used-state aggregation, counter
+  rates, runner-spec scaling, saturation colors and peak-marker backgrounds.
+- Refresh logs every second and metrics every five seconds in live mode;
+  retain the last 12 visible lines and use the raw pagination cursor.
+- Preserve Python's completed-job fallback, partial 404 placeholders,
+  transient retry footers, terminal client errors and silent Ctrl-C exit 130.
+- Keep the Python behavior that live job metadata is fetched once. The
+  watcher does not auto-exit when a running job subsequently completes.
+- Extend terminal parity to background colors. Regression tests first proved
+  that missing, wrong and reset backgrounds went undetected.
+- Keep exact redraw sequencing outside the compatibility target. No new
+  dependencies and no remote mutations.
+
+Validation: 55 differential cases per executable, including ten terminal
+cases, all source types, scaling, empty data, JSON, bounds, errors, live
+pagination/retries and real interruption. Go tests cover cadence, bounded
+tails, raw cursors, blocked-request cancellation and sanitized transport errors.
+The stronger style comparator also passes 186 previously captured presentation
+cases across both binaries. The 23 comparator tests, Go race tests, lint,
+generation checks and paired admin build pass.
+
 ## Remaining work
 
-Run diagnose, job metrics, PR/status, artifacts,
+Run diagnose, PR/status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
