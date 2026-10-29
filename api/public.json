@@ -1,6 +1,19 @@
 {
   "components": {
     "schemas": {
+      "APIResponse_CancelWorkflowRunResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CancelWorkflowRunResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CancelWorkflowRunResponse]",
+        "type": "object"
+      },
       "APIResponse_JobResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -27,6 +40,19 @@
         "title": "APIResponse[OrganizationRepositoryResponse]",
         "type": "object"
       },
+      "APIResponse_RerunWorkflowRunResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RerunWorkflowRunResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[RerunWorkflowRunResponse]",
+        "type": "object"
+      },
       "APIResponse_WorkflowRunResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -48,6 +74,28 @@
         ],
         "title": "CIProvider",
         "type": "string"
+      },
+      "CancelWorkflowRunResponse": {
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "cancel_requested",
+              "already_terminal"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "CancelWorkflowRunResponse",
+        "type": "object"
       },
       "GovernanceHoldReason": {
         "enum": [
@@ -1134,6 +1182,43 @@
           }
         },
         "title": "PaginationMeta",
+        "type": "object"
+      },
+      "RerunWorkflowRunRequest": {
+        "description": "Request body for rerunning a workflow run.",
+        "properties": {
+          "failed_only": {
+            "default": false,
+            "description": "If true, re-run only the failed jobs",
+            "title": "Failed Only",
+            "type": "boolean"
+          }
+        },
+        "title": "RerunWorkflowRunRequest",
+        "type": "object"
+      },
+      "RerunWorkflowRunResponse": {
+        "properties": {
+          "failed_only": {
+            "title": "Failed Only",
+            "type": "boolean"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "rerun_requested",
+            "default": "rerun_requested",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "failed_only"
+        ],
+        "title": "RerunWorkflowRunResponse",
         "type": "object"
       },
       "SSHForwardingRequest": {
@@ -3540,6 +3625,175 @@
           }
         ],
         "summary": "Get Workflow Run",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/{run_id}/cancel": {
+      "post": {
+        "description": "Cancel an in-progress or queued workflow run.\n\nSupports GitHub Actions and Avrea CI. Returns `status=\"already_terminal\"`\n(HTTP 200) when the run has finished. GitHub source repositories require\nsource write access; native runs on other sources require organization\nadmin access. Scoped tokens cannot cancel runs.",
+        "operationId": "cancel_workflow_run_endpoint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CancelWorkflowRunResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Workflow run not found or not accessible, or GitHub reported it as not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Workflow Run Endpoint",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/{run_id}/rerun": {
+      "post": {
+        "description": "Re-run a workflow run (all jobs, or only failed jobs with failed_only=true).",
+        "operationId": "rerun_workflow_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RerunWorkflowRunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_RerunWorkflowRunResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Workflow run not found or not accessible, or GitHub reported it as not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rerun Workflow Run",
         "tags": [
           "organization-installations"
         ]
