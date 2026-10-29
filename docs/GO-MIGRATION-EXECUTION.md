@@ -292,9 +292,34 @@ target/output and file-free prompt refusal. Go race tests, lint, generated-code
 checks, paired admin checks, fixture typing, comparator tests and workflow
 validation pass. Report hashes match both tested executables.
 
+## Log search batch
+
+Added log search and the logs alias, shared with avr-admin.
+Cache checkpoints: public 39910b3, admin bf60242a75.
+
+Decisions:
+- Reuse the existing typed log-search transport, with required repository
+  context and all Python query/stream/level/VM/limit options.
+- Preserve Python's case-insensitive choices and server-side limit validation;
+  no new client-side bounds or automatic pagination.
+- Match counts, timestamps, level and stream widths, line numbers, raw group
+  annotations, multiline indentation and red/yellow/cyan level colors.
+- Preserve embedded SGR color on terminals and remove it from pipes/no-color
+  output. Escape other terminal control sequences; JSON retains original data.
+- Retain diagnostics in search results, matching Python search rather than
+  applying the job-log viewer's diagnostic filter.
+- No new dependencies, schema operations or remote mutations.
+
+Validation: 38 differential cases per executable, including five terminal cases,
+cover exact request payloads, filters, aliases, numeric precision, field discovery,
+errors, multiline content, annotations and color/no-color behavior. A focused
+test verifies that embedded styling survives while other terminal commands are
+escaped. Go race tests, lint, paired admin checks, fixture typing and workflow
+validation pass; report hashes match both tested executables.
+
 ## Remaining work
 
-Log search/SBOM, configuration/tokens/settings, organization and repository
+SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
