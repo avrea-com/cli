@@ -2660,6 +2660,11 @@ type GetAnalysisForCommitParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// DownloadAnalysisArtifactParams defines parameters for DownloadAnalysisArtifact.
+type DownloadAnalysisArtifactParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetLatestAnalysisParams defines parameters for GetLatestAnalysis.
 type GetLatestAnalysisParams struct {
 	// IncludeDev Include development dependencies in the SBOM summary and artifact selection. Older snapshots must be regenerated.

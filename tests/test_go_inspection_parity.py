@@ -138,3 +138,14 @@ def test_terminal_comparison_accepts_equivalent_background_encoding():
     go["stdout"] = "\x1b[38;5;8;48;5;8m░\x1b[39;49mX"
     scenario = {"name": "metric track", "args": ["job", "metrics"], "presentation": True}
     assert not compare(scenario, python, go)
+
+
+def test_repeated_carriage_returns_before_newline_are_not_blank_lines():
+    python = capture({})
+    python["stdout"] = "first\r\r\nsecond\r\n"
+    go = deepcopy(python)
+    go["stdout"] = "first\nsecond\n"
+    scenario = {"name": "terminal newline", "args": ["sbom", "view"], "presentation": True}
+    assert not compare(scenario, python, go)
+    go["stdout"] = "first\n\nsecond\n"
+    assert "terminal layout" in compare(scenario, python, go)

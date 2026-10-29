@@ -344,9 +344,42 @@ preservation. Focused Go tests cover repeated history cursors and cancellation.
 Go race tests, lint, schema generation, paired admin checks, fixture typing and
 workflow validation pass; report hashes match the tested executables.
 
+## SBOM download batch
+
+Added sbom download, shared with avr-admin.
+SBOM inspection checkpoints: public 9226f0d, admin b7dbe36f63.
+
+Decisions:
+- Preserve latest/full-SHA/prefix resolution, all three artifact formats,
+  default/custom filenames, raw stdout output and missing-result hints.
+- Receive the complete response before opening the destination or emitting
+  stdout, as Python does. Use a private temporary spool rather than buffering
+  the complete inventory in memory; remove it on success, error or cancellation.
+- Keep normal file-open permissions, overwrite and symlink behavior. Do not
+  create missing destination parents or expand a literal tilde.
+- Add decoded streaming for gzip/zstd analysis artifacts without the JSON size
+  limit. Workflow artifact downloads continue requiring identity encoding.
+  Redirects remain refused and error bodies remain bounded.
+- Preserve raw bytes; SBOM artifacts do not expose the workflow-artifact
+  integrity contract, so no checksum claim is made for this command.
+- No new dependencies or live remote mutations.
+
+Validation: 34 download cases per executable, including three terminal cases,
+plus 92 workflow-artifact and 76 SBOM-inspection regression cases per executable.
+Focused Go tests cover an 18 MiB compressed inventory, opaque stdout bytes,
+cancellation, existing-file preservation and spool cleanup. Go race tests, lint,
+schema generation, paired admin checks, fixture typing and workflow validation
+pass; report hashes match both binaries.
+
+A regression capture exposed repeated CR-before-LF being mistaken for a blank
+line by the presentation comparator. A failing test reproduced it; normalization
+now accepts equivalent carriage returns while retaining real extra blank lines.
+The original raw capture was re-evaluated with that correction and retained with
+its prior difference/provenance. All 48 comparator regression tests pass.
+
 ## Remaining work
 
-SBOM download/generate, configuration/tokens/settings, organization and repository
+SBOM generate, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
