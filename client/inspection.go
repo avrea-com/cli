@@ -271,3 +271,11 @@ func (c *Client) CacheUsage(ctx context.Context, org, repo string) (Record[wire.
 	fields, _ := body["data"].(map[string]any)
 	return decodeRecord[wire.CacheUsageSummary](fields)
 }
+
+func (c *Client) CacheEntries(ctx context.Context, org, repo string, query url.Values) (Page[wire.CacheEntryResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/cache/entries", query)
+	if err != nil {
+		return Page[wire.CacheEntryResponse]{}, err
+	}
+	return decodePage[wire.CacheEntryResponse](body)
+}

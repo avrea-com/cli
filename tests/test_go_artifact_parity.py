@@ -71,3 +71,13 @@ def test_binary_fixture_preserves_bytes_and_extra_headers():
         server.shutdown()
         server.server_close()
         worker.join()
+
+
+def test_browser_capture_does_not_start_login_callback(tmp_path):
+    scenario = {
+        "args": ["-c", "import webbrowser; webbrowser.open('https://example.test/cache')"],
+        "browser_capture": True,
+    }
+    result = run([sys.executable], scenario, tmp_path, "http://127.0.0.1")
+    assert result["exit"] == 0
+    assert result["browser"] == "https://example.test/cache"

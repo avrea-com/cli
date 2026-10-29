@@ -310,6 +310,144 @@
         "title": "CIWorkflowResponse",
         "type": "object"
       },
+      "CacheDeleteByKeyResponse": {
+        "properties": {
+          "deleted_count": {
+            "title": "Deleted Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deleted_count"
+        ],
+        "title": "CacheDeleteByKeyResponse",
+        "type": "object"
+      },
+      "CacheEntriesListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CacheEntryResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "streaming": {
+            "default": false,
+            "title": "Streaming",
+            "type": "boolean"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "CacheEntriesListResponse",
+        "type": "object"
+      },
+      "CacheEntryResponse": {
+        "properties": {
+          "cache_type": {
+            "title": "Cache Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "hit_count": {
+            "title": "Hit Count",
+            "type": "integer"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At"
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "cache_type",
+          "key",
+          "ref",
+          "version",
+          "size_bytes",
+          "created_at",
+          "last_accessed_at",
+          "hit_count"
+        ],
+        "title": "CacheEntryResponse",
+        "type": "object"
+      },
       "CacheLruEviction": {
         "description": "The repository's most recent quota-driven (least-recently-used) eviction.\n\nEntries last used at or before `cutoff_accessed_at` were deleted at\n`evicted_at`, so the gap between the two is how long an unused entry\nstayed cached. Entries never accessed since upload count from upload.",
         "properties": {
@@ -3447,6 +3585,23 @@
           "status"
         ],
         "title": "PullMergeability",
+        "type": "object"
+      },
+      "RepoCachePurgeResponse": {
+        "description": "Envelope for the purge state, null when no purge is in flight.",
+        "properties": {
+          "purge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepoCachePurgeStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "RepoCachePurgeResponse",
         "type": "object"
       },
       "RepoCachePurgeStatus": {
@@ -7923,6 +8078,80 @@
       }
     },
     "/orgs/{org_id}/repos/{repo_id}/cache": {
+      "delete": {
+        "description": "Queue a full cache purge for one repository.\n\nAsynchronous for the same reason as the org-wide purge: the work walks\nevery storage's LIST/DELETE pages, scans Valkey and deletes the stats row,\nwhich on a large repository outlives the request. It ran inline here long\nafter the org sweep moved to the queue, so the console's purge button hung\nuntil the ingress cut it off while the deletion carried on server-side.\n\nReturns the resulting purge state rather than a deleted count: nothing has\nbeen deleted when this returns. The dedup key is shared with the org-wide\nsweep, so clicking purge on a repository an org sweep already covers\ncoalesces into that task instead of walking the storages twice.",
+        "operationId": "purge_repo_cache",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoCachePurgeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Purge Repo Cache",
+        "tags": [
+          "cache"
+        ]
+      },
       "get": {
         "description": "Get cache usage summary for a repository.\n\nAlso carries the live purge state, so the console can poll one endpoint\nand see the usage and the purge that is invalidating it consistently. It\nis readable by anyone who can read the repository, a strictly smaller\ndisclosure than the sizes alongside it, even though queueing a purge\nneeds org admin.",
         "operationId": "get_cache_usage",
@@ -7993,6 +8222,311 @@
           }
         ],
         "summary": "Get Cache Usage",
+        "tags": [
+          "cache"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/cache/entries": {
+      "delete": {
+        "description": "Delete cache entries matching a key name within a cache type.\n\nGated on repo read despite being an admin route: the response carries a\ndeletion count, which turns an exact-key delete into an existence oracle\nfor guessed cache keys. Org-wide purging stays available to admins via\nDELETE /orgs/{org_id}/cache/entries, which returns one aggregate count.",
+        "operationId": "delete_cache_entries_by_key",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Cache type to scope deletion",
+            "in": "query",
+            "name": "cache_type",
+            "required": true,
+            "schema": {
+              "description": "Cache type to scope deletion",
+              "pattern": "^[a-z][a-z0-9_-]{1,31}$",
+              "title": "Cache Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact cache key name to match for deletion",
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "description": "Exact cache key name to match for deletion",
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ref to narrow deletion scope (used by gha)",
+            "in": "query",
+            "name": "ref",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ref to narrow deletion scope (used by gha)",
+              "title": "Ref"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheDeleteByKeyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Cache Entries By Key",
+        "tags": [
+          "cache"
+        ]
+      },
+      "get": {
+        "description": "List cache entries for a repository.",
+        "operationId": "list_cache_entries",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cache_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z][a-z0-9_-]{1,31}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cache Type"
+            }
+          },
+          {
+            "description": "Prefix match on cache key name",
+            "in": "query",
+            "name": "key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Prefix match on cache key name",
+              "title": "Key"
+            }
+          },
+          {
+            "description": "Exact match on ref",
+            "in": "query",
+            "name": "ref",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact match on ref",
+              "title": "Ref"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque continuation cursor from a previous response's next_cursor (stream mode)",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque continuation cursor from a previous response's next_cursor (stream mode)",
+              "title": "After"
+            }
+          },
+          {
+            "description": "Sort order (ignored when the response is streaming a large repo)",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "created_at.desc",
+              "description": "Sort order (ignored when the response is streaming a large repo)",
+              "enum": [
+                "created_at.desc",
+                "created_at.asc",
+                "size_bytes.desc",
+                "size_bytes.asc",
+                "last_accessed_at.desc",
+                "last_accessed_at.asc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheEntriesListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Cache Entries",
         "tags": [
           "cache"
         ]

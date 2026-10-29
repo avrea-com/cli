@@ -903,6 +903,36 @@ func (e ResolveOrganizationRepositoryParamsPlatform) Valid() bool {
 	}
 }
 
+// Defines values for ListCacheEntriesParamsOrder.
+const (
+	ListCacheEntriesParamsOrderCreatedAtAsc       ListCacheEntriesParamsOrder = "created_at.asc"
+	ListCacheEntriesParamsOrderCreatedAtDesc      ListCacheEntriesParamsOrder = "created_at.desc"
+	ListCacheEntriesParamsOrderLastAccessedAtAsc  ListCacheEntriesParamsOrder = "last_accessed_at.asc"
+	ListCacheEntriesParamsOrderLastAccessedAtDesc ListCacheEntriesParamsOrder = "last_accessed_at.desc"
+	ListCacheEntriesParamsOrderSizeBytesAsc       ListCacheEntriesParamsOrder = "size_bytes.asc"
+	ListCacheEntriesParamsOrderSizeBytesDesc      ListCacheEntriesParamsOrder = "size_bytes.desc"
+)
+
+// Valid indicates whether the value is a known member of the ListCacheEntriesParamsOrder enum.
+func (e ListCacheEntriesParamsOrder) Valid() bool {
+	switch e {
+	case ListCacheEntriesParamsOrderCreatedAtAsc:
+		return true
+	case ListCacheEntriesParamsOrderCreatedAtDesc:
+		return true
+	case ListCacheEntriesParamsOrderLastAccessedAtAsc:
+		return true
+	case ListCacheEntriesParamsOrderLastAccessedAtDesc:
+		return true
+	case ListCacheEntriesParamsOrderSizeBytesAsc:
+		return true
+	case ListCacheEntriesParamsOrderSizeBytesDesc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListWorkflowRunsParamsStatuses.
 const (
 	ListWorkflowRunsParamsStatusesCompleted  ListWorkflowRunsParamsStatuses = "completed"
@@ -1214,6 +1244,36 @@ type CIWorkflowResponse struct {
 	UpdatedAt                 time.Time                 `json:"updated_at"`
 	WorkflowId                string                    `json:"workflow_id"`
 	AdditionalProperties      map[string]interface{}    `json:"-"`
+}
+
+// CacheDeleteByKeyResponse defines model for CacheDeleteByKeyResponse.
+type CacheDeleteByKeyResponse struct {
+	DeletedCount         int                    `json:"deleted_count"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CacheEntriesListResponse defines model for CacheEntriesListResponse.
+type CacheEntriesListResponse struct {
+	Data                 []CacheEntryResponse      `json:"data"`
+	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
+	Partial              *bool                     `json:"partial,omitempty"`
+	Streaming            *bool                     `json:"streaming,omitempty"`
+	Total                int                       `json:"total"`
+	Truncated            *bool                     `json:"truncated,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// CacheEntryResponse defines model for CacheEntryResponse.
+type CacheEntryResponse struct {
+	CacheType            string                       `json:"cache_type"`
+	CreatedAt            time.Time                    `json:"created_at"`
+	HitCount             int                          `json:"hit_count"`
+	Key                  nullable.Nullable[string]    `json:"key"`
+	LastAccessedAt       nullable.Nullable[time.Time] `json:"last_accessed_at"`
+	Ref                  nullable.Nullable[string]    `json:"ref"`
+	SizeBytes            int                          `json:"size_bytes"`
+	Version              nullable.Nullable[string]    `json:"version"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
 // CacheLruEviction The repository's most recent quota-driven (least-recently-used) eviction.
@@ -1859,6 +1919,12 @@ type PullMergeability struct {
 
 // PullMergeabilityStatus defines model for PullMergeability.Status.
 type PullMergeabilityStatus string
+
+// RepoCachePurgeResponse Envelope for the purge state, null when no purge is in flight.
+type RepoCachePurgeResponse struct {
+	Purge                nullable.Nullable[RepoCachePurgeStatus] `json:"purge,omitempty"`
+	AdditionalProperties map[string]interface{}                  `json:"-"`
+}
 
 // RepoCachePurgeStatus Live state of this repository's cache purge.
 //
@@ -2541,10 +2607,51 @@ type ArtifactDownloadParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// PurgeRepoCacheParams defines parameters for PurgeRepoCache.
+type PurgeRepoCacheParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetCacheUsageParams defines parameters for GetCacheUsage.
 type GetCacheUsageParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
+
+// DeleteCacheEntriesByKeyParams defines parameters for DeleteCacheEntriesByKey.
+type DeleteCacheEntriesByKeyParams struct {
+	// CacheType Cache type to scope deletion
+	CacheType string `form:"cache_type" json:"cache_type"`
+
+	// Key Exact cache key name to match for deletion
+	Key string `form:"key" json:"key"`
+
+	// Ref Ref to narrow deletion scope (used by gha)
+	Ref          *string `form:"ref,omitempty" json:"ref,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListCacheEntriesParams defines parameters for ListCacheEntries.
+type ListCacheEntriesParams struct {
+	CacheType *string `form:"cache_type,omitempty" json:"cache_type,omitempty"`
+
+	// Key Prefix match on cache key name
+	Key *string `form:"key,omitempty" json:"key,omitempty"`
+
+	// Ref Exact match on ref
+	Ref    *string `form:"ref,omitempty" json:"ref,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int    `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// After Opaque continuation cursor from a previous response's next_cursor (stream mode)
+	After *string `form:"after,omitempty" json:"after,omitempty"`
+
+	// Order Sort order (ignored when the response is streaming a large repo)
+	Order        *ListCacheEntriesParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+	AvreaSession *string                      `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListCacheEntriesParamsOrder defines parameters for ListCacheEntries.
+type ListCacheEntriesParamsOrder string
 
 // DispatchWorkflowEndpointParams defines parameters for DispatchWorkflowEndpoint.
 type DispatchWorkflowEndpointParams struct {
@@ -3316,6 +3423,370 @@ func (a CIWorkflowResponse) MarshalJSON() ([]byte, error) {
 	object["workflow_id"], err = json.Marshal(a.WorkflowId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheDeleteByKeyResponse. Returns the specified
+// element and whether it was found
+func (a CacheDeleteByKeyResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheDeleteByKeyResponse
+func (a *CacheDeleteByKeyResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheDeleteByKeyResponse to handle AdditionalProperties
+func (a *CacheDeleteByKeyResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["deleted_count"]; found {
+		err = json.Unmarshal(raw, &a.DeletedCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'deleted_count': %w", err)
+		}
+		delete(object, "deleted_count")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheDeleteByKeyResponse to handle AdditionalProperties
+func (a CacheDeleteByKeyResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["deleted_count"], err = json.Marshal(a.DeletedCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'deleted_count': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheEntriesListResponse. Returns the specified
+// element and whether it was found
+func (a CacheEntriesListResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheEntriesListResponse
+func (a *CacheEntriesListResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheEntriesListResponse to handle AdditionalProperties
+func (a *CacheEntriesListResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.NextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_cursor': %w", err)
+		}
+		delete(object, "next_cursor")
+	}
+
+	if raw, found := object["partial"]; found {
+		err = json.Unmarshal(raw, &a.Partial)
+		if err != nil {
+			return fmt.Errorf("error reading 'partial': %w", err)
+		}
+		delete(object, "partial")
+	}
+
+	if raw, found := object["streaming"]; found {
+		err = json.Unmarshal(raw, &a.Streaming)
+		if err != nil {
+			return fmt.Errorf("error reading 'streaming': %w", err)
+		}
+		delete(object, "streaming")
+	}
+
+	if raw, found := object["total"]; found {
+		err = json.Unmarshal(raw, &a.Total)
+		if err != nil {
+			return fmt.Errorf("error reading 'total': %w", err)
+		}
+		delete(object, "total")
+	}
+
+	if raw, found := object["truncated"]; found {
+		err = json.Unmarshal(raw, &a.Truncated)
+		if err != nil {
+			return fmt.Errorf("error reading 'truncated': %w", err)
+		}
+		delete(object, "truncated")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheEntriesListResponse to handle AdditionalProperties
+func (a CacheEntriesListResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	if a.NextCursor != nil {
+		object["next_cursor"], err = json.Marshal(a.NextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
+		}
+	}
+
+	if a.Partial != nil {
+		object["partial"], err = json.Marshal(a.Partial)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'partial': %w", err)
+		}
+	}
+
+	if a.Streaming != nil {
+		object["streaming"], err = json.Marshal(a.Streaming)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'streaming': %w", err)
+		}
+	}
+
+	object["total"], err = json.Marshal(a.Total)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total': %w", err)
+	}
+
+	if a.Truncated != nil {
+		object["truncated"], err = json.Marshal(a.Truncated)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'truncated': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CacheEntryResponse. Returns the specified
+// element and whether it was found
+func (a CacheEntryResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CacheEntryResponse
+func (a *CacheEntryResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CacheEntryResponse to handle AdditionalProperties
+func (a *CacheEntryResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cache_type"]; found {
+		err = json.Unmarshal(raw, &a.CacheType)
+		if err != nil {
+			return fmt.Errorf("error reading 'cache_type': %w", err)
+		}
+		delete(object, "cache_type")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["hit_count"]; found {
+		err = json.Unmarshal(raw, &a.HitCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'hit_count': %w", err)
+		}
+		delete(object, "hit_count")
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if raw, found := object["last_accessed_at"]; found {
+		err = json.Unmarshal(raw, &a.LastAccessedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_accessed_at': %w", err)
+		}
+		delete(object, "last_accessed_at")
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
+	if raw, found := object["version"]; found {
+		err = json.Unmarshal(raw, &a.Version)
+		if err != nil {
+			return fmt.Errorf("error reading 'version': %w", err)
+		}
+		delete(object, "version")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CacheEntryResponse to handle AdditionalProperties
+func (a CacheEntryResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cache_type"], err = json.Marshal(a.CacheType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cache_type': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["hit_count"], err = json.Marshal(a.HitCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'hit_count': %w", err)
+	}
+
+	object["key"], err = json.Marshal(a.Key)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	object["last_accessed_at"], err = json.Marshal(a.LastAccessedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'last_accessed_at': %w", err)
+	}
+
+	object["ref"], err = json.Marshal(a.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+	}
+
+	object["size_bytes"], err = json.Marshal(a.SizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+	}
+
+	object["version"], err = json.Marshal(a.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'version': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -9253,6 +9724,74 @@ func (a PullMergeability) MarshalJSON() ([]byte, error) {
 		object["up_to_date"], err = json.Marshal(a.UpToDate)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'up_to_date': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RepoCachePurgeResponse. Returns the specified
+// element and whether it was found
+func (a RepoCachePurgeResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RepoCachePurgeResponse
+func (a *RepoCachePurgeResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RepoCachePurgeResponse to handle AdditionalProperties
+func (a *RepoCachePurgeResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["purge"]; found {
+		err = json.Unmarshal(raw, &a.Purge)
+		if err != nil {
+			return fmt.Errorf("error reading 'purge': %w", err)
+		}
+		delete(object, "purge")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RepoCachePurgeResponse to handle AdditionalProperties
+func (a RepoCachePurgeResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Purge != nil {
+		object["purge"], err = json.Marshal(a.Purge)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'purge': %w", err)
 		}
 	}
 
