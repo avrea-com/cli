@@ -33,6 +33,24 @@ func (e CIProvider) Valid() bool {
 	}
 }
 
+// Defines values for CancelWorkflowRunResponseStatus.
+const (
+	AlreadyTerminal CancelWorkflowRunResponseStatus = "already_terminal"
+	CancelRequested CancelWorkflowRunResponseStatus = "cancel_requested"
+)
+
+// Valid indicates whether the value is a known member of the CancelWorkflowRunResponseStatus enum.
+func (e CancelWorkflowRunResponseStatus) Valid() bool {
+	switch e {
+	case AlreadyTerminal:
+		return true
+	case CancelRequested:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GovernanceHoldReason.
 const (
 	GroupSuspended     GovernanceHoldReason = "group_suspended"
@@ -294,6 +312,21 @@ func (e OrganizationRepositoryResponsePlatform) Valid() bool {
 	case OrganizationRepositoryResponsePlatformGithub:
 		return true
 	case OrganizationRepositoryResponsePlatformGitlab:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RerunWorkflowRunResponseStatus.
+const (
+	RerunRequested RerunWorkflowRunResponseStatus = "rerun_requested"
+)
+
+// Valid indicates whether the value is a known member of the RerunWorkflowRunResponseStatus enum.
+func (e RerunWorkflowRunResponseStatus) Valid() bool {
+	switch e {
+	case RerunRequested:
 		return true
 	default:
 		return false
@@ -651,6 +684,11 @@ func (e ListWorkflowRunsParamsOrder) Valid() bool {
 	}
 }
 
+// APIResponseCancelWorkflowRunResponse defines model for APIResponse_CancelWorkflowRunResponse_.
+type APIResponseCancelWorkflowRunResponse struct {
+	Data CancelWorkflowRunResponse `json:"data"`
+}
+
 // APIResponseJobResponse defines model for APIResponse_JobResponse_.
 type APIResponseJobResponse struct {
 	Data JobResponse `json:"data"`
@@ -662,6 +700,11 @@ type APIResponseOrganizationRepositoryResponse struct {
 	Data OrganizationRepositoryResponse `json:"data"`
 }
 
+// APIResponseRerunWorkflowRunResponse defines model for APIResponse_RerunWorkflowRunResponse_.
+type APIResponseRerunWorkflowRunResponse struct {
+	Data RerunWorkflowRunResponse `json:"data"`
+}
+
 // APIResponseWorkflowRunResponse defines model for APIResponse_WorkflowRunResponse_.
 type APIResponseWorkflowRunResponse struct {
 	Data WorkflowRunResponse `json:"data"`
@@ -669,6 +712,16 @@ type APIResponseWorkflowRunResponse struct {
 
 // CIProvider defines model for CIProvider.
 type CIProvider string
+
+// CancelWorkflowRunResponse defines model for CancelWorkflowRunResponse.
+type CancelWorkflowRunResponse struct {
+	RunId                string                          `json:"run_id"`
+	Status               CancelWorkflowRunResponseStatus `json:"status"`
+	AdditionalProperties map[string]interface{}          `json:"-"`
+}
+
+// CancelWorkflowRunResponseStatus defines model for CancelWorkflowRunResponse.Status.
+type CancelWorkflowRunResponseStatus string
 
 // GovernanceHoldReason defines model for GovernanceHoldReason.
 type GovernanceHoldReason string
@@ -923,6 +976,24 @@ type PagedResponseOrganizationListItem struct {
 type PaginationMeta struct {
 	NextCursor nullable.Nullable[string] `json:"next_cursor,omitempty"`
 }
+
+// RerunWorkflowRunRequest Request body for rerunning a workflow run.
+type RerunWorkflowRunRequest struct {
+	// FailedOnly If true, re-run only the failed jobs
+	FailedOnly           *bool                  `json:"failed_only,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// RerunWorkflowRunResponse defines model for RerunWorkflowRunResponse.
+type RerunWorkflowRunResponse struct {
+	FailedOnly           bool                            `json:"failed_only"`
+	RunId                string                          `json:"run_id"`
+	Status               *RerunWorkflowRunResponseStatus `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}          `json:"-"`
+}
+
+// RerunWorkflowRunResponseStatus defines model for RerunWorkflowRunResponse.Status.
+type RerunWorkflowRunResponseStatus string
 
 // SSHForwardingRequest defines model for SSHForwardingRequest.
 type SSHForwardingRequest struct {
@@ -1328,6 +1399,19 @@ type GetWorkflowRunParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// CancelWorkflowRunEndpointParams defines parameters for CancelWorkflowRunEndpoint.
+type CancelWorkflowRunEndpointParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RerunWorkflowRunJSONBody defines parameters for RerunWorkflowRun.
+type RerunWorkflowRunJSONBody = RerunWorkflowRunRequest
+
+// RerunWorkflowRunParams defines parameters for RerunWorkflowRun.
+type RerunWorkflowRunParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListUserOrganizationsParams defines parameters for ListUserOrganizations.
 type ListUserOrganizationsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -1341,8 +1425,90 @@ type SshForwardingParams struct {
 // SearchLogsJSONRequestBody defines body for SearchLogs for application/json ContentType.
 type SearchLogsJSONRequestBody = LogSearchParams
 
+// RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
+type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
+
 // SshForwardingJSONRequestBody defines body for SshForwarding for application/json ContentType.
 type SshForwardingJSONRequestBody = SSHForwardingRequest
+
+// Getter for additional properties for CancelWorkflowRunResponse. Returns the specified
+// element and whether it was found
+func (a CancelWorkflowRunResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CancelWorkflowRunResponse
+func (a *CancelWorkflowRunResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CancelWorkflowRunResponse to handle AdditionalProperties
+func (a *CancelWorkflowRunResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["run_id"]; found {
+		err = json.Unmarshal(raw, &a.RunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_id': %w", err)
+		}
+		delete(object, "run_id")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CancelWorkflowRunResponse to handle AdditionalProperties
+func (a CancelWorkflowRunResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["run_id"], err = json.Marshal(a.RunId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // Getter for additional properties for HTTPValidationError. Returns the specified
 // element and whether it was found
@@ -3529,6 +3695,168 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 	object["repository_id"], err = json.Marshal(a.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RerunWorkflowRunRequest. Returns the specified
+// element and whether it was found
+func (a RerunWorkflowRunRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RerunWorkflowRunRequest
+func (a *RerunWorkflowRunRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RerunWorkflowRunRequest to handle AdditionalProperties
+func (a *RerunWorkflowRunRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["failed_only"]; found {
+		err = json.Unmarshal(raw, &a.FailedOnly)
+		if err != nil {
+			return fmt.Errorf("error reading 'failed_only': %w", err)
+		}
+		delete(object, "failed_only")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RerunWorkflowRunRequest to handle AdditionalProperties
+func (a RerunWorkflowRunRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.FailedOnly != nil {
+		object["failed_only"], err = json.Marshal(a.FailedOnly)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failed_only': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RerunWorkflowRunResponse. Returns the specified
+// element and whether it was found
+func (a RerunWorkflowRunResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RerunWorkflowRunResponse
+func (a *RerunWorkflowRunResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RerunWorkflowRunResponse to handle AdditionalProperties
+func (a *RerunWorkflowRunResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["failed_only"]; found {
+		err = json.Unmarshal(raw, &a.FailedOnly)
+		if err != nil {
+			return fmt.Errorf("error reading 'failed_only': %w", err)
+		}
+		delete(object, "failed_only")
+	}
+
+	if raw, found := object["run_id"]; found {
+		err = json.Unmarshal(raw, &a.RunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_id': %w", err)
+		}
+		delete(object, "run_id")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RerunWorkflowRunResponse to handle AdditionalProperties
+func (a RerunWorkflowRunResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["failed_only"], err = json.Marshal(a.FailedOnly)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'failed_only': %w", err)
+	}
+
+	object["run_id"], err = json.Marshal(a.RunId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
+	}
+
+	if a.Status != nil {
+		object["status"], err = json.Marshal(a.Status)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'status': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
