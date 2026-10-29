@@ -83,12 +83,38 @@ cases. Go tests cover temporal matching, poll deadlines, cancellation,
 stdin limits and refusal to read JSON from a terminal. The existing inspection
 parity suite is rerun because the shared watch renderer changed.
 
+## Active-job watch batch
+
+Added job watch and the jobs alias, shared with avr-admin.
+Workflow dispatch checkpoints: public 87f4b55, admin 83ebbb86ae.
+
+Decisions:
+- Preserve the default five-second interval, active-state query, repeated
+  repository/name filters, Git resolution and one JSON snapshot per refresh.
+- Stream snapshots automatically when piped, or explicitly with --ndjson.
+  Reuse the job-list table, colors, underlines and links in terminal mode.
+- Retry transient HTTP/network failures until interrupted; propagate other
+  client errors with the existing auth/exit-code contract.
+- Retain the previous terminal frame during a retry. Exact title/redraw events
+  are outside the compatibility target.
+- Preserve commands' explicit Ctrl-C handling at the shared exit boundary.
+  It no longer adds a redundant Interrupted message after Stopped watching.
+- Fix ordered --on-avrea/--shadowing flags so the last occurrence wins.
+- Normalize only query-key ordering in API diagnostic URLs; every parameter,
+  repeated value and value order remains checked.
+
+Validation: 28 differential cases per executable, including eight terminal
+cases, real process interruption, snapshots, filters, retries and both toggle
+orders. Go tests cover blocked-request cancellation, transport retries and
+integer preservation. Three comparator tests prove that semantic differences
+still fail. The existing 79 job cases are rerun for both executables.
+
 ## Remaining work
 
-Run diagnose, job metrics/watch, PR/status, artifacts,
+Run diagnose, job metrics, PR/status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
-all aliases, and a final per-command flag/argument/behavior coverage audit.
+remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.
