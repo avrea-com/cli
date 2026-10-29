@@ -17,7 +17,9 @@
     "rerun_workflow_run",
     "cancel_workflow_run_endpoint",
     "aggregate_workflow_runs",
-    "list_repository_workflows_indexed"
+    "list_repository_workflows_indexed",
+    "get_organization_repository",
+    "dispatch_workflow_endpoint"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

@@ -38,6 +38,7 @@ type Dependencies struct {
 	Now             func() time.Time
 	Wait            func(context.Context, time.Duration) error
 	IsTerminal      func() bool
+	IsInputTerminal func() bool
 	IsErrorTerminal func() bool
 	LoginTimeout    time.Duration
 	GitRemote       func(context.Context) (string, error)
@@ -80,6 +81,9 @@ func (d Dependencies) defaults() Dependencies {
 	}
 	if d.IsTerminal == nil {
 		d.IsTerminal = func() bool { f, ok := d.Out.(*os.File); return ok && term.IsTerminal(int(f.Fd())) }
+	}
+	if d.IsInputTerminal == nil {
+		d.IsInputTerminal = func() bool { f, ok := d.In.(*os.File); return ok && term.IsTerminal(int(f.Fd())) }
 	}
 	if d.IsErrorTerminal == nil {
 		d.IsErrorTerminal = func() bool { f, ok := d.Err.(*os.File); return ok && term.IsTerminal(int(f.Fd())) }

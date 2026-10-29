@@ -818,6 +818,19 @@ type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
 }
 
+// APIResponseDispatchWorkflowResponse defines model for APIResponse_DispatchWorkflowResponse_.
+type APIResponseDispatchWorkflowResponse struct {
+	// Data Response for a workflow dispatch.
+	//
+	// `platform_run_id` is the GitHub workflow run ID (always present with
+	// api-version 2026-03-10; degrades to None if GitHub returns 204).
+	// `run_id` is the Avrea `run-xxx` ID, which is None at dispatch time
+	// because the run record is created asynchronously from the
+	// workflow_run webhook — clients can poll workflow-runs by
+	// `platform_run_id` to bridge the gap.
+	Data DispatchWorkflowResponse `json:"data"`
+}
+
 // APIResponseJobResponse defines model for APIResponse_JobResponse_.
 type APIResponseJobResponse struct {
 	Data JobResponse `json:"data"`
@@ -902,6 +915,35 @@ type CancelWorkflowRunResponse struct {
 
 // CancelWorkflowRunResponseStatus defines model for CancelWorkflowRunResponse.Status.
 type CancelWorkflowRunResponseStatus string
+
+// DispatchWorkflowRequest Request body for dispatching a workflow.
+type DispatchWorkflowRequest struct {
+	// Inputs Optional workflow input parameters
+	Inputs nullable.Nullable[map[string]string] `json:"inputs,omitempty"`
+
+	// Ref Branch or tag name to run the workflow at
+	Ref string `json:"ref"`
+
+	// Workflow Workflow filename (e.g. 'build.yml') or platform workflow_id; no path segments
+	Workflow             string                 `json:"workflow"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DispatchWorkflowResponse Response for a workflow dispatch.
+//
+// `platform_run_id` is the GitHub workflow run ID (always present with
+// api-version 2026-03-10; degrades to None if GitHub returns 204).
+// `run_id` is the Avrea `run-xxx` ID, which is None at dispatch time
+// because the run record is created asynchronously from the
+// workflow_run webhook — clients can poll workflow-runs by
+// `platform_run_id` to bridge the gap.
+type DispatchWorkflowResponse struct {
+	PlatformRunId        nullable.Nullable[int]    `json:"platform_run_id,omitempty"`
+	Ref                  string                    `json:"ref"`
+	RunId                nullable.Nullable[string] `json:"run_id,omitempty"`
+	Workflow             string                    `json:"workflow"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
 
 // GovernanceHoldReason defines model for GovernanceHoldReason.
 type GovernanceHoldReason string
@@ -1672,6 +1714,16 @@ type ResolveOrganizationRepositoryParams struct {
 // ResolveOrganizationRepositoryParamsPlatform defines parameters for ResolveOrganizationRepository.
 type ResolveOrganizationRepositoryParamsPlatform string
 
+// GetOrganizationRepositoryParams defines parameters for GetOrganizationRepository.
+type GetOrganizationRepositoryParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DispatchWorkflowEndpointParams defines parameters for DispatchWorkflowEndpoint.
+type DispatchWorkflowEndpointParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListRepositoryWorkflowsIndexedParams defines parameters for ListRepositoryWorkflowsIndexed.
 type ListRepositoryWorkflowsIndexedParams struct {
 	CiProvider   *CIProvider `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
@@ -1890,6 +1942,9 @@ type SshForwardingParams struct {
 
 // SearchLogsJSONRequestBody defines body for SearchLogs for application/json ContentType.
 type SearchLogsJSONRequestBody = LogSearchParams
+
+// DispatchWorkflowEndpointJSONRequestBody defines body for DispatchWorkflowEndpoint for application/json ContentType.
+type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
 
 // RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
 type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
@@ -2484,6 +2539,209 @@ func (a CancelWorkflowRunResponse) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DispatchWorkflowRequest. Returns the specified
+// element and whether it was found
+func (a DispatchWorkflowRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DispatchWorkflowRequest
+func (a *DispatchWorkflowRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DispatchWorkflowRequest to handle AdditionalProperties
+func (a *DispatchWorkflowRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["workflow"]; found {
+		err = json.Unmarshal(raw, &a.Workflow)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow': %w", err)
+		}
+		delete(object, "workflow")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DispatchWorkflowRequest to handle AdditionalProperties
+func (a DispatchWorkflowRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	object["ref"], err = json.Marshal(a.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+	}
+
+	object["workflow"], err = json.Marshal(a.Workflow)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DispatchWorkflowResponse. Returns the specified
+// element and whether it was found
+func (a DispatchWorkflowResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DispatchWorkflowResponse
+func (a *DispatchWorkflowResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DispatchWorkflowResponse to handle AdditionalProperties
+func (a *DispatchWorkflowResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["platform_run_id"]; found {
+		err = json.Unmarshal(raw, &a.PlatformRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_run_id': %w", err)
+		}
+		delete(object, "platform_run_id")
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["run_id"]; found {
+		err = json.Unmarshal(raw, &a.RunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_id': %w", err)
+		}
+		delete(object, "run_id")
+	}
+
+	if raw, found := object["workflow"]; found {
+		err = json.Unmarshal(raw, &a.Workflow)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow': %w", err)
+		}
+		delete(object, "workflow")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DispatchWorkflowResponse to handle AdditionalProperties
+func (a DispatchWorkflowResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.PlatformRunId != nil {
+		object["platform_run_id"], err = json.Marshal(a.PlatformRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_run_id': %w", err)
+		}
+	}
+
+	object["ref"], err = json.Marshal(a.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+	}
+
+	if a.RunId != nil {
+		object["run_id"], err = json.Marshal(a.RunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
+		}
+	}
+
+	object["workflow"], err = json.Marshal(a.Workflow)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
