@@ -152,6 +152,7 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_artifact --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_cache --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_log_search --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom --go build/go/avr.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -172,6 +173,7 @@ jobs:
             build/go/artifact-parity.json
             build/go/cache-parity.json
             build/go/log-search-parity.json
+            build/go/sbom-inspection-parity.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error
 

@@ -317,9 +317,36 @@ test verifies that embedded styling survives while other terminal commands are
 escaped. Go race tests, lint, paired admin checks, fixture typing and workflow
 validation pass; report hashes match both tested executables.
 
+## SBOM inspection batch
+
+Added sbom list/view, shared with avr-admin.
+Log-search checkpoints: public 3a7ec1a, admin 7df4eed7f5.
+
+Decisions:
+- Preserve cursor validation, quoted pagination hints, optional commit
+  argument/flag, uppercase/whitespace normalization and full SHA-1/SHA-256
+  selection. Resolve unique prefixes through paginated history and report
+  ambiguity; stop a repeated cursor rather than loop indefinitely.
+- Match human metadata, unknown counts, license/ecosystem ordering, negative
+  count handling, producer omissions and the ten-item display rule, including
+  the eleven-item exception and --full.
+- Keep hints pinned to the displayed commit and safely quoted for the shell.
+  Escape controls in human-readable names and clip license names after escaping.
+- Tolerate non-object opaque summaries as Python does, after a differential
+  failure demonstrated the mismatch. JSON preserves the original summary.
+- Preserve no-SBOM hints on 404/422 and avoid falsely treating missing counts
+  as zero. No new dependencies or live writes.
+
+Validation: 76 Python/Go cases per executable, including seven terminal cases,
+cover history/cursor output, prefix resolution, field validation order, unknown
+counts, opaque summaries, omission/truncation boundaries, escaping and JSON
+preservation. Focused Go tests cover repeated history cursors and cancellation.
+Go race tests, lint, schema generation, paired admin checks, fixture typing and
+workflow validation pass; report hashes match the tested executables.
+
 ## Remaining work
 
-SBOM, configuration/tokens/settings, organization and repository
+SBOM download/generate, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
