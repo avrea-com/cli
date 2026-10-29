@@ -163,7 +163,12 @@ def run(ctx):
     help="Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable.",
 )
 @click.option("--branch", "head_branches", multiple=True, help="Filter by head branch (repeatable).")
-@click.option("-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl-xxx, repeatable).")
+@click.option(
+    "--ci-provider", type=click.Choice(["github_actions", "gitlab_ci", "avrea_ci"]), help="Filter by CI engine."
+)
+@click.option(
+    "-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl- or awf-, repeatable)."
+)
 @click.option("--since", default=None, help="Relative time window: '7d', '24h', etc. Sugar for --created-after.")
 @click.option(
     "--from",
@@ -204,6 +209,7 @@ def run_list(
     status_values,
     head_branches,
     workflow_ids,
+    ci_provider,
     since,
     created_after,
     created_before,
@@ -283,6 +289,8 @@ def run_list(
         params["conclusions"] = platform_conclusions
     if head_branches:
         params["head_branches"] = list(head_branches)
+    if ci_provider:
+        params["ci_provider"] = ci_provider
     if workflow_ids:
         params["workflow_ids"] = list(workflow_ids)
     if created_after:

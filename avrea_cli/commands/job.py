@@ -216,7 +216,12 @@ def job(ctx):
     help="Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable.",
 )
 @click.option("--on-avrea/--shadowing", "running_on_avrea", default=None, help="Filter by Avrea-run vs shadowing jobs.")
-@click.option("-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl-xxx, repeatable).")
+@click.option(
+    "--ci-provider", type=click.Choice(["github_actions", "gitlab_ci", "avrea_ci"]), help="Filter by CI engine."
+)
+@click.option(
+    "-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl- or awf-, repeatable)."
+)
 @click.option("--since", default=None, help="Relative time window: '7d', '24h', etc.")
 @click.option("-L", "--limit", type=click.IntRange(1, 1000), default=20, show_default=True, help="Max jobs to return.")
 @click.option("--cursor", default=None, help="Pagination cursor from a previous response.")
@@ -243,6 +248,7 @@ def job_list(
     status_values,
     running_on_avrea,
     workflow_ids,
+    ci_provider,
     since,
     limit,
     cursor,
@@ -291,6 +297,8 @@ def job_list(
         params["conclusions"] = platform_conclusions
     if running_on_avrea is not None:
         params["running_on_avrea"] = running_on_avrea
+    if ci_provider:
+        params["ci_provider"] = ci_provider
     if workflow_ids:
         params["workflow_ids"] = list(workflow_ids)
     if since:

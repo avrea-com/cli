@@ -246,3 +246,16 @@ def test_native_job_metrics_use_the_public_vm_metrics_route(runner: CliRunner, m
     assert result.exit_code == 0, result.output
     assert '"cpu"' in result.output
     assert get.call_args.args[0].endswith(f"/jobs/{_JOB}/metrics/cpu")
+
+
+@pytest.mark.parametrize("command", ["run", "job"])
+@pytest.mark.parametrize("provider", ["github_actions", "gitlab_ci", "avrea_ci"])
+def test_history_provider_filter_reaches_public_api(
+    runner: CliRunner, monkeypatch: MonkeyPatch, command: str, provider: str
+) -> None:
+    get = MagicMock(return_value={"data": []})
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr(f"avrea_cli.commands.{command}.resolve_repos_or_detect", lambda *args, **kwargs: [])
+    result = runner.invoke(cli, [command, "list", "--ci-provider", provider, "--json", "*"])
+    assert result.exit_code == 0, result.output
+    assert get.call_args.kwargs["params"]["ci_provider"] == provider
