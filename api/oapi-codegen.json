@@ -1,0 +1,10 @@
+{
+  "package": "wire",
+  "generate": {
+    "models": true
+  },
+  "output-options": {
+    "nullable-type": true
+  },
+  "allow-remote-refs-from": []
+}

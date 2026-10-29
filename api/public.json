@@ -1,0 +1,3672 @@
+{
+  "components": {
+    "schemas": {
+      "APIResponse_JobResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/JobResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[JobResponse]",
+        "type": "object"
+      },
+      "APIResponse_OrganizationRepositoryResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrganizationRepositoryResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[OrganizationRepositoryResponse]",
+        "type": "object"
+      },
+      "APIResponse_WorkflowRunResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WorkflowRunResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[WorkflowRunResponse]",
+        "type": "object"
+      },
+      "CIProvider": {
+        "enum": [
+          "github_actions",
+          "gitlab_ci",
+          "avrea_ci"
+        ],
+        "title": "CIProvider",
+        "type": "string"
+      },
+      "GovernanceHoldReason": {
+        "enum": [
+          "group_suspended",
+          "principal_suspended"
+        ],
+        "type": "string"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobQueueWait": {
+        "properties": {
+          "expires_at": {
+            "description": "Do not display this observation after this time.",
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "resource_limit",
+              "os_restricted"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "observed_at",
+          "expires_at"
+        ],
+        "title": "JobQueueWait",
+        "type": "object"
+      },
+      "JobResponse": {
+        "properties": {
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "description": "CI engine executing this work, independently of the source repository host or runner location."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "conclusion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "success",
+                  "failure",
+                  "neutral",
+                  "cancelled",
+                  "skipped",
+                  "timed_out",
+                  "action_required"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conclusion"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "governance_hold_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceHoldReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "job_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Job Labels",
+            "type": "array"
+          },
+          "job_name": {
+            "title": "Job Name",
+            "type": "string"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "platform_job_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The platform's job identifier: GitHub's job id, or GitLab's build id. A retried GitLab build is a new build with its own id. Null for Avrea CI jobs.",
+            "title": "Platform Job Id"
+          },
+          "platform_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The platform's run identifier: GitHub's workflow_run id, or GitLab's pipeline id. Null for Avrea CI jobs.",
+            "title": "Platform Run Id"
+          },
+          "queue_wait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobQueueWait"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Recent resource-limit or OS-restriction observation for a queued Avrea job. Single-job detail only; absent when unknown or expired. Resource limits do not distinguish organization and group scope."
+          },
+          "repository_full_name": {
+            "title": "Repository Full Name",
+            "type": "string"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "run_attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GitHub's workflow run attempt. Null when no attempt is recorded, which is always the case for a GitLab or Avrea CI job.",
+            "title": "Run Attempt"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avrea run ID, or null when the job is not linked to a run known to Avrea.",
+            "title": "Run Id"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobRunnerSpecs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "running_on_avrea": {
+            "title": "Running On Avrea",
+            "type": "boolean"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed",
+              "waiting"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JobStepResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps"
+          },
+          "workflow_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "job_id",
+          "ci_provider",
+          "repository_id",
+          "repository_full_name",
+          "platform",
+          "platform_job_id",
+          "platform_run_id",
+          "run_attempt",
+          "job_name",
+          "job_labels",
+          "state",
+          "conclusion",
+          "created_at",
+          "started_at",
+          "completed_at",
+          "duration_seconds",
+          "running_on_avrea"
+        ],
+        "title": "JobResponse",
+        "type": "object"
+      },
+      "JobRunnerSpecs": {
+        "description": "Public specs of the VM that executed a job (Avrea runs only).\n\nPopulated only on the single-job detail endpoint, resolved from the latest\nconfirmed execution -> vm -> runner image. ``None`` on list responses and\nwhenever the job has not landed on a VM yet (queued / shadowing).\ncpu/memory/disk are the VM's allocation; architecture/os_type/\nimage_series_name describe the VM's runner image. The host node is an\nimplementation detail and is not exposed.",
+        "properties": {
+          "architecture": {
+            "title": "Architecture",
+            "type": "string"
+          },
+          "cpu_virtual_cores": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Virtual Cores"
+          },
+          "disk_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disk Gb"
+          },
+          "image_series_name": {
+            "title": "Image Series Name",
+            "type": "string"
+          },
+          "memory_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Mb"
+          },
+          "os_type": {
+            "title": "Os Type",
+            "type": "string"
+          },
+          "vm_id": {
+            "title": "Vm Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vm_id",
+          "architecture",
+          "os_type",
+          "image_series_name",
+          "cpu_virtual_cores",
+          "memory_mb",
+          "disk_gb"
+        ],
+        "title": "JobRunnerSpecs",
+        "type": "object"
+      },
+      "JobStepResponse": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "conclusion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conclusion"
+          },
+          "log_record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stable log step identity when supplied by the runner.",
+            "title": "Log Record Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed",
+              "pending"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "conclusion",
+          "number",
+          "started_at",
+          "completed_at"
+        ],
+        "title": "JobStepResponse",
+        "type": "object"
+      },
+      "JobsListPagination": {
+        "description": "Cursor for the next page.",
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "JobsListPagination",
+        "type": "object"
+      },
+      "JobsListResponse": {
+        "description": "Jobs list with pagination.",
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/JobResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/JobsListPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "JobsListResponse",
+        "type": "object"
+      },
+      "LogLevel": {
+        "description": "Log level extracted from GitHub Actions ##[level] markers.",
+        "enum": [
+          "diagnostic",
+          "debug",
+          "info",
+          "notice",
+          "warning",
+          "error",
+          "group",
+          "endgroup",
+          "command"
+        ],
+        "title": "LogLevel",
+        "type": "string"
+      },
+      "LogSearchParams": {
+        "description": "Public log search and log reading parameters.",
+        "properties": {
+          "after_line": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "title": "After Line"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LogLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "logs_protocol": {
+            "anyOf": [
+              {
+                "const": 2,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logs Protocol"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "enum": [
+                  "line_number.asc",
+                  "line_number.desc"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order"
+          },
+          "order_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "relevance",
+                  "line_number"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "title": "Order By"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "repository_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Ids"
+          },
+          "resume_token": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Token"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LogStream"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vm_id": {
+            "anyOf": [
+              {
+                "pattern": "^vrm-[0-9a-f]{32}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vm Id"
+          }
+        },
+        "title": "LogSearchParams",
+        "type": "object"
+      },
+      "LogSearchResponse": {
+        "description": "Paginated search response.",
+        "properties": {
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "namespaces_searched": {
+            "default": 1,
+            "title": "Namespaces Searched",
+            "type": "integer"
+          },
+          "namespaces_with_results": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Namespaces With Results"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "next_resume_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Resume Token"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "enum": [
+                  "line_number.asc",
+                  "line_number.desc"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/LogSearchResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "step_names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Step Names",
+            "type": "object"
+          },
+          "total_estimated": {
+            "title": "Total Estimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "results",
+          "total_estimated",
+          "query",
+          "limit",
+          "offset"
+        ],
+        "title": "LogSearchResponse",
+        "type": "object"
+      },
+      "LogSearchResult": {
+        "description": "Single search result.",
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/LogLevel"
+          },
+          "line_number": {
+            "title": "Line Number",
+            "type": "integer"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "step_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Name"
+          },
+          "step_record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Record Id"
+          },
+          "stream": {
+            "$ref": "#/components/schemas/LogStream"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "vm_id": {
+            "title": "Vm Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "line_number",
+          "content",
+          "stream",
+          "level",
+          "timestamp",
+          "score",
+          "repository_id",
+          "vm_id"
+        ],
+        "title": "LogSearchResult",
+        "type": "object"
+      },
+      "LogStream": {
+        "description": "Log output stream type.",
+        "enum": [
+          "stdout",
+          "stderr",
+          "step_output"
+        ],
+        "title": "LogStream",
+        "type": "string"
+      },
+      "OrganizationListItem": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "organization_runners_enabled": {
+            "title": "Organization Runners Enabled",
+            "type": "boolean"
+          },
+          "owners": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Owners",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_id",
+          "name",
+          "slug",
+          "role",
+          "organization_runners_enabled"
+        ],
+        "title": "OrganizationListItem",
+        "type": "object"
+      },
+      "OrganizationRepositoriesPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "OrganizationRepositoriesPagination",
+        "type": "object"
+      },
+      "OrganizationRepositoriesResponse": {
+        "properties": {
+          "access_resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganizationRepositoryAccessResolution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationRepositoryResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/OrganizationRepositoriesPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "OrganizationRepositoriesResponse",
+        "type": "object"
+      },
+      "OrganizationRepositoryAccessResolution": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "retry_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After Seconds"
+          }
+        },
+        "required": [
+          "complete"
+        ],
+        "title": "OrganizationRepositoryAccessResolution",
+        "type": "object"
+      },
+      "OrganizationRepositoryResponse": {
+        "description": "Organization repository response model.",
+        "properties": {
+          "default_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Branch"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "platform": {
+            "default": "github",
+            "enum": [
+              "github",
+              "gitlab",
+              "avrea"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "platform_repository_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Repository Id"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository_id",
+          "platform_repository_id",
+          "name",
+          "full_name"
+        ],
+        "title": "OrganizationRepositoryResponse",
+        "type": "object"
+      },
+      "PagedResponse_OrganizationListItem_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationListItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[OrganizationListItem]",
+        "type": "object"
+      },
+      "PaginationMeta": {
+        "additionalProperties": false,
+        "description": "Pagination metadata. ``next_cursor`` is None on the final page.",
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "PaginationMeta",
+        "type": "object"
+      },
+      "SSHForwardingRequest": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "SSHForwardingRequest",
+        "type": "object"
+      },
+      "SSHForwardingResponse": {
+        "properties": {
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "host_key": {
+            "title": "Host Key",
+            "type": "string"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "private_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Private Key"
+          },
+          "ssh_keys_installed": {
+            "title": "Ssh Keys Installed",
+            "type": "boolean"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "username",
+          "ssh_keys_installed",
+          "host_key"
+        ],
+        "title": "SSHForwardingResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "Workflow": {
+        "properties": {
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "default": "github_actions"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "platform_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "workflow_id": {
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "platform_id",
+          "name",
+          "path",
+          "state"
+        ],
+        "title": "Workflow",
+        "type": "object"
+      },
+      "WorkflowRun": {
+        "description": "Workflow run sub-object for embedding in job responses (no jobs).",
+        "properties": {
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "description": "CI engine executing this work, independently of the source repository host or runner location."
+          },
+          "conclusion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "success",
+                  "failure",
+                  "neutral",
+                  "cancelled",
+                  "skipped",
+                  "timed_out",
+                  "action_required",
+                  "stale",
+                  "startup_failure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conclusion"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "display_title": {
+            "title": "Display Title",
+            "type": "string"
+          },
+          "event": {
+            "title": "Event",
+            "type": "string"
+          },
+          "head_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Branch"
+          },
+          "run_attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Attempt"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "run_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Number"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "pending",
+              "in_progress",
+              "completed",
+              "waiting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "workflow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Workflow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "run_id",
+          "ci_provider",
+          "display_title",
+          "event",
+          "status",
+          "conclusion",
+          "run_number",
+          "run_attempt",
+          "head_branch",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WorkflowRun",
+        "type": "object"
+      },
+      "WorkflowRunHeadCommit": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/WorkflowRunHeadCommitAuthor"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "required": [
+          "message",
+          "author"
+        ],
+        "title": "WorkflowRunHeadCommit",
+        "type": "object"
+      },
+      "WorkflowRunHeadCommitAuthor": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "WorkflowRunHeadCommitAuthor",
+        "type": "object"
+      },
+      "WorkflowRunPullRequest": {
+        "properties": {
+          "base_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Branch"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "number"
+        ],
+        "title": "WorkflowRunPullRequest",
+        "type": "object"
+      },
+      "WorkflowRunRepository": {
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mirror_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mirror Enabled"
+          }
+        },
+        "required": [
+          "id",
+          "full_name"
+        ],
+        "title": "WorkflowRunRepository",
+        "type": "object"
+      },
+      "WorkflowRunResponse": {
+        "properties": {
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "description": "CI engine executing this work, independently of the source repository host or runner location."
+          },
+          "conclusion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "success",
+                  "failure",
+                  "neutral",
+                  "cancelled",
+                  "skipped",
+                  "timed_out",
+                  "action_required",
+                  "stale",
+                  "startup_failure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conclusion"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "display_title": {
+            "title": "Display Title",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "event": {
+            "title": "Event",
+            "type": "string"
+          },
+          "head_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Branch"
+          },
+          "head_commit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowRunHeadCommit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "head_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Sha"
+          },
+          "jobs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JobResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jobs"
+          },
+          "platform_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Run Id"
+          },
+          "platform_workflow_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Workflow Id"
+          },
+          "pull_request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowRunPullRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repository": {
+            "$ref": "#/components/schemas/WorkflowRunRepository"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "run_attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Attempt"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "run_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Number"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "pending",
+              "in_progress",
+              "completed",
+              "waiting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "triggering_actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowRunTriggeringActor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "workflow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Workflow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workflow metadata when requested with include=workflow. Null when not requested or no catalog entry is known; use workflow_name and workflow_path."
+          },
+          "workflow_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workflow name recorded for this run. For Avrea CI, use this field when workflow is null.",
+            "title": "Workflow Name"
+          },
+          "workflow_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workflow file path recorded for this run. For Avrea CI, use this field when workflow is null.",
+            "title": "Workflow Path"
+          }
+        },
+        "required": [
+          "run_id",
+          "ci_provider",
+          "repository_id",
+          "display_title",
+          "event",
+          "status",
+          "conclusion",
+          "repository",
+          "platform_workflow_id",
+          "run_number",
+          "run_attempt",
+          "head_branch",
+          "head_sha",
+          "head_commit",
+          "created_at",
+          "started_at",
+          "updated_at",
+          "duration_seconds"
+        ],
+        "title": "WorkflowRunResponse",
+        "type": "object"
+      },
+      "WorkflowRunTriggeringActor": {
+        "properties": {
+          "platform_id": {
+            "title": "Platform Id",
+            "type": "integer"
+          },
+          "platform_login": {
+            "title": "Platform Login",
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform_id",
+          "platform_login"
+        ],
+        "title": "WorkflowRunTriggeringActor",
+        "type": "object"
+      },
+      "WorkflowRunsListPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "WorkflowRunsListPagination",
+        "type": "object"
+      },
+      "WorkflowRunsListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WorkflowRunResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/WorkflowRunsListPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "WorkflowRunsListResponse",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "support@avrea.com",
+      "name": "Avrea Support"
+    },
+    "description": "Public-facing API for Avrea control plane with OAuth,\n            user management, jobs, and GitHub integration",
+    "license": {
+      "name": "Proprietary",
+      "url": "https://avrea.com/"
+    },
+    "title": "Avrea Control API (Public)",
+    "version": "2025.9.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/logs/search": {
+      "post": {
+        "description": "Search and retrieve logs across user's repositories.\n\nSupports these modes:\n- Full-text search: provide `query`; each namespace uses BM25 relevance and offset\n  pagination. Canonical `order` and line cursors are rejected; deprecated\n  `order_by` is ignored.\n- Log reading: omit `query` and provide `job_id` or `vm_id`; results use cursor\n  pagination ordered by `line_number.asc` (default) or `line_number.desc`.\n  Replay `next_cursor` as `cursor` with the same `order`.\n- Resume tokens: set logs_protocol=2 for job reads. Pass next_resume_token\n  back as resume_token with the same order and filters. The token remembers\n  the execution, log source, and last line confirmed in storage. GitHub\n  fallback continues to use next_cursor/cursor. Older clients omit logs_protocol.\n- Repository reads: omit `query`, execution IDs, and cursors; results use\n  timestamp order within each namespace and bounded offset pagination.\n  Results are concatenated in repository order and, within each repository,\n  in month order, preserving each query's row order without a global sort.\n  This also applies to full-text searches. No line order or cursor is returned\n  for repository reads.\n- Searches read monthly namespaces. Missing namespaces are empty; backend failures return\n  503. Full-text search and repository reads cap offset plus limit at 10000.\n\nRepository filtering:\n- `organization_id`: Search repositories in one Avrea organization\n- `repository_ids`: Search specific repositories by Avrea ID (rep-xxx format)\n- No organization or repository filter: Search all repositories the user can access\n\nA `vm_id` without `job_id` must include `repository_ids` so authorization\ndoes not expand to the user's full cross-organization repository set.\n\nResults are filtered to only include logs from repositories the user has access to.",
+        "operationId": "search_logs",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogSearchParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "A scoped token reads logs by job or by runner VM only"
+          },
+          "404": {
+            "description": "Job or job execution not found, or GitHub job logs unavailable"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search Logs",
+        "tags": [
+          "logs"
+        ]
+      }
+    },
+    "/orgs/{org_id}/jobs": {
+      "get": {
+        "description": "List jobs for an organization.\n\nResults are filtered to only include jobs from repositories the user has access to.\nUses cursor-based pagination: pass next_cursor from the previous response to fetch the next page.\nUse the same order (and filters) when following next_cursor.",
+        "operationId": "list_jobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ci_provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CIProvider"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ci Provider"
+            }
+          },
+          {
+            "in": "query",
+            "name": "repository_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repository Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job_names",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Names"
+            }
+          },
+          {
+            "in": "query",
+            "name": "states",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "queued",
+                      "in_progress",
+                      "completed",
+                      "waiting"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "States"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conclusions",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "success",
+                      "failure",
+                      "neutral",
+                      "cancelled",
+                      "skipped",
+                      "timed_out",
+                      "action_required"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Conclusions"
+            }
+          },
+          {
+            "description": "Filter by whether the job targets Avrea runners (true) or other runners (false)",
+            "in": "query",
+            "name": "running_on_avrea",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether the job targets Avrea runners (true) or other runners (false)",
+              "title": "Running On Avrea"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triggering_actor_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triggering Actor Platform Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Platform Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_run_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Run Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_run_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Run Platform Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created Before"
+            }
+          },
+          {
+            "description": "Filter jobs with duration > value",
+            "in": "query",
+            "name": "duration_seconds.gt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter jobs with duration > value",
+              "title": "Duration Seconds.Gt"
+            }
+          },
+          {
+            "description": "Filter jobs with duration >= value",
+            "in": "query",
+            "name": "duration_seconds.gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter jobs with duration >= value",
+              "title": "Duration Seconds.Gte"
+            }
+          },
+          {
+            "description": "Filter jobs with duration < value",
+            "in": "query",
+            "name": "duration_seconds.lt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter jobs with duration < value",
+              "title": "Duration Seconds.Lt"
+            }
+          },
+          {
+            "description": "Filter jobs with duration <= value",
+            "in": "query",
+            "name": "duration_seconds.lte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter jobs with duration <= value",
+              "title": "Duration Seconds.Lte"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor for next page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor for next page",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Sort order (newest/oldest first, or longest/shortest duration first)",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "created_at.desc",
+              "description": "Sort order (newest/oldest first, or longest/shortest duration first)",
+              "enum": [
+                "created_at.desc",
+                "created_at.asc",
+                "duration_seconds.desc",
+                "duration_seconds.asc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: steps)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: steps)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobsListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Jobs",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/jobs/{job_id}": {
+      "get": {
+        "description": "Get a single job by ID within an organization.",
+        "operationId": "get_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: steps)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: steps)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_JobResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Job not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Job",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos": {
+      "get": {
+        "description": "List repositories in an organization that the user can access.\n\nCursor-paginated by ``(repository_full_name, repository_id)`` ascending \u2014\nthe same shape as ``/orgs/{org}/workflow-runs`` and ``/orgs/{org}/jobs``.\nPass the previous response's ``pagination.next_cursor`` verbatim to fetch\nthe next page; ``None`` when no more rows. ``q`` and ``repository_ids``\nnarrow the listing (typeahead search and by-id resolution); both compose\nwith the cursor because they don't change the order. Identity-bound\ncomplete permission baselines are refreshed in the background, with stale\nserving bounded to 48 hours.",
+        "operationId": "list_organization_repositories",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Substring match on full_name, case-insensitive.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring match on full_name, case-insensitive.",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "repository_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "pattern": "^rep-[0-9a-f]{32}$",
+                    "type": "string"
+                  },
+                  "maxItems": 200,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repository Ids"
+            }
+          },
+          {
+            "description": "Only repositories on this platform.",
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "github",
+                    "gitlab",
+                    "avrea"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only repositories on this platform.",
+              "title": "Platform"
+            }
+          },
+          {
+            "description": "Display-only mode that returns repositories supported by positive access evidence while the complete repository-access baseline builds. Omitted repositories remain unknown.",
+            "in": "query",
+            "name": "allow_partial",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Display-only mode that returns repositories supported by positive access evidence while the complete repository-access baseline builds. Omitted repositories remain unknown.",
+              "title": "Allow Partial",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationRepositoriesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Repository permissions are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Organization Repositories",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/resolve": {
+      "get": {
+        "description": "Resolve a repository full_name to its Avrea repository_id within an organization.\n\nReturns 404 if the repository is not found in the org or the caller lacks access.\nThe 404 body for true misses (repo not in org) embeds ``nearby_full_names`` +\n``other_orgs`` so clients can render a \"did you mean?\" hint without a second\nround-trip. The 404 for unsupported-platform / no-access is a bare\n``message`` so we don't leak existence.",
+        "operationId": "resolve_organization_repository",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repository full name (e.g. 'octocat/hello-world')",
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Repository full name (e.g. 'octocat/hello-world')",
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repository platform.",
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "github",
+              "description": "Repository platform.",
+              "enum": [
+                "github",
+                "gitlab",
+                "avrea"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_OrganizationRepositoryResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resolve Organization Repository",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs": {
+      "get": {
+        "description": "List workflow runs for an organization.\n\nResults are filtered through the 24-hour dashboard permission snapshot,\nwith live GitHub fallback for missing or stale private-repository snapshots.\nUses cursor-based pagination: pass next_cursor from the previous response to fetch the next page.\nUse the same order (and filters) when following next_cursor.",
+        "operationId": "list_workflow_runs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ci_provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CIProvider"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ci Provider"
+            }
+          },
+          {
+            "in": "query",
+            "name": "repository_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repository Ids"
+            }
+          },
+          {
+            "description": "Exact-match GitHub workflow run ID \u2014 bridges dispatch's `platform_run_id` to the Avrea `run_id` once the webhook lands.",
+            "in": "query",
+            "name": "platform_run_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact-match GitHub workflow run ID \u2014 bridges dispatch's `platform_run_id` to the Avrea `run_id` once the webhook lands.",
+              "title": "Platform Run Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "statuses",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "queued",
+                      "pending",
+                      "in_progress",
+                      "completed",
+                      "waiting"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Statuses"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conclusions",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "success",
+                      "failure",
+                      "neutral",
+                      "cancelled",
+                      "skipped",
+                      "timed_out",
+                      "action_required",
+                      "stale",
+                      "startup_failure"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Conclusions"
+            }
+          },
+          {
+            "in": "query",
+            "name": "head_branches",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Head Branches"
+            }
+          },
+          {
+            "description": "Exact head commit SHAs, e.g. a pull request's commits. Requires exactly one `repository_ids` value.",
+            "in": "query",
+            "name": "head_shas",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+                    "type": "string"
+                  },
+                  "maxItems": 100,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact head commit SHAs, e.g. a pull request's commits. Requires exactly one `repository_ids` value.",
+              "title": "Head Shas"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triggering_actor_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Triggering Actor Platform Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_platform_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow Platform Ids"
+            }
+          },
+          {
+            "description": "Filter runs with at least one job targeting Avrea runners (true) or none (false)",
+            "in": "query",
+            "name": "running_on_avrea",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with at least one job targeting Avrea runners (true) or none (false)",
+              "title": "Running On Avrea"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "started_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "started_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started Before"
+            }
+          },
+          {
+            "description": "Filter runs with duration > value",
+            "in": "query",
+            "name": "duration_seconds.gt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration > value",
+              "title": "Duration Seconds.Gt"
+            }
+          },
+          {
+            "description": "Filter runs with duration >= value",
+            "in": "query",
+            "name": "duration_seconds.gte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration >= value",
+              "title": "Duration Seconds.Gte"
+            }
+          },
+          {
+            "description": "Filter runs with duration < value",
+            "in": "query",
+            "name": "duration_seconds.lt",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration < value",
+              "title": "Duration Seconds.Lt"
+            }
+          },
+          {
+            "description": "Filter runs with duration <= value",
+            "in": "query",
+            "name": "duration_seconds.lte",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter runs with duration <= value",
+              "title": "Duration Seconds.Lte"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor for next page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor for next page",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Sort order (newest/oldest first, or longest/shortest duration first)",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "created_at.desc",
+              "description": "Sort order (newest/oldest first, or longest/shortest duration first)",
+              "enum": [
+                "created_at.desc",
+                "created_at.asc",
+                "started_at.desc",
+                "started_at.asc",
+                "duration_seconds.desc",
+                "duration_seconds.asc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: jobs)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: jobs)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRunsListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Workflow Runs",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/by-platform-id/{platform_run_id}": {
+      "get": {
+        "description": "Resolve a GitHub workflow run id (the integer in ``actions/runs/<id>``)\nto the Avrea ``run-xxx`` record in one round-trip.\n\nSaves callers the dance of ``GET /workflow-runs?platform_run_id=...``\n+ unwrapping ``data[0]`` (which silently returns nothing when the run\nisn't visible). 404 when no matching run exists or the caller lacks\naccess \u2014 same existence-hiding shape as the by-id endpoint.\n\nWhen a workflow is rerun, GitHub keeps the same ``platform_run_id``\nbut increments ``platform_run_attempt``. This endpoint resolves to\nthe **latest attempt** (highest ``platform_run_attempt``).",
+        "operationId": "get_workflow_run_by_platform_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "GitHub workflow run id (positive integer)",
+            "in": "path",
+            "name": "platform_run_id",
+            "required": true,
+            "schema": {
+              "description": "GitHub workflow run id (positive integer)",
+              "minimum": 1,
+              "title": "Platform Run Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: jobs)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: jobs)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_WorkflowRunResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Workflow run not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Workflow Run By Platform Id",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/{run_id}": {
+      "get": {
+        "description": "Get a single workflow run by ID within an organization.",
+        "operationId": "get_workflow_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: jobs)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: jobs)",
+              "title": "Include"
+            }
+          },
+          {
+            "description": "Hint that this run's job logs will be read soon",
+            "in": "query",
+            "name": "warm_logs",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Hint that this run's job logs will be read soon",
+              "title": "Warm Logs",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_WorkflowRunResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Workflow run not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Workflow Run",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/users/me/organizations": {
+      "get": {
+        "description": "List organizations the current user belongs to.",
+        "operationId": "list_user_organizations",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_OrganizationListItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List User Organizations",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/vms/ssh-forwarding": {
+      "post": {
+        "description": "Set up SSH access to a running VM.\n\nProvide a job_id to identify the target VM.\nReturns connection credentials (host, port, username, password).\nIf the user has GitHub SSH keys configured, those are also installed.",
+        "operationId": "ssh_forwarding",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SSHForwardingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SSHForwardingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Job or running virtual machine not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ssh Forwarding",
+        "tags": [
+          "vms"
+        ]
+      }
+    }
+  }
+}
