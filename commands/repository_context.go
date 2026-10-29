@@ -73,7 +73,7 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 	}
 	warnCase := func(actual string) {
 		if actual != "" && actual != repo && strings.EqualFold(actual, repo) && d.IsErrorTerminal() {
-			_, _ = fmt.Fprintf(d.Err, "(using repo: %s → %s)\n", output.CellText(repo), output.CellText(actual))
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint(fmt.Sprintf("(using repo: %s → %s)", output.CellText(repo), output.CellText(actual)), "2"))
 		}
 	}
 	if config.IsScoped(cfg.Token) {
@@ -173,7 +173,7 @@ func resolveRepositories(ctx context.Context, d Dependencies, cfg config.Config,
 			return nil, nil
 		}
 		if d.IsErrorTerminal() && d.Getenv("AVR_REPO") != name {
-			_, _ = fmt.Fprintf(d.Err, "(using repo: %s)\n", output.CellText(name))
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint("(using repo: "+output.CellText(name)+")", "2"))
 		}
 		repos = []string{name}
 	}
@@ -187,7 +187,7 @@ func resolveRepositories(ctx context.Context, d Dependencies, cfg config.Config,
 				if config.IsScoped(cfg.Token) {
 					note = fmt.Sprintf("auto-detected %s is not a repository this scoped token reaches; showing all that it reaches.", output.CellText(repo))
 				}
-				_, _ = fmt.Fprintf(d.Err, "  (%s)\n", note)
+				_, _ = fmt.Fprintln(d.Err, d.errorPaint("  ("+note+")", "2"))
 				return nil, nil
 			}
 			return nil, err

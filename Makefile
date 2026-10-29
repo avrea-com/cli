@@ -110,6 +110,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_watch --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_metrics --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_run_diagnose --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_pr --go build/go/avr
 
 go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...

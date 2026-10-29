@@ -381,6 +381,24 @@
         "title": "DispatchWorkflowResponse",
         "type": "object"
       },
+      "FeatureFlagResponse": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "enabled"
+        ],
+        "title": "FeatureFlagResponse",
+        "type": "object"
+      },
       "GovernanceHoldReason": {
         "enum": [
           "group_suspended",
@@ -2017,6 +2035,317 @@
         "title": "MetricsSeries",
         "type": "object"
       },
+      "OrgPullRequestAttentionMeta": {
+        "description": "What a scope=attention page covered beyond the rows it returned.\n\nThe page holds the matches among its candidates, so its rows alone say\nneither how far the page reached nor whether a candidate it left out is\nstill waiting on a merge verdict.",
+        "properties": {
+          "covered_through": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Activity time of the last candidate the page considered, matched or not. A refresh of page one covers every PR down to it. Null when there is no next page: the page is then the whole list.",
+            "title": "Covered Through"
+          },
+          "unsettled_verdicts": {
+            "default": false,
+            "description": "Whether any candidate on the page, returned or not, has a pending or stale merge verdict. Asking again shortly may then change the page.",
+            "title": "Unsettled Verdicts",
+            "type": "boolean"
+          }
+        },
+        "title": "OrgPullRequestAttentionMeta",
+        "type": "object"
+      },
+      "OrgPullRequestList": {
+        "description": "Cursor-paginated, unlike the repo list's `next_before_number`.\n\nPR numbers are per repository and so are not orderable across an\norganization; this list is ordered by activity and keyset-paginated on it,\nwhich is also the house envelope (docs/REST_API_STYLE_GUIDE.md).",
+        "properties": {
+          "attention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrgPullRequestAttentionMeta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrgPullRequestSummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "OrgPullRequestList",
+        "type": "object"
+      },
+      "OrgPullRequestSummary": {
+        "description": "One row of the organization-wide list, which spans repositories.\n\nA PR number identifies a PR only within its repository, so every row has to\nname the repository it belongs to -- both to render it and to build the\nlink into the repo's PR detail.",
+        "properties": {
+          "attention_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "review_requested",
+                  "checks",
+                  "changes_requested",
+                  "conflicts"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attention Reason"
+          },
+          "author_login": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Login"
+          },
+          "base_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Ref"
+          },
+          "base_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Sha"
+          },
+          "check_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Status"
+          },
+          "comment_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Count"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "draft": {
+            "title": "Draft",
+            "type": "boolean"
+          },
+          "failed_check_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed Check Count"
+          },
+          "failed_checks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed Checks"
+          },
+          "head_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Ref"
+          },
+          "head_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Sha"
+          },
+          "mergeability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PullMergeability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "merged": {
+            "title": "Merged",
+            "type": "boolean"
+          },
+          "mirror_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mirror Enabled"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "repository_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Full Name"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "review_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Decision"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unresolved_thread_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unresolved Thread Count"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "viewer_review_requested": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewer Review Requested"
+          }
+        },
+        "required": [
+          "number",
+          "title",
+          "state",
+          "draft",
+          "merged",
+          "author_login",
+          "base_ref",
+          "head_ref",
+          "head_sha",
+          "base_sha",
+          "created_at",
+          "updated_at",
+          "repository_id"
+        ],
+        "title": "OrgPullRequestSummary",
+        "type": "object"
+      },
       "OrganizationListItem": {
         "properties": {
           "name": {
@@ -2234,6 +2563,170 @@
         ],
         "title": "Platform",
         "type": "string"
+      },
+      "PullDiffSize": {
+        "description": "How much this PR changes, for the size badge.\n\nTotals cover every changed file; the ``generated_*`` figures are a SUBSET of\nthem, not a remainder. Carrying both lets a reader see \"+2400, of which 2300\ngenerated\" without a second lookup, and lets the console decide on its own\nwhat to exclude when bucketing -- a threshold change then ships without\nrecomputing anything here.\n\nCounted against the same base the merge verdict resolved, so the two always\ndescribe the same pair of commits.",
+        "properties": {
+          "additions": {
+            "title": "Additions",
+            "type": "integer"
+          },
+          "deletions": {
+            "title": "Deletions",
+            "type": "integer"
+          },
+          "files_changed": {
+            "title": "Files Changed",
+            "type": "integer"
+          },
+          "generated_additions": {
+            "title": "Generated Additions",
+            "type": "integer"
+          },
+          "generated_deletions": {
+            "title": "Generated Deletions",
+            "type": "integer"
+          },
+          "generated_files_changed": {
+            "title": "Generated Files Changed",
+            "type": "integer"
+          },
+          "stats_omitted": {
+            "default": false,
+            "title": "Stats Omitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "files_changed",
+          "additions",
+          "deletions",
+          "generated_files_changed",
+          "generated_additions",
+          "generated_deletions"
+        ],
+        "title": "PullDiffSize",
+        "type": "object"
+      },
+      "PullMergeability": {
+        "description": "Whether a PR merges cleanly into the current tip of its base branch.\n\n``status`` is decided in the executor (see git_pr_merge_check) so the\nmergeable/analysis ladder lives in one place. ``pending`` means no verdict\nis cached yet and one has been queued -- ask again shortly. The field is\nabsent entirely for PRs that can never show a badge (merged, closed, draft,\nor a missing base ref or head SHA).\n\n``unavailable`` is the terminal \"no verdict, and none is coming\" answer. It\ncovers both avrea-git declining to decide (unrelated histories, unsupported\nmerge shape) and there being no live mirror to ask in the first place; the\ntwo are indistinguishable to a reader and neither changes on a refetch, so\nthey share a badge rather than a permanent ``pending`` spinner.\n\n``stale`` means the verdict was computed against a base tip the branch has\nsince moved past, or is simply old enough to be worth recomputing. It is\nserved rather than withheld, and a warm is queued: replacing a known answer\nwith a spinner every time someone merges to the default branch would be a\nworse read of the same facts. It lives here and not on PullMergeVerdict\nbecause staleness is a property of when you asked, not of the cached answer.\n\nDerived from the cached verdict rather than restating its fields: this is\nthe wire shape of exactly that object, so a field added to PullMergeVerdict\nmust reach the API. Spelled out as a separate model it would keep compiling\nand silently drop the new field. Only the genuine differences are declared --\nthe extra ``pending`` status, which is never cached because it means\n\"nothing cached\"; the fields a pending badge may not know yet; and ``stale``.",
+        "properties": {
+          "base_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Ref"
+          },
+          "base_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Sha"
+          },
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
+          "conflict_path_count": {
+            "default": 0,
+            "title": "Conflict Path Count",
+            "type": "integer"
+          },
+          "conflict_paths": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflict Paths",
+            "type": "array"
+          },
+          "engine_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Version"
+          },
+          "exact": {
+            "default": true,
+            "title": "Exact",
+            "type": "boolean"
+          },
+          "fast_forward": {
+            "default": false,
+            "title": "Fast Forward",
+            "type": "boolean"
+          },
+          "head_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Sha"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PullDiffSize"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "mergeable",
+              "conflicts",
+              "uncertain",
+              "unavailable",
+              "pending"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "up_to_date": {
+            "default": false,
+            "title": "Up To Date",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "PullMergeability",
+        "type": "object"
       },
       "RerunWorkflowRunRequest": {
         "description": "Request body for rerunning a workflow run.",
@@ -4280,6 +4773,82 @@
         ]
       }
     },
+    "/orgs/{org_id}/feature-flags/{flag_key}": {
+      "get": {
+        "description": "Resolve a single ``feature.*`` launch-gate flag for the org.\n\nOpen to any member \u2014 the console gates that show feature surfaces depend\non it. This endpoint stays separate from the generic settings list because\ninternal launch gates are intentionally readable here, while that list\nomits internal keys entirely (and rejects customer writes to them).\nAnything that is not a registered boolean ``feature.*`` setting resolves\nto ``enabled=false``: fail-closed, and it lets the frontend reference a\nflag before it is registered without tripping a 422.",
+        "operationId": "get_org_feature_flag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "flag_key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "title": "Flag Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Org Feature Flag",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
     "/orgs/{org_id}/jobs": {
       "get": {
         "description": "List jobs for an organization.\n\nResults are filtered to only include jobs from repositories the user has access to.\nUses cursor-based pagination: pass next_cursor from the previous response to fetch the next page.\nUse the same order (and filters) when following next_cursor.",
@@ -4975,6 +5544,193 @@
         "tags": [
           "metrics"
         ]
+      }
+    },
+    "/orgs/{org_id}/pull-requests": {
+      "get": {
+        "description": "Pull requests across every repository of an organization.\n\nBehind ``feature.org-pull-requests.enabled`` while it rolls out: this list\nis only as consistent as the weakest repository it spans, so it stays dark\nuntil avrea-git can answer for all of them.\n\nEvery page is bounded by ``get_readable_repo_ids``, so the default (every\nclass) is \"every PR you can already read\", not a widening of what the\ncaller may see; a narrower ``scope`` selects classes relative to the caller.\n\nDeliberately not gated on a browsable mirror, unlike the routes above: this\nis control-plane PR metadata, not a mirror read. A row whose repository has\nno mirror still belongs on the list -- it simply reports no merge verdict\n(see _pr_mergeability), and the console's PR drawer resolves the mirror per\nrepository and says so when there is none.",
+        "operationId": "list_org_pulls",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeatable; the union of the selected classes. authored: PRs you opened. involved: PRs you were asked to review or commented on, and did not open. rest: every other PR. Omitted: all three. attention: open PRs that need you -- your own blocked by checks, a change request or conflicts, and others' that request your review; drafts never. Not combinable with another scope or a state other than open. A page holds the matches among `limit` candidates, so it may be short or empty and still carry a cursor.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "authored",
+                      "involved",
+                      "rest",
+                      "attention"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable; the union of the selected classes. authored: PRs you opened. involved: PRs you were asked to review or commented on, and did not open. rest: every other PR. Omitted: all three. attention: open PRs that need you -- your own blocked by checks, a change request or conflicts, and others' that request your review; drafts never. Not combinable with another scope or a state other than open. A page holds the matches among `limit` candidates, so it may be short or empty and still carry a cursor.",
+              "title": "Scope"
+            }
+          },
+          {
+            "description": "Repeatable; the union of the selected states. open, merged, or closed (closed without merging). Omitted: all three.",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "open",
+                      "closed",
+                      "merged"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable; the union of the selected states. open, merged, or closed (closed without merging). Omitted: all three.",
+              "title": "State"
+            }
+          },
+          {
+            "description": "Substring match, case-insensitive, over the fields a row shows: title, #number, author login, head/base branch, and repository full name.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring match, case-insensitive, over the fields a row shows: title, #number, author login, head/base branch, and repository full name.",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "repository_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "pattern": "^rep-[0-9a-f]{32}$",
+                    "type": "string"
+                  },
+                  "maxItems": 200,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repository Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor for the next page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor for the next page",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgPullRequestList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Organization-wide pull requests are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Org Pulls"
       }
     },
     "/orgs/{org_id}/repos": {

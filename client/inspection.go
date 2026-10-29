@@ -240,3 +240,18 @@ func (c *Client) RunMetrics(ctx context.Context, org, id string, query url.Value
 	}
 	return decodeRecord[wire.WorkflowRunMetricsResponse](body)
 }
+
+func (c *Client) FeatureFlag(ctx context.Context, org, key string) (Record[wire.FeatureFlagResponse], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/feature-flags/"+url.PathEscape(key), nil)
+	if err != nil {
+		return Record[wire.FeatureFlagResponse]{}, err
+	}
+	return decodeRecord[wire.FeatureFlagResponse](body)
+}
+func (c *Client) PullRequests(ctx context.Context, org string, query url.Values) (Page[wire.OrgPullRequestSummary], error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/pull-requests", query)
+	if err != nil {
+		return Page[wire.OrgPullRequestSummary]{}, err
+	}
+	return decodePage[wire.OrgPullRequestSummary](body)
+}

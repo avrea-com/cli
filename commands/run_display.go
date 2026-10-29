@@ -84,6 +84,9 @@ func renderJobs(d Dependencies, jobs []map[string]any, steps bool, host, slug st
 }
 
 func relativeAge(raw string, now time.Time) string {
+	if raw == "" {
+		return "unknown"
+	}
 	created, err := time.Parse(time.RFC3339Nano, raw)
 	if err != nil {
 		return raw

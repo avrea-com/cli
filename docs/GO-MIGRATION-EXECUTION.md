@@ -170,9 +170,36 @@ Five comparator tests protect evidence and request checking. Go tests cover
 concurrent requests, cancellation and a generation-based baseline window;
 Go race tests, lint, generation checks and paired admin checks pass.
 
+## Pull-request listing batch
+
+Added pr list and the prs alias, shared with avr-admin.
+Diagnostics checkpoints: public 86260ef, admin 8053fde819.
+
+Decisions:
+- Preserve the organization feature-availability check before repository
+  resolution and cursor validation, including the distinct unknown/unsupported
+  messages.
+- Match case-insensitive scope/state choices, repeated repository filters,
+  Git soft detection, limits, Unicode cursor-length bounds and JSON/jq.
+- Preserve exact TSV columns/escaping and terminal widths, truncation, cyan
+  PR numbers, dim ages, underlined headers and PR/title links. Hide the
+  repository column only when exactly one repository was resolved.
+- Keep native transport diagnostics sanitized while retaining the PR-specific
+  failure context.
+- Fix shared repository hints to use Python's dim styling and missing relative
+  timestamps to display unknown. Both differences were caught by parity
+  before the fixes. Add run/workflow terminal-hint regression cases.
+- No new dependencies or remote mutations.
+
+Validation: 61 differential cases per executable, including 12 terminal cases
+(two are shared run/workflow hint regressions), plus 104 existing presentation
+cases per executable. Go race tests, lint, generated-code checks, paired admin
+checks, fixture typing and workflow validation pass. Report hashes match the
+tested executables.
+
 ## Remaining work
 
-PR/status, artifacts,
+Status, artifacts,
 cache/log search/SBOM, configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
