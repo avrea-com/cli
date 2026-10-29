@@ -956,6 +956,8 @@ def presentation(value):
 
 
 def terminal_text(value):
+    # Repeated CR before LF returns to column zero repeatedly, not extra rows.
+    value = re.sub(r"\r+\n", "\n", value)
     # Link targets are metadata, not visible information. A hidden URL must
     # not satisfy a check for a missing visible ID or label.
     value = re.sub(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)", "", value)

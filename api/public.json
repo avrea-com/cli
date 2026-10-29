@@ -8129,6 +8129,109 @@
         ]
       }
     },
+    "/orgs/{org_id}/repos/{repo_id}/analysis/{type}/commits/{commit_sha}/artifacts/{filename}": {
+      "get": {
+        "description": "Stream a single analysis artifact, decompressed, for a specific commit.",
+        "operationId": "download_analysis_artifact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "title": "Filename",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:sbom|repo_intel)$",
+              "title": "Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commit_sha",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+              "title": "Commit Sha",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or analysis result or artifact not found or unavailable"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Download one decompressed analysis artifact for a specific commit",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
     "/orgs/{org_id}/repos/{repo_id}/analysis/{type}/latest": {
       "get": {
         "description": "Latest analysis result metadata + summary for the repository and type.",
