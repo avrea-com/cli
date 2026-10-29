@@ -1828,6 +1828,155 @@
         "title": "LogStream",
         "type": "string"
       },
+      "MetricSource": {
+        "enum": [
+          "cpu",
+          "memory",
+          "disk-io",
+          "disk-ops",
+          "filesystem",
+          "network",
+          "load"
+        ],
+        "title": "MetricSource",
+        "type": "string"
+      },
+      "MetricsQueryResponse": {
+        "properties": {
+          "rate_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unit of each series' `rates` entry. Present only for counter sources (disk-io, disk-ops, network); omitted from gauge responses.",
+            "title": "Rate Unit"
+          },
+          "series": {
+            "description": "Time series matching the query",
+            "items": {
+              "$ref": "#/components/schemas/MetricsSeries"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "unit": {
+            "description": "Unit of each sample's value: one of 'ratio' (0..1), 'bytes', 'operations', 'count'. Fixed per source.",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit",
+          "series"
+        ],
+        "title": "MetricsQueryResponse",
+        "type": "object"
+      },
+      "MetricsSeries": {
+        "examples": [
+          {
+            "labels": {
+              "cpu": "cpu0",
+              "state": "user"
+            },
+            "values": [
+              [
+                1711756800,
+                0.42
+              ],
+              [
+                1711756815,
+                0.38
+              ]
+            ]
+          },
+          {
+            "labels": {
+              "device": "eth0",
+              "direction": "receive"
+            },
+            "rates": [
+              [
+                1711756805,
+                204.8
+              ]
+            ],
+            "values": [
+              [
+                1711756800,
+                104857600
+              ],
+              [
+                1711756805,
+                104858624
+              ]
+            ]
+          }
+        ],
+        "properties": {
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Metric labels (key-value pairs)",
+            "title": "Labels",
+            "type": "object"
+          },
+          "rates": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-scrape rates derived from `values`. Present only on series from counter sources (disk-io, disk-ops, network); omitted from gauge responses. Length is `len(values) - 1` \u2014 the first sample has no previous point to diff against. Each rate is emitted at the trailing timestamp.",
+            "title": "Rates"
+          },
+          "values": {
+            "description": "Array of [timestamp, value] pairs",
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "labels",
+          "values"
+        ],
+        "title": "MetricsSeries",
+        "type": "object"
+      },
       "OrganizationListItem": {
         "properties": {
           "name": {
@@ -4643,6 +4792,131 @@
         "summary": "Get Job",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/jobs/{job_id}/metrics/{source}": {
+      "get": {
+        "description": "Retrieve VM metrics for a job by source type. Available sources: cpu, memory, disk-io, disk-ops, filesystem, network, load. Counter sources (disk-io, disk-ops, network) return raw counter samples in `values` and server-computed per-scrape rates in `rates` (trailing-timestamp semantics); consumers that just want throughput can read `rates` directly. When start/end are omitted, they default to the execution's time range. Requires organization membership and repository access. Rate limited per IP (see metrics_rate_limit_per_minute in config; default 60/min).",
+        "operationId": "get_job_metrics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MetricSource"
+            }
+          },
+          {
+            "description": "Start time (Unix seconds). Defaults to execution start.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start time (Unix seconds). Defaults to execution start.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "End time (Unix seconds). Defaults to execution end or now.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End time (Unix seconds). Defaults to execution end or now.",
+              "title": "End"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsQueryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Job not found, no repository access, or no execution assigned"
+          },
+          "422": {
+            "description": "Invalid time range parameters"
+          },
+          "429": {
+            "description": "Rate limit exceeded (metrics_rate_limit_per_minute req/min per IP)"
+          },
+          "500": {
+            "description": "Execution record has invalid fields (vm_id format, missing created_at)"
+          },
+          "502": {
+            "description": "Metrics backend error, unreachable, or unexpected response"
+          },
+          "503": {
+            "description": "Metrics service not configured"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get job metrics by source",
+        "tags": [
+          "metrics"
         ]
       }
     },

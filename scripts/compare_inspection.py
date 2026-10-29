@@ -914,7 +914,7 @@ def presentation_scenarios():
 def presentation(value):
     """Compare visible glyph styles, not escape encoding or whitespace padding."""
     value = re.sub(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)", "", value)
-    state = {"fg": None, "bold": False, "dim": False, "underline": False}
+    state = {"fg": None, "bg": None, "bold": False, "dim": False, "underline": False}
     glyphs = []
     offset = 0
     for match in re.finditer(r"\x1b\[([0-?]*)([ -/]*)([@-~])", value):
@@ -927,7 +927,7 @@ def presentation(value):
             while i < len(codes):
                 code = codes[i]
                 if code == 0:
-                    state = {"fg": None, "bold": False, "dim": False, "underline": False}
+                    state = {"fg": None, "bg": None, "bold": False, "dim": False, "underline": False}
                 elif code in (1, 2, 4):
                     state[{1: "bold", 2: "dim", 4: "underline"}[code]] = True
                 elif code == 22:
@@ -936,12 +936,18 @@ def presentation(value):
                     state["underline"] = False
                 elif code == 39:
                     state["fg"] = None
+                elif code == 49:
+                    state["bg"] = None
+                elif 40 <= code <= 47:
+                    state["bg"] = code - 40
+                elif 100 <= code <= 107:
+                    state["bg"] = code - 100 + 8
                 elif 30 <= code <= 37:
                     state["fg"] = code - 30
                 elif 90 <= code <= 97:
                     state["fg"] = code - 90 + 8
-                elif code == 38 and i + 2 < len(codes) and codes[i + 1] == 5:
-                    state["fg"] = codes[i + 2]
+                elif code in (38, 48) and i + 2 < len(codes) and codes[i + 1] == 5:
+                    state["fg" if code == 38 else "bg"] = codes[i + 2]
                     i += 2
                 i += 1
         offset = match.end()
