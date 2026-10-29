@@ -22,7 +22,9 @@
     "dispatch_workflow_endpoint",
     "get_job_metrics",
     "list_workflow_run_jobs",
-    "get_workflow_run_metrics"
+    "get_workflow_run_metrics",
+    "get_org_feature_flag",
+    "list_org_pulls"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

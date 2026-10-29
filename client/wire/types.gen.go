@@ -345,6 +345,30 @@ func (e MetricSource) Valid() bool {
 	}
 }
 
+// Defines values for OrgPullRequestSummaryAttentionReason.
+const (
+	OrgPullRequestSummaryAttentionReasonChangesRequested OrgPullRequestSummaryAttentionReason = "changes_requested"
+	OrgPullRequestSummaryAttentionReasonChecks           OrgPullRequestSummaryAttentionReason = "checks"
+	OrgPullRequestSummaryAttentionReasonConflicts        OrgPullRequestSummaryAttentionReason = "conflicts"
+	OrgPullRequestSummaryAttentionReasonReviewRequested  OrgPullRequestSummaryAttentionReason = "review_requested"
+)
+
+// Valid indicates whether the value is a known member of the OrgPullRequestSummaryAttentionReason enum.
+func (e OrgPullRequestSummaryAttentionReason) Valid() bool {
+	switch e {
+	case OrgPullRequestSummaryAttentionReasonChangesRequested:
+		return true
+	case OrgPullRequestSummaryAttentionReasonChecks:
+		return true
+	case OrgPullRequestSummaryAttentionReasonConflicts:
+		return true
+	case OrgPullRequestSummaryAttentionReasonReviewRequested:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrganizationRepositoryResponsePlatform.
 const (
 	OrganizationRepositoryResponsePlatformAvrea  OrganizationRepositoryResponsePlatform = "avrea"
@@ -384,6 +408,33 @@ func (e Platform) Valid() bool {
 	case PlatformGitlab:
 		return true
 	case PlatformPublicGit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PullMergeabilityStatus.
+const (
+	PullMergeabilityStatusConflicts   PullMergeabilityStatus = "conflicts"
+	PullMergeabilityStatusMergeable   PullMergeabilityStatus = "mergeable"
+	PullMergeabilityStatusPending     PullMergeabilityStatus = "pending"
+	PullMergeabilityStatusUnavailable PullMergeabilityStatus = "unavailable"
+	PullMergeabilityStatusUncertain   PullMergeabilityStatus = "uncertain"
+)
+
+// Valid indicates whether the value is a known member of the PullMergeabilityStatus enum.
+func (e PullMergeabilityStatus) Valid() bool {
+	switch e {
+	case PullMergeabilityStatusConflicts:
+		return true
+	case PullMergeabilityStatusMergeable:
+		return true
+	case PullMergeabilityStatusPending:
+		return true
+	case PullMergeabilityStatusUnavailable:
+		return true
+	case PullMergeabilityStatusUncertain:
 		return true
 	default:
 		return false
@@ -612,6 +663,51 @@ func (e ListJobsParamsOrder) Valid() bool {
 	case ListJobsParamsOrderDurationSecondsAsc:
 		return true
 	case ListJobsParamsOrderDurationSecondsDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListOrgPullsParamsScope.
+const (
+	Attention ListOrgPullsParamsScope = "attention"
+	Authored  ListOrgPullsParamsScope = "authored"
+	Involved  ListOrgPullsParamsScope = "involved"
+	Rest      ListOrgPullsParamsScope = "rest"
+)
+
+// Valid indicates whether the value is a known member of the ListOrgPullsParamsScope enum.
+func (e ListOrgPullsParamsScope) Valid() bool {
+	switch e {
+	case Attention:
+		return true
+	case Authored:
+		return true
+	case Involved:
+		return true
+	case Rest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListOrgPullsParamsState.
+const (
+	Closed ListOrgPullsParamsState = "closed"
+	Merged ListOrgPullsParamsState = "merged"
+	Open   ListOrgPullsParamsState = "open"
+)
+
+// Valid indicates whether the value is a known member of the ListOrgPullsParamsState enum.
+func (e ListOrgPullsParamsState) Valid() bool {
+	switch e {
+	case Closed:
+		return true
+	case Merged:
+		return true
+	case Open:
 		return true
 	default:
 		return false
@@ -1002,6 +1098,13 @@ type DispatchWorkflowResponse struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// FeatureFlagResponse defines model for FeatureFlagResponse.
+type FeatureFlagResponse struct {
+	Enabled              bool                   `json:"enabled"`
+	Key                  string                 `json:"key"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // GovernanceHoldReason defines model for GovernanceHoldReason.
 type GovernanceHoldReason string
 
@@ -1300,6 +1403,70 @@ type MetricsSeries struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// OrgPullRequestAttentionMeta What a scope=attention page covered beyond the rows it returned.
+//
+// The page holds the matches among its candidates, so its rows alone say
+// neither how far the page reached nor whether a candidate it left out is
+// still waiting on a merge verdict.
+type OrgPullRequestAttentionMeta struct {
+	// CoveredThrough Activity time of the last candidate the page considered, matched or not. A refresh of page one covers every PR down to it. Null when there is no next page: the page is then the whole list.
+	CoveredThrough nullable.Nullable[time.Time] `json:"covered_through,omitempty"`
+
+	// UnsettledVerdicts Whether any candidate on the page, returned or not, has a pending or stale merge verdict. Asking again shortly may then change the page.
+	UnsettledVerdicts    *bool                  `json:"unsettled_verdicts,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// OrgPullRequestList Cursor-paginated, unlike the repo list's `next_before_number`.
+//
+// PR numbers are per repository and so are not orderable across an
+// organization; this list is ordered by activity and keyset-paginated on it,
+// which is also the house envelope (docs/REST_API_STYLE_GUIDE.md).
+type OrgPullRequestList struct {
+	Attention nullable.Nullable[OrgPullRequestAttentionMeta] `json:"attention,omitempty"`
+	Data      []OrgPullRequestSummary                        `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination           *PaginationMeta        `json:"pagination,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// OrgPullRequestSummary One row of the organization-wide list, which spans repositories.
+//
+// A PR number identifies a PR only within its repository, so every row has to
+// name the repository it belongs to -- both to render it and to build the
+// link into the repo's PR detail.
+type OrgPullRequestSummary struct {
+	AttentionReason       nullable.Nullable[OrgPullRequestSummaryAttentionReason] `json:"attention_reason,omitempty"`
+	AuthorLogin           nullable.Nullable[string]                               `json:"author_login"`
+	BaseRef               nullable.Nullable[string]                               `json:"base_ref"`
+	BaseSha               nullable.Nullable[string]                               `json:"base_sha"`
+	CheckStatus           nullable.Nullable[string]                               `json:"check_status,omitempty"`
+	CommentCount          nullable.Nullable[int]                                  `json:"comment_count,omitempty"`
+	CreatedAt             nullable.Nullable[time.Time]                            `json:"created_at"`
+	Draft                 bool                                                    `json:"draft"`
+	FailedCheckCount      nullable.Nullable[int]                                  `json:"failed_check_count,omitempty"`
+	FailedChecks          nullable.Nullable[[]string]                             `json:"failed_checks,omitempty"`
+	HeadRef               nullable.Nullable[string]                               `json:"head_ref"`
+	HeadSha               nullable.Nullable[string]                               `json:"head_sha"`
+	Mergeability          nullable.Nullable[PullMergeability]                     `json:"mergeability,omitempty"`
+	Merged                bool                                                    `json:"merged"`
+	MirrorEnabled         nullable.Nullable[bool]                                 `json:"mirror_enabled,omitempty"`
+	Number                int                                                     `json:"number"`
+	RepositoryFullName    nullable.Nullable[string]                               `json:"repository_full_name,omitempty"`
+	RepositoryId          string                                                  `json:"repository_id"`
+	ReviewDecision        nullable.Nullable[string]                               `json:"review_decision,omitempty"`
+	State                 string                                                  `json:"state"`
+	Title                 string                                                  `json:"title"`
+	UnresolvedThreadCount nullable.Nullable[int]                                  `json:"unresolved_thread_count,omitempty"`
+	UpdatedAt             nullable.Nullable[time.Time]                            `json:"updated_at"`
+	ViewerReviewRequested nullable.Nullable[bool]                                 `json:"viewer_review_requested,omitempty"`
+	AdditionalProperties  map[string]interface{}                                  `json:"-"`
+}
+
+// OrgPullRequestSummaryAttentionReason defines model for OrgPullRequestSummary.AttentionReason.
+type OrgPullRequestSummaryAttentionReason string
+
 // OrganizationListItem defines model for OrganizationListItem.
 type OrganizationListItem struct {
 	Name                       string                 `json:"name"`
@@ -1361,6 +1528,74 @@ type PaginationMeta struct {
 
 // Platform defines model for Platform.
 type Platform string
+
+// PullDiffSize How much this PR changes, for the size badge.
+//
+// Totals cover every changed file; the “generated_*“ figures are a SUBSET of
+// them, not a remainder. Carrying both lets a reader see "+2400, of which 2300
+// generated" without a second lookup, and lets the console decide on its own
+// what to exclude when bucketing -- a threshold change then ships without
+// recomputing anything here.
+//
+// Counted against the same base the merge verdict resolved, so the two always
+// describe the same pair of commits.
+type PullDiffSize struct {
+	Additions             int                    `json:"additions"`
+	Deletions             int                    `json:"deletions"`
+	FilesChanged          int                    `json:"files_changed"`
+	GeneratedAdditions    int                    `json:"generated_additions"`
+	GeneratedDeletions    int                    `json:"generated_deletions"`
+	GeneratedFilesChanged int                    `json:"generated_files_changed"`
+	StatsOmitted          *bool                  `json:"stats_omitted,omitempty"`
+	AdditionalProperties  map[string]interface{} `json:"-"`
+}
+
+// PullMergeability Whether a PR merges cleanly into the current tip of its base branch.
+//
+// “status“ is decided in the executor (see git_pr_merge_check) so the
+// mergeable/analysis ladder lives in one place. “pending“ means no verdict
+// is cached yet and one has been queued -- ask again shortly. The field is
+// absent entirely for PRs that can never show a badge (merged, closed, draft,
+// or a missing base ref or head SHA).
+//
+// “unavailable“ is the terminal "no verdict, and none is coming" answer. It
+// covers both avrea-git declining to decide (unrelated histories, unsupported
+// merge shape) and there being no live mirror to ask in the first place; the
+// two are indistinguishable to a reader and neither changes on a refetch, so
+// they share a badge rather than a permanent “pending“ spinner.
+//
+// “stale“ means the verdict was computed against a base tip the branch has
+// since moved past, or is simply old enough to be worth recomputing. It is
+// served rather than withheld, and a warm is queued: replacing a known answer
+// with a spinner every time someone merges to the default branch would be a
+// worse read of the same facts. It lives here and not on PullMergeVerdict
+// because staleness is a property of when you asked, not of the cached answer.
+//
+// Derived from the cached verdict rather than restating its fields: this is
+// the wire shape of exactly that object, so a field added to PullMergeVerdict
+// must reach the API. Spelled out as a separate model it would keep compiling
+// and silently drop the new field. Only the genuine differences are declared --
+// the extra “pending“ status, which is never cached because it means
+// "nothing cached"; the fields a pending badge may not know yet; and “stale“.
+type PullMergeability struct {
+	BaseRef              nullable.Nullable[string]       `json:"base_ref,omitempty"`
+	BaseSha              nullable.Nullable[string]       `json:"base_sha,omitempty"`
+	ComputedAt           nullable.Nullable[time.Time]    `json:"computed_at,omitempty"`
+	ConflictPathCount    *int                            `json:"conflict_path_count,omitempty"`
+	ConflictPaths        *[]string                       `json:"conflict_paths,omitempty"`
+	EngineVersion        nullable.Nullable[string]       `json:"engine_version,omitempty"`
+	Exact                *bool                           `json:"exact,omitempty"`
+	FastForward          *bool                           `json:"fast_forward,omitempty"`
+	HeadSha              nullable.Nullable[string]       `json:"head_sha,omitempty"`
+	Size                 nullable.Nullable[PullDiffSize] `json:"size,omitempty"`
+	Stale                *bool                           `json:"stale,omitempty"`
+	Status               PullMergeabilityStatus          `json:"status"`
+	UpToDate             *bool                           `json:"up_to_date,omitempty"`
+	AdditionalProperties map[string]interface{}          `json:"-"`
+}
+
+// PullMergeabilityStatus defines model for PullMergeability.Status.
+type PullMergeabilityStatus string
 
 // RerunWorkflowRunRequest Request body for rerunning a workflow run.
 type RerunWorkflowRunRequest struct {
@@ -1693,6 +1928,11 @@ type SearchLogsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// GetOrgFeatureFlagParams defines parameters for GetOrgFeatureFlag.
+type GetOrgFeatureFlagParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListJobsParams defines parameters for ListJobs.
 type ListJobsParams struct {
 	CiProvider    *CIProvider                  `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
@@ -1792,6 +2032,30 @@ type GetJobMetricsParams struct {
 	End          *int    `form:"end,omitempty" json:"end,omitempty"`
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
+
+// ListOrgPullsParams defines parameters for ListOrgPulls.
+type ListOrgPullsParams struct {
+	// Scope Repeatable; the union of the selected classes. authored: PRs you opened. involved: PRs you were asked to review or commented on, and did not open. rest: every other PR. Omitted: all three. attention: open PRs that need you -- your own blocked by checks, a change request or conflicts, and others' that request your review; drafts never. Not combinable with another scope or a state other than open. A page holds the matches among `limit` candidates, so it may be short or empty and still carry a cursor.
+	Scope *[]ListOrgPullsParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// State Repeatable; the union of the selected states. open, merged, or closed (closed without merging). Omitted: all three.
+	State *[]ListOrgPullsParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Q Substring match, case-insensitive, over the fields a row shows: title, #number, author login, head/base branch, and repository full name.
+	Q             *string   `form:"q,omitempty" json:"q,omitempty"`
+	RepositoryIds *[]string `form:"repository_ids,omitempty" json:"repository_ids,omitempty"`
+	Limit         *int      `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for the next page
+	Cursor       *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListOrgPullsParamsScope defines parameters for ListOrgPulls.
+type ListOrgPullsParamsScope string
+
+// ListOrgPullsParamsState defines parameters for ListOrgPulls.
+type ListOrgPullsParamsState string
 
 // ListOrganizationRepositoriesParams defines parameters for ListOrganizationRepositories.
 type ListOrganizationRepositoriesParams struct {
@@ -2885,6 +3149,85 @@ func (a DispatchWorkflowResponse) MarshalJSON() ([]byte, error) {
 	object["workflow"], err = json.Marshal(a.Workflow)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FeatureFlagResponse. Returns the specified
+// element and whether it was found
+func (a FeatureFlagResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FeatureFlagResponse
+func (a *FeatureFlagResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FeatureFlagResponse to handle AdditionalProperties
+func (a *FeatureFlagResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FeatureFlagResponse to handle AdditionalProperties
+func (a FeatureFlagResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["enabled"], err = json.Marshal(a.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+	}
+
+	object["key"], err = json.Marshal(a.Key)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'key': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -5758,6 +6101,574 @@ func (a MetricsSeries) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for OrgPullRequestAttentionMeta. Returns the specified
+// element and whether it was found
+func (a OrgPullRequestAttentionMeta) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OrgPullRequestAttentionMeta
+func (a *OrgPullRequestAttentionMeta) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OrgPullRequestAttentionMeta to handle AdditionalProperties
+func (a *OrgPullRequestAttentionMeta) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["covered_through"]; found {
+		err = json.Unmarshal(raw, &a.CoveredThrough)
+		if err != nil {
+			return fmt.Errorf("error reading 'covered_through': %w", err)
+		}
+		delete(object, "covered_through")
+	}
+
+	if raw, found := object["unsettled_verdicts"]; found {
+		err = json.Unmarshal(raw, &a.UnsettledVerdicts)
+		if err != nil {
+			return fmt.Errorf("error reading 'unsettled_verdicts': %w", err)
+		}
+		delete(object, "unsettled_verdicts")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OrgPullRequestAttentionMeta to handle AdditionalProperties
+func (a OrgPullRequestAttentionMeta) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CoveredThrough != nil {
+		object["covered_through"], err = json.Marshal(a.CoveredThrough)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'covered_through': %w", err)
+		}
+	}
+
+	if a.UnsettledVerdicts != nil {
+		object["unsettled_verdicts"], err = json.Marshal(a.UnsettledVerdicts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unsettled_verdicts': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OrgPullRequestList. Returns the specified
+// element and whether it was found
+func (a OrgPullRequestList) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OrgPullRequestList
+func (a *OrgPullRequestList) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OrgPullRequestList to handle AdditionalProperties
+func (a *OrgPullRequestList) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["attention"]; found {
+		err = json.Unmarshal(raw, &a.Attention)
+		if err != nil {
+			return fmt.Errorf("error reading 'attention': %w", err)
+		}
+		delete(object, "attention")
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["pagination"]; found {
+		err = json.Unmarshal(raw, &a.Pagination)
+		if err != nil {
+			return fmt.Errorf("error reading 'pagination': %w", err)
+		}
+		delete(object, "pagination")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OrgPullRequestList to handle AdditionalProperties
+func (a OrgPullRequestList) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Attention != nil {
+		object["attention"], err = json.Marshal(a.Attention)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'attention': %w", err)
+		}
+	}
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	if a.Pagination != nil {
+		object["pagination"], err = json.Marshal(a.Pagination)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OrgPullRequestSummary. Returns the specified
+// element and whether it was found
+func (a OrgPullRequestSummary) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OrgPullRequestSummary
+func (a *OrgPullRequestSummary) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OrgPullRequestSummary to handle AdditionalProperties
+func (a *OrgPullRequestSummary) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["attention_reason"]; found {
+		err = json.Unmarshal(raw, &a.AttentionReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'attention_reason': %w", err)
+		}
+		delete(object, "attention_reason")
+	}
+
+	if raw, found := object["author_login"]; found {
+		err = json.Unmarshal(raw, &a.AuthorLogin)
+		if err != nil {
+			return fmt.Errorf("error reading 'author_login': %w", err)
+		}
+		delete(object, "author_login")
+	}
+
+	if raw, found := object["base_ref"]; found {
+		err = json.Unmarshal(raw, &a.BaseRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'base_ref': %w", err)
+		}
+		delete(object, "base_ref")
+	}
+
+	if raw, found := object["base_sha"]; found {
+		err = json.Unmarshal(raw, &a.BaseSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'base_sha': %w", err)
+		}
+		delete(object, "base_sha")
+	}
+
+	if raw, found := object["check_status"]; found {
+		err = json.Unmarshal(raw, &a.CheckStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'check_status': %w", err)
+		}
+		delete(object, "check_status")
+	}
+
+	if raw, found := object["comment_count"]; found {
+		err = json.Unmarshal(raw, &a.CommentCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'comment_count': %w", err)
+		}
+		delete(object, "comment_count")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["draft"]; found {
+		err = json.Unmarshal(raw, &a.Draft)
+		if err != nil {
+			return fmt.Errorf("error reading 'draft': %w", err)
+		}
+		delete(object, "draft")
+	}
+
+	if raw, found := object["failed_check_count"]; found {
+		err = json.Unmarshal(raw, &a.FailedCheckCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'failed_check_count': %w", err)
+		}
+		delete(object, "failed_check_count")
+	}
+
+	if raw, found := object["failed_checks"]; found {
+		err = json.Unmarshal(raw, &a.FailedChecks)
+		if err != nil {
+			return fmt.Errorf("error reading 'failed_checks': %w", err)
+		}
+		delete(object, "failed_checks")
+	}
+
+	if raw, found := object["head_ref"]; found {
+		err = json.Unmarshal(raw, &a.HeadRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'head_ref': %w", err)
+		}
+		delete(object, "head_ref")
+	}
+
+	if raw, found := object["head_sha"]; found {
+		err = json.Unmarshal(raw, &a.HeadSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'head_sha': %w", err)
+		}
+		delete(object, "head_sha")
+	}
+
+	if raw, found := object["mergeability"]; found {
+		err = json.Unmarshal(raw, &a.Mergeability)
+		if err != nil {
+			return fmt.Errorf("error reading 'mergeability': %w", err)
+		}
+		delete(object, "mergeability")
+	}
+
+	if raw, found := object["merged"]; found {
+		err = json.Unmarshal(raw, &a.Merged)
+		if err != nil {
+			return fmt.Errorf("error reading 'merged': %w", err)
+		}
+		delete(object, "merged")
+	}
+
+	if raw, found := object["mirror_enabled"]; found {
+		err = json.Unmarshal(raw, &a.MirrorEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'mirror_enabled': %w", err)
+		}
+		delete(object, "mirror_enabled")
+	}
+
+	if raw, found := object["number"]; found {
+		err = json.Unmarshal(raw, &a.Number)
+		if err != nil {
+			return fmt.Errorf("error reading 'number': %w", err)
+		}
+		delete(object, "number")
+	}
+
+	if raw, found := object["repository_full_name"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_full_name': %w", err)
+		}
+		delete(object, "repository_full_name")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["review_decision"]; found {
+		err = json.Unmarshal(raw, &a.ReviewDecision)
+		if err != nil {
+			return fmt.Errorf("error reading 'review_decision': %w", err)
+		}
+		delete(object, "review_decision")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["title"]; found {
+		err = json.Unmarshal(raw, &a.Title)
+		if err != nil {
+			return fmt.Errorf("error reading 'title': %w", err)
+		}
+		delete(object, "title")
+	}
+
+	if raw, found := object["unresolved_thread_count"]; found {
+		err = json.Unmarshal(raw, &a.UnresolvedThreadCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'unresolved_thread_count': %w", err)
+		}
+		delete(object, "unresolved_thread_count")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["viewer_review_requested"]; found {
+		err = json.Unmarshal(raw, &a.ViewerReviewRequested)
+		if err != nil {
+			return fmt.Errorf("error reading 'viewer_review_requested': %w", err)
+		}
+		delete(object, "viewer_review_requested")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OrgPullRequestSummary to handle AdditionalProperties
+func (a OrgPullRequestSummary) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AttentionReason != nil {
+		object["attention_reason"], err = json.Marshal(a.AttentionReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'attention_reason': %w", err)
+		}
+	}
+
+	object["author_login"], err = json.Marshal(a.AuthorLogin)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'author_login': %w", err)
+	}
+
+	object["base_ref"], err = json.Marshal(a.BaseRef)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'base_ref': %w", err)
+	}
+
+	object["base_sha"], err = json.Marshal(a.BaseSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'base_sha': %w", err)
+	}
+
+	if a.CheckStatus != nil {
+		object["check_status"], err = json.Marshal(a.CheckStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'check_status': %w", err)
+		}
+	}
+
+	if a.CommentCount != nil {
+		object["comment_count"], err = json.Marshal(a.CommentCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'comment_count': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["draft"], err = json.Marshal(a.Draft)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'draft': %w", err)
+	}
+
+	if a.FailedCheckCount != nil {
+		object["failed_check_count"], err = json.Marshal(a.FailedCheckCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failed_check_count': %w", err)
+		}
+	}
+
+	if a.FailedChecks != nil {
+		object["failed_checks"], err = json.Marshal(a.FailedChecks)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'failed_checks': %w", err)
+		}
+	}
+
+	object["head_ref"], err = json.Marshal(a.HeadRef)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'head_ref': %w", err)
+	}
+
+	object["head_sha"], err = json.Marshal(a.HeadSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'head_sha': %w", err)
+	}
+
+	if a.Mergeability != nil {
+		object["mergeability"], err = json.Marshal(a.Mergeability)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mergeability': %w", err)
+		}
+	}
+
+	object["merged"], err = json.Marshal(a.Merged)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'merged': %w", err)
+	}
+
+	if a.MirrorEnabled != nil {
+		object["mirror_enabled"], err = json.Marshal(a.MirrorEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mirror_enabled': %w", err)
+		}
+	}
+
+	object["number"], err = json.Marshal(a.Number)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'number': %w", err)
+	}
+
+	if a.RepositoryFullName != nil {
+		object["repository_full_name"], err = json.Marshal(a.RepositoryFullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repository_full_name': %w", err)
+		}
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	if a.ReviewDecision != nil {
+		object["review_decision"], err = json.Marshal(a.ReviewDecision)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'review_decision': %w", err)
+		}
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["title"], err = json.Marshal(a.Title)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'title': %w", err)
+	}
+
+	if a.UnresolvedThreadCount != nil {
+		object["unresolved_thread_count"], err = json.Marshal(a.UnresolvedThreadCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unresolved_thread_count': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	if a.ViewerReviewRequested != nil {
+		object["viewer_review_requested"], err = json.Marshal(a.ViewerReviewRequested)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'viewer_review_requested': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for OrganizationListItem. Returns the specified
 // element and whether it was found
 func (a OrganizationListItem) Get(fieldName string) (value interface{}, found bool) {
@@ -6260,6 +7171,398 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 	object["repository_id"], err = json.Marshal(a.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PullDiffSize. Returns the specified
+// element and whether it was found
+func (a PullDiffSize) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PullDiffSize
+func (a *PullDiffSize) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PullDiffSize to handle AdditionalProperties
+func (a *PullDiffSize) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["additions"]; found {
+		err = json.Unmarshal(raw, &a.Additions)
+		if err != nil {
+			return fmt.Errorf("error reading 'additions': %w", err)
+		}
+		delete(object, "additions")
+	}
+
+	if raw, found := object["deletions"]; found {
+		err = json.Unmarshal(raw, &a.Deletions)
+		if err != nil {
+			return fmt.Errorf("error reading 'deletions': %w", err)
+		}
+		delete(object, "deletions")
+	}
+
+	if raw, found := object["files_changed"]; found {
+		err = json.Unmarshal(raw, &a.FilesChanged)
+		if err != nil {
+			return fmt.Errorf("error reading 'files_changed': %w", err)
+		}
+		delete(object, "files_changed")
+	}
+
+	if raw, found := object["generated_additions"]; found {
+		err = json.Unmarshal(raw, &a.GeneratedAdditions)
+		if err != nil {
+			return fmt.Errorf("error reading 'generated_additions': %w", err)
+		}
+		delete(object, "generated_additions")
+	}
+
+	if raw, found := object["generated_deletions"]; found {
+		err = json.Unmarshal(raw, &a.GeneratedDeletions)
+		if err != nil {
+			return fmt.Errorf("error reading 'generated_deletions': %w", err)
+		}
+		delete(object, "generated_deletions")
+	}
+
+	if raw, found := object["generated_files_changed"]; found {
+		err = json.Unmarshal(raw, &a.GeneratedFilesChanged)
+		if err != nil {
+			return fmt.Errorf("error reading 'generated_files_changed': %w", err)
+		}
+		delete(object, "generated_files_changed")
+	}
+
+	if raw, found := object["stats_omitted"]; found {
+		err = json.Unmarshal(raw, &a.StatsOmitted)
+		if err != nil {
+			return fmt.Errorf("error reading 'stats_omitted': %w", err)
+		}
+		delete(object, "stats_omitted")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PullDiffSize to handle AdditionalProperties
+func (a PullDiffSize) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["additions"], err = json.Marshal(a.Additions)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'additions': %w", err)
+	}
+
+	object["deletions"], err = json.Marshal(a.Deletions)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'deletions': %w", err)
+	}
+
+	object["files_changed"], err = json.Marshal(a.FilesChanged)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'files_changed': %w", err)
+	}
+
+	object["generated_additions"], err = json.Marshal(a.GeneratedAdditions)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'generated_additions': %w", err)
+	}
+
+	object["generated_deletions"], err = json.Marshal(a.GeneratedDeletions)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'generated_deletions': %w", err)
+	}
+
+	object["generated_files_changed"], err = json.Marshal(a.GeneratedFilesChanged)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'generated_files_changed': %w", err)
+	}
+
+	if a.StatsOmitted != nil {
+		object["stats_omitted"], err = json.Marshal(a.StatsOmitted)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stats_omitted': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PullMergeability. Returns the specified
+// element and whether it was found
+func (a PullMergeability) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PullMergeability
+func (a *PullMergeability) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PullMergeability to handle AdditionalProperties
+func (a *PullMergeability) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["base_ref"]; found {
+		err = json.Unmarshal(raw, &a.BaseRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'base_ref': %w", err)
+		}
+		delete(object, "base_ref")
+	}
+
+	if raw, found := object["base_sha"]; found {
+		err = json.Unmarshal(raw, &a.BaseSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'base_sha': %w", err)
+		}
+		delete(object, "base_sha")
+	}
+
+	if raw, found := object["computed_at"]; found {
+		err = json.Unmarshal(raw, &a.ComputedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'computed_at': %w", err)
+		}
+		delete(object, "computed_at")
+	}
+
+	if raw, found := object["conflict_path_count"]; found {
+		err = json.Unmarshal(raw, &a.ConflictPathCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'conflict_path_count': %w", err)
+		}
+		delete(object, "conflict_path_count")
+	}
+
+	if raw, found := object["conflict_paths"]; found {
+		err = json.Unmarshal(raw, &a.ConflictPaths)
+		if err != nil {
+			return fmt.Errorf("error reading 'conflict_paths': %w", err)
+		}
+		delete(object, "conflict_paths")
+	}
+
+	if raw, found := object["engine_version"]; found {
+		err = json.Unmarshal(raw, &a.EngineVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'engine_version': %w", err)
+		}
+		delete(object, "engine_version")
+	}
+
+	if raw, found := object["exact"]; found {
+		err = json.Unmarshal(raw, &a.Exact)
+		if err != nil {
+			return fmt.Errorf("error reading 'exact': %w", err)
+		}
+		delete(object, "exact")
+	}
+
+	if raw, found := object["fast_forward"]; found {
+		err = json.Unmarshal(raw, &a.FastForward)
+		if err != nil {
+			return fmt.Errorf("error reading 'fast_forward': %w", err)
+		}
+		delete(object, "fast_forward")
+	}
+
+	if raw, found := object["head_sha"]; found {
+		err = json.Unmarshal(raw, &a.HeadSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'head_sha': %w", err)
+		}
+		delete(object, "head_sha")
+	}
+
+	if raw, found := object["size"]; found {
+		err = json.Unmarshal(raw, &a.Size)
+		if err != nil {
+			return fmt.Errorf("error reading 'size': %w", err)
+		}
+		delete(object, "size")
+	}
+
+	if raw, found := object["stale"]; found {
+		err = json.Unmarshal(raw, &a.Stale)
+		if err != nil {
+			return fmt.Errorf("error reading 'stale': %w", err)
+		}
+		delete(object, "stale")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["up_to_date"]; found {
+		err = json.Unmarshal(raw, &a.UpToDate)
+		if err != nil {
+			return fmt.Errorf("error reading 'up_to_date': %w", err)
+		}
+		delete(object, "up_to_date")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PullMergeability to handle AdditionalProperties
+func (a PullMergeability) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BaseRef != nil {
+		object["base_ref"], err = json.Marshal(a.BaseRef)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'base_ref': %w", err)
+		}
+	}
+
+	if a.BaseSha != nil {
+		object["base_sha"], err = json.Marshal(a.BaseSha)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'base_sha': %w", err)
+		}
+	}
+
+	if a.ComputedAt != nil {
+		object["computed_at"], err = json.Marshal(a.ComputedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'computed_at': %w", err)
+		}
+	}
+
+	if a.ConflictPathCount != nil {
+		object["conflict_path_count"], err = json.Marshal(a.ConflictPathCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'conflict_path_count': %w", err)
+		}
+	}
+
+	if a.ConflictPaths != nil {
+		object["conflict_paths"], err = json.Marshal(a.ConflictPaths)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'conflict_paths': %w", err)
+		}
+	}
+
+	if a.EngineVersion != nil {
+		object["engine_version"], err = json.Marshal(a.EngineVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'engine_version': %w", err)
+		}
+	}
+
+	if a.Exact != nil {
+		object["exact"], err = json.Marshal(a.Exact)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'exact': %w", err)
+		}
+	}
+
+	if a.FastForward != nil {
+		object["fast_forward"], err = json.Marshal(a.FastForward)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fast_forward': %w", err)
+		}
+	}
+
+	if a.HeadSha != nil {
+		object["head_sha"], err = json.Marshal(a.HeadSha)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'head_sha': %w", err)
+		}
+	}
+
+	if a.Size != nil {
+		object["size"], err = json.Marshal(a.Size)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'size': %w", err)
+		}
+	}
+
+	if a.Stale != nil {
+		object["stale"], err = json.Marshal(a.Stale)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stale': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	if a.UpToDate != nil {
+		object["up_to_date"], err = json.Marshal(a.UpToDate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'up_to_date': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
