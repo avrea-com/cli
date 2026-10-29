@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-and job SSH in Go,
+job SSH, run rerun/cancel, and workflow list/view in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -29,6 +29,10 @@ make go-build
 ./build/go/avr job logs JOB_ID --follow
 ./build/go/avr run logs RUN --job test
 ./build/go/avr job ssh JOB_ID --print-command
+./build/go/avr workflow list --repo OWNER/REPO
+./build/go/avr workflow view build.yml --repo OWNER/REPO
+./build/go/avr run rerun RUN --failed
+./build/go/avr run cancel RUN
 ```
 
 The preview uses the same credential store as Python by default. Use a separate
@@ -56,6 +60,16 @@ Implemented commands:
 - `auth logout`: revoke the selected key and remove its local host entry.
 - Hidden `login`/`logout` aliases and `auth git-credential` for existing Git
   helpers, including exact Basic/Bearer protocol output and fail-closed behavior.
+
+Run control and workflow discovery:
+
+- `run rerun RUN [--failed] [--yes]`: confirm, request a rerun, and find the
+  new attempt with bounded polling.
+- `run cancel RUN [--yes]`: confirm cancellation and report already-finished runs.
+- `workflow list`: repository filters, time window, sorted limits, aggregate
+  tables, JSON projection and jq.
+- `workflow view WORKFLOW`: resolve by ID, numeric platform ID, name, filename
+  or stem; show summary/job statistics and recent runs, or open the browser.
 
 Inspection commands:
 
