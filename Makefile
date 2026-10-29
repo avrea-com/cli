@@ -15,6 +15,8 @@ clean:
 help: ## Show available targets
 	@echo "avr - Available targets:"
 	@echo "  help             - Show this help message"
+	@echo "  go-check         - Test, lint, compare and scan the Go preview"
+	@echo "  go-build         - Build the Go preview in build/go/avr"
 	@echo "  test             - Run unit tests (fast, no Docker)"
 	@echo "  lint             - Check for linting issues"
 	@echo "  fix              - Auto-fix linting issues"
@@ -80,3 +82,41 @@ update: ## Update dependencies
 	@$(UV) lock --upgrade
 	@$(UV) sync
 	@echo "✅ avr dependencies updated"
+
+# Go preview. The existing Python build and distribution remain active.
+GO ?= go
+
+.PHONY: go-build go-test go-lint go-parity go-scan go-check
+
+go-build: ## Build the native Go preview and bundled license notices
+	@$(GO) build -trimpath -ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" -o build/go/avr ./cmd/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/go_notices.py --go "$(GO)"
+
+go-test:
+	@$(GO) test -race ./...
+
+go-lint:
+	@$(GO) vet ./...
+	@$(GO) tool -modfile=tools/go.mod golangci-lint run ./...
+
+go-parity: go-build
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_inspection --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr
+
+go-scan:
+	@$(GO) tool -modfile=tools/go.mod govulncheck ./...
+
+go-check: go-test go-lint go-parity go-generation-check go-scan
+
+.PHONY: go-generate go-generation-check go-schema-gate
+go-generate:
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)"
+
+go-generation-check:
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check
+
+go-schema-gate:
+	@test -n "$(AVREA_CORE)" || { echo "Set AVREA_CORE to the avrea-core checkout" >&2; exit 1; }
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check --core "$(AVREA_CORE)"

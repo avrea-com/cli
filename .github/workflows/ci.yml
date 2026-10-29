@@ -109,3 +109,67 @@ jobs:
           severity-cutoff: medium
           fail-build: true
           output-format: table
+
+  go-preview:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # The parity runner extracts its pinned Python baseline.
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.27.3"
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version-file: pyproject.toml
+      - run: uv run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --check
+      - run: go test -race ./...
+      - run: go build -trimpath -o build/go/avr.exe ./cmd/avr
+      - run: uv run --python 3.14 --frozen --extra dev python scripts/go_notices.py
+      - run: uv run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
+      - run: uv run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_inspection --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr.exe
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: go-preview-${{ matrix.os }}
+          path: |
+            build/go/avr.exe
+            build/go/auth-parity.json
+            build/go/inspection-parity.json
+            build/go/job-parity.json
+            build/go/THIRD-PARTY-NOTICES.txt
+          if-no-files-found: error
+
+  go-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.27.3"
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - run: make go-lint go-scan
+      - name: Check formatting and dependency drift
+        shell: bash
+        run: |
+          test -z "$(gofmt -l cmd commands config client output)"
+          go mod tidy
+          (cd tools && go mod tidy)
+          git diff --exit-code -- go.mod go.sum tools/go.mod tools/go.sum
