@@ -25,6 +25,8 @@ make go-build
 ./build/go/avr run watch RUN --exit-status
 ./build/go/avr run watch RUN --ndjson
 ./build/go/avr job list --status failure
+./build/go/avr job watch --repo OWNER/REPO
+./build/go/avr job watch --ndjson
 ./build/go/avr job view JOB_ID
 ./build/go/avr job logs JOB_ID --follow
 ./build/go/avr run logs RUN --job test
@@ -75,6 +77,10 @@ Run control and workflow discovery:
 - `workflow run WORKFLOW`: dispatch with raw fields or JSON stdin, resolve the
   default branch unless --ref is supplied, then watch by default. Use --no-watch
   to return after dispatch.
+
+- `job watch`: watch active jobs in a styled table or a JSON snapshot stream;
+  filter by repository/name and configure the refresh interval. `jobs` is an
+  alias for the job command group.
 
 Inspection commands:
 
