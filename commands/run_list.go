@@ -21,7 +21,7 @@ var sincePattern = regexp.MustCompile("^([0-9]+)([dhm])$")
 func NewRun(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	group := &cobra.Command{Use: "run", Short: "View and manage workflow runs."}
-	group.AddCommand(newRunList(d), newRunView(d), newRunWatch(d), newRunLogs(d), newRunRerun(d), newRunCancel(d))
+	group.AddCommand(newRunList(d), newRunView(d), newRunWatch(d), newRunLogs(d), newRunRerun(d), newRunCancel(d), newRunDiagnose(d))
 	return group
 }
 

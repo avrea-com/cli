@@ -969,6 +969,46 @@
         "title": "JobAggregation",
         "type": "object"
       },
+      "JobMetricsEntry": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when this job has no metrics to return. Currently only 'no_execution' (job hasn't been picked up by a runner).",
+            "title": "Error"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MetricsQueryResponse"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-source MetricsQueryResponse, present iff the job has a usable execution. Absent when `error` is set.",
+            "title": "Metrics"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "JobMetricsEntry",
+        "type": "object"
+      },
       "JobQueueWait": {
         "properties": {
           "expires_at": {
@@ -3703,6 +3743,23 @@
           "email"
         ],
         "title": "WorkflowRunHeadCommitAuthor",
+        "type": "object"
+      },
+      "WorkflowRunMetricsResponse": {
+        "properties": {
+          "data": {
+            "description": "One entry per job in the run that the caller can see; jobs without an execution are flagged via `error`.",
+            "items": {
+              "$ref": "#/components/schemas/JobMetricsEntry"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "WorkflowRunMetricsResponse",
         "type": "object"
       },
       "WorkflowRunPullRequest": {
@@ -6682,6 +6739,276 @@
         "summary": "Cancel Workflow Run Endpoint",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/{run_id}/jobs": {
+      "get": {
+        "description": "Paginated jobs scoped to a single run.\n\nSugar for ``GET /orgs/{org}/jobs?workflow_run_ids=[run_id]`` \u2014 useful when\nyou have a run_id and want all its jobs without manually constructing\nthe query string. Same response shape, same cursor encoding.",
+        "operationId": "list_workflow_run_jobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor for next page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor for next page",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "created_at.desc",
+              "enum": [
+                "created_at.desc",
+                "created_at.asc",
+                "duration_seconds.desc",
+                "duration_seconds.asc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sub-objects to include (default: steps)",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sub-objects to include (default: steps)",
+              "title": "Include"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobsListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Workflow Run Jobs",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/workflow-runs/{run_id}/metrics": {
+      "get": {
+        "description": "Returns one entry per job the caller can see in this workflow run. Jobs without an execution assignment are returned with `error: \"no_execution\"`. Backed by a single batched metrics query covering all (vm_id, metric_name) pairs; the per-(job, source) cache is shared with the per-source endpoint. Requires organization membership and repository access. Rate limited per IP (see metrics_rate_limit_per_minute in config; default 60/min). Returns 422 if the run has more than 200 jobs; use the per-job endpoint for those.",
+        "operationId": "get_workflow_run_metrics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeat for each source you want.",
+            "in": "query",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "description": "Repeat for each source you want.",
+              "items": {
+                "$ref": "#/components/schemas/MetricSource"
+              },
+              "maxItems": 7,
+              "minItems": 1,
+              "title": "Source",
+              "type": "array"
+            }
+          },
+          {
+            "description": "Start time (Unix seconds). Defaults per-job to execution start.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start time (Unix seconds). Defaults per-job to execution start.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "End time (Unix seconds). Defaults per-job to execution end or now.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End time (Unix seconds). Defaults per-job to execution end or now.",
+              "title": "End"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowRunMetricsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Invalid time range or too many jobs in the run"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "description": "Execution record has invalid fields (vm_id format, missing created_at)"
+          },
+          "502": {
+            "description": "Metrics backend error, unreachable, or unexpected response"
+          },
+          "503": {
+            "description": "Metrics service not configured"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get metrics for all jobs of a workflow run in one call",
+        "tags": [
+          "metrics"
         ]
       }
     },
