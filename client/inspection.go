@@ -161,3 +161,22 @@ func (c *Client) SSHForwarding(ctx context.Context, id string) (Record[wire.SSHF
 	}
 	return decodeRecord[wire.SSHForwardingResponse](body)
 }
+
+func (c *Client) CancelRun(ctx context.Context, org, id string) (Record[wire.CancelWorkflowRunResponse], error) {
+	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/cancel", nil)
+	if err != nil {
+		return Record[wire.CancelWorkflowRunResponse]{}, err
+	}
+	fields, _ := body["data"].(map[string]any)
+	return decodeRecord[wire.CancelWorkflowRunResponse](fields)
+}
+
+func (c *Client) Rerun(ctx context.Context, org, id string, failed bool) error {
+	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/rerun", wire.RerunWorkflowRunRequest{FailedOnly: &failed})
+	if err != nil {
+		return err
+	}
+	fields, _ := body["data"].(map[string]any)
+	_, err = decodeRecord[wire.RerunWorkflowRunResponse](fields)
+	return err
+}

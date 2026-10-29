@@ -13,7 +13,9 @@
     "search_logs",
     "list_jobs",
     "get_job",
-    "ssh_forwarding"
+    "ssh_forwarding",
+    "rerun_workflow_run",
+    "cancel_workflow_run_endpoint"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
