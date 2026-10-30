@@ -27,6 +27,30 @@ func (e AggregateWorkflowPlatform) Valid() bool {
 	}
 }
 
+// Defines values for AiTaskStatus.
+const (
+	COMPLETED AiTaskStatus = "COMPLETED"
+	FAILED    AiTaskStatus = "FAILED"
+	PENDING   AiTaskStatus = "PENDING"
+	RUNNING   AiTaskStatus = "RUNNING"
+)
+
+// Valid indicates whether the value is a known member of the AiTaskStatus enum.
+func (e AiTaskStatus) Valid() bool {
+	switch e {
+	case COMPLETED:
+		return true
+	case FAILED:
+		return true
+	case PENDING:
+		return true
+	case RUNNING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CIProvider.
 const (
 	AvreaCi       CIProvider = "avrea_ci"
@@ -60,6 +84,24 @@ func (e CancelWorkflowRunResponseStatus) Valid() bool {
 	case AlreadyTerminal:
 		return true
 	case CancelRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerateSbomRequestScope.
+const (
+	GenerateSbomRequestScopeFull GenerateSbomRequestScope = "full"
+	GenerateSbomRequestScopeSbom GenerateSbomRequestScope = "sbom"
+)
+
+// Valid indicates whether the value is a known member of the GenerateSbomRequestScope enum.
+func (e GenerateSbomRequestScope) Valid() bool {
+	switch e {
+	case GenerateSbomRequestScopeFull:
+		return true
+	case GenerateSbomRequestScopeSbom:
 		return true
 	default:
 		return false
@@ -468,6 +510,51 @@ const (
 func (e RerunWorkflowRunResponseStatus) Valid() bool {
 	switch e {
 	case RerunRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SbomRefreshStateErrorCode.
+const (
+	SbomRefreshStateErrorCodeRateLimited           SbomRefreshStateErrorCode = "rate_limited"
+	SbomRefreshStateErrorCodeRepositoryUnavailable SbomRefreshStateErrorCode = "repository_unavailable"
+	SbomRefreshStateErrorCodeUnavailable           SbomRefreshStateErrorCode = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the SbomRefreshStateErrorCode enum.
+func (e SbomRefreshStateErrorCode) Valid() bool {
+	switch e {
+	case SbomRefreshStateErrorCodeRateLimited:
+		return true
+	case SbomRefreshStateErrorCodeRepositoryUnavailable:
+		return true
+	case SbomRefreshStateErrorCodeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SbomRefreshStateStatus.
+const (
+	SbomRefreshStateStatusCurrent  SbomRefreshStateStatus = "current"
+	SbomRefreshStateStatusDeferred SbomRefreshStateStatus = "deferred"
+	SbomRefreshStateStatusFailed   SbomRefreshStateStatus = "failed"
+	SbomRefreshStateStatusPending  SbomRefreshStateStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the SbomRefreshStateStatus enum.
+func (e SbomRefreshStateStatus) Valid() bool {
+	switch e {
+	case SbomRefreshStateStatusCurrent:
+		return true
+	case SbomRefreshStateStatusDeferred:
+		return true
+	case SbomRefreshStateStatusFailed:
+		return true
+	case SbomRefreshStateStatusPending:
 		return true
 	default:
 		return false
@@ -903,6 +990,24 @@ func (e ResolveOrganizationRepositoryParamsPlatform) Valid() bool {
 	}
 }
 
+// Defines values for GetAiTaskStateParamsScope.
+const (
+	GetAiTaskStateParamsScopeFull GetAiTaskStateParamsScope = "full"
+	GetAiTaskStateParamsScopeSbom GetAiTaskStateParamsScope = "sbom"
+)
+
+// Valid indicates whether the value is a known member of the GetAiTaskStateParamsScope enum.
+func (e GetAiTaskStateParamsScope) Valid() bool {
+	switch e {
+	case GetAiTaskStateParamsScopeFull:
+		return true
+	case GetAiTaskStateParamsScopeSbom:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListCacheEntriesParamsOrder.
 const (
 	ListCacheEntriesParamsOrderCreatedAtAsc       ListCacheEntriesParamsOrder = "created_at.asc"
@@ -1224,6 +1329,9 @@ type AggregateWorkflow struct {
 // AggregateWorkflowPlatform defines model for AggregateWorkflow.Platform.
 type AggregateWorkflowPlatform string
 
+// AiTaskStatus defines model for AiTaskStatus.
+type AiTaskStatus string
+
 // AnalysisArtifact defines model for AnalysisArtifact.
 type AnalysisArtifact struct {
 	Filename  string `json:"filename"`
@@ -1232,6 +1340,33 @@ type AnalysisArtifact struct {
 	// RawBytes Uncompressed artifact size; the size of the bytes a download returns.
 	RawBytes             int                    `json:"raw_bytes"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// AnalysisStateResponse Where the repository's latest analysis stands, with no report attached.
+//
+// All fields are null when no analysis has ever been created for the repo --
+// the "never examined" case, which is deliberately not an error. `status`
+// mirrors `ai_tasks.status` (PENDING / RUNNING / COMPLETED / FAILED).
+//
+// `error_message` is intentionally NOT exposed: it is written for operators
+// and would reach anyone with read access to the repository. A failed
+// analysis is reported as failed, not explained.
+//
+// `error_code` is the bounded exception to that: a value from
+// `ANALYSIS_FAILURE_CODES`, never free text, so a failure can be phrased for
+// the customer without leaking an operator diagnostic. Null unless the
+// latest analysis FAILED with a code this build recognises.
+type AnalysisStateResponse struct {
+	AiTaskId    nullable.Nullable[string]    `json:"ai_task_id,omitempty"`
+	CompletedAt nullable.Nullable[time.Time] `json:"completed_at,omitempty"`
+	CreatedAt   nullable.Nullable[time.Time] `json:"created_at,omitempty"`
+	ErrorCode   nullable.Nullable[string]    `json:"error_code,omitempty"`
+
+	// SbomRefresh Automatic default-branch SBOM target, independent of the latest task. Pending includes a refresh waiting for another scan to finish. Null when automatic refresh is disabled, not yet discovered, or scope is full.
+	SbomRefresh          nullable.Nullable[SbomRefreshState] `json:"sbom_refresh,omitempty"`
+	StartedAt            nullable.Nullable[time.Time]        `json:"started_at,omitempty"`
+	Status               nullable.Nullable[AiTaskStatus]     `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}              `json:"-"`
 }
 
 // AnalysisTaskResponse defines model for AnalysisTaskResponse.
@@ -1385,6 +1520,29 @@ type FeatureFlagResponse struct {
 	Enabled              bool                   `json:"enabled"`
 	Key                  string                 `json:"key"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// GenerateSbomRequest defines model for GenerateSbomRequest.
+type GenerateSbomRequest struct {
+	// Ref Git ref (branch, tag, or full or abbreviated commit SHA) to analyse. Default: the repository's default-branch tip.
+	Ref nullable.Nullable[string] `json:"ref,omitempty"`
+
+	// Scope What the run produces. 'sbom' runs the clone and dependency inventory only. 'full' additionally produces the repo-intel report the Insights tab renders, which costs an LLM round-trip taking minutes. Default 'full' for backward compatibility with clients that predate the split.
+	Scope                *GenerateSbomRequestScope `json:"scope,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// GenerateSbomRequestScope What the run produces. 'sbom' runs the clone and dependency inventory only. 'full' additionally produces the repo-intel report the Insights tab renders, which costs an LLM round-trip taking minutes. Default 'full' for backward compatibility with clients that predate the split.
+type GenerateSbomRequestScope string
+
+// GenerateSbomResponse defines model for GenerateSbomResponse.
+type GenerateSbomResponse struct {
+	AiTaskId string `json:"ai_task_id"`
+
+	// CommitSha Full SHA of the commit the run analyses, when the ref is a full or abbreviated commit SHA. Null for a branch, a tag, or the default branch.
+	CommitSha            nullable.Nullable[string] `json:"commit_sha,omitempty"`
+	Status               string                    `json:"status"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
 // GovernanceHoldReason defines model for GovernanceHoldReason.
@@ -2047,6 +2205,25 @@ type SbomListResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// SbomRefreshState defines model for SbomRefreshState.
+type SbomRefreshState struct {
+	Branch    nullable.Nullable[string]                    `json:"branch"`
+	CommitSha nullable.Nullable[string]                    `json:"commit_sha"`
+	ErrorCode nullable.Nullable[SbomRefreshStateErrorCode] `json:"error_code,omitempty"`
+
+	// ResultRecordedAt Publication time of the completed target result, before inventory promotion.
+	ResultRecordedAt     nullable.Nullable[time.Time] `json:"result_recorded_at,omitempty"`
+	RetryAt              nullable.Nullable[time.Time] `json:"retry_at,omitempty"`
+	Status               SbomRefreshStateStatus       `json:"status"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
+}
+
+// SbomRefreshStateErrorCode defines model for SbomRefreshState.ErrorCode.
+type SbomRefreshStateErrorCode string
+
+// SbomRefreshStateStatus defines model for SbomRefreshState.Status.
+type SbomRefreshStateStatus string
+
 // StepAggregation defines model for StepAggregation.
 type StepAggregation struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64] `json:"action_required_avg_duration_seconds,omitempty"`
@@ -2643,6 +2820,16 @@ type GetOrganizationRepositoryParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// GetAiTaskStateParams defines parameters for GetAiTaskState.
+type GetAiTaskStateParams struct {
+	// Scope Output whose latest task state is requested. Full runs satisfy both scopes; SBOM-only runs satisfy only the SBOM scope.
+	Scope        *GetAiTaskStateParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+	AvreaSession *string                    `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetAiTaskStateParamsScope defines parameters for GetAiTaskState.
+type GetAiTaskStateParamsScope string
+
 // ListSbomsParams defines parameters for ListSboms.
 type ListSbomsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
@@ -2650,6 +2837,11 @@ type ListSbomsParams struct {
 
 	// IncludeDev List only SBOMs with development-inclusive artifacts, using their counts.
 	IncludeDev   *bool   `form:"include_dev,omitempty" json:"include_dev,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GenerateSbomParams defines parameters for GenerateSbom.
+type GenerateSbomParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -2995,6 +3187,9 @@ type SshForwardingParams struct {
 
 // SearchLogsJSONRequestBody defines body for SearchLogs for application/json ContentType.
 type SearchLogsJSONRequestBody = LogSearchParams
+
+// GenerateSbomJSONRequestBody defines body for GenerateSbom for application/json ContentType.
+type GenerateSbomJSONRequestBody = GenerateSbomRequest
 
 // DispatchWorkflowEndpointJSONRequestBody defines body for DispatchWorkflowEndpoint for application/json ContentType.
 type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
@@ -3364,6 +3559,164 @@ func (a AnalysisArtifact) MarshalJSON() ([]byte, error) {
 	object["raw_bytes"], err = json.Marshal(a.RawBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'raw_bytes': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AnalysisStateResponse. Returns the specified
+// element and whether it was found
+func (a AnalysisStateResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AnalysisStateResponse
+func (a *AnalysisStateResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AnalysisStateResponse to handle AdditionalProperties
+func (a *AnalysisStateResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ai_task_id"]; found {
+		err = json.Unmarshal(raw, &a.AiTaskId)
+		if err != nil {
+			return fmt.Errorf("error reading 'ai_task_id': %w", err)
+		}
+		delete(object, "ai_task_id")
+	}
+
+	if raw, found := object["completed_at"]; found {
+		err = json.Unmarshal(raw, &a.CompletedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'completed_at': %w", err)
+		}
+		delete(object, "completed_at")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["error_code"]; found {
+		err = json.Unmarshal(raw, &a.ErrorCode)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_code': %w", err)
+		}
+		delete(object, "error_code")
+	}
+
+	if raw, found := object["sbom_refresh"]; found {
+		err = json.Unmarshal(raw, &a.SbomRefresh)
+		if err != nil {
+			return fmt.Errorf("error reading 'sbom_refresh': %w", err)
+		}
+		delete(object, "sbom_refresh")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AnalysisStateResponse to handle AdditionalProperties
+func (a AnalysisStateResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AiTaskId != nil {
+		object["ai_task_id"], err = json.Marshal(a.AiTaskId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ai_task_id': %w", err)
+		}
+	}
+
+	if a.CompletedAt != nil {
+		object["completed_at"], err = json.Marshal(a.CompletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'completed_at': %w", err)
+		}
+	}
+
+	if a.CreatedAt != nil {
+		object["created_at"], err = json.Marshal(a.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+		}
+	}
+
+	if a.ErrorCode != nil {
+		object["error_code"], err = json.Marshal(a.ErrorCode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_code': %w", err)
+		}
+	}
+
+	if a.SbomRefresh != nil {
+		object["sbom_refresh"], err = json.Marshal(a.SbomRefresh)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sbom_refresh': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	if a.Status != nil {
+		object["status"], err = json.Marshal(a.Status)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'status': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -4906,6 +5259,183 @@ func (a FeatureFlagResponse) MarshalJSON() ([]byte, error) {
 	object["key"], err = json.Marshal(a.Key)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GenerateSbomRequest. Returns the specified
+// element and whether it was found
+func (a GenerateSbomRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GenerateSbomRequest
+func (a *GenerateSbomRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GenerateSbomRequest to handle AdditionalProperties
+func (a *GenerateSbomRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["scope"]; found {
+		err = json.Unmarshal(raw, &a.Scope)
+		if err != nil {
+			return fmt.Errorf("error reading 'scope': %w", err)
+		}
+		delete(object, "scope")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GenerateSbomRequest to handle AdditionalProperties
+func (a GenerateSbomRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Ref != nil {
+		object["ref"], err = json.Marshal(a.Ref)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+		}
+	}
+
+	if a.Scope != nil {
+		object["scope"], err = json.Marshal(a.Scope)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scope': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GenerateSbomResponse. Returns the specified
+// element and whether it was found
+func (a GenerateSbomResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GenerateSbomResponse
+func (a *GenerateSbomResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GenerateSbomResponse to handle AdditionalProperties
+func (a *GenerateSbomResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ai_task_id"]; found {
+		err = json.Unmarshal(raw, &a.AiTaskId)
+		if err != nil {
+			return fmt.Errorf("error reading 'ai_task_id': %w", err)
+		}
+		delete(object, "ai_task_id")
+	}
+
+	if raw, found := object["commit_sha"]; found {
+		err = json.Unmarshal(raw, &a.CommitSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'commit_sha': %w", err)
+		}
+		delete(object, "commit_sha")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GenerateSbomResponse to handle AdditionalProperties
+func (a GenerateSbomResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["ai_task_id"], err = json.Marshal(a.AiTaskId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ai_task_id': %w", err)
+	}
+
+	if a.CommitSha != nil {
+		object["commit_sha"], err = json.Marshal(a.CommitSha)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'commit_sha': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -10968,6 +11498,143 @@ func (a SbomListResponse) MarshalJSON() ([]byte, error) {
 	object["pagination"], err = json.Marshal(a.Pagination)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SbomRefreshState. Returns the specified
+// element and whether it was found
+func (a SbomRefreshState) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SbomRefreshState
+func (a *SbomRefreshState) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SbomRefreshState to handle AdditionalProperties
+func (a *SbomRefreshState) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["branch"]; found {
+		err = json.Unmarshal(raw, &a.Branch)
+		if err != nil {
+			return fmt.Errorf("error reading 'branch': %w", err)
+		}
+		delete(object, "branch")
+	}
+
+	if raw, found := object["commit_sha"]; found {
+		err = json.Unmarshal(raw, &a.CommitSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'commit_sha': %w", err)
+		}
+		delete(object, "commit_sha")
+	}
+
+	if raw, found := object["error_code"]; found {
+		err = json.Unmarshal(raw, &a.ErrorCode)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_code': %w", err)
+		}
+		delete(object, "error_code")
+	}
+
+	if raw, found := object["result_recorded_at"]; found {
+		err = json.Unmarshal(raw, &a.ResultRecordedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'result_recorded_at': %w", err)
+		}
+		delete(object, "result_recorded_at")
+	}
+
+	if raw, found := object["retry_at"]; found {
+		err = json.Unmarshal(raw, &a.RetryAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'retry_at': %w", err)
+		}
+		delete(object, "retry_at")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SbomRefreshState to handle AdditionalProperties
+func (a SbomRefreshState) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["branch"], err = json.Marshal(a.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'branch': %w", err)
+	}
+
+	object["commit_sha"], err = json.Marshal(a.CommitSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'commit_sha': %w", err)
+	}
+
+	if a.ErrorCode != nil {
+		object["error_code"], err = json.Marshal(a.ErrorCode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_code': %w", err)
+		}
+	}
+
+	if a.ResultRecordedAt != nil {
+		object["result_recorded_at"], err = json.Marshal(a.ResultRecordedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'result_recorded_at': %w", err)
+		}
+	}
+
+	if a.RetryAt != nil {
+		object["retry_at"], err = json.Marshal(a.RetryAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'retry_at': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

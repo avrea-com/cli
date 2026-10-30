@@ -43,7 +43,14 @@ func transportFailure(err error, message string, reading bool) error {
 			reason = "ConnectTimeout"
 		}
 	} else if reading {
-		return errors.New(message)
+		switch {
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			reason = "RemoteProtocolError"
+		case errors.As(err, &network):
+			reason = "ReadError"
+		default:
+			return errors.New(message)
+		}
 	}
 	return &TransportError{Message: message, Reason: reason}
 }

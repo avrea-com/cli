@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"maps"
+	"net/http"
 	"net/url"
 
 	"github.com/avrea-com/cli/client/wire"
@@ -29,4 +30,27 @@ func (c *Client) SBOM(ctx context.Context, path string) (Record[wire.AnalysisTas
 	record, err := decodeRecord[wire.AnalysisTaskResponse](typed)
 	record.Fields = body
 	return record, err
+}
+
+func (c *Client) GenerateSBOM(ctx context.Context, path string, body map[string]any) (Record[wire.GenerateSbomResponse], error) {
+	result, err := c.Do(ctx, http.MethodPost, path, body)
+	if err != nil {
+		return Record[wire.GenerateSbomResponse]{}, err
+	}
+	// Expansion is optional: older/malformed producers must not prevent
+	// following the returned task when no usable commit was provided.
+	typed := maps.Clone(result)
+	if _, ok := result["commit_sha"].(string); !ok {
+		typed["commit_sha"] = nil
+	}
+	record, err := decodeRecord[wire.GenerateSbomResponse](typed)
+	record.Fields = result
+	return record, err
+}
+func (c *Client) SBOMTaskState(ctx context.Context, path string) (Record[wire.AnalysisStateResponse], error) {
+	result, err := c.Get(ctx, path, url.Values{"scope": {"sbom"}})
+	if err != nil {
+		return Record[wire.AnalysisStateResponse]{}, err
+	}
+	return decodeRecord[wire.AnalysisStateResponse](result)
 }
