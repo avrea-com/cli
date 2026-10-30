@@ -32,7 +32,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
         "Show recent runs, performance stats, and cache health.",
         "Core Commands",
     ),  # noqa: E501
-    ("run", "avrea_cli.commands.run", "run", "View and manage GitHub workflow runs.", "Core Commands"),
+    ("run", "avrea_cli.commands.run", "run", "View and manage CI workflow runs.", "Core Commands"),
     ("pr", "avrea_cli.commands.pr", "pr", "View pull requests.", "Core Commands"),
     ("job", "avrea_cli.commands.job", "job", "Inspect Avrea job VMs (SSH, metrics, logs).", "Core Commands"),
     ("vm", "avrea_cli.vm", "vm", "Manage long-running VMs (SSH/RDP/VNC).", "Core Commands"),

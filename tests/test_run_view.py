@@ -14,7 +14,7 @@ import pytest
 
 SAMPLE_RUN = {
     "data": {
-        "run_id": "run-abc123",
+        "run_id": "run-019e5a2e474e76ca13d52ca70c883e0f",
         "display_title": "Fix CI build",
         "status": "completed",
         "conclusion": "success",
@@ -81,7 +81,7 @@ SAMPLE_RUN = {
 SAMPLE_RUNS_LIST = {
     "data": [
         {
-            "run_id": "run-abc123",
+            "run_id": "run-019e5a2e474e76ca13d52ca70c883e0f",
             "display_title": "Fix CI build",
             "status": "completed",
             "conclusion": "success",
@@ -160,12 +160,12 @@ class TestRunView:
 
         result = runner.invoke(
             cli,
-            ["run", "view", f"{console_url}/org/acme/runs/run-abc123", "--json", "run_id"],
+            ["run", "view", f"{console_url}/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f", "--json", "run_id"],
         )
 
         assert result.exit_code == 0, result.output
         assert calls[-1] == (
-            "/orgs/org-acme/workflow-runs/run-abc123",
+            "/orgs/org-acme/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f",
             {"include": ["jobs", "workflow"]},
         )
 
@@ -185,7 +185,7 @@ class TestRunView:
             [
                 "run",
                 "view",
-                "https://console.avrea.com/org/acme/runs/run-abc123",
+                "https://console.avrea.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f",
                 "--org",
                 "org-other",
             ],
@@ -208,7 +208,7 @@ class TestRunView:
             [
                 "run",
                 "view",
-                "https://console.avrea.com/org/acme/runs/run-abc123",
+                "https://console.avrea.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f",
                 "--org",
                 "org-other",
             ],
@@ -232,7 +232,7 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f"])
         assert result.exit_code == 0
         assert "Fix CI build" in result.output
         assert "push" in result.output
@@ -244,7 +244,7 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f"])
         assert "Build" in result.output
         assert "Deploy" in result.output
         assert "JOBS" in result.output
@@ -254,7 +254,7 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--steps"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--steps"])
         assert result.exit_code == 0
         assert "Set up job" in result.output
 
@@ -264,31 +264,33 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--json", "*"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json", "*"])
         assert result.exit_code == 0, result.output
         parsed = json.loads(result.output)
         # Output is a JSON object, not array — view commands return one record.
         assert isinstance(parsed, dict)
-        assert parsed["run_id"] == "run-abc123"
+        assert parsed["run_id"] == "run-019e5a2e474e76ca13d52ca70c883e0f"
 
     def test_json_output_field_selection(self, runner, monkeypatch):
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--json", "run_id,conclusion"])
+        result = runner.invoke(
+            cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json", "run_id,conclusion"]
+        )
         assert result.exit_code == 0, result.output
         parsed = json.loads(result.output)
         assert set(parsed.keys()) == {"run_id", "conclusion"}
 
     def test_jq_requires_json(self, runner):
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "-q", ".run_id"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "-q", ".run_id"])
         assert result.exit_code != 0
         assert "--jq requires --json" in result.output
 
     def test_requires_auth(self, runner, monkeypatch):
         monkeypatch.delenv("AVR_TOKEN", raising=False)
-        result = runner.invoke(cli, ["run", "view", "run-abc123"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f"])
         assert result.exit_code != 0
 
     def test_job_filter_keeps_only_matching_jobs(self, runner, monkeypatch):
@@ -297,7 +299,7 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--job", "Build"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--job", "Build"])
         assert result.exit_code == 0
         assert "Build" in result.output
         assert "Deploy" not in result.output  # filtered out
@@ -307,7 +309,7 @@ class TestRunView:
             "avrea_cli.api_client.ApiClient.public_get",
             lambda self, path, **kw: SAMPLE_RUN,
         )
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--job", "nosuch"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--job", "nosuch"])
         assert result.exit_code == 0
         assert "No job matching" in result.output
 
@@ -318,7 +320,7 @@ class TestRunWatch:
         client = MagicMock()
         client.public_get.side_effect = KeyboardInterrupt
         with pytest.raises(SystemExit) as exit_info:
-            watch_run_loop(client, "org-default", "run-abc123", interval=1, exit_status=True)
+            watch_run_loop(client, "org-default", "run-019e5a2e474e76ca13d52ca70c883e0f", interval=1, exit_status=True)
         assert exit_info.value.code == 130
         assert "Stopped watching." in capsys.readouterr().out
 
@@ -333,7 +335,7 @@ class TestRunWatch:
 
     def test_requires_auth(self, runner, monkeypatch):
         monkeypatch.delenv("AVR_TOKEN", raising=False)
-        result = runner.invoke(cli, ["run", "watch", "run-abc123"])
+        result = runner.invoke(cli, ["run", "watch", "run-019e5a2e474e76ca13d52ca70c883e0f"])
         assert result.exit_code != 0
 
     def test_explicit_repo_not_found_propagates(self, runner, monkeypatch):
@@ -370,7 +372,7 @@ class TestRunWatchJson:
         snapshots = [
             {
                 "data": {
-                    "run_id": "run-x",
+                    "run_id": "run-019e5a2e474e72d711642b726b044016",
                     "status": "in_progress",
                     "jobs": [
                         {"job_id": "job-1", "platform_job_id": 100, "job_name": "Build", "state": "queued"},
@@ -379,7 +381,7 @@ class TestRunWatchJson:
             },
             {
                 "data": {
-                    "run_id": "run-x",
+                    "run_id": "run-019e5a2e474e72d711642b726b044016",
                     "status": "in_progress",
                     "jobs": [
                         {"job_id": "job-1", "platform_job_id": 100, "job_name": "Build", "state": "in_progress"},
@@ -388,7 +390,7 @@ class TestRunWatchJson:
             },
             {
                 "data": {
-                    "run_id": "run-x",
+                    "run_id": "run-019e5a2e474e72d711642b726b044016",
                     "status": "completed",
                     "conclusion": "success",
                     "duration_seconds": 30,
@@ -407,7 +409,7 @@ class TestRunWatchJson:
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", self._stateful_get(snapshots))
         monkeypatch.setattr("time.sleep", lambda _: None)
 
-        result = runner.invoke(cli, ["run", "watch", "run-x", "--ndjson"])
+        result = runner.invoke(cli, ["run", "watch", "run-019e5a2e474e72d711642b726b044016", "--ndjson"])
         assert result.exit_code == 0, result.output
 
         events = [json.loads(line) for line in result.output.strip().splitlines() if line.startswith("{")]
@@ -421,7 +423,7 @@ class TestRunWatchJson:
     def test_exit_status_propagates_failure(self, runner, monkeypatch):
         snapshot = {
             "data": {
-                "run_id": "run-x",
+                "run_id": "run-019e5a2e474e72d711642b726b044016",
                 "status": "completed",
                 "conclusion": "failure",
                 "jobs": [],
@@ -429,7 +431,9 @@ class TestRunWatchJson:
         }
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, **kw: snapshot)
         monkeypatch.setattr("time.sleep", lambda _: None)
-        result = runner.invoke(cli, ["run", "watch", "run-x", "--ndjson", "--exit-status"])
+        result = runner.invoke(
+            cli, ["run", "watch", "run-019e5a2e474e72d711642b726b044016", "--ndjson", "--exit-status"]
+        )
         assert result.exit_code == 1
         events = [json.loads(line) for line in result.output.strip().splitlines() if line.startswith("{")]
         assert events[-1]["event"] == "run_completed"
@@ -446,7 +450,7 @@ class TestRunWatchJson:
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", raise_404)
         monkeypatch.setattr("time.sleep", lambda _: None)
-        result = runner.invoke(cli, ["run", "watch", "run-x", "--ndjson"])
+        result = runner.invoke(cli, ["run", "watch", "run-019e5a2e474e72d711642b726b044016", "--ndjson"])
         # handle_http_error exits 1 for non-401 4xx
         assert result.exit_code == 1
         # Must not have looped indefinitely emitting "Error fetching run" lines.
@@ -462,11 +466,18 @@ class TestRunWatchJson:
             if calls["i"] == 1:
                 req = httpx.Request("GET", f"https://api.example{path}")
                 raise httpx.HTTPStatusError("502", request=req, response=httpx.Response(502, request=req))
-            return {"data": {"run_id": "run-x", "status": "completed", "conclusion": "success", "jobs": []}}
+            return {
+                "data": {
+                    "run_id": "run-019e5a2e474e72d711642b726b044016",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "jobs": [],
+                }
+            }
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", maybe_500)
         monkeypatch.setattr("time.sleep", lambda _: None)
-        result = runner.invoke(cli, ["run", "watch", "run-x", "--ndjson"])
+        result = runner.invoke(cli, ["run", "watch", "run-019e5a2e474e72d711642b726b044016", "--ndjson"])
         assert result.exit_code == 0, result.output
         # Saw the transient error AND eventually completed.
         assert "Error fetching run" in result.output
@@ -481,7 +492,7 @@ class TestRunWatchJson:
         which "just returns" would break the real ``| head -n1`` path."""
         snapshot = {
             "data": {
-                "run_id": "run-x",
+                "run_id": "run-019e5a2e474e72d711642b726b044016",
                 "status": "completed",
                 "conclusion": "success",
                 "jobs": [],
@@ -494,7 +505,7 @@ class TestRunWatchJson:
             raise SystemExit(0)
 
         monkeypatch.setattr("avrea_cli.commands.run._emit_ndjson_event", _exit_clean)
-        result = runner.invoke(cli, ["run", "watch", "run-x", "--ndjson"])
+        result = runner.invoke(cli, ["run", "watch", "run-019e5a2e474e72d711642b726b044016", "--ndjson"])
         assert result.exit_code == 0, result.output
 
 

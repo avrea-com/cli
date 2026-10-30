@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 import click
 import re
 
-_AVREA_RUN_ID_RE = re.compile(r"run-[A-Za-z0-9]+")
+_AVREA_RUN_ID_RE = re.compile(r"(?:run|awr)-[0-9a-f]{32}")
 _ASCII_DECIMAL_RE = re.compile(r"[0-9]+")
 _GITHUB_NAME_RE = re.compile(r"[A-Za-z0-9_.-]+")
 _ORG_SLUG_RE = re.compile(r"[A-Za-z0-9-]+")

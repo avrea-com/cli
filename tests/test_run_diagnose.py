@@ -8,7 +8,7 @@ import json
 
 RUN: dict[str, Any] = {
     "data": {
-        "run_id": "run-abc123",
+        "run_id": "run-019e5a2e474e76ca13d52ca70c883e0f",
         "platform_run_id": 123456789,
         "repository_id": "rep-123",
         "platform_workflow_id": 456,
@@ -133,11 +133,13 @@ def _install_api(
 
     def fake_get(self, path, params=None, **kwargs):
         get_calls.append((path, params))
-        if path.endswith("/by-platform-id/123456789") or path.endswith("/workflow-runs/run-abc123"):
+        if path.endswith("/by-platform-id/123456789") or path.endswith(
+            "/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f"
+        ):
             return RUN
-        if path.endswith("/workflow-runs/run-abc123/jobs"):
+        if path.endswith("/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/jobs"):
             return jobs_response
-        if path.endswith("/workflow-runs/run-abc123/metrics"):
+        if path.endswith("/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/metrics"):
             if metrics_error:
                 request = httpx.Request("GET", "https://api.avrea.com/metrics")
                 response = httpx.Response(503, request=request)
@@ -161,11 +163,11 @@ def _install_api(
 def test_avrea_id_composes_existing_apis(runner, monkeypatch) -> None:
     get_calls, post_calls = _install_api(monkeypatch)
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123", "--json"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json"])
 
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
-    assert report["run"]["run_id"] == "run-abc123"
+    assert report["run"]["run_id"] == "run-019e5a2e474e76ca13d52ca70c883e0f"
     assert report["timing"]["queue_seconds"] == 2
     assert report["timing"]["execution_seconds"] == 90
     assert report["jobs"][0]["timing"]["queue_seconds"] == 3
@@ -180,20 +182,22 @@ def test_avrea_id_composes_existing_apis(runner, monkeypatch) -> None:
 
     paths = {path for path, _ in get_calls}
     assert paths == {
-        "/orgs/org-default/workflow-runs/run-abc123",
-        "/orgs/org-default/workflow-runs/run-abc123/jobs",
-        "/orgs/org-default/workflow-runs/run-abc123/metrics",
+        "/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f",
+        "/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/jobs",
+        "/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/metrics",
         "/orgs/org-default/workflow-runs/aggregate",
     }
     assert all(not path.endswith("/diagnostics") for path in paths)
     params_by_path = dict(get_calls)
-    assert params_by_path["/orgs/org-default/workflow-runs/run-abc123"] == {"include": ["workflow"]}
-    assert params_by_path["/orgs/org-default/workflow-runs/run-abc123/jobs"] == {
+    assert params_by_path["/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f"] == {
+        "include": ["workflow"]
+    }
+    assert params_by_path["/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/jobs"] == {
         "limit": 100,
         "order": "created_at.asc",
         "include": ["steps"],
     }
-    assert params_by_path["/orgs/org-default/workflow-runs/run-abc123/metrics"] == {
+    assert params_by_path["/orgs/org-default/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/metrics"] == {
         "source": ["cpu", "memory", "disk-io", "network"]
     }
     assert params_by_path["/orgs/org-default/workflow-runs/aggregate"] == {
@@ -224,7 +228,7 @@ def test_failed_non_avrea_job_skips_log_search(runner, monkeypatch) -> None:
         jobs_response={"data": [job], "pagination": {"next_cursor": None}},
     )
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123", "--json"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json"])
 
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
@@ -248,13 +252,13 @@ def test_github_id_resolves_directly_then_composes(runner, monkeypatch) -> None:
         "/orgs/org-default/workflow-runs/by-platform-id/123456789",
         {"include": ["workflow"]},
     ) in get_calls
-    assert not any(path.endswith("/workflow-runs/run-abc123") for path, _ in get_calls)
+    assert not any(path.endswith("/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f") for path, _ in get_calls)
 
 
 def test_human_report_prioritizes_failure_evidence(runner, monkeypatch) -> None:
     _install_api(monkeypatch)
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f"])
 
     assert result.exit_code == 0, result.output
     assert "CI #42 (attempt 1)" in result.output
@@ -271,7 +275,7 @@ def test_human_report_prioritizes_failure_evidence(runner, monkeypatch) -> None:
 def test_optional_metrics_failure_returns_partial_report(runner, monkeypatch) -> None:
     _install_api(monkeypatch, metrics_error=True)
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123", "--json"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json"])
 
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
@@ -305,7 +309,7 @@ def test_invalid_metrics_discard_warnings_from_partial_parse(runner, monkeypatch
         metrics_response=metrics_response,
     )
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123", "--json"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f", "--json"])
 
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
@@ -342,7 +346,7 @@ def test_invalid_run_response_fails_cleanly(runner, monkeypatch) -> None:
         lambda self, path, **kwargs: {"data": []},
     )
 
-    result = runner.invoke(cli, ["run", "diagnose", "run-abc123"])
+    result = runner.invoke(cli, ["run", "diagnose", "run-019e5a2e474e76ca13d52ca70c883e0f"])
 
     assert result.exit_code != 0
     assert "invalid workflow-run response" in result.output.lower()

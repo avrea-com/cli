@@ -18,7 +18,7 @@ def _run_view_sample() -> dict:
     return copy.deepcopy(
         {
             "data": {
-                "run_id": "run-abc123",
+                "run_id": "run-019e5a2e474e76ca13d52ca70c883e0f",
                 "platform_run_id": 987654,
                 "run_attempt": 1,
                 "repository": {"full_name": "acme/svc"},
@@ -83,13 +83,13 @@ class TestRunListWeb:
 class TestRunViewWeb:
     def test_avrea_url_uses_slug(self, runner, monkeypatch):
         _stub_get(monkeypatch, _run_view_sample())
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--web"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--web"])
         assert result.exit_code == 0, result.output
-        assert "Avrea:  https://console.avrea.com/org/acme/runs/run-abc123" in result.output
+        assert "Avrea:  https://console.avrea.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f" in result.output
 
     def test_github_url_uses_platform_run_id_not_workflow_id(self, runner, monkeypatch):
         _stub_get(monkeypatch, _run_view_sample())
-        result = runner.invoke(cli, ["run", "view", "run-abc123", "--web"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e76ca13d52ca70c883e0f", "--web"])
         assert result.exit_code == 0, result.output
         assert "GitHub: https://github.com/acme/svc/actions/runs/987654" in result.output
         # First-attempt URL has no /attempts/N suffix
@@ -98,21 +98,23 @@ class TestRunViewWeb:
     def test_github_url_appends_attempt_suffix_for_reruns(self, runner, monkeypatch):
         rerun_payload = {
             "data": {
-                "run_id": "run-rerun",
+                "run_id": "run-019e5a2e474e71fae2d16b59d6f78051",
                 "platform_run_id": 987654,
                 "run_attempt": 3,
                 "repository": {"full_name": "acme/svc"},
             }
         }
         _stub_get(monkeypatch, rerun_payload)
-        result = runner.invoke(cli, ["run", "view", "run-rerun", "--web"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e71fae2d16b59d6f78051", "--web"])
         assert result.exit_code == 0, result.output
         assert "/runs/987654/attempts/3" in result.output
 
     def test_github_url_omitted_when_platform_run_id_missing(self, runner, monkeypatch):
-        no_platform = {"data": {"run_id": "run-x", "repository": {"full_name": "acme/svc"}}}
+        no_platform = {
+            "data": {"run_id": "run-019e5a2e474e72d711642b726b044016", "repository": {"full_name": "acme/svc"}}
+        }
         _stub_get(monkeypatch, no_platform)
-        result = runner.invoke(cli, ["run", "view", "run-x", "--web"])
+        result = runner.invoke(cli, ["run", "view", "run-019e5a2e474e72d711642b726b044016", "--web"])
         assert result.exit_code == 0
         assert "GitHub:" not in result.output
 
