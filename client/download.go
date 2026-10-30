@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptrace"
+	"net/url"
 	"strings"
 	"time"
 
@@ -62,16 +63,53 @@ func (b *downloadBody) Close() error {
 // than a whole-file deadline. The caller must close the body. Redirects are
 // refused even if the supplied transport allows them.
 func (c *Client) Download(ctx context.Context, path string) (io.ReadCloser, error) {
-	return c.download(ctx, path, false)
+	return c.download(ctx, path, false, false)
 }
 
 // DownloadDecoded supports opaque analysis artifacts with the same compression
 // negotiation as Python. The decoded bytes stream without the JSON size limit.
 func (c *Client) DownloadDecoded(ctx context.Context, path string) (io.ReadCloser, error) {
-	return c.download(ctx, path, true)
+	return c.download(ctx, path, true, false)
 }
 
-func (c *Client) download(ctx context.Context, path string, compressed bool) (io.ReadCloser, error) {
+// DownloadInvoice follows PDF redirects without forwarding API credentials
+// outside the original origin. Other API and artifact requests refuse redirects.
+func (c *Client) DownloadInvoice(ctx context.Context, path string) (io.ReadCloser, error) {
+	return c.download(ctx, path, true, true)
+}
+
+func invoiceRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) > 20 {
+		return errors.New("too many invoice redirects")
+	}
+	previous := via[len(via)-1].URL
+	if req.URL.User != nil || (req.URL.Scheme != "https" && req.URL.Scheme != "http") ||
+		(previous.Scheme == "https" && req.URL.Scheme != "https") {
+		return errors.New("unsafe invoice redirect")
+	}
+	sameOrigin := func(a, b *url.URL) bool {
+		port := func(u *url.URL) string {
+			if p := u.Port(); p != "" {
+				return p
+			}
+			if u.Scheme == "https" {
+				return "443"
+			}
+			return "80"
+		}
+		return strings.EqualFold(a.Scheme, b.Scheme) && strings.EqualFold(a.Hostname(), b.Hostname()) && port(a) == port(b)
+	}
+	for _, prior := range via {
+		if !sameOrigin(req.URL, prior.URL) {
+			req.Header.Del("Authorization")
+			req.Header.Del("Cookie")
+			break
+		}
+	}
+	return nil
+}
+
+func (c *Client) download(ctx context.Context, path string, compressed, redirects bool) (io.ReadCloser, error) {
 	if err := config.ValidateHost(c.Config.Host); err != nil {
 		return nil, err
 	}
@@ -107,6 +145,11 @@ func (c *Client) download(ctx context.Context, path string, compressed bool) (io
 	transport := *c.HTTP
 	transport.Timeout = 0
 	transport.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	if redirects {
+		transport.CheckRedirect = invoiceRedirect
+		transport.Jar = nil
+	}
+
 	resp, err := transport.Do(req) //nolint:bodyclose // Ownership transfers to downloadBody; errors close it below.
 	if timing != nil {
 		timing.response(resp)

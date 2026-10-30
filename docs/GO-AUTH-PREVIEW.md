@@ -28,6 +28,7 @@ make go-build
 ./build/go/avr billing payment-methods remove PM_ID --org ORG
 ./build/go/avr billing invoices list --org ORG
 ./build/go/avr billing invoices show INVOICE_ID --org ORG
+./build/go/avr billing invoices download INVOICE_ID --org ORG --out invoice.pdf
 ./build/go/avr billing payment-methods list --org ORG
 ./build/go/avr health --json status
 ./build/go/avr audit-events list --org ORG --resource-type api_key

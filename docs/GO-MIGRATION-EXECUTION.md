@@ -800,9 +800,35 @@ JSON/jq, empty responses, refusal/EOF and HTTP failures. Public Go race tests,
 lint/build, schema generation, admin composition, fixture typing and workflow
 checks pass. Both report hashes match the tested executables.
 
+## Invoice PDF downloads
+
+Added billing invoices download, shared with avr-admin. Billing write
+checkpoints: public ff11a00, admin 3e95ddaa72.
+
+Downloads finish into a private spool before opening the destination, preserving
+existing files on network failure without buffering entire PDFs in memory.
+SBOM downloads now use that same spool helper. Final writes preserve Python's
+ordinary file permissions, replacement and symlink semantics; --out - is a
+literal filename for this command, not stdout.
+
+Invoice downloads alone follow bounded HTTP redirects. Same-origin redirects
+retain auth; leaving the origin permanently drops credentials for that chain.
+HTTPS downgrades and userinfo destinations are refused. Other API/artifact
+redirect policies remain unchanged. Deliberate differences: slash-containing
+invoice identifiers stay one escaped URL segment; Go decodes zstd PDFs while
+Python's standalone httpx path saves unsupported compressed bytes. Both zstd
+results are explicitly asserted, not normalized away.
+
+Validation: 29 paired PDF cases (two terminal cases) and 34 SBOM regression
+cases per binary pass. Four focused Go tests cover credential stripping across
+origins and back, downgrade/loop refusal, preserving existing files on broken
+streams, and escaped-ID/basename handling. Go race tests, lint/build, generation,
+admin composition, fixture typing and workflow checks pass. All four report
+hashes match the tested executables. No live invoice downloads or billing writes.
+
 ## Remaining work
 
-Card addition and invoice downloads, firewall, VM commands, hidden docs, root/help/completion,
+Card addition, firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

@@ -131,6 +131,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_audit_health --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_writes --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_invoice_download --go build/go/avr
 	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py -q
 
 go-scan:
