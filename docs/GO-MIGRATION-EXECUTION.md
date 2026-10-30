@@ -607,9 +607,39 @@ subsequent JSON requests and redirect refusal. Go race tests, lint, schema
 generation, admin composition checks, fixture typing and workflow validation
 pass. Both parity report hashes match the final tested executables.
 
+## GitHub installation batch
+
+Added org install list/add/remove and the orgs alias, shared with avr-admin.
+SAML checkpoints: public 9054897, admin 8114860557.
+
+Decisions:
+- Keep cross-organization installation listing, fallback organization labels,
+  UTC timestamps, JSON projection and jq.
+- Read the installation baseline before launching the browser. Preserve the
+  no-browser option, printed URL, nonpositive wait skip and default 120 seconds.
+- Preserve Python's five-second polling cadence, including its final poll
+  after a shorter wait budget. Detect distinct new platform installation IDs
+  against the original accessible-installations snapshot and sort them.
+  Timeout remains informational with exit 0; poll errors remain failures.
+- Cancellation stops polling with exit 130 and Python's abort diagnostic.
+  Fake-clock tests verify the final-poll boundary without timing thresholds.
+- Suspension requires confirmation or --yes/-y, honors disabled prompts and
+  checks cancellation before DELETE. No write retries are added.
+- Add the existing orgs alias to the entire organization tree.
+- No dependencies or live installation changes; browser launches are captured
+  by local fixtures.
+
+Validation: 59 paired cases per binary, including five terminal cases and a
+real process interruption, cover all three commands, polling outcomes,
+browser capture, fields, errors, confirmations and the alias. Two Go tests
+cover wait-budget/cancellation behavior and cancellation before suspension.
+Go race tests, lint, schema generation, admin composition checks, fixture
+typing, inventory verification and workflow validation pass. Both report
+hashes match the tested binaries.
+
 ## Remaining work
 
-Organization installation and repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

@@ -20,6 +20,9 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr org install list
+./build/go/avr org install add --org ORG --no-browser --wait-seconds 0
+./build/go/avr org install remove --org ORG --installation-id INSTALLATION_ID
 ./build/go/avr org saml show --org ORG
 ./build/go/avr org saml sp-metadata --org ORG
 ./build/go/avr org saml configure idp-metadata.xml --org ORG --email-attribute mail

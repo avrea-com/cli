@@ -165,6 +165,24 @@ func (e GovernanceHoldReason) Valid() bool {
 	}
 }
 
+// Defines values for IntegratedSourcePlatform.
+const (
+	IntegratedSourcePlatformGithub IntegratedSourcePlatform = "github"
+	IntegratedSourcePlatformGitlab IntegratedSourcePlatform = "gitlab"
+)
+
+// Valid indicates whether the value is a known member of the IntegratedSourcePlatform enum.
+func (e IntegratedSourcePlatform) Valid() bool {
+	switch e {
+	case IntegratedSourcePlatformGithub:
+		return true
+	case IntegratedSourcePlatformGitlab:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for JobQueueWaitReason.
 const (
 	OsRestricted  JobQueueWaitReason = "os_restricted"
@@ -1792,6 +1810,9 @@ type HTTPValidationError struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// IntegratedSourcePlatform defines model for IntegratedSourcePlatform.
+type IntegratedSourcePlatform string
+
 // JobAggregateBucket defines model for JobAggregateBucket.
 type JobAggregateBucket struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64]   `json:"action_required_avg_duration_seconds,omitempty"`
@@ -2295,6 +2316,14 @@ type PagedResponseOrganizationMemberResponse struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponseUserInstallationItem defines model for PagedResponse_UserInstallationItem_.
+type PagedResponseUserInstallationItem struct {
+	Data []UserInstallationItem `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PagedResponseWorkflowArtifactView defines model for PagedResponse_WorkflowArtifactView_.
 type PagedResponseWorkflowArtifactView struct {
 	Data []WorkflowArtifactView `json:"data"`
@@ -2670,6 +2699,24 @@ type StepAggregation struct {
 	AdditionalProperties                map[string]interface{}     `json:"-"`
 }
 
+// UserInstallationItem Installation summary for user's installations list.
+type UserInstallationItem struct {
+	CreatedAt              time.Time                 `json:"created_at"`
+	GithubUrl              nullable.Nullable[string] `json:"github_url"`
+	InstallationId         string                    `json:"installation_id"`
+	OrganizationId         nullable.Nullable[string] `json:"organization_id"`
+	OrganizationName       nullable.Nullable[string] `json:"organization_name"`
+	OrganizationSlug       nullable.Nullable[string] `json:"organization_slug"`
+	Platform               IntegratedSourcePlatform  `json:"platform"`
+	PlatformInstallationId nullable.Nullable[string] `json:"platform_installation_id"`
+	PlatformSettingsUrl    string                    `json:"platform_settings_url"`
+	State                  string                    `json:"state"`
+	TargetId               int                       `json:"target_id"`
+	TargetName             string                    `json:"target_name"`
+	TargetType             string                    `json:"target_type"`
+	AdditionalProperties   map[string]interface{}    `json:"-"`
+}
+
 // ValidationError defines model for ValidationError.
 type ValidationError struct {
 	Ctx                  *map[string]interface{}    `json:"ctx,omitempty"`
@@ -2999,6 +3046,11 @@ type VerifyEmailDomainParams struct {
 
 // GetOrgFeatureFlagParams defines parameters for GetOrgFeatureFlag.
 type GetOrgFeatureFlagParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RemoveOrganizationInstallationParams defines parameters for RemoveOrganizationInstallation.
+type RemoveOrganizationInstallationParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -3678,6 +3730,11 @@ type ListSettingsSchemaParams struct {
 
 // ListSettingsSchemaParamsScope defines parameters for ListSettingsSchema.
 type ListSettingsSchemaParamsScope string
+
+// ListUserInstallationsParams defines parameters for ListUserInstallations.
+type ListUserInstallationsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
 
 // ListUserOrganizationsParams defines parameters for ListUserOrganizations.
 type ListUserOrganizationsParams struct {
@@ -14799,6 +14856,228 @@ func (a StepAggregation) MarshalJSON() ([]byte, error) {
 	object["total_duration_seconds"], err = json.Marshal(a.TotalDurationSeconds)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'total_duration_seconds': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for UserInstallationItem. Returns the specified
+// element and whether it was found
+func (a UserInstallationItem) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for UserInstallationItem
+func (a *UserInstallationItem) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for UserInstallationItem to handle AdditionalProperties
+func (a *UserInstallationItem) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["github_url"]; found {
+		err = json.Unmarshal(raw, &a.GithubUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'github_url': %w", err)
+		}
+		delete(object, "github_url")
+	}
+
+	if raw, found := object["installation_id"]; found {
+		err = json.Unmarshal(raw, &a.InstallationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'installation_id': %w", err)
+		}
+		delete(object, "installation_id")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["organization_name"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationName)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_name': %w", err)
+		}
+		delete(object, "organization_name")
+	}
+
+	if raw, found := object["organization_slug"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationSlug)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_slug': %w", err)
+		}
+		delete(object, "organization_slug")
+	}
+
+	if raw, found := object["platform"]; found {
+		err = json.Unmarshal(raw, &a.Platform)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform': %w", err)
+		}
+		delete(object, "platform")
+	}
+
+	if raw, found := object["platform_installation_id"]; found {
+		err = json.Unmarshal(raw, &a.PlatformInstallationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_installation_id': %w", err)
+		}
+		delete(object, "platform_installation_id")
+	}
+
+	if raw, found := object["platform_settings_url"]; found {
+		err = json.Unmarshal(raw, &a.PlatformSettingsUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_settings_url': %w", err)
+		}
+		delete(object, "platform_settings_url")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["target_id"]; found {
+		err = json.Unmarshal(raw, &a.TargetId)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_id': %w", err)
+		}
+		delete(object, "target_id")
+	}
+
+	if raw, found := object["target_name"]; found {
+		err = json.Unmarshal(raw, &a.TargetName)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_name': %w", err)
+		}
+		delete(object, "target_name")
+	}
+
+	if raw, found := object["target_type"]; found {
+		err = json.Unmarshal(raw, &a.TargetType)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_type': %w", err)
+		}
+		delete(object, "target_type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for UserInstallationItem to handle AdditionalProperties
+func (a UserInstallationItem) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["github_url"], err = json.Marshal(a.GithubUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'github_url': %w", err)
+	}
+
+	object["installation_id"], err = json.Marshal(a.InstallationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'installation_id': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["organization_name"], err = json.Marshal(a.OrganizationName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_name': %w", err)
+	}
+
+	object["organization_slug"], err = json.Marshal(a.OrganizationSlug)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_slug': %w", err)
+	}
+
+	object["platform"], err = json.Marshal(a.Platform)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform': %w", err)
+	}
+
+	object["platform_installation_id"], err = json.Marshal(a.PlatformInstallationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform_installation_id': %w", err)
+	}
+
+	object["platform_settings_url"], err = json.Marshal(a.PlatformSettingsUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform_settings_url': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["target_id"], err = json.Marshal(a.TargetId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_id': %w", err)
+	}
+
+	object["target_name"], err = json.Marshal(a.TargetName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_name': %w", err)
+	}
+
+	object["target_type"], err = json.Marshal(a.TargetType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_type': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

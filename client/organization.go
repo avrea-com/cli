@@ -48,3 +48,11 @@ func (c *Client) SetEmailDomains(ctx context.Context, path string, domains []str
 	}
 	return decodePage[wire.EmailDomainResponse](body)
 }
+
+func (c *Client) Installations(ctx context.Context) (Page[wire.UserInstallationItem], error) {
+	body, err := c.Get(ctx, "/users/me/installations", nil)
+	if err != nil {
+		return Page[wire.UserInstallationItem]{}, err
+	}
+	return decodePage[wire.UserInstallationItem](body)
+}

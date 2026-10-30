@@ -1492,6 +1492,13 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "IntegratedSourcePlatform": {
+        "enum": [
+          "github",
+          "gitlab"
+        ],
+        "type": "string"
+      },
       "JobAggregateBucket": {
         "properties": {
           "action_required_avg_duration_seconds": {
@@ -4275,6 +4282,27 @@
         "title": "PagedResponse[OrganizationMemberResponse]",
         "type": "object"
       },
+      "PagedResponse_UserInstallationItem_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/UserInstallationItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[UserInstallationItem]",
+        "type": "object"
+      },
       "PagedResponse_WorkflowArtifactView_": {
         "additionalProperties": false,
         "properties": {
@@ -5716,6 +5744,115 @@
           "step"
         ],
         "title": "StepAggregation",
+        "type": "object"
+      },
+      "UserInstallationItem": {
+        "description": "Installation summary for user's installations list.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "github_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Url"
+          },
+          "installation_id": {
+            "title": "Installation Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "organization_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Slug"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/IntegratedSourcePlatform"
+          },
+          "platform_installation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Installation Id"
+          },
+          "platform_settings_url": {
+            "title": "Platform Settings Url",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "integer"
+          },
+          "target_name": {
+            "title": "Target Name",
+            "type": "string"
+          },
+          "target_type": {
+            "title": "Target Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "installation_id",
+          "platform_installation_id",
+          "organization_id",
+          "organization_name",
+          "organization_slug",
+          "target_type",
+          "target_name",
+          "target_id",
+          "platform",
+          "platform_settings_url",
+          "github_url",
+          "state",
+          "created_at"
+        ],
+        "title": "UserInstallationItem",
         "type": "object"
       },
       "ValidationError": {
@@ -8061,6 +8198,92 @@
         "summary": "Get Org Feature Flag",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/orgs/{org_id}/installations/{installation_id}": {
+      "delete": {
+        "description": "Remove an installation using its provider-specific lifecycle.",
+        "operationId": "remove_organization_installation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "installation_id",
+            "required": true,
+            "schema": {
+              "title": "Installation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Installation not found for the organization"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Organization Installation",
+        "tags": [
+          "organization-installations"
         ]
       }
     },
@@ -14084,6 +14307,61 @@
         "summary": "List Settings Schema",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/users/me/installations": {
+      "get": {
+        "description": "List all installations accessible to the user across all their organizations.\n\nEvery installation of each organization the user belongs to, unless an\norganization's group grants narrow that read.",
+        "operationId": "list_user_installations",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_UserInstallationItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List User Installations",
+        "tags": [
+          "users"
         ]
       }
     },
