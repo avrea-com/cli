@@ -173,7 +173,12 @@ func newGitLabRunnerCommand(d Dependencies, verb string) *cobra.Command {
 				}
 			}
 			if cmd.Flags().Changed("json") {
-				return o.record(cmd, d, map[string]any{"data": configured, "setup": setup}, fields)
+				// gojq consumes JSON arrays as []any, including locally assembled results.
+				items := make([]any, len(configured))
+				for i, row := range configured {
+					items[i] = row
+				}
+				return o.record(cmd, d, map[string]any{"data": items, "setup": setup}, fields)
 			}
 		}
 		return nil
