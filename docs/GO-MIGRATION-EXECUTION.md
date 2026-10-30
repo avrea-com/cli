@@ -575,9 +575,41 @@ settings argument/value regression cases pass in each binary. Go race tests,
 lint, schema generation, admin composition checks, fixture typing and workflow
 validation pass. The four reports match the final tested binary hashes.
 
+## SAML batch
+
+Added org saml show/sp-metadata/test/configure/enforcement/remove, shared
+with avr-admin. Organization checkpoints: public 3c5b67d, admin e94c390e22.
+
+Decisions:
+- Keep metadata as opaque XML bytes. Upload file or stdin without parsing,
+  re-encoding or logging it; use the authenticated, timeout-bounded transport
+  with application/xml and the same redirect refusal as JSON requests.
+- Preserve all attribute aliases, case-insensitive role/state choices,
+  optional attribute omission and last-option-wins positive/negative toggles.
+- Keep aligned configuration output, nullable fields, JSON/jq, XML newline
+  handling, organization-slug resolution and browser/manual-open messages.
+- Removal retains default-no confirmation, --yes/-y and prompt-disabled
+  refusal. Mutation paths check cancellation and do not add retries.
+- Bound metadata reads at 16 MiB and allow cancellation while stdin blocks.
+  This local memory guard is above the server's 1 MiB accepted-body limit;
+  ordinary validation stays server-side. Oversized local input fails before
+  upload rather than allocating without a bound.
+- Extend the local harness to compare XML body bytes and content type.
+  Existing JSON request capture is unchanged.
+- No new dependencies or live SSO changes/sign-ins.
+
+Validation: 106 paired cases per binary, including eight terminal cases,
+cover all six commands, byte-exact file/stdin uploads, options and aliases,
+pending errors, field selection, browser capture, prompts and diagnostics.
+Six focused Go tests cover blocked-input cancellation, the input bound,
+authenticated opaque XML without diagnostic disclosure, browser failure,
+subsequent JSON requests and redirect refusal. Go race tests, lint, schema
+generation, admin composition checks, fixture typing and workflow validation
+pass. Both parity report hashes match the final tested executables.
+
 ## Remaining work
 
-Organization SAML/install and repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Organization installation and repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

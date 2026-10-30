@@ -193,7 +193,7 @@ func NewOrg(deps Dependencies) *cobra.Command {
 		}
 		return output.Grid(d.Out, []string{"ID", "Name", "Slug", "Role", "Default"}, rows)
 	})
-	group.AddCommand(cmd, newOrgCreate(d), newOrgMembers(d), newEmailDomains(d))
+	group.AddCommand(cmd, newOrgCreate(d), newOrgMembers(d), newEmailDomains(d), newSAML(d))
 	return group
 }
 

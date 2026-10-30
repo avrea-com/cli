@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 import argparse
+import base64
 import copy
 import decimal
 import gzip
@@ -77,7 +78,13 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                 "authorization": self.headers.get("Authorization"),
                 "cookie": self.headers.get("Cookie"),
                 "csrf": self.headers.get("X-CSRF-Token"),
-                "body": json.loads(body) if body else None,
+                "body": (
+                    {"base64": base64.b64encode(body).decode(), "content_type": self.headers.get("Content-Type")}
+                    if self.headers.get("Content-Type") == "application/xml"
+                    else json.loads(body)
+                    if body
+                    else None
+                ),
             }
         )
         key = (self.command, canonical_path(self.path))
