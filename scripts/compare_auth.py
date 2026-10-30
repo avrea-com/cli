@@ -121,6 +121,30 @@ class Fixture(http.server.BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def windows_literal_json_args(args):
+    """Avoid Click expanding a standalone JSON wildcard into local filenames."""
+    result = []
+    index = 0
+    while index < len(args):
+        if args[index : index + 2] == ["--json", "*"]:
+            result.append("--json=*")
+            index += 2
+        else:
+            result.append(args[index])
+            index += 1
+    return result
+
+
+def run_captured(args, *, stdin, **kwargs):
+    """Send identical UTF-8 input bytes on every OS; decode terminal output."""
+    result = subprocess.run(args, input=stdin.encode("utf-8"), capture_output=True, **kwargs)
+    # Match subprocess text-mode output normalization without its Windows
+    # input conversion, which would change LF Git protocol fixtures to CRLF.
+    result.stdout = result.stdout.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    result.stderr = result.stderr.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    return result
+
+
 def run(executable, scenario, root, host):
     with tempfile.TemporaryDirectory(prefix="avr-parity-") as directory:
         home = Path(directory)
@@ -218,6 +242,8 @@ def run(executable, scenario, root, host):
 
             env["PATH"] = make_stubs(home, scenario["bootstrap_stub"])
         args = [a.replace("FIXTURE_HOST", host).replace("FIXTURE_HOME", directory) for a in scenario["args"]]
+        if os.name == "nt":
+            args = windows_literal_json_args(args)
         if remote := scenario.get("git_remote"):
             subprocess.run(["git", "init", "-q", directory], env=env, check=True, capture_output=True, timeout=5)
             subprocess.run(
@@ -353,13 +379,11 @@ def run(executable, scenario, root, host):
                     process.communicate()
         else:
             try:
-                result = subprocess.run(
+                result = run_captured(
                     executable + args,
                     env=env,
                     cwd=directory,
-                    input=scenario.get("stdin", ""),
-                    capture_output=True,
-                    text=True,
+                    stdin=scenario.get("stdin", ""),
                     timeout=20,
                 )
             except subprocess.TimeoutExpired as exc:
