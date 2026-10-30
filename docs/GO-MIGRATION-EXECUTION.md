@@ -738,9 +738,35 @@ the final clone suite. Go race tests, lint, generation and dependency scanning,
 admin checks, fixture typing and workflow validation pass. Both final clone
 report hashes match the tested binaries. No live mirror cloning or API changes.
 
+## Audit events and health batch
+
+Added audit-events list and health, shared with avr-admin. Clone checkpoints:
+public dca7046, admin 8a00d27359.
+
+Decisions:
+- Preserve audit filters, date aliases and last-option-wins behavior, bounded
+  limits, cursor validation and organization selection. Human output retains
+  the next-page hint; JSON emits only the selected event records.
+- Retain API member order and compact ASCII JSON in the audit Data column,
+  including nested values and large integers. JSON projection uses the raw
+  typed values independently of human rendering.
+- Health requires no login. Preserve human progress/status lines, host-based
+  HTTP/network/timeout diagnostics, and exit 1 after an unreachable response.
+  JSON failures still emit the stable selected status record, including jq.
+- Keep error text and status icons consistent with Python in terminals and
+  pipes. No dependencies or live writes are added.
+
+Validation: 73 paired cases per binary, including five terminal cases, cover
+filters and aliases, limits/cursors, empty and nullable data, ordered event
+payloads, JSON/jq and HTTP errors. Failure JSON is structurally compared even
+on nonzero exits. A focused Go test covers unauthenticated connection/timeout
+failures, retained JSON, and sanitized network diagnostics. Go race tests,
+lint, schema generation, admin composition, fixture typing and workflow
+validation pass. Both parity report hashes match the tested executables.
+
 ## Remaining work
 
-Billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Billing/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
