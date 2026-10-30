@@ -240,13 +240,9 @@ def run(executable, scenario, root, host):
 
         if scenario.get("login"):
             if executable[1:] == ["-m", "avrea_cli.main"]:
-                # Diagnose startup stalls in the unmodified Python oracle on CI.
-                executable = [
-                    executable[0],
-                    "-c",
-                    "import faulthandler, runpy; faulthandler.dump_traceback_later(10); "
-                    "runpy.run_module('avrea_cli.main', run_name='__main__')",
-                ]
+                # Keep the callback server's cosmetic reverse DNS lookup local.
+                # The pinned oracle still handles the real login and callback.
+                executable = [executable[0], str(Path(__file__).with_name("parity_login_oracle.py"))]
 
             def callback():
                 deadline = time.monotonic() + 15

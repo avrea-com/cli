@@ -25,12 +25,15 @@ func TestTimingSeparatesResponseWaitAndBody(t *testing.T) {
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
-		time.Sleep(12 * time.Millisecond)
 		_, _ = fmt.Fprint(w, `{"secret":"response-secret"}`)
 	}))
 	defer server.Close()
 	var log bytes.Buffer
-	c := New(config.Config{Host: server.URL, Token: "token-secret"}, server.Client(), "test")
+	httpClient := server.Client()
+	// Delay at Read, after the client records response_headers. A server-side
+	// sleep can expire before the client is scheduled on a busy CI runner.
+	httpClient.Transport = delayedBodyTransport{httpClient.Transport}
+	c := New(config.Config{Host: server.URL, Token: "token-secret"}, httpClient, "test")
 	c.Timings = &log
 	for range 2 {
 		if _, err := c.Do(t.Context(), http.MethodGet, "/users/me?session=query-secret", nil); err != nil {
@@ -75,6 +78,26 @@ func TestTimingSeparatesResponseWaitAndBody(t *testing.T) {
 			t.Fatal("wrong TLS events for fresh/reused connection")
 		}
 	}
+}
+
+type delayedBodyTransport struct{ http.RoundTripper }
+
+func (t delayedBodyTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	resp, err := t.RoundTripper.RoundTrip(r)
+	if err == nil {
+		resp.Body = &delayedBody{ReadCloser: resp.Body}
+	}
+	return resp, err
+}
+
+type delayedBody struct {
+	io.ReadCloser
+	once sync.Once
+}
+
+func (b *delayedBody) Read(p []byte) (int, error) {
+	b.once.Do(func() { time.Sleep(12 * time.Millisecond) })
+	return b.ReadCloser.Read(p)
 }
 
 func TestTimingCallbacksAreConcurrentAndRedacted(t *testing.T) {

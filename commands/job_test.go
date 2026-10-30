@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -169,7 +170,7 @@ func TestJobSSHArgumentsAndPasswordBoundary(t *testing.T) {
 					t.Fatalf("invalid pin: %q %v", content, e)
 				}
 				info, e := os.Stat(pin)
-				if e != nil || info.Mode().Perm() != 0600 {
+				if e != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0600) {
 					t.Fatalf("unsafe pin permissions: %v %v", info, e)
 				}
 				want := []string{"ssh", "-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + pin, "-p", "2222", "runner@runner.example.test"}
