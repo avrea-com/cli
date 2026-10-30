@@ -95,7 +95,7 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 				}
 			}
 			if page.NextCursor == "" {
-				return "", &missingRepository{fmt.Sprintf("This scoped token does not reach repository %q.\n  \x60avr repo list\x60 shows the repositories it reaches.", output.CellText(repo))}
+				return "", &missingRepository{fmt.Sprintf("This scoped token does not reach repository %q.\n  \x60avr repo list\x60 shows the repositories it reaches.\nAborted!", output.CellText(repo))}
 			}
 			if len(page.Items) == 0 || seen[page.NextCursor] {
 				return "", errors.New("repository listing returned a cursor that does not advance")
@@ -125,19 +125,19 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 	if structured {
 		fmt.Fprintf(&message, "Repository %q is not in org %q.", output.CellText(repo), output.CellText(org))
 	} else {
-		fmt.Fprintf(&message, "Failed to resolve repository %q (HTTP 404).", output.CellText(repo))
+		fmt.Fprintf(&message, "Failed to resolve repository %s (HTTP 404).", pythonQuote(output.CellText(repo)))
 		if he.Detail != "" {
 			fmt.Fprintf(&message, "\n  %s", output.CellText(he.Detail))
 		}
 	}
 	if names, ok := detail["nearby_full_names"].([]any); ok && len(names) > 0 {
-		message.WriteString("\n  Did you mean one of these?")
+		message.WriteString("\n\n  Did you mean one of these?")
 		for _, name := range names {
 			fmt.Fprintf(&message, "\n    %s", output.CellText(fmt.Sprint(name)))
 		}
 	}
 	if orgs, ok := detail["other_orgs"].([]any); ok && len(orgs) > 0 {
-		message.WriteString("\n  You also belong to:")
+		message.WriteString("\n\n  You also belong to:")
 		for _, item := range orgs {
 			if o, ok := item.(map[string]any); ok {
 				fmt.Fprintf(&message, "\n    %s (%s)", output.CellText(fieldText(o, "slug")), output.CellText(fieldText(o, "organization_id")))
@@ -145,11 +145,12 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 		}
 		message.WriteString("\n  Try --org <id>, or avr config set org <slug> to switch default.")
 	} else if structured {
-		message.WriteString("\n  Connect this repo: open the Avrea console and add it to the org.")
+		message.WriteString("\n\n  Connect this repo: open the Avrea console and add it to the org.")
 	}
 	if platform == "gitlab" {
 		message.WriteString("\nCheck the GitLab repository connection, your access, and whether GitLab support is enabled.")
 	}
+	message.WriteString("\nAborted!")
 	return "", &missingRepository{message.String()}
 }
 
