@@ -3110,6 +3110,240 @@
         "title": "JobsListResponse",
         "type": "object"
       },
+      "LegacyGitHubPublicMirrorCatalogResource": {
+        "description": "Compatibility response for the deprecated GitHub-only lookup route.",
+        "properties": {
+          "approval_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval State"
+          },
+          "approved_owner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved Owner Id"
+          },
+          "default_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Branch"
+          },
+          "https_clone_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Https Clone Url"
+          },
+          "installation_kind": {
+            "title": "Installation Kind",
+            "type": "string"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "is_disabled": {
+            "title": "Is Disabled",
+            "type": "boolean"
+          },
+          "is_fork": {
+            "title": "Is Fork",
+            "type": "boolean"
+          },
+          "lease_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Hours"
+          },
+          "mirror_enabled": {
+            "title": "Mirror Enabled",
+            "type": "boolean"
+          },
+          "platform": {
+            "const": "github",
+            "default": "github",
+            "title": "Platform",
+            "type": "string"
+          },
+          "platform_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Full Name"
+          },
+          "platform_owner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Owner Id"
+          },
+          "platform_owner_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Owner Identifier"
+          },
+          "platform_owner_login": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Owner Login"
+          },
+          "platform_owner_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Owner Type"
+          },
+          "platform_pushed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Pushed At"
+          },
+          "platform_repository_id": {
+            "title": "Platform Repository Id",
+            "type": "integer"
+          },
+          "platform_repository_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Repository Identifier"
+          },
+          "platform_size_kb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Size Kb"
+          },
+          "public_access_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Access Expires At"
+          },
+          "public_metadata_verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Metadata Verified At"
+          },
+          "repository_full_name": {
+            "title": "Repository Full Name",
+            "type": "string"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "revocation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Reason"
+          }
+        },
+        "required": [
+          "repository_id",
+          "platform_repository_id",
+          "repository_full_name",
+          "is_archived",
+          "is_disabled",
+          "is_fork",
+          "mirror_enabled",
+          "installation_kind"
+        ],
+        "title": "LegacyGitHubPublicMirrorCatalogResource",
+        "type": "object"
+      },
       "LogLevel": {
         "description": "Log level extracted from GitHub Actions ##[level] markers.",
         "enum": [
@@ -4352,6 +4586,186 @@
         ],
         "title": "Platform",
         "type": "string"
+      },
+      "PublicMirrorPlatform": {
+        "enum": [
+          "github",
+          "gitlab",
+          "public_git"
+        ],
+        "type": "string"
+      },
+      "PublicMirrorRequestCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "full_name": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Full Name",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "full_name"
+        ],
+        "title": "PublicMirrorRequestCreate",
+        "type": "object"
+      },
+      "PublicMirrorRequestResource": {
+        "properties": {
+          "approval_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval State"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "github_snapshot": {
+            "additionalProperties": true,
+            "title": "Github Snapshot",
+            "type": "object"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/PublicMirrorPlatform",
+            "default": "github"
+          },
+          "platform_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Full Name"
+          },
+          "provider_snapshot": {
+            "additionalProperties": true,
+            "title": "Provider Snapshot",
+            "type": "object"
+          },
+          "public_access_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Access Expires At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "repository_full_name": {
+            "title": "Repository Full Name",
+            "type": "string"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "requester_organization_id": {
+            "title": "Requester Organization Id",
+            "type": "string"
+          },
+          "requester_user_id": {
+            "title": "Requester User Id",
+            "type": "string"
+          },
+          "review_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Note"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewed_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By User Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "repository_id",
+          "repository_full_name",
+          "status",
+          "requester_organization_id",
+          "requester_user_id",
+          "github_snapshot",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PublicMirrorRequestResource",
+        "type": "object"
       },
       "PullDiffSize": {
         "description": "How much this PR changes, for the size badge.\n\nTotals cover every changed file; the ``generated_*`` figures are a SUBSET of\nthem, not a remainder. Carrying both lets a reader see \"+2400, of which 2300\ngenerated\" without a second lookup, and lets the console decide on its own\nwhat to exclude when bucketing -- a threshold change then ships without\nrecomputing anything here.\n\nCounted against the same base the merge verdict resolved, so the two always\ndescribe the same pair of commits.",
@@ -9489,6 +9903,295 @@
         ]
       }
     },
+    "/orgs/{org_id}/public-mirrors/requests": {
+      "get": {
+        "operationId": "list_public_mirror_requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PublicMirrorRequestResource"
+                  },
+                  "title": "Response List Public Mirror Requests",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Public Mirror Requests",
+        "tags": [
+          "public-git-mirrors"
+        ]
+      },
+      "post": {
+        "operationId": "request_public_mirror",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicMirrorRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMirrorRequestResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Public repository not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Request Public Mirror",
+        "tags": [
+          "public-git-mirrors"
+        ]
+      }
+    },
+    "/orgs/{org_id}/public-mirrors/requests/{request_id}": {
+      "delete": {
+        "operationId": "cancel_public_mirror_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMirrorRequestResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Public mirror request not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Public Mirror Request",
+        "tags": [
+          "public-git-mirrors"
+        ]
+      },
+      "get": {
+        "operationId": "get_public_mirror_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMirrorRequestResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Public mirror request not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Public Mirror Request",
+        "tags": [
+          "public-git-mirrors"
+        ]
+      }
+    },
     "/orgs/{org_id}/pull-requests": {
       "get": {
         "description": "Pull requests across every repository of an organization.\n\nBehind ``feature.org-pull-requests.enabled`` while it rolls out: this list\nis only as consistent as the weakest repository it spans, so it stays dark\nuntil avrea-git can answer for all of them.\n\nEvery page is bounded by ``get_readable_repo_ids``, so the default (every\nclass) is \"every PR you can already read\", not a widening of what the\ncaller may see; a narrower ``scope`` selects classes relative to the caller.\n\nDeliberately not gated on a browsable mirror, unlike the routes above: this\nis control-plane PR metadata, not a mirror read. A row whose repository has\nno mirror still belongs on the list -- it simply reports no merge verdict\n(see _pr_mergeability), and the console's PR drawer resolves the mirror per\nrepository and says so when there is none.",
@@ -14170,6 +14873,82 @@
         "summary": "Rerun Workflow Run",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/public-mirrors/{owner}/{repository}": {
+      "get": {
+        "deprecated": true,
+        "operationId": "get_public_mirror",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "schema": {
+              "title": "Owner",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repository",
+            "required": true,
+            "schema": {
+              "title": "Repository",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyGitHubPublicMirrorCatalogResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Public mirror not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Public Mirror",
+        "tags": [
+          "public-git-mirrors"
         ]
       }
     },

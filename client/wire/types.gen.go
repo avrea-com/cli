@@ -282,6 +282,21 @@ func (e JobStepResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for LegacyGitHubPublicMirrorCatalogResourcePlatform.
+const (
+	LegacyGitHubPublicMirrorCatalogResourcePlatformGithub LegacyGitHubPublicMirrorCatalogResourcePlatform = "github"
+)
+
+// Valid indicates whether the value is a known member of the LegacyGitHubPublicMirrorCatalogResourcePlatform enum.
+func (e LegacyGitHubPublicMirrorCatalogResourcePlatform) Valid() bool {
+	switch e {
+	case LegacyGitHubPublicMirrorCatalogResourcePlatformGithub:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LogLevel.
 const (
 	Command    LogLevel = "command"
@@ -507,6 +522,27 @@ func (e Platform) Valid() bool {
 	case PlatformGitlab:
 		return true
 	case PlatformPublicGit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicMirrorPlatform.
+const (
+	PublicMirrorPlatformGithub    PublicMirrorPlatform = "github"
+	PublicMirrorPlatformGitlab    PublicMirrorPlatform = "gitlab"
+	PublicMirrorPlatformPublicGit PublicMirrorPlatform = "public_git"
+)
+
+// Valid indicates whether the value is a known member of the PublicMirrorPlatform enum.
+func (e PublicMirrorPlatform) Valid() bool {
+	switch e {
+	case PublicMirrorPlatformGithub:
+		return true
+	case PublicMirrorPlatformGitlab:
+		return true
+	case PublicMirrorPlatformPublicGit:
 		return true
 	default:
 		return false
@@ -2056,6 +2092,39 @@ type JobsListResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// LegacyGitHubPublicMirrorCatalogResource Compatibility response for the deprecated GitHub-only lookup route.
+type LegacyGitHubPublicMirrorCatalogResource struct {
+	ApprovalState                nullable.Nullable[string]                        `json:"approval_state,omitempty"`
+	ApprovedOwnerId              nullable.Nullable[int]                           `json:"approved_owner_id,omitempty"`
+	DefaultBranch                nullable.Nullable[string]                        `json:"default_branch,omitempty"`
+	HttpsCloneUrl                nullable.Nullable[string]                        `json:"https_clone_url,omitempty"`
+	InstallationKind             string                                           `json:"installation_kind"`
+	IsArchived                   bool                                             `json:"is_archived"`
+	IsDisabled                   bool                                             `json:"is_disabled"`
+	IsFork                       bool                                             `json:"is_fork"`
+	LeaseHours                   nullable.Nullable[int]                           `json:"lease_hours,omitempty"`
+	MirrorEnabled                bool                                             `json:"mirror_enabled"`
+	Platform                     *LegacyGitHubPublicMirrorCatalogResourcePlatform `json:"platform,omitempty"`
+	PlatformFullName             nullable.Nullable[string]                        `json:"platform_full_name,omitempty"`
+	PlatformOwnerId              nullable.Nullable[int]                           `json:"platform_owner_id,omitempty"`
+	PlatformOwnerIdentifier      nullable.Nullable[string]                        `json:"platform_owner_identifier,omitempty"`
+	PlatformOwnerLogin           nullable.Nullable[string]                        `json:"platform_owner_login,omitempty"`
+	PlatformOwnerType            nullable.Nullable[string]                        `json:"platform_owner_type,omitempty"`
+	PlatformPushedAt             nullable.Nullable[time.Time]                     `json:"platform_pushed_at,omitempty"`
+	PlatformRepositoryId         int                                              `json:"platform_repository_id"`
+	PlatformRepositoryIdentifier nullable.Nullable[string]                        `json:"platform_repository_identifier,omitempty"`
+	PlatformSizeKb               nullable.Nullable[int]                           `json:"platform_size_kb,omitempty"`
+	PublicAccessExpiresAt        nullable.Nullable[time.Time]                     `json:"public_access_expires_at,omitempty"`
+	PublicMetadataVerifiedAt     nullable.Nullable[time.Time]                     `json:"public_metadata_verified_at,omitempty"`
+	RepositoryFullName           string                                           `json:"repository_full_name"`
+	RepositoryId                 string                                           `json:"repository_id"`
+	RevocationReason             nullable.Nullable[string]                        `json:"revocation_reason,omitempty"`
+	AdditionalProperties         map[string]interface{}                           `json:"-"`
+}
+
+// LegacyGitHubPublicMirrorCatalogResourcePlatform defines model for LegacyGitHubPublicMirrorCatalogResource.Platform.
+type LegacyGitHubPublicMirrorCatalogResourcePlatform string
+
 // LogLevel Log level extracted from GitHub Actions ##[level] markers.
 type LogLevel string
 
@@ -2339,6 +2408,38 @@ type PaginationMeta struct {
 
 // Platform defines model for Platform.
 type Platform string
+
+// PublicMirrorPlatform defines model for PublicMirrorPlatform.
+type PublicMirrorPlatform string
+
+// PublicMirrorRequestCreate defines model for PublicMirrorRequestCreate.
+type PublicMirrorRequestCreate struct {
+	FullName string                    `json:"full_name"`
+	Reason   nullable.Nullable[string] `json:"reason,omitempty"`
+}
+
+// PublicMirrorRequestResource defines model for PublicMirrorRequestResource.
+type PublicMirrorRequestResource struct {
+	ApprovalState           nullable.Nullable[string]    `json:"approval_state,omitempty"`
+	CreatedAt               time.Time                    `json:"created_at"`
+	GithubSnapshot          map[string]interface{}       `json:"github_snapshot"`
+	Platform                *PublicMirrorPlatform        `json:"platform,omitempty"`
+	PlatformFullName        nullable.Nullable[string]    `json:"platform_full_name,omitempty"`
+	ProviderSnapshot        *map[string]interface{}      `json:"provider_snapshot,omitempty"`
+	PublicAccessExpiresAt   nullable.Nullable[time.Time] `json:"public_access_expires_at,omitempty"`
+	Reason                  nullable.Nullable[string]    `json:"reason,omitempty"`
+	RepositoryFullName      string                       `json:"repository_full_name"`
+	RepositoryId            string                       `json:"repository_id"`
+	RequestId               string                       `json:"request_id"`
+	RequesterOrganizationId string                       `json:"requester_organization_id"`
+	RequesterUserId         string                       `json:"requester_user_id"`
+	ReviewNote              nullable.Nullable[string]    `json:"review_note,omitempty"`
+	ReviewedAt              nullable.Nullable[time.Time] `json:"reviewed_at,omitempty"`
+	ReviewedByUserId        nullable.Nullable[string]    `json:"reviewed_by_user_id,omitempty"`
+	Status                  string                       `json:"status"`
+	UpdatedAt               time.Time                    `json:"updated_at"`
+	AdditionalProperties    map[string]interface{}       `json:"-"`
+}
 
 // PullDiffSize How much this PR changes, for the size badge.
 //
@@ -3240,6 +3341,26 @@ type ListOrganizationMembersParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListPublicMirrorRequestsParams defines parameters for ListPublicMirrorRequests.
+type ListPublicMirrorRequestsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RequestPublicMirrorParams defines parameters for RequestPublicMirror.
+type RequestPublicMirrorParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// CancelPublicMirrorRequestParams defines parameters for CancelPublicMirrorRequest.
+type CancelPublicMirrorRequestParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetPublicMirrorRequestParams defines parameters for GetPublicMirrorRequest.
+type GetPublicMirrorRequestParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListOrgPullsParams defines parameters for ListOrgPulls.
 type ListOrgPullsParams struct {
 	// Scope Repeatable; the union of the selected classes. authored: PRs you opened. involved: PRs you were asked to review or commented on, and did not open. rest: every other PR. Omitted: all three. attention: open PRs that need you -- your own blocked by checks, a change request or conflicts, and others' that request your review; drafts never. Not combinable with another scope or a state other than open. A page holds the matches among `limit` candidates, so it may be short or empty and still carry a cursor.
@@ -3721,6 +3842,11 @@ type RerunWorkflowRunParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// GetPublicMirrorParams defines parameters for GetPublicMirror.
+type GetPublicMirrorParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListSettingsSchemaParams defines parameters for ListSettingsSchema.
 type ListSettingsSchemaParams struct {
 	Prefix       *string                        `form:"prefix,omitempty" json:"prefix,omitempty"`
@@ -3762,6 +3888,9 @@ type SetEmailDomainsJSONRequestBody = EmailDomainsRequest
 
 // ClaimEmailDomainJSONRequestBody defines body for ClaimEmailDomain for application/json ContentType.
 type ClaimEmailDomainJSONRequestBody = EmailDomainClaimRequest
+
+// RequestPublicMirrorJSONRequestBody defines body for RequestPublicMirror for application/json ContentType.
+type RequestPublicMirrorJSONRequestBody = PublicMirrorRequestCreate
 
 // GenerateSbomJSONRequestBody defines body for GenerateSbom for application/json ContentType.
 type GenerateSbomJSONRequestBody = GenerateSbomRequest
@@ -9887,6 +10016,418 @@ func (a JobsListResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for LegacyGitHubPublicMirrorCatalogResource. Returns the specified
+// element and whether it was found
+func (a LegacyGitHubPublicMirrorCatalogResource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for LegacyGitHubPublicMirrorCatalogResource
+func (a *LegacyGitHubPublicMirrorCatalogResource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for LegacyGitHubPublicMirrorCatalogResource to handle AdditionalProperties
+func (a *LegacyGitHubPublicMirrorCatalogResource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["approval_state"]; found {
+		err = json.Unmarshal(raw, &a.ApprovalState)
+		if err != nil {
+			return fmt.Errorf("error reading 'approval_state': %w", err)
+		}
+		delete(object, "approval_state")
+	}
+
+	if raw, found := object["approved_owner_id"]; found {
+		err = json.Unmarshal(raw, &a.ApprovedOwnerId)
+		if err != nil {
+			return fmt.Errorf("error reading 'approved_owner_id': %w", err)
+		}
+		delete(object, "approved_owner_id")
+	}
+
+	if raw, found := object["default_branch"]; found {
+		err = json.Unmarshal(raw, &a.DefaultBranch)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_branch': %w", err)
+		}
+		delete(object, "default_branch")
+	}
+
+	if raw, found := object["https_clone_url"]; found {
+		err = json.Unmarshal(raw, &a.HttpsCloneUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'https_clone_url': %w", err)
+		}
+		delete(object, "https_clone_url")
+	}
+
+	if raw, found := object["installation_kind"]; found {
+		err = json.Unmarshal(raw, &a.InstallationKind)
+		if err != nil {
+			return fmt.Errorf("error reading 'installation_kind': %w", err)
+		}
+		delete(object, "installation_kind")
+	}
+
+	if raw, found := object["is_archived"]; found {
+		err = json.Unmarshal(raw, &a.IsArchived)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_archived': %w", err)
+		}
+		delete(object, "is_archived")
+	}
+
+	if raw, found := object["is_disabled"]; found {
+		err = json.Unmarshal(raw, &a.IsDisabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_disabled': %w", err)
+		}
+		delete(object, "is_disabled")
+	}
+
+	if raw, found := object["is_fork"]; found {
+		err = json.Unmarshal(raw, &a.IsFork)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_fork': %w", err)
+		}
+		delete(object, "is_fork")
+	}
+
+	if raw, found := object["lease_hours"]; found {
+		err = json.Unmarshal(raw, &a.LeaseHours)
+		if err != nil {
+			return fmt.Errorf("error reading 'lease_hours': %w", err)
+		}
+		delete(object, "lease_hours")
+	}
+
+	if raw, found := object["mirror_enabled"]; found {
+		err = json.Unmarshal(raw, &a.MirrorEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'mirror_enabled': %w", err)
+		}
+		delete(object, "mirror_enabled")
+	}
+
+	if raw, found := object["platform"]; found {
+		err = json.Unmarshal(raw, &a.Platform)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform': %w", err)
+		}
+		delete(object, "platform")
+	}
+
+	if raw, found := object["platform_full_name"]; found {
+		err = json.Unmarshal(raw, &a.PlatformFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_full_name': %w", err)
+		}
+		delete(object, "platform_full_name")
+	}
+
+	if raw, found := object["platform_owner_id"]; found {
+		err = json.Unmarshal(raw, &a.PlatformOwnerId)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_owner_id': %w", err)
+		}
+		delete(object, "platform_owner_id")
+	}
+
+	if raw, found := object["platform_owner_identifier"]; found {
+		err = json.Unmarshal(raw, &a.PlatformOwnerIdentifier)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_owner_identifier': %w", err)
+		}
+		delete(object, "platform_owner_identifier")
+	}
+
+	if raw, found := object["platform_owner_login"]; found {
+		err = json.Unmarshal(raw, &a.PlatformOwnerLogin)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_owner_login': %w", err)
+		}
+		delete(object, "platform_owner_login")
+	}
+
+	if raw, found := object["platform_owner_type"]; found {
+		err = json.Unmarshal(raw, &a.PlatformOwnerType)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_owner_type': %w", err)
+		}
+		delete(object, "platform_owner_type")
+	}
+
+	if raw, found := object["platform_pushed_at"]; found {
+		err = json.Unmarshal(raw, &a.PlatformPushedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_pushed_at': %w", err)
+		}
+		delete(object, "platform_pushed_at")
+	}
+
+	if raw, found := object["platform_repository_id"]; found {
+		err = json.Unmarshal(raw, &a.PlatformRepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_repository_id': %w", err)
+		}
+		delete(object, "platform_repository_id")
+	}
+
+	if raw, found := object["platform_repository_identifier"]; found {
+		err = json.Unmarshal(raw, &a.PlatformRepositoryIdentifier)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_repository_identifier': %w", err)
+		}
+		delete(object, "platform_repository_identifier")
+	}
+
+	if raw, found := object["platform_size_kb"]; found {
+		err = json.Unmarshal(raw, &a.PlatformSizeKb)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_size_kb': %w", err)
+		}
+		delete(object, "platform_size_kb")
+	}
+
+	if raw, found := object["public_access_expires_at"]; found {
+		err = json.Unmarshal(raw, &a.PublicAccessExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'public_access_expires_at': %w", err)
+		}
+		delete(object, "public_access_expires_at")
+	}
+
+	if raw, found := object["public_metadata_verified_at"]; found {
+		err = json.Unmarshal(raw, &a.PublicMetadataVerifiedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'public_metadata_verified_at': %w", err)
+		}
+		delete(object, "public_metadata_verified_at")
+	}
+
+	if raw, found := object["repository_full_name"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_full_name': %w", err)
+		}
+		delete(object, "repository_full_name")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["revocation_reason"]; found {
+		err = json.Unmarshal(raw, &a.RevocationReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'revocation_reason': %w", err)
+		}
+		delete(object, "revocation_reason")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for LegacyGitHubPublicMirrorCatalogResource to handle AdditionalProperties
+func (a LegacyGitHubPublicMirrorCatalogResource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ApprovalState != nil {
+		object["approval_state"], err = json.Marshal(a.ApprovalState)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'approval_state': %w", err)
+		}
+	}
+
+	if a.ApprovedOwnerId != nil {
+		object["approved_owner_id"], err = json.Marshal(a.ApprovedOwnerId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'approved_owner_id': %w", err)
+		}
+	}
+
+	if a.DefaultBranch != nil {
+		object["default_branch"], err = json.Marshal(a.DefaultBranch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_branch': %w", err)
+		}
+	}
+
+	if a.HttpsCloneUrl != nil {
+		object["https_clone_url"], err = json.Marshal(a.HttpsCloneUrl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'https_clone_url': %w", err)
+		}
+	}
+
+	object["installation_kind"], err = json.Marshal(a.InstallationKind)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'installation_kind': %w", err)
+	}
+
+	object["is_archived"], err = json.Marshal(a.IsArchived)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_archived': %w", err)
+	}
+
+	object["is_disabled"], err = json.Marshal(a.IsDisabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_disabled': %w", err)
+	}
+
+	object["is_fork"], err = json.Marshal(a.IsFork)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_fork': %w", err)
+	}
+
+	if a.LeaseHours != nil {
+		object["lease_hours"], err = json.Marshal(a.LeaseHours)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'lease_hours': %w", err)
+		}
+	}
+
+	object["mirror_enabled"], err = json.Marshal(a.MirrorEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'mirror_enabled': %w", err)
+	}
+
+	if a.Platform != nil {
+		object["platform"], err = json.Marshal(a.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform': %w", err)
+		}
+	}
+
+	if a.PlatformFullName != nil {
+		object["platform_full_name"], err = json.Marshal(a.PlatformFullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_full_name': %w", err)
+		}
+	}
+
+	if a.PlatformOwnerId != nil {
+		object["platform_owner_id"], err = json.Marshal(a.PlatformOwnerId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_owner_id': %w", err)
+		}
+	}
+
+	if a.PlatformOwnerIdentifier != nil {
+		object["platform_owner_identifier"], err = json.Marshal(a.PlatformOwnerIdentifier)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_owner_identifier': %w", err)
+		}
+	}
+
+	if a.PlatformOwnerLogin != nil {
+		object["platform_owner_login"], err = json.Marshal(a.PlatformOwnerLogin)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_owner_login': %w", err)
+		}
+	}
+
+	if a.PlatformOwnerType != nil {
+		object["platform_owner_type"], err = json.Marshal(a.PlatformOwnerType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_owner_type': %w", err)
+		}
+	}
+
+	if a.PlatformPushedAt != nil {
+		object["platform_pushed_at"], err = json.Marshal(a.PlatformPushedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_pushed_at': %w", err)
+		}
+	}
+
+	object["platform_repository_id"], err = json.Marshal(a.PlatformRepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform_repository_id': %w", err)
+	}
+
+	if a.PlatformRepositoryIdentifier != nil {
+		object["platform_repository_identifier"], err = json.Marshal(a.PlatformRepositoryIdentifier)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_repository_identifier': %w", err)
+		}
+	}
+
+	if a.PlatformSizeKb != nil {
+		object["platform_size_kb"], err = json.Marshal(a.PlatformSizeKb)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_size_kb': %w", err)
+		}
+	}
+
+	if a.PublicAccessExpiresAt != nil {
+		object["public_access_expires_at"], err = json.Marshal(a.PublicAccessExpiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'public_access_expires_at': %w", err)
+		}
+	}
+
+	if a.PublicMetadataVerifiedAt != nil {
+		object["public_metadata_verified_at"], err = json.Marshal(a.PublicMetadataVerifiedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'public_metadata_verified_at': %w", err)
+		}
+	}
+
+	object["repository_full_name"], err = json.Marshal(a.RepositoryFullName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_full_name': %w", err)
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	if a.RevocationReason != nil {
+		object["revocation_reason"], err = json.Marshal(a.RevocationReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'revocation_reason': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for LogSearchParams. Returns the specified
 // element and whether it was found
 func (a LogSearchParams) Get(fieldName string) (value interface{}, found bool) {
@@ -12000,6 +12541,313 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 	object["repository_id"], err = json.Marshal(a.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PublicMirrorRequestResource. Returns the specified
+// element and whether it was found
+func (a PublicMirrorRequestResource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PublicMirrorRequestResource
+func (a *PublicMirrorRequestResource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PublicMirrorRequestResource to handle AdditionalProperties
+func (a *PublicMirrorRequestResource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["approval_state"]; found {
+		err = json.Unmarshal(raw, &a.ApprovalState)
+		if err != nil {
+			return fmt.Errorf("error reading 'approval_state': %w", err)
+		}
+		delete(object, "approval_state")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["github_snapshot"]; found {
+		err = json.Unmarshal(raw, &a.GithubSnapshot)
+		if err != nil {
+			return fmt.Errorf("error reading 'github_snapshot': %w", err)
+		}
+		delete(object, "github_snapshot")
+	}
+
+	if raw, found := object["platform"]; found {
+		err = json.Unmarshal(raw, &a.Platform)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform': %w", err)
+		}
+		delete(object, "platform")
+	}
+
+	if raw, found := object["platform_full_name"]; found {
+		err = json.Unmarshal(raw, &a.PlatformFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_full_name': %w", err)
+		}
+		delete(object, "platform_full_name")
+	}
+
+	if raw, found := object["provider_snapshot"]; found {
+		err = json.Unmarshal(raw, &a.ProviderSnapshot)
+		if err != nil {
+			return fmt.Errorf("error reading 'provider_snapshot': %w", err)
+		}
+		delete(object, "provider_snapshot")
+	}
+
+	if raw, found := object["public_access_expires_at"]; found {
+		err = json.Unmarshal(raw, &a.PublicAccessExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'public_access_expires_at': %w", err)
+		}
+		delete(object, "public_access_expires_at")
+	}
+
+	if raw, found := object["reason"]; found {
+		err = json.Unmarshal(raw, &a.Reason)
+		if err != nil {
+			return fmt.Errorf("error reading 'reason': %w", err)
+		}
+		delete(object, "reason")
+	}
+
+	if raw, found := object["repository_full_name"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_full_name': %w", err)
+		}
+		delete(object, "repository_full_name")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["request_id"]; found {
+		err = json.Unmarshal(raw, &a.RequestId)
+		if err != nil {
+			return fmt.Errorf("error reading 'request_id': %w", err)
+		}
+		delete(object, "request_id")
+	}
+
+	if raw, found := object["requester_organization_id"]; found {
+		err = json.Unmarshal(raw, &a.RequesterOrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'requester_organization_id': %w", err)
+		}
+		delete(object, "requester_organization_id")
+	}
+
+	if raw, found := object["requester_user_id"]; found {
+		err = json.Unmarshal(raw, &a.RequesterUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'requester_user_id': %w", err)
+		}
+		delete(object, "requester_user_id")
+	}
+
+	if raw, found := object["review_note"]; found {
+		err = json.Unmarshal(raw, &a.ReviewNote)
+		if err != nil {
+			return fmt.Errorf("error reading 'review_note': %w", err)
+		}
+		delete(object, "review_note")
+	}
+
+	if raw, found := object["reviewed_at"]; found {
+		err = json.Unmarshal(raw, &a.ReviewedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'reviewed_at': %w", err)
+		}
+		delete(object, "reviewed_at")
+	}
+
+	if raw, found := object["reviewed_by_user_id"]; found {
+		err = json.Unmarshal(raw, &a.ReviewedByUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'reviewed_by_user_id': %w", err)
+		}
+		delete(object, "reviewed_by_user_id")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PublicMirrorRequestResource to handle AdditionalProperties
+func (a PublicMirrorRequestResource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ApprovalState != nil {
+		object["approval_state"], err = json.Marshal(a.ApprovalState)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'approval_state': %w", err)
+		}
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.GithubSnapshot != nil {
+		object["github_snapshot"], err = json.Marshal(a.GithubSnapshot)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'github_snapshot': %w", err)
+		}
+	}
+
+	if a.Platform != nil {
+		object["platform"], err = json.Marshal(a.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform': %w", err)
+		}
+	}
+
+	if a.PlatformFullName != nil {
+		object["platform_full_name"], err = json.Marshal(a.PlatformFullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'platform_full_name': %w", err)
+		}
+	}
+
+	if a.ProviderSnapshot != nil {
+		object["provider_snapshot"], err = json.Marshal(a.ProviderSnapshot)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'provider_snapshot': %w", err)
+		}
+	}
+
+	if a.PublicAccessExpiresAt != nil {
+		object["public_access_expires_at"], err = json.Marshal(a.PublicAccessExpiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'public_access_expires_at': %w", err)
+		}
+	}
+
+	if a.Reason != nil {
+		object["reason"], err = json.Marshal(a.Reason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
+		}
+	}
+
+	object["repository_full_name"], err = json.Marshal(a.RepositoryFullName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_full_name': %w", err)
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	object["request_id"], err = json.Marshal(a.RequestId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'request_id': %w", err)
+	}
+
+	object["requester_organization_id"], err = json.Marshal(a.RequesterOrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'requester_organization_id': %w", err)
+	}
+
+	object["requester_user_id"], err = json.Marshal(a.RequesterUserId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'requester_user_id': %w", err)
+	}
+
+	if a.ReviewNote != nil {
+		object["review_note"], err = json.Marshal(a.ReviewNote)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'review_note': %w", err)
+		}
+	}
+
+	if a.ReviewedAt != nil {
+		object["reviewed_at"], err = json.Marshal(a.ReviewedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'reviewed_at': %w", err)
+		}
+	}
+
+	if a.ReviewedByUserId != nil {
+		object["reviewed_by_user_id"], err = json.Marshal(a.ReviewedByUserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'reviewed_by_user_id': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

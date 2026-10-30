@@ -637,6 +637,30 @@ Go race tests, lint, schema generation, admin composition checks, fixture
 typing, inventory verification and workflow validation pass. Both report
 hashes match the tested binaries.
 
+## Public-mirror batch
+
+Added repo public-mirror check/request/requests/view/cancel and the repos
+alias, shared with avr-admin. Installation checkpoints: public 8c824c4,
+admin 1b87dc84e2.
+
+Decisions:
+- Preserve Python's GitHub catalog lookup route. A catalog 404 is an
+  availability answer with exit 0, including JSON nulls for absent fields.
+- Keep aligned records, bordered request tables, nullable review fields and
+  UTC timestamps. JSON preserves large integers and nested snapshots.
+- Cancellation keeps default-no confirmation, --yes/-y and disabled-prompt
+  refusal. Empty successful responses use the supplied request ID.
+- Escape request IDs and repository name segments; reject dot segments for
+  catalog lookups. Mutations check cancellation and are not retried.
+- No new dependencies or live mirror requests/cancellations.
+
+Validation: 132 paired cases per binary, including seven terminal cases,
+cover all five commands, selection and jq, request bodies, organization
+resolution, HTTP errors, confirmations and empty cancellation responses.
+A focused Go test prevents both mutation paths after cancellation. Go race
+tests, lint, generation checks, admin composition checks, fixture typing and
+workflow validation pass. Both reports match the tested binary hashes.
+
 ## Remaining work
 
 Repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,

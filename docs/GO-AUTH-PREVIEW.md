@@ -20,6 +20,11 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr repo public-mirror check rust-lang/rust
+./build/go/avr repo public-mirror request rust-lang/rust --reason 'Build dependency'
+./build/go/avr repo public-mirror requests
+./build/go/avr repo public-mirror view REQUEST_ID
+./build/go/avr repo public-mirror cancel REQUEST_ID
 ./build/go/avr org install list
 ./build/go/avr org install add --org ORG --no-browser --wait-seconds 0
 ./build/go/avr org install remove --org ORG --installation-id INSTALLATION_ID

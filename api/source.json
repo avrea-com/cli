@@ -63,7 +63,12 @@
     "set_saml_enforcement",
     "saml_metadata",
     "list_user_installations",
-    "remove_organization_installation"
+    "remove_organization_installation",
+    "get_public_mirror",
+    "list_public_mirror_requests",
+    "request_public_mirror",
+    "get_public_mirror_request",
+    "cancel_public_mirror_request"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
