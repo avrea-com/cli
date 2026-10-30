@@ -170,6 +170,23 @@ def run(executable, scenario, root, host):
                 + str(scenario["ssh_stub"])
                 + ")\n"
             )
+            if scenario.get("ssh_stub_pins"):
+                script = (
+                    "#!"
+                    + sys.executable
+                    + "\nimport json,os,sys\nfrom pathlib import Path\n"
+                    + "args=sys.argv[1:]; pin=None\n"
+                    + "for i,arg in enumerate(args):\n"
+                    + " if arg.startswith('UserKnownHostsFile='):\n"
+                    + "  path=Path(arg.split('=',1)[1]); Path('.ssh-stub-pin').write_text(str(path))\n"
+                    + "  pin={'text':path.read_text(),'mode':path.stat().st_mode & 0o777}\n"
+                    + "  args[i]='UserKnownHostsFile=<known_hosts>'\n"
+                    + "print('SSH ARGS: ' + json.dumps(args))\n"
+                    + "print('SSH PIN: ' + json.dumps(pin))\n"
+                    + "sys.exit("
+                    + str(scenario["ssh_stub"])
+                    + ")\n"
+                )
             for tool in ("ssh", "sshpass"):
                 executable_stub = stub / tool
                 executable_stub.write_text(script)
@@ -359,7 +376,10 @@ def run(executable, scenario, root, host):
             escaped = json.dumps(directory)[1:-1]
             stdout = stdout.replace(escaped, "<home>").replace(directory, "<home>")
             stderr = stderr.replace(escaped, "<home>").replace(directory, "<home>")
+        pin_marker = home / ".ssh-stub-pin"
+        pin_removed = not Path(pin_marker.read_text()).exists() if pin_marker.exists() else None
         return {
+            **({"ssh_pin_removed": pin_removed} if scenario.get("ssh_stub_pins") else {}),
             **({"files": captured} if "capture_files" in scenario else {}),
             "exit": result.returncode,
             "browser": browser_target.read_text() if browser_target.exists() else None,
