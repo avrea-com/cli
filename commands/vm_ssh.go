@@ -156,6 +156,9 @@ func newVMSSH(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if err = prepareGlobalOptions(cmd, d); err != nil {
+			return err
+		}
 		if help, _ := cmd.Flags().GetBool("help"); help {
 			return cmd.Help()
 		}

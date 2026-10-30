@@ -1347,14 +1347,50 @@ option spelling, every leaf and every positional argument. This is still input
 coverage. Complete the argument/default/error audit and broader fresh regression
 run before treating the entire public surface as verified.
 
+## Argument contracts and declared defaults
+
+Global-option checkpoints: public 33753c5, admin e279f46ed7.
+
+Added 848 parser comparisons per executable: unknown commands in every group,
+unknown options in each non-passthrough leaf, missing required arguments,
+extra arguments where arity is finite, missing values for every value-taking
+option, required options, and invalid choices/numbers/dates and range bounds.
+Fixtures supply other required inputs so each case isolates one error. Card
+fields that prompt when absent retain their dedicated interactive tests; VM SSH
+retains its intentional unknown-flag and variadic passthrough behavior.
+
+The comparator requires exit 2, an appropriate diagnostic identifying the
+rejected option where applicable, no stdout and no API/browser/config side
+effects. Ordinary Click/Cobra parser wording is an intentional presentation
+difference; exact Usage prefixes and equivalent argument-count phrasing are
+not required. Eight comparator tests reject the wrong error category, omitted
+option names and side effects.
+
+Added 98 comparisons for all 49 declared value defaults, both omitted and
+explicit. Existing behavior fixtures retain their response/file/protocol
+assertions. Installation polling uses a fixture that produces a new
+installation on its first poll, so production timeout defaults are exercised
+without waiting for expiration. Existing command-family tests and the
+registration gate continue covering flag defaults and ordered boolean toggles.
+
+The custom VM SSH parser exposed a root setup ordering bug: invalid AVR_LINKS
+was rejected before explicit --links/--no-links had been parsed. Custom parsers
+now validate globals after consuming their flags. Standalone constructors
+without public root options do not acquire those root checks. A Go test and
+three additional differential cases guard overrides, help and debug warnings.
+
+All 848 parser cases, 98 default cases, 45 global cases and 70 VM SSH cases
+pass for both binaries. Reports match the tested binary hashes. Public race,
+lint, build, metadata and registration checks, admin checks, Python tooling,
+21 focused comparator/catalog tests and both workflow checks pass. Parser and
+default suites are wired into public/admin CI and public go-parity.
+
 ## Remaining work
 
-Finish the per-command argument/default/error behavior audit and broader
-fresh differential regression run.
-Existing implemented commands also remain subject to that exhaustive audit;
-the prior suites are substantial evidence, not a claim that every flag combination
-has already been checked. Packaging and native OS CI remain separate release gates.
+Run the complete current public and shared-admin regression suites against
+freshly built binaries, then reconcile command/flag/argument requirements with
+the resulting reports and produce the final decisions/status report. Input
+coverage and a passing registration audit alone are not completion evidence.
 
-The initial explicit option-use and alias gaps are closed by the suites above.
-Continue with defaults and argument validation before claiming the full public
-surface complete.
+Packaging, native OS CI execution and later admin-only families remain separate
+migration phases. repo-intel is untouched.

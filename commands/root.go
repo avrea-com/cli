@@ -209,7 +209,13 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	root.PersistentFlags().BoolVar(&linksDefault, "links", linksDefault, "Enable links where supported.")
 	root.PersistentFlags().Var(inverseBool{&linksDefault}, "no-links", "Disable terminal links.")
 	root.PersistentFlags().Lookup("no-links").NoOptDefVal = "true"
-	root.PersistentPreRunE = run(func(cmd *cobra.Command, _ []string) error { return prepareGlobalOptions(cmd, d) })
+	root.PersistentPreRunE = run(func(cmd *cobra.Command, _ []string) error {
+		if cmd.DisableFlagParsing {
+			// Custom parsers validate globals after consuming their own flags.
+			return nil
+		}
+		return prepareGlobalOptions(cmd, d)
+	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
 	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
