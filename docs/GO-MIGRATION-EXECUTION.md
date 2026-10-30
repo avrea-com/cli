@@ -993,6 +993,35 @@ lint/build, schema generation, admin composition, fixture typing and workflow
 validation pass; both report hashes match the tested executables. Validation
 used local fixtures only, with no live provisioning or vendor calls.
 
+## VM SSH configuration batch
+
+Added ssh-config with identity, alias, known-hosts path, append and config-file
+options. Creation checkpoints: public ddf48d7, admin 970597bace.
+
+Preserve known-host entries for other endpoints, replace the selected pin,
+update managed alias blocks in place, preserve unmanaged config and reject
+unterminated managed blocks without modifying the config. Files are atomically
+replaced at 0600; new parent directories use 0700. Warn about earlier Host *
+settings that can override an appended pin, and about trust-on-first-use when
+the endpoint has no host key. Paths with whitespace are quoted.
+
+Malformed endpoint addresses/usernames are rejected before any pin write,
+where Python can write a pin before rejecting the config. This intentional
+difference has explicit no-file-write assertions. Host/user/port validation
+also rejects option-like or out-of-range values. SSH file reads are bounded
+to 16 MiB and invalid UTF-8 produces a concise error. File comparisons normalize
+only each isolated fixture's home-directory prefix; content and modes otherwise
+remain compared.
+
+Validation: 59 paired cases per binary, including five terminal cases, pass.
+Four Go tests cover private permissions, idempotent updates, preservation of
+unterminated configs and unrelated pins, new-directory modes and malformed
+endpoints. The local OpenSSH parser accepts the generated block and resolves
+the expected host/user/port/identity/pinning settings. Go race tests, lint/build,
+admin composition, fixture typing and workflow validation pass. Both report
+hashes match the binaries. No remote SSH connections or user SSH files were
+used by validation.
+
 ## Remaining work
 
 VM SSH/tunnels/bootstrap, hidden docs, root/help/completion,
