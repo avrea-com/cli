@@ -1,0 +1,10 @@
+set -euo pipefail
+if command -v pipx >/dev/null 2>&1; then
+  pipx install --force avr-cli
+elif command -v python3 >/dev/null 2>&1; then
+  python3 -m pip install --user --upgrade avr-cli
+else
+  echo "no pipx or python3 on the VM; cannot install avr" >&2
+  exit 1
+fi
+echo "avr installed ($(avr --version 2>/dev/null || echo 'open a new shell, then: avr --version'))"

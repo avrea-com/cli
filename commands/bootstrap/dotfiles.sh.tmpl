@@ -1,0 +1,14 @@
+set -euo pipefail
+url={{.URL}}
+dir="$HOME/.dotfiles"
+if [ -d "$dir/.git" ]; then git -C "$dir" pull --ff-only; else git clone "$url" "$dir"; fi
+git -C "$dir" -c 'url.https://github.com/.insteadOf=git://github.com/' submodule update --init --recursive || echo "warning: some dotfiles submodules failed to init (continuing)"
+ran=""
+for f in install.sh install bootstrap.sh setup.sh; do
+  if [ -f "$dir/$f" ]; then echo "running dotfiles installer $f"; ( cd "$dir" && sh "./$f" ); ran="$f"; break; fi
+done
+if [ -n "$ran" ]; then
+  echo "dotfiles: ran $ran from $url"
+else
+  echo "dotfiles: cloned to $dir (no install.sh/install/bootstrap.sh/setup.sh found; apply manually, e.g. with stow)"
+fi

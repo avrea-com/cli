@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels/bootstrap in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -11,6 +11,10 @@ VM start/stop preserve Python's legacy PATCH desired_state request. That field
 is absent from the pinned current API schema, so those two commands still need
 live integration verification. They do not silently substitute pause/resume or
 delete, which change disk and password semantics.
+
+VM bootstrap preserves Python's scripts and credential forwarding. Its
+--install-avr step still installs the Python package in the VM; selecting a Go
+release artifact belongs to the later release-packaging work.
 
 ## Build and try
 
@@ -35,6 +39,7 @@ make go-build
 ./build/go/avr vm port-forward VM_ID --port 8080
 ./build/go/avr vm rdp VM_ID --launch
 ./build/go/avr vm vnc VM_ID --print
+./build/go/avr vm bootstrap VM_ID --install claude,codex --repo https://github.com/me/project --print
 ./build/go/avr vm pause VM_ID --org ORG --memory --wait
 ./build/go/avr vm resume VM_ID --org ORG --wait
 ./build/go/avr vm delete VM_ID --org ORG --wait

@@ -211,6 +211,10 @@ def run(executable, scenario, root, host):
             executable_stub.write_text(script)
             executable_stub.chmod(0o700)
             env["PATH"] = str(stub) + os.pathsep + env["PATH"]
+        if "bootstrap_stub" in scenario and sys.platform != "win32":
+            from scripts.bootstrap_fixture import make_stubs  # noqa: PLC0415 - optional fixture for module callers
+
+            env["PATH"] = make_stubs(home, scenario["bootstrap_stub"])
         args = [a.replace("FIXTURE_HOST", host).replace("FIXTURE_HOME", directory) for a in scenario["args"]]
         if remote := scenario.get("git_remote"):
             subprocess.run(["git", "init", "-q", directory], env=env, check=True, capture_output=True, timeout=5)
@@ -378,7 +382,13 @@ def run(executable, scenario, root, host):
             stderr = stderr.replace(escaped, "<home>").replace(directory, "<home>")
         pin_marker = home / ".ssh-stub-pin"
         pin_removed = not Path(pin_marker.read_text()).exists() if pin_marker.exists() else None
+        bootstrap = {}
+        if "bootstrap_stub" in scenario:
+            from scripts.bootstrap_fixture import read_records  # noqa: PLC0415 - optional fixture for module callers
+
+            bootstrap["bootstrap"] = read_records(home)
         return {
+            **bootstrap,
             **({"ssh_pin_removed": pin_removed} if scenario.get("ssh_stub_pins") else {}),
             **({"files": captured} if "capture_files" in scenario else {}),
             "exit": result.returncode,
