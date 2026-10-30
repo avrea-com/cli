@@ -1022,9 +1022,39 @@ admin composition, fixture typing and workflow validation pass. Both report
 hashes match the binaries. No remote SSH connections or user SSH files were
 used by validation.
 
+## VM SSH session batch
+
+Added ssh with identity, print, login-shell and tmux-session options and
+unprocessed remote arguments. SSH config checkpoints: public a5ead4d,
+admin ebe039ea04.
+
+Preserve Python shell quoting, unknown-option passthrough, known options before
+the -- separator, session validation, child exit status and temporary host-key
+pinning at 0600. Printed commands use accept-new because they cannot reference
+an ephemeral pin; live connections warn when no key is available. Temporary
+pins are removed on child success, failure, launch errors and cancellation.
+Endpoint validation reuses the SSH config safeguards.
+
+Both executable entrypoints now use InterruptContext. Ordinary commands still
+cancel on Ctrl-C; an attached VM SSH child owns terminal interrupts until it
+exits, while external context cancellation remains effective. No signal policy
+is installed merely by composing the command library. The code preserves
+Python's signal-derived subprocess exit values on Unix.
+
+Validation: 70 paired cases per binary, including five terminal cases, pass.
+The stub inspects the real pin's contents/mode and verifies removal after the
+parent exits. A paired PTY test sends SIGINT to the parent/child process group,
+proves the child receives it while the parent stays alive, then checks the
+child's exit code and pin cleanup. Existing card-prompt PTY tests confirm normal
+cancellation and echo restoration still work, three terminal tests per binary.
+Go tests also cover pin cleanup on launch failure/external cancellation and a
+reproduced, fixed usage-error exit regression. Go race tests, lint/build, admin
+composition, fixture typing and workflow validation pass; both parity report
+hashes match the tested executables. No remote SSH connections were made.
+
 ## Remaining work
 
-VM SSH/tunnels/bootstrap, hidden docs, root/help/completion,
+VM tunnels/bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
