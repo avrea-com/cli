@@ -68,7 +68,12 @@
     "list_public_mirror_requests",
     "request_public_mirror",
     "get_public_mirror_request",
-    "cancel_public_mirror_request"
+    "cancel_public_mirror_request",
+    "list_git_clusters",
+    "get_repo_git_mirror",
+    "update_repo_git_mirror",
+    "add_repo_git_mirror_placement",
+    "remove_repo_git_mirror_placement"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

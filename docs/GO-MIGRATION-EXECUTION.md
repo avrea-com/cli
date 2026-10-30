@@ -661,9 +661,39 @@ A focused Go test prevents both mutation paths after cancellation. Go race
 tests, lint, generation checks, admin composition checks, fixture typing and
 workflow validation pass. Both reports match the tested binary hashes.
 
+## Git-mirror management batch
+
+Added repo mirror create/status/enable/disable/place/unplace/locations, shared
+with avr-admin. Public-mirror checkpoints: public 463d94d, admin 038bc118f4.
+
+Decisions:
+- Keep source-aware repository resolution and server-owned feature gating.
+  GitHub creation accepts owner/repo; GitLab creation accepts nested namespaces.
+- Fetch every location page, reject malformed/repeated cursors, prefer exact
+  cluster IDs, and reject ambiguous display-name/datacenter matches.
+- Creation resolves the location before writing, skips enabling an already
+  enabled mirror, and preserves partial-success diagnostics when placement
+  fails. No automatic mutation retries are introduced.
+- Disable and unplace retain default-no confirmations, --yes/-y and disabled
+  prompt handling. Empty successful removal responses retain Python output.
+- Preserve aligned records, bordered placement/location tables, nullable
+  fields, UTC timestamps, JSON/jq and terminal behavior.
+- Two failing paired cases exposed shared resolution-message drift: GitLab
+  connection guidance and alternate-organization suggestions. Both are fixed
+  with broad inspection regressions in each binary.
+- No new dependencies or live mirror changes.
+
+Validation: 191 paired cases per binary, including eight terminal cases, cover
+all seven commands and their options, pagination, resolution, partial failures,
+prompts and exit codes. Another 143 inspection cases per binary pass. Two Go
+tests check uncertain mutation responses without retries or private-detail
+leaks, and cancellation between enable and placement. Race tests, lint, schema
+generation, admin composition checks, fixture typing, command inventory and
+workflow validation pass. All four report hashes match the tested binaries.
+
 ## Remaining work
 
-Repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Repository cloning, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

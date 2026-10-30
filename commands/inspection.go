@@ -259,7 +259,7 @@ func NewRepo(deps Dependencies) *cobra.Command {
 		}
 		return d.repoTable(rows, links)
 	})
-	group.AddCommand(cmd, newPublicMirrors(d))
+	group.AddCommand(cmd, newPublicMirrors(d), newGitMirrors(d))
 	return group
 }
 

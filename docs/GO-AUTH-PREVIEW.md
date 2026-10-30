@@ -20,6 +20,13 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr repo mirror locations
+./build/go/avr repo mirror create acme/web --location gsc-fi
+./build/go/avr repo mirror status --repo acme/web
+./build/go/avr repo mirror enable --repo acme/web
+./build/go/avr repo mirror disable --repo acme/web
+./build/go/avr repo mirror place gsc-fi --repo acme/web
+./build/go/avr repo mirror unplace gsc-fi --repo acme/web
 ./build/go/avr repo public-mirror check rust-lang/rust
 ./build/go/avr repo public-mirror request rust-lang/rust --reason 'Build dependency'
 ./build/go/avr repo public-mirror requests

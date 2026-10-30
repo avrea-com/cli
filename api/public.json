@@ -1472,6 +1472,66 @@
         "title": "GenerateSbomResponse",
         "type": "object"
       },
+      "GitClusterResource": {
+        "properties": {
+          "cluster_id": {
+            "title": "Cluster Id",
+            "type": "string"
+          },
+          "datacenter_id": {
+            "title": "Datacenter Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cluster_id",
+          "datacenter_id",
+          "name"
+        ],
+        "title": "GitClusterResource",
+        "type": "object"
+      },
+      "GitClustersListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/GitClusterResource"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/GitClustersPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "GitClustersListResponse",
+        "type": "object"
+      },
+      "GitClustersPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "GitClustersPagination",
+        "type": "object"
+      },
       "GovernanceHoldReason": {
         "enum": [
           "group_suspended",
@@ -3899,6 +3959,64 @@
         "title": "MetricsSeries",
         "type": "object"
       },
+      "MirrorPlacementResource": {
+        "properties": {
+          "cluster_id": {
+            "title": "Cluster Id",
+            "type": "string"
+          },
+          "config_synced": {
+            "default": true,
+            "title": "Config Synced",
+            "type": "boolean"
+          },
+          "config_synced_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Synced At"
+          },
+          "last_sync_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sync At"
+          },
+          "last_sync_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sync Status"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cluster_id",
+          "role"
+        ],
+        "title": "MirrorPlacementResource",
+        "type": "object"
+      },
       "OrgPullRequestAttentionMeta": {
         "description": "What a scope=attention page covered beyond the rows it returned.\n\nThe page holds the matches among its candidates, so its rows alone say\nneither how far the page reached nor whether a candidate it left out is\nstill waiting on a merge verdict.",
         "properties": {
@@ -4970,6 +5088,56 @@
           "requested_at"
         ],
         "title": "RepoCachePurgeStatus",
+        "type": "object"
+      },
+      "RepoGitMirrorResource": {
+        "properties": {
+          "data_deletion_pending": {
+            "default": false,
+            "title": "Data Deletion Pending",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "placements": {
+            "items": {
+              "$ref": "#/components/schemas/MirrorPlacementResource"
+            },
+            "title": "Placements",
+            "type": "array"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository_id",
+          "full_name",
+          "enabled",
+          "placements"
+        ],
+        "title": "RepoGitMirrorResource",
+        "type": "object"
+      },
+      "RepoGitMirrorUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "RepoGitMirrorUpdate",
         "type": "object"
       },
       "RerunWorkflowRunRequest": {
@@ -8612,6 +8780,120 @@
         "summary": "Get Org Feature Flag",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/orgs/{org_id}/git-clusters": {
+      "get": {
+        "description": "The avrea-git clusters a mirror can be placed in.\n\nClusters are platform-wide (one per datacenter), not per-org resources;\nonly their identity and location are exposed so the console can offer\nplacement targets.",
+        "operationId": "list_git_clusters",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "cluster_id.asc",
+              "enum": [
+                "cluster_id",
+                "cluster_id.asc",
+                "cluster_id.desc",
+                "datacenter_id",
+                "datacenter_id.asc",
+                "datacenter_id.desc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitClustersListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Git mirrors are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Git Clusters",
+        "tags": [
+          "git-mirrors"
         ]
       }
     },
@@ -12266,6 +12548,334 @@
         "summary": "Dispatch Workflow Endpoint",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/git-mirrors": {
+      "get": {
+        "description": "The repo's mirror declaration plus its per-cluster placement state.",
+        "operationId": "get_repo_git_mirror",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoGitMirrorResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or git mirrors are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Repo Git Mirror",
+        "tags": [
+          "git-mirrors"
+        ]
+      },
+      "put": {
+        "description": "Declare (or undeclare) the repository as mirrored into avrea-git.\n\nWrites ``cache.git.enabled`` at repository scope and reconciles the\ndenormalised ``mirror_enabled`` column, exactly like the admin settings\npath. Disabling writes an explicit repo-scope off override (so an org-level\non cannot silently re-enable it) and leaves existing placements in place but\ninert, so re-enabling restores them (matches ``reconcile_repo_git_mirror``).\n\n``reconcile_repo_git_mirror`` is called directly rather than through the\nbest-effort ``reconcile_git_mirror_after_setting_change`` hook: that hook\nswallows reconcile failures, which would leave this endpoint reporting a\ndeclaration it had not actually applied.",
+        "operationId": "update_repo_git_mirror",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepoGitMirrorUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoGitMirrorResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or git mirrors are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Repo Git Mirror",
+        "tags": [
+          "git-mirrors"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/git-mirrors/placements/{cluster_id}": {
+      "delete": {
+        "description": "Remove the repository's mirror placement from a git cluster.",
+        "operationId": "remove_repo_git_mirror_placement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cluster_id",
+            "required": true,
+            "schema": {
+              "title": "Cluster Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoGitMirrorResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, mirror placement not found, or git mirrors are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Repo Git Mirror Placement",
+        "tags": [
+          "git-mirrors"
+        ]
+      },
+      "put": {
+        "description": "Place the repository's mirror in a git cluster (idempotent).\n\nA newly-created placement gets the default priority-1 upstream source, so\n\"mirror repo X in region Y from the platform\" is one request. An existing\nplacement is left exactly as configured \u2014 a repeat PUT cannot overwrite an\noperator-tuned source graph.",
+        "operationId": "add_repo_git_mirror_placement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cluster_id",
+            "required": true,
+            "schema": {
+              "title": "Cluster Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoGitMirrorResource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, git cluster not found, or git mirrors are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Repo Git Mirror Placement",
+        "tags": [
+          "git-mirrors"
         ]
       }
     },
