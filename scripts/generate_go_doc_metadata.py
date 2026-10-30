@@ -25,8 +25,8 @@ if __name__ == "__main__":
     tree["terminal"] = terminal_tree()
     value = json.dumps(tree, indent=2, ensure_ascii=False, default=str) + "\n"
     if args.check:
-        if target.read_text() != value:
+        if target.read_text(encoding="utf-8") != value:
             raise SystemExit("Go documentation metadata differs from the pinned Python input")
     else:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(value)
+        target.write_text(value, encoding="utf-8", newline="\n")
