@@ -1,0 +1,10 @@
+set -euo pipefail
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm not found on the VM; cannot install agents" >&2
+  exit 1
+fi
+for pkg in {{.Packages}}; do
+  echo "installing $pkg"
+  npm install -g "$pkg" || sudo -n npm install -g "$pkg"
+done
+echo "installed: {{.Agents}}"

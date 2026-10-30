@@ -1085,9 +1085,50 @@ OS runs remain CI gates. Go race tests, lint/build, admin composition, fixture
 typing and workflow validation pass; report hashes match both executables.
 No live VM connections or real desktop applications were used.
 
+## VM bootstrap batch
+
+Added bootstrap with all Python flags: identity, GitHub setup toggle, repeated
+agent installs and environment values, credential forwarding, avr installation,
+repository/ref, dotfiles, inline/file scripts and print-only plans. Tunnel
+checkpoints: public fc656a8, admin a46833a6cb.
+
+Preserve the existing shell scripts and step order: environment, GitHub,
+repository, dotfiles, agents, avr, custom script. Print mode needs no auth or
+network and never invokes local credential helpers. Real runs resolve the
+endpoint, silently probe SSH with five attempts, stream each step, and stop at
+the first failed step. Environment and GitHub credentials use SSH stdin, not
+command arguments or local terminal output. User scripts can still print their
+own input; this is not a remote-output redaction mechanism.
+
+Credential forwarding preserves explicit overrides, ordered/deduplicated
+agents, per-agent warnings and the optional Claude setup-token/hidden-paste
+prompt. Unicode environment-name validation uses the existing pinned x/text
+normalizer, promoted from indirect to direct without a version change.
+Run-script reads reuse the 16 MiB/UTF-8 guard and Python newline normalization.
+GitHub helper output is bounded to 1 MiB and its diagnostics are suppressed;
+cancellation and timeouts return concise errors. SSH pins are private and
+removed on completion, failure, timeout and cancellation.
+
+Decision: --install-avr retains Python's pipx/pip package installation inside
+the VM until Go release packaging exists. No upstream CLI code was copied;
+the script templates come from this repository's pinned Python implementation.
+
+Validation: 92 paired cases per binary, including five terminal-output cases,
+pass. They compare printed scripts, actual SSH arguments/stdin, helper order,
+retry/failure behavior, credential overrides, API errors and pin content/mode/
+cleanup. Seven paired real-terminal prompt scenarios plus one Go interrupt
+check pass for each binary; hidden input is not echoed and terminal echo is
+restored. Three Go tests cover execution of the environment setup script in an
+isolated home, idempotent login hooks, private files, helper output bounds and
+process timeout/cancellation cleanup. Public race tests, lint, generated API
+checks, admin composition, fixture typing and both workflow validations pass.
+Report hashes match both tested binaries. All helpers and API calls are local
+fixtures; no VM connections, real authentication helpers or installations were
+performed. Native terminal tests ran on macOS; native Linux/Windows remain CI.
+
 ## Remaining work
 
-VM bootstrap, hidden docs, root/help/completion,
+Hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
