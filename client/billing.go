@@ -9,8 +9,8 @@ import (
 	"github.com/avrea-com/cli/client/wire"
 )
 
-func billingRecord[T any](ctx context.Context, c *Client, path string) (Record[T], error) {
-	body, err := c.Get(ctx, path, nil)
+func billingRecord[T any](ctx context.Context, c *Client, method, path string, payload any) (Record[T], error) {
+	body, err := c.Do(ctx, method, path, payload)
 	if err != nil {
 		return Record[T]{}, err
 	}
@@ -21,13 +21,13 @@ func billingRecord[T any](ctx context.Context, c *Client, path string) (Record[T
 	return decodeRecord[T](fields)
 }
 func (c *Client) BillingSummary(ctx context.Context, path string) (Record[wire.BillingSummaryResponse], error) {
-	return billingRecord[wire.BillingSummaryResponse](ctx, c, path)
+	return billingRecord[wire.BillingSummaryResponse](ctx, c, http.MethodGet, path, nil)
 }
 func (c *Client) BillingSettings(ctx context.Context, path string) (Record[wire.BillingSettingsResponse], error) {
-	return billingRecord[wire.BillingSettingsResponse](ctx, c, path)
+	return billingRecord[wire.BillingSettingsResponse](ctx, c, http.MethodGet, path, nil)
 }
 func (c *Client) Invoice(ctx context.Context, path string) (Record[wire.InvoiceResponse], error) {
-	return billingRecord[wire.InvoiceResponse](ctx, c, path)
+	return billingRecord[wire.InvoiceResponse](ctx, c, http.MethodGet, path, nil)
 }
 func (c *Client) Invoices(ctx context.Context, path string, query url.Values) (Page[wire.InvoiceResponse], error) {
 	body, err := c.Get(ctx, path, query)
@@ -45,26 +45,10 @@ func (c *Client) PaymentMethods(ctx context.Context, path string) (Page[wire.Pay
 }
 
 func (c *Client) UpdateBillingSettings(ctx context.Context, path string, body wire.BillingSettingsRequest) (Record[wire.BillingSettingsResponse], error) {
-	response, err := c.Do(ctx, http.MethodPut, path, body)
-	if err != nil {
-		return Record[wire.BillingSettingsResponse]{}, err
-	}
-	fields, ok := response["data"].(map[string]any)
-	if !ok {
-		return Record[wire.BillingSettingsResponse]{}, errors.New("unexpected API response: expected billing data")
-	}
-	return decodeRecord[wire.BillingSettingsResponse](fields)
+	return billingRecord[wire.BillingSettingsResponse](ctx, c, http.MethodPut, path, body)
 }
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, path string) (Record[wire.PaymentMethodResponse], error) {
-	response, err := c.Do(ctx, http.MethodPut, path, nil)
-	if err != nil {
-		return Record[wire.PaymentMethodResponse]{}, err
-	}
-	fields, ok := response["data"].(map[string]any)
-	if !ok {
-		return Record[wire.PaymentMethodResponse]{}, errors.New("unexpected API response: expected billing data")
-	}
-	return decodeRecord[wire.PaymentMethodResponse](fields)
+	return billingRecord[wire.PaymentMethodResponse](ctx, c, http.MethodPut, path, nil)
 }
 func (c *Client) RemovePaymentMethod(ctx context.Context, path string) error {
 	_, err := c.Raw(ctx, http.MethodDelete, path, nil)

@@ -1,0 +1,37 @@
+package main
+
+import (
+ "context"
+ "errors"
+ "net/http"
+ "net/url"
+ "os"
+ "os/signal"
+
+ public "github.com/avrea-com/cli/commands"
+ ADMIN_IMPORT
+)
+type fixtureTransport struct{}
+func (fixtureTransport) RoundTrip(req *http.Request)(*http.Response,error){
+ target,err:=url.Parse(os.Getenv("AVR_HOST"))
+ if err!=nil || target.Scheme!="http" || target.Hostname()!="127.0.0.1"{return nil,errors.New("fixture requires loopback AVR_HOST")}
+ copy:=req.Clone(req.Context())
+ address:=*req.URL
+ copy.URL=&address
+ if address.Scheme=="https" && address.Host=="api.stripe.com" {
+  copy.URL.Scheme=target.Scheme
+  copy.URL.Host=target.Host
+  copy.URL.Path="/stripe-fixture"+address.Path
+  copy.Host=""
+ }else if address.Scheme!=target.Scheme || address.Host!=target.Host {
+  return nil,errors.New("fixture refuses external request")
+ }
+ return http.DefaultTransport.RoundTrip(copy)
+}
+func main(){
+ public.IgnoreBrokenPipe()
+ ctx,stop:=signal.NotifyContext(context.Background(),os.Interrupt)
+ defer stop()
+ code:=EXECUTE(ctx,os.Args[1:],public.Dependencies{HTTP:&http.Client{Transport:fixtureTransport{}},Version:"billing-card-fixture"})
+ os.Exit(code)
+}

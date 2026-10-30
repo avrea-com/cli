@@ -157,6 +157,32 @@
         "title": "APIResponse[SamlConfigResponse]",
         "type": "object"
       },
+      "APIResponse_SetupIntentResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetupIntentResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[SetupIntentResponse]",
+        "type": "object"
+      },
+      "APIResponse_StripeKeyResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StripeKeyResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[StripeKeyResponse]",
+        "type": "object"
+      },
       "APIResponse_WorkflowArtifact_": {
         "additionalProperties": false,
         "properties": {
@@ -666,6 +692,19 @@
           "summary"
         ],
         "title": "AnalysisTaskResponse",
+        "type": "object"
+      },
+      "AttachPaymentMethodRequest": {
+        "properties": {
+          "stripe_payment_method_id": {
+            "title": "Stripe Payment Method Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stripe_payment_method_id"
+        ],
+        "title": "AttachPaymentMethodRequest",
         "type": "object"
       },
       "AuditEventAction": {
@@ -6634,6 +6673,19 @@
         "title": "SettingUpdate",
         "type": "object"
       },
+      "SetupIntentResponse": {
+        "properties": {
+          "client_secret": {
+            "title": "Client Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_secret"
+        ],
+        "title": "SetupIntentResponse",
+        "type": "object"
+      },
       "StepAggregation": {
         "properties": {
           "action_required_avg_duration_seconds": {
@@ -7192,6 +7244,19 @@
           "step"
         ],
         "title": "StepAggregation",
+        "type": "object"
+      },
+      "StripeKeyResponse": {
+        "properties": {
+          "stripe_key": {
+            "title": "Stripe Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stripe_key"
+        ],
+        "title": "StripeKeyResponse",
         "type": "object"
       },
       "UsageSummaryResponse": {
@@ -9936,6 +10001,94 @@
         "tags": [
           "billing"
         ]
+      },
+      "post": {
+        "operationId": "attach_payment_method",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachPaymentMethodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_PaymentMethodResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Attach Payment Method",
+        "tags": [
+          "billing"
+        ]
       }
     },
     "/orgs/{org_id}/billing/payment-methods/{pm_id}": {
@@ -10275,6 +10428,155 @@
           }
         ],
         "summary": "Update Billing Settings",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/setup-intent": {
+      "post": {
+        "operationId": "create_setup_intent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_SetupIntentResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Setup Intent",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/stripe-key": {
+      "get": {
+        "operationId": "get_stripe_key",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_StripeKeyResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Stripe Key",
         "tags": [
           "billing"
         ]

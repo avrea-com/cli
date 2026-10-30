@@ -1680,6 +1680,16 @@ type APIResponseSamlConfigResponse struct {
 	Data SamlConfigResponse `json:"data"`
 }
 
+// APIResponseSetupIntentResponse defines model for APIResponse_SetupIntentResponse_.
+type APIResponseSetupIntentResponse struct {
+	Data SetupIntentResponse `json:"data"`
+}
+
+// APIResponseStripeKeyResponse defines model for APIResponse_StripeKeyResponse_.
+type APIResponseStripeKeyResponse struct {
+	Data StripeKeyResponse `json:"data"`
+}
+
 // APIResponseWorkflowArtifact defines model for APIResponse_WorkflowArtifact_.
 type APIResponseWorkflowArtifact struct {
 	Data WorkflowArtifact `json:"data"`
@@ -1828,6 +1838,12 @@ type AnalysisTaskResponse struct {
 	Summary              map[string]interface{} `json:"summary"`
 	Type                 string                 `json:"type"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// AttachPaymentMethodRequest defines model for AttachPaymentMethodRequest.
+type AttachPaymentMethodRequest struct {
+	StripePaymentMethodId string                 `json:"stripe_payment_method_id"`
+	AdditionalProperties  map[string]interface{} `json:"-"`
 }
 
 // AuditEventAction defines model for AuditEventAction.
@@ -3184,6 +3200,12 @@ type SettingUpdate_Value struct {
 	union json.RawMessage
 }
 
+// SetupIntentResponse defines model for SetupIntentResponse.
+type SetupIntentResponse struct {
+	ClientSecret         string                 `json:"client_secret"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // StepAggregation defines model for StepAggregation.
 type StepAggregation struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64] `json:"action_required_avg_duration_seconds,omitempty"`
@@ -3244,6 +3266,12 @@ type StepAggregation struct {
 	TimedOutTotalDurationSeconds        nullable.Nullable[float64] `json:"timed_out_total_duration_seconds,omitempty"`
 	TotalDurationSeconds                nullable.Nullable[float64] `json:"total_duration_seconds"`
 	AdditionalProperties                map[string]interface{}     `json:"-"`
+}
+
+// StripeKeyResponse defines model for StripeKeyResponse.
+type StripeKeyResponse struct {
+	StripeKey            string                 `json:"stripe_key"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // UsageSummaryResponse defines model for UsageSummaryResponse.
@@ -3630,6 +3658,11 @@ type ListPaymentMethodsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// AttachPaymentMethodParams defines parameters for AttachPaymentMethod.
+type AttachPaymentMethodParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // RemovePaymentMethodParams defines parameters for RemovePaymentMethod.
 type RemovePaymentMethodParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3647,6 +3680,16 @@ type GetBillingSettingsParams struct {
 
 // UpdateBillingSettingsParams defines parameters for UpdateBillingSettings.
 type UpdateBillingSettingsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// CreateSetupIntentParams defines parameters for CreateSetupIntent.
+type CreateSetupIntentParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetStripeKeyParams defines parameters for GetStripeKey.
+type GetStripeKeyParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -4459,6 +4502,9 @@ type SearchLogsJSONRequestBody = LogSearchParams
 
 // CreateAccessTokenJSONRequestBody defines body for CreateAccessToken for application/json ContentType.
 type CreateAccessTokenJSONRequestBody = CreateAccessTokenRequest
+
+// AttachPaymentMethodJSONRequestBody defines body for AttachPaymentMethod for application/json ContentType.
+type AttachPaymentMethodJSONRequestBody = AttachPaymentMethodRequest
 
 // UpdateBillingSettingsJSONRequestBody defines body for UpdateBillingSettings for application/json ContentType.
 type UpdateBillingSettingsJSONRequestBody = BillingSettingsRequest
@@ -5524,6 +5570,72 @@ func (a AnalysisTaskResponse) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AttachPaymentMethodRequest. Returns the specified
+// element and whether it was found
+func (a AttachPaymentMethodRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AttachPaymentMethodRequest
+func (a *AttachPaymentMethodRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AttachPaymentMethodRequest to handle AdditionalProperties
+func (a *AttachPaymentMethodRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["stripe_payment_method_id"]; found {
+		err = json.Unmarshal(raw, &a.StripePaymentMethodId)
+		if err != nil {
+			return fmt.Errorf("error reading 'stripe_payment_method_id': %w", err)
+		}
+		delete(object, "stripe_payment_method_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AttachPaymentMethodRequest to handle AdditionalProperties
+func (a AttachPaymentMethodRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["stripe_payment_method_id"], err = json.Marshal(a.StripePaymentMethodId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stripe_payment_method_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -17603,6 +17715,72 @@ func (a SettingSchemaResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for SetupIntentResponse. Returns the specified
+// element and whether it was found
+func (a SetupIntentResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SetupIntentResponse
+func (a *SetupIntentResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SetupIntentResponse to handle AdditionalProperties
+func (a *SetupIntentResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["client_secret"]; found {
+		err = json.Unmarshal(raw, &a.ClientSecret)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_secret': %w", err)
+		}
+		delete(object, "client_secret")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SetupIntentResponse to handle AdditionalProperties
+func (a SetupIntentResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["client_secret"], err = json.Marshal(a.ClientSecret)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'client_secret': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for StepAggregation. Returns the specified
 // element and whether it was found
 func (a StepAggregation) Get(fieldName string) (value interface{}, found bool) {
@@ -18466,6 +18644,72 @@ func (a StepAggregation) MarshalJSON() ([]byte, error) {
 	object["total_duration_seconds"], err = json.Marshal(a.TotalDurationSeconds)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'total_duration_seconds': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for StripeKeyResponse. Returns the specified
+// element and whether it was found
+func (a StripeKeyResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for StripeKeyResponse
+func (a *StripeKeyResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for StripeKeyResponse to handle AdditionalProperties
+func (a *StripeKeyResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["stripe_key"]; found {
+		err = json.Unmarshal(raw, &a.StripeKey)
+		if err != nil {
+			return fmt.Errorf("error reading 'stripe_key': %w", err)
+		}
+		delete(object, "stripe_key")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for StripeKeyResponse to handle AdditionalProperties
+func (a StripeKeyResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["stripe_key"], err = json.Marshal(a.StripeKey)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stripe_key': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
