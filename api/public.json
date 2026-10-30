@@ -126,6 +126,47 @@
         "title": "APIResponse[list[WorkflowRunAggregateBucket]]",
         "type": "object"
       },
+      "AccessTokenGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "access_level": {
+            "description": "The one level each type is minted at: read for a repository, admin for a customer_vm. Any other level is refused with 422.",
+            "enum": [
+              "read",
+              "write",
+              "admin"
+            ],
+            "title": "Access Level",
+            "type": "string"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "enum": [
+              "repository",
+              "customer_vm"
+            ],
+            "title": "Resource Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_type",
+          "access_level"
+        ],
+        "title": "AccessTokenGrant",
+        "type": "object"
+      },
       "AccessTokenGrantResponse": {
         "properties": {
           "access_level": {
@@ -911,6 +952,169 @@
           "status"
         ],
         "title": "CancelWorkflowRunResponse",
+        "type": "object"
+      },
+      "CreateAccessTokenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_vm_create": {
+            "default": false,
+            "title": "Allow Vm Create",
+            "type": "boolean"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/AccessTokenGrant"
+            },
+            "maxItems": 100,
+            "title": "Grants",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "default": 28800,
+            "maximum": 604800.0,
+            "minimum": 60.0,
+            "title": "Ttl Seconds",
+            "type": "integer"
+          },
+          "vm_create_limit": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vm Create Limit"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateAccessTokenRequest",
+        "type": "object"
+      },
+      "CreatedAccessTokenResponse": {
+        "properties": {
+          "allow_vm_create": {
+            "title": "Allow Vm Create",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/AccessTokenGrantResponse"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked Reason"
+          },
+          "token": {
+            "description": "The avs_ credential. Returned once; store it now.",
+            "title": "Token",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "vm_create_count": {
+            "title": "Vm Create Count",
+            "type": "integer"
+          },
+          "vm_create_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vm Create Limit"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "user_id",
+          "name",
+          "created_at",
+          "expires_at",
+          "last_used_at",
+          "revoked_at",
+          "revoked_reason",
+          "allow_vm_create",
+          "vm_create_limit",
+          "vm_create_count",
+          "grants",
+          "token"
+        ],
+        "title": "CreatedAccessTokenResponse",
         "type": "object"
       },
       "DispatchWorkflowRequest": {
@@ -6646,6 +6850,93 @@
           }
         ],
         "summary": "List Access Tokens",
+        "tags": [
+          "access-tokens"
+        ]
+      },
+      "post": {
+        "description": "Mint a scoped token. The secret is returned once. Scoped tokens cannot\nmint tokens.",
+        "operationId": "create_access_token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAccessTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "A grant names an object you cannot reach at that level, you are not an active member, the organization is suspended, or the caller is a scoped token"
+          },
+          "404": {
+            "description": "Scoped tokens, or the VMs the token names, are not available for the organization"
+          },
+          "409": {
+            "description": "You already hold the maximum number of live tokens in this organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "503": {
+            "description": "Scoped tokens are not yet available everywhere, or access could not be verified yet"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Access Token",
         "tags": [
           "access-tokens"
         ]

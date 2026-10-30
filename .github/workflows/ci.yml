@@ -157,6 +157,7 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom_generate --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_config --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_token --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_token_create --go build/go/avr.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -182,6 +183,7 @@ jobs:
             build/go/sbom-generate-parity.json
             build/go/config-parity.json
             build/go/token-inspection-parity.json
+            build/go/token-create-parity.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error
 

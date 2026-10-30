@@ -22,11 +22,11 @@ var tokenIDPattern = regexp.MustCompile("^key-[0-9a-f]{32}$")
 
 const noTokenHint = "Run \x60avr token list\x60 to see the tokens visible to you."
 
-// NewToken exposes scoped token inspection and revocation.
+// NewToken exposes scoped token creation, inspection and revocation.
 func NewToken(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "token", Aliases: []string{"tokens"}, Short: "Create and manage scoped access tokens."}
-	c.AddCommand(newTokenList(d), newTokenView(d), newTokenRevoke(d))
+	c.AddCommand(newTokenList(d), newTokenView(d), newTokenRevoke(d), newTokenCreate(d))
 	return c
 }
 func tokenIDArgs(cmd *cobra.Command, args []string) error {

@@ -480,9 +480,41 @@ typing and both workflow validators pass. Final report hashes match both
 executables. Login parity suites must run serially because their callback URL
 uses port 8765; a parallel invocation collided and the isolated rerun passed.
 
+## Token creation batch
+
+Added token create (also tokens create), shared with avr-admin.
+Inspection checkpoints: public 4a7a6a3, admin 296cd12c69.
+
+Decisions:
+- Preserve repeatable repository/VM grants, repository name resolution,
+  deduplication and repository-before-VM request ordering. Leave optional TTL
+  and VM limits out when absent so server defaults apply.
+- Validate grant levels, grant count, TTL bounds and credential field selection
+  before creating anything. Send exactly one creation request, with no retry
+  when the outcome is uncertain.
+- Keep the one-time credential available despite malformed summary metadata.
+  Buffer jq results and require the credential to survive the filter. On a
+  failed filter, recover with unfiltered selected JSON and return failure.
+- Do not put credentials or underlying transport/output errors on stderr.
+  Preserve Python's recovery and revoke hints, feature/capability guidance,
+  throttling details and grant-index explanations.
+- Cancellation returns 130 even after local credential recovery. Broken pipes
+  and buffered-output failures return nonzero and do not claim successful
+  delivery. Local recovery never sends another API request.
+- No new dependencies or live token creation.
+
+Validation: 76 paired cases per binary, including two terminal cases, cover
+grant combinations, optional defaults, TTL boundaries, JSON/jq recovery,
+malformed success responses and HTTP errors. Three focused Go tests cover
+cancellation, write/flush failures, uncertain outcomes and no duplicate POSTs.
+The 87 token inspection/revocation regression cases pass in each binary.
+Go race tests, lint, schema generation, admin composition checks, fixture
+typing and workflow validation pass. All four reports match the tested
+binary hashes. Native OS CI and real credential creation were not exercised.
+
 ## Remaining work
 
-Token creation/settings, organization and repository
+Settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
