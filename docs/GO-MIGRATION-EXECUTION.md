@@ -413,9 +413,39 @@ Go race tests, lint, schema generation, vulnerability scan, admin composition
 checks, fixture typing and workflow validation pass. Both report hashes match
 the final tested binaries.
 
+## CLI configuration batch
+
+Added config (status), config list, config get org, config set org VALUE and
+config unset org, shared with avr-admin. SBOM generation checkpoints: public
+0ca2031, admin 6f381c7c62.
+
+Decisions:
+- Match host/auth/org/repository status, best-effort profile lookup, environment
+  and stored-value source annotations, Git detection, colors and bold/dim text.
+- Resolve set values as exact IDs, exact slugs, then case-insensitive slugs;
+  persist the resolved ID. Keep authentication and scoped-token restrictions.
+- Set/unset only the current host's organization field. Preserve tokens,
+  unrelated future fields, other hosts, insertion order and default_host.
+  Unset does not require a login and does not create an absent hosts file.
+- Reuse private atomic credential storage. Human output escapes external
+  control characters; config never prints the credential.
+- Admin retains its documented environment-derived host default. Tests align
+  the wrapper environments for shared default/source presentation cases.
+- No API schema changes, dependencies or live configuration mutations.
+
+Validation: 55 Python/Go cases per binary, including eight terminal cases,
+compare visible output/styles, requests, exit codes and resulting hosts.json.
+Expected file content is independently specified for mutations and refusals.
+Four Go tests cover exact-ID precedence, unknown-field preservation,
+cancellation, scoped identity avoidance and absent/empty host behavior.
+The existing auth regression suites pass: 65 public cases and 64 shared admin
+cases, excluding the previously documented stored-host default difference.
+Go race tests, lint, admin composition checks, fixture typing and both workflow
+validators pass. Reports match the final binary hashes.
+
 ## Remaining work
 
-Configuration/tokens/settings, organization and repository
+Tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;

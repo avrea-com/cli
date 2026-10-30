@@ -25,6 +25,10 @@ make go-build
 ./build/go/avr sbom view COMMIT_PREFIX --repo OWNER/REPO --full
 ./build/go/avr sbom download COMMIT_PREFIX --repo OWNER/REPO --format inventory --out inventory.json
 ./build/go/avr sbom generate COMMIT --repo OWNER/REPO --wait --wait-timeout 900
+./build/go/avr config
+./build/go/avr config get org
+./build/go/avr config set org ORG_SLUG
+./build/go/avr config unset org
 ./build/go/avr log search --repo OWNER/REPO --query "error" --level error
 ./build/go/avr log search --repo OWNER/REPO --json content,line_number
 ./build/go/avr cache list --repo OWNER/REPO --type gha
