@@ -62,7 +62,11 @@ func newJobView(d Dependencies) *cobra.Command {
 				return err
 			}
 			repo, runID, jobID := fieldText(j, "repository_full_name"), fieldText(j, "platform_run_id"), fieldText(j, "platform_job_id")
-			if repo != "" && runID != "" && jobID != "" {
+			if sourcePlatform(j) == "gitlab" && repo != "" && jobID != "" {
+				if _, err = fmt.Fprintln(d.Out, "GitLab: https://gitlab.com/"+output.CellText(repo)+"/-/jobs/"+output.CellText(jobID)); err != nil {
+					return err
+				}
+			} else if sourcePlatform(j) == "github" && repo != "" && runID != "" && jobID != "" {
 				_, err = fmt.Fprintln(d.Out, "GitHub: https://github.com/"+output.CellText(repo)+"/actions/runs/"+output.CellText(runID)+"/job/"+output.CellText(jobID))
 				if err != nil {
 					return err
@@ -135,6 +139,9 @@ func renderJobView(d Dependencies, j map[string]any, id, host, slug string) erro
 			number = "?"
 		}
 		runDisplay = "#" + number + " (" + short + ")"
+		if wf["run_number"] == nil {
+			runDisplay = rid
+		}
 		if slug != "" && rid != "" {
 			runTarget = consoleURL(host) + "/org/" + url.PathEscape(slug) + "/runs/" + url.PathEscape(rid)
 		}
@@ -155,7 +162,7 @@ func renderJobView(d Dependencies, j map[string]any, id, host, slug string) erro
 	if j["running_on_avrea"] == true {
 		on = "yes"
 	}
-	rows := [][2]string{{"Job", linkCell(output.CellText(id), jobTarget(host, slug, id))}, {"Name", output.CellText(fieldText(j, "job_name"))}, {"Repository", linkCell(output.CellText(repo), repoTarget)}, {"Run", linkCell(output.CellText(runDisplay), runTarget)}, {"Conclusion", conclusion}, {"Duration", formatDuration(j["duration_seconds"])}, {"Labels", output.CellText(label)}, {"On Avrea", on}, {"Created", formatTimestamp(fieldText(j, "created_at"))}, {"Started", formatTimestamp(fieldText(j, "started_at"))}, {"Completed", formatTimestamp(fieldText(j, "completed_at"))}}
+	rows := [][2]string{{"Job", linkCell(output.CellText(id), jobTarget(host, slug, id))}, {"CI", output.CellText(jobCIProvider(j))}, {"Name", output.CellText(fieldText(j, "job_name"))}, {"Repository", linkCell(output.CellText(repo), repoTarget)}, {"Platform", output.CellText(sourcePlatform(j))}, {"Run", linkCell(output.CellText(runDisplay), runTarget)}, {"Conclusion", conclusion}, {"Duration", formatDuration(j["duration_seconds"])}, {"Labels", output.CellText(label)}, {"On Avrea", on}, {"Created", formatTimestamp(fieldText(j, "created_at"))}, {"Started", formatTimestamp(fieldText(j, "started_at"))}, {"Completed", formatTimestamp(fieldText(j, "completed_at"))}}
 	for _, r := range rows {
 		if _, err := fmt.Fprintf(d.Out, "%-11s %s\n", r[0], r[1]); err != nil {
 			return err

@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var runFields = []string{"run_id", "platform_run_id", "display_title", "status", "conclusion", "head_branch", "head_sha", "event", "run_number", "run_attempt", "duration_seconds", "created_at", "updated_at", "workflow_id", "workflow", "repository", "triggering_actor"}
+var runFields = []string{"run_id", "ci_provider", "workflow_name", "workflow_path", "platform_run_id", "display_title", "status", "conclusion", "head_branch", "head_sha", "event", "run_number", "run_attempt", "duration_seconds", "created_at", "updated_at", "workflow_id", "workflow", "repository", "triggering_actor"}
 var runStates = map[string]bool{"queued": true, "in_progress": true, "completed": true}
 var runConclusions = map[string]bool{"success": true, "failure": true, "neutral": true, "cancelled": true, "skipped": true, "timed_out": true, "action_required": true, "stale": true, "startup_failure": true}
 var sincePattern = regexp.MustCompile("^([0-9]+)([dhm])$")
@@ -41,7 +41,7 @@ func normalizeTimestamp(value string) (string, error) {
 
 func newRunList(d Dependencies) *cobra.Command {
 	var options jsonOptions
-	var org, since, after, before, cursor, order string
+	var org, since, after, before, cursor, order, provider string
 	var repos, statuses, branches, workflows []string
 	var limit int
 	var web bool
@@ -53,6 +53,7 @@ func newRunList(d Dependencies) *cobra.Command {
 	f.StringArrayVar(&statuses, "status", nil, "Filter by run state or conclusion (repeatable).")
 	f.StringArrayVar(&branches, "branch", nil, "Filter by head branch (repeatable).")
 	f.StringArrayVarP(&workflows, "workflow", "w", nil, "Filter by workflow ID (repeatable).")
+	f.StringVar(&provider, "ci-provider", "", "Filter by CI engine.")
 	f.StringVar(&since, "since", "", "Relative time window, e.g. 7d, 24h or 30m.")
 	f.StringVar(&after, "created-after", "", "Only runs created after this ISO timestamp.")
 	f.StringVar(&after, "from", "", "Alias for --created-after.")
@@ -63,6 +64,9 @@ func newRunList(d Dependencies) *cobra.Command {
 	f.StringVar(&order, "order", "created_at.desc", "Sort by created_at.desc or created_at.asc.")
 	f.BoolVar(&web, "web", false, "Open in browser.")
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
+		if err := validateCIProvider(provider); err != nil {
+			return err
+		}
 		if limit < 1 || limit > 1000 {
 			return &ExitError{2, "Error: --limit must be between 1 and 1000."}
 		}
@@ -150,6 +154,9 @@ func newRunList(d Dependencies) *cobra.Command {
 				query.Add(key, v)
 			}
 		}
+		if provider != "" {
+			query.Set("ci_provider", provider)
+		}
 		page, err := api.Runs(cmd.Context(), id, query)
 		if err != nil {
 			return apiError(cfg, err, "list workflow runs")
@@ -167,15 +174,14 @@ func newRunList(d Dependencies) *cobra.Command {
 		rows := [][]string{}
 		for _, record := range page.Items {
 			r := record.Fields
-			workflow, _ := r["workflow"].(map[string]any)
 			state := fieldText(r, "conclusion")
 			if state == "" {
 				state = fieldText(r, "status")
 			}
-			rows = append(rows, []string{state, fieldText(r, "display_title"), fieldText(workflow, "name"), fieldText(r, "head_branch"), fieldText(r, "event"), fieldText(r, "run_id"), fieldText(r, "duration_seconds"), fieldText(r, "created_at")})
+			rows = append(rows, []string{state, fieldText(r, "display_title"), workflowName(r), fieldText(r, "head_branch"), fieldText(r, "event"), fieldText(r, "run_id"), fieldText(r, "duration_seconds"), fieldText(r, "created_at"), runCIProvider(r)})
 		}
 		if !d.IsTerminal() {
-			return output.Table(d.Out, []string{"status", "title", "workflow", "branch", "event", "run_id", "duration_seconds", "created_at"}, rows, true)
+			return output.Table(d.Out, []string{"status", "title", "workflow", "branch", "event", "run_id", "duration_seconds", "created_at", "ci_provider"}, rows, true)
 		}
 		for i, row := range rows {
 
@@ -189,7 +195,7 @@ func newRunList(d Dependencies) *cobra.Command {
 				target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(slug) + "/runs/" + url.PathEscape(row[5])
 				repo, _ := page.Items[i].Fields["repository"].(map[string]any)
 				branchTarget := ""
-				if name, branch := fieldText(repo, "full_name"), fieldText(page.Items[i].Fields, "head_branch"); strings.Contains(name, "/") && branch != "" {
+				if name, branch := fieldText(repo, "full_name"), fieldText(page.Items[i].Fields, "head_branch"); strings.Contains(name, "/") && branch != "" && page.Items[i].Fields["ci_provider"] != "avrea_ci" {
 					branchTarget = "https://github.com/" + name + "/tree/" + url.PathEscape(branch)
 				}
 				links = append(links, []string{"", target, target, branchTarget, "", target, "", ""})

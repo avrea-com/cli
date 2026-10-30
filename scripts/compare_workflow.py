@@ -146,7 +146,7 @@ def scenarios():
                 "args": ["workflow", "view", "Build web", "--repo", REPO],
                 "responses": BASE | {LOOKUP: (200, {"data": [WORKFLOW, WORKFLOW | {"workflow_id": WF2}]})},
                 "exit": 1,
-                "error_terms": ["Ambiguous", "Matches:", "--wfl-id"],
+                "error_terms": ["Ambiguous", "Matches:", "full workflow ID"],
             },
             {
                 "name": "workflow lookup pagination",

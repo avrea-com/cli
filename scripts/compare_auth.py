@@ -35,7 +35,7 @@ import threading
 import time
 import urllib.request
 
-BASELINE = "99e74d119d83c7cef2887c2dd04a724719e6b009"
+BASELINE = "96d1ccb987032f35b10c7bb0b9c90816da1323a0"
 TOKEN = "avr_fixture_key_never_a_real_secret"
 USER = {
     "id": "usr-fixture",
@@ -582,6 +582,8 @@ def scenarios():
     for name, args in [
         ("github login", ["auth", "login"]),
         ("google login alias", ["login", "--provider", "Google"]),
+        ("gitlab login", ["auth", "login", "--provider", "gitlab"]),
+        ("gitlab login alias", ["login", "--provider", "GitLab"]),
         ("SSO login", ["auth", "login", "--email", "fixture@example.test"]),
     ]:
         cases.append({"name": name, "args": args, "login": True, "responses": login_responses, "writes": True})

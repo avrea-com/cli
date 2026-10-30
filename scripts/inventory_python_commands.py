@@ -51,12 +51,12 @@ if __name__ == "__main__":
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     subprocess.run(
-        ["git", "diff", "--exit-code", "99e74d119d83c7cef2887c2dd04a724719e6b009", "--", "avrea_cli"],
+        ["git", "diff", "--exit-code", "96d1ccb987032f35b10c7bb0b9c90816da1323a0", "--", "avrea_cli"],
         check=True,
         stdout=subprocess.DEVNULL,
     )
 
-    payload = {"baseline": "99e74d119d83c7cef2887c2dd04a724719e6b009", "aliases": ALIASES, "root": inventory()}
+    payload = {"baseline": "96d1ccb987032f35b10c7bb0b9c90816da1323a0", "aliases": ALIASES, "root": inventory()}
     target = Path("docs/go-python-command-contract.json")
     rendered = json.dumps(payload, indent=2, sort_keys=True, default=stable_value) + "\n"
     if args.check:

@@ -103,7 +103,7 @@ func flagDefault(flag *pflag.Flag) any {
 	case "int", "int64":
 		value, _ := strconv.ParseInt(flag.DefValue, 10, 64)
 		return value
-	case "stringArray", "stringSlice":
+	case "stringArray", "stringSlice", "intSlice":
 		raw := strings.TrimSuffix(strings.TrimPrefix(flag.DefValue, "["), "]")
 		if raw == "" {
 			return []any{}
@@ -111,6 +111,17 @@ func flagDefault(flag *pflag.Flag) any {
 		values, err := csv.NewReader(strings.NewReader(raw)).Read()
 		if err != nil {
 			return flag.DefValue
+		}
+		if flag.Value.Type() == "intSlice" {
+			numbers := make([]int64, len(values))
+			for i, value := range values {
+				number, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return flag.DefValue
+				}
+				numbers[i] = number
+			}
+			return numbers
 		}
 		return values
 	default:
@@ -123,7 +134,7 @@ func zeroFlagDefault(flag *pflag.Flag) bool {
 		return flag.DefValue == "false"
 	case "int", "int64":
 		return flag.DefValue == "0"
-	case "stringArray", "stringSlice":
+	case "stringArray", "stringSlice", "intSlice":
 		return flag.DefValue == "[]"
 	default:
 		return flag.DefValue == ""
@@ -134,14 +145,14 @@ func flagParam(flag *pflag.Flag) Param {
 	if flag.Value.Type() == "bool" {
 		typ = "boolean"
 	}
-	if flag.Value.Type() == "int" || flag.Value.Type() == "int64" {
+	if flag.Value.Type() == "int" || flag.Value.Type() == "int64" || flag.Value.Type() == "intSlice" {
 		typ = "integer"
 	}
 	opts := []string{"--" + flag.Name}
 	if flag.Shorthand != "" {
 		opts = append(opts, "-"+flag.Shorthand)
 	}
-	return Param{Name: strings.ReplaceAll(flag.Name, "-", "_"), Kind: "option", Opts: opts, Secondary: []string{}, Type: typ, Required: len(flag.Annotations[cobra.BashCompOneRequiredFlag]) > 0, Multiple: flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice", Nargs: 1, IsFlag: flag.NoOptDefVal != "", Help: str(flag.Usage), Hidden: flag.Hidden, Default: flagDefault(flag)}
+	return Param{Name: strings.ReplaceAll(flag.Name, "-", "_"), Kind: "option", Opts: opts, Secondary: []string{}, Type: typ, Required: len(flag.Annotations[cobra.BashCompOneRequiredFlag]) > 0, Multiple: flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice" || flag.Value.Type() == "intSlice", Nargs: 1, IsFlag: flag.NoOptDefVal != "", Help: str(flag.Usage), Hidden: flag.Hidden, Default: flagDefault(flag)}
 }
 func lookupFlag(c *cobra.Command, option string) *pflag.Flag {
 	if strings.HasPrefix(option, "--") {
@@ -214,7 +225,7 @@ func params(c *cobra.Command, original []Param) []Param {
 		param.Opts = keep(param.Opts)
 		param.Secondary = keep(param.Secondary)
 		param.IsFlag = flag.NoOptDefVal != ""
-		param.Multiple = flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice"
+		param.Multiple = flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice" || flag.Value.Type() == "intSlice"
 		param.Hidden = flag.Hidden
 		if param.Default != nil || !zeroFlagDefault(flag) {
 			param.Default = flagDefault(flag)

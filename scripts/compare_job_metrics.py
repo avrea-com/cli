@@ -111,7 +111,7 @@ def scenarios():
         presentation=True,
     )
     missing = responses()
-    missing[("GET", VIEW[1] + "/metrics/cpu")] = (404, {"detail": "no execution"})
+    missing[("GET", VIEW[1] + "/metrics/cpu")] = (404, {"detail": "No execution found for job"})
     case("partial missing execution", responses=missing, presentation=True)
     case("missing execution JSON", ["--json"], responses=missing, json=True)
     for value in [0, 0.60, 0.85, 1, 1.2]:
