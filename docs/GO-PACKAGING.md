@@ -168,3 +168,11 @@ to the normal resolver, and the pinned Python code still binds a real socket,
 handles callback HTTP, and writes credentials. Focused tests cover this boundary;
 all 67 auth parity scenarios pass locally. This fixture does not establish that
 stock Python login avoids reverse-DNS delays on hosted macOS.
+
+Windows parity invocations use `--json=*` instead of separate `--json` and
+`*` arguments: Click otherwise glob-expands the wildcard into local filenames
+before parsing it. Both executables receive the same equivalent option. The
+capture helper sends UTF-8 stdin bytes directly, preventing subprocess text
+mode from converting LF Git-protocol fixtures into CRLF; output is decoded as
+UTF-8 with normal terminal newline normalization. These boundaries have focused
+tests. Go does not emulate Click's Windows filesystem glob expansion.

@@ -2,7 +2,10 @@
 
 from copy import deepcopy
 from scripts.compare_auth import compare
+from scripts.compare_auth import run_captured
+from scripts.compare_auth import windows_literal_json_args
 import pytest
+import sys
 
 
 def captured():
@@ -60,3 +63,30 @@ def test_api_and_local_state_regressions_are_detected():
     differences = compare({"args": ["auth", "status"], "json": True}, python, go)
     assert "requests" in differences
     assert "hosts" in differences
+
+
+def test_json_wildcard_is_literal_without_rewriting_other_arguments():
+    assert windows_literal_json_args(["auth", "status", "--json", "*"]) == ["auth", "status", "--json=*"]
+    args = ["--json=email", "--jq", "*", "--json", "email", "*"]
+    assert windows_literal_json_args(args) == args
+
+
+def test_protocol_input_bytes_are_not_translated_by_the_host():
+    value = "protocol=https\nhost=mirror.test\n\n"
+    result = run_captured(
+        [sys.executable, "-c", "import sys; print(sys.stdin.buffer.read().hex())"],
+        stdin=value,
+        timeout=5,
+    )
+    assert result.returncode == 0
+    assert result.stdout.strip() == value.encode("utf-8").hex()
+
+
+def test_captured_output_is_utf8_with_terminal_newline_normalization():
+    result = run_captured(
+        [sys.executable, "-c", "import sys; sys.stdout.buffer.write(bytes.fromhex('e29c930d0a'))"],
+        stdin="",
+        timeout=5,
+    )
+    assert result.returncode == 0
+    assert result.stdout == "✓\n"
