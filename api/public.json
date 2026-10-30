@@ -616,6 +616,168 @@
         "title": "AnalysisTaskResponse",
         "type": "object"
       },
+      "AuditEventAction": {
+        "enum": [
+          "CREATE",
+          "UPDATE",
+          "DELETE",
+          "ENABLE",
+          "DISABLE",
+          "ROTATE",
+          "TRANSFER",
+          "SUSPEND",
+          "UNSUSPEND",
+          "DENY"
+        ],
+        "title": "AuditEventAction",
+        "type": "string"
+      },
+      "AuditEventActorType": {
+        "enum": [
+          "USER",
+          "OPERATOR",
+          "API_KEY",
+          "SYSTEM",
+          "EXTERNAL"
+        ],
+        "title": "AuditEventActorType",
+        "type": "string"
+      },
+      "AuditEventResponse": {
+        "properties": {
+          "acting_api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acting Api Key Id"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditEventAction"
+          },
+          "actor_type": {
+            "$ref": "#/components/schemas/AuditEventActorType"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "client_ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Ip"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_data": {
+            "additionalProperties": true,
+            "title": "Event Data",
+            "type": "object"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "title": "Resource Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "created_at",
+          "organization_id",
+          "actor_user_id",
+          "actor_type",
+          "acting_api_key_id",
+          "client_ip",
+          "resource_type",
+          "resource_id",
+          "action",
+          "event_data"
+        ],
+        "title": "AuditEventResponse",
+        "type": "object"
+      },
+      "AuditEventsListPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "AuditEventsListPagination",
+        "type": "object"
+      },
+      "AuditEventsListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/AuditEventsListPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "AuditEventsListResponse",
+        "type": "object"
+      },
       "CIProvider": {
         "enum": [
           "github_actions",
@@ -1590,6 +1752,27 @@
         },
         "title": "HTTPValidationError",
         "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "enum": [
+          "ok",
+          "degraded",
+          "unavailable"
+        ],
+        "title": "HealthStatus",
+        "type": "string"
       },
       "IntegratedSourcePlatform": {
         "enum": [
@@ -8112,6 +8295,28 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/health": {
+      "get": {
+        "description": "Check the health status of the API and database connectivity",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health check",
+        "tags": [
+          "system"
+        ]
+      }
+    },
     "/logs/search": {
       "post": {
         "description": "Search and retrieve logs across user's repositories.\n\nSupports these modes:\n- Full-text search: provide `query`; each namespace uses BM25 relevance and offset\n  pagination. Canonical `order` and line cursors are rejected; deprecated\n  `order_by` is ignored.\n- Log reading: omit `query` and provide `job_id` or `vm_id`; results use cursor\n  pagination ordered by `line_number.asc` (default) or `line_number.desc`.\n  Replay `next_cursor` as `cursor` with the same `order`.\n- Resume tokens: set logs_protocol=2 for job reads. Pass next_resume_token\n  back as resume_token with the same order and filters. The token remembers\n  the execution, log source, and last line confirmed in storage. GitHub\n  fallback continues to use next_cursor/cursor. Older clients omit logs_protocol.\n- Repository reads: omit `query`, execution IDs, and cursors; results use\n  timestamp order within each namespace and bounded offset pagination.\n  Results are concatenated in repository order and, within each repository,\n  in month order, preserving each query's row order without a global sort.\n  This also applies to full-text searches. No line order or cursor is returned\n  for repository reads.\n- Searches read monthly namespaces. Missing namespaces are empty; backend failures return\n  503. Full-text search and repository reads cap offset plus limit at 10000.\n\nRepository filtering:\n- `organization_id`: Search repositories in one Avrea organization\n- `repository_ids`: Search specific repositories by Avrea ID (rep-xxx format)\n- No organization or repository filter: Search all repositories the user can access\n\nA `vm_id` without `job_id` must include `repository_ids` so authorization\ndoes not expand to the user's full cross-organization repository set.\n\nResults are filtered to only include logs from repositories the user has access to.",
@@ -8505,6 +8710,194 @@
         "summary": "Get Access Token",
         "tags": [
           "access-tokens"
+        ]
+      }
+    },
+    "/orgs/{org_id}/audit-events": {
+      "get": {
+        "description": "List audit events for an organization.\n\nVisible to organization admins (admin). Uses cursor-based pagination\nkeyed on (created_at DESC, event_id DESC).",
+        "operationId": "list_org_audit_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resource_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditEventAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor_user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor for next page",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor for next page",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Sort order (only created_at.desc supported)",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "created_at.desc",
+              "description": "Sort order (only created_at.desc supported)",
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventsListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Org Audit Events",
+        "tags": [
+          "audit-events"
         ]
       }
     },

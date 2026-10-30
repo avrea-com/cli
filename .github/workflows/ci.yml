@@ -165,6 +165,7 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_public_mirrors --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_git_mirrors --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_clone --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_audit_health --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py -q
         env:
           AVR_GO_BINARY: build/go/avr.exe
@@ -201,6 +202,7 @@ jobs:
             build/go/public-mirror-parity.json
             build/go/git-mirror-parity.json
             build/go/clone-parity.json
+            build/go/audit-health-parity.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error
 

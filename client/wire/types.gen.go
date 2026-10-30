@@ -90,6 +90,75 @@ func (e AiTaskStatus) Valid() bool {
 	}
 }
 
+// Defines values for AuditEventAction.
+const (
+	CREATE    AuditEventAction = "CREATE"
+	DELETE    AuditEventAction = "DELETE"
+	DENY      AuditEventAction = "DENY"
+	DISABLE   AuditEventAction = "DISABLE"
+	ENABLE    AuditEventAction = "ENABLE"
+	ROTATE    AuditEventAction = "ROTATE"
+	SUSPEND   AuditEventAction = "SUSPEND"
+	TRANSFER  AuditEventAction = "TRANSFER"
+	UNSUSPEND AuditEventAction = "UNSUSPEND"
+	UPDATE    AuditEventAction = "UPDATE"
+)
+
+// Valid indicates whether the value is a known member of the AuditEventAction enum.
+func (e AuditEventAction) Valid() bool {
+	switch e {
+	case CREATE:
+		return true
+	case DELETE:
+		return true
+	case DENY:
+		return true
+	case DISABLE:
+		return true
+	case ENABLE:
+		return true
+	case ROTATE:
+		return true
+	case SUSPEND:
+		return true
+	case TRANSFER:
+		return true
+	case UNSUSPEND:
+		return true
+	case UPDATE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditEventActorType.
+const (
+	APIKEY   AuditEventActorType = "API_KEY"
+	EXTERNAL AuditEventActorType = "EXTERNAL"
+	OPERATOR AuditEventActorType = "OPERATOR"
+	SYSTEM   AuditEventActorType = "SYSTEM"
+	USER     AuditEventActorType = "USER"
+)
+
+// Valid indicates whether the value is a known member of the AuditEventActorType enum.
+func (e AuditEventActorType) Valid() bool {
+	switch e {
+	case APIKEY:
+		return true
+	case EXTERNAL:
+		return true
+	case OPERATOR:
+		return true
+	case SYSTEM:
+		return true
+	case USER:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CIProvider.
 const (
 	AvreaCi       CIProvider = "avrea_ci"
@@ -159,6 +228,27 @@ func (e GovernanceHoldReason) Valid() bool {
 	case GroupSuspended:
 		return true
 	case PrincipalSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HealthStatus.
+const (
+	HealthStatusDegraded    HealthStatus = "degraded"
+	HealthStatusOk          HealthStatus = "ok"
+	HealthStatusUnavailable HealthStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the HealthStatus enum.
+func (e HealthStatus) Valid() bool {
+	switch e {
+	case HealthStatusDegraded:
+		return true
+	case HealthStatusOk:
+		return true
+	case HealthStatusUnavailable:
 		return true
 	default:
 		return false
@@ -1654,6 +1744,41 @@ type AnalysisTaskResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// AuditEventAction defines model for AuditEventAction.
+type AuditEventAction string
+
+// AuditEventActorType defines model for AuditEventActorType.
+type AuditEventActorType string
+
+// AuditEventResponse defines model for AuditEventResponse.
+type AuditEventResponse struct {
+	ActingApiKeyId       nullable.Nullable[string] `json:"acting_api_key_id"`
+	Action               AuditEventAction          `json:"action"`
+	ActorType            AuditEventActorType       `json:"actor_type"`
+	ActorUserId          nullable.Nullable[string] `json:"actor_user_id"`
+	ClientIp             nullable.Nullable[string] `json:"client_ip"`
+	CreatedAt            time.Time                 `json:"created_at"`
+	EventData            map[string]interface{}    `json:"event_data"`
+	EventId              int                       `json:"event_id"`
+	OrganizationId       nullable.Nullable[string] `json:"organization_id"`
+	ResourceId           nullable.Nullable[string] `json:"resource_id"`
+	ResourceType         string                    `json:"resource_type"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// AuditEventsListPagination defines model for AuditEventsListPagination.
+type AuditEventsListPagination struct {
+	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// AuditEventsListResponse defines model for AuditEventsListResponse.
+type AuditEventsListResponse struct {
+	Data                 []AuditEventResponse      `json:"data"`
+	Pagination           AuditEventsListPagination `json:"pagination"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
 // CIProvider defines model for CIProvider.
 type CIProvider string
 
@@ -1927,6 +2052,15 @@ type HTTPValidationError struct {
 	Detail               *[]ValidationError     `json:"detail,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// HealthResponse defines model for HealthResponse.
+type HealthResponse struct {
+	Status               HealthStatus           `json:"status"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// HealthStatus defines model for HealthStatus.
+type HealthStatus string
 
 // IntegratedSourcePlatform defines model for IntegratedSourcePlatform.
 type IntegratedSourcePlatform string
@@ -3242,6 +3376,23 @@ type RevokeAccessTokenParams struct {
 
 // GetAccessTokenParams defines parameters for GetAccessToken.
 type GetAccessTokenParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListOrgAuditEventsParams defines parameters for ListOrgAuditEvents.
+type ListOrgAuditEventsParams struct {
+	ResourceType  *string           `form:"resource_type,omitempty" json:"resource_type,omitempty"`
+	Action        *AuditEventAction `form:"action,omitempty" json:"action,omitempty"`
+	ActorUserId   *string           `form:"actor_user_id,omitempty" json:"actor_user_id,omitempty"`
+	CreatedAfter  *time.Time        `form:"created_after,omitempty" json:"created_after,omitempty"`
+	CreatedBefore *time.Time        `form:"created_before,omitempty" json:"created_before,omitempty"`
+	Limit         *int              `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor for next page
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Order Sort order (only created_at.desc supported)
+	Order        *string `form:"order,omitempty" json:"order,omitempty"`
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -5116,6 +5267,353 @@ func (a AnalysisTaskResponse) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AuditEventResponse. Returns the specified
+// element and whether it was found
+func (a AuditEventResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AuditEventResponse
+func (a *AuditEventResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AuditEventResponse to handle AdditionalProperties
+func (a *AuditEventResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["acting_api_key_id"]; found {
+		err = json.Unmarshal(raw, &a.ActingApiKeyId)
+		if err != nil {
+			return fmt.Errorf("error reading 'acting_api_key_id': %w", err)
+		}
+		delete(object, "acting_api_key_id")
+	}
+
+	if raw, found := object["action"]; found {
+		err = json.Unmarshal(raw, &a.Action)
+		if err != nil {
+			return fmt.Errorf("error reading 'action': %w", err)
+		}
+		delete(object, "action")
+	}
+
+	if raw, found := object["actor_type"]; found {
+		err = json.Unmarshal(raw, &a.ActorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_type': %w", err)
+		}
+		delete(object, "actor_type")
+	}
+
+	if raw, found := object["actor_user_id"]; found {
+		err = json.Unmarshal(raw, &a.ActorUserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'actor_user_id': %w", err)
+		}
+		delete(object, "actor_user_id")
+	}
+
+	if raw, found := object["client_ip"]; found {
+		err = json.Unmarshal(raw, &a.ClientIp)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_ip': %w", err)
+		}
+		delete(object, "client_ip")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["event_data"]; found {
+		err = json.Unmarshal(raw, &a.EventData)
+		if err != nil {
+			return fmt.Errorf("error reading 'event_data': %w", err)
+		}
+		delete(object, "event_data")
+	}
+
+	if raw, found := object["event_id"]; found {
+		err = json.Unmarshal(raw, &a.EventId)
+		if err != nil {
+			return fmt.Errorf("error reading 'event_id': %w", err)
+		}
+		delete(object, "event_id")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["resource_id"]; found {
+		err = json.Unmarshal(raw, &a.ResourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'resource_id': %w", err)
+		}
+		delete(object, "resource_id")
+	}
+
+	if raw, found := object["resource_type"]; found {
+		err = json.Unmarshal(raw, &a.ResourceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'resource_type': %w", err)
+		}
+		delete(object, "resource_type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AuditEventResponse to handle AdditionalProperties
+func (a AuditEventResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["acting_api_key_id"], err = json.Marshal(a.ActingApiKeyId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'acting_api_key_id': %w", err)
+	}
+
+	object["action"], err = json.Marshal(a.Action)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'action': %w", err)
+	}
+
+	object["actor_type"], err = json.Marshal(a.ActorType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'actor_type': %w", err)
+	}
+
+	object["actor_user_id"], err = json.Marshal(a.ActorUserId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'actor_user_id': %w", err)
+	}
+
+	object["client_ip"], err = json.Marshal(a.ClientIp)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'client_ip': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.EventData != nil {
+		object["event_data"], err = json.Marshal(a.EventData)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'event_data': %w", err)
+		}
+	}
+
+	object["event_id"], err = json.Marshal(a.EventId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'event_id': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["resource_id"], err = json.Marshal(a.ResourceId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'resource_id': %w", err)
+	}
+
+	object["resource_type"], err = json.Marshal(a.ResourceType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'resource_type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AuditEventsListPagination. Returns the specified
+// element and whether it was found
+func (a AuditEventsListPagination) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AuditEventsListPagination
+func (a *AuditEventsListPagination) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AuditEventsListPagination to handle AdditionalProperties
+func (a *AuditEventsListPagination) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.NextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_cursor': %w", err)
+		}
+		delete(object, "next_cursor")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AuditEventsListPagination to handle AdditionalProperties
+func (a AuditEventsListPagination) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NextCursor != nil {
+		object["next_cursor"], err = json.Marshal(a.NextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for AuditEventsListResponse. Returns the specified
+// element and whether it was found
+func (a AuditEventsListResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AuditEventsListResponse
+func (a *AuditEventsListResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AuditEventsListResponse to handle AdditionalProperties
+func (a *AuditEventsListResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["pagination"]; found {
+		err = json.Unmarshal(raw, &a.Pagination)
+		if err != nil {
+			return fmt.Errorf("error reading 'pagination': %w", err)
+		}
+		delete(object, "pagination")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AuditEventsListResponse to handle AdditionalProperties
+func (a AuditEventsListResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -7834,6 +8332,72 @@ func (a HTTPValidationError) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'detail': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for HealthResponse. Returns the specified
+// element and whether it was found
+func (a HealthResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for HealthResponse
+func (a *HealthResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for HealthResponse to handle AdditionalProperties
+func (a *HealthResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for HealthResponse to handle AdditionalProperties
+func (a HealthResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
