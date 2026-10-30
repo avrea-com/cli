@@ -7,6 +7,7 @@ usage are emitted for explicit review, and executable suites remain necessary.
 from pathlib import Path
 import argparse
 import json
+import subprocess
 
 
 def flatten(node):
@@ -104,12 +105,21 @@ def audit(python, go):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--inventory", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--inventory")
+    source.add_argument("--go-tool")
     parser.add_argument("--report", default="build/go/command-surface-audit.json")
     args = parser.parse_args()
+    if args.go_tool:
+        inventory = subprocess.check_output([args.go_tool, "run", "./scripts/command_inventory"], text=True)
+        inventory_path = Path(args.report).parent / "go-command-inventory.json"
+        inventory_path.parent.mkdir(parents=True, exist_ok=True)
+        inventory_path.write_text(inventory)
+    else:
+        inventory = Path(args.inventory).read_text()
     report = audit(
         json.loads(Path("docs/go-python-command-contract.json").read_text()),
-        json.loads(Path(args.inventory).read_text()),
+        json.loads(inventory),
     )
     target = Path(args.report)
     target.parent.mkdir(parents=True, exist_ok=True)

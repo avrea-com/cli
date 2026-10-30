@@ -134,6 +134,8 @@ jobs:
         with:
           version-file: pyproject.toml
       - run: uv run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --check
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool go
       - run: go test -race ./...
       - run: go build -trimpath -o build/go/avr.exe ./cmd/avr
       - run: uv run --python 3.14 --frozen --extra dev python scripts/go_notices.py
@@ -179,8 +181,9 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_tunnel --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_bootstrap --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_aliases --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_internal_docs --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr.exe
-      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py -q
+      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py -q
         env:
           AVR_GO_BINARY: build/go/avr.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
