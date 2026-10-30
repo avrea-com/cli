@@ -133,6 +133,9 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version-file: pyproject.toml
+      - name: Install completion test shells
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y fish zsh
       - run: uv run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --check
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool go
@@ -183,8 +186,9 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_aliases --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_internal_docs --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_help --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_completion --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr.exe
-      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py -q
+      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py scripts/test_go_completion.py -q
         env:
           AVR_GO_BINARY: build/go/avr.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -220,6 +224,8 @@ jobs:
             build/go/public-mirror-parity.json
             build/go/git-mirror-parity.json
             build/go/clone-parity.json
+            build/go/help-parity.json
+            build/go/completion-parity.json
             build/go/audit-health-parity.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error

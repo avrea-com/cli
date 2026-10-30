@@ -231,17 +231,21 @@ func NewAuth(deps Dependencies) *cobra.Command {
 func Execute(ctx context.Context, args []string, deps Dependencies) int {
 	started := time.Now()
 	d := deps.defaults()
-	if d.timingEnabled() {
+	if d.timingEnabled() && d.Getenv("_AVR_COMPLETE") == "" {
 		defer func() {
 			_, _ = fmt.Fprintf(d.Err, "avr-timing {\"kind\":\"command\",\"duration_ms\":%.6f}\n", float64(time.Since(started))/float64(time.Millisecond))
 		}()
 	}
 	root := NewRoot(d) //nolint:contextcheck // Cobra passes ctx through ExecuteContext to each RunE.
-	return ExecuteRoot(ctx, root, args, d.Err)
+	return ExecuteRoot(ctx, root, args, d.Err, d)
 }
 
 // ExecuteRoot applies the shared exit-code contract to a composed command tree.
-func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr io.Writer) int {
+// Optional dependencies provide environment lookup for shell completion.
+func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr io.Writer, dependencies ...Dependencies) int {
+	if code, handled := executeCompletion(root, dependencies); handled {
+		return code
+	}
 	if stderr == nil {
 		stderr = os.Stderr
 	}
