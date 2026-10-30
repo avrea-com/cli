@@ -346,6 +346,8 @@ def run(executable, scenario, root, host):
             for item in candidates:
                 if item.is_file():
                     data = item.read_bytes()
+                    if scenario.get("normalize_file_home"):
+                        data = data.replace(directory.encode(), b"<home>")
                     captured[item.relative_to(home).as_posix()] = {
                         "size": len(data),
                         "sha256": hashlib.sha256(data).hexdigest(),
