@@ -186,3 +186,18 @@ func (s *Store) Clear(host string) (bool, error) {
 	}
 	return true, s.Write(h)
 }
+
+// ClearDefaultOrg removes only the active host's stored organization override.
+// Tokens, unknown fields, host ordering and the selected default host survive.
+func (s *Store) ClearDefaultOrg(host string) (bool, error) {
+	h := s.Read()
+	entry, ok := h.Entries[host].(map[string]any)
+	if !ok {
+		return false, nil
+	}
+	if _, ok = entry["default_org"]; !ok {
+		return false, nil
+	}
+	delete(entry, "default_org")
+	return true, s.Write(h)
+}
