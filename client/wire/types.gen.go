@@ -68,22 +68,22 @@ func (e AggregateWorkflowPlatform) Valid() bool {
 
 // Defines values for AiTaskStatus.
 const (
-	COMPLETED AiTaskStatus = "COMPLETED"
-	FAILED    AiTaskStatus = "FAILED"
-	PENDING   AiTaskStatus = "PENDING"
-	RUNNING   AiTaskStatus = "RUNNING"
+	AiTaskStatusCOMPLETED AiTaskStatus = "COMPLETED"
+	AiTaskStatusFAILED    AiTaskStatus = "FAILED"
+	AiTaskStatusPENDING   AiTaskStatus = "PENDING"
+	AiTaskStatusRUNNING   AiTaskStatus = "RUNNING"
 )
 
 // Valid indicates whether the value is a known member of the AiTaskStatus enum.
 func (e AiTaskStatus) Valid() bool {
 	switch e {
-	case COMPLETED:
+	case AiTaskStatusCOMPLETED:
 		return true
-	case FAILED:
+	case AiTaskStatusFAILED:
 		return true
-	case PENDING:
+	case AiTaskStatusPENDING:
 		return true
-	case RUNNING:
+	case AiTaskStatusRUNNING:
 		return true
 	default:
 		return false
@@ -153,6 +153,54 @@ func (e AuditEventActorType) Valid() bool {
 	case SYSTEM:
 		return true
 	case USER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingCustomerType.
+const (
+	Company  BillingCustomerType = "company"
+	Consumer BillingCustomerType = "consumer"
+)
+
+// Valid indicates whether the value is a known member of the BillingCustomerType enum.
+func (e BillingCustomerType) Valid() bool {
+	switch e {
+	case Company:
+		return true
+	case Consumer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingInvoiceStatus.
+const (
+	BillingInvoiceStatusDRAFT     BillingInvoiceStatus = "DRAFT"
+	BillingInvoiceStatusESTIMATED BillingInvoiceStatus = "ESTIMATED"
+	BillingInvoiceStatusFAILED    BillingInvoiceStatus = "FAILED"
+	BillingInvoiceStatusPAID      BillingInvoiceStatus = "PAID"
+	BillingInvoiceStatusPENDING   BillingInvoiceStatus = "PENDING"
+	BillingInvoiceStatusVOID      BillingInvoiceStatus = "VOID"
+)
+
+// Valid indicates whether the value is a known member of the BillingInvoiceStatus enum.
+func (e BillingInvoiceStatus) Valid() bool {
+	switch e {
+	case BillingInvoiceStatusDRAFT:
+		return true
+	case BillingInvoiceStatusESTIMATED:
+		return true
+	case BillingInvoiceStatusFAILED:
+		return true
+	case BillingInvoiceStatusPAID:
+		return true
+	case BillingInvoiceStatusPENDING:
+		return true
+	case BillingInvoiceStatusVOID:
 		return true
 	default:
 		return false
@@ -1542,6 +1590,16 @@ func (e ListSettingsSchemaParamsScope) Valid() bool {
 	}
 }
 
+// APIResponseBillingSettingsResponse defines model for APIResponse_BillingSettingsResponse_.
+type APIResponseBillingSettingsResponse struct {
+	Data BillingSettingsResponse `json:"data"`
+}
+
+// APIResponseBillingSummaryResponse defines model for APIResponse_BillingSummaryResponse_.
+type APIResponseBillingSummaryResponse struct {
+	Data BillingSummaryResponse `json:"data"`
+}
+
 // APIResponseCancelWorkflowRunResponse defines model for APIResponse_CancelWorkflowRunResponse_.
 type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
@@ -1569,6 +1627,11 @@ type APIResponseDispatchWorkflowResponse struct {
 type APIResponseEmailDomainResponse struct {
 	// Data Response model for an email domain.
 	Data EmailDomainResponse `json:"data"`
+}
+
+// APIResponseInvoiceResponse defines model for APIResponse_InvoiceResponse_.
+type APIResponseInvoiceResponse struct {
+	Data InvoiceResponse `json:"data"`
 }
 
 // APIResponseJobResponse defines model for APIResponse_JobResponse_.
@@ -1777,6 +1840,50 @@ type AuditEventsListResponse struct {
 	Data                 []AuditEventResponse      `json:"data"`
 	Pagination           AuditEventsListPagination `json:"pagination"`
 	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// BillingAddress defines model for BillingAddress.
+type BillingAddress struct {
+	City       nullable.Nullable[string] `json:"city,omitempty"`
+	Country    nullable.Nullable[string] `json:"country,omitempty"`
+	Line1      nullable.Nullable[string] `json:"line1,omitempty"`
+	Line2      nullable.Nullable[string] `json:"line2,omitempty"`
+	PostalCode nullable.Nullable[string] `json:"postal_code,omitempty"`
+}
+
+// BillingCustomerType defines model for BillingCustomerType.
+type BillingCustomerType string
+
+// BillingInvoiceStatus defines model for BillingInvoiceStatus.
+type BillingInvoiceStatus string
+
+// BillingSettingsResponse defines model for BillingSettingsResponse.
+type BillingSettingsResponse struct {
+	BillingAddress       nullable.Nullable[BillingAddress]      `json:"billing_address,omitempty"`
+	BillingEmails        nullable.Nullable[[]string]            `json:"billing_emails,omitempty"`
+	CompanyName          nullable.Nullable[string]              `json:"company_name,omitempty"`
+	ContactPersonName    nullable.Nullable[string]              `json:"contact_person_name,omitempty"`
+	CustomerType         nullable.Nullable[BillingCustomerType] `json:"customer_type,omitempty"`
+	MetronomeCustomerId  nullable.Nullable[string]              `json:"metronome_customer_id,omitempty"`
+	StripeCustomerId     nullable.Nullable[string]              `json:"stripe_customer_id,omitempty"`
+	TaxId                nullable.Nullable[string]              `json:"tax_id,omitempty"`
+	TaxIdStatus          nullable.Nullable[string]              `json:"tax_id_status,omitempty"`
+	AdditionalProperties map[string]interface{}                 `json:"-"`
+}
+
+// BillingSummaryResponse defines model for BillingSummaryResponse.
+type BillingSummaryResponse struct {
+	BillingEmails nullable.Nullable[[]string] `json:"billing_emails,omitempty"`
+
+	// CreditHoldActive Whether the scheduler is currently blocking new workflows because the organization's monthly credit hold is enforced.
+	CreditHoldActive     *bool                                    `json:"credit_hold_active,omitempty"`
+	CurrentPeriodUsage   nullable.Nullable[UsageSummaryResponse]  `json:"current_period_usage,omitempty"`
+	DefaultPaymentMethod nullable.Nullable[PaymentMethodResponse] `json:"default_payment_method,omitempty"`
+	HasBilling           bool                                     `json:"has_billing"`
+
+	// UnlimitedWorkflowAccess Whether an operator has granted unlimited workflow access. Organizations with this access do not require a payment method.
+	UnlimitedWorkflowAccess *bool                  `json:"unlimited_workflow_access,omitempty"`
+	AdditionalProperties    map[string]interface{} `json:"-"`
 }
 
 // CIProvider defines model for CIProvider.
@@ -2064,6 +2171,37 @@ type HealthStatus string
 
 // IntegratedSourcePlatform defines model for IntegratedSourcePlatform.
 type IntegratedSourcePlatform string
+
+// InvoiceResponse defines model for InvoiceResponse.
+type InvoiceResponse struct {
+	CreatedAt            time.Time                 `json:"created_at"`
+	Currency             string                    `json:"currency"`
+	HasPdf               bool                      `json:"has_pdf"`
+	HasReceiptPdf        bool                      `json:"has_receipt_pdf"`
+	InvoiceId            string                    `json:"invoice_id"`
+	InvoiceNumber        nullable.Nullable[int]    `json:"invoice_number,omitempty"`
+	LineItems            *[]map[string]interface{} `json:"line_items,omitempty"`
+	PeriodEnd            time.Time                 `json:"period_end"`
+	PeriodStart          time.Time                 `json:"period_start"`
+	Status               BillingInvoiceStatus      `json:"status"`
+	SubtotalCents        int                       `json:"subtotal_cents"`
+	TaxCents             int                       `json:"tax_cents"`
+	TotalCents           int                       `json:"total_cents"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// InvoicesListResponse defines model for InvoicesListResponse.
+type InvoicesListResponse struct {
+	Data                 []InvoiceResponse      `json:"data"`
+	Pagination           InvoicesPagination     `json:"pagination"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// InvoicesPagination defines model for InvoicesPagination.
+type InvoicesPagination struct {
+	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
 
 // JobAggregateBucket defines model for JobAggregateBucket.
 type JobAggregateBucket struct {
@@ -2625,6 +2763,14 @@ type PagedResponseOrganizationMemberResponse struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponsePaymentMethodResponse defines model for PagedResponse_PaymentMethodResponse_.
+type PagedResponsePaymentMethodResponse struct {
+	Data []PaymentMethodResponse `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PagedResponseUserInstallationItem defines model for PagedResponse_UserInstallationItem_.
 type PagedResponseUserInstallationItem struct {
 	Data []UserInstallationItem `json:"data"`
@@ -2644,6 +2790,17 @@ type PagedResponseWorkflowArtifactView struct {
 // PaginationMeta Pagination metadata. “next_cursor“ is None on the final page.
 type PaginationMeta struct {
 	NextCursor nullable.Nullable[string] `json:"next_cursor,omitempty"`
+}
+
+// PaymentMethodResponse defines model for PaymentMethodResponse.
+type PaymentMethodResponse struct {
+	CardBrand            nullable.Nullable[string] `json:"card_brand,omitempty"`
+	CardExpMonth         nullable.Nullable[int]    `json:"card_exp_month,omitempty"`
+	CardExpYear          nullable.Nullable[int]    `json:"card_exp_year,omitempty"`
+	CardLast4            nullable.Nullable[string] `json:"card_last4,omitempty"`
+	IsDefault            *bool                     `json:"is_default,omitempty"`
+	PaymentMethodId      string                    `json:"payment_method_id"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
 // Platform defines model for Platform.
@@ -3055,6 +3212,16 @@ type StepAggregation struct {
 	AdditionalProperties                map[string]interface{}     `json:"-"`
 }
 
+// UsageSummaryResponse defines model for UsageSummaryResponse.
+type UsageSummaryResponse struct {
+	BreakdownBySpec      map[string]map[string]interface{} `json:"breakdown_by_spec"`
+	PeriodEnd            time.Time                         `json:"period_end"`
+	PeriodStart          time.Time                         `json:"period_start"`
+	TotalComputeSeconds  float64                           `json:"total_compute_seconds"`
+	TotalJobs            int                               `json:"total_jobs"`
+	AdditionalProperties map[string]interface{}            `json:"-"`
+}
+
 // UserInstallationItem Installation summary for user's installations list.
 type UserInstallationItem struct {
 	CreatedAt              time.Time                 `json:"created_at"`
@@ -3393,6 +3560,35 @@ type ListOrgAuditEventsParams struct {
 
 	// Order Sort order (only created_at.desc supported)
 	Order        *string `form:"order,omitempty" json:"order,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetBillingSummaryParams defines parameters for GetBillingSummary.
+type GetBillingSummaryParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListInvoicesParams defines parameters for ListInvoices.
+type ListInvoicesParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor from a previous response.
+	Cursor       *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetInvoiceParams defines parameters for GetInvoice.
+type GetInvoiceParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListPaymentMethodsParams defines parameters for ListPaymentMethods.
+type ListPaymentMethodsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetBillingSettingsParams defines parameters for GetBillingSettings.
+type GetBillingSettingsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -5614,6 +5810,335 @@ func (a AuditEventsListResponse) MarshalJSON() ([]byte, error) {
 	object["pagination"], err = json.Marshal(a.Pagination)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BillingSettingsResponse. Returns the specified
+// element and whether it was found
+func (a BillingSettingsResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BillingSettingsResponse
+func (a *BillingSettingsResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BillingSettingsResponse to handle AdditionalProperties
+func (a *BillingSettingsResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["billing_address"]; found {
+		err = json.Unmarshal(raw, &a.BillingAddress)
+		if err != nil {
+			return fmt.Errorf("error reading 'billing_address': %w", err)
+		}
+		delete(object, "billing_address")
+	}
+
+	if raw, found := object["billing_emails"]; found {
+		err = json.Unmarshal(raw, &a.BillingEmails)
+		if err != nil {
+			return fmt.Errorf("error reading 'billing_emails': %w", err)
+		}
+		delete(object, "billing_emails")
+	}
+
+	if raw, found := object["company_name"]; found {
+		err = json.Unmarshal(raw, &a.CompanyName)
+		if err != nil {
+			return fmt.Errorf("error reading 'company_name': %w", err)
+		}
+		delete(object, "company_name")
+	}
+
+	if raw, found := object["contact_person_name"]; found {
+		err = json.Unmarshal(raw, &a.ContactPersonName)
+		if err != nil {
+			return fmt.Errorf("error reading 'contact_person_name': %w", err)
+		}
+		delete(object, "contact_person_name")
+	}
+
+	if raw, found := object["customer_type"]; found {
+		err = json.Unmarshal(raw, &a.CustomerType)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_type': %w", err)
+		}
+		delete(object, "customer_type")
+	}
+
+	if raw, found := object["metronome_customer_id"]; found {
+		err = json.Unmarshal(raw, &a.MetronomeCustomerId)
+		if err != nil {
+			return fmt.Errorf("error reading 'metronome_customer_id': %w", err)
+		}
+		delete(object, "metronome_customer_id")
+	}
+
+	if raw, found := object["stripe_customer_id"]; found {
+		err = json.Unmarshal(raw, &a.StripeCustomerId)
+		if err != nil {
+			return fmt.Errorf("error reading 'stripe_customer_id': %w", err)
+		}
+		delete(object, "stripe_customer_id")
+	}
+
+	if raw, found := object["tax_id"]; found {
+		err = json.Unmarshal(raw, &a.TaxId)
+		if err != nil {
+			return fmt.Errorf("error reading 'tax_id': %w", err)
+		}
+		delete(object, "tax_id")
+	}
+
+	if raw, found := object["tax_id_status"]; found {
+		err = json.Unmarshal(raw, &a.TaxIdStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'tax_id_status': %w", err)
+		}
+		delete(object, "tax_id_status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BillingSettingsResponse to handle AdditionalProperties
+func (a BillingSettingsResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BillingAddress != nil {
+		object["billing_address"], err = json.Marshal(a.BillingAddress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'billing_address': %w", err)
+		}
+	}
+
+	if a.BillingEmails != nil {
+		object["billing_emails"], err = json.Marshal(a.BillingEmails)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'billing_emails': %w", err)
+		}
+	}
+
+	if a.CompanyName != nil {
+		object["company_name"], err = json.Marshal(a.CompanyName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'company_name': %w", err)
+		}
+	}
+
+	if a.ContactPersonName != nil {
+		object["contact_person_name"], err = json.Marshal(a.ContactPersonName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'contact_person_name': %w", err)
+		}
+	}
+
+	if a.CustomerType != nil {
+		object["customer_type"], err = json.Marshal(a.CustomerType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'customer_type': %w", err)
+		}
+	}
+
+	if a.MetronomeCustomerId != nil {
+		object["metronome_customer_id"], err = json.Marshal(a.MetronomeCustomerId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metronome_customer_id': %w", err)
+		}
+	}
+
+	if a.StripeCustomerId != nil {
+		object["stripe_customer_id"], err = json.Marshal(a.StripeCustomerId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stripe_customer_id': %w", err)
+		}
+	}
+
+	if a.TaxId != nil {
+		object["tax_id"], err = json.Marshal(a.TaxId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tax_id': %w", err)
+		}
+	}
+
+	if a.TaxIdStatus != nil {
+		object["tax_id_status"], err = json.Marshal(a.TaxIdStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tax_id_status': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BillingSummaryResponse. Returns the specified
+// element and whether it was found
+func (a BillingSummaryResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BillingSummaryResponse
+func (a *BillingSummaryResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BillingSummaryResponse to handle AdditionalProperties
+func (a *BillingSummaryResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["billing_emails"]; found {
+		err = json.Unmarshal(raw, &a.BillingEmails)
+		if err != nil {
+			return fmt.Errorf("error reading 'billing_emails': %w", err)
+		}
+		delete(object, "billing_emails")
+	}
+
+	if raw, found := object["credit_hold_active"]; found {
+		err = json.Unmarshal(raw, &a.CreditHoldActive)
+		if err != nil {
+			return fmt.Errorf("error reading 'credit_hold_active': %w", err)
+		}
+		delete(object, "credit_hold_active")
+	}
+
+	if raw, found := object["current_period_usage"]; found {
+		err = json.Unmarshal(raw, &a.CurrentPeriodUsage)
+		if err != nil {
+			return fmt.Errorf("error reading 'current_period_usage': %w", err)
+		}
+		delete(object, "current_period_usage")
+	}
+
+	if raw, found := object["default_payment_method"]; found {
+		err = json.Unmarshal(raw, &a.DefaultPaymentMethod)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_payment_method': %w", err)
+		}
+		delete(object, "default_payment_method")
+	}
+
+	if raw, found := object["has_billing"]; found {
+		err = json.Unmarshal(raw, &a.HasBilling)
+		if err != nil {
+			return fmt.Errorf("error reading 'has_billing': %w", err)
+		}
+		delete(object, "has_billing")
+	}
+
+	if raw, found := object["unlimited_workflow_access"]; found {
+		err = json.Unmarshal(raw, &a.UnlimitedWorkflowAccess)
+		if err != nil {
+			return fmt.Errorf("error reading 'unlimited_workflow_access': %w", err)
+		}
+		delete(object, "unlimited_workflow_access")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BillingSummaryResponse to handle AdditionalProperties
+func (a BillingSummaryResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BillingEmails != nil {
+		object["billing_emails"], err = json.Marshal(a.BillingEmails)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'billing_emails': %w", err)
+		}
+	}
+
+	if a.CreditHoldActive != nil {
+		object["credit_hold_active"], err = json.Marshal(a.CreditHoldActive)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'credit_hold_active': %w", err)
+		}
+	}
+
+	if a.CurrentPeriodUsage != nil {
+		object["current_period_usage"], err = json.Marshal(a.CurrentPeriodUsage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'current_period_usage': %w", err)
+		}
+	}
+
+	if a.DefaultPaymentMethod != nil {
+		object["default_payment_method"], err = json.Marshal(a.DefaultPaymentMethod)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_payment_method': %w", err)
+		}
+	}
+
+	object["has_billing"], err = json.Marshal(a.HasBilling)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'has_billing': %w", err)
+	}
+
+	if a.UnlimitedWorkflowAccess != nil {
+		object["unlimited_workflow_access"], err = json.Marshal(a.UnlimitedWorkflowAccess)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unlimited_workflow_access': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -8398,6 +8923,381 @@ func (a HealthResponse) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for InvoiceResponse. Returns the specified
+// element and whether it was found
+func (a InvoiceResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for InvoiceResponse
+func (a *InvoiceResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for InvoiceResponse to handle AdditionalProperties
+func (a *InvoiceResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["currency"]; found {
+		err = json.Unmarshal(raw, &a.Currency)
+		if err != nil {
+			return fmt.Errorf("error reading 'currency': %w", err)
+		}
+		delete(object, "currency")
+	}
+
+	if raw, found := object["has_pdf"]; found {
+		err = json.Unmarshal(raw, &a.HasPdf)
+		if err != nil {
+			return fmt.Errorf("error reading 'has_pdf': %w", err)
+		}
+		delete(object, "has_pdf")
+	}
+
+	if raw, found := object["has_receipt_pdf"]; found {
+		err = json.Unmarshal(raw, &a.HasReceiptPdf)
+		if err != nil {
+			return fmt.Errorf("error reading 'has_receipt_pdf': %w", err)
+		}
+		delete(object, "has_receipt_pdf")
+	}
+
+	if raw, found := object["invoice_id"]; found {
+		err = json.Unmarshal(raw, &a.InvoiceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'invoice_id': %w", err)
+		}
+		delete(object, "invoice_id")
+	}
+
+	if raw, found := object["invoice_number"]; found {
+		err = json.Unmarshal(raw, &a.InvoiceNumber)
+		if err != nil {
+			return fmt.Errorf("error reading 'invoice_number': %w", err)
+		}
+		delete(object, "invoice_number")
+	}
+
+	if raw, found := object["line_items"]; found {
+		err = json.Unmarshal(raw, &a.LineItems)
+		if err != nil {
+			return fmt.Errorf("error reading 'line_items': %w", err)
+		}
+		delete(object, "line_items")
+	}
+
+	if raw, found := object["period_end"]; found {
+		err = json.Unmarshal(raw, &a.PeriodEnd)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_end': %w", err)
+		}
+		delete(object, "period_end")
+	}
+
+	if raw, found := object["period_start"]; found {
+		err = json.Unmarshal(raw, &a.PeriodStart)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_start': %w", err)
+		}
+		delete(object, "period_start")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["subtotal_cents"]; found {
+		err = json.Unmarshal(raw, &a.SubtotalCents)
+		if err != nil {
+			return fmt.Errorf("error reading 'subtotal_cents': %w", err)
+		}
+		delete(object, "subtotal_cents")
+	}
+
+	if raw, found := object["tax_cents"]; found {
+		err = json.Unmarshal(raw, &a.TaxCents)
+		if err != nil {
+			return fmt.Errorf("error reading 'tax_cents': %w", err)
+		}
+		delete(object, "tax_cents")
+	}
+
+	if raw, found := object["total_cents"]; found {
+		err = json.Unmarshal(raw, &a.TotalCents)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_cents': %w", err)
+		}
+		delete(object, "total_cents")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for InvoiceResponse to handle AdditionalProperties
+func (a InvoiceResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["currency"], err = json.Marshal(a.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'currency': %w", err)
+	}
+
+	object["has_pdf"], err = json.Marshal(a.HasPdf)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'has_pdf': %w", err)
+	}
+
+	object["has_receipt_pdf"], err = json.Marshal(a.HasReceiptPdf)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'has_receipt_pdf': %w", err)
+	}
+
+	object["invoice_id"], err = json.Marshal(a.InvoiceId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'invoice_id': %w", err)
+	}
+
+	if a.InvoiceNumber != nil {
+		object["invoice_number"], err = json.Marshal(a.InvoiceNumber)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'invoice_number': %w", err)
+		}
+	}
+
+	if a.LineItems != nil {
+		object["line_items"], err = json.Marshal(a.LineItems)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'line_items': %w", err)
+		}
+	}
+
+	object["period_end"], err = json.Marshal(a.PeriodEnd)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_end': %w", err)
+	}
+
+	object["period_start"], err = json.Marshal(a.PeriodStart)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_start': %w", err)
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["subtotal_cents"], err = json.Marshal(a.SubtotalCents)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'subtotal_cents': %w", err)
+	}
+
+	object["tax_cents"], err = json.Marshal(a.TaxCents)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tax_cents': %w", err)
+	}
+
+	object["total_cents"], err = json.Marshal(a.TotalCents)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_cents': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for InvoicesListResponse. Returns the specified
+// element and whether it was found
+func (a InvoicesListResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for InvoicesListResponse
+func (a *InvoicesListResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for InvoicesListResponse to handle AdditionalProperties
+func (a *InvoicesListResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["pagination"]; found {
+		err = json.Unmarshal(raw, &a.Pagination)
+		if err != nil {
+			return fmt.Errorf("error reading 'pagination': %w", err)
+		}
+		delete(object, "pagination")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for InvoicesListResponse to handle AdditionalProperties
+func (a InvoicesListResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for InvoicesPagination. Returns the specified
+// element and whether it was found
+func (a InvoicesPagination) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for InvoicesPagination
+func (a *InvoicesPagination) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for InvoicesPagination to handle AdditionalProperties
+func (a *InvoicesPagination) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.NextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_cursor': %w", err)
+		}
+		delete(object, "next_cursor")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for InvoicesPagination to handle AdditionalProperties
+func (a InvoicesPagination) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NextCursor != nil {
+		object["next_cursor"], err = json.Marshal(a.NextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -13947,6 +14847,147 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for PaymentMethodResponse. Returns the specified
+// element and whether it was found
+func (a PaymentMethodResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PaymentMethodResponse
+func (a *PaymentMethodResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PaymentMethodResponse to handle AdditionalProperties
+func (a *PaymentMethodResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["card_brand"]; found {
+		err = json.Unmarshal(raw, &a.CardBrand)
+		if err != nil {
+			return fmt.Errorf("error reading 'card_brand': %w", err)
+		}
+		delete(object, "card_brand")
+	}
+
+	if raw, found := object["card_exp_month"]; found {
+		err = json.Unmarshal(raw, &a.CardExpMonth)
+		if err != nil {
+			return fmt.Errorf("error reading 'card_exp_month': %w", err)
+		}
+		delete(object, "card_exp_month")
+	}
+
+	if raw, found := object["card_exp_year"]; found {
+		err = json.Unmarshal(raw, &a.CardExpYear)
+		if err != nil {
+			return fmt.Errorf("error reading 'card_exp_year': %w", err)
+		}
+		delete(object, "card_exp_year")
+	}
+
+	if raw, found := object["card_last4"]; found {
+		err = json.Unmarshal(raw, &a.CardLast4)
+		if err != nil {
+			return fmt.Errorf("error reading 'card_last4': %w", err)
+		}
+		delete(object, "card_last4")
+	}
+
+	if raw, found := object["is_default"]; found {
+		err = json.Unmarshal(raw, &a.IsDefault)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_default': %w", err)
+		}
+		delete(object, "is_default")
+	}
+
+	if raw, found := object["payment_method_id"]; found {
+		err = json.Unmarshal(raw, &a.PaymentMethodId)
+		if err != nil {
+			return fmt.Errorf("error reading 'payment_method_id': %w", err)
+		}
+		delete(object, "payment_method_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PaymentMethodResponse to handle AdditionalProperties
+func (a PaymentMethodResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CardBrand != nil {
+		object["card_brand"], err = json.Marshal(a.CardBrand)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'card_brand': %w", err)
+		}
+	}
+
+	if a.CardExpMonth != nil {
+		object["card_exp_month"], err = json.Marshal(a.CardExpMonth)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'card_exp_month': %w", err)
+		}
+	}
+
+	if a.CardExpYear != nil {
+		object["card_exp_year"], err = json.Marshal(a.CardExpYear)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'card_exp_year': %w", err)
+		}
+	}
+
+	if a.CardLast4 != nil {
+		object["card_last4"], err = json.Marshal(a.CardLast4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'card_last4': %w", err)
+		}
+	}
+
+	if a.IsDefault != nil {
+		object["is_default"], err = json.Marshal(a.IsDefault)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_default': %w", err)
+		}
+	}
+
+	object["payment_method_id"], err = json.Marshal(a.PaymentMethodId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'payment_method_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for PublicMirrorRequestResource. Returns the specified
 // element and whether it was found
 func (a PublicMirrorRequestResource) Get(fieldName string) (value interface{}, found bool) {
@@ -17221,6 +18262,126 @@ func (a StepAggregation) MarshalJSON() ([]byte, error) {
 	object["total_duration_seconds"], err = json.Marshal(a.TotalDurationSeconds)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'total_duration_seconds': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for UsageSummaryResponse. Returns the specified
+// element and whether it was found
+func (a UsageSummaryResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for UsageSummaryResponse
+func (a *UsageSummaryResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for UsageSummaryResponse to handle AdditionalProperties
+func (a *UsageSummaryResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["breakdown_by_spec"]; found {
+		err = json.Unmarshal(raw, &a.BreakdownBySpec)
+		if err != nil {
+			return fmt.Errorf("error reading 'breakdown_by_spec': %w", err)
+		}
+		delete(object, "breakdown_by_spec")
+	}
+
+	if raw, found := object["period_end"]; found {
+		err = json.Unmarshal(raw, &a.PeriodEnd)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_end': %w", err)
+		}
+		delete(object, "period_end")
+	}
+
+	if raw, found := object["period_start"]; found {
+		err = json.Unmarshal(raw, &a.PeriodStart)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_start': %w", err)
+		}
+		delete(object, "period_start")
+	}
+
+	if raw, found := object["total_compute_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TotalComputeSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_compute_seconds': %w", err)
+		}
+		delete(object, "total_compute_seconds")
+	}
+
+	if raw, found := object["total_jobs"]; found {
+		err = json.Unmarshal(raw, &a.TotalJobs)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_jobs': %w", err)
+		}
+		delete(object, "total_jobs")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for UsageSummaryResponse to handle AdditionalProperties
+func (a UsageSummaryResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BreakdownBySpec != nil {
+		object["breakdown_by_spec"], err = json.Marshal(a.BreakdownBySpec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'breakdown_by_spec': %w", err)
+		}
+	}
+
+	object["period_end"], err = json.Marshal(a.PeriodEnd)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_end': %w", err)
+	}
+
+	object["period_start"], err = json.Marshal(a.PeriodStart)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_start': %w", err)
+	}
+
+	object["total_compute_seconds"], err = json.Marshal(a.TotalComputeSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_compute_seconds': %w", err)
+	}
+
+	object["total_jobs"], err = json.Marshal(a.TotalJobs)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_jobs': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
