@@ -40,6 +40,19 @@
         "title": "APIResponse[CancelWorkflowRunResponse]",
         "type": "object"
       },
+      "APIResponse_CustomerVmDeleteResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CustomerVmDeleteResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CustomerVmDeleteResponse]",
+        "type": "object"
+      },
       "APIResponse_CustomerVmDetail_": {
         "additionalProperties": false,
         "properties": {
@@ -64,6 +77,32 @@
           "data"
         ],
         "title": "APIResponse[CustomerVmUsageReport]",
+        "type": "object"
+      },
+      "APIResponse_CustomerVmWithPassword_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CustomerVmWithPassword"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CustomerVmWithPassword]",
+        "type": "object"
+      },
+      "APIResponse_CustomerVm_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CustomerVm"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CustomerVm]",
         "type": "object"
       },
       "APIResponse_DeleteSamlConfigResponse_": {
@@ -2106,6 +2145,25 @@
         "title": "CustomerVmBootstrapProvider",
         "type": "string"
       },
+      "CustomerVmDeleteResponse": {
+        "properties": {
+          "customer_vm_id": {
+            "title": "Customer Vm Id",
+            "type": "string"
+          },
+          "state": {
+            "const": "DELETING",
+            "default": "DELETING",
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_vm_id"
+        ],
+        "title": "CustomerVmDeleteResponse",
+        "type": "object"
+      },
       "CustomerVmDetail": {
         "properties": {
           "access_level": {
@@ -2381,6 +2439,119 @@
         "title": "CustomerVmDetail",
         "type": "object"
       },
+      "CustomerVmPauseRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "memory": {
+            "default": false,
+            "title": "Memory",
+            "type": "boolean"
+          }
+        },
+        "title": "CustomerVmPauseRequest",
+        "type": "object"
+      },
+      "CustomerVmResumeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "discard_memory": {
+            "default": false,
+            "title": "Discard Memory",
+            "type": "boolean"
+          }
+        },
+        "title": "CustomerVmResumeRequest",
+        "type": "object"
+      },
+      "CustomerVmUpdateRequest": {
+        "additionalProperties": false,
+        "description": "Partial update; omitted fields are left unchanged.\n\n``rotate_password`` returns a new password and applies it live on a\nRUNNING VM. Stored SSH keys apply live or at the next resume, except keys\nfirst supplied by a scoped token: an owner boot excludes these. Power\ntransitions are the pause, resume and delete operations.",
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "egress_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EgressRuleCreate"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Egress Rules"
+          },
+          "https_ports": {
+            "anyOf": [
+              {
+                "items": {
+                  "maximum": 65535.0,
+                  "minimum": 1.0,
+                  "type": "integer"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes. Applies at the next start or resume; [] publishes none.",
+            "title": "Https Ports"
+          },
+          "rotate_password": {
+            "default": false,
+            "title": "Rotate Password",
+            "type": "boolean"
+          },
+          "ssh_public_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ssh Public Keys"
+          },
+          "ttl_seconds": {
+            "anyOf": [
+              {
+                "maximum": 604800.0,
+                "minimum": 300.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Seconds"
+          }
+        },
+        "title": "CustomerVmUpdateRequest",
+        "type": "object"
+      },
       "CustomerVmUsage": {
         "properties": {
           "customer_vm_id": {
@@ -2470,6 +2641,52 @@
           "total_memory_mb_seconds"
         ],
         "title": "CustomerVmUsageReport",
+        "type": "object"
+      },
+      "CustomerVmWithPassword": {
+        "properties": {
+          "egress_rules_applied": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Present when the request changed egress_rules: true when the running VM enforces them now, false when that is not confirmed; they apply at its next resume at the latest.",
+            "title": "Egress Rules Applied"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "precheckout_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precheckout Note"
+          },
+          "vm": {
+            "$ref": "#/components/schemas/CustomerVm"
+          }
+        },
+        "required": [
+          "vm"
+        ],
+        "title": "CustomerVmWithPassword",
         "type": "object"
       },
       "DeleteSamlConfigResponse": {
@@ -18803,6 +19020,82 @@
       }
     },
     "/orgs/{org_id}/vms/{customer_vm_id}": {
+      "delete": {
+        "description": "Delete a VM. Asynchronous while a VM is live: the resource shows\nDELETING until the node confirms the stop, then disappears.",
+        "operationId": "delete_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The VM's id (cvm-...) or its display name.",
+            "in": "path",
+            "name": "customer_vm_id",
+            "required": true,
+            "schema": {
+              "description": "The VM's id (cvm-...) or its display name.",
+              "title": "Customer Vm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVmDeleteResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization, or virtual machine not found or no longer available"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Vm",
+        "tags": [
+          "customer-vms"
+        ]
+      },
       "get": {
         "operationId": "get_vm",
         "parameters": [
@@ -18874,6 +19167,288 @@
           }
         ],
         "summary": "Get Vm",
+        "tags": [
+          "customer-vms"
+        ]
+      },
+      "patch": {
+        "description": "Update metadata, extend the TTL, or rotate credentials. The response\ncarries a one-time ``password`` whenever a live rotation provisioned one.",
+        "operationId": "update_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The VM's id (cvm-...) or its display name.",
+            "in": "path",
+            "name": "customer_vm_id",
+            "required": true,
+            "schema": {
+              "description": "The VM's id (cvm-...) or its display name.",
+              "title": "Customer Vm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerVmUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVmWithPassword_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller, or its scoped token, holds less access than the change needs (admin to rotate the VM's password, or set SSH keys or https_ports); a scoped token that sets egress_rules, or egress_rules from a caller who is not an organization admin; a scoped token that installs a guest credential or sets https_ports while a boot it did not start runs; or https_ports that add a port where sandbox HTTPS URLs are disabled or not enabled for the organization"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization, or virtual machine not found or no longer available"
+          },
+          "409": {
+            "description": "A live VM of the organization already has the requested display_name, or the change conflicts with the VM's state"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Vm",
+        "tags": [
+          "customer-vms"
+        ]
+      }
+    },
+    "/orgs/{org_id}/vms/{customer_vm_id}/pause": {
+      "post": {
+        "description": "Pause a RUNNING Linux VM into a snapshot archive.\n\nAsynchronous: the resource shows PAUSING while the node snapshots and\nuploads the VM's state, then PAUSED with a ``snapshot`` summary. Resume\nwith the ``/resume`` endpoint; a paused VM holds no node resources.",
+        "operationId": "pause_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The VM's id (cvm-...) or its display name.",
+            "in": "path",
+            "name": "customer_vm_id",
+            "required": true,
+            "schema": {
+              "description": "The VM's id (cvm-...) or its display name.",
+              "title": "Customer Vm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CustomerVmPauseRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVm_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization, or virtual machine not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Pause Vm",
+        "tags": [
+          "customer-vms"
+        ]
+      }
+    },
+    "/orgs/{org_id}/vms/{customer_vm_id}/resume": {
+      "post": {
+        "description": "Resume a PAUSED VM from its snapshot archive.\n\nAsynchronous: the resource moves through PENDING/STARTING back to\nRUNNING with fresh endpoints. The existing password remains unless this\nresume withdraws a password a scoped token set or received. That password\nis replaced before endpoints are published, and the replacement is not\nreturned. Use PATCH with ``rotate_password`` afterwards to obtain a fresh\npassword. Stored SSH-key changes are reconciled before endpoints are published.\n``discard_memory`` boots the preserved disk fresh even when the snapshot\ncarries memory state \u2014 the recovery path when a memory restore keeps\nfailing on its pinned node.",
+        "operationId": "resume_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The VM's id (cvm-...) or its display name.",
+            "in": "path",
+            "name": "customer_vm_id",
+            "required": true,
+            "schema": {
+              "description": "The VM's id (cvm-...) or its display name.",
+              "title": "Customer Vm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CustomerVmResumeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVm_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization, or virtual machine not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resume Vm",
         "tags": [
           "customer-vms"
         ]

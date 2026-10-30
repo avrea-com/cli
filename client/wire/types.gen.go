@@ -303,6 +303,21 @@ func (e CustomerVmBootstrapProvider) Valid() bool {
 	}
 }
 
+// Defines values for CustomerVmDeleteResponseState.
+const (
+	CustomerVmDeleteResponseStateDELETING CustomerVmDeleteResponseState = "DELETING"
+)
+
+// Valid indicates whether the value is a known member of the CustomerVmDeleteResponseState enum.
+func (e CustomerVmDeleteResponseState) Valid() bool {
+	switch e {
+	case CustomerVmDeleteResponseStateDELETING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerVmDetailAccessLevel.
 const (
 	CustomerVmDetailAccessLevelAdmin CustomerVmDetailAccessLevel = "admin"
@@ -1818,6 +1833,11 @@ type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
 }
 
+// APIResponseCustomerVmDeleteResponse defines model for APIResponse_CustomerVmDeleteResponse_.
+type APIResponseCustomerVmDeleteResponse struct {
+	Data CustomerVmDeleteResponse `json:"data"`
+}
+
 // APIResponseCustomerVmDetail defines model for APIResponse_CustomerVmDetail_.
 type APIResponseCustomerVmDetail struct {
 	Data CustomerVmDetail `json:"data"`
@@ -1826,6 +1846,16 @@ type APIResponseCustomerVmDetail struct {
 // APIResponseCustomerVmUsageReport defines model for APIResponse_CustomerVmUsageReport_.
 type APIResponseCustomerVmUsageReport struct {
 	Data CustomerVmUsageReport `json:"data"`
+}
+
+// APIResponseCustomerVmWithPassword defines model for APIResponse_CustomerVmWithPassword_.
+type APIResponseCustomerVmWithPassword struct {
+	Data CustomerVmWithPassword `json:"data"`
+}
+
+// APIResponseCustomerVm defines model for APIResponse_CustomerVm_.
+type APIResponseCustomerVm struct {
+	Data CustomerVm `json:"data"`
 }
 
 // APIResponseDeleteSamlConfigResponse defines model for APIResponse_DeleteSamlConfigResponse_.
@@ -2369,6 +2399,16 @@ type CustomerVmAccessLevel string
 // CustomerVmBootstrapProvider defines model for CustomerVmBootstrapProvider.
 type CustomerVmBootstrapProvider string
 
+// CustomerVmDeleteResponse defines model for CustomerVmDeleteResponse.
+type CustomerVmDeleteResponse struct {
+	CustomerVmId         string                         `json:"customer_vm_id"`
+	State                *CustomerVmDeleteResponseState `json:"state,omitempty"`
+	AdditionalProperties map[string]interface{}         `json:"-"`
+}
+
+// CustomerVmDeleteResponseState defines model for CustomerVmDeleteResponse.State.
+type CustomerVmDeleteResponseState string
+
 // CustomerVmDetail defines model for CustomerVmDetail.
 type CustomerVmDetail struct {
 	// AccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
@@ -2437,6 +2477,33 @@ type CustomerVmDetail struct {
 // CustomerVmDetailAccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
 type CustomerVmDetailAccessLevel string
 
+// CustomerVmPauseRequest defines model for CustomerVmPauseRequest.
+type CustomerVmPauseRequest struct {
+	Memory *bool `json:"memory,omitempty"`
+}
+
+// CustomerVmResumeRequest defines model for CustomerVmResumeRequest.
+type CustomerVmResumeRequest struct {
+	DiscardMemory *bool `json:"discard_memory,omitempty"`
+}
+
+// CustomerVmUpdateRequest Partial update; omitted fields are left unchanged.
+//
+// “rotate_password“ returns a new password and applies it live on a
+// RUNNING VM. Stored SSH keys apply live or at the next resume, except keys
+// first supplied by a scoped token: an owner boot excludes these. Power
+// transitions are the pause, resume and delete operations.
+type CustomerVmUpdateRequest struct {
+	DisplayName nullable.Nullable[string]             `json:"display_name,omitempty"`
+	EgressRules nullable.Nullable[[]EgressRuleCreate] `json:"egress_rules,omitempty"`
+
+	// HttpsPorts Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes. Applies at the next start or resume; [] publishes none.
+	HttpsPorts     nullable.Nullable[[]int]    `json:"https_ports,omitempty"`
+	RotatePassword *bool                       `json:"rotate_password,omitempty"`
+	SshPublicKeys  nullable.Nullable[[]string] `json:"ssh_public_keys,omitempty"`
+	TtlSeconds     nullable.Nullable[int]      `json:"ttl_seconds,omitempty"`
+}
+
 // CustomerVmUsage defines model for CustomerVmUsage.
 type CustomerVmUsage struct {
 	CustomerVmId         string                 `json:"customer_vm_id"`
@@ -2459,6 +2526,16 @@ type CustomerVmUsageReport struct {
 	TotalVcpuSeconds     int                    `json:"total_vcpu_seconds"`
 	Vms                  []CustomerVmUsage      `json:"vms"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CustomerVmWithPassword defines model for CustomerVmWithPassword.
+type CustomerVmWithPassword struct {
+	// EgressRulesApplied Present when the request changed egress_rules: true when the running VM enforces them now, false when that is not confirmed; they apply at its next resume at the latest.
+	EgressRulesApplied   nullable.Nullable[bool]   `json:"egress_rules_applied,omitempty"`
+	Password             nullable.Nullable[string] `json:"password,omitempty"`
+	PrecheckoutNote      nullable.Nullable[string] `json:"precheckout_note,omitempty"`
+	Vm                   CustomerVm                `json:"vm"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
 // DeleteSamlConfigResponse defines model for DeleteSamlConfigResponse.
@@ -4912,8 +4989,34 @@ type GetVmUsageParams struct {
 	AvreaSession *string    `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// DeleteVmParams defines parameters for DeleteVm.
+type DeleteVmParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetVmParams defines parameters for GetVm.
 type GetVmParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateVmParams defines parameters for UpdateVm.
+type UpdateVmParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// PauseVmJSONBody defines parameters for PauseVm.
+type PauseVmJSONBody = CustomerVmPauseRequest
+
+// PauseVmParams defines parameters for PauseVm.
+type PauseVmParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ResumeVmJSONBody defines parameters for ResumeVm.
+type ResumeVmJSONBody = CustomerVmResumeRequest
+
+// ResumeVmParams defines parameters for ResumeVm.
+type ResumeVmParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -5255,6 +5358,15 @@ type SetSamlEnforcementJSONRequestBody = EnforcementRequest
 
 // UpdateOrgSettingJSONRequestBody defines body for UpdateOrgSetting for application/json ContentType.
 type UpdateOrgSettingJSONRequestBody = SettingUpdate
+
+// UpdateVmJSONRequestBody defines body for UpdateVm for application/json ContentType.
+type UpdateVmJSONRequestBody = CustomerVmUpdateRequest
+
+// PauseVmJSONRequestBody defines body for PauseVm for application/json ContentType.
+type PauseVmJSONRequestBody = PauseVmJSONBody
+
+// ResumeVmJSONRequestBody defines body for ResumeVm for application/json ContentType.
+type ResumeVmJSONRequestBody = ResumeVmJSONBody
 
 // RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
 type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
@@ -9146,6 +9258,87 @@ func (a CustomerVm) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for CustomerVmDeleteResponse. Returns the specified
+// element and whether it was found
+func (a CustomerVmDeleteResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVmDeleteResponse
+func (a *CustomerVmDeleteResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVmDeleteResponse to handle AdditionalProperties
+func (a *CustomerVmDeleteResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["customer_vm_id"]; found {
+		err = json.Unmarshal(raw, &a.CustomerVmId)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_vm_id': %w", err)
+		}
+		delete(object, "customer_vm_id")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVmDeleteResponse to handle AdditionalProperties
+func (a CustomerVmDeleteResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["customer_vm_id"], err = json.Marshal(a.CustomerVmId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'customer_vm_id': %w", err)
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for CustomerVmDetail. Returns the specified
 // element and whether it was found
 func (a CustomerVmDetail) Get(fieldName string) (value interface{}, found bool) {
@@ -9932,6 +10125,117 @@ func (a CustomerVmUsageReport) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'vms': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CustomerVmWithPassword. Returns the specified
+// element and whether it was found
+func (a CustomerVmWithPassword) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVmWithPassword
+func (a *CustomerVmWithPassword) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVmWithPassword to handle AdditionalProperties
+func (a *CustomerVmWithPassword) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["egress_rules_applied"]; found {
+		err = json.Unmarshal(raw, &a.EgressRulesApplied)
+		if err != nil {
+			return fmt.Errorf("error reading 'egress_rules_applied': %w", err)
+		}
+		delete(object, "egress_rules_applied")
+	}
+
+	if raw, found := object["password"]; found {
+		err = json.Unmarshal(raw, &a.Password)
+		if err != nil {
+			return fmt.Errorf("error reading 'password': %w", err)
+		}
+		delete(object, "password")
+	}
+
+	if raw, found := object["precheckout_note"]; found {
+		err = json.Unmarshal(raw, &a.PrecheckoutNote)
+		if err != nil {
+			return fmt.Errorf("error reading 'precheckout_note': %w", err)
+		}
+		delete(object, "precheckout_note")
+	}
+
+	if raw, found := object["vm"]; found {
+		err = json.Unmarshal(raw, &a.Vm)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm': %w", err)
+		}
+		delete(object, "vm")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVmWithPassword to handle AdditionalProperties
+func (a CustomerVmWithPassword) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.EgressRulesApplied != nil {
+		object["egress_rules_applied"], err = json.Marshal(a.EgressRulesApplied)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'egress_rules_applied': %w", err)
+		}
+	}
+
+	if a.Password != nil {
+		object["password"], err = json.Marshal(a.Password)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'password': %w", err)
+		}
+	}
+
+	if a.PrecheckoutNote != nil {
+		object["precheckout_note"], err = json.Marshal(a.PrecheckoutNote)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'precheckout_note': %w", err)
+		}
+	}
+
+	object["vm"], err = json.Marshal(a.Vm)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

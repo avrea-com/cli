@@ -1,11 +1,16 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, and settings in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM inspection/lifecycle in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
 [PLAN-go-cli-migration.md](PLAN-go-cli-migration.md).
+
+VM start/stop preserve Python's legacy PATCH desired_state request. That field
+is absent from the pinned current API schema, so those two commands still need
+live integration verification. They do not silently substitute pause/resume or
+delete, which change disk and password semantics.
 
 ## Build and try
 
@@ -23,6 +28,9 @@ make go-build
 ./build/go/avr health
 ./build/go/avr vm list --org ORG
 ./build/go/avr vm show VM_ID --org ORG
+./build/go/avr vm pause VM_ID --org ORG --memory --wait
+./build/go/avr vm resume VM_ID --org ORG --wait
+./build/go/avr vm delete VM_ID --org ORG --wait
 ./build/go/avr vm usage --org ORG --start 2026-10-01 --end 2026-10-30
 ./build/go/avr firewall list --org ORG
 ./build/go/avr firewall show --org ORG --repo REPO_ID
