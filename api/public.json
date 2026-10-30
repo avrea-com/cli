@@ -40,6 +40,32 @@
         "title": "APIResponse[CancelWorkflowRunResponse]",
         "type": "object"
       },
+      "APIResponse_CustomerVmDetail_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CustomerVmDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CustomerVmDetail]",
+        "type": "object"
+      },
+      "APIResponse_CustomerVmUsageReport_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CustomerVmUsageReport"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[CustomerVmUsageReport]",
+        "type": "object"
+      },
       "APIResponse_DeleteSamlConfigResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -693,6 +719,14 @@
         ],
         "title": "AnalysisTaskResponse",
         "type": "object"
+      },
+      "Architecture": {
+        "enum": [
+          "x86_64",
+          "arm64"
+        ],
+        "title": "Architecture",
+        "type": "string"
       },
       "AttachPaymentMethodRequest": {
         "properties": {
@@ -1794,6 +1828,648 @@
           "token"
         ],
         "title": "CreatedAccessTokenResponse",
+        "type": "object"
+      },
+      "CustomerVm": {
+        "properties": {
+          "access_level": {
+            "description": "The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.",
+            "enum": [
+              "read",
+              "write",
+              "admin"
+            ],
+            "title": "Access Level",
+            "type": "string"
+          },
+          "architecture": {
+            "$ref": "#/components/schemas/Architecture"
+          },
+          "bootstrap_provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerVmBootstrapProvider"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The coding-agent vendor whose worker this agent sandbox starts. Null for a VM a person created."
+          },
+          "cpu_count": {
+            "title": "Cpu Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "customer_vm_id": {
+            "title": "Customer Vm Id",
+            "type": "string"
+          },
+          "deletes_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a paused or failed VM is deleted with its disk unless its TTL is extended first. Null in other states.",
+            "title": "Deletes At"
+          },
+          "disk_gb": {
+            "title": "Disk Gb",
+            "type": "integer"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "enable_remote_desktop": {
+            "title": "Enable Remote Desktop",
+            "type": "boolean"
+          },
+          "endpoints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VmEndpoints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fetch_depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetch Depth"
+          },
+          "forkable": {
+            "default": false,
+            "description": "Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.",
+            "title": "Forkable",
+            "type": "boolean"
+          },
+          "https_ports": {
+            "description": "Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Https Ports",
+            "type": "array"
+          },
+          "memory_mb": {
+            "title": "Memory Mb",
+            "type": "integer"
+          },
+          "os_type": {
+            "title": "Os Type",
+            "type": "string"
+          },
+          "pausable": {
+            "default": false,
+            "description": "Whether the VM can be paused now: it is running and its guest supports snapshots.",
+            "title": "Pausable",
+            "type": "boolean"
+          },
+          "precheckout_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "Deprecated alias for repository_ref.",
+            "title": "Precheckout Ref"
+          },
+          "preload_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preload Status"
+          },
+          "repository_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The repository the VM preloads. Null when it has none, or when the scoped token calling cannot read the one it has.",
+            "title": "Repository Full Name"
+          },
+          "repository_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Ref"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VmSnapshotInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ssh_public_keys": {
+            "description": "Desired SSH keys, not confirmation of guest installation. Keys first supplied by a scoped token are excluded from owner boots.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ssh Public Keys",
+            "type": "array"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the latest allocated run reached running; null if that run has not reached running. Pending or failed resumes before allocation retain the previous run.",
+            "title": "Started At"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "state_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Reason"
+          },
+          "stop_at": {
+            "description": "The TTL: the VM is paused then, or deleted when it cannot be paused.",
+            "format": "date-time",
+            "title": "Stop At",
+            "type": "string"
+          },
+          "stopped_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the latest allocated run ended; null if it has not ended. Pending or failed resumes before allocation retain the previous run.",
+            "title": "Stopped At"
+          },
+          "token_cache_restricted": {
+            "default": false,
+            "description": "The guest retains cache and private-package restrictions from a scoped-token boot. These persist through snapshot resumes. False once the guest and snapshot are discarded.",
+            "title": "Token Cache Restricted",
+            "type": "boolean"
+          },
+          "ttl_pausable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether this running VM is paused at stop_at rather than deleted. Null unless the VM is running.",
+            "title": "Ttl Pausable"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_vm_id",
+          "display_name",
+          "os_type",
+          "architecture",
+          "cpu_count",
+          "memory_mb",
+          "disk_gb",
+          "enable_remote_desktop",
+          "ssh_public_keys",
+          "state",
+          "stop_at",
+          "created_at",
+          "updated_at",
+          "access_level"
+        ],
+        "title": "CustomerVm",
+        "type": "object"
+      },
+      "CustomerVmBootstrapProvider": {
+        "enum": [
+          "claude_code",
+          "cursor"
+        ],
+        "title": "CustomerVmBootstrapProvider",
+        "type": "string"
+      },
+      "CustomerVmDetail": {
+        "properties": {
+          "access_level": {
+            "description": "The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.",
+            "enum": [
+              "read",
+              "write",
+              "admin"
+            ],
+            "title": "Access Level",
+            "type": "string"
+          },
+          "architecture": {
+            "$ref": "#/components/schemas/Architecture"
+          },
+          "bootstrap_provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerVmBootstrapProvider"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The coding-agent vendor whose worker this agent sandbox starts. Null for a VM a person created."
+          },
+          "cpu_count": {
+            "title": "Cpu Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "customer_vm_id": {
+            "title": "Customer Vm Id",
+            "type": "string"
+          },
+          "deletes_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a paused or failed VM is deleted with its disk unless its TTL is extended first. Null in other states.",
+            "title": "Deletes At"
+          },
+          "disk_gb": {
+            "title": "Disk Gb",
+            "type": "integer"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "egress_rules": {
+            "items": {
+              "$ref": "#/components/schemas/EgressRule"
+            },
+            "title": "Egress Rules",
+            "type": "array"
+          },
+          "enable_remote_desktop": {
+            "title": "Enable Remote Desktop",
+            "type": "boolean"
+          },
+          "endpoints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VmEndpoints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fetch_depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetch Depth"
+          },
+          "forkable": {
+            "default": false,
+            "description": "Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.",
+            "title": "Forkable",
+            "type": "boolean"
+          },
+          "https_ports": {
+            "description": "Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Https Ports",
+            "type": "array"
+          },
+          "memory_mb": {
+            "title": "Memory Mb",
+            "type": "integer"
+          },
+          "os_type": {
+            "title": "Os Type",
+            "type": "string"
+          },
+          "pausable": {
+            "default": false,
+            "description": "Whether the VM can be paused now: it is running and its guest supports snapshots.",
+            "title": "Pausable",
+            "type": "boolean"
+          },
+          "precheckout_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "Deprecated alias for repository_ref.",
+            "title": "Precheckout Ref"
+          },
+          "preload_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preload Status"
+          },
+          "repository_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The repository the VM preloads. Null when it has none, or when the scoped token calling cannot read the one it has.",
+            "title": "Repository Full Name"
+          },
+          "repository_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Ref"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VmSnapshotInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ssh_public_keys": {
+            "description": "Desired SSH keys, not confirmation of guest installation. Keys first supplied by a scoped token are excluded from owner boots.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ssh Public Keys",
+            "type": "array"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the latest allocated run reached running; null if that run has not reached running. Pending or failed resumes before allocation retain the previous run.",
+            "title": "Started At"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "state_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Reason"
+          },
+          "stop_at": {
+            "description": "The TTL: the VM is paused then, or deleted when it cannot be paused.",
+            "format": "date-time",
+            "title": "Stop At",
+            "type": "string"
+          },
+          "stopped_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the latest allocated run ended; null if it has not ended. Pending or failed resumes before allocation retain the previous run.",
+            "title": "Stopped At"
+          },
+          "token_cache_restricted": {
+            "default": false,
+            "description": "The guest retains cache and private-package restrictions from a scoped-token boot. These persist through snapshot resumes. False once the guest and snapshot are discarded.",
+            "title": "Token Cache Restricted",
+            "type": "boolean"
+          },
+          "ttl_pausable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether this running VM is paused at stop_at rather than deleted. Null unless the VM is running.",
+            "title": "Ttl Pausable"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_vm_id",
+          "display_name",
+          "os_type",
+          "architecture",
+          "cpu_count",
+          "memory_mb",
+          "disk_gb",
+          "enable_remote_desktop",
+          "ssh_public_keys",
+          "state",
+          "stop_at",
+          "created_at",
+          "updated_at",
+          "access_level"
+        ],
+        "title": "CustomerVmDetail",
+        "type": "object"
+      },
+      "CustomerVmUsage": {
+        "properties": {
+          "customer_vm_id": {
+            "title": "Customer Vm Id",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "memory_mb_seconds": {
+            "title": "Memory Mb Seconds",
+            "type": "integer"
+          },
+          "os_type": {
+            "title": "Os Type",
+            "type": "string"
+          },
+          "run_count": {
+            "title": "Run Count",
+            "type": "integer"
+          },
+          "runtime_seconds": {
+            "title": "Runtime Seconds",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "vcpu_seconds": {
+            "title": "Vcpu Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "customer_vm_id",
+          "display_name",
+          "os_type",
+          "state",
+          "run_count",
+          "runtime_seconds",
+          "vcpu_seconds",
+          "memory_mb_seconds"
+        ],
+        "title": "CustomerVmUsage",
+        "type": "object"
+      },
+      "CustomerVmUsageReport": {
+        "properties": {
+          "period_end": {
+            "format": "date-time",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date-time",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "total_memory_mb_seconds": {
+            "title": "Total Memory Mb Seconds",
+            "type": "integer"
+          },
+          "total_runtime_seconds": {
+            "title": "Total Runtime Seconds",
+            "type": "integer"
+          },
+          "total_vcpu_seconds": {
+            "title": "Total Vcpu Seconds",
+            "type": "integer"
+          },
+          "vms": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerVmUsage"
+            },
+            "title": "Vms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "period_start",
+          "period_end",
+          "vms",
+          "total_runtime_seconds",
+          "total_vcpu_seconds",
+          "total_memory_mb_seconds"
+        ],
+        "title": "CustomerVmUsageReport",
         "type": "object"
       },
       "DeleteSamlConfigResponse": {
@@ -5804,6 +6480,27 @@
         "title": "PagedResponse[AccessTokenResponse]",
         "type": "object"
       },
+      "PagedResponse_CustomerVm_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerVm"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[CustomerVm]",
+        "type": "object"
+      },
       "PagedResponse_EmailDomainResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -8061,6 +8758,143 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VmEndpoint": {
+        "properties": {
+          "external_ip": {
+            "title": "External Ip",
+            "type": "string"
+          },
+          "external_port": {
+            "title": "External Port",
+            "type": "integer"
+          },
+          "host_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Key"
+          },
+          "protocol": {
+            "enum": [
+              "ssh",
+              "rdp",
+              "vnc"
+            ],
+            "title": "Protocol",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "protocol",
+          "external_ip",
+          "external_port",
+          "username"
+        ],
+        "title": "VmEndpoint",
+        "type": "object"
+      },
+      "VmEndpoints": {
+        "properties": {
+          "https": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VmHttpsEndpoint"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The VM's live HTTPS URLs, in https_ports order (a port since removed from it last, until the next start). Null while it has none: before its run reports them, once its organization turns sandbox HTTPS off, or for a run started while sandbox HTTPS was off or in a datacenter without it.",
+            "title": "Https"
+          },
+          "remote_desktop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VmEndpoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ssh": {
+            "$ref": "#/components/schemas/VmEndpoint"
+          }
+        },
+        "required": [
+          "ssh"
+        ],
+        "title": "VmEndpoints",
+        "type": "object"
+      },
+      "VmHttpsEndpoint": {
+        "properties": {
+          "port": {
+            "description": "The guest port the URL reaches.",
+            "title": "Port",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "port",
+          "url"
+        ],
+        "title": "VmHttpsEndpoint",
+        "type": "object"
+      },
+      "VmSnapshotInfo": {
+        "description": "Customer-visible summary of the pause snapshot backing a PAUSED VM.\n\nProjected from the stored snapshot reference; storage-internal details\n(bucket, key, node) stay server-side.",
+        "properties": {
+          "archive_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Bytes"
+          },
+          "memory_included": {
+            "title": "Memory Included",
+            "type": "boolean"
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
+          }
+        },
+        "required": [
+          "memory_included"
+        ],
+        "title": "VmSnapshotInfo",
         "type": "object"
       },
       "Workflow": {
@@ -17701,6 +18535,347 @@
         "summary": "Delete Org Setting",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/orgs/{org_id}/vms": {
+      "get": {
+        "description": "List the organization's VMs, newest first (deleted ones excluded).",
+        "operationId": "list_vms",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by lifecycle state.",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PENDING",
+                    "STARTING",
+                    "RUNNING",
+                    "PAUSING",
+                    "PAUSED",
+                    "STOPPING",
+                    "DELETING",
+                    "FAILED"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by lifecycle state.",
+              "title": "State"
+            }
+          },
+          {
+            "description": "List every VM visible to the caller, or narrow the result to VMs created by the caller. This never widens the caller's existing organization role.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "description": "List every VM visible to the caller, or narrow the result to VMs created by the caller. This never widens the caller's existing organization role.",
+              "enum": [
+                "all",
+                "mine"
+              ],
+              "title": "Scope",
+              "type": "string"
+            }
+          },
+          {
+            "description": "true lists agent sandboxes only, false the VMs people created; omitted lists both.",
+            "in": "query",
+            "name": "sandbox",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true lists agent sandboxes only, false the VMs people created; omitted lists both.",
+              "title": "Sandbox"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_CustomerVm_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Vms",
+        "tags": [
+          "customer-vms"
+        ]
+      }
+    },
+    "/orgs/{org_id}/vms/usage": {
+      "get": {
+        "description": "Usage metering per VM: each power-on cycle's [created_at, stopped_at)\nwindow clipped to the requested period, summed into runtime / vCPU /\nmemory seconds. Deleted VMs are included \u2014 usage survives deletion.",
+        "operationId": "get_vm_usage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive period start (default: 30 days ago).",
+            "in": "query",
+            "name": "period_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive period start (default: 30 days ago).",
+              "title": "Period Start"
+            }
+          },
+          {
+            "description": "Exclusive period end (default: now).",
+            "in": "query",
+            "name": "period_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exclusive period end (default: now).",
+              "title": "Period End"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVmUsageReport_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Vm Usage",
+        "tags": [
+          "customer-vms"
+        ]
+      }
+    },
+    "/orgs/{org_id}/vms/{customer_vm_id}": {
+      "get": {
+        "operationId": "get_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The VM's id (cvm-...) or its display name.",
+            "in": "path",
+            "name": "customer_vm_id",
+            "required": true,
+            "schema": {
+              "description": "The VM's id (cvm-...) or its display name.",
+              "title": "Customer Vm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVmDetail_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization, or virtual machine not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Vm",
+        "tags": [
+          "customer-vms"
         ]
       }
     },
