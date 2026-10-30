@@ -120,14 +120,11 @@ def scenarios():
                 "error_terms": ["--ci-provider"],
             }
         )
+    job_views = ["job view human", "job view web piped", "job list TSV"]
+    if sys.platform != "win32":
+        job_views += ["styled job view human", "styled job list TSV"]
     for provider in (None, "gitlab_ci"):
-        for name in (
-            "job view human",
-            "job view web piped",
-            "job list TSV",
-            "styled job view human",
-            "styled job list TSV",
-        ):
+        for name in job_views:
             case = deepcopy(next(c for c in jobs.scenarios() if c["name"] == name))
             for response in case["responses"].values():
                 if response[0] == 200 and isinstance(response[1], dict):
