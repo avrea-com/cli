@@ -21,6 +21,13 @@ make go-build
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
 ./build/go/avr health
+./build/go/avr firewall list --org ORG
+./build/go/avr firewall show --org ORG --repo REPO_ID
+./build/go/avr firewall flow-summaries --org ORG --repo REPO_ID --with-drops
+./build/go/avr firewall add --org ORG --action allow --fqdn api.example.com --proto tcp --ports 443
+./build/go/avr firewall move RULE_ID --org ORG --to 0
+./build/go/avr firewall set-default --org ORG --action deny
+./build/go/avr firewall delete RULE_ID --org ORG
 ./build/go/avr billing summary --org ORG
 ./build/go/avr billing settings --org ORG
 ./build/go/avr billing update-settings --org ORG --email billing@example.com

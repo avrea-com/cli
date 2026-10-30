@@ -860,9 +860,36 @@ The 131 billing inspection and 71 billing write cases per binary still pass.
 Go race tests, lint/build, schema generation, admin composition, fixture typing
 and workflow checks pass; all native report hashes match tested executables.
 
+## Firewall batch
+
+Added all seven firewall commands: list, show, add, delete, move, set-default
+and flow-summaries. Card checkpoints: public d108b47, admin 5c8d23b469.
+
+Preserve explicit --repo scope (ambient AVR_REPO does not apply here), boolean
+--json without projection/jq, raw rule/flow JSON, bordered tables, flow filters
+and aliases, pagination hints, and required option/argument behavior. Add keeps
+the original CIDR text after validation, supports IPv4/IPv6 addresses, netmasks
+and hostmasks, and retains explicit null matcher/port fields. Ports are validated
+before auth; non-TCP/UDP protocols cannot have ports.
+
+Move sends one full-order request after reading the scope. Set-default patches
+an existing default in place; it never deletes first or creates after updating.
+Delete has no prompt, matching Python. Writes are not retried. All validation
+uses local fixtures; no live firewall policies were changed.
+
+Validation: 175 paired cases per binary, including seven terminal cases, pass.
+Coverage includes org/repo selection, all commands, request order/bodies, raw
+JSON, null/empty fields, CIDR/port variants, move boundaries, default creation
+versus update, aliases, HTTP failures and flow summaries. A focused Go test
+first reproduced GET/PATCH/POST after a malformed default-update response; the
+fix now stops after GET/PATCH with an error, including HTTP failure coverage.
+The reorder fixture was corrected to the pinned API's 200 JSON-array response.
+Go race tests, lint/build, generation, admin composition, fixture typing and
+workflow checks pass. Both report hashes match the tested executables.
+
 ## Remaining work
 
-Firewall, VM commands, hidden docs, root/help/completion,
+VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
