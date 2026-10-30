@@ -1283,6 +1283,38 @@ tests/lint/build, fixture lint/types and workflow validation pass. The suite
 is now part of both CI workflows and the public go-parity target. This closes
 the initial option-use gaps, not the remaining aliases and argument audit.
 
+## Option aliases and value effects
+
+Option-use checkpoints: public 320acda, admin 3d26d97dd8.
+
+Added a typed input catalog that resolves command aliases, option scopes,
+attached values, short clusters and argument separators against the pinned
+Python command contract. It distinguishes fixture presence from zero-exit
+non-discovery inputs. Neither category is a claim that behavior passes.
+
+Derived 72 missing equivalent-spelling cases from existing behavioral fixtures.
+The derivation keeps positive and negative boolean forms separate and reuses
+each source suite's comparator and assertions. Added 25 direct cases for jq
+object transformations on artifact deletion/download, run listing and settings
+schema; named mirror resolution on GitHub and GitLab; run relative-time
+filters; explicit login providers; and workflow-watch interval/exit status.
+These exercise effects on output, API requests, files and local login state.
+No live account, mirror, artifact or workflow is changed by the validation.
+
+All 72 alias and 25 value cases pass for both binaries. Reports match the
+tested binary hashes. Nine parser/generator/comparator tests pass, including
+checks that agreement between two implementations ignoring jq or --source
+cannot pass. Fixture lint/types and both workflow checks pass. Both new
+suites run in public/admin CI and the public go-parity target.
+
+The catalog contains 3,699 non-help/completion fixture inputs. Every leaf and
+positional argument has an input, and only the root version spellings lack
+a direct scenario. Some job/run watch options have no zero-exit case because
+their fixtures deliberately end with an API failure, interruption or a failed
+run's --exit-status. Their existing stream/output and exit comparisons remain
+required evidence. Root/global behavior and the argument/default validation
+audit remain open; input presence does not prove those requirements.
+
 ## Remaining work
 
 Remaining root/global-flag behavior and a final per-command
@@ -1291,10 +1323,6 @@ Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.
 
-A preliminary literal-argument scan found 3,511 existing non-help/completion
-fixture scenarios and no leaf without a scenario. It identified 32 parameter
-entries without an explicit option spelling in those scenarios. This is an
-audit starting point, not behavior coverage proof. Start with explicit --org
-overrides, job list --since, job view --jq, run list --web, --no-pager, run logs
---all-levels, and hidden login --email, then check defaults, all option aliases,
-argument validation and root/global behavior.
+The initial explicit option-use and alias gaps are closed by the suites above.
+Continue with root/global behavior, defaults and argument validation before
+claiming the full public surface complete.
