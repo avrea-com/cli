@@ -196,7 +196,7 @@ def repo_clone(
     REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
     When several placements are available, the first to serve the repository
     wins. A single placement is used directly. Use --placement to select an
-    exact URL or hostname.
+    exact URL or hostname. Requires Git 2.31 or newer.
 
     The origin remote stays on the selected read-only mirror. A repository-local
     Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
@@ -273,13 +273,22 @@ def repo_clone(
             pending.exception()
             pending = None
         token, _ = git_token(client, full_name, pending=pending)
+    selected_directly = endpoint is not None
     if endpoint is None:
         click.echo("Finding the nearest available Git mirror…", err=True)
         endpoint = asyncio.run(nearest_mirror(endpoints, full_name, token))
     click.echo(f"Cloning {full_name} from {endpoint}", err=True)
-    ctx.exit(
-        clone_mirror(config.public_api_url, endpoint, full_name, directory, token=token, branch=branch, depth=depth)
+    returncode = clone_mirror(
+        config.public_api_url, endpoint, full_name, directory, token=token, branch=branch, depth=depth
     )
+    if returncode > 0 and selected_directly:
+        # Diagnose failures without adding a request to successful direct clones.
+        # A healthy mirror leaves Git's own error (e.g. a local path conflict) alone.
+        try:
+            asyncio.run(nearest_mirror([endpoint], full_name, token))
+        except click.ClickException as exc:
+            exc.show()
+    ctx.exit(returncode)
 
 
 @repo.command("list")

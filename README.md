@@ -97,7 +97,8 @@ Avrea uses a single available placement directly. With multiple placements,
 it picks the first mirror that responds successfully from your machine.
 `--placement` accepts an advertised mirror URL or hostname to select one
 explicitly. Give the `owner/repository` name or an Avrea repository ID (`rep-...`).
-The repository must already have Git mirroring enabled and a usable placement.
+Requires Git 2.31 or newer. The repository must already have Git mirroring
+enabled and a usable placement.
 
 `origin` stays on the selected read-only mirror. The clone installs a
 repository-local credential helper so ordinary `git fetch` and `git pull`

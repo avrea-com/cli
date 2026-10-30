@@ -197,7 +197,7 @@ def clone_mirror(
 ) -> int:
     url = clone_url(endpoint, full_name)
     env = os.environ.copy()
-    # Secrets must not appear in argv, Git config, or user-enabled trace logs.
+    # Disable tracing enabled through the inherited environment.
     for key in list(env):
         if key.startswith("GIT_TRACE") or key == "GIT_CURL_VERBOSE":
             del env[key]
@@ -205,6 +205,8 @@ def clone_mirror(
     env["GIT_ASKPASS"] = ""
     env["SSH_ASKPASS"] = ""
     # Reuse the initial token without persisting it or exposing it in argv.
+    # Git re-exports it in GIT_CONFIG_PARAMETERS to child processes, including
+    # user-configured hooks and checkout filters.
     # These process-only overrides also keep Git from invoking any credential
     # helper during this clone; the repository-local helper serves later fetches.
     env["AVR_GIT_CLONE_AUTHORIZATION"] = f"Authorization: Bearer {token}"

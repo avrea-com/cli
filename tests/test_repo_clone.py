@@ -37,6 +37,7 @@ TOKEN = "secret-git-jwt"
 class GitServerControls(TypedDict):
     redirect: str | None
     token_status: int
+    git_status: int
     endpoints: list[str] | None
     unauthorized_requests: int
 
@@ -326,6 +327,8 @@ def test_invalid_token_does_not_leak(response):
 
 def test_clone_preserves_git_exit_code_and_disables_secret_tracing(runner, monkeypatch, clone_api):
     captured = {}
+    nearest = AsyncMock(return_value=ENDPOINTS[0])
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
 
     def run(argv, **kwargs):
         captured.update(kwargs)
@@ -337,10 +340,20 @@ def test_clone_preserves_git_exit_code_and_disables_secret_tracing(runner, monke
     monkeypatch.setattr("avrea_cli.git_mirror.subprocess.run", run)
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", "--placement", ENDPOINTS[0]])
     assert result.exit_code == 128
+    nearest.assert_awaited_once_with([ENDPOINTS[0]], "foo/faa", TOKEN)
     assert not any(key.startswith("GIT_TRACE") for key in captured["env"])
     assert "GIT_CURL_VERBOSE" not in captured["env"]
     assert captured["env"]["GIT_ASKPASS"] == ""
     assert captured["env"]["SSH_ASKPASS"] == ""
+
+
+def test_failed_clone_does_not_repeat_mirror_race(runner, monkeypatch, clone_api):
+    nearest = AsyncMock(return_value=ENDPOINTS[0])
+    monkeypatch.setattr("avrea_cli.commands.repo.nearest_mirror", nearest)
+    monkeypatch.setattr("avrea_cli.commands.repo.clone_mirror", lambda *args, **kwargs: 128)
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa"])
+    assert result.exit_code == 128
+    nearest.assert_awaited_once_with(ENDPOINTS, "foo/faa", TOKEN)
 
 
 @pytest.mark.asyncio
@@ -491,6 +504,7 @@ def git_server(tmp_path, monkeypatch):
     controls: GitServerControls = {
         "redirect": None,
         "token_status": 200,
+        "git_status": 200,
         "endpoints": None,
         "unauthorized_requests": 0,
     }
@@ -546,6 +560,12 @@ def git_server(tmp_path, monkeypatch):
                 self.end_headers()
                 return
             authenticated.append(token)
+            if controls["git_status"] != 200:
+                self.send_response(controls["git_status"])
+                if controls["git_status"] == 401:
+                    self.send_header("WWW-Authenticate", 'Basic realm="mirror"')
+                self.end_headers()
+                return
             url = urlsplit(self.path)
             if "git-receive-pack" in self.path:
                 self.send_response(403)
@@ -631,6 +651,53 @@ def test_real_clone_and_later_fetch_use_fresh_tokens(
     assert set(authenticated) == set(issued)
     assert (tmp_path / "global-config").read_text() == global_config
     assert stored_credentials.read_text() == seeded
+
+
+@pytest.mark.parametrize(
+    ("status", "hint"),
+    [
+        (401, "login and repository permissions"),
+        (403, "login and repository permissions"),
+        (404, "avr repo mirror status"),
+        (503, "connectivity and `avr health`"),
+    ],
+)
+@pytest.mark.parametrize("explicit_placement", [False, True])
+def test_failed_direct_clone_reports_mirror_recovery_hint(
+    runner, monkeypatch, tmp_path, git_server, capfd, status, hint, explicit_placement
+):
+    base_url, issued, authenticated, controls = git_server
+    controls["git_status"] = status
+    monkeypatch.setenv("AVR_HOST", base_url)
+    args = ["repo", "clone", "foo/faa", str(tmp_path / "checkout")]
+    if explicit_placement:
+        controls["endpoints"] = [base_url, ENDPOINTS[0]]
+        args.extend(["--placement", base_url])
+    result = runner.invoke(cli, args)
+    git_stderr = capfd.readouterr().err
+    assert result.exit_code == 128
+    assert "fatal:" in git_stderr
+    assert f"HTTP {status}" in result.stderr
+    assert hint in result.stderr
+    assert issued == ["git-jwt-1"]
+    assert authenticated == [issued[0], issued[0]]
+    assert issued[0] not in result.output + git_stderr
+
+
+def test_failed_direct_clone_of_healthy_mirror_preserves_git_error(runner, monkeypatch, tmp_path, git_server, capfd):
+    base_url, issued, authenticated, _ = git_server
+    monkeypatch.setenv("AVR_HOST", base_url)
+    destination = tmp_path / "occupied"
+    destination.mkdir()
+    (destination / "existing").write_text("keep this file")
+    result = runner.invoke(cli, ["repo", "clone", "foo/faa", str(destination)])
+    assert result.exit_code == 128
+    assert "already exists and is not an empty directory" in capfd.readouterr().err
+    assert "No mirror could serve" not in result.stderr
+    assert "Error:" not in result.stderr
+    assert (destination / "existing").read_text() == "keep this file"
+    assert issued == ["git-jwt-1"]
+    assert authenticated == issued  # Only the post-failure probe reaches the mirror.
 
 
 def test_clone_mirror_handles_missing_git(monkeypatch):
