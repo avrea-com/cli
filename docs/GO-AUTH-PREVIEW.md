@@ -20,6 +20,8 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr repo clone acme/web
+./build/go/avr repo clone acme/web checkout --depth 1 --branch main
 ./build/go/avr repo mirror locations
 ./build/go/avr repo mirror create acme/web --location gsc-fi
 ./build/go/avr repo mirror status --repo acme/web

@@ -691,9 +691,56 @@ leaks, and cancellation between enable and placement. Race tests, lint, schema
 generation, admin composition checks, fixture typing, command inventory and
 workflow validation pass. All four report hashes match the tested binaries.
 
+## Repository clone batch
+
+Added repo clone with explicit/nearest mirror selection, native Git execution
+and a persistent Go credential helper, shared with avr-admin. Mirror-management
+checkpoints: public 7771b8d, admin b435f235ae.
+
+Decisions:
+- Keep name/ID discovery independent of organization selection. Preserve
+  .git suffix handling, --placement, --branch/-b, --depth, optional destination,
+  native Git exit codes, human diagnostics and terminal output.
+- Race authenticated Git advertisement headers with a five-second total
+  bound. Reject redirects and non-Git responses; cancel losing probes.
+  Validate server-advertised origins and repository routes before minting.
+- Persist the current native executable's absolute path as the repository's
+  credential helper, rather than selecting a possibly Python avr on PATH.
+  This intentional difference keeps subsequent fetch/pull native and also
+  works when cloned through avr-admin. The helper pins the original API host.
+- Preserve reset of inherited credential helpers for the exact mirror URL,
+  useHttpPath and redirect refusal. JWTs stay out of argv and Git config;
+  tracing and askpass are disabled for the clone child.
+- Reuse shared token issuance/validation for probes and the Git credential
+  adapter. A failing Go regression demonstrated that a malformed IDNA hostname
+  could mint a token through the adapter; shared hostname validation now rejects
+  it first, with malformed/valid encoded-host comparisons against Python.
+- Add golang.org/x/net/idna v0.61.0 and indirect x/text v0.43.0 (BSD-3-Clause).
+  Both releases date to 2026-10-09, satisfying the age gate. Build notices
+  include their licenses. Govulncheck reports no affected symbols or imported
+  packages; module-only HTML notices GO-2026-6866 and GO-2026-6860 are outside
+  the imported IDNA package. Their v0.62.0 fix was released 2026-10-27 19:00 UTC
+  and had not reached the three-day age gate at this validation.
+- Extend the fixture server with opt-in loopback endpoint substitution and
+  explicit content types. Capture native Git invocation without remote clones.
+  The comparator permits the executable-path and shell-quoting differences,
+  while checking actual helper executable, repository scope and environment.
+
+Validation: 94 paired clone/credential cases per binary, including three
+terminal cases. Four Go tests cover losing-probe cancellation, redirect refusal,
+parent cancellation and malformed IDNA rejection before token issuance. Five
+Python integration/comparator tests per binary include a real local smart-HTTP
+clone, subsequent fetches with fresh credentials, pinned API origin, refusal
+after token issuance fails, unchanged credential storage, and comparator guards.
+The full auth regression suites also passed (65 public, 64 admin with the
+documented host-selection difference); all Git protocol cases are included in
+the final clone suite. Go race tests, lint, generation and dependency scanning,
+admin checks, fixture typing and workflow validation pass. Both final clone
+report hashes match the tested binaries. No live mirror cloning or API changes.
+
 ## Remaining work
 
-Repository cloning, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

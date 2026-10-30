@@ -99,10 +99,13 @@ class Fixture(http.server.BaseHTTPRequestHandler):
         if isinstance(response, list):
             response = response.pop(0) if len(response) > 1 else response[0]
         status, payload, *extra = response
+        if getattr(self.server, "expand_host", False) and not isinstance(payload, bytes):
+            payload = json.loads(json.dumps(payload).replace("FIXTURE_HOST", self.server.fixture_host))
         self.send_response(status)
-        self.send_header(
-            "Content-Type", "application/octet-stream" if isinstance(payload, bytes) else "application/json"
-        )
+        if not extra or not any(k.lower() == "content-type" for k in extra[0]):
+            self.send_header(
+                "Content-Type", "application/octet-stream" if isinstance(payload, bytes) else "application/json"
+            )
         for key, value in (extra[0] if extra else {}).items():
             self.send_header(key, value)
         data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
@@ -166,6 +169,25 @@ def run(executable, scenario, root, host):
                 executable_stub = stub / tool
                 executable_stub.write_text(script)
                 executable_stub.chmod(0o700)
+            env["PATH"] = str(stub) + os.pathsep + env["PATH"]
+        if "git_stub" in scenario and sys.platform != "win32":
+            stub = home / "bin"
+            stub.mkdir(exist_ok=True)
+            script = (
+                "#!"
+                + sys.executable
+                + "\nimport json,os,sys\n"
+                + "keys=['GIT_TERMINAL_PROMPT','GIT_ASKPASS','SSH_ASKPASS']\n"
+                + "keys += [k for k in os.environ if k.startswith('GIT_TRACE') or k=='GIT_CURL_VERBOSE']\n"
+                + "capture={'args':sys.argv[1:], 'env':{k:os.environ.get(k) for k in keys}}\n"
+                + "print('GIT CAPTURE: ' + json.dumps(capture))\n"
+                + "sys.exit("
+                + str(scenario["git_stub"])
+                + ")\n"
+            )
+            executable_stub = stub / "git"
+            executable_stub.write_text(script)
+            executable_stub.chmod(0o700)
             env["PATH"] = str(stub) + os.pathsep + env["PATH"]
         args = [a.replace("FIXTURE_HOST", host).replace("FIXTURE_HOME", directory) for a in scenario["args"]]
         if remote := scenario.get("git_remote"):
@@ -716,6 +738,8 @@ def main(case_factory=scenarios, compare_results=compare, default_report="build/
                 results = []
                 for executable in ([sys.executable, "-m", "avrea_cli.main"], [str(Path(args.go).resolve())]):
                     server.requests = []
+                    server.expand_host = scenario.get("expand_host", False)
+                    server.fixture_host = host
                     server.responses = copy.deepcopy(
                         {
                             (method, canonical_path(path)): response

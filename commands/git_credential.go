@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/avrea-com/cli/config"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/idna"
 )
 
 var repoPart = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
@@ -49,6 +48,9 @@ func gitURL(raw, repo string) (*url.URL, error) {
 			if !dnsLabel.MatchString(label) {
 				return nil, invalid
 			}
+		}
+		if _, err := idna.Lookup.ToUnicode(host); err != nil {
+			return nil, &ExitError{1, "Error: The API returned an invalid or insecure mirror endpoint."}
 		}
 	}
 	if port := u.Port(); port != "" {
@@ -129,15 +131,9 @@ func newGitCredential(d Dependencies) *cobra.Command {
 		if err := authenticated(cfg); err != nil {
 			return fail(err)
 		}
-		result, err := api.Do(cmd.Context(), http.MethodPost, "/tokens/git", map[string]any{"repos": []string{repo}})
+		token, expires, err := issueGitToken(cmd.Context(), d, cfg, api, repo)
 		if err != nil {
-			return fail(apiError(cfg, err, "issue a Git token"))
-		}
-		token, _ := result["token"].(string)
-		expiry, _ := result["expires_at"].(string)
-		expires, err := time.Parse(time.RFC3339Nano, expiry)
-		if err != nil || !expires.After(d.Now()) || !repoPart.MatchString(token) {
-			return fail(errors.New("Avrea returned an invalid or expired Git token.")) //nolint:staticcheck // Preserve the existing user-facing CLI diagnostic.
+			return fail(err)
 		}
 		if bearer {
 			_, err = fmt.Fprintf(d.Out, "capability[]=authtype\nauthtype=Bearer\ncredential=%s\nephemeral=true\n\n", token)
