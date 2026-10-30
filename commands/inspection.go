@@ -200,7 +200,7 @@ func NewOrg(deps Dependencies) *cobra.Command {
 // NewRepo returns public repository inspection commands.
 func NewRepo(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "repo", Short: "Manage repositories."}
+	group := &cobra.Command{Use: "repo", Aliases: []string{"repos"}, Short: "Manage repositories."}
 	var options jsonOptions
 	var org string
 	var limit int
@@ -259,7 +259,7 @@ func NewRepo(deps Dependencies) *cobra.Command {
 		}
 		return d.repoTable(rows, links)
 	})
-	group.AddCommand(cmd)
+	group.AddCommand(cmd, newPublicMirrors(d))
 	return group
 }
 
