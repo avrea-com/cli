@@ -879,6 +879,36 @@ func (e WorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListGitClustersParamsOrder.
+const (
+	ClusterId        ListGitClustersParamsOrder = "cluster_id"
+	ClusterIdAsc     ListGitClustersParamsOrder = "cluster_id.asc"
+	ClusterIdDesc    ListGitClustersParamsOrder = "cluster_id.desc"
+	DatacenterId     ListGitClustersParamsOrder = "datacenter_id"
+	DatacenterIdAsc  ListGitClustersParamsOrder = "datacenter_id.asc"
+	DatacenterIdDesc ListGitClustersParamsOrder = "datacenter_id.desc"
+)
+
+// Valid indicates whether the value is a known member of the ListGitClustersParamsOrder enum.
+func (e ListGitClustersParamsOrder) Valid() bool {
+	switch e {
+	case ClusterId:
+		return true
+	case ClusterIdAsc:
+		return true
+	case ClusterIdDesc:
+		return true
+	case DatacenterId:
+		return true
+	case DatacenterIdAsc:
+		return true
+	case DatacenterIdDesc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListJobsParamsStates.
 const (
 	ListJobsParamsStatesCompleted  ListJobsParamsStates = "completed"
@@ -1837,6 +1867,27 @@ type GenerateSbomResponse struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// GitClusterResource defines model for GitClusterResource.
+type GitClusterResource struct {
+	ClusterId            string                 `json:"cluster_id"`
+	DatacenterId         string                 `json:"datacenter_id"`
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// GitClustersListResponse defines model for GitClustersListResponse.
+type GitClustersListResponse struct {
+	Data                 []GitClusterResource   `json:"data"`
+	Pagination           GitClustersPagination  `json:"pagination"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// GitClustersPagination defines model for GitClustersPagination.
+type GitClustersPagination struct {
+	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
 // GovernanceHoldReason defines model for GovernanceHoldReason.
 type GovernanceHoldReason string
 
@@ -2232,6 +2283,17 @@ type MetricsSeries struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// MirrorPlacementResource defines model for MirrorPlacementResource.
+type MirrorPlacementResource struct {
+	ClusterId            string                       `json:"cluster_id"`
+	ConfigSynced         *bool                        `json:"config_synced,omitempty"`
+	ConfigSyncedAt       nullable.Nullable[time.Time] `json:"config_synced_at,omitempty"`
+	LastSyncAt           nullable.Nullable[time.Time] `json:"last_sync_at,omitempty"`
+	LastSyncStatus       nullable.Nullable[string]    `json:"last_sync_status,omitempty"`
+	Role                 string                       `json:"role"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
+}
+
 // OrgPullRequestAttentionMeta What a scope=attention page covered beyond the rows it returned.
 //
 // The page holds the matches among its candidates, so its rows alone say
@@ -2538,6 +2600,21 @@ type RepoCachePurgeStatus struct {
 
 // RepoCachePurgeStatusState defines model for RepoCachePurgeStatus.State.
 type RepoCachePurgeStatusState string
+
+// RepoGitMirrorResource defines model for RepoGitMirrorResource.
+type RepoGitMirrorResource struct {
+	DataDeletionPending  *bool                     `json:"data_deletion_pending,omitempty"`
+	Enabled              bool                      `json:"enabled"`
+	FullName             string                    `json:"full_name"`
+	Placements           []MirrorPlacementResource `json:"placements"`
+	RepositoryId         string                    `json:"repository_id"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// RepoGitMirrorUpdate defines model for RepoGitMirrorUpdate.
+type RepoGitMirrorUpdate struct {
+	Enabled bool `json:"enabled"`
+}
 
 // RerunWorkflowRunRequest Request body for rerunning a workflow run.
 type RerunWorkflowRunRequest struct {
@@ -3150,6 +3227,19 @@ type GetOrgFeatureFlagParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListGitClustersParams defines parameters for ListGitClusters.
+type ListGitClustersParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor from a previous response.
+	Cursor       *string                     `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Order        *ListGitClustersParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+	AvreaSession *string                     `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListGitClustersParamsOrder defines parameters for ListGitClusters.
+type ListGitClustersParamsOrder string
+
 // RemoveOrganizationInstallationParams defines parameters for RemoveOrganizationInstallation.
 type RemoveOrganizationInstallationParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3545,6 +3635,26 @@ type DispatchWorkflowEndpointParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// GetRepoGitMirrorParams defines parameters for GetRepoGitMirror.
+type GetRepoGitMirrorParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateRepoGitMirrorParams defines parameters for UpdateRepoGitMirror.
+type UpdateRepoGitMirrorParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RemoveRepoGitMirrorPlacementParams defines parameters for RemoveRepoGitMirrorPlacement.
+type RemoveRepoGitMirrorPlacementParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// AddRepoGitMirrorPlacementParams defines parameters for AddRepoGitMirrorPlacement.
+type AddRepoGitMirrorPlacementParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListRepoSettingsParams defines parameters for ListRepoSettings.
 type ListRepoSettingsParams struct {
 	Prefix       *string `form:"prefix,omitempty" json:"prefix,omitempty"`
@@ -3897,6 +4007,9 @@ type GenerateSbomJSONRequestBody = GenerateSbomRequest
 
 // DispatchWorkflowEndpointJSONRequestBody defines body for DispatchWorkflowEndpoint for application/json ContentType.
 type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
+
+// UpdateRepoGitMirrorJSONRequestBody defines body for UpdateRepoGitMirror for application/json ContentType.
+type UpdateRepoGitMirrorJSONRequestBody = RepoGitMirrorUpdate
 
 // UpdateRepoSettingJSONRequestBody defines body for UpdateRepoSetting for application/json ContentType.
 type UpdateRepoSettingJSONRequestBody = SettingUpdate
@@ -7200,6 +7313,247 @@ func (a GenerateSbomResponse) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GitClusterResource. Returns the specified
+// element and whether it was found
+func (a GitClusterResource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitClusterResource
+func (a *GitClusterResource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitClusterResource to handle AdditionalProperties
+func (a *GitClusterResource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cluster_id"]; found {
+		err = json.Unmarshal(raw, &a.ClusterId)
+		if err != nil {
+			return fmt.Errorf("error reading 'cluster_id': %w", err)
+		}
+		delete(object, "cluster_id")
+	}
+
+	if raw, found := object["datacenter_id"]; found {
+		err = json.Unmarshal(raw, &a.DatacenterId)
+		if err != nil {
+			return fmt.Errorf("error reading 'datacenter_id': %w", err)
+		}
+		delete(object, "datacenter_id")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitClusterResource to handle AdditionalProperties
+func (a GitClusterResource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cluster_id"], err = json.Marshal(a.ClusterId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cluster_id': %w", err)
+	}
+
+	object["datacenter_id"], err = json.Marshal(a.DatacenterId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'datacenter_id': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GitClustersListResponse. Returns the specified
+// element and whether it was found
+func (a GitClustersListResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitClustersListResponse
+func (a *GitClustersListResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitClustersListResponse to handle AdditionalProperties
+func (a *GitClustersListResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["pagination"]; found {
+		err = json.Unmarshal(raw, &a.Pagination)
+		if err != nil {
+			return fmt.Errorf("error reading 'pagination': %w", err)
+		}
+		delete(object, "pagination")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitClustersListResponse to handle AdditionalProperties
+func (a GitClustersListResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GitClustersPagination. Returns the specified
+// element and whether it was found
+func (a GitClustersPagination) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitClustersPagination
+func (a *GitClustersPagination) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitClustersPagination to handle AdditionalProperties
+func (a *GitClustersPagination) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["next_cursor"]; found {
+		err = json.Unmarshal(raw, &a.NextCursor)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_cursor': %w", err)
+		}
+		delete(object, "next_cursor")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitClustersPagination to handle AdditionalProperties
+func (a GitClustersPagination) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NextCursor != nil {
+		object["next_cursor"], err = json.Marshal(a.NextCursor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -11340,6 +11694,145 @@ func (a MetricsSeries) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for MirrorPlacementResource. Returns the specified
+// element and whether it was found
+func (a MirrorPlacementResource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MirrorPlacementResource
+func (a *MirrorPlacementResource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MirrorPlacementResource to handle AdditionalProperties
+func (a *MirrorPlacementResource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cluster_id"]; found {
+		err = json.Unmarshal(raw, &a.ClusterId)
+		if err != nil {
+			return fmt.Errorf("error reading 'cluster_id': %w", err)
+		}
+		delete(object, "cluster_id")
+	}
+
+	if raw, found := object["config_synced"]; found {
+		err = json.Unmarshal(raw, &a.ConfigSynced)
+		if err != nil {
+			return fmt.Errorf("error reading 'config_synced': %w", err)
+		}
+		delete(object, "config_synced")
+	}
+
+	if raw, found := object["config_synced_at"]; found {
+		err = json.Unmarshal(raw, &a.ConfigSyncedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'config_synced_at': %w", err)
+		}
+		delete(object, "config_synced_at")
+	}
+
+	if raw, found := object["last_sync_at"]; found {
+		err = json.Unmarshal(raw, &a.LastSyncAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_sync_at': %w", err)
+		}
+		delete(object, "last_sync_at")
+	}
+
+	if raw, found := object["last_sync_status"]; found {
+		err = json.Unmarshal(raw, &a.LastSyncStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_sync_status': %w", err)
+		}
+		delete(object, "last_sync_status")
+	}
+
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
+		if err != nil {
+			return fmt.Errorf("error reading 'role': %w", err)
+		}
+		delete(object, "role")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MirrorPlacementResource to handle AdditionalProperties
+func (a MirrorPlacementResource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cluster_id"], err = json.Marshal(a.ClusterId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cluster_id': %w", err)
+	}
+
+	if a.ConfigSynced != nil {
+		object["config_synced"], err = json.Marshal(a.ConfigSynced)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'config_synced': %w", err)
+		}
+	}
+
+	if a.ConfigSyncedAt != nil {
+		object["config_synced_at"], err = json.Marshal(a.ConfigSyncedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'config_synced_at': %w", err)
+		}
+	}
+
+	if a.LastSyncAt != nil {
+		object["last_sync_at"], err = json.Marshal(a.LastSyncAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'last_sync_at': %w", err)
+		}
+	}
+
+	if a.LastSyncStatus != nil {
+		object["last_sync_status"], err = json.Marshal(a.LastSyncStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'last_sync_status': %w", err)
+		}
+	}
+
+	object["role"], err = json.Marshal(a.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for OrgPullRequestAttentionMeta. Returns the specified
 // element and whether it was found
 func (a OrgPullRequestAttentionMeta) Get(fieldName string) (value interface{}, found bool) {
@@ -13387,6 +13880,128 @@ func (a RepoCachePurgeStatus) MarshalJSON() ([]byte, error) {
 	object["state"], err = json.Marshal(a.State)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RepoGitMirrorResource. Returns the specified
+// element and whether it was found
+func (a RepoGitMirrorResource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RepoGitMirrorResource
+func (a *RepoGitMirrorResource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RepoGitMirrorResource to handle AdditionalProperties
+func (a *RepoGitMirrorResource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data_deletion_pending"]; found {
+		err = json.Unmarshal(raw, &a.DataDeletionPending)
+		if err != nil {
+			return fmt.Errorf("error reading 'data_deletion_pending': %w", err)
+		}
+		delete(object, "data_deletion_pending")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["full_name"]; found {
+		err = json.Unmarshal(raw, &a.FullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'full_name': %w", err)
+		}
+		delete(object, "full_name")
+	}
+
+	if raw, found := object["placements"]; found {
+		err = json.Unmarshal(raw, &a.Placements)
+		if err != nil {
+			return fmt.Errorf("error reading 'placements': %w", err)
+		}
+		delete(object, "placements")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RepoGitMirrorResource to handle AdditionalProperties
+func (a RepoGitMirrorResource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.DataDeletionPending != nil {
+		object["data_deletion_pending"], err = json.Marshal(a.DataDeletionPending)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data_deletion_pending': %w", err)
+		}
+	}
+
+	object["enabled"], err = json.Marshal(a.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+	}
+
+	object["full_name"], err = json.Marshal(a.FullName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'full_name': %w", err)
+	}
+
+	if a.Placements != nil {
+		object["placements"], err = json.Marshal(a.Placements)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'placements': %w", err)
+		}
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
