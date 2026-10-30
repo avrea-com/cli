@@ -27,7 +27,7 @@ func vmSSHEndpoint(ctx context.Context, cfg config.Config, api *client.Client, o
 	endpoints, _ := record.Fields["endpoints"].(map[string]any)
 	endpoint, _ := endpoints["ssh"].(map[string]any)
 	if len(endpoint) == 0 {
-		return nil, &ExitError{1, "Error: VM " + output.CellText(id) + " has no SSH endpoint yet (state: " + billingText(record.Fields, "state", "None") + "). Endpoints appear once the VM is RUNNING; check `avr vm show`."}
+		return nil, vmMissingSSHEndpoint(record.Fields, id)
 	}
 	return endpoint, nil
 }

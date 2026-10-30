@@ -1052,9 +1052,42 @@ reproduced, fixed usage-error exit regression. Go race tests, lint/build, admin
 composition, fixture typing and workflow validation pass; both parity report
 hashes match the tested executables. No remote SSH connections were made.
 
+## VM TCP and desktop tunnel batch
+
+Added port-forward, rdp and vnc with every Python flag, including repeated
+[LOCAL:]GUEST ports, local-port overrides, identity, print and launch toggles.
+SSH checkpoints: public e775689, admin 23a5699613.
+
+Preserve loopback-only bindings, port range/duplicate validation, reservation
+of explicit ports before auto-selection, SSH keepalive/forward-failure options,
+temporary host-key pinning, platform-specific desktop commands, ready messages
+and trust-on-first-use warnings. Printed commands never open SSH or a desktop.
+Live tunnels check every forward for up to 60 seconds before reporting ready,
+surface unexpected SSH exits, and close on Ctrl-C with exit 130. Processes are
+reaped, with bounded graceful termination on Unix before forced cleanup.
+
+A missing desktop client leaves the tunnel available for a manual connection.
+A waitable desktop client no longer keeps the command hanging after SSH has
+already failed; the child is cleaned up when the tunnel ends. Auto-selection
+also bounds repeated local-port collisions instead of looping indefinitely.
+These are intentional lifecycle safeguards beyond the Python implementation.
+
+Validation: 107 paired scenarios per binary, including five terminal cases,
+pass. Auto-selected local ports are normalized by role; explicit local ports,
+guest ports, order, arguments and requests remain compared. Twelve paired
+local lifecycle tests per binary exercise all three commands through real
+loopback listeners and SSH/client stubs: ready, clean exit, dropped connection,
+Ctrl-C, desktop launch and missing-client fallback. They verify freed ports,
+child reaping, pin content/mode and removal. Three Go tests cover explicit-port
+reservation, all-port readiness/deadline handling and desktop command selection
+for Windows/macOS/Linux hosts. Native lifecycle tests ran on macOS; other native
+OS runs remain CI gates. Go race tests, lint/build, admin composition, fixture
+typing and workflow validation pass; report hashes match both executables.
+No live VM connections or real desktop applications were used.
+
 ## Remaining work
 
-VM tunnels/bootstrap, hidden docs, root/help/completion,
+VM bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
