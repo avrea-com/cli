@@ -1,6 +1,32 @@
 {
   "components": {
     "schemas": {
+      "APIResponse_BillingSettingsResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BillingSettingsResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[BillingSettingsResponse]",
+        "type": "object"
+      },
+      "APIResponse_BillingSummaryResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BillingSummaryResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[BillingSummaryResponse]",
+        "type": "object"
+      },
       "APIResponse_CancelWorkflowRunResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -51,6 +77,19 @@
           "data"
         ],
         "title": "APIResponse[EmailDomainResponse]",
+        "type": "object"
+      },
+      "APIResponse_InvoiceResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InvoiceResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[InvoiceResponse]",
         "type": "object"
       },
       "APIResponse_JobResponse_": {
@@ -776,6 +815,258 @@
           "pagination"
         ],
         "title": "AuditEventsListResponse",
+        "type": "object"
+      },
+      "BillingAddress": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "line1": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line1"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          }
+        },
+        "title": "BillingAddress",
+        "type": "object"
+      },
+      "BillingCustomerType": {
+        "enum": [
+          "company",
+          "consumer"
+        ],
+        "title": "BillingCustomerType",
+        "type": "string"
+      },
+      "BillingInvoiceStatus": {
+        "enum": [
+          "ESTIMATED",
+          "DRAFT",
+          "PENDING",
+          "PAID",
+          "FAILED",
+          "VOID"
+        ],
+        "title": "BillingInvoiceStatus",
+        "type": "string"
+      },
+      "BillingSettingsResponse": {
+        "properties": {
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "billing_emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Emails"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "contact_person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person Name"
+          },
+          "customer_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingCustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metronome_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metronome Customer Id"
+          },
+          "stripe_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stripe Customer Id"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "tax_id_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Status"
+          }
+        },
+        "title": "BillingSettingsResponse",
+        "type": "object"
+      },
+      "BillingSummaryResponse": {
+        "properties": {
+          "billing_emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Emails"
+          },
+          "credit_hold_active": {
+            "default": false,
+            "description": "Whether the scheduler is currently blocking new workflows because the organization's monthly credit hold is enforced.",
+            "title": "Credit Hold Active",
+            "type": "boolean"
+          },
+          "current_period_usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageSummaryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentMethodResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_billing": {
+            "title": "Has Billing",
+            "type": "boolean"
+          },
+          "unlimited_workflow_access": {
+            "default": false,
+            "description": "Whether an operator has granted unlimited workflow access. Organizations with this access do not require a payment method.",
+            "title": "Unlimited Workflow Access",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_billing"
+        ],
+        "title": "BillingSummaryResponse",
         "type": "object"
       },
       "CIProvider": {
@@ -1780,6 +2071,128 @@
           "gitlab"
         ],
         "type": "string"
+      },
+      "InvoiceResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "has_pdf": {
+            "title": "Has Pdf",
+            "type": "boolean"
+          },
+          "has_receipt_pdf": {
+            "title": "Has Receipt Pdf",
+            "type": "boolean"
+          },
+          "invoice_id": {
+            "title": "Invoice Id",
+            "type": "string"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          },
+          "line_items": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Line Items",
+            "type": "array"
+          },
+          "period_end": {
+            "format": "date-time",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date-time",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillingInvoiceStatus"
+          },
+          "subtotal_cents": {
+            "title": "Subtotal Cents",
+            "type": "integer"
+          },
+          "tax_cents": {
+            "title": "Tax Cents",
+            "type": "integer"
+          },
+          "total_cents": {
+            "title": "Total Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "period_start",
+          "period_end",
+          "subtotal_cents",
+          "tax_cents",
+          "total_cents",
+          "currency",
+          "status",
+          "has_pdf",
+          "has_receipt_pdf",
+          "created_at"
+        ],
+        "title": "InvoiceResponse",
+        "type": "object"
+      },
+      "InvoicesListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/InvoicesPagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "InvoicesListResponse",
+        "type": "object"
+      },
+      "InvoicesPagination": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "title": "InvoicesPagination",
+        "type": "object"
       },
       "JobAggregateBucket": {
         "properties": {
@@ -4914,6 +5327,27 @@
         "title": "PagedResponse[OrganizationMemberResponse]",
         "type": "object"
       },
+      "PagedResponse_PaymentMethodResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[PaymentMethodResponse]",
+        "type": "object"
+      },
       "PagedResponse_UserInstallationItem_": {
         "additionalProperties": false,
         "properties": {
@@ -4973,6 +5407,68 @@
           }
         },
         "title": "PaginationMeta",
+        "type": "object"
+      },
+      "PaymentMethodResponse": {
+        "properties": {
+          "card_brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Brand"
+          },
+          "card_exp_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Exp Month"
+          },
+          "card_exp_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Exp Year"
+          },
+          "card_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Last4"
+          },
+          "is_default": {
+            "default": false,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "payment_method_id": {
+            "title": "Payment Method Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_method_id"
+        ],
+        "title": "PaymentMethodResponse",
         "type": "object"
       },
       "Platform": {
@@ -6606,6 +7102,45 @@
           "step"
         ],
         "title": "StepAggregation",
+        "type": "object"
+      },
+      "UsageSummaryResponse": {
+        "properties": {
+          "breakdown_by_spec": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Breakdown By Spec",
+            "type": "object"
+          },
+          "period_end": {
+            "format": "date-time",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date-time",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "total_compute_seconds": {
+            "title": "Total Compute Seconds",
+            "type": "number"
+          },
+          "total_jobs": {
+            "title": "Total Jobs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period_start",
+          "period_end",
+          "total_compute_seconds",
+          "total_jobs",
+          "breakdown_by_spec"
+        ],
+        "title": "UsageSummaryResponse",
         "type": "object"
       },
       "UserInstallationItem": {
@@ -8898,6 +9433,394 @@
         "summary": "List Org Audit Events",
         "tags": [
           "audit-events"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing": {
+      "get": {
+        "operationId": "get_billing_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_BillingSummaryResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Billing Summary",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/invoices": {
+      "get": {
+        "description": "Cursor-paginated invoices, ordered by ``period_end`` descending.\n\nSame shape as ``/orgs/{org}/workflow-runs`` and friends: pass the\nprevious response's ``pagination.next_cursor`` verbatim. ``None`` once\nno more rows.",
+        "operationId": "list_invoices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoicesListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Invoices",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/invoices/{invoice_id}": {
+      "get": {
+        "operationId": "get_invoice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_InvoiceResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Invoice",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/payment-methods": {
+      "get": {
+        "operationId": "list_payment_methods",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_PaymentMethodResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Payment Methods",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/settings": {
+      "get": {
+        "operationId": "get_billing_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_BillingSettingsResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Billing Settings",
+        "tags": [
+          "billing"
         ]
       }
     },

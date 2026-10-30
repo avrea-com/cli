@@ -78,7 +78,12 @@
     "get_session_by_id",
     "issue_git_token",
     "health",
-    "list_org_audit_events"
+    "list_org_audit_events",
+    "get_billing_summary",
+    "list_invoices",
+    "get_invoice",
+    "list_payment_methods",
+    "get_billing_settings"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
