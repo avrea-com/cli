@@ -1223,10 +1223,58 @@ workflows pass. The help suite is wired into public/admin CI. The 42 native
 docs scenarios also pass per executable after extending shared metadata.
 Report hashes match the tested binaries; native Linux/Windows remain CI gates.
 
+## Native shell completion
+
+Help checkpoints: public f54d0c0, admin 885cbe388e.
+
+Implemented the existing _AVR_COMPLETE source/complete interface for Bash,
+Zsh and Fish. Admin uses _AVR_ADMIN_COMPLETE and accepts the shared public
+variable as a compatibility fallback. Existing documented setup commands
+continue to work. Completion resolves the live composed command registry
+before argument parsing, credential loading or handlers, and makes no API
+requests. Timing diagnostics are suppressed for completion.
+
+Migrated short descriptions and the parameter type fields needed for choices,
+files and directories. The generator excludes runtime function representations
+so metadata is reproducible. Command names, visible flags, aliases, used versus
+repeatable options, option values, positional/variadic arguments and incomplete
+shell quoting are handled natively. Hidden commands remain addressable without
+being advertised. No additional runtime dependency was added.
+
+The setup scripts consume the compatibility protocol directly. Shell tests
+caught and fixed Zsh argument quoting and first/subsequent-tab autoload behavior.
+Generated scripts are evaluated only in isolated test shells; no user profile
+or completion installation was modified.
+
+Validation: 1,847 differential completion scenarios per executable cover every
+command's option/argument completions, supplied options, choice/path values,
+aliases, quoting, separators, diagnostics and unsupported modes. Four Go tests
+cover offline dispatch, live composition, safe tokenization and quiet timing.
+Six comparator tests enforce record boundaries, ordering, types and absence
+of API calls while allowing platform newlines. Bash and Zsh integration tests
+pass for both executables, including actual Zsh tab insertion and directory
+paths with spaces. Fish protocol comparisons pass locally; the actual Fish
+shell is not installed here, so that integration test is a Linux CI gate.
+Both workflows install Fish/Zsh and run the shell suite.
+
+Public race tests, lint, deterministic metadata and command-registration gates,
+admin composition, Python tooling and workflow validation pass. The existing
+392 help comparisons per executable passed during this batch. Completion
+reports identify the exact tested binaries. Native Linux/Windows execution and
+the real Fish shell remain CI validation, not locally observed results.
+
 ## Remaining work
 
-Shell completion, remaining root/global-flag behavior, and a final per-command
+Remaining root/global-flag behavior and a final per-command
 flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.
+
+A preliminary literal-argument scan found 3,511 existing non-help/completion
+fixture scenarios and no leaf without a scenario. It identified 32 parameter
+entries without an explicit option spelling in those scenarios. This is an
+audit starting point, not behavior coverage proof. Start with explicit --org
+overrides, job list --since, job view --jq, run list --web, --no-pager, run logs
+--all-levels, and hidden login --email, then check defaults, all option aliases,
+argument validation and root/global behavior.

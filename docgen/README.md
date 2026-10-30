@@ -37,3 +37,10 @@ Metadata is loaded lazily when help is requested. The native formatter retains
 the Python layout, wrapping and styles; no Python process is started at runtime.
 The executable help suite checks every command and both help flags, plus bare
 groups, aliases, welcome text, terminal colors and representative widths.
+
+Completion uses the same lazy metadata for parameter types and short
+descriptions. It resolves the live command/flag registry without callbacks,
+credential loading or API requests. The existing _AVR_COMPLETE protocol and
+Bash/Zsh/Fish setup commands remain supported; avr-admin also accepts
+_AVR_ADMIN_COMPLETE. Setup scripts are native templates, and shell integration
+tests exercise registration, first-use autoloading and actual suggestions.

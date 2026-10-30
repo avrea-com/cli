@@ -25,7 +25,26 @@ def terminal_tree():
         # option. Recreate it here with the actual inherited root settings.
         command._help_option = None
         options = []
+        completion = []
         for parameter in command.get_params(context):
+            kind = "option" if isinstance(parameter, click.Option) else "argument"
+            completion.append(
+                {
+                    "name": parameter.name,
+                    "kind": kind,
+                    "names": parameter.opts + parameter.secondary_opts,
+                    "help": getattr(parameter, "help", None) or "",
+                    "multiple": parameter.multiple,
+                    "flag": bool(getattr(parameter, "is_flag", False)),
+                    "hidden": bool(getattr(parameter, "hidden", False)),
+                    "nargs": parameter.nargs,
+                    "type": {
+                        key: value
+                        for key, value in parameter.type.to_info_dict().items()
+                        if key in {"param_type", "choices", "case_sensitive", "file_okay"}
+                    },
+                }
+            )
             record = parameter.get_help_record(context)
             if record is not None:
                 options.append(
@@ -55,6 +74,8 @@ def terminal_tree():
                     )
                 walk(child, path + " " + name, context)
         result[path] = {
+            "completion_help": command.get_short_help_str(),
+            "completion_params": completion,
             "sections": isinstance(command, GhHelpMixin),
             "help": command.help or "",
             "epilog": command.epilog or "",
