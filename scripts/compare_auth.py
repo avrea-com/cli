@@ -69,6 +69,9 @@ class Fixture(http.server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         self.respond()
 
+    def do_PATCH(self):
+        self.respond()
+
     def respond(self):
         body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
         self.server.requests.append(
