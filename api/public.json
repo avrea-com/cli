@@ -9776,6 +9776,99 @@
         ]
       }
     },
+    "/orgs/{org_id}/billing/invoices/{invoice_id}/pdf": {
+      "get": {
+        "operationId": "download_invoice_pdf",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document_kind",
+            "required": false,
+            "schema": {
+              "default": "invoice",
+              "enum": [
+                "invoice",
+                "receipt"
+              ],
+              "title": "Document Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Invoice or invoice PDF not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Download Invoice Pdf",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/orgs/{org_id}/billing/payment-methods": {
       "get": {
         "operationId": "list_payment_methods",

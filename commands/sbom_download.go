@@ -53,30 +53,12 @@ func newSBOMDownload(d Dependencies) *cobra.Command {
 		if err != nil {
 			return sbomDownloadError(cfg, err, filename)
 		}
-		closeStream := func() {
-			if stream != nil {
-				_ = stream.Close()
-				stream = nil
-			}
-		}
-		defer closeStream()
-		// Python fetches all bytes before opening the destination or writing stdout.
-		// Spooling preserves that failure behavior without retaining large inventories
-		// in memory. Destination permissions and symlinks follow normal open semantics.
-		spool, err := os.CreateTemp("", "avr-sbom-*")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = spool.Close(); _ = os.Remove(spool.Name()) }()
-		count, err := io.Copy(spool, stream)
-		closeStream()
+		spool, count, err := spoolDownload(stream)
 		if err != nil {
 			return sbomDownloadError(cfg, err, filename)
 		}
+		defer func() { _ = spool.Close(); _ = os.Remove(spool.Name()) }()
 		if err = cmd.Context().Err(); err != nil {
-			return err
-		}
-		if _, err = spool.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
 		if target == "-" {
