@@ -229,7 +229,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		}
 		detail := "."
 		if he.Detail != "" {
-			detail = ": " + output.Text(he.Detail)
+			detail = ": " + output.CellText(he.Detail)
 		}
 		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."}
 	}
@@ -242,7 +242,7 @@ func apiError(cfg config.Config, err error, action string) error {
 	}
 	detail := ""
 	if he.Detail != "" {
-		detail = ": " + output.Text(he.Detail)
+		detail = ": " + output.CellText(he.Detail)
 	}
 	var message string
 	switch he.Status {
