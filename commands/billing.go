@@ -25,7 +25,7 @@ func NewBilling(deps Dependencies) *cobra.Command {
 	invoices := &cobra.Command{Use: "invoices", Short: "Manage invoices."}
 	invoices.AddCommand(newInvoiceList(d), newInvoiceShow(d), newInvoiceDownload(d))
 	methods := &cobra.Command{Use: "payment-methods", Short: "Manage payment methods."}
-	methods.AddCommand(newPaymentMethodList(d), newPaymentMethodDefault(d), newPaymentMethodRemove(d))
+	methods.AddCommand(newPaymentMethodList(d), newPaymentMethodAdd(d), newPaymentMethodDefault(d), newPaymentMethodRemove(d))
 	c.AddCommand(newBillingSummary(d), newBillingSettings(d), newBillingUpdate(d), invoices, methods)
 	return c
 }

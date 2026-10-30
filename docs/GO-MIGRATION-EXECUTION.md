@@ -826,9 +826,43 @@ streams, and escaped-ID/basename handling. Go race tests, lint/build, generation
 admin composition, fixture typing and workflow checks pass. All four report
 hashes match the tested executables. No live invoice downloads or billing writes.
 
+## Card addition
+
+Added billing payment-methods add. PDF checkpoints: public 0aaa251,
+admin 86bf10adeb. Billing now has all ten Python leaf commands.
+
+Preserve required card flags and prompts, month validation, organization
+selection, setup-intent creation, Stripe confirmation, attachment and human
+output. Hidden terminal input suppresses echo and restores it on interruption.
+Numeric prompts retry with Python's diagnostics. As in Python, these Click-style
+required prompts are not bypassed by AVR_PROMPT_DISABLED.
+
+Card details go only to the fixed Stripe HTTPS origin with the publishable key.
+Avrea receives only the resulting Stripe payment-method ID. Stripe requests
+have a deadline and response bound, never inherit API credentials/cookies,
+never follow redirects, never enter API trace/timing output and are not retried.
+Transport errors are sanitized; echoed input secrets are redacted from Stripe
+error messages. Malformed setup-intent IDs cannot change the request path.
+These are deliberate improvements over exposing raw network errors or accepting
+path-shaped IDs. No new runtime dependencies.
+
+Validation per binary: 26 paired native pre-Stripe cases, plus 55 paired cases
+(four terminal cases) against the public/admin command roots with an injected
+loopback HTTP transport. The latter builds test-only entry points and patches
+only the archived Python oracle's Stripe transport; production binaries gain no
+endpoint override. Reports distinguish native and injected validation and record
+the native binary hash. Request bodies/order, Basic auth, prompt/error output
+and absence of secret output are checked. No live Stripe or billing writes.
+Two real-PTY tests per binary compare hidden input against Python and verify
+echo restoration on Ctrl-C. Two Go tests cover four Stripe failure variants,
+secret redaction, redirect refusal, response bounds and malformed intent IDs.
+The 131 billing inspection and 71 billing write cases per binary still pass.
+Go race tests, lint/build, schema generation, admin composition, fixture typing
+and workflow checks pass; all native report hashes match tested executables.
+
 ## Remaining work
 
-Card addition, firewall, VM commands, hidden docs, root/help/completion,
+Firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

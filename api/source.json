@@ -87,7 +87,10 @@
     "update_billing_settings",
     "set_default_payment_method",
     "remove_payment_method",
-    "download_invoice_pdf"
+    "download_invoice_pdf",
+    "get_stripe_key",
+    "create_setup_intent",
+    "attach_payment_method"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
