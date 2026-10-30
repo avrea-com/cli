@@ -1385,6 +1385,31 @@ lint, build, metadata and registration checks, admin checks, Python tooling,
 21 focused comparator/catalog tests and both workflow checks pass. Parser and
 default suites are wired into public/admin CI and public go-parity.
 
+## Admin configuration oracle and provenance
+
+Argument/default checkpoints: public a91e0fc, admin 3cb7a32949.
+
+The final broad sweep reproduced the known admin host-selection difference:
+public Python can select its stored default host, while Python AdminCliConfig
+derives an API host from admin environment settings when AVR_HOST is unset.
+Core's compare_public.py now runs the pinned public auth/config command corpus
+with the actual AdminCliConfig source from the pinned core baseline. Reports
+record both source pins and the admin configuration hash. This validates the
+shared command composition, not unported admin overrides or internal methods.
+
+Added explicit admin environment precedence and host-keyed credential cases.
+The comparison reproduced incorrect config-status provenance in Go: the host
+was correct, but its source label came from the original environment instead
+of the composed configuration loader. Config now retains host provenance, so
+admin status matches Python without mutating the process environment.
+
+All 65 public auth, 74 admin auth, and 55 config cases for each binary pass
+against matching binary hashes. Public race tests, lint/build and all 1,626
+Python tests pass; admin checks, adapter lint/types and workflow validation pass.
+Both workflows retain all differential report variants as artifacts; admin CI
+uses its own configuration oracle for auth and config. The full fresh sweep
+still remains below.
+
 ## Remaining work
 
 Run the complete current public and shared-admin regression suites against

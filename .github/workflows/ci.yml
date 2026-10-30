@@ -203,42 +203,8 @@ jobs:
           name: go-preview-${{ matrix.os }}
           path: |
             build/go/avr.exe
-            build/go/auth-parity.json
-            build/go/inspection-parity.json
-            build/go/job-parity.json
-            build/go/run-control-parity.json
-            build/go/workflow-parity.json
-            build/go/workflow-run-parity.json
-            build/go/job-watch-parity.json
-            build/go/job-metrics-parity.json
-            build/go/run-diagnose-parity.json
-            build/go/pr-parity.json
-            build/go/status-parity.json
-            build/go/artifact-parity.json
-            build/go/cache-parity.json
-            build/go/log-search-parity.json
-            build/go/sbom-inspection-parity.json
-            build/go/sbom-download-parity.json
-            build/go/sbom-generate-parity.json
-            build/go/config-parity.json
-            build/go/token-inspection-parity.json
-            build/go/token-create-parity.json
-            build/go/settings-parity.json
-            build/go/organization-parity.json
-            build/go/saml-parity.json
-            build/go/installation-parity.json
-            build/go/public-mirror-parity.json
-            build/go/git-mirror-parity.json
-            build/go/clone-parity.json
-            build/go/help-parity.json
-            build/go/completion-parity.json
-            build/go/option-gaps-parity.json
-            build/go/option-values-parity.json
-            build/go/option-aliases-parity.json
-            build/go/global-parity.json
-            build/go/argument-contract-parity.json
-            build/go/defaults-parity.json
-            build/go/audit-health-parity.json
+            build/go/*parity*.json
+            build/go/command-surface-audit.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error
 
