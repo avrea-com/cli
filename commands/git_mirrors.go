@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -18,7 +17,6 @@ import (
 
 var gitMirrorFields = []string{"repository_id", "full_name", "enabled", "placements"}
 var gitClusterFields = []string{"cluster_id", "datacenter_id", "name"}
-var repositorySegment = regexp.MustCompile("^[A-Za-z0-9_.-]+$")
 
 func validateRepositoryName(value string) error {
 	parts := strings.Split(value, "/")
@@ -26,7 +24,7 @@ func validateRepositoryName(value string) error {
 		return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 	}
 	for _, part := range parts {
-		if part == "." || part == ".." || !repositorySegment.MatchString(part) {
+		if part == "." || part == ".." || !repoPart.MatchString(part) {
 			return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 		}
 	}

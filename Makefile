@@ -127,6 +127,8 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_installations --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_public_mirrors --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_git_mirrors --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_clone --go build/go/avr
+	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py -q
 
 go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...

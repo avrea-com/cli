@@ -1532,6 +1532,45 @@
         "title": "GitClustersPagination",
         "type": "object"
       },
+      "GitTokenRequest": {
+        "properties": {
+          "repos": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repos"
+          }
+        },
+        "title": "GitTokenRequest",
+        "type": "object"
+      },
+      "GitTokenResponse": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "expires_at"
+        ],
+        "title": "GitTokenResponse",
+        "type": "object"
+      },
       "GovernanceHoldReason": {
         "enum": [
           "group_suspended",
@@ -4015,6 +4054,64 @@
           "role"
         ],
         "title": "MirrorPlacementResource",
+        "type": "object"
+      },
+      "MirrorSession": {
+        "properties": {
+          "browsable": {
+            "title": "Browsable",
+            "type": "boolean"
+          },
+          "default_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Branch"
+          },
+          "endpoints": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Endpoints",
+            "type": "array"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mirror_off",
+                  "not_ready"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": [
+          "browsable"
+        ],
+        "title": "MirrorSession",
         "type": "object"
       },
       "OrgPullRequestAttentionMeta": {
@@ -15562,6 +15659,150 @@
         ]
       }
     },
+    "/repos/{owner}/{repository}/mirror/session": {
+      "get": {
+        "description": "Discover a GitHub repository's mirrors directly by owner/repository.\n\nThe caller must belong to the repository's active Avrea organization and\nhave source read access. Scoped tokens retain their organization and\nrepository limits; platform-admin overrides do not apply.",
+        "operationId": "get_session_by_name",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "schema": {
+              "title": "Owner",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repository",
+            "required": true,
+            "schema": {
+              "title": "Repository",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MirrorSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Repository access could not be verified"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Session By Name"
+      }
+    },
+    "/repos/{repo_id}/mirror/session": {
+      "get": {
+        "description": "Discover a repository's mirrors by its Avrea ID, returning its current name.\n\nUses the same active-membership, source-read and scoped-token checks as\nname-based discovery. Platform-admin overrides do not apply.",
+        "operationId": "get_session_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "pattern": "^rep-[0-9a-f]{32}$",
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MirrorSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Repository access could not be verified"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Session By Id"
+      }
+    },
     "/saml/{org_slug}/metadata": {
       "get": {
         "operationId": "saml_metadata",
@@ -15696,6 +15937,78 @@
         "summary": "List Settings Schema",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/tokens/git": {
+      "post": {
+        "description": "Issue a short-lived JWT for authenticating to avrea-git.\n\nThe JWT contains the user's identity, platform admin status, and\nper-repo permissions. avrea-git validates the token locally\nusing a shared secret \u2014 no network call back to the control plane.\n\nFor regular users, pass `repos` to specify which repositories to\ninclude permissions for. If omitted, the token has no repo permissions\nand can only be used for token-level endpoints (e.g., list repos).\n\nThrough a scoped token the JWT carries no admin claim, names only\nrepositories inside the token's organization and selection, grants read\non them whatever level the token holds, and expires with the token or\nafter ten minutes, whichever is sooner. A JWT already\nissued stays valid until then when the token is revoked.",
+        "operationId": "issue_git_token",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GitTokenRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Issue Git Token",
+        "tags": [
+          "tokens"
         ]
       }
     },

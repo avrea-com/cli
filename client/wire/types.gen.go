@@ -459,6 +459,24 @@ func (e MetricSource) Valid() bool {
 	}
 }
 
+// Defines values for MirrorSessionUnavailableReason.
+const (
+	MirrorOff MirrorSessionUnavailableReason = "mirror_off"
+	NotReady  MirrorSessionUnavailableReason = "not_ready"
+)
+
+// Valid indicates whether the value is a known member of the MirrorSessionUnavailableReason enum.
+func (e MirrorSessionUnavailableReason) Valid() bool {
+	switch e {
+	case MirrorOff:
+		return true
+	case NotReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrgPullRequestSummaryAttentionReason.
 const (
 	OrgPullRequestSummaryAttentionReasonChangesRequested OrgPullRequestSummaryAttentionReason = "changes_requested"
@@ -1888,6 +1906,19 @@ type GitClustersPagination struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// GitTokenRequest defines model for GitTokenRequest.
+type GitTokenRequest struct {
+	Repos                nullable.Nullable[[]string] `json:"repos,omitempty"`
+	AdditionalProperties map[string]interface{}      `json:"-"`
+}
+
+// GitTokenResponse defines model for GitTokenResponse.
+type GitTokenResponse struct {
+	ExpiresAt            time.Time              `json:"expires_at"`
+	Token                string                 `json:"token"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // GovernanceHoldReason defines model for GovernanceHoldReason.
 type GovernanceHoldReason string
 
@@ -2293,6 +2324,19 @@ type MirrorPlacementResource struct {
 	Role                 string                       `json:"role"`
 	AdditionalProperties map[string]interface{}       `json:"-"`
 }
+
+// MirrorSession defines model for MirrorSession.
+type MirrorSession struct {
+	Browsable            bool                                              `json:"browsable"`
+	DefaultBranch        nullable.Nullable[string]                         `json:"default_branch,omitempty"`
+	Endpoints            *[]string                                         `json:"endpoints,omitempty"`
+	FullName             nullable.Nullable[string]                         `json:"full_name,omitempty"`
+	UnavailableReason    nullable.Nullable[MirrorSessionUnavailableReason] `json:"unavailable_reason,omitempty"`
+	AdditionalProperties map[string]interface{}                            `json:"-"`
+}
+
+// MirrorSessionUnavailableReason defines model for MirrorSession.UnavailableReason.
+type MirrorSessionUnavailableReason string
 
 // OrgPullRequestAttentionMeta What a scope=attention page covered beyond the rows it returned.
 //
@@ -3957,6 +4001,16 @@ type GetPublicMirrorParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// GetSessionByNameParams defines parameters for GetSessionByName.
+type GetSessionByNameParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetSessionByIdParams defines parameters for GetSessionById.
+type GetSessionByIdParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListSettingsSchemaParams defines parameters for ListSettingsSchema.
 type ListSettingsSchemaParams struct {
 	Prefix       *string                        `form:"prefix,omitempty" json:"prefix,omitempty"`
@@ -3966,6 +4020,14 @@ type ListSettingsSchemaParams struct {
 
 // ListSettingsSchemaParamsScope defines parameters for ListSettingsSchema.
 type ListSettingsSchemaParamsScope string
+
+// IssueGitTokenJSONBody defines parameters for IssueGitToken.
+type IssueGitTokenJSONBody = GitTokenRequest
+
+// IssueGitTokenParams defines parameters for IssueGitToken.
+type IssueGitTokenParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
 
 // ListUserInstallationsParams defines parameters for ListUserInstallations.
 type ListUserInstallationsParams struct {
@@ -4022,6 +4084,9 @@ type UpdateOrgSettingJSONRequestBody = SettingUpdate
 
 // RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
 type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
+
+// IssueGitTokenJSONRequestBody defines body for IssueGitToken for application/json ContentType.
+type IssueGitTokenJSONRequestBody = IssueGitTokenJSONBody
 
 // CreateOrganizationJSONRequestBody defines body for CreateOrganization for application/json ContentType.
 type CreateOrganizationJSONRequestBody = CreateOrganizationRequest
@@ -7554,6 +7619,153 @@ func (a GitClustersPagination) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'next_cursor': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GitTokenRequest. Returns the specified
+// element and whether it was found
+func (a GitTokenRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitTokenRequest
+func (a *GitTokenRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitTokenRequest to handle AdditionalProperties
+func (a *GitTokenRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["repos"]; found {
+		err = json.Unmarshal(raw, &a.Repos)
+		if err != nil {
+			return fmt.Errorf("error reading 'repos': %w", err)
+		}
+		delete(object, "repos")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitTokenRequest to handle AdditionalProperties
+func (a GitTokenRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Repos != nil {
+		object["repos"], err = json.Marshal(a.Repos)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repos': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GitTokenResponse. Returns the specified
+// element and whether it was found
+func (a GitTokenResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitTokenResponse
+func (a *GitTokenResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitTokenResponse to handle AdditionalProperties
+func (a *GitTokenResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["expires_at"]; found {
+		err = json.Unmarshal(raw, &a.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'expires_at': %w", err)
+		}
+		delete(object, "expires_at")
+	}
+
+	if raw, found := object["token"]; found {
+		err = json.Unmarshal(raw, &a.Token)
+		if err != nil {
+			return fmt.Errorf("error reading 'token': %w", err)
+		}
+		delete(object, "token")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitTokenResponse to handle AdditionalProperties
+func (a GitTokenResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["expires_at"], err = json.Marshal(a.ExpiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
+	}
+
+	object["token"], err = json.Marshal(a.Token)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'token': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -11822,6 +12034,132 @@ func (a MirrorPlacementResource) MarshalJSON() ([]byte, error) {
 	object["role"], err = json.Marshal(a.Role)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MirrorSession. Returns the specified
+// element and whether it was found
+func (a MirrorSession) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MirrorSession
+func (a *MirrorSession) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MirrorSession to handle AdditionalProperties
+func (a *MirrorSession) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["browsable"]; found {
+		err = json.Unmarshal(raw, &a.Browsable)
+		if err != nil {
+			return fmt.Errorf("error reading 'browsable': %w", err)
+		}
+		delete(object, "browsable")
+	}
+
+	if raw, found := object["default_branch"]; found {
+		err = json.Unmarshal(raw, &a.DefaultBranch)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_branch': %w", err)
+		}
+		delete(object, "default_branch")
+	}
+
+	if raw, found := object["endpoints"]; found {
+		err = json.Unmarshal(raw, &a.Endpoints)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoints': %w", err)
+		}
+		delete(object, "endpoints")
+	}
+
+	if raw, found := object["full_name"]; found {
+		err = json.Unmarshal(raw, &a.FullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'full_name': %w", err)
+		}
+		delete(object, "full_name")
+	}
+
+	if raw, found := object["unavailable_reason"]; found {
+		err = json.Unmarshal(raw, &a.UnavailableReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'unavailable_reason': %w", err)
+		}
+		delete(object, "unavailable_reason")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MirrorSession to handle AdditionalProperties
+func (a MirrorSession) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["browsable"], err = json.Marshal(a.Browsable)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'browsable': %w", err)
+	}
+
+	if a.DefaultBranch != nil {
+		object["default_branch"], err = json.Marshal(a.DefaultBranch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default_branch': %w", err)
+		}
+	}
+
+	if a.Endpoints != nil {
+		object["endpoints"], err = json.Marshal(a.Endpoints)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoints': %w", err)
+		}
+	}
+
+	if a.FullName != nil {
+		object["full_name"], err = json.Marshal(a.FullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'full_name': %w", err)
+		}
+	}
+
+	if a.UnavailableReason != nil {
+		object["unavailable_reason"], err = json.Marshal(a.UnavailableReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unavailable_reason': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

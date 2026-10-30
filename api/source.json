@@ -73,7 +73,10 @@
     "get_repo_git_mirror",
     "update_repo_git_mirror",
     "add_repo_git_mirror_placement",
-    "remove_repo_git_mirror_placement"
+    "remove_repo_git_mirror_placement",
+    "get_session_by_name",
+    "get_session_by_id",
+    "issue_git_token"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
