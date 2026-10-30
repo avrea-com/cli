@@ -1,6 +1,6 @@
 # Go migration plan for avr and avr-admin
 
-Status: public implementation rebased and updated; refreshed parity validation in progress. Release/admin-only phases remain.
+Status: public implementation rebased onto origin/main; refreshed local parity validation complete. Release/admin-only phases remain.
 Updated: 2026-10-30.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
