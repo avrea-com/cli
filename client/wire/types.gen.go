@@ -1347,6 +1347,12 @@ type APIResponseDispatchWorkflowResponse struct {
 	Data DispatchWorkflowResponse `json:"data"`
 }
 
+// APIResponseEmailDomainResponse defines model for APIResponse_EmailDomainResponse_.
+type APIResponseEmailDomainResponse struct {
+	// Data Response model for an email domain.
+	Data EmailDomainResponse `json:"data"`
+}
+
 // APIResponseJobResponse defines model for APIResponse_JobResponse_.
 type APIResponseJobResponse struct {
 	Data JobResponse `json:"data"`
@@ -1371,6 +1377,11 @@ type APIResponseWorkflowArtifact struct {
 // APIResponseWorkflowRunResponse defines model for APIResponse_WorkflowRunResponse_.
 type APIResponseWorkflowRunResponse struct {
 	Data WorkflowRunResponse `json:"data"`
+}
+
+// APIResponseListEmailDomainResponse defines model for APIResponse_list_EmailDomainResponse__.
+type APIResponseListEmailDomainResponse struct {
+	Data []EmailDomainResponse `json:"data"`
 }
 
 // APIResponseListJobAggregateBucket defines model for APIResponse_list_JobAggregateBucket__.
@@ -1616,6 +1627,12 @@ type CreateAccessTokenRequest struct {
 	VmCreateLimit nullable.Nullable[int] `json:"vm_create_limit,omitempty"`
 }
 
+// CreateOrganizationRequest defines model for CreateOrganizationRequest.
+type CreateOrganizationRequest struct {
+	Name                 string                 `json:"name"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // CreatedAccessTokenResponse defines model for CreatedAccessTokenResponse.
 type CreatedAccessTokenResponse struct {
 	AllowVmCreate  bool                         `json:"allow_vm_create"`
@@ -1664,6 +1681,31 @@ type DispatchWorkflowResponse struct {
 	RunId                nullable.Nullable[string] `json:"run_id,omitempty"`
 	Workflow             string                    `json:"workflow"`
 	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// EmailDomainClaimRequest Request model for creating a DNS-verifiable domain claim.
+type EmailDomainClaimRequest struct {
+	Domain               string                 `json:"domain"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// EmailDomainResponse Response model for an email domain.
+type EmailDomainResponse struct {
+	CreatedAt                 time.Time                    `json:"created_at"`
+	DnsRecordName             nullable.Nullable[string]    `json:"dns_record_name,omitempty"`
+	DnsRecordValue            nullable.Nullable[string]    `json:"dns_record_value,omitempty"`
+	Domain                    string                       `json:"domain"`
+	OrganizationEmailDomainId string                       `json:"organization_email_domain_id"`
+	OrganizationId            string                       `json:"organization_id"`
+	Verified                  bool                         `json:"verified"`
+	VerifiedAt                nullable.Nullable[time.Time] `json:"verified_at,omitempty"`
+	AdditionalProperties      map[string]interface{}       `json:"-"`
+}
+
+// EmailDomainsRequest Request model for setting email domains.
+type EmailDomainsRequest struct {
+	Domains              []string               `json:"domains"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // FeatureFlagResponse defines model for FeatureFlagResponse.
@@ -2130,6 +2172,17 @@ type OrganizationListItem struct {
 	AdditionalProperties       map[string]interface{} `json:"-"`
 }
 
+// OrganizationMemberResponse Response model for an organization member.
+type OrganizationMemberResponse struct {
+	AvatarUrl            nullable.Nullable[string] `json:"avatar_url"`
+	JoinedAt             time.Time                 `json:"joined_at"`
+	Name                 nullable.Nullable[string] `json:"name"`
+	Role                 string                    `json:"role"`
+	State                string                    `json:"state"`
+	UserId               string                    `json:"user_id"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
 // OrganizationRepositoriesPagination defines model for OrganizationRepositoriesPagination.
 type OrganizationRepositoriesPagination struct {
 	NextCursor           nullable.Nullable[string] `json:"next_cursor,omitempty"`
@@ -2173,9 +2226,25 @@ type PagedResponseAccessTokenResponse struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponseEmailDomainResponse defines model for PagedResponse_EmailDomainResponse_.
+type PagedResponseEmailDomainResponse struct {
+	Data []EmailDomainResponse `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PagedResponseOrganizationListItem defines model for PagedResponse_OrganizationListItem_.
 type PagedResponseOrganizationListItem struct {
 	Data []OrganizationListItem `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
+// PagedResponseOrganizationMemberResponse defines model for PagedResponse_OrganizationMemberResponse_.
+type PagedResponseOrganizationMemberResponse struct {
+	Data []OrganizationMemberResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
@@ -2835,6 +2904,27 @@ type GetAccessTokenParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListEmailDomainsParams defines parameters for ListEmailDomains.
+type ListEmailDomainsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// SetEmailDomainsParams defines parameters for SetEmailDomains.
+type SetEmailDomainsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ClaimEmailDomainParams defines parameters for ClaimEmailDomain.
+type ClaimEmailDomainParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// VerifyEmailDomainParams defines parameters for VerifyEmailDomain.
+type VerifyEmailDomainParams struct {
+	ForceVerified *bool   `form:"force_verified,omitempty" json:"force_verified,omitempty"`
+	AvreaSession  *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetOrgFeatureFlagParams defines parameters for GetOrgFeatureFlag.
 type GetOrgFeatureFlagParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3018,6 +3108,11 @@ type GetJobMetricsParams struct {
 
 	// End End time (Unix seconds). Defaults to execution end or now.
 	End          *int    `form:"end,omitempty" json:"end,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListOrganizationMembersParams defines parameters for ListOrganizationMembers.
+type ListOrganizationMembersParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -3487,6 +3582,11 @@ type ListUserOrganizationsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// CreateOrganizationParams defines parameters for CreateOrganization.
+type CreateOrganizationParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // SshForwardingParams defines parameters for SshForwarding.
 type SshForwardingParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3497,6 +3597,12 @@ type SearchLogsJSONRequestBody = LogSearchParams
 
 // CreateAccessTokenJSONRequestBody defines body for CreateAccessToken for application/json ContentType.
 type CreateAccessTokenJSONRequestBody = CreateAccessTokenRequest
+
+// SetEmailDomainsJSONRequestBody defines body for SetEmailDomains for application/json ContentType.
+type SetEmailDomainsJSONRequestBody = EmailDomainsRequest
+
+// ClaimEmailDomainJSONRequestBody defines body for ClaimEmailDomain for application/json ContentType.
+type ClaimEmailDomainJSONRequestBody = EmailDomainClaimRequest
 
 // GenerateSbomJSONRequestBody defines body for GenerateSbom for application/json ContentType.
 type GenerateSbomJSONRequestBody = GenerateSbomRequest
@@ -3512,6 +3618,9 @@ type UpdateOrgSettingJSONRequestBody = SettingUpdate
 
 // RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
 type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
+
+// CreateOrganizationJSONRequestBody defines body for CreateOrganization for application/json ContentType.
+type CreateOrganizationJSONRequestBody = CreateOrganizationRequest
 
 // SshForwardingJSONRequestBody defines body for SshForwarding for application/json ContentType.
 type SshForwardingJSONRequestBody = SSHForwardingRequest
@@ -5620,6 +5729,72 @@ func (a CancelWorkflowRunResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for CreateOrganizationRequest. Returns the specified
+// element and whether it was found
+func (a CreateOrganizationRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CreateOrganizationRequest
+func (a *CreateOrganizationRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CreateOrganizationRequest to handle AdditionalProperties
+func (a *CreateOrganizationRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CreateOrganizationRequest to handle AdditionalProperties
+func (a CreateOrganizationRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for CreatedAccessTokenResponse. Returns the specified
 // element and whether it was found
 func (a CreatedAccessTokenResponse) Get(fieldName string) (value interface{}, found bool) {
@@ -6049,6 +6224,303 @@ func (a DispatchWorkflowResponse) MarshalJSON() ([]byte, error) {
 	object["workflow"], err = json.Marshal(a.Workflow)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EmailDomainClaimRequest. Returns the specified
+// element and whether it was found
+func (a EmailDomainClaimRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EmailDomainClaimRequest
+func (a *EmailDomainClaimRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EmailDomainClaimRequest to handle AdditionalProperties
+func (a *EmailDomainClaimRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["domain"]; found {
+		err = json.Unmarshal(raw, &a.Domain)
+		if err != nil {
+			return fmt.Errorf("error reading 'domain': %w", err)
+		}
+		delete(object, "domain")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EmailDomainClaimRequest to handle AdditionalProperties
+func (a EmailDomainClaimRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["domain"], err = json.Marshal(a.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'domain': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EmailDomainResponse. Returns the specified
+// element and whether it was found
+func (a EmailDomainResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EmailDomainResponse
+func (a *EmailDomainResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EmailDomainResponse to handle AdditionalProperties
+func (a *EmailDomainResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["dns_record_name"]; found {
+		err = json.Unmarshal(raw, &a.DnsRecordName)
+		if err != nil {
+			return fmt.Errorf("error reading 'dns_record_name': %w", err)
+		}
+		delete(object, "dns_record_name")
+	}
+
+	if raw, found := object["dns_record_value"]; found {
+		err = json.Unmarshal(raw, &a.DnsRecordValue)
+		if err != nil {
+			return fmt.Errorf("error reading 'dns_record_value': %w", err)
+		}
+		delete(object, "dns_record_value")
+	}
+
+	if raw, found := object["domain"]; found {
+		err = json.Unmarshal(raw, &a.Domain)
+		if err != nil {
+			return fmt.Errorf("error reading 'domain': %w", err)
+		}
+		delete(object, "domain")
+	}
+
+	if raw, found := object["organization_email_domain_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationEmailDomainId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_email_domain_id': %w", err)
+		}
+		delete(object, "organization_email_domain_id")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["verified"]; found {
+		err = json.Unmarshal(raw, &a.Verified)
+		if err != nil {
+			return fmt.Errorf("error reading 'verified': %w", err)
+		}
+		delete(object, "verified")
+	}
+
+	if raw, found := object["verified_at"]; found {
+		err = json.Unmarshal(raw, &a.VerifiedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'verified_at': %w", err)
+		}
+		delete(object, "verified_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EmailDomainResponse to handle AdditionalProperties
+func (a EmailDomainResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.DnsRecordName != nil {
+		object["dns_record_name"], err = json.Marshal(a.DnsRecordName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dns_record_name': %w", err)
+		}
+	}
+
+	if a.DnsRecordValue != nil {
+		object["dns_record_value"], err = json.Marshal(a.DnsRecordValue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dns_record_value': %w", err)
+		}
+	}
+
+	object["domain"], err = json.Marshal(a.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'domain': %w", err)
+	}
+
+	object["organization_email_domain_id"], err = json.Marshal(a.OrganizationEmailDomainId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_email_domain_id': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["verified"], err = json.Marshal(a.Verified)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'verified': %w", err)
+	}
+
+	if a.VerifiedAt != nil {
+		object["verified_at"], err = json.Marshal(a.VerifiedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'verified_at': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EmailDomainsRequest. Returns the specified
+// element and whether it was found
+func (a EmailDomainsRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EmailDomainsRequest
+func (a *EmailDomainsRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EmailDomainsRequest to handle AdditionalProperties
+func (a *EmailDomainsRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["domains"]; found {
+		err = json.Unmarshal(raw, &a.Domains)
+		if err != nil {
+			return fmt.Errorf("error reading 'domains': %w", err)
+		}
+		delete(object, "domains")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EmailDomainsRequest to handle AdditionalProperties
+func (a EmailDomainsRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Domains != nil {
+		object["domains"], err = json.Marshal(a.Domains)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'domains': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -10723,6 +11195,137 @@ func (a OrganizationListItem) MarshalJSON() ([]byte, error) {
 	object["slug"], err = json.Marshal(a.Slug)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'slug': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for OrganizationMemberResponse. Returns the specified
+// element and whether it was found
+func (a OrganizationMemberResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for OrganizationMemberResponse
+func (a *OrganizationMemberResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for OrganizationMemberResponse to handle AdditionalProperties
+func (a *OrganizationMemberResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["avatar_url"]; found {
+		err = json.Unmarshal(raw, &a.AvatarUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'avatar_url': %w", err)
+		}
+		delete(object, "avatar_url")
+	}
+
+	if raw, found := object["joined_at"]; found {
+		err = json.Unmarshal(raw, &a.JoinedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'joined_at': %w", err)
+		}
+		delete(object, "joined_at")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
+		if err != nil {
+			return fmt.Errorf("error reading 'role': %w", err)
+		}
+		delete(object, "role")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["user_id"]; found {
+		err = json.Unmarshal(raw, &a.UserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'user_id': %w", err)
+		}
+		delete(object, "user_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for OrganizationMemberResponse to handle AdditionalProperties
+func (a OrganizationMemberResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["avatar_url"], err = json.Marshal(a.AvatarUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'avatar_url': %w", err)
+	}
+
+	object["joined_at"], err = json.Marshal(a.JoinedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'joined_at': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["role"], err = json.Marshal(a.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["user_id"], err = json.Marshal(a.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'user_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

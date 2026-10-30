@@ -27,6 +27,19 @@
         "title": "APIResponse[DispatchWorkflowResponse]",
         "type": "object"
       },
+      "APIResponse_EmailDomainResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailDomainResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[EmailDomainResponse]",
+        "type": "object"
+      },
       "APIResponse_JobResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -90,6 +103,23 @@
           "data"
         ],
         "title": "APIResponse[WorkflowRunResponse]",
+        "type": "object"
+      },
+      "APIResponse_list_EmailDomainResponse__": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EmailDomainResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[list[EmailDomainResponse]]",
         "type": "object"
       },
       "APIResponse_list_JobAggregateBucket__": {
@@ -1003,6 +1033,22 @@
         "title": "CreateAccessTokenRequest",
         "type": "object"
       },
+      "CreateOrganizationRequest": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 2,
+            "pattern": "^[\\w ._-]+$",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateOrganizationRequest",
+        "type": "object"
+      },
       "CreatedAccessTokenResponse": {
         "properties": {
           "allow_vm_create": {
@@ -1194,6 +1240,106 @@
           "ref"
         ],
         "title": "DispatchWorkflowResponse",
+        "type": "object"
+      },
+      "EmailDomainClaimRequest": {
+        "description": "Request model for creating a DNS-verifiable domain claim.",
+        "properties": {
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain"
+        ],
+        "title": "EmailDomainClaimRequest",
+        "type": "object"
+      },
+      "EmailDomainResponse": {
+        "description": "Response model for an email domain.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dns_record_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dns Record Name"
+          },
+          "dns_record_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dns Record Value"
+          },
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "organization_email_domain_id": {
+            "title": "Organization Email Domain Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "required": [
+          "organization_email_domain_id",
+          "organization_id",
+          "domain",
+          "created_at",
+          "verified"
+        ],
+        "title": "EmailDomainResponse",
+        "type": "object"
+      },
+      "EmailDomainsRequest": {
+        "description": "Request model for setting email domains.",
+        "properties": {
+          "domains": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Domains",
+            "type": "array"
+          }
+        },
+        "required": [
+          "domains"
+        ],
+        "title": "EmailDomainsRequest",
         "type": "object"
       },
       "FeatureFlagResponse": {
@@ -3811,6 +3957,60 @@
         "title": "OrganizationListItem",
         "type": "object"
       },
+      "OrganizationMemberResponse": {
+        "description": "Response model for an organization member.",
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "avatar_url",
+          "role",
+          "state",
+          "joined_at"
+        ],
+        "title": "OrganizationMemberResponse",
+        "type": "object"
+      },
       "OrganizationRepositoriesPagination": {
         "properties": {
           "next_cursor": {
@@ -3960,6 +4160,27 @@
         "title": "PagedResponse[AccessTokenResponse]",
         "type": "object"
       },
+      "PagedResponse_EmailDomainResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EmailDomainResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[EmailDomainResponse]",
+        "type": "object"
+      },
       "PagedResponse_OrganizationListItem_": {
         "additionalProperties": false,
         "properties": {
@@ -3979,6 +4200,27 @@
           "data"
         ],
         "title": "PagedResponse[OrganizationListItem]",
+        "type": "object"
+      },
+      "PagedResponse_OrganizationMemberResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationMemberResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[OrganizationMemberResponse]",
         "type": "object"
       },
       "PagedResponse_WorkflowArtifactView_": {
@@ -7264,6 +7506,302 @@
         ]
       }
     },
+    "/orgs/{org_id}/email-domains": {
+      "get": {
+        "description": "List all email domains for an organization.\n\nRequires membership in the organization. Changes require admin role.",
+        "operationId": "list_email_domains",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_EmailDomainResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Email Domains",
+        "tags": [
+          "organization-installations"
+        ]
+      },
+      "post": {
+        "description": "Set the email domains for an organization.\n\nReplaces all existing email domains with the provided list.\nUsers who sign up with an email matching these domains will automatically\nbe added to the organization.\n\nRequires admin role in the organization.",
+        "operationId": "set_email_domains",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailDomainsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_list_EmailDomainResponse__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Email Domains",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/email-domains/claim": {
+      "post": {
+        "description": "Claim a company domain and return the DNS TXT ownership challenge.",
+        "operationId": "claim_email_domain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailDomainClaimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_EmailDomainResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Claim Email Domain",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/email-domains/{domain}/verify": {
+      "post": {
+        "description": "Confirm DNS ownership of a claimed email domain and mark it verified.\n\nThe org must first publish the TXT record returned when the domain was\nclaimed (``dns_record_name`` / ``dns_record_value``). Until a domain is\nverified it does not drive auto-invite. ``force_verified=true`` skips the\nDNS check and is honored only for platform admins (local-dev / support\nshortcut).\n\nRequires admin role in the organization.",
+        "operationId": "verify_email_domain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "domain",
+            "required": true,
+            "schema": {
+              "title": "Domain",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "force_verified",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Force Verified",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_EmailDomainResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Email domain not found for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Email Domain",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
     "/orgs/{org_id}/feature-flags/{flag_key}": {
       "get": {
         "description": "Resolve a single ``feature.*`` launch-gate flag for the org.\n\nOpen to any member \u2014 the console gates that show feature surfaces depend\non it. This endpoint stays separate from the generic settings list because\ninternal launch gates are intentionally readable here, while that list\nomits internal keys entirely (and rejects customer writes to them).\nAnything that is not a registered boolean ``feature.*`` setting resolves\nto ``enabled=false``: fail-closed, and it lets the frontend reference a\nflag before it is registered without tripping a 422.",
@@ -8475,6 +9013,70 @@
         "summary": "Get job metrics by source",
         "tags": [
           "metrics"
+        ]
+      }
+    },
+    "/orgs/{org_id}/members": {
+      "get": {
+        "description": "List all members of an organization.\n\nReadable by any member -- who else is in your own organization is not\nprivileged information. Changing or removing a member still requires admin.",
+        "operationId": "list_organization_members",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_OrganizationMemberResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Organization Members",
+        "tags": [
+          "organization-installations"
         ]
       }
     },
@@ -12888,6 +13490,69 @@
           }
         ],
         "summary": "List User Organizations",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "description": "Create a new organization with the current user as admin.",
+        "operationId": "create_organization",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationListItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Organization",
         "tags": [
           "users"
         ]

@@ -247,23 +247,13 @@ func settingsWriteError(cfg config.Config, err error, action, key string, repo, 
 }
 func newSettingsWrite(d Dependencies, reset bool) *cobra.Command {
 	var org, repo string
-	use, short, count := "set KEY VALUE", "Set a setting value.", 2
+	use, short := "set KEY VALUE", "Set a setting value."
+	names := []string{"KEY", "VALUE"}
 	if reset {
-		use, short, count = "reset KEY", "Remove a setting override.", 1
+		use, short = "reset KEY", "Remove a setting override."
+		names = []string{"KEY"}
 	}
-	c := &cobra.Command{Use: use, Short: short, Args: func(_ *cobra.Command, args []string) error {
-		if len(args) < count {
-			key := "KEY"
-			if len(args) > 0 {
-				key = "VALUE"
-			}
-			return &ExitError{2, "Error: Missing argument '" + key + "'."}
-		}
-		if len(args) > count {
-			return &ExitError{2, "Error: Got unexpected extra argument (" + output.CellText(strings.Join(args[count:], " ")) + ")"}
-		}
-		return nil
-	}}
+	c := &cobra.Command{Use: use, Short: short, Args: positionalArguments(names...)}
 	cacheScopeFlags(c, &org, &repo)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, id, rid, err := settingsContext(cmd, d, org, repo, true)

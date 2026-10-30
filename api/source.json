@@ -50,7 +50,13 @@
     "list_org_settings",
     "update_org_setting",
     "delete_org_setting",
-    "list_settings_schema"
+    "list_settings_schema",
+    "create_organization",
+    "list_organization_members",
+    "list_email_domains",
+    "claim_email_domain",
+    "verify_email_domain",
+    "set_email_domains"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

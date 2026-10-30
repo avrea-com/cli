@@ -547,10 +547,37 @@ and workflow validation pass. The four reports match final binary hashes.
 The admin checks validate inherited public semantics; admin-only settings
 overrides remain outside this public-command migration.
 
+## Organization and email-domain batch
+
+Added org create/members and org email-domain list/claim/verify/set, shared
+with avr-admin. Settings checkpoints: public 089a84c, admin 0cea779e05.
+
+Decisions:
+- Keep organization creation independent of current org selection. Member and
+  domain commands retain explicit IDs, slug resolution and the configured org.
+- Preserve table and aligned-record output, nullable member names, UTC
+  timestamps, pending/verified domain status, DNS challenges and verification
+  instructions. Pending verification remains a successful status inspection.
+- Domain replacement keeps the default-no confirmation, --yes/-y bypass,
+  disabled-prompt refusal and server-returned domain order/count.
+- Send one request per mutation, guard cancellation before sending, and escape
+  verification domains as a single path segment. No new feature preflights.
+- Add a shared named-positional validator after five differential cases
+  exposed generic Cobra diagnostics. Settings reuses it; JSON single-record
+  output and aligned labels also have shared helpers.
+- No new dependencies, live organization creation or DNS/domain changes.
+
+Validation: 127 paired cases per binary, including eight terminal cases,
+cover all six commands, request bodies, organization selection, pending and
+verified records, empty data, JSON/jq, prompts, errors and argument diagnostics.
+A Go test checks cancellation before all four new mutation paths. Twenty
+settings argument/value regression cases pass in each binary. Go race tests,
+lint, schema generation, admin composition checks, fixture typing and workflow
+validation pass. The four reports match the final tested binary hashes.
+
 ## Remaining work
 
-Organization and repository
-management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
+Organization SAML/install and repository management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
