@@ -61,7 +61,9 @@
     "upsert_saml_config",
     "delete_saml_config",
     "set_saml_enforcement",
-    "saml_metadata"
+    "saml_metadata",
+    "list_user_installations",
+    "remove_organization_installation"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
