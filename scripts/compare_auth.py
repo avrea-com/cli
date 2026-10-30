@@ -81,6 +81,8 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                 "body": (
                     {"base64": base64.b64encode(body).decode(), "content_type": self.headers.get("Content-Type")}
                     if self.headers.get("Content-Type") == "application/xml"
+                    else dict(parse_qsl(body.decode(), keep_blank_values=True))
+                    if self.headers.get("Content-Type") == "application/x-www-form-urlencoded"
                     else json.loads(body)
                     if body
                     else None
@@ -704,7 +706,9 @@ def scenarios():
     return cases
 
 
-def main(case_factory=scenarios, compare_results=compare, default_report="build/go/auth-parity.json"):
+def main(
+    case_factory=scenarios, compare_results=compare, default_report="build/go/auth-parity.json", prepare_oracle=None
+):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", required=True)
     parser.add_argument("--report", default=default_report)
@@ -729,6 +733,8 @@ def main(case_factory=scenarios, compare_results=compare, default_report="build/
     with tempfile.TemporaryDirectory(prefix="avr-oracle-") as oracle:
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(oracle, filter="data")
+        if prepare_oracle is not None:
+            prepare_oracle(Path(oracle))
         server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), Fixture))
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
