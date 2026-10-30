@@ -230,3 +230,7 @@ jobs:
           go mod tidy
           (cd tools && go mod tidy)
           git diff --exit-code -- go.mod go.sum tools/go.mod tools/go.sum
+
+  go-packages:
+    needs: [go-preview, go-checks]
+    uses: ./.github/workflows/go-package.yml

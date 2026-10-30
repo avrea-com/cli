@@ -1645,3 +1645,57 @@ build/go/rebased-final-parity for diagnosis.
 No production GitLab, billing, VM or SSH mutation was performed. Repo-intel
 remains untouched. No push, release, deployment or installation cutover was
 performed.
+
+## Local public preview packaging trial — 2026-10-30
+
+Added a stdlib-only native package builder/validator, reusable Go package
+workflow, and `make go-package`. See [GO-PACKAGING.md](GO-PACKAGING.md).
+CI invokes the workflow after existing Go validation and uploads native
+macOS ARM64, Linux AMD64 and Windows AMD64 preview archives.
+
+Local macOS ARM64 archive validation passed: version/source identity, help,
+local configuration, three completion sources, bundled README/docs, and
+embedded jq using a loopback API fixture, all with isolated HOME and empty
+PATH. The archive includes the executable, license/notices, completion files,
+reference docs/man pages, and a hashed file inventory. Archive and report:
+`build/go/packages/avr-go_0.5.0-go-preview_darwin_arm64.tar.gz{,.validation.json}`.
+
+Seven package integrity tests passed. The extracted CGO-disabled executable
+also passed 30 existing native Git/SSH, tunnel/bootstrap, docs and completion
+integration tests; one real Fish shell test was skipped because Fish is not
+installed locally. Ruff and workflow validation passed. This is a local dirty
+worktree preview; Linux/Windows execution still awaits CI. No runtime command
+implementation changed, and the full differential suite was not rerun for
+this packaging-only slice. No installation, publication or push was performed.
+
+## Production Windows/Linux packaging trial — 2026-10-30
+
+Native builds on dedicated production Windows Server 2025 and Ubuntu 26.04.1
+VMs passed without package-code changes. Both used Go 1.27.3 and Python 3.14;
+each passed 7 integrity tests plus 12 extracted-binary smoke checks. Build,
+package and validation took 16.55 s on Windows and 11.72 s on Linux, excluding
+toolchain setup. Downloaded archives and payload inventories were rechecked
+locally. Full details and VM-access/cleanup findings are in
+[GO-PACKAGING.md](GO-PACKAGING.md#production-vm-trial--2026-10-30).
+
+Reports and artifacts are retained in `build/go/prod-vm-trial/`. Both task
+VMs were deleted and subsequent detail requests returned HTTP 404.
+Production rejected Ubuntu 22.04 creation, so that exact CI image remains
+untested locally. Production also rejected legacy `avr vm stop` with 422;
+the supported delete command completed cleanup. No CLI runtime change,
+release publication, or push was performed.
+
+## Production Linux ARM64 attempt — 2026-10-30
+
+Enabled the native `linux_arm64` package target; seven local integrity tests
+and Ruff passed. Two fresh production ARM VMs reached RUNNING but presented
+SSH host keys different from the API-advertised pin. Strict verification
+blocked both connections before source transfer, so no ARM build ran.
+Both task VMs were deleted. Evidence is in
+`build/go/prod-vm-arm64-trial/`; details are in
+[GO-PACKAGING.md](GO-PACKAGING.md#production-linux-arm64-attempt--2026-10-30).
+The CI matrix is unchanged pending native ARM validation.
+
+Linux ARM64 was subsequently deferred at the user’s request and removed from
+the allowed packaging targets. The first packaging milestone remains macOS
+ARM64, Linux AMD64 and Windows AMD64; the trial evidence is retained.
