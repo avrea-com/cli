@@ -6,6 +6,7 @@ to reproduce the migration input, never by the installed native CLI.
 
 from avrea_cli.docs_gen import build_tree
 from pathlib import Path
+from scripts.go_help_metadata import terminal_tree
 import argparse
 import json
 import subprocess
@@ -20,7 +21,9 @@ if __name__ == "__main__":
         stdout=subprocess.DEVNULL,
     )
     target = Path("docgen/metadata.json")
-    value = json.dumps(build_tree(), indent=2, ensure_ascii=False, default=str) + "\n"
+    tree = build_tree()
+    tree["terminal"] = terminal_tree()
+    value = json.dumps(tree, indent=2, ensure_ascii=False, default=str) + "\n"
     if args.check:
         if target.read_text() != value:
             raise SystemExit("Go documentation metadata differs from the pinned Python input")
