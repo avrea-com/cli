@@ -20,6 +20,9 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr health
+./build/go/avr health --json status
+./build/go/avr audit-events list --org ORG --resource-type api_key
 ./build/go/avr repo clone acme/web
 ./build/go/avr repo clone acme/web checkout --depth 1 --branch main
 ./build/go/avr repo mirror locations
