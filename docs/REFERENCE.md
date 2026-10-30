@@ -1345,6 +1345,29 @@ API refusal or a changed report fails the command without partial output.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
+#### `avr tests view`
+
+Read one exact test result using its result_id from avr tests JOB.
+
+```sh
+avr tests view [OPTIONS] RESULT
+```
+
+Reruns never substitute a newer result. Expired reports return an explicit
+status; deleted or inaccessible results fail the command. Use --repo when
+opening a result outside its repository checkout.
+
+**Arguments**
+
+- `RESULT_ID`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to AVR_REPO or the current checkout.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 ### `avr sbom`
 
 View, generate, and download repository SBOMs.

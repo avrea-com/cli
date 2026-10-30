@@ -16,6 +16,7 @@ from avrea_cli.json_output import make_schema
 from avrea_cli.json_output import split_fields
 from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo
+from avrea_cli.repo_context import resolve_repo_or_detect
 from typing import Any
 import click
 import httpx
@@ -154,10 +155,16 @@ def _show(response: dict[str, Any]) -> None:
             column_labels=["Suite", "Class", "Test", "Outcome", "Time (ms)"],
         )
         for row in rows:
+            # The class keeps same-named tests in different classes apart.
+            label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key)) or "unknown"
             if row.get("failure_summary"):
-                # The class keeps same-named tests in different classes apart.
-                label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key))
-                click.echo(f"\n{label or 'unknown'}: {_text(row['failure_summary'])}")
+                click.echo(f"\n{label}: {_text(row['failure_summary'])}")
+            if row.get("result_id") and row.get("outcome") in ("failed", "errored"):
+                click.echo(
+                    f"View {label}: avr tests view {shlex.quote(_text(row['result_id']))} "
+                    f"--org {shlex.quote(_text(response['organization_id']))} "
+                    f"--repo {shlex.quote(_text(response['repository_id']))}"
+                )
     elif response.get("status") == "available" and response.get("total_count") == 0:
         click.echo("The retained report contains zero test occurrences. This does not establish that no tests ran.")
     elif response.get("status") == "available":
@@ -234,3 +241,86 @@ def tests_list(
     next_cursor = response["pagination"]["next_cursor"]
     if next_cursor:
         click.echo(f"More results available. Continue with --cursor {shlex.quote(_text(next_cursor))}", err=True)
+
+
+_RESULT_FIELDS = make_schema(
+    "organization_id",
+    "repository_id",
+    "result_id",
+    "status",
+    "job_id",
+    "execution_id",
+    "commit_sha",
+    "report_finished_at",
+    "data",
+)
+
+
+@tests.command("view")
+@click.argument("result_id", metavar="RESULT")
+@click.option("--org", "org_id", help="Organization ID or slug. Defaults to the configured organization.")
+@click.option(
+    "--repo", "repo_id", help="Repository (owner/name or rep-ID). Defaults to AVR_REPO or the current checkout."
+)
+@json_options
+@click.pass_context
+def tests_view(
+    ctx: click.Context,
+    result_id: str,
+    org_id: str | None,
+    repo_id: str | None,
+    json_fields: str | None,
+    jq_expr: str | None,
+) -> None:
+    """Read one exact test result using its result_id from avr tests JOB.
+
+    Reruns never substitute a newer result. Expired reports return an explicit
+    status; deleted or inaccessible results fail the command. Use --repo when
+    opening a result outside its repository checkout.
+    """
+    if handle_json_meta(json_fields, jq_expr, _RESULT_FIELDS):
+        return
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,1024}", result_id):
+        raise click.BadParameter("use the result_id returned by avr tests JOB", param_hint="RESULT")
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    organization = get_org_id(config, org_id, client=client)
+    repository = resolve_repo_or_detect(client, config, organization, repo_id, required=True)
+    response = _get(
+        client,
+        f"/orgs/{organization}/repos/{repository}/tests/results/{result_id}",
+        "read the test result",
+        "Check the result ID, selected organization and repository, and that Repository Tests are enabled.",
+    )
+    row = response.get("data")
+    state = response.get("status")
+    if response.get("result_id") != result_id or state not in ("available", "expired", "not_recorded"):
+        raise click.ClickException("The API returned invalid test result details.")
+    if state == "available":
+        if not isinstance(row, dict) or row.get("result_id") != result_id:
+            raise click.ClickException("The API returned a different or missing test result.")
+    elif row is not None:
+        raise click.ClickException("The API returned content for unavailable test evidence.")
+    response.update(organization_id=organization, repository_id=repository)
+    if json_fields is not None:
+        emit_json_record(response, split_fields(json_fields, _RESULT_FIELDS), _RESULT_FIELDS, jq_expr)
+        return
+    click.echo(f"Result: {_text(result_id)}  Status: {_text(state)}")
+    click.echo(f"Organization: {_text(organization)}  Repository: {_text(repository)}")
+    if state == "expired":
+        click.echo("This report has expired. Test names and failure output are no longer retained.")
+        if response.get("commit_sha"):
+            click.echo(f"Recorded job commit: {_text(response['commit_sha'])}")
+    elif state == "not_recorded":
+        click.echo("No retained report is available for this result.")
+    else:
+        assert isinstance(row, dict)
+        click.echo(f"Original job: {_text(response.get('job_id'))}  Execution: {_text(response.get('execution_id'))}")
+        click.echo(f"Recorded job commit: {_text(response.get('commit_sha'))}")
+        click.echo(f"Report finished: {_text(response.get('report_finished_at'))}")
+        click.echo(
+            f"Test: {_text(row.get('name'))}  Suite: {_text(row.get('suite'))}  Class: {_text(row.get('class_name'))}"
+        )
+        click.echo(f"Outcome: {_text(row.get('outcome'))}  Duration (ms): {_text(row.get('duration_ms'))}")
+        click.echo(_text(row["failure_summary"]) if row.get("failure_summary") else "No failure summary was recorded.")

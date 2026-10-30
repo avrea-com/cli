@@ -16,6 +16,7 @@ JOB_PATH = f"/orgs/{ORG}/jobs/{JOB}"
 RESULTS_PATH = f"/orgs/{ORG}/repos/{REPO}/jobs/{JOB}/tests"
 SCOPE = ["--org", ORG]
 ROW = {
+    "result_id": "result-one",
     "test_id": "a" * 64,
     "suite": "checkout",
     "class_name": "TestCheckout",
@@ -168,6 +169,8 @@ def test_failure_messages_name_the_class_of_same_named_tests(runner: CliRunner, 
     assert result.exit_code == 0, result.output
     assert "TestCart.test_init: cart failed" in result.stdout
     assert "TestOrder.test_init: order failed" in result.stdout
+    assert "View TestCart.test_init:" in result.stdout
+    assert "View TestOrder.test_init:" in result.stdout
 
 
 def test_page_budget_returns_a_resume_cursor(runner: CliRunner, job_api: FakeApi) -> None:
@@ -327,5 +330,145 @@ def test_help_only_advertises_the_shipped_job_journey(runner: CliRunner, api: Fa
     assert result.exit_code == 0, result.output
     assert "avr tests JOB" in result.stdout
     assert "history" not in result.stdout
-    assert "view" not in result.stdout
+    assert "view" in result.stdout
     assert api.requests == []
+
+
+RESULT_PATH = f"/orgs/{ORG}/repos/{REPO}/tests/results/result-one"
+
+
+def exact_result(**changes: Any) -> dict[str, Any]:
+    return {
+        "result_id": "result-one",
+        "status": "available",
+        "job_id": JOB,
+        "execution_id": EXECUTION,
+        "commit_sha": "b" * 40,
+        "report_finished_at": "2026-10-30T10:00:00Z",
+        "data": ROW,
+        **changes,
+    }
+
+
+@pytest.mark.parametrize("json_output", [False, True])
+def test_view_reads_only_exact_result(runner: CliRunner, api: FakeApi, json_output: bool) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result())
+    args = ["tests", "view", "result-one", *SCOPE, "--repo", REPO]
+    if json_output:
+        args.extend(["--json", "*"])
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0, result.output
+    if json_output:
+        data = json.loads(result.output)
+        assert data["data"] == ROW
+        assert data["repository_id"] == REPO
+    else:
+        assert "expected 200, got 500" in result.output
+        assert EXECUTION in result.output
+    assert not api.sent("GET", JOB_PATH)
+    assert not api.sent("GET", RESULTS_PATH)
+
+
+@pytest.mark.parametrize("state", ["expired", "not_recorded"])
+def test_view_unavailable_never_fetches_latest(runner: CliRunner, api: FakeApi, state: str) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result(status=state, data=None))
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO, "--json", "*"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["status"] == state
+    assert not api.sent("GET", JOB_PATH)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{"result_id": "another"}, {"data": None}, {"status": "expired"}, {"data": {**ROW, "result_id": "another"}}],
+)
+def test_view_rejects_mismatched_or_inconsistent_results(
+    runner: CliRunner, api: FakeApi, changes: dict[str, Any]
+) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result(**changes))
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO, "--json", "*"])
+    assert result.exit_code != 0
+    assert "expected 200" not in result.output
+
+
+def test_view_escapes_report_control_characters(runner: CliRunner, api: FakeApi) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result(data={**ROW, "failure_summary": "bad\x1b[31m"}))
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO])
+    assert result.exit_code == 0, result.output
+    assert "\x1b" not in result.output
+
+
+@pytest.mark.parametrize("result_id", ["../escape", "a" * 1025, "x?secret=1"])
+def test_view_refuses_invalid_result_locators(runner: CliRunner, api: FakeApi, result_id: str) -> None:
+    result = runner.invoke(cli, ["tests", "view", result_id, *SCOPE, "--repo", REPO])
+    assert result.exit_code != 0
+    assert "use the result_id" in result.output
+
+
+def test_text_listing_only_gives_view_commands_for_unsuccessful_tests(runner: CliRunner, job_api: FakeApi) -> None:
+    job_api.reply(
+        "GET",
+        RESULTS_PATH,
+        json=page([ROW, {**ROW, "result_id": "passed-result", "outcome": "passed", "failure_summary": None}]),
+    )
+    result = runner.invoke(cli, ["tests", JOB, *SCOPE])
+    assert result.exit_code == 0, result.output
+    assert f"avr tests view result-one --org {ORG} --repo {REPO}" in result.output
+    assert "avr tests view passed-result" not in result.output
+
+
+def test_view_expired_keeps_coarse_commit_context(runner: CliRunner, api: FakeApi) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result(status="expired", data=None))
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO])
+    assert result.exit_code == 0, result.output
+    assert "This report has expired" in result.output
+    assert "Recorded job commit: " + "b" * 40 in result.output
+
+
+@pytest.mark.parametrize("code", [403, 404, 410, 429, 503])
+def test_view_refusal_emits_no_result_content(runner: CliRunner, api: FakeApi, code: int) -> None:
+    api.reply("GET", RESULT_PATH, status=code, json={"detail": "Result unavailable"})
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO, "--json", "*"])
+    assert result.exit_code == 1
+    assert f"HTTP {code}" in result.stderr
+    assert not result.stdout
+    assert len(api.requests) == 1
+    if code == 404:
+        assert "Check the result ID" in result.stderr
+
+
+def test_view_json_field_selection(runner: CliRunner, api: FakeApi) -> None:
+    api.reply("GET", RESULT_PATH, json=exact_result(job_id=NATIVE_JOB))
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO, "--json", "job_id,status"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout) == {"job_id": NATIVE_JOB, "status": "available"}
+    assert len(api.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "args,exit_code",
+    [(["--jq", ".status"], 2), (["--json", "capture_id"], 1), (["--output", "json"], 2)],
+)
+def test_view_invalid_options_make_no_requests(
+    runner: CliRunner, api: FakeApi, args: list[str], exit_code: int
+) -> None:
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--repo", REPO, *args])
+    assert result.exit_code == exit_code
+    assert api.requests == []
+
+
+def test_view_json_field_discovery_needs_no_api(runner: CliRunner, api: FakeApi) -> None:
+    result = runner.invoke(cli, ["tests", "view", "result-one", "--json", "?"])
+    assert result.exit_code == 0, result.output
+    assert "result_id" in result.stdout
+    assert "report_finished_at" in result.stdout
+    assert api.requests == []
+
+
+def test_view_uses_repository_environment(runner: CliRunner, api: FakeApi, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AVR_REPO", REPO)
+    api.reply("GET", RESULT_PATH, json=exact_result())
+    result = runner.invoke(cli, ["tests", "view", "result-one", *SCOPE, "--json", "repository_id"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout) == {"repository_id": REPO}
+    assert len(api.requests) == 1
