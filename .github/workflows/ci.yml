@@ -187,6 +187,7 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_internal_docs --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_help --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_completion --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_option_gaps --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py scripts/test_go_completion.py -q
         env:
@@ -226,6 +227,7 @@ jobs:
             build/go/clone-parity.json
             build/go/help-parity.json
             build/go/completion-parity.json
+            build/go/option-gaps-parity.json
             build/go/audit-health-parity.json
             build/go/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error

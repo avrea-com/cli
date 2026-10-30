@@ -94,7 +94,11 @@ func newRunList(d Dependencies) *cobra.Command {
 		}
 		if web {
 			target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(orgSlug(cmd.Context(), cfg, api, id)) + "?view=workflows"
-			_, err = fmt.Fprintln(d.Out, target)
+			label := target
+			if d.IsTerminal() {
+				label = "Opening: " + target
+			}
+			_, err = fmt.Fprintln(d.Out, label)
 			if err != nil {
 				return err
 			}
