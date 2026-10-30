@@ -20,8 +20,9 @@ avr repo clone [OPTIONS] REPOSITORY [DIRECTORY]
 ```
 
 REPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).
-Available placements are raced from this client; the first to serve the
-repository wins. Use --placement to select an exact URL or hostname.
+When several placements are available, the first to serve the repository
+wins. A single placement is used directly. Use --placement to select an
+exact URL or hostname. Requires Git 2.31 or newer.
 
 The origin remote stays on the selected read-only mirror. A repository-local
 Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
