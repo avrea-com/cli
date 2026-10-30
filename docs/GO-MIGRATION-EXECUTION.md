@@ -1315,14 +1315,46 @@ run's --exit-status. Their existing stream/output and exit comparisons remain
 required evidence. Root/global behavior and the argument/default validation
 audit remain open; input presence does not prove those requirements.
 
+## Root flags and environment behavior
+
+Option alias/value checkpoints: public 150d6ec, admin 3d41d283a2.
+
+Added 42 root/global cases per executable: both version spellings, offline
+version output with malformed environment settings, verbose flags at each
+command position, debug categories, link environment booleans, explicit
+overrides, and repeated positive/negative link flags.
+
+The first comparisons reproduced missing warnings for unknown debug categories,
+invalid link settings reaching the API, and --no-links always winning over
+a later --links. Additional boundary coverage reproduced whitespace-only
+AVR_LINKS behavior. Fixed all four: root command setup validates link settings,
+warnings retain Python's sorted/deduplicated category presentation, and both
+link flags share one ordered boolean value. Explicit flags override environment
+values. Root version/help remain eager, and the native-only timing diagnostic
+category remains supported without being reported as unknown.
+
+Version comparison permits the intentional native build/version identifier and
+admin program name while requiring a single correctly formed line, no stderr,
+exit zero and no API/browser/config writes. Two Go tests and six comparator
+tests guard flag order, validation before handlers, warnings and version side
+effects. All 42 paired cases and the 392 help regressions pass for both binaries;
+their reports match the rebuilt binaries. Public race/lint/build, metadata and
+registration checks, admin checks, Python tooling and both workflows pass.
+The global suite is wired into both CI workflows and public go-parity.
+
+The input catalog now contains 3,740 cases, with a fixture for every declared
+option spelling, every leaf and every positional argument. This is still input
+coverage. Complete the argument/default/error audit and broader fresh regression
+run before treating the entire public surface as verified.
+
 ## Remaining work
 
-Remaining root/global-flag behavior and a final per-command
-flag/argument/behavior coverage audit.
+Finish the per-command argument/default/error behavior audit and broader
+fresh differential regression run.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.
 
 The initial explicit option-use and alias gaps are closed by the suites above.
-Continue with root/global behavior, defaults and argument validation before
-claiming the full public surface complete.
+Continue with defaults and argument validation before claiming the full public
+surface complete.

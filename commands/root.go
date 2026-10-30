@@ -199,12 +199,17 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	d.ColorEnabled = func() bool { return !noColor && (inheritedColor == nil || inheritedColor()) }
 	root.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output.")
 	linksDefault := true
-	switch strings.ToLower(strings.TrimSpace(d.Getenv("AVR_LINKS"))) {
+	linksEnv := d.Getenv("AVR_LINKS")
+	switch strings.ToLower(strings.TrimSpace(linksEnv)) {
+	case "":
+		linksDefault = linksEnv == ""
 	case "0", "false", "f", "no", "n", "off":
 		linksDefault = false
 	}
-	root.PersistentFlags().Bool("links", linksDefault, "Enable links where supported.")
-	root.PersistentFlags().Bool("no-links", false, "Disable terminal links.")
+	root.PersistentFlags().BoolVar(&linksDefault, "links", linksDefault, "Enable links where supported.")
+	root.PersistentFlags().Var(inverseBool{&linksDefault}, "no-links", "Disable terminal links.")
+	root.PersistentFlags().Lookup("no-links").NoOptDefVal = "true"
+	root.PersistentPreRunE = run(func(cmd *cobra.Command, _ []string) error { return prepareGlobalOptions(cmd, d) })
 	root.Flags().BoolP("version", "V", false, "Print version.")
 	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
