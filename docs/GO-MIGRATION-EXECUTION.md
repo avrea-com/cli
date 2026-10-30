@@ -1149,10 +1149,53 @@ not yet a completion gate or a behavior-coverage claim: absent/default values,
 enum/range/path validation, argument execution, terminal help and shell
 completion still need the final executable coverage audit.
 
+## Hidden documentation command
+
+Registration/alias checkpoints: public 88ec80b, admin 2d2348280e.
+
+Added internal docs with format, out, stdout and readme, preserving all five
+format choices: Markdown, structured JSON, Starlight, man, and all. The native
+command renders the public reference in both executables, matching Python's
+public-docs behavior when composed into admin. It never needs Python at runtime
+or calls the API.
+
+Migrated the existing documentation prose, examples and Click-specific type/
+metavar metadata from the pinned Python source. The Go renderer walks the live
+public command tree for command/flag membership, aliases, flag arity, repeated
+values and defaults. Tests cover adding/removing commands and flags, changed
+optional and array defaults, hidden commands, and preservation of the existing
+documentation schema. The reference version identifies the public package;
+it is independent of the embedding admin executable's build identifier.
+Reference defaults are stable even when AVR_LINKS overrides an invocation.
+
+Keep the existing file layout, success messages and stale .md/.1 page cleanup.
+Cleanup does not traverse directory symlinks. Markdown preserves code while
+escaping prose placeholders; troff neutralizes request-looking lines. JSON
+object-key ordering/escaping can differ while the decoded structure matches.
+The Starlight generated comment now says command tree instead of Click tree.
+
+Decision: default README lookup uses README.md beside the native executable,
+where Python uses its package parent. An explicit --readme behaves as before.
+make go-docs passes the source-tree README explicitly. A paired package test
+copies the binary beside a fixture README and confirms the same overview page
+as Python. Source metadata regeneration/checking needs the pinned Python input
+during migration; installed native docs generation does not.
+
+Validation: 42 paired scenarios per binary, including two terminal cases,
+compare every generated page, file membership/mode, JSON structure, stdout,
+errors, README variants and stale-file removal. Six Go tests cover registry
+changes, escaping, cancellation and cleanup; the bundled-README check passes
+for both binaries. The registration audit now passes all 142 command/group
+nodes and every declared Python flag, with no missing plural aliases. Public
+race tests/lint/build, generated API checks, metadata drift checks, admin
+composition, fixture lint/typing and both workflows pass. Report hashes match
+the rebuilt executables. The registration gate and docs suites are wired into
+CI. This does not replace the remaining executable flag/argument/help/completion
+audit, and native Linux/Windows runs remain CI gates.
+
 ## Remaining work
 
-Hidden docs, root/help/completion,
-and a final per-command flag/argument/behavior coverage audit.
+Root/help/completion and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.

@@ -370,6 +370,11 @@ def run(executable, scenario, root, host):
                     if scenario.get("normalize_file_home"):
                         data = data.replace(directory.encode(), b"<home>")
                     captured[item.relative_to(home).as_posix()] = {
+                        **(
+                            {"text": data.decode("utf-8", errors="replace")}
+                            if scenario.get("capture_text_files")
+                            else {}
+                        ),
                         "size": len(data),
                         "sha256": hashlib.sha256(data).hexdigest(),
                         "mode": item.stat().st_mode & 0o777 if os.name != "nt" else None,

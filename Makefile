@@ -142,13 +142,14 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_tunnel --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_bootstrap --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_aliases --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_internal_docs --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr --go-tool "$(GO)"
-	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py -q
+	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py -q
 
 go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...
 
-go-check: go-test go-lint go-parity go-generation-check go-scan
+go-check: go-test go-lint go-parity go-generation-check go-command-check go-scan
 
 .PHONY: go-generate go-generation-check go-schema-gate
 go-generate:
@@ -160,3 +161,11 @@ go-generation-check:
 go-schema-gate:
 	@test -n "$(AVREA_CORE)" || { echo "Set AVREA_CORE to the avrea-core checkout" >&2; exit 1; }
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check --core "$(AVREA_CORE)"
+
+.PHONY: go-command-check go-docs
+go-command-check: ## Check the complete command registry and migrated documentation input
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool "$(GO)"
+
+go-docs: go-build ## Generate the public reference with the native CLI
+	@./build/go/avr internal docs --format all --out . --readme README.md
