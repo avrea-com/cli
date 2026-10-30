@@ -2,6 +2,8 @@
 
 from scripts import command_cases as catalog
 from scripts.compare_option_aliases import replace_option
+import pytest
+import sys
 
 
 def test_option_values_that_look_like_commands_are_not_commands():
@@ -84,3 +86,18 @@ def test_derived_aliases_keep_command_arguments_and_option_meaning():
         assert before.arguments == after.arguments
         assert [meaning(option) for option in before.options] == [meaning(option) for option in after.options]
         assert original["args"] != derived["args"]
+
+
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+def test_native_ci_cases_respect_platform_terminal_support(monkeypatch, platform):
+    from scripts.compare_native_ci import scenarios
+
+    monkeypatch.setattr(sys, "platform", platform)
+    cases = scenarios()
+    names = {case["name"] for case in cases}
+    for provider in (None, "gitlab_ci"):
+        for name in ("job view human", "job view web piped", "job list TSV"):
+            assert f"GitLab {provider} {name}" in names
+        assert (f"GitLab {provider} styled job view human" in names) == (platform != "win32")
+    if platform == "win32":
+        assert not any(case.get("tty") for case in cases)
