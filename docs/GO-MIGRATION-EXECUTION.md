@@ -1,7 +1,8 @@
 # Go migration execution record
 
-Status (2026-10-30): the public implementation is rebased and updated; refreshed
-parity validation is in progress. The full public tree is native Go and reused by the admin preview.
+Status (2026-10-30): the public implementation is rebased onto origin/main,
+updated for newly merged behavior, and passes refreshed local parity validation.
+The full public tree is native Go and reused by the admin preview.
 See the final validation and next-phase sections at the end for evidence and
 the boundaries of this completion. Earlier sections are chronological checkpoints.
 
@@ -1593,4 +1594,54 @@ Independent clone discovery/authentication requests may arrive in either order;
 only that initial pair is normalized. Subsequent requests and token scopes
 remain compared. Normal terminal redraw differences remain accepted.
 
-Refresh validation: in progress. Reports are under build/go/rebased-parity.
+Refresh validation passed on 2026-10-30 against public runtime source
+f41e68dea221d2758df2697c628fa8c674888b79 and admin source
+844d4fa01befcf393e77f77321dadd1edafc5371. The final documentation commit does
+not change the tested runtime or fixtures.
+
+| Validation | Public avr | Shared avr-admin |
+| --- | ---: | ---: |
+| Differential suite modules | 53 passed | 53 passed |
+| Paired scenarios in those suites | 7,400 passed | 7,409 passed |
+| Additional native GitLab cases | 165 passed | 165 passed |
+| Additional native card cases | 26 passed | 26 passed |
+| Native subprocess/lifecycle tests | 32 passed | 32 passed |
+| Actual Fish shell integration | 1 skipped | 1 skipped |
+
+This is 15,191 paired scenarios including the additional native checks.
+Each binary passed 917 parser cases, 100 default cases, 409 help cases and
+1,975 completion cases. The 5,016 non-help/completion fixture inputs leave no
+missing leaf, option spelling or positional slot. The only options without
+zero-exit operational inputs are eager version discovery and watch options
+whose fixtures deliberately interrupt or return failure status.
+
+All 108 suite/process runs passed in build/go/rebased-verified-parity/manifest.json.
+The manifest and reports record the pinned Python baseline, source commits,
+arguments, captures and frozen binary hashes. No meaningful unaccepted
+differences remain in this corpus. GitLab and Stripe external writes use
+isolated loopback fixtures. Actual Fish is unavailable locally; all three
+shell completion protocols pass.
+
+Tested SHA-256 values:
+
+- Public: 50d482457780afc0fd9db96524b906dfcf40aad66fb2d64731caf745e4184b3e
+- Admin: 2d944079a7882ae1f58a74fafe3dec8a7d79ddb3db558a3945b60442f25e5165
+
+Public Go race tests, lint/build, Python lint and all 1,766 Python tests passed.
+Admin race/lint/build, schema generation and the current-core schema gate,
+metadata/registry checks and both workflow validators passed. Dependencies
+were unchanged. Cross-platform execution remains a CI/release gate; these
+local results are from macOS.
+
+The full checks also found and fixed repeatable integer flags being described
+as scalar defaults in generated documentation and suppressed after use in
+completion. Added Bash/Zsh/Fish cases reproduce that regression. Operational
+jq coverage then caught a locally assembled runner-result array that JSON
+could encode but gojq could not traverse; it now uses gojq's JSON array
+representation. The final full sweep was rerun after these fixes. Earlier
+failed attempts remain under build/go/rebased-parity and
+build/go/rebased-final-parity for diagnosis.
+
+No production GitLab, billing, VM or SSH mutation was performed. Repo-intel
+remains untouched. No push, release, deployment or installation cutover was
+performed.
