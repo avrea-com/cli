@@ -348,15 +348,22 @@ def run(executable, scenario, root, host):
                     process.kill()
                     process.communicate()
         else:
-            result = subprocess.run(
-                executable + args,
-                env=env,
-                cwd=directory,
-                input=scenario.get("stdin", ""),
-                capture_output=True,
-                text=True,
-                timeout=20,
-            )
+            try:
+                result = subprocess.run(
+                    executable + args,
+                    env=env,
+                    cwd=directory,
+                    input=scenario.get("stdin", ""),
+                    capture_output=True,
+                    text=True,
+                    timeout=20,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(
+                    f"Scenario {scenario.get('name')!r} timed out: "
+                    f"browser_called={browser_target.exists()}, callback_errors={callback_errors!r}, "
+                    f"stdout={exc.stdout!r}, stderr={exc.stderr!r}"
+                ) from exc
         if callback_worker is not None:
             callback_worker.join(timeout=16)
             if callback_errors:
