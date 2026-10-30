@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, and SBOM list/view/download in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, and settings in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -25,6 +25,10 @@ make go-build
 ./build/go/avr sbom view COMMIT_PREFIX --repo OWNER/REPO --full
 ./build/go/avr sbom download COMMIT_PREFIX --repo OWNER/REPO --format inventory --out inventory.json
 ./build/go/avr sbom generate COMMIT --repo OWNER/REPO --wait --wait-timeout 900
+./build/go/avr settings list
+./build/go/avr settings schema --scope repository
+./build/go/avr settings set cache.gha.enabled false --repo OWNER/REPO
+./build/go/avr settings reset cache.gha.enabled --org ORG
 ./build/go/avr config
 ./build/go/avr config get org
 ./build/go/avr config set org ORG_SLUG

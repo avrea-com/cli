@@ -35,16 +35,16 @@ func (e AccessTokenGrantAccessLevel) Valid() bool {
 
 // Defines values for AccessTokenGrantResourceType.
 const (
-	CustomerVm AccessTokenGrantResourceType = "customer_vm"
-	Repository AccessTokenGrantResourceType = "repository"
+	AccessTokenGrantResourceTypeCustomerVm AccessTokenGrantResourceType = "customer_vm"
+	AccessTokenGrantResourceTypeRepository AccessTokenGrantResourceType = "repository"
 )
 
 // Valid indicates whether the value is a known member of the AccessTokenGrantResourceType enum.
 func (e AccessTokenGrantResourceType) Valid() bool {
 	switch e {
-	case CustomerVm:
+	case AccessTokenGrantResourceTypeCustomerVm:
 		return true
-	case Repository:
+	case AccessTokenGrantResourceTypeRepository:
 		return true
 	default:
 		return false
@@ -594,6 +594,30 @@ func (e SbomRefreshStateStatus) Valid() bool {
 	case SbomRefreshStateStatusFailed:
 		return true
 	case SbomRefreshStateStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SettingSchemaResponseValueType.
+const (
+	Boolean    SettingSchemaResponseValueType = "boolean"
+	Integer    SettingSchemaResponseValueType = "integer"
+	String     SettingSchemaResponseValueType = "string"
+	StringList SettingSchemaResponseValueType = "string_list"
+)
+
+// Valid indicates whether the value is a known member of the SettingSchemaResponseValueType enum.
+func (e SettingSchemaResponseValueType) Valid() bool {
+	switch e {
+	case Boolean:
+		return true
+	case Integer:
+		return true
+	case String:
+		return true
+	case StringList:
 		return true
 	default:
 		return false
@@ -1281,6 +1305,24 @@ func (e ListWorkflowRunJobsParamsOrder) Valid() bool {
 	case ListWorkflowRunJobsParamsOrderDurationSecondsAsc:
 		return true
 	case ListWorkflowRunJobsParamsOrderDurationSecondsDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSettingsSchemaParamsScope.
+const (
+	ListSettingsSchemaParamsScopeOrganization ListSettingsSchemaParamsScope = "organization"
+	ListSettingsSchemaParamsScopeRepository   ListSettingsSchemaParamsScope = "repository"
+)
+
+// Valid indicates whether the value is a known member of the ListSettingsSchemaParamsScope enum.
+func (e ListSettingsSchemaParamsScope) Valid() bool {
+	switch e {
+	case ListSettingsSchemaParamsScopeOrganization:
+		return true
+	case ListSettingsSchemaParamsScopeRepository:
 		return true
 	default:
 		return false
@@ -2341,6 +2383,90 @@ type SbomRefreshStateErrorCode string
 // SbomRefreshStateStatus defines model for SbomRefreshState.Status.
 type SbomRefreshStateStatus string
 
+// SettingResponse defines model for SettingResponse.
+type SettingResponse struct {
+	Key                  string                 `json:"key"`
+	Redacted             *bool                  `json:"redacted,omitempty"`
+	Source               string                 `json:"source"`
+	Value                SettingResponse_Value  `json:"value"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SettingResponseValue0 defines model for SettingResponse.Value.0.
+type SettingResponseValue0 = bool
+
+// SettingResponseValue1 defines model for SettingResponse.Value.1.
+type SettingResponseValue1 = string
+
+// SettingResponseValue2 defines model for SettingResponse.Value.2.
+type SettingResponseValue2 = int
+
+// SettingResponseValue3 defines model for SettingResponse.Value.3.
+type SettingResponseValue3 = []string
+
+// SettingResponse_Value defines model for SettingResponse.Value.
+type SettingResponse_Value struct {
+	union json.RawMessage
+}
+
+// SettingSchemaResponse defines model for SettingSchemaResponse.
+type SettingSchemaResponse struct {
+	Choices               []string                       `json:"choices"`
+	Default               SettingSchemaResponse_Default  `json:"default"`
+	Description           string                         `json:"description"`
+	Inherits              bool                           `json:"inherits"`
+	Key                   string                         `json:"key"`
+	MaxValue              nullable.Nullable[int]         `json:"max_value"`
+	MinValue              nullable.Nullable[int]         `json:"min_value"`
+	RepositoryIndependent bool                           `json:"repository_independent"`
+	Scopes                []string                       `json:"scopes"`
+	ValueType             SettingSchemaResponseValueType `json:"value_type"`
+	AdditionalProperties  map[string]interface{}         `json:"-"`
+}
+
+// SettingSchemaResponseDefault0 defines model for SettingSchemaResponse.Default.0.
+type SettingSchemaResponseDefault0 = bool
+
+// SettingSchemaResponseDefault1 defines model for SettingSchemaResponse.Default.1.
+type SettingSchemaResponseDefault1 = string
+
+// SettingSchemaResponseDefault2 defines model for SettingSchemaResponse.Default.2.
+type SettingSchemaResponseDefault2 = int
+
+// SettingSchemaResponseDefault3 defines model for SettingSchemaResponse.Default.3.
+type SettingSchemaResponseDefault3 = []string
+
+// SettingSchemaResponse_Default defines model for SettingSchemaResponse.Default.
+type SettingSchemaResponse_Default struct {
+	union json.RawMessage
+}
+
+// SettingSchemaResponseValueType defines model for SettingSchemaResponse.ValueType.
+type SettingSchemaResponseValueType string
+
+// SettingUpdate defines model for SettingUpdate.
+type SettingUpdate struct {
+	Key   string              `json:"key"`
+	Value SettingUpdate_Value `json:"value"`
+}
+
+// SettingUpdateValue0 defines model for SettingUpdate.Value.0.
+type SettingUpdateValue0 = bool
+
+// SettingUpdateValue1 defines model for SettingUpdate.Value.1.
+type SettingUpdateValue1 = string
+
+// SettingUpdateValue2 defines model for SettingUpdate.Value.2.
+type SettingUpdateValue2 = int
+
+// SettingUpdateValue3 defines model for SettingUpdate.Value.3.
+type SettingUpdateValue3 = []string
+
+// SettingUpdate_Value defines model for SettingUpdate.Value.
+type SettingUpdate_Value struct {
+	union json.RawMessage
+}
+
 // StepAggregation defines model for StepAggregation.
 type StepAggregation struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64] `json:"action_required_avg_duration_seconds,omitempty"`
@@ -3079,10 +3205,42 @@ type DispatchWorkflowEndpointParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListRepoSettingsParams defines parameters for ListRepoSettings.
+type ListRepoSettingsParams struct {
+	Prefix       *string `form:"prefix,omitempty" json:"prefix,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateRepoSettingParams defines parameters for UpdateRepoSetting.
+type UpdateRepoSettingParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DeleteRepoSettingParams defines parameters for DeleteRepoSetting.
+type DeleteRepoSettingParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListRepositoryWorkflowsIndexedParams defines parameters for ListRepositoryWorkflowsIndexed.
 type ListRepositoryWorkflowsIndexedParams struct {
 	CiProvider   *CIProvider `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
 	AvreaSession *string     `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListOrgSettingsParams defines parameters for ListOrgSettings.
+type ListOrgSettingsParams struct {
+	Prefix       *string `form:"prefix,omitempty" json:"prefix,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateOrgSettingParams defines parameters for UpdateOrgSetting.
+type UpdateOrgSettingParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DeleteOrgSettingParams defines parameters for DeleteOrgSetting.
+type DeleteOrgSettingParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
 // ListWorkflowRunsParams defines parameters for ListWorkflowRuns.
@@ -3314,6 +3472,16 @@ type RerunWorkflowRunParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListSettingsSchemaParams defines parameters for ListSettingsSchema.
+type ListSettingsSchemaParams struct {
+	Prefix       *string                        `form:"prefix,omitempty" json:"prefix,omitempty"`
+	Scope        *ListSettingsSchemaParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+	AvreaSession *string                        `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListSettingsSchemaParamsScope defines parameters for ListSettingsSchema.
+type ListSettingsSchemaParamsScope string
+
 // ListUserOrganizationsParams defines parameters for ListUserOrganizations.
 type ListUserOrganizationsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3335,6 +3503,12 @@ type GenerateSbomJSONRequestBody = GenerateSbomRequest
 
 // DispatchWorkflowEndpointJSONRequestBody defines body for DispatchWorkflowEndpoint for application/json ContentType.
 type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
+
+// UpdateRepoSettingJSONRequestBody defines body for UpdateRepoSetting for application/json ContentType.
+type UpdateRepoSettingJSONRequestBody = SettingUpdate
+
+// UpdateOrgSettingJSONRequestBody defines body for UpdateOrgSetting for application/json ContentType.
+type UpdateOrgSettingJSONRequestBody = SettingUpdate
 
 // RerunWorkflowRunJSONRequestBody defines body for RerunWorkflowRun for application/json ContentType.
 type RerunWorkflowRunJSONRequestBody = RerunWorkflowRunJSONBody
@@ -12341,6 +12515,300 @@ func (a SbomRefreshState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for SettingResponse. Returns the specified
+// element and whether it was found
+func (a SettingResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SettingResponse
+func (a *SettingResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SettingResponse to handle AdditionalProperties
+func (a *SettingResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if raw, found := object["redacted"]; found {
+		err = json.Unmarshal(raw, &a.Redacted)
+		if err != nil {
+			return fmt.Errorf("error reading 'redacted': %w", err)
+		}
+		delete(object, "redacted")
+	}
+
+	if raw, found := object["source"]; found {
+		err = json.Unmarshal(raw, &a.Source)
+		if err != nil {
+			return fmt.Errorf("error reading 'source': %w", err)
+		}
+		delete(object, "source")
+	}
+
+	if raw, found := object["value"]; found {
+		err = json.Unmarshal(raw, &a.Value)
+		if err != nil {
+			return fmt.Errorf("error reading 'value': %w", err)
+		}
+		delete(object, "value")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SettingResponse to handle AdditionalProperties
+func (a SettingResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["key"], err = json.Marshal(a.Key)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	if a.Redacted != nil {
+		object["redacted"], err = json.Marshal(a.Redacted)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'redacted': %w", err)
+		}
+	}
+
+	object["source"], err = json.Marshal(a.Source)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'source': %w", err)
+	}
+
+	object["value"], err = json.Marshal(a.Value)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'value': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SettingSchemaResponse. Returns the specified
+// element and whether it was found
+func (a SettingSchemaResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SettingSchemaResponse
+func (a *SettingSchemaResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SettingSchemaResponse to handle AdditionalProperties
+func (a *SettingSchemaResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["choices"]; found {
+		err = json.Unmarshal(raw, &a.Choices)
+		if err != nil {
+			return fmt.Errorf("error reading 'choices': %w", err)
+		}
+		delete(object, "choices")
+	}
+
+	if raw, found := object["default"]; found {
+		err = json.Unmarshal(raw, &a.Default)
+		if err != nil {
+			return fmt.Errorf("error reading 'default': %w", err)
+		}
+		delete(object, "default")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["inherits"]; found {
+		err = json.Unmarshal(raw, &a.Inherits)
+		if err != nil {
+			return fmt.Errorf("error reading 'inherits': %w", err)
+		}
+		delete(object, "inherits")
+	}
+
+	if raw, found := object["key"]; found {
+		err = json.Unmarshal(raw, &a.Key)
+		if err != nil {
+			return fmt.Errorf("error reading 'key': %w", err)
+		}
+		delete(object, "key")
+	}
+
+	if raw, found := object["max_value"]; found {
+		err = json.Unmarshal(raw, &a.MaxValue)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_value': %w", err)
+		}
+		delete(object, "max_value")
+	}
+
+	if raw, found := object["min_value"]; found {
+		err = json.Unmarshal(raw, &a.MinValue)
+		if err != nil {
+			return fmt.Errorf("error reading 'min_value': %w", err)
+		}
+		delete(object, "min_value")
+	}
+
+	if raw, found := object["repository_independent"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryIndependent)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_independent': %w", err)
+		}
+		delete(object, "repository_independent")
+	}
+
+	if raw, found := object["scopes"]; found {
+		err = json.Unmarshal(raw, &a.Scopes)
+		if err != nil {
+			return fmt.Errorf("error reading 'scopes': %w", err)
+		}
+		delete(object, "scopes")
+	}
+
+	if raw, found := object["value_type"]; found {
+		err = json.Unmarshal(raw, &a.ValueType)
+		if err != nil {
+			return fmt.Errorf("error reading 'value_type': %w", err)
+		}
+		delete(object, "value_type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SettingSchemaResponse to handle AdditionalProperties
+func (a SettingSchemaResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Choices != nil {
+		object["choices"], err = json.Marshal(a.Choices)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'choices': %w", err)
+		}
+	}
+
+	object["default"], err = json.Marshal(a.Default)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'default': %w", err)
+	}
+
+	object["description"], err = json.Marshal(a.Description)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'description': %w", err)
+	}
+
+	object["inherits"], err = json.Marshal(a.Inherits)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'inherits': %w", err)
+	}
+
+	object["key"], err = json.Marshal(a.Key)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	object["max_value"], err = json.Marshal(a.MaxValue)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'max_value': %w", err)
+	}
+
+	object["min_value"], err = json.Marshal(a.MinValue)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'min_value': %w", err)
+	}
+
+	object["repository_independent"], err = json.Marshal(a.RepositoryIndependent)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_independent': %w", err)
+	}
+
+	if a.Scopes != nil {
+		object["scopes"], err = json.Marshal(a.Scopes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scopes': %w", err)
+		}
+	}
+
+	object["value_type"], err = json.Marshal(a.ValueType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'value_type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for StepAggregation. Returns the specified
 // element and whether it was found
 func (a StepAggregation) Get(fieldName string) (value interface{}, found bool) {
@@ -16246,6 +16714,348 @@ func (a WorkflowsListResponse) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(object)
+}
+
+// AsSettingResponseValue0 returns the union data inside the SettingResponse_Value as a SettingResponseValue0
+func (t SettingResponse_Value) AsSettingResponseValue0() (SettingResponseValue0, error) {
+	var body SettingResponseValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingResponseValue0 overwrites any union data inside the SettingResponse_Value as the provided SettingResponseValue0
+func (t *SettingResponse_Value) FromSettingResponseValue0(v SettingResponseValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingResponseValue0 performs a merge with any union data inside the SettingResponse_Value, using the provided SettingResponseValue0
+func (t *SettingResponse_Value) MergeSettingResponseValue0(v SettingResponseValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingResponseValue1 returns the union data inside the SettingResponse_Value as a SettingResponseValue1
+func (t SettingResponse_Value) AsSettingResponseValue1() (SettingResponseValue1, error) {
+	var body SettingResponseValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingResponseValue1 overwrites any union data inside the SettingResponse_Value as the provided SettingResponseValue1
+func (t *SettingResponse_Value) FromSettingResponseValue1(v SettingResponseValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingResponseValue1 performs a merge with any union data inside the SettingResponse_Value, using the provided SettingResponseValue1
+func (t *SettingResponse_Value) MergeSettingResponseValue1(v SettingResponseValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingResponseValue2 returns the union data inside the SettingResponse_Value as a SettingResponseValue2
+func (t SettingResponse_Value) AsSettingResponseValue2() (SettingResponseValue2, error) {
+	var body SettingResponseValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingResponseValue2 overwrites any union data inside the SettingResponse_Value as the provided SettingResponseValue2
+func (t *SettingResponse_Value) FromSettingResponseValue2(v SettingResponseValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingResponseValue2 performs a merge with any union data inside the SettingResponse_Value, using the provided SettingResponseValue2
+func (t *SettingResponse_Value) MergeSettingResponseValue2(v SettingResponseValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingResponseValue3 returns the union data inside the SettingResponse_Value as a SettingResponseValue3
+func (t SettingResponse_Value) AsSettingResponseValue3() (SettingResponseValue3, error) {
+	var body SettingResponseValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingResponseValue3 overwrites any union data inside the SettingResponse_Value as the provided SettingResponseValue3
+func (t *SettingResponse_Value) FromSettingResponseValue3(v SettingResponseValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingResponseValue3 performs a merge with any union data inside the SettingResponse_Value, using the provided SettingResponseValue3
+func (t *SettingResponse_Value) MergeSettingResponseValue3(v SettingResponseValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SettingResponse_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SettingResponse_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSettingSchemaResponseDefault0 returns the union data inside the SettingSchemaResponse_Default as a SettingSchemaResponseDefault0
+func (t SettingSchemaResponse_Default) AsSettingSchemaResponseDefault0() (SettingSchemaResponseDefault0, error) {
+	var body SettingSchemaResponseDefault0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingSchemaResponseDefault0 overwrites any union data inside the SettingSchemaResponse_Default as the provided SettingSchemaResponseDefault0
+func (t *SettingSchemaResponse_Default) FromSettingSchemaResponseDefault0(v SettingSchemaResponseDefault0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingSchemaResponseDefault0 performs a merge with any union data inside the SettingSchemaResponse_Default, using the provided SettingSchemaResponseDefault0
+func (t *SettingSchemaResponse_Default) MergeSettingSchemaResponseDefault0(v SettingSchemaResponseDefault0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingSchemaResponseDefault1 returns the union data inside the SettingSchemaResponse_Default as a SettingSchemaResponseDefault1
+func (t SettingSchemaResponse_Default) AsSettingSchemaResponseDefault1() (SettingSchemaResponseDefault1, error) {
+	var body SettingSchemaResponseDefault1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingSchemaResponseDefault1 overwrites any union data inside the SettingSchemaResponse_Default as the provided SettingSchemaResponseDefault1
+func (t *SettingSchemaResponse_Default) FromSettingSchemaResponseDefault1(v SettingSchemaResponseDefault1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingSchemaResponseDefault1 performs a merge with any union data inside the SettingSchemaResponse_Default, using the provided SettingSchemaResponseDefault1
+func (t *SettingSchemaResponse_Default) MergeSettingSchemaResponseDefault1(v SettingSchemaResponseDefault1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingSchemaResponseDefault2 returns the union data inside the SettingSchemaResponse_Default as a SettingSchemaResponseDefault2
+func (t SettingSchemaResponse_Default) AsSettingSchemaResponseDefault2() (SettingSchemaResponseDefault2, error) {
+	var body SettingSchemaResponseDefault2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingSchemaResponseDefault2 overwrites any union data inside the SettingSchemaResponse_Default as the provided SettingSchemaResponseDefault2
+func (t *SettingSchemaResponse_Default) FromSettingSchemaResponseDefault2(v SettingSchemaResponseDefault2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingSchemaResponseDefault2 performs a merge with any union data inside the SettingSchemaResponse_Default, using the provided SettingSchemaResponseDefault2
+func (t *SettingSchemaResponse_Default) MergeSettingSchemaResponseDefault2(v SettingSchemaResponseDefault2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingSchemaResponseDefault3 returns the union data inside the SettingSchemaResponse_Default as a SettingSchemaResponseDefault3
+func (t SettingSchemaResponse_Default) AsSettingSchemaResponseDefault3() (SettingSchemaResponseDefault3, error) {
+	var body SettingSchemaResponseDefault3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingSchemaResponseDefault3 overwrites any union data inside the SettingSchemaResponse_Default as the provided SettingSchemaResponseDefault3
+func (t *SettingSchemaResponse_Default) FromSettingSchemaResponseDefault3(v SettingSchemaResponseDefault3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingSchemaResponseDefault3 performs a merge with any union data inside the SettingSchemaResponse_Default, using the provided SettingSchemaResponseDefault3
+func (t *SettingSchemaResponse_Default) MergeSettingSchemaResponseDefault3(v SettingSchemaResponseDefault3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SettingSchemaResponse_Default) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SettingSchemaResponse_Default) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSettingUpdateValue0 returns the union data inside the SettingUpdate_Value as a SettingUpdateValue0
+func (t SettingUpdate_Value) AsSettingUpdateValue0() (SettingUpdateValue0, error) {
+	var body SettingUpdateValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingUpdateValue0 overwrites any union data inside the SettingUpdate_Value as the provided SettingUpdateValue0
+func (t *SettingUpdate_Value) FromSettingUpdateValue0(v SettingUpdateValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingUpdateValue0 performs a merge with any union data inside the SettingUpdate_Value, using the provided SettingUpdateValue0
+func (t *SettingUpdate_Value) MergeSettingUpdateValue0(v SettingUpdateValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingUpdateValue1 returns the union data inside the SettingUpdate_Value as a SettingUpdateValue1
+func (t SettingUpdate_Value) AsSettingUpdateValue1() (SettingUpdateValue1, error) {
+	var body SettingUpdateValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingUpdateValue1 overwrites any union data inside the SettingUpdate_Value as the provided SettingUpdateValue1
+func (t *SettingUpdate_Value) FromSettingUpdateValue1(v SettingUpdateValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingUpdateValue1 performs a merge with any union data inside the SettingUpdate_Value, using the provided SettingUpdateValue1
+func (t *SettingUpdate_Value) MergeSettingUpdateValue1(v SettingUpdateValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingUpdateValue2 returns the union data inside the SettingUpdate_Value as a SettingUpdateValue2
+func (t SettingUpdate_Value) AsSettingUpdateValue2() (SettingUpdateValue2, error) {
+	var body SettingUpdateValue2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingUpdateValue2 overwrites any union data inside the SettingUpdate_Value as the provided SettingUpdateValue2
+func (t *SettingUpdate_Value) FromSettingUpdateValue2(v SettingUpdateValue2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingUpdateValue2 performs a merge with any union data inside the SettingUpdate_Value, using the provided SettingUpdateValue2
+func (t *SettingUpdate_Value) MergeSettingUpdateValue2(v SettingUpdateValue2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSettingUpdateValue3 returns the union data inside the SettingUpdate_Value as a SettingUpdateValue3
+func (t SettingUpdate_Value) AsSettingUpdateValue3() (SettingUpdateValue3, error) {
+	var body SettingUpdateValue3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSettingUpdateValue3 overwrites any union data inside the SettingUpdate_Value as the provided SettingUpdateValue3
+func (t *SettingUpdate_Value) FromSettingUpdateValue3(v SettingUpdateValue3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSettingUpdateValue3 performs a merge with any union data inside the SettingUpdate_Value, using the provided SettingUpdateValue3
+func (t *SettingUpdate_Value) MergeSettingUpdateValue3(v SettingUpdateValue3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SettingUpdate_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SettingUpdate_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsValidationErrorLoc0 returns the union data inside the ValidationError_Loc_Item as a ValidationErrorLoc0
