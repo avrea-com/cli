@@ -62,6 +62,9 @@ class Fixture(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         self.respond()
 
+    def do_PUT(self):
+        self.respond()
+
     def do_DELETE(self):
         self.respond()
 

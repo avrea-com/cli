@@ -43,7 +43,14 @@
     "list_access_tokens",
     "get_access_token",
     "revoke_access_token",
-    "create_access_token"
+    "create_access_token",
+    "list_repo_settings",
+    "update_repo_setting",
+    "delete_repo_setting",
+    "list_org_settings",
+    "update_org_setting",
+    "delete_org_setting",
+    "list_settings_schema"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

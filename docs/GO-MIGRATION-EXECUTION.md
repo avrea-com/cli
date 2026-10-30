@@ -512,9 +512,44 @@ Go race tests, lint, schema generation, admin composition checks, fixture
 typing and workflow validation pass. All four reports match the tested
 binary hashes. Native OS CI and real credential creation were not exercised.
 
+## Settings batch
+
+Added settings list/schema/set/reset, shared with the admin Go composition.
+Token creation checkpoints: public 85a32a8, admin 85a79273eb.
+
+Decisions:
+- Preserve scope precedence: --repo, explicit --org, AVR_REPO, then Git.
+  Explicit --org ignores ambient repo context. Disconnected detected reads
+  may fall back to org results; writes stop instead of changing scope.
+- Keep schema/list field discovery, projection, jq, prefix/scope filters,
+  bordered tables, inherited-source labels and browser targets.
+- Parse booleans and decimal integers before sending writes, retaining large
+  integer precision and leaving other strings unchanged. Reset escapes the
+  key as one URL path segment. Do not retry writes.
+- Preserve org-only-setting guidance on repository-scoped 422 responses and
+  distinguish an explicit --repo from ambient selection in that guidance.
+- Correct shared missing-repository punctuation, blank lines and abort
+  messages exposed by paired fixtures. Resolution and soft fallback retain
+  their existing behavior.
+- Extend the local parity server to handle PUT. Earlier 501s were fixture
+  limitations, not application behavior; successful writes now exercise and
+  compare the actual request bodies.
+- No dependencies or live configuration mutations.
+
+Validation: 114 paired cases per binary, including nine terminal/browser
+cases. They cover all four commands, scope precedence, disconnected checkout
+refusal, value parsing, escaped keys, JSON/jq, errors and argument diagnostics.
+Three Go tests cover cancellation between resolution and mutation, explicit
+org isolation with precise integers, and schema access without org/Git lookup.
+All 143 inspection regression cases pass in each binary. Go race tests, lint,
+schema reproducibility, admin checks, fixture typing, inventory verification
+and workflow validation pass. The four reports match final binary hashes.
+The admin checks validate inherited public semantics; admin-only settings
+overrides remain outside this public-command migration.
+
 ## Remaining work
 
-Settings, organization and repository
+Organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
