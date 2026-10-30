@@ -239,6 +239,14 @@ def run(executable, scenario, root, host):
             env["BROWSER"] = env["AVR_BROWSER"]
 
         if scenario.get("login"):
+            if executable[1:] == ["-m", "avrea_cli.main"]:
+                # Diagnose startup stalls in the unmodified Python oracle on CI.
+                executable = [
+                    executable[0],
+                    "-c",
+                    "import faulthandler, runpy; faulthandler.dump_traceback_later(10); "
+                    "runpy.run_module('avrea_cli.main', run_name='__main__')",
+                ]
 
             def callback():
                 deadline = time.monotonic() + 15
