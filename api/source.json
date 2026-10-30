@@ -42,7 +42,8 @@
     "get_ai_task_state",
     "list_access_tokens",
     "get_access_token",
-    "revoke_access_token"
+    "revoke_access_token",
+    "create_access_token"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

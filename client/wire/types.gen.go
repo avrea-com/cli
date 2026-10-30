@@ -12,6 +12,45 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for AccessTokenGrantAccessLevel.
+const (
+	Admin AccessTokenGrantAccessLevel = "admin"
+	Read  AccessTokenGrantAccessLevel = "read"
+	Write AccessTokenGrantAccessLevel = "write"
+)
+
+// Valid indicates whether the value is a known member of the AccessTokenGrantAccessLevel enum.
+func (e AccessTokenGrantAccessLevel) Valid() bool {
+	switch e {
+	case Admin:
+		return true
+	case Read:
+		return true
+	case Write:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccessTokenGrantResourceType.
+const (
+	CustomerVm AccessTokenGrantResourceType = "customer_vm"
+	Repository AccessTokenGrantResourceType = "repository"
+)
+
+// Valid indicates whether the value is a known member of the AccessTokenGrantResourceType enum.
+func (e AccessTokenGrantResourceType) Valid() bool {
+	switch e {
+	case CustomerVm:
+		return true
+	case Repository:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AggregateWorkflowPlatform.
 const (
 	AggregateWorkflowPlatformGithub AggregateWorkflowPlatform = "github"
@@ -1302,6 +1341,20 @@ type APIResponseListWorkflowRunAggregateBucket struct {
 	Data []WorkflowRunAggregateBucket `json:"data"`
 }
 
+// AccessTokenGrant defines model for AccessTokenGrant.
+type AccessTokenGrant struct {
+	// AccessLevel The one level each type is minted at: read for a repository, admin for a customer_vm. Any other level is refused with 422.
+	AccessLevel  AccessTokenGrantAccessLevel  `json:"access_level"`
+	ResourceId   nullable.Nullable[string]    `json:"resource_id,omitempty"`
+	ResourceType AccessTokenGrantResourceType `json:"resource_type"`
+}
+
+// AccessTokenGrantAccessLevel The one level each type is minted at: read for a repository, admin for a customer_vm. Any other level is refused with 422.
+type AccessTokenGrantAccessLevel string
+
+// AccessTokenGrantResourceType defines model for AccessTokenGrant.ResourceType.
+type AccessTokenGrantResourceType string
+
 // AccessTokenGrantResponse defines model for AccessTokenGrantResponse.
 type AccessTokenGrantResponse struct {
 	AccessLevel          string                    `json:"access_level"`
@@ -1511,6 +1564,36 @@ type CancelWorkflowRunResponse struct {
 
 // CancelWorkflowRunResponseStatus defines model for CancelWorkflowRunResponse.Status.
 type CancelWorkflowRunResponseStatus string
+
+// CreateAccessTokenRequest defines model for CreateAccessTokenRequest.
+type CreateAccessTokenRequest struct {
+	AllowVmCreate *bool                  `json:"allow_vm_create,omitempty"`
+	Grants        *[]AccessTokenGrant    `json:"grants,omitempty"`
+	Name          string                 `json:"name"`
+	TtlSeconds    *int                   `json:"ttl_seconds,omitempty"`
+	VmCreateLimit nullable.Nullable[int] `json:"vm_create_limit,omitempty"`
+}
+
+// CreatedAccessTokenResponse defines model for CreatedAccessTokenResponse.
+type CreatedAccessTokenResponse struct {
+	AllowVmCreate  bool                         `json:"allow_vm_create"`
+	CreatedAt      time.Time                    `json:"created_at"`
+	ExpiresAt      time.Time                    `json:"expires_at"`
+	Grants         []AccessTokenGrantResponse   `json:"grants"`
+	Id             string                       `json:"id"`
+	LastUsedAt     nullable.Nullable[time.Time] `json:"last_used_at"`
+	Name           string                       `json:"name"`
+	OrganizationId string                       `json:"organization_id"`
+	RevokedAt      nullable.Nullable[time.Time] `json:"revoked_at"`
+	RevokedReason  nullable.Nullable[string]    `json:"revoked_reason"`
+
+	// Token The avs_ credential. Returned once; store it now.
+	Token                string                 `json:"token"`
+	UserId               string                 `json:"user_id"`
+	VmCreateCount        int                    `json:"vm_create_count"`
+	VmCreateLimit        nullable.Nullable[int] `json:"vm_create_limit"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
 
 // DispatchWorkflowRequest Request body for dispatching a workflow.
 type DispatchWorkflowRequest struct {
@@ -2611,6 +2694,11 @@ type ListAccessTokensParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// CreateAccessTokenParams defines parameters for CreateAccessToken.
+type CreateAccessTokenParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // RevokeAccessTokenParams defines parameters for RevokeAccessToken.
 type RevokeAccessTokenParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -3238,6 +3326,9 @@ type SshForwardingParams struct {
 
 // SearchLogsJSONRequestBody defines body for SearchLogs for application/json ContentType.
 type SearchLogsJSONRequestBody = LogSearchParams
+
+// CreateAccessTokenJSONRequestBody defines body for CreateAccessToken for application/json ContentType.
+type CreateAccessTokenJSONRequestBody = CreateAccessTokenRequest
 
 // GenerateSbomJSONRequestBody defines body for GenerateSbom for application/json ContentType.
 type GenerateSbomJSONRequestBody = GenerateSbomRequest
@@ -5344,6 +5435,243 @@ func (a CancelWorkflowRunResponse) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CreatedAccessTokenResponse. Returns the specified
+// element and whether it was found
+func (a CreatedAccessTokenResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CreatedAccessTokenResponse
+func (a *CreatedAccessTokenResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CreatedAccessTokenResponse to handle AdditionalProperties
+func (a *CreatedAccessTokenResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allow_vm_create"]; found {
+		err = json.Unmarshal(raw, &a.AllowVmCreate)
+		if err != nil {
+			return fmt.Errorf("error reading 'allow_vm_create': %w", err)
+		}
+		delete(object, "allow_vm_create")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["expires_at"]; found {
+		err = json.Unmarshal(raw, &a.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'expires_at': %w", err)
+		}
+		delete(object, "expires_at")
+	}
+
+	if raw, found := object["grants"]; found {
+		err = json.Unmarshal(raw, &a.Grants)
+		if err != nil {
+			return fmt.Errorf("error reading 'grants': %w", err)
+		}
+		delete(object, "grants")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["last_used_at"]; found {
+		err = json.Unmarshal(raw, &a.LastUsedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_used_at': %w", err)
+		}
+		delete(object, "last_used_at")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["revoked_at"]; found {
+		err = json.Unmarshal(raw, &a.RevokedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'revoked_at': %w", err)
+		}
+		delete(object, "revoked_at")
+	}
+
+	if raw, found := object["revoked_reason"]; found {
+		err = json.Unmarshal(raw, &a.RevokedReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'revoked_reason': %w", err)
+		}
+		delete(object, "revoked_reason")
+	}
+
+	if raw, found := object["token"]; found {
+		err = json.Unmarshal(raw, &a.Token)
+		if err != nil {
+			return fmt.Errorf("error reading 'token': %w", err)
+		}
+		delete(object, "token")
+	}
+
+	if raw, found := object["user_id"]; found {
+		err = json.Unmarshal(raw, &a.UserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'user_id': %w", err)
+		}
+		delete(object, "user_id")
+	}
+
+	if raw, found := object["vm_create_count"]; found {
+		err = json.Unmarshal(raw, &a.VmCreateCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm_create_count': %w", err)
+		}
+		delete(object, "vm_create_count")
+	}
+
+	if raw, found := object["vm_create_limit"]; found {
+		err = json.Unmarshal(raw, &a.VmCreateLimit)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm_create_limit': %w", err)
+		}
+		delete(object, "vm_create_limit")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CreatedAccessTokenResponse to handle AdditionalProperties
+func (a CreatedAccessTokenResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["allow_vm_create"], err = json.Marshal(a.AllowVmCreate)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'allow_vm_create': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["expires_at"], err = json.Marshal(a.ExpiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
+	}
+
+	if a.Grants != nil {
+		object["grants"], err = json.Marshal(a.Grants)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'grants': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["last_used_at"], err = json.Marshal(a.LastUsedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'last_used_at': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["revoked_at"], err = json.Marshal(a.RevokedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'revoked_at': %w", err)
+	}
+
+	object["revoked_reason"], err = json.Marshal(a.RevokedReason)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'revoked_reason': %w", err)
+	}
+
+	object["token"], err = json.Marshal(a.Token)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'token': %w", err)
+	}
+
+	object["user_id"], err = json.Marshal(a.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'user_id': %w", err)
+	}
+
+	object["vm_create_count"], err = json.Marshal(a.VmCreateCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm_create_count': %w", err)
+	}
+
+	object["vm_create_limit"], err = json.Marshal(a.VmCreateLimit)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm_create_limit': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
