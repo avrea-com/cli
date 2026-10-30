@@ -555,6 +555,27 @@ func (e RerunWorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for SamlConfigResponseGroupSyncState.
+const (
+	AttrGroupsUnset SamlConfigResponseGroupSyncState = "attr_groups_unset"
+	Enabled         SamlConfigResponseGroupSyncState = "enabled"
+	SyncDisabled    SamlConfigResponseGroupSyncState = "sync_disabled"
+)
+
+// Valid indicates whether the value is a known member of the SamlConfigResponseGroupSyncState enum.
+func (e SamlConfigResponseGroupSyncState) Valid() bool {
+	switch e {
+	case AttrGroupsUnset:
+		return true
+	case Enabled:
+		return true
+	case SyncDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SbomRefreshStateErrorCode.
 const (
 	SbomRefreshStateErrorCodeRateLimited           SbomRefreshStateErrorCode = "rate_limited"
@@ -1334,6 +1355,11 @@ type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
 }
 
+// APIResponseDeleteSamlConfigResponse defines model for APIResponse_DeleteSamlConfigResponse_.
+type APIResponseDeleteSamlConfigResponse struct {
+	Data DeleteSamlConfigResponse `json:"data"`
+}
+
 // APIResponseDispatchWorkflowResponse defines model for APIResponse_DispatchWorkflowResponse_.
 type APIResponseDispatchWorkflowResponse struct {
 	// Data Response for a workflow dispatch.
@@ -1367,6 +1393,13 @@ type APIResponseOrganizationRepositoryResponse struct {
 // APIResponseRerunWorkflowRunResponse defines model for APIResponse_RerunWorkflowRunResponse_.
 type APIResponseRerunWorkflowRunResponse struct {
 	Data RerunWorkflowRunResponse `json:"data"`
+}
+
+// APIResponseSamlConfigResponse defines model for APIResponse_SamlConfigResponse_.
+type APIResponseSamlConfigResponse struct {
+	// Data The org's SAML config, minus secrets. idp_x509_cert is omitted (bulky;
+	// the console doesn't need it back).
+	Data SamlConfigResponse `json:"data"`
 }
 
 // APIResponseWorkflowArtifact defines model for APIResponse_WorkflowArtifact_.
@@ -1654,6 +1687,12 @@ type CreatedAccessTokenResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// DeleteSamlConfigResponse defines model for DeleteSamlConfigResponse.
+type DeleteSamlConfigResponse struct {
+	Deleted              bool                   `json:"deleted"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // DispatchWorkflowRequest Request body for dispatching a workflow.
 type DispatchWorkflowRequest struct {
 	// Inputs Optional workflow input parameters
@@ -1705,6 +1744,12 @@ type EmailDomainResponse struct {
 // EmailDomainsRequest Request model for setting email domains.
 type EmailDomainsRequest struct {
 	Domains              []string               `json:"domains"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// EnforcementRequest defines model for EnforcementRequest.
+type EnforcementRequest struct {
+	Enforce              bool                   `json:"enforce"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -2399,6 +2444,33 @@ type SSHForwardingResponse struct {
 	Username             string                    `json:"username"`
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
+
+// SamlConfigResponse The org's SAML config, minus secrets. idp_x509_cert is omitted (bulky;
+// the console doesn't need it back).
+type SamlConfigResponse struct {
+	AllowIdpInitiated        bool                             `json:"allow_idp_initiated"`
+	AttrEmail                string                           `json:"attr_email"`
+	AttrFamilyName           nullable.Nullable[string]        `json:"attr_family_name"`
+	AttrGivenName            nullable.Nullable[string]        `json:"attr_given_name"`
+	AttrGroups               nullable.Nullable[string]        `json:"attr_groups"`
+	CreatedAt                time.Time                        `json:"created_at"`
+	DefaultRole              string                           `json:"default_role"`
+	GroupGrantStaleAfterDays int                              `json:"group_grant_stale_after_days"`
+	GroupSyncState           SamlConfigResponseGroupSyncState `json:"group_sync_state"`
+	IdpEntityId              string                           `json:"idp_entity_id"`
+	IdpSloUrl                nullable.Nullable[string]        `json:"idp_slo_url"`
+	IdpSsoUrl                string                           `json:"idp_sso_url"`
+	IsEnforced               bool                             `json:"is_enforced"`
+	JitProvisioning          bool                             `json:"jit_provisioning"`
+	NameIdFormat             string                           `json:"name_id_format"`
+	OrganizationId           string                           `json:"organization_id"`
+	OrganizationSamlConfigId string                           `json:"organization_saml_config_id"`
+	UpdatedAt                time.Time                        `json:"updated_at"`
+	AdditionalProperties     map[string]interface{}           `json:"-"`
+}
+
+// SamlConfigResponseGroupSyncState defines model for SamlConfigResponse.GroupSyncState.
+type SamlConfigResponseGroupSyncState string
 
 // SbomListItem One completed SBOM in the repository's history.
 //
@@ -3322,6 +3394,36 @@ type ListRepositoryWorkflowsIndexedParams struct {
 	AvreaSession *string     `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// DeleteSamlConfigParams defines parameters for DeleteSamlConfig.
+type DeleteSamlConfigParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetSamlConfigParams defines parameters for GetSamlConfig.
+type GetSamlConfigParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpsertSamlConfigParams defines parameters for UpsertSamlConfig.
+type UpsertSamlConfigParams struct {
+	// AttrEmail IdP attribute carrying the email
+	AttrEmail      *string `form:"attr_email,omitempty" json:"attr_email,omitempty"`
+	AttrGivenName  *string `form:"attr_given_name,omitempty" json:"attr_given_name,omitempty"`
+	AttrFamilyName *string `form:"attr_family_name,omitempty" json:"attr_family_name,omitempty"`
+	AttrGroups     *string `form:"attr_groups,omitempty" json:"attr_groups,omitempty"`
+
+	// DefaultRole Role for JIT-provisioned members; non-user requested or stored roles require org admin
+	DefaultRole       *string `form:"default_role,omitempty" json:"default_role,omitempty"`
+	JitProvisioning   *bool   `form:"jit_provisioning,omitempty" json:"jit_provisioning,omitempty"`
+	AllowIdpInitiated *bool   `form:"allow_idp_initiated,omitempty" json:"allow_idp_initiated,omitempty"`
+	AvreaSession      *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// SetSamlEnforcementParams defines parameters for SetSamlEnforcement.
+type SetSamlEnforcementParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListOrgSettingsParams defines parameters for ListOrgSettings.
 type ListOrgSettingsParams struct {
 	Prefix       *string `form:"prefix,omitempty" json:"prefix,omitempty"`
@@ -3612,6 +3714,9 @@ type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
 
 // UpdateRepoSettingJSONRequestBody defines body for UpdateRepoSetting for application/json ContentType.
 type UpdateRepoSettingJSONRequestBody = SettingUpdate
+
+// SetSamlEnforcementJSONRequestBody defines body for SetSamlEnforcement for application/json ContentType.
+type SetSamlEnforcementJSONRequestBody = EnforcementRequest
 
 // UpdateOrgSettingJSONRequestBody defines body for UpdateOrgSetting for application/json ContentType.
 type UpdateOrgSettingJSONRequestBody = SettingUpdate
@@ -6032,6 +6137,72 @@ func (a CreatedAccessTokenResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for DeleteSamlConfigResponse. Returns the specified
+// element and whether it was found
+func (a DeleteSamlConfigResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeleteSamlConfigResponse
+func (a *DeleteSamlConfigResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeleteSamlConfigResponse to handle AdditionalProperties
+func (a *DeleteSamlConfigResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["deleted"]; found {
+		err = json.Unmarshal(raw, &a.Deleted)
+		if err != nil {
+			return fmt.Errorf("error reading 'deleted': %w", err)
+		}
+		delete(object, "deleted")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeleteSamlConfigResponse to handle AdditionalProperties
+func (a DeleteSamlConfigResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["deleted"], err = json.Marshal(a.Deleted)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'deleted': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for DispatchWorkflowRequest. Returns the specified
 // element and whether it was found
 func (a DispatchWorkflowRequest) Get(fieldName string) (value interface{}, found bool) {
@@ -6521,6 +6692,72 @@ func (a EmailDomainsRequest) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'domains': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EnforcementRequest. Returns the specified
+// element and whether it was found
+func (a EnforcementRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EnforcementRequest
+func (a *EnforcementRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EnforcementRequest to handle AdditionalProperties
+func (a *EnforcementRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enforce"]; found {
+		err = json.Unmarshal(raw, &a.Enforce)
+		if err != nil {
+			return fmt.Errorf("error reading 'enforce': %w", err)
+		}
+		delete(object, "enforce")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EnforcementRequest to handle AdditionalProperties
+func (a EnforcementRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["enforce"], err = json.Marshal(a.Enforce)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enforce': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -12621,6 +12858,293 @@ func (a SSHForwardingResponse) MarshalJSON() ([]byte, error) {
 	object["username"], err = json.Marshal(a.Username)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'username': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SamlConfigResponse. Returns the specified
+// element and whether it was found
+func (a SamlConfigResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SamlConfigResponse
+func (a *SamlConfigResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SamlConfigResponse to handle AdditionalProperties
+func (a *SamlConfigResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allow_idp_initiated"]; found {
+		err = json.Unmarshal(raw, &a.AllowIdpInitiated)
+		if err != nil {
+			return fmt.Errorf("error reading 'allow_idp_initiated': %w", err)
+		}
+		delete(object, "allow_idp_initiated")
+	}
+
+	if raw, found := object["attr_email"]; found {
+		err = json.Unmarshal(raw, &a.AttrEmail)
+		if err != nil {
+			return fmt.Errorf("error reading 'attr_email': %w", err)
+		}
+		delete(object, "attr_email")
+	}
+
+	if raw, found := object["attr_family_name"]; found {
+		err = json.Unmarshal(raw, &a.AttrFamilyName)
+		if err != nil {
+			return fmt.Errorf("error reading 'attr_family_name': %w", err)
+		}
+		delete(object, "attr_family_name")
+	}
+
+	if raw, found := object["attr_given_name"]; found {
+		err = json.Unmarshal(raw, &a.AttrGivenName)
+		if err != nil {
+			return fmt.Errorf("error reading 'attr_given_name': %w", err)
+		}
+		delete(object, "attr_given_name")
+	}
+
+	if raw, found := object["attr_groups"]; found {
+		err = json.Unmarshal(raw, &a.AttrGroups)
+		if err != nil {
+			return fmt.Errorf("error reading 'attr_groups': %w", err)
+		}
+		delete(object, "attr_groups")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["default_role"]; found {
+		err = json.Unmarshal(raw, &a.DefaultRole)
+		if err != nil {
+			return fmt.Errorf("error reading 'default_role': %w", err)
+		}
+		delete(object, "default_role")
+	}
+
+	if raw, found := object["group_grant_stale_after_days"]; found {
+		err = json.Unmarshal(raw, &a.GroupGrantStaleAfterDays)
+		if err != nil {
+			return fmt.Errorf("error reading 'group_grant_stale_after_days': %w", err)
+		}
+		delete(object, "group_grant_stale_after_days")
+	}
+
+	if raw, found := object["group_sync_state"]; found {
+		err = json.Unmarshal(raw, &a.GroupSyncState)
+		if err != nil {
+			return fmt.Errorf("error reading 'group_sync_state': %w", err)
+		}
+		delete(object, "group_sync_state")
+	}
+
+	if raw, found := object["idp_entity_id"]; found {
+		err = json.Unmarshal(raw, &a.IdpEntityId)
+		if err != nil {
+			return fmt.Errorf("error reading 'idp_entity_id': %w", err)
+		}
+		delete(object, "idp_entity_id")
+	}
+
+	if raw, found := object["idp_slo_url"]; found {
+		err = json.Unmarshal(raw, &a.IdpSloUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'idp_slo_url': %w", err)
+		}
+		delete(object, "idp_slo_url")
+	}
+
+	if raw, found := object["idp_sso_url"]; found {
+		err = json.Unmarshal(raw, &a.IdpSsoUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'idp_sso_url': %w", err)
+		}
+		delete(object, "idp_sso_url")
+	}
+
+	if raw, found := object["is_enforced"]; found {
+		err = json.Unmarshal(raw, &a.IsEnforced)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_enforced': %w", err)
+		}
+		delete(object, "is_enforced")
+	}
+
+	if raw, found := object["jit_provisioning"]; found {
+		err = json.Unmarshal(raw, &a.JitProvisioning)
+		if err != nil {
+			return fmt.Errorf("error reading 'jit_provisioning': %w", err)
+		}
+		delete(object, "jit_provisioning")
+	}
+
+	if raw, found := object["name_id_format"]; found {
+		err = json.Unmarshal(raw, &a.NameIdFormat)
+		if err != nil {
+			return fmt.Errorf("error reading 'name_id_format': %w", err)
+		}
+		delete(object, "name_id_format")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["organization_saml_config_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationSamlConfigId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_saml_config_id': %w", err)
+		}
+		delete(object, "organization_saml_config_id")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SamlConfigResponse to handle AdditionalProperties
+func (a SamlConfigResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["allow_idp_initiated"], err = json.Marshal(a.AllowIdpInitiated)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'allow_idp_initiated': %w", err)
+	}
+
+	object["attr_email"], err = json.Marshal(a.AttrEmail)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attr_email': %w", err)
+	}
+
+	object["attr_family_name"], err = json.Marshal(a.AttrFamilyName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attr_family_name': %w", err)
+	}
+
+	object["attr_given_name"], err = json.Marshal(a.AttrGivenName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attr_given_name': %w", err)
+	}
+
+	object["attr_groups"], err = json.Marshal(a.AttrGroups)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attr_groups': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["default_role"], err = json.Marshal(a.DefaultRole)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'default_role': %w", err)
+	}
+
+	object["group_grant_stale_after_days"], err = json.Marshal(a.GroupGrantStaleAfterDays)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'group_grant_stale_after_days': %w", err)
+	}
+
+	object["group_sync_state"], err = json.Marshal(a.GroupSyncState)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'group_sync_state': %w", err)
+	}
+
+	object["idp_entity_id"], err = json.Marshal(a.IdpEntityId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'idp_entity_id': %w", err)
+	}
+
+	object["idp_slo_url"], err = json.Marshal(a.IdpSloUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'idp_slo_url': %w", err)
+	}
+
+	object["idp_sso_url"], err = json.Marshal(a.IdpSsoUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'idp_sso_url': %w", err)
+	}
+
+	object["is_enforced"], err = json.Marshal(a.IsEnforced)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_enforced': %w", err)
+	}
+
+	object["jit_provisioning"], err = json.Marshal(a.JitProvisioning)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'jit_provisioning': %w", err)
+	}
+
+	object["name_id_format"], err = json.Marshal(a.NameIdFormat)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name_id_format': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["organization_saml_config_id"], err = json.Marshal(a.OrganizationSamlConfigId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_saml_config_id': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

@@ -56,7 +56,12 @@
     "list_email_domains",
     "claim_email_domain",
     "verify_email_domain",
-    "set_email_domains"
+    "set_email_domains",
+    "get_saml_config",
+    "upsert_saml_config",
+    "delete_saml_config",
+    "set_saml_enforcement",
+    "saml_metadata"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
