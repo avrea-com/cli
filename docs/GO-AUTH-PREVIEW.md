@@ -20,6 +20,12 @@ make go-build
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
+./build/go/avr org saml show --org ORG
+./build/go/avr org saml sp-metadata --org ORG
+./build/go/avr org saml configure idp-metadata.xml --org ORG --email-attribute mail
+./build/go/avr org saml test --org ORG --no-browser
+./build/go/avr org saml enforcement on --org ORG
+./build/go/avr org saml remove --org ORG
 ./build/go/avr org email-domain list --org ORG
 ./build/go/avr org email-domain claim example.com --org ORG
 ./build/go/avr org email-domain verify example.com --org ORG

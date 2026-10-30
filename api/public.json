@@ -14,6 +14,19 @@
         "title": "APIResponse[CancelWorkflowRunResponse]",
         "type": "object"
       },
+      "APIResponse_DeleteSamlConfigResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeleteSamlConfigResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[DeleteSamlConfigResponse]",
+        "type": "object"
+      },
       "APIResponse_DispatchWorkflowResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -77,6 +90,19 @@
           "data"
         ],
         "title": "APIResponse[RerunWorkflowRunResponse]",
+        "type": "object"
+      },
+      "APIResponse_SamlConfigResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SamlConfigResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[SamlConfigResponse]",
         "type": "object"
       },
       "APIResponse_WorkflowArtifact_": {
@@ -1163,6 +1189,19 @@
         "title": "CreatedAccessTokenResponse",
         "type": "object"
       },
+      "DeleteSamlConfigResponse": {
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "DeleteSamlConfigResponse",
+        "type": "object"
+      },
       "DispatchWorkflowRequest": {
         "description": "Request body for dispatching a workflow.",
         "properties": {
@@ -1340,6 +1379,19 @@
           "domains"
         ],
         "title": "EmailDomainsRequest",
+        "type": "object"
+      },
+      "EnforcementRequest": {
+        "properties": {
+          "enforce": {
+            "title": "Enforce",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enforce"
+        ],
+        "title": "EnforcementRequest",
         "type": "object"
       },
       "FeatureFlagResponse": {
@@ -4581,6 +4633,140 @@
           "host_key"
         ],
         "title": "SSHForwardingResponse",
+        "type": "object"
+      },
+      "SamlConfigResponse": {
+        "description": "The org's SAML config, minus secrets. idp_x509_cert is omitted (bulky;\nthe console doesn't need it back).",
+        "properties": {
+          "allow_idp_initiated": {
+            "title": "Allow Idp Initiated",
+            "type": "boolean"
+          },
+          "attr_email": {
+            "title": "Attr Email",
+            "type": "string"
+          },
+          "attr_family_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attr Family Name"
+          },
+          "attr_given_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attr Given Name"
+          },
+          "attr_groups": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attr Groups"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "default_role": {
+            "title": "Default Role",
+            "type": "string"
+          },
+          "group_grant_stale_after_days": {
+            "title": "Group Grant Stale After Days",
+            "type": "integer"
+          },
+          "group_sync_state": {
+            "enum": [
+              "enabled",
+              "sync_disabled",
+              "attr_groups_unset"
+            ],
+            "title": "Group Sync State",
+            "type": "string"
+          },
+          "idp_entity_id": {
+            "title": "Idp Entity Id",
+            "type": "string"
+          },
+          "idp_slo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idp Slo Url"
+          },
+          "idp_sso_url": {
+            "title": "Idp Sso Url",
+            "type": "string"
+          },
+          "is_enforced": {
+            "title": "Is Enforced",
+            "type": "boolean"
+          },
+          "jit_provisioning": {
+            "title": "Jit Provisioning",
+            "type": "boolean"
+          },
+          "name_id_format": {
+            "title": "Name Id Format",
+            "type": "string"
+          },
+          "organization_id": {
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "organization_saml_config_id": {
+            "title": "Organization Saml Config Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "organization_saml_config_id",
+          "organization_id",
+          "idp_entity_id",
+          "idp_sso_url",
+          "idp_slo_url",
+          "name_id_format",
+          "attr_email",
+          "attr_given_name",
+          "attr_family_name",
+          "attr_groups",
+          "group_sync_state",
+          "group_grant_stale_after_days",
+          "is_enforced",
+          "jit_provisioning",
+          "allow_idp_initiated",
+          "default_role",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SamlConfigResponse",
         "type": "object"
       },
       "SbomListItem": {
@@ -11511,6 +11697,424 @@
         ]
       }
     },
+    "/orgs/{org_id}/saml": {
+      "delete": {
+        "description": "Delete the org's SAML config, or 404 if none. Requires manage_sso.\n\n409 while SAML group mappings or IdP-owned groups still reference the\nconfig: they must be dismantled first (Org Model v2 Phase 4, plan 17.3).\nDeletion removes SAML account links. Members can link again only when JIT\nprovisioning is enabled on the new configuration, and each member must\nconfirm their email at their next SAML sign-in.",
+        "operationId": "delete_saml_config",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_DeleteSamlConfigResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "SAML configuration not found for the organization"
+          },
+          "409": {
+            "description": "SAML group mappings or IdP-owned groups still reference the configuration; or management authorization is busy (retry with Retry-After)",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Saml Config",
+        "tags": [
+          "saml-admin"
+        ]
+      },
+      "get": {
+        "description": "Return the org's SAML config, or 404 if none. Requires manage_sso.",
+        "operationId": "get_saml_config",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_SamlConfigResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "SAML configuration not found for the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Saml Config",
+        "tags": [
+          "saml-admin"
+        ]
+      },
+      "post": {
+        "description": "Upload IdP metadata XML (the request body) and save the org's SAML config.\n\nBody is the IdP's SAML metadata XML (e.g. the IdP descriptor). Attribute\nmapping and behaviour flags come from query params. Requires manage_sso\n(org admin while delegation is disabled). If either the requested or stored\ndefault_role is not user, an active organization administrator is required.",
+        "operationId": "upsert_saml_config",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "IdP attribute carrying the email",
+            "in": "query",
+            "name": "attr_email",
+            "required": false,
+            "schema": {
+              "default": "email",
+              "description": "IdP attribute carrying the email",
+              "minLength": 1,
+              "title": "Attr Email",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "attr_given_name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Attr Given Name"
+            }
+          },
+          {
+            "in": "query",
+            "name": "attr_family_name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Attr Family Name"
+            }
+          },
+          {
+            "in": "query",
+            "name": "attr_groups",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Attr Groups"
+            }
+          },
+          {
+            "description": "Role for JIT-provisioned members; non-user requested or stored roles require org admin",
+            "in": "query",
+            "name": "default_role",
+            "required": false,
+            "schema": {
+              "default": "user",
+              "description": "Role for JIT-provisioned members; non-user requested or stored roles require org admin",
+              "title": "Default Role",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "jit_provisioning",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Jit Provisioning",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "allow_idp_initiated",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Idp Initiated",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_SamlConfigResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "409": {
+            "description": "SAML group state or linked identities prevent identity provider replacement; or management authorization is busy (retry with Retry-After)",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upsert Saml Config",
+        "tags": [
+          "saml-admin"
+        ]
+      }
+    },
+    "/orgs/{org_id}/saml/enforcement": {
+      "post": {
+        "description": "Enable or disable SSO enforcement for the org.\n\nEnforcement is a separate opt-in from configuring SAML: it requires both a\nSAML config and at least one DNS-verified domain (so verifying a domain\nalone never blocks OAuth). Requires manage_sso (org admin while delegation is disabled).",
+        "operationId": "set_saml_enforcement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnforcementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_SamlConfigResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Saml Enforcement",
+        "tags": [
+          "saml-admin"
+        ]
+      }
+    },
     "/orgs/{org_id}/settings": {
       "get": {
         "description": "Resolved organization settings. Readable by any member; writes are admin.\n\nSecrets are replaced with a redaction marker. Internal definitions are\nresolved only so organization gates can be evaluated, then filtered out\nunless their registry metadata exposes them at organization scope.",
@@ -13343,6 +13947,49 @@
         "summary": "Rerun Workflow Run",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/saml/{org_slug}/metadata": {
+      "get": {
+        "operationId": "saml_metadata",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_slug",
+            "required": true,
+            "schema": {
+              "title": "Org Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Organization slug is not valid"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Saml Metadata",
+        "tags": [
+          "saml"
         ]
       }
     },

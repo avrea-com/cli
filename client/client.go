@@ -114,7 +114,11 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		return nil, errors.New("invalid API path")
 	}
 	var reader io.Reader
-	if body != nil {
+	contentType := "application/json"
+	if content, ok := body.(rawRequestContent); ok {
+		reader = bytes.NewReader(content.data)
+		contentType = content.contentType
+	} else if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
@@ -129,7 +133,7 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Accept-Encoding", "zstd, gzip")
 	var timing *requestTiming
