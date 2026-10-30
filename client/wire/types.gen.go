@@ -1645,6 +1645,11 @@ type APIResponseOrganizationRepositoryResponse struct {
 	Data OrganizationRepositoryResponse `json:"data"`
 }
 
+// APIResponsePaymentMethodResponse defines model for APIResponse_PaymentMethodResponse_.
+type APIResponsePaymentMethodResponse struct {
+	Data PaymentMethodResponse `json:"data"`
+}
+
 // APIResponseRerunWorkflowRunResponse defines model for APIResponse_RerunWorkflowRunResponse_.
 type APIResponseRerunWorkflowRunResponse struct {
 	Data RerunWorkflowRunResponse `json:"data"`
@@ -1856,6 +1861,17 @@ type BillingCustomerType string
 
 // BillingInvoiceStatus defines model for BillingInvoiceStatus.
 type BillingInvoiceStatus string
+
+// BillingSettingsRequest defines model for BillingSettingsRequest.
+type BillingSettingsRequest struct {
+	BillingAddress       nullable.Nullable[map[string]interface{}] `json:"billing_address,omitempty"`
+	BillingEmails        nullable.Nullable[[]string]               `json:"billing_emails,omitempty"`
+	CompanyName          nullable.Nullable[string]                 `json:"company_name,omitempty"`
+	ContactPersonName    nullable.Nullable[string]                 `json:"contact_person_name,omitempty"`
+	CustomerType         nullable.Nullable[BillingCustomerType]    `json:"customer_type,omitempty"`
+	TaxId                nullable.Nullable[string]                 `json:"tax_id,omitempty"`
+	AdditionalProperties map[string]interface{}                    `json:"-"`
+}
 
 // BillingSettingsResponse defines model for BillingSettingsResponse.
 type BillingSettingsResponse struct {
@@ -3587,8 +3603,23 @@ type ListPaymentMethodsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// RemovePaymentMethodParams defines parameters for RemovePaymentMethod.
+type RemovePaymentMethodParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// SetDefaultPaymentMethodParams defines parameters for SetDefaultPaymentMethod.
+type SetDefaultPaymentMethodParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetBillingSettingsParams defines parameters for GetBillingSettings.
 type GetBillingSettingsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateBillingSettingsParams defines parameters for UpdateBillingSettings.
+type UpdateBillingSettingsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -4401,6 +4432,9 @@ type SearchLogsJSONRequestBody = LogSearchParams
 
 // CreateAccessTokenJSONRequestBody defines body for CreateAccessToken for application/json ContentType.
 type CreateAccessTokenJSONRequestBody = CreateAccessTokenRequest
+
+// UpdateBillingSettingsJSONRequestBody defines body for UpdateBillingSettings for application/json ContentType.
+type UpdateBillingSettingsJSONRequestBody = BillingSettingsRequest
 
 // SetEmailDomainsJSONRequestBody defines body for SetEmailDomains for application/json ContentType.
 type SetEmailDomainsJSONRequestBody = EmailDomainsRequest
@@ -5810,6 +5844,149 @@ func (a AuditEventsListResponse) MarshalJSON() ([]byte, error) {
 	object["pagination"], err = json.Marshal(a.Pagination)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BillingSettingsRequest. Returns the specified
+// element and whether it was found
+func (a BillingSettingsRequest) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BillingSettingsRequest
+func (a *BillingSettingsRequest) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BillingSettingsRequest to handle AdditionalProperties
+func (a *BillingSettingsRequest) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["billing_address"]; found {
+		err = json.Unmarshal(raw, &a.BillingAddress)
+		if err != nil {
+			return fmt.Errorf("error reading 'billing_address': %w", err)
+		}
+		delete(object, "billing_address")
+	}
+
+	if raw, found := object["billing_emails"]; found {
+		err = json.Unmarshal(raw, &a.BillingEmails)
+		if err != nil {
+			return fmt.Errorf("error reading 'billing_emails': %w", err)
+		}
+		delete(object, "billing_emails")
+	}
+
+	if raw, found := object["company_name"]; found {
+		err = json.Unmarshal(raw, &a.CompanyName)
+		if err != nil {
+			return fmt.Errorf("error reading 'company_name': %w", err)
+		}
+		delete(object, "company_name")
+	}
+
+	if raw, found := object["contact_person_name"]; found {
+		err = json.Unmarshal(raw, &a.ContactPersonName)
+		if err != nil {
+			return fmt.Errorf("error reading 'contact_person_name': %w", err)
+		}
+		delete(object, "contact_person_name")
+	}
+
+	if raw, found := object["customer_type"]; found {
+		err = json.Unmarshal(raw, &a.CustomerType)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_type': %w", err)
+		}
+		delete(object, "customer_type")
+	}
+
+	if raw, found := object["tax_id"]; found {
+		err = json.Unmarshal(raw, &a.TaxId)
+		if err != nil {
+			return fmt.Errorf("error reading 'tax_id': %w", err)
+		}
+		delete(object, "tax_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BillingSettingsRequest to handle AdditionalProperties
+func (a BillingSettingsRequest) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BillingAddress != nil {
+		object["billing_address"], err = json.Marshal(a.BillingAddress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'billing_address': %w", err)
+		}
+	}
+
+	if a.BillingEmails != nil {
+		object["billing_emails"], err = json.Marshal(a.BillingEmails)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'billing_emails': %w", err)
+		}
+	}
+
+	if a.CompanyName != nil {
+		object["company_name"], err = json.Marshal(a.CompanyName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'company_name': %w", err)
+		}
+	}
+
+	if a.ContactPersonName != nil {
+		object["contact_person_name"], err = json.Marshal(a.ContactPersonName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'contact_person_name': %w", err)
+		}
+	}
+
+	if a.CustomerType != nil {
+		object["customer_type"], err = json.Marshal(a.CustomerType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'customer_type': %w", err)
+		}
+	}
+
+	if a.TaxId != nil {
+		object["tax_id"], err = json.Marshal(a.TaxId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tax_id': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
