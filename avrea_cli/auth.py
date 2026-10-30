@@ -404,6 +404,8 @@ def _auth_url(public_api_url: str, callback_uri: str, *, provider: str, saml_log
         return f"{public_api_url}/oauth/google/login?final_redirect={callback_uri}"
     if provider == "github":
         return f"{public_api_url}/oauth/github/login?next={callback_uri}"
+    if provider == "gitlab":
+        return f"{public_api_url}/oauth/gitlab/login?next={callback_uri}"
     raise click.ClickException(f"Unsupported auth provider '{provider}'")
 
 

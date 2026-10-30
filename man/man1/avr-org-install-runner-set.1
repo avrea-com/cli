@@ -1,0 +1,45 @@
+.TH AVR\-ORG\-INSTALL\-RUNNER\-SET 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-runner-set \- Verify and configure MACHINE_TYPE, replacing its previous runner if present.
+.SH SYNOPSIS
+.B avr org install runner set
+[OPTIONS] MACHINE_TYPE
+.SH DESCRIPTION
+Verify and configure MACHINE_TYPE, replacing its previous runner if present.
+.PP
+Read the token from a hidden prompt or --runner-token-stdin.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    architecture, configured, cpu_count, description, disk_gb,
+    invalid_at, machine_type, memory_mb, paused, run_untagged,
+    runner_id, status, tag, token_expires_at, verified_at
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIMACHINE_TYPE\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+GitLab installation ID (ins-xxx format). (required)
+.TP
+\fB\-\-runner\-token\-stdin\fR
+Read the runner authentication token from standard input.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-runner-create (1),
+.BR avr-org-install-runner-delete (1),
+.BR avr-org-install-runner-list (1)

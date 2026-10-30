@@ -1,13 +1,20 @@
 .TH AVR\-ORG\-INSTALL\-REMOVE 1 "" "avr 0.5.0" "Avrea CLI"
 .SH NAME
-avr-org-install-remove \- Remove/suspend a GitHub installation.
+avr-org-install-remove \- Remove an installation using its provider-specific lifecycle.
 .SH SYNOPSIS
 .B avr org install remove
 [OPTIONS]
 .SH DESCRIPTION
-Remove/suspend a GitHub installation.
+Remove an installation using its provider-specific lifecycle.
 .PP
-Confirms before suspending; pass --yes to skip the prompt (required when stdout isn't a TTY, e.g. in CI).
+GitHub installations are suspended. GitLab installations are permanently disconnected, including their Avrea history; use `avr org install rotate` for a credential problem instead. Pass --yes to skip confirmation.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    action, installation_id, organization_id, platform
+.fi
+.RE
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
@@ -18,8 +25,17 @@ Installation ID to remove (ins-xxx format) (required)
 .TP
 \fB\-\-yes\fR, \fB\-y\fR
 Skip confirmation prompt.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-org-install (1),
 .BR avr-org-install-add (1),
-.BR avr-org-install-list (1)
+.BR avr-org-install-list (1),
+.BR avr-org-install-rotate (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-set-selection (1)

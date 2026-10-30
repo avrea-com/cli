@@ -193,6 +193,7 @@ class TestResolveRepoOrDetect:
     def test_required_raises_when_no_git_and_no_flag(self, config, monkeypatch):
         client = MagicMock()
         monkeypatch.setattr("avrea_cli.repo_context.detect_repo_context_from_git", lambda: None)
+        monkeypatch.setattr("avrea_cli.repo_context._list_git_remotes", lambda: [])
         with pytest.raises(click.ClickException, match="Could not determine repository"):
             resolve_repo_or_detect(client, config, "org-1", None, required=True)
 

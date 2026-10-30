@@ -173,6 +173,27 @@ def test_public_post_rejects_json_and_raw_content(monkeypatch) -> None:
         raise AssertionError("expected ValueError")
 
 
+def test_public_patch_supports_per_request_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("AVR_TOKEN", "test-token")
+    monkeypatch.delenv("AVR_HOST", raising=False)
+    monkeypatch.delenv("AVR_ORG", raising=False)
+    monkeypatch.setattr("avrea_cli.auth.load_token", lambda *, host: None)
+    monkeypatch.setattr("avrea_cli.auth.load_default_org", lambda *, host: None)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.extensions["timeout"] == {
+            "connect": 70.0,
+            "read": 70.0,
+            "write": 70.0,
+            "pool": 70.0,
+        }
+        return httpx.Response(200, request=request, json={"ok": True})
+
+    client = ApiClient(CliConfig(), http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert client.public_patch("/test", json={"value": 1}, timeout=70.0) == {"ok": True}
+
+
 def _isolate_config(monkeypatch) -> None:
     monkeypatch.delenv("AVR_HOST", raising=False)
     monkeypatch.delenv("AVR_TOKEN", raising=False)

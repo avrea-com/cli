@@ -1,0 +1,34 @@
+.TH AVR\-ORG\-INSTALL\-RUNNER 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-runner \- Manage GitLab runners, one per Linux machine type.
+.SH SYNOPSIS
+.B avr org install runner
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage GitLab runners, one per Linux machine type.
+.PP
+.SH COMMANDS
+.TP
+create
+Create group runners in GitLab and configure their machine types in Avrea.
+.TP
+delete
+Remove MACHINE_TYPE's runner configuration from Avrea.
+.TP
+list
+List all machine types, runner status, and exact GitLab setup instructions.
+.TP
+set
+Verify and configure MACHINE_TYPE, replacing its previous runner if present.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install (1),
+.BR avr-org-install-add (1),
+.BR avr-org-install-list (1),
+.BR avr-org-install-remove (1),
+.BR avr-org-install-rotate (1),
+.BR avr-org-install-set-selection (1),
+.BR avr-org-install-runner-create (1),
+.BR avr-org-install-runner-delete (1),
+.BR avr-org-install-runner-list (1),
+.BR avr-org-install-runner-set (1)

@@ -145,6 +145,12 @@ def _parse_avrea_url(value: str, parts: SplitResult, *, api_url: str) -> RunRefe
 
 def parse_run_reference(value: str, *, api_url: str) -> RunReference:
     """Validate and normalize a CLI workflow-run argument."""
+    if value.startswith("job-"):
+        raise click.BadParameter("This is a job ID, not a run ID. Use 'avr job view JOB_ID'.")
+    if value.startswith("https://gitlab.com/"):
+        raise click.BadParameter(
+            "Run commands support GitHub workflow runs. Use 'avr job view JOB_ID' for GitLab jobs."
+        )
     if _AVREA_RUN_ID_RE.fullmatch(value):
         return RunReference(raw=value, kind=RunReferenceKind.AVREA_ID, run_id=value)
     if _ASCII_DECIMAL_RE.fullmatch(value):

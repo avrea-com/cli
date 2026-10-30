@@ -1,0 +1,48 @@
+.TH AVR\-ORG\-INSTALL\-ROTATE 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-org-install-rotate \- Rotate a GitLab installation's access token and webhook secret.
+.SH SYNOPSIS
+.B avr org install rotate
+[OPTIONS]
+.SH DESCRIPTION
+Rotate a GitLab installation's access token and webhook secret.
+.PP
+Create an expiring gitlab.com group access token with Reporter role, api, and read_repository. The new token is read from a hidden prompt or stdin and is never accepted as a command-line value.
+.PP
+With --json, the field list or jq filter must keep webhook_setup, which carries the one-time webhook secret.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    access_token_expires_on, access_token_invalid_at,
+    access_token_last_validated_at, created_at, credential_kind,
+    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
+    installation_id, organization_id, project_selection_mode, configured_runner_count,
+    degraded_runner_count, selected_project_count, state, target_type,
+    updated_at, webhook_secret_rotated_at, webhook_setup
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-installation\-id\fR \fITEXT\fR
+GitLab installation ID (ins-xxx format). (required)
+.TP
+\fB\-\-access\-token\-stdin\fR
+Read the GitLab group access token from stdin instead of prompting.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-install (1),
+.BR avr-org-install-add (1),
+.BR avr-org-install-list (1),
+.BR avr-org-install-remove (1),
+.BR avr-org-install-runner (1),
+.BR avr-org-install-set-selection (1)
