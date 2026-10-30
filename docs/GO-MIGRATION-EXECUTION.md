@@ -1193,9 +1193,40 @@ the rebuilt executables. The registration gate and docs suites are wired into
 CI. This does not replace the remaining executable flag/argument/help/completion
 audit, and native Linux/Windows runs remain CI gates.
 
+## Terminal help and bare command behavior
+
+Native docs checkpoints: public a4164f0, admin 8621ef25d9.
+
+Added native help using the migrated public help prose, option labels and
+section metadata. The formatter reads the live composed tree for visible
+commands and flags, so admin extensions and hidden/removed entries remain
+accurate. Metadata loads only when help is requested, without a Python process
+or credential/API lookup. Independent command trees do not share mutable state.
+
+Preserve uppercase bold sections for the groups that use them, plain leaf
+help, option/default spacing, literal examples, aliases, inherited -h/--help,
+and representative terminal widths. Bare unauthenticated avr shows the Python
+welcome; authenticated avr shows help. Bare groups print help to stderr and
+exit 2. Explicit help remains stdout/exit 0, including help placed before a
+subcommand. Preserve Python's existing eager top-level help color behavior;
+subcommand help and the welcome respect no-color settings. Cobra's additional
+completion command is not advertised; compatible shell completion is next.
+
+Validation: 392 Python/Go cases per executable, including 69 terminal cases,
+pass with no API requests. The comparator checks visible layout and glyph
+styles, allowing equivalent ANSI encodings, trailing spaces and the admin
+program name. Six comparator regression tests detect style, layout, content,
+exit and accidental-request changes. Two Go tests cover bare invocation
+contracts, live composition and independent trees. Public race tests/lint,
+metadata and registration gates, admin composition, Python tooling and both
+workflows pass. The help suite is wired into public/admin CI. The 42 native
+docs scenarios also pass per executable after extending shared metadata.
+Report hashes match the tested binaries; native Linux/Windows remain CI gates.
+
 ## Remaining work
 
-Root/help/completion and a final per-command flag/argument/behavior coverage audit.
+Shell completion, remaining root/global-flag behavior, and a final per-command
+flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.

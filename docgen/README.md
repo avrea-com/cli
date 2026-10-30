@@ -30,3 +30,10 @@ Executable parity compares every generated file to the Python oracle. It
 compares JSON by structure, and permits the Starlight comment to name the
 command tree without the old Click implementation name. Other page contents
 are compared after normalizing platform newlines.
+
+Terminal help uses the same migrated input for prose, parameter labels and
+section ordering, and the live Go registry for visible commands and flags.
+Metadata is loaded lazily when help is requested. The native formatter retains
+the Python layout, wrapping and styles; no Python process is started at runtime.
+The executable help suite checks every command and both help flags, plus bare
+groups, aliases, welcome text, terminal colors and representative widths.
