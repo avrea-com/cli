@@ -37,7 +37,7 @@ func runLogs(ctx context.Context, d Dependencies, api *client.Client, jobs []map
 				}
 			}
 			if len(failedSteps) == 0 {
-				b.WriteString("No failed steps.\n")
+				b.WriteString(noFailedSteps(id, objectList(job["steps"])) + "\n")
 				continue
 			}
 		}
@@ -50,7 +50,7 @@ func runLogs(ctx context.Context, d Dependencies, api *client.Client, jobs []map
 				name := fieldText(step, "name")
 				printed := false
 				for _, entry := range entries {
-					if fieldText(entry, "step_name") != name {
+					if !logBelongsToStep(entry, step) {
 						continue
 					}
 					if !printed {

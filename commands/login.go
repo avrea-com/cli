@@ -24,12 +24,12 @@ func NewLogin(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	var provider, email string
 	cmd := &cobra.Command{Use: "login", Short: "Authenticate via browser and store credentials.", Args: cobra.NoArgs}
-	cmd.Flags().StringVar(&provider, "provider", "github", "OAuth provider: github or google.")
+	cmd.Flags().StringVar(&provider, "provider", "github", "OAuth provider: github, google or gitlab.")
 	cmd.Flags().StringVar(&email, "email", "", "Work email for company SSO discovery.")
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		provider = strings.ToLower(provider)
-		if provider != "github" && provider != "google" {
-			return &ExitError{2, "Error: --provider must be github or google"}
+		if provider != "github" && provider != "google" && provider != "gitlab" {
+			return &ExitError{2, "Error: --provider must be github, google or gitlab"}
 		}
 		cfg, store, api, err := d.load()
 		if err != nil {

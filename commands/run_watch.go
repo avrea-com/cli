@@ -221,7 +221,7 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 					event = "job_completed"
 				}
 				if event != "" {
-					if e := emit(map[string]any{"event": event, "avrea_job_id": job["job_id"], "platform_job_id": job["platform_job_id"], "job_name": job["job_name"], "state": job["state"], "conclusion": job["conclusion"]}); e != nil {
+					if e := emit(map[string]any{"event": event, "ci_provider": runCIValue(fields), "avrea_job_id": job["job_id"], "platform_job_id": job["platform_job_id"], "job_name": job["job_name"], "state": job["state"], "conclusion": job["conclusion"]}); e != nil {
 						return e
 					}
 				}
@@ -232,7 +232,7 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 				}
 			}
 			if fieldText(fields, "status") == "completed" {
-				if e := emit(map[string]any{"event": "run_completed", "status": fields["status"], "conclusion": fields["conclusion"], "duration_seconds": fields["duration_seconds"]}); e != nil {
+				if e := emit(map[string]any{"event": "run_completed", "ci_provider": runCIValue(fields), "status": fields["status"], "conclusion": fields["conclusion"], "duration_seconds": fields["duration_seconds"]}); e != nil {
 					return e
 				}
 				return watchExit(fields, exitStatus)
@@ -272,7 +272,7 @@ func renderWatch(d Dependencies, cfg config.Config, fields map[string]any, runID
 	if title == "" {
 		title = "run"
 	}
-	header := fmt.Sprintf("Watching run #%s: %s -- %s", output.CellText(fieldText(fields, "run_number")), output.CellText(fieldText(fields, "display_title")), d.Now().UTC().Format("15:04:05 UTC"))
+	header := fmt.Sprintf("Watching run %s: %s [%s] -- %s", output.CellText(runLabel(fields, runID)), output.CellText(fieldText(fields, "display_title")), output.CellText(runCIProvider(fields)), d.Now().UTC().Format("15:04:05 UTC"))
 	if slug != "" {
 		header = linkCell(header, consoleURL(cfg.Host)+"/org/"+url.PathEscape(slug)+"/runs/"+url.PathEscape(runID))
 	}
@@ -296,7 +296,7 @@ func renderWatch(d Dependencies, cfg config.Config, fields map[string]any, runID
 		return err
 	}
 	if fieldText(fields, "status") == "completed" {
-		_, err = fmt.Fprintf(d.Out, "\nRun #%s completed: %s (%s)\n", output.CellText(fieldText(fields, "run_number")), d.paint(output.CellText(fieldText(fields, "conclusion")), conclusionColor(fieldText(fields, "conclusion"))), formatDuration(fields["duration_seconds"]))
+		_, err = fmt.Fprintf(d.Out, "\nRun %s completed: %s (%s)\n", output.CellText(runLabel(fields, runID)), d.paint(output.CellText(fieldText(fields, "conclusion")), conclusionColor(fieldText(fields, "conclusion"))), formatDuration(fields["duration_seconds"]))
 	}
 	return err
 }

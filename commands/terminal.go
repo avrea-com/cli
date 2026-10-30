@@ -101,12 +101,12 @@ func (d Dependencies) runTable(rows, targets [][]string, records []map[string]an
 	for j, h := range headers {
 		cells[j] = d.paint(padded(h, widths[j], false), gray+";4")
 	}
-	if _, err := fmt.Fprintln(d.Out, "  "+strings.Join(cells, " ")); err != nil {
+	if _, err := fmt.Fprintln(d.Out, "  "+strings.Join(cells, " ")+" CI"); err != nil {
 		return err
 	}
 	for i, row := range rows {
 		codes := []string{"", "35", "1", "", "36", "", "2"}
-		for j, value := range row[1:] {
+		for j, value := range row[1:8] {
 			if j < 3 {
 				value = shortCell(output.CellText(value), widths[j]-2)
 			}
@@ -115,7 +115,7 @@ func (d Dependencies) runTable(rows, targets [][]string, records []map[string]an
 				cells[j] = linkCell(cells[j], targets[i][j+1])
 			}
 		}
-		if _, err := fmt.Fprintln(d.Out, d.indicator(records[i], "status")+" "+strings.Join(cells, " ")); err != nil {
+		if _, err := fmt.Fprintln(d.Out, d.indicator(records[i], "status")+" "+strings.Join(cells, " ")+" "+output.CellText(runCIProvider(records[i]))); err != nil {
 			return err
 		}
 	}

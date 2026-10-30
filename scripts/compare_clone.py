@@ -144,7 +144,8 @@ def scenarios():
                     {"Content-Type": "text/html", "Location": "https://never-contact.example.test"},
                 ),
             },
-            exit=1,
+            git_stub=128,
+            exit=128,
         )
     if sys.platform != "win32":
         for placement in ["git.fi.example.test", "https://git.fi.example.test/", "https://git.fi.example.test"]:
@@ -238,7 +239,27 @@ def scenarios():
                 "exit": 0 if valid else 1,
             }
         )
+    if sys.platform != "win32":
+        case(
+            "renamed canonical scope",
+            ["acme/web", "--placement", "git.fi.example.test"],
+            git_stub=0,
+            responses=DEFAULT | {SESSION: (200, ROW | {"full_name": "acme/renamed"})},
+        )
+        case(
+            "recased speculative rejection discarded",
+            ["acme/web", "--placement", "git.fi.example.test"],
+            git_stub=0,
+            responses=DEFAULT
+            | {
+                SESSION: (200, ROW | {"full_name": "Acme/Web"}),
+                TOKEN: [(403, {"detail": "old name rejected"}), (200, TOKEN_ROW)],
+            },
+        )
     cases.extend(deepcopy(c) for c in harness.scenarios() if c["name"].startswith("Git "))
+    for item in cases:
+        if item["args"][:2] == ["repo", "clone"]:
+            item.setdefault("responses", {}).setdefault(TOKEN, (200, TOKEN_ROW))
     return cases
 
 
@@ -258,6 +279,10 @@ def compare(scenario, python, go):
                     if ".helper=!f() { " not in arg:
                         continue
                     prefix, helper = arg.split(".helper=!f() { ", 1)
+                    guard = 'case "$1" in store|erase) return 0;; esac; '
+                    if not helper.startswith(guard):
+                        differences.append(side + " helper missing store/erase guard")
+                    helper = helper.removeprefix(guard)
                     command, suffix = helper.split(' "$@" || ', 1)
                     parts = shlex.split(command)
                     if len(parts) != 8 or parts[2:4] != ["auth", "git-credential"] or not os.path.isabs(parts[1]):
@@ -270,6 +295,16 @@ def compare(scenario, python, go):
                     captured["args"][j] = prefix + ".helper=" + json.dumps(parts) + " " + suffix
                 lines[i] = "GIT CAPTURE: " + json.dumps(captured)
             result["stdout"] = "\n".join(lines) + ("\n" if lines else "")
+    # Discovery and the speculative token request are independent. Sort only
+    # that initial pair; canonical reissues and every later request stay ordered.
+    for result in (python, go):
+        requests = result["requests"]
+        if (
+            len(requests) >= 2
+            and any(r["path"].endswith("/mirror/session") for r in requests[:2])
+            and any(r["path"] == "/tokens/git" for r in requests[:2])
+        ):
+            requests[:2] = sorted(requests[:2], key=lambda r: (r["method"], r["path"]))
     # Presentation is compared on the normalized helper command, not shell quoting
     # or the intentional Python-versus-native executable path difference.
     return differences + watch.compare(scenario, python, go)

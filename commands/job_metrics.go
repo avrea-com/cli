@@ -126,7 +126,7 @@ func fetchMetrics(ctx context.Context, api *client.Client, org, id string, sourc
 		record, err := api.JobMetrics(ctx, org, id, source, query)
 		if err != nil {
 			var he *client.HTTPError
-			if errors.As(err, &he) && he.Status == 404 {
+			if errors.As(err, &he) && he.Status == 404 && he.Detail == "No execution found for job" {
 				result[source] = map[string]any{"series": []any{}, "_error": "no execution"}
 				continue
 			}
@@ -219,6 +219,9 @@ func fetchMetricLogs(ctx context.Context, api *client.Client, id string, cursor 
 func metricFetchError(err error, kind string) (message string, retry bool) {
 	var he *client.HTTPError
 	if errors.As(err, &he) {
+		if kind == "log" && he.Status == 404 && he.Detail == "No execution found for job" {
+			return "", true
+		}
 		return fmt.Sprintf("%s fetch failed: HTTP %d", kind, he.Status), he.Status < 400 || he.Status >= 500 || he.Status == 429
 	}
 	var transport *client.TransportError

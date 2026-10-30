@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/avrea-com/cli/client"
@@ -21,6 +23,17 @@ import (
 	"github.com/kballard/go-shellquote"
 	"github.com/spf13/cobra"
 )
+
+type cloneDiagnosticWriter struct {
+	writer io.Writer
+	mutex  *sync.Mutex
+}
+
+func (w cloneDiagnosticWriter) Write(p []byte) (int, error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	return w.writer.Write(p)
+}
 
 var cloneRepositoryID = regexp.MustCompile("^rep-[0-9a-f]{32}$")
 
@@ -158,14 +171,14 @@ func cloneCredentialConfig(executable, apiHost, target, repo string) []string {
 	// Persist the running native executable: an avr found on PATH may still be
 	// the Python CLI, and Git invokes this helper from a different directory.
 	command := "AVR_HOST=" + shellquote.Join(apiHost) + " " + shellquote.Join(executable, "auth", "git-credential", "--url", target, "--repo", repo)
-	helper := "!f() { " + command + " \"$@\" || { printf \"quit=1\\n\\n\"; exit 1; }; }; f"
+	helper := "!f() { case \"$1\" in store|erase) return 0;; esac; " + command + " \"$@\" || { printf \"quit=1\\n\\n\"; exit 1; }; }; f"
 	return []string{"credential." + target + ".helper=", "credential." + target + ".helper=" + helper, "credential." + target + ".useHttpPath=true", "http." + target + ".followRedirects=false"}
 }
 func cloneEnvironment() []string {
 	var env []string
 	for _, value := range os.Environ() {
 		key, _, _ := strings.Cut(value, "=")
-		if strings.HasPrefix(key, "GIT_TRACE") || key == "GIT_CURL_VERBOSE" || key == "GIT_TERMINAL_PROMPT" || key == "GIT_ASKPASS" || key == "SSH_ASKPASS" {
+		if strings.HasPrefix(key, "GIT_TRACE") || key == "GIT_CURL_VERBOSE" || key == "GIT_TERMINAL_PROMPT" || key == "GIT_ASKPASS" || key == "SSH_ASKPASS" || key == "AVR_GIT_CLONE_AUTHORIZATION" {
 			continue
 		}
 		env = append(env, value)
@@ -248,6 +261,25 @@ func newRepoClone(d Dependencies) *cobra.Command {
 		if err = authenticated(cfg); err != nil {
 			return err
 		}
+		var diagnostics sync.Mutex
+		if api.Trace != nil {
+			api.Trace = cloneDiagnosticWriter{api.Trace, &diagnostics}
+		}
+		if api.Timings != nil {
+			api.Timings = cloneDiagnosticWriter{api.Timings, &diagnostics}
+		}
+		var pending chan struct{}
+		var speculativeToken string
+		var speculativeError error
+		if strings.Contains(repository, "/") {
+			pending = make(chan struct{})
+			go func() {
+				speculativeToken, _, speculativeError = issueGitToken(cmd.Context(), d, cfg, api, repository)
+				close(pending)
+			}()
+			// Discovery/validation errors take precedence, while all HTTP work remains bounded.
+			defer func() { <-pending }()
+		}
 		session, err := api.MirrorSession(cmd.Context(), repository)
 		if err != nil {
 			var he *client.HTTPError
@@ -317,11 +349,25 @@ func newRepoClone(d Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			token, _, tokenErr := issueGitToken(cmd.Context(), d, cfg, api, fullName)
-			if tokenErr != nil {
-				return tokenErr
+		} else if len(endpoints) == 1 {
+			endpoint = endpoints[0]
+		}
+		token, tokenErr := "", error(nil)
+		if pending != nil {
+			<-pending
+			if fullName == repository {
+				token, tokenErr = speculativeToken, speculativeError
 			}
+		}
+		if pending == nil || fullName != repository {
+			token, _, tokenErr = issueGitToken(cmd.Context(), d, cfg, api, fullName)
+		}
+		if tokenErr != nil {
+			return tokenErr
+		}
+		selectedDirectly := endpoint != ""
+		if !selectedDirectly {
+
 			if _, err = fmt.Fprintln(d.Err, "Finding the nearest available Git mirror…"); err != nil {
 				return err
 			}
@@ -342,7 +388,7 @@ func newRepoClone(d Dependencies) *cobra.Command {
 			return err
 		}
 		target := cloneURL(endpoint, fullName)
-		argv := []string{"-c", "http." + target + ".extraHeader=", "clone"}
+		argv := []string{"-c", "http." + target + ".extraHeader=", "--config-env=http." + target + ".extraHeader=AVR_GIT_CLONE_AUTHORIZATION", "-c", "credential." + target + ".helper=", "-c", "http." + target + ".followRedirects=false", "clone"}
 		for _, setting := range cloneCredentialConfig(executable, cfg.Host, target, fullName) {
 			argv = append(argv, "--config", setting)
 		}
@@ -357,9 +403,14 @@ func newRepoClone(d Dependencies) *cobra.Command {
 			directory = args[1]
 		}
 		argv = append(argv, "--", target, directory)
-		code, err := executeClone(cmd.Context(), d, argv, cloneEnvironment())
+		code, err := executeClone(cmd.Context(), d, argv, append(cloneEnvironment(), "AVR_GIT_CLONE_AUTHORIZATION=Authorization: Bearer "+token))
 		if err != nil {
 			return err
+		}
+		if code > 0 && selectedDirectly {
+			if _, diagnostic := nearestMirror(cmd.Context(), d.HTTP, []string{endpoint}, fullName, token); diagnostic != nil {
+				_, _ = fmt.Fprintln(d.Err, diagnostic)
+			}
 		}
 		if code != 0 {
 			return &ExitError{code, ""}

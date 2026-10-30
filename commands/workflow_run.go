@@ -96,6 +96,9 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := requireExternalCI(wf, "Manual workflow dispatch"); err != nil {
+				return err
+			}
 			workflowPath := fieldText(wf, "path")
 			if workflowPath == "" {
 				return &ExitError{1, "Error: Workflow " + output.CellText(identifier) + " has no file path on disk and can't be dispatched. Pass a filename like 'build.yml' explicitly."}

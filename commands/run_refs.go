@@ -12,7 +12,7 @@ import (
 	"github.com/avrea-com/cli/config"
 )
 
-var runIDPattern = regexp.MustCompile(`^run-[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$`)
+var runIDPattern = regexp.MustCompile(`^(?:run|awr)-[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$`)
 var decimalPattern = regexp.MustCompile(`^[0-9]+$`)
 var githubNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
 var orgSlugPattern = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
@@ -35,6 +35,12 @@ func positiveDecimal(raw string) (string, bool) {
 }
 
 func parseRunReference(raw, host string) (runReference, error) {
+	if strings.HasPrefix(raw, "job-") {
+		return runReference{}, &ExitError{2, "Error: This is a job ID, not a run ID. Use 'avr job view JOB_ID'."}
+	}
+	if strings.HasPrefix(raw, "https://gitlab.com/") {
+		return runReference{}, &ExitError{2, "Error: Run commands support GitHub workflow runs. Use 'avr job view JOB_ID' for GitLab jobs."}
+	}
 	if runIDPattern.MatchString(raw) {
 		return runReference{id: raw}, nil
 	}

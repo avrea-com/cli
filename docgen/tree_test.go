@@ -38,6 +38,7 @@ func TestDocumentationTracksLiveCommandsFlagsDefaultsAndAliases(t *testing.T) {
 	vm.Flags().Lookup("limit").DefValue = "7"
 	vm.Flags().Lookup("state").DefValue = "RUNNING"
 	vm.Flags().StringArray("tag", []string{"a,b", "quoted word"}, "Default tags.")
+	vm.Flags().IntSlice("project-id", []int{11, 22}, "Project IDs.")
 	tree, err := docgen.Build(root)
 	if err != nil {
 		t.Fatal(err)
@@ -77,6 +78,9 @@ func TestDocumentationTracksLiveCommandsFlagsDefaultsAndAliases(t *testing.T) {
 		}
 		if p.Name == "tag" && !reflect.DeepEqual(p.Default, []string{"a,b", "quoted word"}) {
 			t.Fatal("array default omitted", p.Default)
+		}
+		if p.Name == "project_id" && (!p.Multiple || p.Type != "integer" || !reflect.DeepEqual(p.Default, []int64{11, 22})) {
+			t.Fatalf("integer array documentation lost type/repeatability/default: %#v", p)
 		}
 		if p.Name == "limit" && p.Default != int64(7) {
 			t.Fatal(p.Default)

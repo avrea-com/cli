@@ -83,6 +83,8 @@ def scenarios():
         ("unknown flag", ["repo", "list", "--unknown"], "-"),
         ("alias", ["repos"], ""),
         ("repeatable", ["job", "list", "--repo", "org/one"], "--repo"),
+        ("repeatable project add", ["org", "install", "add", "--project-id", "11"], "--project-id"),
+        ("repeatable project selection", ["org", "install", "set-selection", "--project-id", "11"], "--project-id"),
         ("boolean pair", ["workflow", "run", "--no-watch"], "--"),
         ("equals choice", ["run", "list"], "--status=su"),
         ("equals separate", ["run", "list", "--status"], "="),

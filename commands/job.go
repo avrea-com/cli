@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var jobFields = []string{"job_id", "platform_job_id", "job_name", "state", "conclusion", "duration_seconds", "created_at", "started_at", "completed_at", "running_on_avrea", "repository_id", "platform_run_id", "labels", "repository"}
+var jobFields = []string{"job_id", "ci_provider", "run_id", "platform", "platform_job_id", "job_name", "state", "conclusion", "duration_seconds", "created_at", "started_at", "completed_at", "running_on_avrea", "repository_id", "platform_run_id", "labels", "repository"}
 var jobViewFields = append(append([]string{}, jobFields...), "steps", "workflow_run")
 
 // NewJob returns independently owned job inspection and connection commands.
@@ -53,7 +53,7 @@ func sinceTimestamp(value string, now time.Time) (string, error) {
 
 func newJobList(d Dependencies) *cobra.Command {
 	var o jsonOptions
-	var org, since, cursor, order string
+	var org, since, cursor, order, provider string
 	var repos, names, statuses, workflows []string
 	var limit int
 	var on bool
@@ -69,11 +69,15 @@ func newJobList(d Dependencies) *cobra.Command {
 	f.Var(inverseBool{&on}, "shadowing", "Show shadowing jobs.")
 	f.Lookup("shadowing").NoOptDefVal = "true"
 	f.Lookup("shadowing").DefValue = "false"
+	f.StringVar(&provider, "ci-provider", "", "Filter by CI engine.")
 	f.StringVar(&since, "since", "", "Relative time window, e.g. 7d, 24h or 30m.")
 	f.StringVar(&cursor, "cursor", "", "Pagination cursor.")
 	f.StringVar(&order, "order", "created_at.desc", "Sort order.")
 	f.IntVarP(&limit, "limit", "L", 20, "Maximum jobs (1–1000).")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
+		if err := validateCIProvider(provider); err != nil {
+			return err
+		}
 		if limit < 1 || limit > 1000 {
 			return &ExitError{2, "Error: --limit must be between 1 and 1000."}
 		}
@@ -134,6 +138,9 @@ func newJobList(d Dependencies) *cobra.Command {
 			}
 			query.Set("cursor", cursor)
 		}
+		if provider != "" {
+			query.Set("ci_provider", provider)
+		}
 		page, err := api.Jobs(cmd.Context(), id, query)
 		if err != nil {
 			return apiError(cfg, err, "list jobs")
@@ -176,9 +183,9 @@ func renderJobList(d Dependencies, jobs []map[string]any, host, slug string) err
 			if j["running_on_avrea"] == true {
 				on = "yes"
 			}
-			rows = append(rows, []string{state, fieldText(j, "job_name"), fieldText(j, "repository_full_name"), on, fieldText(j, "job_id"), fieldText(j, "duration_seconds"), fieldText(j, "created_at")})
+			rows = append(rows, []string{state, fieldText(j, "job_name"), fieldText(j, "repository_full_name"), on, fieldText(j, "job_id"), fieldText(j, "duration_seconds"), fieldText(j, "created_at"), jobCIProvider(j)})
 		}
-		return output.Table(d.Out, []string{"status", "job_name", "repository", "on_avrea", "job_id", "duration_seconds", "created_at"}, rows, true)
+		return output.Table(d.Out, []string{"status", "job_name", "repository", "on_avrea", "job_id", "duration_seconds", "created_at", "ci_provider"}, rows, true)
 	}
 	widths := []int{38, 28, 15, 7, 10, 36}
 	headers := []string{"NAME", "REPOSITORY", "STATUS", "ON", "AGE", "ID"}
@@ -186,7 +193,7 @@ func renderJobList(d Dependencies, jobs []map[string]any, host, slug string) err
 	for i, h := range headers {
 		cells[i] = d.paint(padded(h, widths[i], false), gray+";4")
 	}
-	if _, err := fmt.Fprintln(d.Out, "  "+strings.Join(cells, " ")); err != nil {
+	if _, err := fmt.Fprintln(d.Out, "  "+strings.Join(cells, " ")+" CI"); err != nil {
 		return err
 	}
 	for _, j := range jobs {
@@ -210,7 +217,7 @@ func renderJobList(d Dependencies, jobs []map[string]any, host, slug string) err
 			d.paint(padded(shortCell(state, 14), 15, false), color),
 			d.paint(padded(on, 7, false), onColor),
 			d.paint(padded(relativeAge(fieldText(j, "created_at"), d.Now()), 10, false), "2"),
-			linkCell(d.paint(output.CellText(fieldText(j, "job_id")), "36"), target),
+			linkCell(d.paint(output.CellText(fieldText(j, "job_id")), "36"), target), output.CellText(jobCIProvider(j)),
 		}
 		if _, err := fmt.Fprintln(d.Out, d.indicator(j, "state")+" "+strings.Join(cells, " ")); err != nil {
 			return err
