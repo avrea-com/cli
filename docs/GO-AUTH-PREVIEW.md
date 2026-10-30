@@ -32,6 +32,7 @@ make go-build
 ./build/go/avr token list
 ./build/go/avr token view TOKEN_ID
 ./build/go/avr token revoke TOKEN_ID
+./build/go/avr token create --name ci-read --repo OWNER/REPO --ttl 8h --json token,id
 ./build/go/avr log search --repo OWNER/REPO --query "error" --level error
 ./build/go/avr log search --repo OWNER/REPO --json content,line_number
 ./build/go/avr cache list --repo OWNER/REPO --type gha
