@@ -1,7 +1,7 @@
 # Go migration plan for avr and avr-admin
 
-Status: auth and CI inspection milestones complete locally; full migration in progress.
-Updated: 2026-10-29.
+Status: full public command tree and local parity validation complete; release/admin-only phases remain.
+Updated: 2026-10-30.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
 Admin reference baseline: `4c74b3309689151f133447fd9a98e4ff0874732b`.
@@ -18,7 +18,14 @@ commands to Python. Retire temporary legacy CLI dispatch as commands migrate.
 `repo-intel` stays untouched and Python-backed, including the existing invocation
 path needed to use it. Removing every Python dependency is not a completion goal.
 
-Saving this plan does not authorize implementation, publishing, or deployment.
+The current Go admin preview composes the public command tree only. Admin-only
+commands and overrides still require the existing Python admin executable.
+Legacy dispatch and native release packaging are later phases.
+
+Implementation was subsequently authorized. Publishing and deployment remain
+separate steps. Current implementation decisions and evidence are maintained in
+[GO-MIGRATION-EXECUTION.md](GO-MIGRATION-EXECUTION.md); the dated checkpoints
+below describe earlier stages.
 
 ## Motivation and success criteria
 
@@ -166,12 +173,17 @@ dependencies make a staged migration preferable to simultaneous replacement.
 | API generation | oapi-codegen, subject to the schema gate | Generated API clients and wire types |
 | Compression | klauspost/compress/zstd | Preserve Zstandard API response support |
 | Terminal capabilities | golang.org/x/term | TTY detection, terminal size and state |
-| Styling | Lip Gloss | Consistent human-readable terminal formatting |
-| Prompts | Huh | Selection, confirmations, accessible prompts |
-| Interactive views | Bubble Tea and Bubbles | Existing watch/fleet behavior where an interactive model helps |
-| Releases | GoReleaser | Native archives, checksums, build metadata, Homebrew publication |
-| Tests | testing, httptest, go-cmp, go-internal/testscript | Unit, HTTP contract, and executable behavior tests |
+| Styling | Small Avrea output layer | Match Python tables, colors, emphasis, links and underlines |
+| Prompts | Standard library and x/term | Existing confirmations, selection and hidden-input behavior |
+| Interactive views | Shared native polling and terminal rendering | Existing public watch commands; admin fleet remains later work |
+| Releases | GoReleaser, planned | Native archives, checksums, build metadata, Homebrew publication |
+| Tests | testing, httptest and pytest differential harness | Unit, HTTP contract, terminal and executable behavior tests |
 | CI checks | golangci-lint v2 and govulncheck | Align with avrea-core lint conventions, including relevant govet and Staticcheck checks |
+
+The implemented public commands did not require Lip Gloss, Huh, Bubble Tea,
+go-cmp or testscript. Keep those out of the dependency graph until a concrete
+need arises. Terminal width uses go-runewidth, shell argument parsing uses
+go-shellquote, and Unicode handling uses x/text. go-gh is not a dependency.
 
 Use explicit configuration structs and loaders rather than Viper. Own a small
 Avrea output layer rather than importing gh internals or adopting go-gh as the
