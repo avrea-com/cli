@@ -1126,10 +1126,33 @@ Report hashes match both tested binaries. All helpers and API calls are local
 fixtures; no VM connections, real authentication helpers or installations were
 performed. Native terminal tests ran on macOS; native Linux/Windows remain CI.
 
+## Command registration audit and plural aliases
+
+Bootstrap checkpoints: public 41ba123, admin 28fbde8f66.
+
+Added a live Go command inventory and an audit against the pinned Python tree.
+It checks command presence/visibility, every primary and secondary flag name,
+flag/value arity, repeatability, explicit non-null defaults, declared positional
+count/required/variadic syntax, and plural aliases. The detailed report retains
+both parameter definitions for the remaining behavior review. pflag is now a
+direct development-tool import at its existing pinned version.
+
+The first audit found 140 Go nodes versus 142 Python nodes: only the hidden
+internal group and internal docs command are missing. It also reproduced a
+missing vms alias. That alias is fixed; a Go regression test reads expectations
+from the pinned Python inventory, and eight executable alias scenarios pass
+for each binary. Public race tests/lint, admin composition, fixture lint/typing
+and both workflows pass. The alias suites are included in both CI workflows.
+
+The audit intentionally still exits nonzero for the missing docs nodes. It is
+not yet a completion gate or a behavior-coverage claim: absent/default values,
+enum/range/path validation, argument execution, terminal help and shell
+completion still need the final executable coverage audit.
+
 ## Remaining work
 
 Hidden docs, root/help/completion,
-remaining aliases, and a final per-command flag/argument/behavior coverage audit.
+and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
 has already been checked. Packaging and native OS CI remain separate release gates.
