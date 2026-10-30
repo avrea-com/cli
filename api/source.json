@@ -83,7 +83,10 @@
     "list_invoices",
     "get_invoice",
     "list_payment_methods",
-    "get_billing_settings"
+    "get_billing_settings",
+    "update_billing_settings",
+    "set_default_payment_method",
+    "remove_payment_method"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

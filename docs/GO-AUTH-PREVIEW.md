@@ -23,6 +23,9 @@ make go-build
 ./build/go/avr health
 ./build/go/avr billing summary --org ORG
 ./build/go/avr billing settings --org ORG
+./build/go/avr billing update-settings --org ORG --email billing@example.com
+./build/go/avr billing payment-methods set-default PM_ID --org ORG
+./build/go/avr billing payment-methods remove PM_ID --org ORG
 ./build/go/avr billing invoices list --org ORG
 ./build/go/avr billing invoices show INVOICE_ID --org ORG
 ./build/go/avr billing payment-methods list --org ORG

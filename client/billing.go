@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/url"
 
 	"github.com/avrea-com/cli/client/wire"
@@ -41,4 +42,31 @@ func (c *Client) PaymentMethods(ctx context.Context, path string) (Page[wire.Pay
 		return Page[wire.PaymentMethodResponse]{}, err
 	}
 	return decodePage[wire.PaymentMethodResponse](body)
+}
+
+func (c *Client) UpdateBillingSettings(ctx context.Context, path string, body wire.BillingSettingsRequest) (Record[wire.BillingSettingsResponse], error) {
+	response, err := c.Do(ctx, http.MethodPut, path, body)
+	if err != nil {
+		return Record[wire.BillingSettingsResponse]{}, err
+	}
+	fields, ok := response["data"].(map[string]any)
+	if !ok {
+		return Record[wire.BillingSettingsResponse]{}, errors.New("unexpected API response: expected billing data")
+	}
+	return decodeRecord[wire.BillingSettingsResponse](fields)
+}
+func (c *Client) SetDefaultPaymentMethod(ctx context.Context, path string) (Record[wire.PaymentMethodResponse], error) {
+	response, err := c.Do(ctx, http.MethodPut, path, nil)
+	if err != nil {
+		return Record[wire.PaymentMethodResponse]{}, err
+	}
+	fields, ok := response["data"].(map[string]any)
+	if !ok {
+		return Record[wire.PaymentMethodResponse]{}, errors.New("unexpected API response: expected billing data")
+	}
+	return decodeRecord[wire.PaymentMethodResponse](fields)
+}
+func (c *Client) RemovePaymentMethod(ctx context.Context, path string) error {
+	_, err := c.Raw(ctx, http.MethodDelete, path, nil)
+	return err
 }
