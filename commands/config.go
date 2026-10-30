@@ -155,11 +155,15 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 	if host == "" {
 		host = cfg.Host
 	}
-	hostSource := "default"
-	if d.Getenv("AVR_HOST") != "" {
-		hostSource = "AVR_HOST"
-	} else if store.Read().DefaultHost != "" {
-		hostSource = "hosts.json"
+	hostSource := cfg.HostSource
+	if hostSource == "" {
+		// Preserve custom loaders that predate explicit provenance.
+		hostSource = "default"
+		if d.Getenv("AVR_HOST") != "" {
+			hostSource = "AVR_HOST"
+		} else if store.Read().DefaultHost != "" {
+			hostSource = "hosts.json"
+		}
 	}
 	if _, err = fmt.Fprintln(d.Out, d.paint(output.CellText(host), "1")+" "+source(hostSource)); err != nil {
 		return err

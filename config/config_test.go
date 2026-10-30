@@ -160,3 +160,28 @@ func TestInvalidStoredDefaultRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHostSourceTracksResolutionInsteadOfOnlyTheSelectedURL(t *testing.T) {
+	store := &Store{Path: filepath.Join(t.TempDir(), "hosts.json")}
+	loaded, err := Load(store, func(string) string { return "" })
+	if err != nil || loaded.HostSource != "default" {
+		t.Fatal(loaded.HostSource, err)
+	}
+	if err = store.Set(DefaultHost, "token", "avr_fixture"); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ value, source string }{
+		{"", "hosts.json"},
+		{DefaultHost, "AVR_HOST"},
+	} {
+		loaded, err = Load(store, func(key string) string {
+			if key == "AVR_HOST" {
+				return tc.value
+			}
+			return ""
+		})
+		if err != nil || loaded.Host != DefaultHost || loaded.HostSource != tc.source {
+			t.Fatal(loaded.Host, loaded.HostSource, err)
+		}
+	}
+}

@@ -160,6 +160,8 @@ def run(executable, scenario, root, host):
         )
         env.update(scenario.get("env", {}))
         env = {k: v for k, v in env.items() if v is not None}
+        if scenario.get("expand_env"):
+            env = {k: v.replace("FIXTURE_HOST", host).replace("FIXTURE_HOME", directory) for k, v in env.items()}
         if "ssh_stub" in scenario and sys.platform != "win32":
             stub = home / "bin"
             stub.mkdir()
