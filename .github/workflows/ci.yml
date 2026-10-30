@@ -177,8 +177,9 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh_config --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_tunnel --go build/go/avr.exe
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_bootstrap --go build/go/avr.exe
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr.exe
-      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py -q
+      - run: uv run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py -q
         env:
           AVR_GO_BINARY: build/go/avr.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
