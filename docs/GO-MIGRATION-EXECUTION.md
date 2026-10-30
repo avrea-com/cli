@@ -443,9 +443,46 @@ cases, excluding the previously documented stored-host default difference.
 Go race tests, lint, admin composition checks, fixture typing and both workflow
 validators pass. Reports match the final binary hashes.
 
+## Token inspection and revocation batch
+
+Added token list/view/revoke and the tokens alias, shared with avr-admin.
+Configuration checkpoints: public d6fdf0a, admin 06fde33025.
+
+Decisions:
+- Preserve 200-record page bounds, the requested total limit, empty-page
+  termination, overfetch truncation and stderr hints when more records remain.
+- Keep stable TSV columns and human tables, conditional owner columns,
+  compact repository/VM grant summaries, creation quotas and revoked/expired
+  status. Inspection never includes the one-time credential, even if an API
+  response unexpectedly supplies it.
+- Validate canonical token IDs before building paths. Preserve organization
+  ID/slug selection, scoped-token error hints, JSON projection and jq.
+- Revoke only after the default-no confirmation or --yes/-y. Preserve prompt
+  disabling and idempotent success. A cancellation guard prevents starting a
+  revoke request after cancellation; a failing test demonstrated the gap.
+- Add the plural alias after an executable parity case exposed its omission.
+  No feature-gate preflight is added: existing tokens remain inspectable and
+  revocable even when token creation is unavailable.
+- Server error text now uses the same terminal-control escaping as Python.
+  Three failing token error cases demonstrated that the previous shared helper
+  left Unicode line/direction controls unescaped and formatted C1 controls
+  differently. Shared authentication regression suites cover the correction.
+- No new dependencies or live token mutations.
+
+Validation: 87 paired cases per executable, including nine terminal cases,
+cover pagination, owner/grant summaries, statuses, field validation, JSON/jq,
+scope selection, confirmation, errors and the plural alias. A synthetic
+credential injected into inspection responses is checked for non-disclosure.
+Three Go tests verify page/total bounds and cancellation before polling or
+revocation. Public auth 65 cases and shared admin auth 64 cases pass.
+Go race tests, lint, schema reproducibility, admin composition checks, fixture
+typing and both workflow validators pass. Final report hashes match both
+executables. Login parity suites must run serially because their callback URL
+uses port 8765; a parallel invocation collided and the isolated rerun passed.
+
 ## Remaining work
 
-Tokens/settings, organization and repository
+Token creation/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;

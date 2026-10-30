@@ -126,6 +126,144 @@
         "title": "APIResponse[list[WorkflowRunAggregateBucket]]",
         "type": "object"
       },
+      "AccessTokenGrantResponse": {
+        "properties": {
+          "access_level": {
+            "title": "Access Level",
+            "type": "string"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "title": "Resource Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_type",
+          "resource_id",
+          "access_level"
+        ],
+        "title": "AccessTokenGrantResponse",
+        "type": "object"
+      },
+      "AccessTokenResponse": {
+        "properties": {
+          "allow_vm_create": {
+            "title": "Allow Vm Create",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/AccessTokenGrantResponse"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked Reason"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "vm_create_count": {
+            "title": "Vm Create Count",
+            "type": "integer"
+          },
+          "vm_create_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vm Create Limit"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "user_id",
+          "name",
+          "created_at",
+          "expires_at",
+          "last_used_at",
+          "revoked_at",
+          "revoked_reason",
+          "allow_vm_create",
+          "vm_create_limit",
+          "vm_create_count",
+          "grants"
+        ],
+        "title": "AccessTokenResponse",
+        "type": "object"
+      },
       "AggregateJobRef": {
         "properties": {
           "name": {
@@ -3597,6 +3735,27 @@
         "title": "OrganizationRepositoryResponse",
         "type": "object"
       },
+      "PagedResponse_AccessTokenResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AccessTokenResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "default": {}
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "PagedResponse[AccessTokenResponse]",
+        "type": "object"
+      },
       "PagedResponse_OrganizationListItem_": {
         "additionalProperties": false,
         "properties": {
@@ -6394,6 +6553,244 @@
         "summary": "Search Logs",
         "tags": [
           "logs"
+        ]
+      }
+    },
+    "/orgs/{org_id}/access-tokens": {
+      "get": {
+        "description": "Live tokens, newest first: every member's for an active root\nadministrator, otherwise your own. An Avrea operator who is not a member\ncan read them for support and, through that read, revoke none. Available\nwith scoped tokens disabled\nand in a suspended organization, so tokens can still be found and revoked;\nonly minting is gated.",
+        "operationId": "list_access_tokens",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_AccessTokenResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Invalid cursor"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Access Tokens",
+        "tags": [
+          "access-tokens"
+        ]
+      }
+    },
+    "/orgs/{org_id}/access-tokens/{token_id}": {
+      "delete": {
+        "description": "Revoke a token: its owner, the token itself, or an active root\nadministrator. Revoking an already revoked token succeeds again without a\nsecond audit event. Revocation stops the next request; it deletes no VM.\nLike listing and reading, this stays available with the flag off, so a\ntoken can always be found and revoked.",
+        "operationId": "revoke_access_token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "token_id",
+            "required": true,
+            "schema": {
+              "title": "Token Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Token not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revoke Access Token",
+        "tags": [
+          "access-tokens"
+        ]
+      },
+      "get": {
+        "description": "Read one token, including a revoked or expired one: the token itself,\nits owner, or an active root administrator, and Avrea operators for\nsupport. Anything else answers as absent. A token's grant rows become\neligible for removal 30 days after its expiry or revocation, and `grants`\nis empty once the daily retention task has removed them. A grant on a\ncustomer VM is removed when the VM is deleted. The token's audit events\nkeep its grants: the creation event those it was minted with, and an\nupdate event each VM grant added later.",
+        "operationId": "get_access_token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "token_id",
+            "required": true,
+            "schema": {
+              "title": "Token Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Token not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Access Token",
+        "tags": [
+          "access-tokens"
         ]
       }
     },

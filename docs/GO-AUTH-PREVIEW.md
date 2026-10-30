@@ -29,6 +29,9 @@ make go-build
 ./build/go/avr config get org
 ./build/go/avr config set org ORG_SLUG
 ./build/go/avr config unset org
+./build/go/avr token list
+./build/go/avr token view TOKEN_ID
+./build/go/avr token revoke TOKEN_ID
 ./build/go/avr log search --repo OWNER/REPO --query "error" --level error
 ./build/go/avr log search --repo OWNER/REPO --json content,line_number
 ./build/go/avr cache list --repo OWNER/REPO --type gha

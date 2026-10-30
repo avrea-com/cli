@@ -39,7 +39,10 @@
     "get_latest_analysis",
     "download_analysis_artifact",
     "generate_sbom",
-    "get_ai_task_state"
+    "get_ai_task_state",
+    "list_access_tokens",
+    "get_access_token",
+    "revoke_access_token"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
