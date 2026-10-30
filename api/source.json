@@ -37,7 +37,9 @@
     "list_sboms",
     "get_analysis_for_commit",
     "get_latest_analysis",
-    "download_analysis_artifact"
+    "download_analysis_artifact",
+    "generate_sbom",
+    "get_ai_task_state"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
