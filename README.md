@@ -174,9 +174,8 @@ Missing or expired reports are distinct from a retained report containing zero
 tests. A report marked complete does not establish that every expected test ran.
 
 This requires an API deployment supporting job test results and access to the
-repository's test evidence. Only Avrea job IDs are supported in this first
-slice. Provider job IDs/URLs, immutable result links and anchored test history
-follow separately; this command does not rerun tests or change collection.
+repository's test evidence. Only Avrea job IDs are supported. The command does
+not rerun tests or change collection.
 
 **Trigger a workflow_dispatch**
 

@@ -1313,7 +1313,7 @@ avr tests [OPTIONS] COMMAND [ARGS]...
 ```
 
 Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from
-avr job list. No report capture ID or configuration digest is required.
+avr job list.
 
 #### `avr tests list`
 

@@ -80,7 +80,7 @@ def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | N
     snapshot: dict[str, Any] | None = None
     seen = {cursor} if cursor else set()
     for _ in range(_MAX_PAGES):
-        page_limit = min(100, limit - len(rows))
+        page_limit = limit - len(rows)
         params: dict[str, Any] = {"limit": page_limit}
         if cursor is not None:
             params["cursor"] = cursor
@@ -132,7 +132,9 @@ def _show(response: dict[str, Any]) -> None:
         )
         for row in rows:
             if row.get("failure_summary"):
-                click.echo(f"\n{_text(row.get('name'))}: {_text(row['failure_summary'])}")
+                # The class keeps same-named tests in different classes apart.
+                label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key))
+                click.echo(f"\n{label or 'unknown'}: {_text(row['failure_summary'])}")
     elif response.get("status") == "available" and response.get("total_count") == 0:
         click.echo("The retained report contains zero test occurrences. This does not establish that no tests ran.")
     else:
@@ -147,7 +149,7 @@ def tests(ctx: click.Context) -> None:
     """Read a job's tests, timings and recorded failure messages.
 
     Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from
-    avr job list. No report capture ID or configuration digest is required.
+    avr job list.
     """
     ensure_ctx(ctx)
 

@@ -121,6 +121,26 @@ def test_limit_preserves_next_cursor_and_request_sizes(runner: CliRunner, job_ap
     ]
 
 
+def test_large_limit_is_read_in_one_request_when_the_page_holds_it(runner: CliRunner, job_api: FakeApi) -> None:
+    job_api.reply("GET", RESULTS_PATH, json=page([ROW] * 1000, total_count=1000))
+    result = runner.invoke(cli, ["tests", JOB, *SCOPE, "--limit", "1000", "--json", "*"])
+    assert result.exit_code == 0, result.output
+    assert len(json.loads(result.stdout)["data"]) == 1000
+    assert [dict(r.url.params) for r in job_api.sent("GET", RESULTS_PATH)] == [{"limit": "1000"}]
+
+
+def test_failure_messages_name_the_class_of_same_named_tests(runner: CliRunner, job_api: FakeApi) -> None:
+    rows = [
+        {**ROW, "class_name": "TestCart", "name": "test_init", "failure_summary": "cart failed"},
+        {**ROW, "class_name": "TestOrder", "name": "test_init", "failure_summary": "order failed"},
+    ]
+    job_api.reply("GET", RESULTS_PATH, json=page(rows))
+    result = runner.invoke(cli, ["tests", JOB, *SCOPE])
+    assert result.exit_code == 0, result.output
+    assert "TestCart.test_init: cart failed" in result.stdout
+    assert "TestOrder.test_init: order failed" in result.stdout
+
+
 def test_page_budget_returns_a_resume_cursor(runner: CliRunner, job_api: FakeApi) -> None:
     for i in range(20):
         job_api.reply("GET", RESULTS_PATH, json=page([], cursor=f"page-{i}"))

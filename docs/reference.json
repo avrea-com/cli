@@ -6257,7 +6257,7 @@
         "full": "avr tests",
         "is_group": true,
         "short_help": "Read a job's tests, timings and recorded failure messages.",
-        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from\navr job list. No report capture ID or configuration digest is required.\n",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from\navr job list.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
