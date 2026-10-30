@@ -45,6 +45,13 @@ func (o jsonOptions) list(cmd *cobra.Command, d Dependencies, records []map[stri
 	return output.JSONList(cmd.Context(), d.Out, records, fields, o.expression)
 }
 
+func (o jsonOptions) record(cmd *cobra.Command, d Dependencies, record map[string]any, available []string) error {
+	fields, err := output.Fields(o.fields, available)
+	if err != nil {
+		return err
+	}
+	return output.JSON(cmd.Context(), d.Out, record, fields, o.expression)
+}
 func rawRecords[T any](page client.Page[T]) []map[string]any {
 	rows := make([]map[string]any, 0, len(page.Items))
 	for _, record := range page.Items {
@@ -186,7 +193,7 @@ func NewOrg(deps Dependencies) *cobra.Command {
 		}
 		return output.Grid(d.Out, []string{"ID", "Name", "Slug", "Role", "Default"}, rows)
 	})
-	group.AddCommand(cmd)
+	group.AddCommand(cmd, newOrgCreate(d), newOrgMembers(d), newEmailDomains(d))
 	return group
 }
 

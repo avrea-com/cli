@@ -18,6 +18,12 @@ make go-build
 ./build/go/avr auth status
 ./build/go/avr auth status --json email,host --jq .email
 ./build/go/avr org list
+./build/go/avr org create 'My Team'
+./build/go/avr org members --org ORG
+./build/go/avr org email-domain list --org ORG
+./build/go/avr org email-domain claim example.com --org ORG
+./build/go/avr org email-domain verify example.com --org ORG
+./build/go/avr org email-domain set example.com corp.example.com --org ORG
 ./build/go/avr status --repo OWNER/REPO
 ./build/go/avr status --since 24h --json
 ./build/go/avr repo list --org ORG
