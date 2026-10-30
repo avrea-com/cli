@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/avrea-com/cli/client/wire"
@@ -42,4 +43,39 @@ func (c *Client) DeleteVM(ctx context.Context, path string) (Record[wire.APIResp
 		return Record[wire.APIResponseCustomerVmDeleteResponse]{}, err
 	}
 	return decodeRecord[wire.APIResponseCustomerVmDeleteResponse](body)
+}
+
+// vmRequestWithRules retains unknown rule properties and forwards rule-shape
+// validation to the server, matching Python. Other fields use generated models.
+func vmRequestWithRules(model any, rules *[]any) (map[string]any, error) {
+	raw, err := json.Marshal(model)
+	if err != nil {
+		return nil, err
+	}
+	body, err := decodeObject(raw)
+	if err != nil {
+		return nil, err
+	}
+	if rules != nil {
+		body["egress_rules"] = *rules
+	}
+	return body, nil
+}
+func (c *Client) UpdateVM(ctx context.Context, path string, request wire.CustomerVmUpdateRequest, rules *[]any) (Record[wire.APIResponseCustomerVmWithPassword], error) {
+	body, err := vmRequestWithRules(request, rules)
+	if err != nil {
+		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
+	}
+	raw, err := c.Raw(ctx, http.MethodPatch, path, body)
+	if err != nil {
+		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
+	}
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return Record[wire.APIResponseCustomerVmWithPassword]{}, nil
+	}
+	response, err := decodeObject(raw)
+	if err != nil {
+		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
+	}
+	return decodeRecord[wire.APIResponseCustomerVmWithPassword](response)
 }
