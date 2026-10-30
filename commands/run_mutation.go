@@ -104,6 +104,11 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			}
 			existing, id = record.Fields, fieldText(record.Fields, "run_id")
 		}
+		if rerun {
+			if err := requireExternalCI(existing, "Reruns"); err != nil {
+				return err
+			}
+		}
 		scope := "all jobs"
 		if failed {
 			scope = "failed jobs only"

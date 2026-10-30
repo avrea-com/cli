@@ -137,7 +137,7 @@ func jobLogContent(ctx context.Context, d Dependencies, api *client.Client, id s
 			}
 		}
 		if len(failedSteps) == 0 {
-			return "No failed steps.", nil
+			return noFailedSteps(id, steps), nil
 		}
 	}
 	entries, err := fetchJobLogs(ctx, api, id, o)
@@ -148,7 +148,7 @@ func jobLogContent(ctx context.Context, d Dependencies, api *client.Client, id s
 		for _, s := range failedSteps {
 			printed := false
 			for _, e := range entries {
-				if fieldText(e, "step_name") != fieldText(s, "name") {
+				if !logBelongsToStep(e, s) {
 					continue
 				}
 				if !printed {
@@ -289,17 +289,18 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 			}
 			_, retry := retryReason(e)
 			var he *client.HTTPError
-			if errors.As(e, &he) && he.Status == 404 {
-				retry = true
+			if !errors.As(e, &he) || he.Status != 404 {
+				if !retry {
+					return apiError(cfg, e, "fetch logs")
+				}
+				idle++
+				if err = d.Wait(ctx, 2*time.Second); err != nil {
+					return err
+				}
+				continue
 			}
-			if !retry {
-				return apiError(cfg, e, "fetch logs")
-			}
-			idle++
-			if err = d.Wait(ctx, 2*time.Second); err != nil {
-				return err
-			}
-			continue
+			// Pending jobs can complete without a VM. Let the idle check
+			// observe their state even while log search returns 404.
 		}
 		if len(raw) > 0 {
 			if next == nil || cursor != nil && fmt.Sprint(next) == fmt.Sprint(cursor) {
@@ -380,4 +381,23 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 			return err
 		}
 	}
+}
+
+func noFailedSteps(id string, steps []map[string]any) string {
+	if strings.HasPrefix(id, "awj-") {
+		missing := len(steps) == 0
+		for _, step := range steps {
+			missing = missing || fieldText(step, "conclusion") == ""
+		}
+		if missing {
+			return "Step outcomes are unavailable; use " + fmt.Sprintf("%cavr job logs %s%c", 96, output.CellText(id), 96) + " for all output."
+		}
+	}
+	return "No failed steps."
+}
+func logBelongsToStep(entry, step map[string]any) bool {
+	if id := fieldText(step, "log_record_id"); id != "" {
+		return fieldText(entry, "step_record_id") == id
+	}
+	return fieldText(entry, "step_name") == fieldText(step, "name")
 }

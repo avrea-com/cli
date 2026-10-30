@@ -170,8 +170,12 @@ func renderRunMetadata(d Dependencies, fields map[string]any, host, slug string)
 	if actorName == "" {
 		actorName = fieldText(actor, "platform_login")
 	}
-	wf := fieldText(workflow, "name")
-	if file := fieldText(workflow, "path"); file != "" && wf != "" {
+	wf := workflowName(fields)
+	file := fieldText(workflow, "path")
+	if file == "" {
+		file = fieldText(fields, "workflow_path")
+	}
+	if file != "" && wf != "" {
 		wf += " (" + path.Base(file) + ")"
 	}
 	sha := fieldText(fields, "head_sha")
@@ -181,7 +185,17 @@ func renderRunMetadata(d Dependencies, fields map[string]any, host, slug string)
 	rows := [][2]string{
 		{"Title", fieldText(fields, "display_title")}, {"Conclusion", runState(fields, "status")}, {"Branch", fieldText(fields, "head_branch")}, {"Commit", sha},
 		{"Event", fieldText(fields, "event")}, {"Actor", actorName}, {"Duration", formatDuration(fields["duration_seconds"])},
-		{"Run", "#" + fieldText(fields, "run_number") + " (attempt " + fieldText(fields, "run_attempt") + ")"}, {"Workflow", wf}, {"Repository", fieldText(repo, "full_name")},
+		{"Run", func() string {
+			label := runLabel(fields, fieldText(fields, "run_id"))
+			if number, present := fields["run_number"]; !present || number != nil {
+				attempt, ok := fields["run_attempt"]
+				if !ok {
+					attempt = 1
+				}
+				label += " (attempt " + pythonValue(attempt) + ")"
+			}
+			return label
+		}()}, {"CI", runCIProvider(fields)}, {"Workflow", wf}, {"Repository", fieldText(repo, "full_name")},
 	}
 	for _, row := range rows {
 		value := row[1]
@@ -207,7 +221,7 @@ func renderRunMetadata(d Dependencies, fields map[string]any, host, slug string)
 					target = base + "/activity?repositories=" + url.QueryEscape(id)
 				}
 			case "Branch", "Commit":
-				if name := fieldText(repo, "full_name"); strings.Contains(name, "/") {
+				if name := fieldText(repo, "full_name"); strings.Contains(name, "/") && fields["ci_provider"] != "avrea_ci" {
 					if row[0] == "Branch" {
 						target = "https://github.com/" + name + "/tree/" + url.PathEscape(fieldText(fields, "head_branch"))
 					} else {

@@ -45,7 +45,7 @@ func newJobSSH(d Dependencies) *cobra.Command {
 		if host == "" || !sshHost.MatchString(host) || strings.HasPrefix(host, "-") || !sshUser.MatchString(user) || strings.HasPrefix(user, "-") || port < 1 || port > 65535 {
 			return fmt.Errorf("avrea returned an invalid SSH endpoint")
 		}
-		argv := []string{"ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-p", strconv.Itoa(port), user + "@" + host}
+		argv := []string{"ssh", "-o", "StrictHostKeyChecking=accept-new", "-p", strconv.Itoa(port), user + "@" + host}
 		password := fieldText(rec.Fields, "password")
 		keys, _ := rec.Fields["ssh_keys_installed"].(bool)
 		if printCommand {
@@ -71,6 +71,15 @@ func newJobSSH(d Dependencies) *cobra.Command {
 		if printCommand {
 			return nil
 		}
+		known, err := vmTempKnownHosts(rec.Fields, host, port)
+		if err != nil {
+			return err
+		}
+		if known == "" {
+			return &ExitError{1, "Error: The VM did not return an SSH host key; refusing an unverified connection."}
+		}
+		defer func() { _ = os.Remove(known) }()
+		argv = []string{"ssh", "-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + known, "-p", strconv.Itoa(port), user + "@" + host}
 		runner := d.RunSSH
 		if runner == nil {
 			runner = func(ctx context.Context, args []string) (int, error) { return executeSSH(ctx, d, args) }

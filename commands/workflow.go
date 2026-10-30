@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var workflowFields = []string{"failure_count", "flaked_count", "median_duration_seconds", "workflow_id", "platform_workflow_id", "name", "path", "repository", "runs", "completed_runs"}
+var workflowFields = []string{"ci_provider", "failure_count", "flaked_count", "median_duration_seconds", "workflow_id", "platform_workflow_id", "name", "path", "repository", "runs", "completed_runs"}
 var workflowViewFields = append(append([]string{}, workflowFields...), "p95_duration_seconds", "jobs")
 
 // NewWorkflow returns shared workflow discovery and execution commands.
@@ -33,7 +33,7 @@ func workflowProjection(bucket map[string]any) map[string]any {
 		row[k] = v
 	}
 	wf, _ := bucket["workflow"].(map[string]any)
-	for target, source := range map[string]string{"workflow_id": "workflow_id", "platform_workflow_id": "platform_id", "name": "name", "path": "path", "repository": "repository_full_name"} {
+	for target, source := range map[string]string{"ci_provider": "ci_provider", "workflow_id": "workflow_id", "platform_workflow_id": "platform_id", "name": "name", "path": "path", "repository": "repository_full_name"} {
 		row[target] = wf[source]
 	}
 	row["runs"], row["completed_runs"] = bucket["count"], bucket["completed_count"]
@@ -142,7 +142,7 @@ func lookupWorkflow(ctx context.Context, cfg config.Config, api *client.Client, 
 		query.Set("cursor", page.NextCursor)
 	}
 	safe := output.CellText(identifier)
-	if strings.HasPrefix(identifier, "wfl-") {
+	if strings.HasPrefix(identifier, "wfl-") || strings.HasPrefix(identifier, "awf-") {
 		for _, wf := range rows {
 			if fieldText(wf, "workflow_id") == identifier {
 				return wf, nil
@@ -164,8 +164,15 @@ func lookupWorkflow(ctx context.Context, cfg config.Config, api *client.Client, 
 	}
 	var matches []map[string]any
 	for _, wf := range rows {
-		if strings.EqualFold(fieldText(wf, "name"), identifier) {
+		if strings.EqualFold(fieldText(wf, "path"), identifier) {
 			matches = append(matches, wf)
+		}
+	}
+	if len(matches) == 0 {
+		for _, wf := range rows {
+			if strings.EqualFold(fieldText(wf, "name"), identifier) {
+				matches = append(matches, wf)
+			}
 		}
 	}
 	if len(matches) == 0 {
@@ -185,7 +192,7 @@ func lookupWorkflow(ctx context.Context, cfg config.Config, api *client.Client, 
 		for i, wf := range matches {
 			names[i] = output.CellText(fieldText(wf, "name"))
 		}
-		return nil, &ExitError{1, fmt.Sprintf("Error: Ambiguous workflow '%s'. Matches: %s. Pass --wfl-id instead.", safe, strings.Join(names, ", "))}
+		return nil, &ExitError{1, fmt.Sprintf("Error: Ambiguous workflow '%s'. Matches: %s. Pass the full workflow ID or file path instead.", safe, strings.Join(names, ", "))}
 	}
 	return matches[0], nil
 }
@@ -220,7 +227,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 			return err
 		}
 		workflow := args[0]
-		if !strings.HasPrefix(workflow, "wfl-") {
+		if !strings.HasPrefix(workflow, "wfl-") && !strings.HasPrefix(workflow, "awf-") {
 			repository, err := requiredWorkflowRepo(cmd.Context(), d, cfg, api, id, repo)
 			if err != nil {
 				return err

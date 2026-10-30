@@ -40,7 +40,11 @@ def scenarios():
                 "name": "installation " + name,
                 "args": ["org", "install", *args],
                 "env": ENV.copy(),
-                "responses": {LIST: (200, {"data": [ROW]}), DELETE: (204, None)},
+                "responses": {
+                    LIST: (200, {"data": [ROW]}),
+                    DELETE: (204, None),
+                    ("GET", DELETE[1]): (200, {"data": ROW}),
+                },
                 **kwargs,
             }
         )
@@ -81,7 +85,7 @@ def scenarios():
             case(
                 verb + " HTTP " + str(status),
                 args,
-                responses={route: (status, {"detail": "fixture denied"})},
+                responses={("GET", DELETE[1]): (200, {"data": ROW}), route: (status, {"detail": "fixture denied"})},
                 exit=4 if status == 401 else 1,
             )
     case("add skip", ["add", "--no-browser", "--wait-seconds", "0"])
@@ -130,6 +134,9 @@ def scenarios():
             item["tty"] = item["merge_terminal"] = True
             item["env"] |= {"NO_COLOR": "", "TERM": "xterm-256color"}
             cases.append(item)
+    for item in cases:
+        if "remove" in item["args"] and item.get("env", {}).get("AVR_TOKEN"):
+            item.setdefault("responses", {}).setdefault(("GET", DELETE[1]), (200, {"data": ROW}))
     return cases
 
 

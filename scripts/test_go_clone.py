@@ -40,20 +40,20 @@ def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noq
     assert (destination / "README").read_text() == "mirror content\n"
     origin = subprocess.check_output(["git", "-C", str(destination), "remote", "get-url", "origin"], text=True).strip()
     assert origin == base_url + "/foo/faa.git"
-    assert issued == ["git-jwt-1", "git-jwt-2"]
+    assert issued == ["git-jwt-1"]
     config = (destination / ".git/config").read_text()
     assert "git-jwt-" not in config and "test-token" not in config
     assert "extraheader" not in config.lower()
     helper = subprocess.check_output(
         ["git", "-C", str(destination), "config", "--get-all", f"credential.{origin}.helper"], text=True
     ).splitlines()[-1]
-    helper_command = helper.removeprefix("!f() { ").split(' "$@" || ', 1)[0]
+    helper_command = helper.removeprefix('!f() { case "$1" in store|erase) return 0;; esac; ').split(' "$@" || ', 1)[0]
     assert Path(shlex.split(helper_command)[1]).resolve() == Path(binary)
     monkeypatch.setenv("AVR_HOST", "https://never-contact.example.test")
     for _ in range(2):
         fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
         assert fetched.returncode == 0, fetched.stderr
-    assert issued == ["git-jwt-1", "git-jwt-2", "git-jwt-3", "git-jwt-4"]
+    assert issued == ["git-jwt-1", "git-jwt-2", "git-jwt-3"]
     assert set(authenticated) == set(issued)
     controls["token_status"] = 503
     fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
@@ -84,7 +84,9 @@ def test_clone_comparator_keeps_helper_scope_and_environment(monkeypatch, tmp_pa
             ]
         )
         helper = (
-            "credential.https://git.example.test/acme/web.git.helper=!f() { " + command + ' "$@" || { exit 1; }; }; f'
+            'credential.https://git.example.test/acme/web.git.helper=!f() { case "$1" in store|erase) return 0;; esac; '
+            + command
+            + ' "$@" || { exit 1; }; }; f'
         )
         capture = {
             "args": ["clone", "--config", helper, "--", "https://git.example.test/acme/web.git", "web"],

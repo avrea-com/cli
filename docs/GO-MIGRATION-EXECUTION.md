@@ -1,7 +1,7 @@
 # Go migration execution record
 
-Status (2026-10-30): the public-command implementation and local parity goal
-is complete. The full public tree is native Go and reused by the admin preview.
+Status (2026-10-30): the public implementation is rebased and updated; refreshed
+parity validation is in progress. The full public tree is native Go and reused by the admin preview.
 See the final validation and next-phase sections at the end for evidence and
 the boundaries of this completion. Earlier sections are chronological checkpoints.
 
@@ -12,7 +12,7 @@ Commits are unsigned as requested. No release, push, or deployment is implied.
 ## Authoritative scope
 
 `go-python-command-contract.json` records the pinned Python command tree:
-142 nodes, including 115 executable leaf commands, nested groups, hidden
+149 nodes, including 121 executable leaf commands, nested groups, hidden
 commands, aliases, options, defaults, choices, and positional arguments.
 Regenerate with `python -m scripts.inventory_python_commands`.
 The snapshot is a denominator, not proof of behavior parity.
@@ -1415,7 +1415,7 @@ Both workflows retain all differential report variants as artifacts; admin CI
 uses its own configuration oracle for auth and config. The subsequent full
 fresh sweep is recorded below.
 
-## Final local validation and requirement reconciliation
+## Pre-rebase local validation and requirement reconciliation
 
 Validated on 2026-10-30 against public source f3eaacb3a18b88e648041dbad52effbf8fc6ee03
 and admin source 890df1fb7087d858a4e6932bda36a4dbeb638e01. Later documentation-only
@@ -1529,3 +1529,68 @@ complete. This is not a production release or full admin migration.
    validation before release; fixture parity does not establish live support.
 
 CodeRabbit remains signed out, so no external CodeRabbit review is claimed.
+
+## origin/main refresh (2026-10-30)
+
+Rebased the public branch onto 96d1ccb987032f35b10c7bb0b9c90816da1323a0
+and the admin branch onto 85e8b2af0d66f55da8989d0718aeb35887e43349.
+Both rebases completed without conflicts. Local before-rebase branches retain
+the previous tips: cli/go-migration-before-main-20261030 and
+cli/go-inspection-admin-before-main-20261030. The Python oracle, command
+inventory, help/documentation metadata, admin configuration oracle and API
+snapshot now use these upstream revisions.
+
+The refreshed public surface has 149 command/group nodes and 121 executable
+leaves, with 557 declared option records, 67 positional arguments and eight
+aliases. Six newly merged leaf commands were implemented:
+
+- org install set-selection and rotate.
+- org install runner list, set, delete and create.
+
+Other upstream behavior carried into the shared implementation:
+
+- GitLab login, GitLab registration through org install add, mixed-provider
+  installation listings with optional runner counts, JSON installation results
+  and permanent GitLab disconnection.
+- Native CI run/workflow IDs, provider filters and metadata, flat workflow
+  fields, provider-aware terminal/JSON/streaming output and GitLab job links.
+  Native CI reruns, diagnostics and manual workflow dispatch retain Python's
+  explicit unavailable messages.
+- Full workflow paths take precedence over display names. Failed-step logs use
+  record IDs when present, distinguish unavailable native step outcomes, and
+  observe jobs that finish before obtaining an execution.
+- Job SSH pins the API-provided host key in a private temporary file and removes
+  it after exit. Missing host keys refuse a connection. Printed commands use
+  accept-new, matching the merged Python command.
+- Named mirror clones overlap discovery and token issuance, discard speculative
+  credentials after a canonical-name change, use a single placement directly,
+  and reuse the first JWT for clone through Git's environment-backed header.
+  The saved helper skips store/erase without launching the CLI. Failed direct
+  clones retain Git's exit code and add mirror diagnostics.
+
+GitLab writes allow the server's validation deadline with a copied 70-second
+client. Runner creation uses GitLab's fixed origin and a separate 30-second
+request without Avrea credentials, cookies, API tracing or redirects. Partial
+creation failures identify the GitLab runner and previously configured machine
+types. Registration/rotation JSON filters must retain the one-time webhook
+secret; output failures recover unfiltered JSON without copying secret-bearing
+jq diagnostics to stderr. No dependency or library changes were needed.
+
+The new compare_native_ci and compare_gitlab suites are wired into public and
+admin CI. They check terminal styles/layout, JSON types/projection, request
+bodies, provider gates, credential recovery, optional count failures, runner
+partial success, SSH key refusal and native log edge cases. The GitLab creation
+suite uses the actual public/admin command roots with an injected loopback
+transport, plus native executable cases before the external write. It never
+creates real GitLab runners. Clone tests retain real local Git clone/fetch
+coverage and now verify one initial JWT, exact canonical scope and saved helper
+behavior.
+
+The broader sweep caught a regression where the new CI column had accidentally
+appeared in repository tables; this was fixed before the final binaries were
+built. New recovery JSON is compared structurally, including on error exits.
+Independent clone discovery/authentication requests may arrive in either order;
+only that initial pair is normalized. Subsequent requests and token scopes
+remain compared. Normal terminal redraw differences remain accepted.
+
+Refresh validation: in progress. Reports are under build/go/rebased-parity.

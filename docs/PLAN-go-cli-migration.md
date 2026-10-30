@@ -1,10 +1,11 @@
 # Go migration plan for avr and avr-admin
 
-Status: full public command tree and local parity validation complete; release/admin-only phases remain.
+Status: public implementation rebased and updated; refreshed parity validation in progress. Release/admin-only phases remain.
 Updated: 2026-10-30.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
-Admin reference baseline: `4c74b3309689151f133447fd9a98e4ff0874732b`.
+Current public/Python baseline: `96d1ccb987032f35b10c7bb0b9c90816da1323a0` from `origin/main`.
+Current admin reference baseline: `85e8b2af0d66f55da8989d0718aeb35887e43349` from `origin/main`.
 
 Rewrite the public `avr` CLI in Go, expose a small reusable command and client
 surface, and compose `avr-admin` from it. Target roughly 99% practical compatibility

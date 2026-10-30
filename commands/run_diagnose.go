@@ -31,6 +31,9 @@ func newRunDiagnose(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if err := requireExternalCI(record.Fields, "Diagnostics"); err != nil {
+			return err
+		}
 		report, err := buildRunDiagnostics(cmd.Context(), d, api, id, record.Fields)
 		if err != nil {
 			return apiError(cfg, err, "diagnose workflow run")

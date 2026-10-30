@@ -51,21 +51,6 @@ func (e AccessTokenGrantResourceType) Valid() bool {
 	}
 }
 
-// Defines values for AggregateWorkflowPlatform.
-const (
-	AggregateWorkflowPlatformGithub AggregateWorkflowPlatform = "github"
-)
-
-// Valid indicates whether the value is a known member of the AggregateWorkflowPlatform enum.
-func (e AggregateWorkflowPlatform) Valid() bool {
-	switch e {
-	case AggregateWorkflowPlatformGithub:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AiTaskStatus.
 const (
 	AiTaskStatusCOMPLETED AiTaskStatus = "COMPLETED"
@@ -92,16 +77,16 @@ func (e AiTaskStatus) Valid() bool {
 
 // Defines values for Architecture.
 const (
-	Arm64 Architecture = "arm64"
-	X8664 Architecture = "x86_64"
+	ArchitectureArm64 Architecture = "arm64"
+	ArchitectureX8664 Architecture = "x86_64"
 )
 
 // Valid indicates whether the value is a known member of the Architecture enum.
 func (e Architecture) Valid() bool {
 	switch e {
-	case Arm64:
+	case ArchitectureArm64:
 		return true
-	case X8664:
+	case ArchitectureX8664:
 		return true
 	default:
 		return false
@@ -335,13 +320,13 @@ func (e CustomerVmBootstrapProvider) Valid() bool {
 
 // Defines values for CustomerVmCreateRequestCacheSettingOverrides.
 const (
-	False CustomerVmCreateRequestCacheSettingOverrides = false
+	CustomerVmCreateRequestCacheSettingOverridesFalse CustomerVmCreateRequestCacheSettingOverrides = false
 )
 
 // Valid indicates whether the value is a known member of the CustomerVmCreateRequestCacheSettingOverrides enum.
 func (e CustomerVmCreateRequestCacheSettingOverrides) Valid() bool {
 	switch e {
-	case False:
+	case CustomerVmCreateRequestCacheSettingOverridesFalse:
 		return true
 	default:
 		return false
@@ -438,6 +423,219 @@ func (e GenerateSbomRequestScope) Valid() bool {
 	case GenerateSbomRequestScopeFull:
 		return true
 	case GenerateSbomRequestScopeSbom:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabProjectSelectionRequestProjectSelectionMode.
+const (
+	GitLabProjectSelectionRequestProjectSelectionModeALL      GitLabProjectSelectionRequestProjectSelectionMode = "ALL"
+	GitLabProjectSelectionRequestProjectSelectionModeSELECTED GitLabProjectSelectionRequestProjectSelectionMode = "SELECTED"
+)
+
+// Valid indicates whether the value is a known member of the GitLabProjectSelectionRequestProjectSelectionMode enum.
+func (e GitLabProjectSelectionRequestProjectSelectionMode) Valid() bool {
+	switch e {
+	case GitLabProjectSelectionRequestProjectSelectionModeALL:
+		return true
+	case GitLabProjectSelectionRequestProjectSelectionModeSELECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRegistrationRequestProjectSelectionMode.
+const (
+	GitLabRegistrationRequestProjectSelectionModeALL      GitLabRegistrationRequestProjectSelectionMode = "ALL"
+	GitLabRegistrationRequestProjectSelectionModeSELECTED GitLabRegistrationRequestProjectSelectionMode = "SELECTED"
+)
+
+// Valid indicates whether the value is a known member of the GitLabRegistrationRequestProjectSelectionMode enum.
+func (e GitLabRegistrationRequestProjectSelectionMode) Valid() bool {
+	switch e {
+	case GitLabRegistrationRequestProjectSelectionModeALL:
+		return true
+	case GitLabRegistrationRequestProjectSelectionModeSELECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerArchitecture.
+const (
+	GitLabRunnerArchitectureArm64 GitLabRunnerArchitecture = "arm64"
+	GitLabRunnerArchitectureX8664 GitLabRunnerArchitecture = "x86_64"
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerArchitecture enum.
+func (e GitLabRunnerArchitecture) Valid() bool {
+	switch e {
+	case GitLabRunnerArchitectureArm64:
+		return true
+	case GitLabRunnerArchitectureX8664:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerPaused.
+const (
+	GitLabRunnerPausedFalse GitLabRunnerPaused = false
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerPaused enum.
+func (e GitLabRunnerPaused) Valid() bool {
+	switch e {
+	case GitLabRunnerPausedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerRunUntagged.
+const (
+	GitLabRunnerRunUntaggedFalse GitLabRunnerRunUntagged = false
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerRunUntagged enum.
+func (e GitLabRunnerRunUntagged) Valid() bool {
+	switch e {
+	case GitLabRunnerRunUntaggedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerSetupCreateInRegisteredGroup.
+const (
+	GitLabRunnerSetupCreateInRegisteredGroupTrue GitLabRunnerSetupCreateInRegisteredGroup = true
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerSetupCreateInRegisteredGroup enum.
+func (e GitLabRunnerSetupCreateInRegisteredGroup) Valid() bool {
+	switch e {
+	case GitLabRunnerSetupCreateInRegisteredGroupTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerSetupDedicatedToAvrea.
+const (
+	GitLabRunnerSetupDedicatedToAvreaTrue GitLabRunnerSetupDedicatedToAvrea = true
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerSetupDedicatedToAvrea enum.
+func (e GitLabRunnerSetupDedicatedToAvrea) Valid() bool {
+	switch e {
+	case GitLabRunnerSetupDedicatedToAvreaTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerSetupOneTagPerJob.
+const (
+	GitLabRunnerSetupOneTagPerJobTrue GitLabRunnerSetupOneTagPerJob = true
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerSetupOneTagPerJob enum.
+func (e GitLabRunnerSetupOneTagPerJob) Valid() bool {
+	switch e {
+	case GitLabRunnerSetupOneTagPerJobTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerSetupRunnerType.
+const (
+	GroupType GitLabRunnerSetupRunnerType = "group_type"
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerSetupRunnerType enum.
+func (e GitLabRunnerSetupRunnerType) Valid() bool {
+	switch e {
+	case GroupType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabRunnerStatus.
+const (
+	Configured    GitLabRunnerStatus = "configured"
+	NotConfigured GitLabRunnerStatus = "not_configured"
+	TokenExpired  GitLabRunnerStatus = "token_expired"
+	TokenInvalid  GitLabRunnerStatus = "token_invalid"
+)
+
+// Valid indicates whether the value is a known member of the GitLabRunnerStatus enum.
+func (e GitLabRunnerStatus) Valid() bool {
+	switch e {
+	case Configured:
+		return true
+	case NotConfigured:
+		return true
+	case TokenExpired:
+		return true
+	case TokenInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabWebhookSetupSecretHeader.
+const (
+	XGitlabToken GitLabWebhookSetupSecretHeader = "X-Gitlab-Token"
+)
+
+// Valid indicates whether the value is a known member of the GitLabWebhookSetupSecretHeader enum.
+func (e GitLabWebhookSetupSecretHeader) Valid() bool {
+	switch e {
+	case XGitlabToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabWebhookSetupSslVerification.
+const (
+	GitLabWebhookSetupSslVerificationTrue GitLabWebhookSetupSslVerification = true
+)
+
+// Valid indicates whether the value is a known member of the GitLabWebhookSetupSslVerification enum.
+func (e GitLabWebhookSetupSslVerification) Valid() bool {
+	switch e {
+	case GitLabWebhookSetupSslVerificationTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitLabWebhookSetupUnlistedTriggersEnabled.
+const (
+	GitLabWebhookSetupUnlistedTriggersEnabledFalse GitLabWebhookSetupUnlistedTriggersEnabled = false
+)
+
+// Valid indicates whether the value is a known member of the GitLabWebhookSetupUnlistedTriggersEnabled enum.
+func (e GitLabWebhookSetupUnlistedTriggersEnabled) Valid() bool {
+	switch e {
+	case GitLabWebhookSetupUnlistedTriggersEnabledFalse:
 		return true
 	default:
 		return false
@@ -2127,18 +2325,16 @@ type AggregateStepRef struct {
 
 // AggregateWorkflow defines model for AggregateWorkflow.
 type AggregateWorkflow struct {
-	Name                 string                     `json:"name"`
-	Path                 string                     `json:"path"`
-	Platform             *AggregateWorkflowPlatform `json:"platform,omitempty"`
-	PlatformId           int                        `json:"platform_id"`
-	RepositoryFullName   string                     `json:"repository_full_name"`
-	State                string                     `json:"state"`
-	WorkflowId           string                     `json:"workflow_id"`
-	AdditionalProperties map[string]interface{}     `json:"-"`
+	CiProvider           *CIProvider            `json:"ci_provider,omitempty"`
+	Name                 string                 `json:"name"`
+	Path                 string                 `json:"path"`
+	Platform             *Platform              `json:"platform,omitempty"`
+	PlatformId           nullable.Nullable[int] `json:"platform_id"`
+	RepositoryFullName   string                 `json:"repository_full_name"`
+	State                string                 `json:"state"`
+	WorkflowId           string                 `json:"workflow_id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
-
-// AggregateWorkflowPlatform defines model for AggregateWorkflow.Platform.
-type AggregateWorkflowPlatform string
 
 // AiTaskStatus defines model for AiTaskStatus.
 type AiTaskStatus string
@@ -2514,7 +2710,7 @@ type CustomerVm struct {
 	// Forkable Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.
 	Forkable *bool `json:"forkable,omitempty"`
 
-	// HttpsPorts Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.
+	// HttpsPorts Guest ports the VM publishes as HTTPS URLs; endpoints.https has the live URLs.
 	HttpsPorts *[]int `json:"https_ports,omitempty"`
 	MemoryMb   int    `json:"memory_mb"`
 	OsType     string `json:"os_type"`
@@ -2642,7 +2838,7 @@ type CustomerVmDetail struct {
 	// Forkable Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.
 	Forkable *bool `json:"forkable,omitempty"`
 
-	// HttpsPorts Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.
+	// HttpsPorts Guest ports the VM publishes as HTTPS URLs; endpoints.https has the live URLs.
 	HttpsPorts *[]int `json:"https_ports,omitempty"`
 	MemoryMb   int    `json:"memory_mb"`
 	OsType     string `json:"os_type"`
@@ -2706,7 +2902,7 @@ type CustomerVmUpdateRequest struct {
 	DisplayName nullable.Nullable[string]             `json:"display_name,omitempty"`
 	EgressRules nullable.Nullable[[]EgressRuleCreate] `json:"egress_rules,omitempty"`
 
-	// HttpsPorts Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes. Applies at the next start or resume; [] publishes none.
+	// HttpsPorts Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes. A running VM's URLs follow within seconds; a stopped or paused VM gets them at its next start or resume. [] publishes none.
 	HttpsPorts     nullable.Nullable[[]int]    `json:"https_ports,omitempty"`
 	RotatePassword *bool                       `json:"rotate_password,omitempty"`
 	SshPublicKeys  nullable.Nullable[[]string] `json:"ssh_public_keys,omitempty"`
@@ -2740,7 +2936,10 @@ type CustomerVmUsageReport struct {
 // CustomerVmWithPassword defines model for CustomerVmWithPassword.
 type CustomerVmWithPassword struct {
 	// EgressRulesApplied Present when the request changed egress_rules: true when the running VM enforces them now, false when that is not confirmed; they apply at its next resume at the latest.
-	EgressRulesApplied   nullable.Nullable[bool]   `json:"egress_rules_applied,omitempty"`
+	EgressRulesApplied nullable.Nullable[bool] `json:"egress_rules_applied,omitempty"`
+
+	// HttpsPortsApplied Present when the request changed https_ports: true when the running VM serves them now, vm.endpoints.https listing a URL for each of them and no other; false when that is not confirmed. They apply at its next start or resume at the latest.
+	HttpsPortsApplied    nullable.Nullable[bool]   `json:"https_ports_applied,omitempty"`
 	Password             nullable.Nullable[string] `json:"password,omitempty"`
 	PrecheckoutNote      nullable.Nullable[string] `json:"precheckout_note,omitempty"`
 	Vm                   CustomerVm                `json:"vm"`
@@ -2956,6 +3155,186 @@ type GitClustersPagination struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// GitLabCredentialRotationRequest defines model for GitLabCredentialRotationRequest.
+type GitLabCredentialRotationRequest struct {
+	AccessToken *string `json:"access_token,omitempty"`
+}
+
+// GitLabInstallationDetail defines model for GitLabInstallationDetail.
+type GitLabInstallationDetail struct {
+	AccessTokenExpiresOn       string                       `json:"access_token_expires_on"`
+	AccessTokenInvalidAt       nullable.Nullable[time.Time] `json:"access_token_invalid_at"`
+	AccessTokenLastValidatedAt time.Time                    `json:"access_token_last_validated_at"`
+	ConfiguredRunnerCount      int                          `json:"configured_runner_count"`
+	CreatedAt                  time.Time                    `json:"created_at"`
+	CredentialKind             string                       `json:"credential_kind"`
+	DegradedRunnerCount        int                          `json:"degraded_runner_count"`
+	GitlabNamespaceFullPath    string                       `json:"gitlab_namespace_full_path"`
+	GitlabNamespaceId          int                          `json:"gitlab_namespace_id"`
+	GitlabProjectIds           []int                        `json:"gitlab_project_ids"`
+	InstallationId             string                       `json:"installation_id"`
+	OrganizationId             string                       `json:"organization_id"`
+	ProjectSelectionMode       string                       `json:"project_selection_mode"`
+	SelectedProjectCount       int                          `json:"selected_project_count"`
+	State                      string                       `json:"state"`
+	TargetType                 string                       `json:"target_type"`
+	UpdatedAt                  time.Time                    `json:"updated_at"`
+	WebhookSecretRotatedAt     time.Time                    `json:"webhook_secret_rotated_at"`
+}
+
+// GitLabInstallationSummary defines model for GitLabInstallationSummary.
+type GitLabInstallationSummary struct {
+	AccessTokenExpiresOn       string                       `json:"access_token_expires_on"`
+	AccessTokenInvalidAt       nullable.Nullable[time.Time] `json:"access_token_invalid_at"`
+	AccessTokenLastValidatedAt time.Time                    `json:"access_token_last_validated_at"`
+	ConfiguredRunnerCount      int                          `json:"configured_runner_count"`
+	CreatedAt                  time.Time                    `json:"created_at"`
+	CredentialKind             string                       `json:"credential_kind"`
+	DegradedRunnerCount        int                          `json:"degraded_runner_count"`
+	GitlabNamespaceFullPath    string                       `json:"gitlab_namespace_full_path"`
+	GitlabNamespaceId          int                          `json:"gitlab_namespace_id"`
+	InstallationId             string                       `json:"installation_id"`
+	OrganizationId             string                       `json:"organization_id"`
+	ProjectSelectionMode       string                       `json:"project_selection_mode"`
+	SelectedProjectCount       int                          `json:"selected_project_count"`
+	State                      string                       `json:"state"`
+	TargetType                 string                       `json:"target_type"`
+	UpdatedAt                  time.Time                    `json:"updated_at"`
+	WebhookSecretRotatedAt     time.Time                    `json:"webhook_secret_rotated_at"`
+}
+
+// GitLabInstallationWriteResponse defines model for GitLabInstallationWriteResponse.
+type GitLabInstallationWriteResponse struct {
+	AccessTokenExpiresOn       string                       `json:"access_token_expires_on"`
+	AccessTokenInvalidAt       nullable.Nullable[time.Time] `json:"access_token_invalid_at"`
+	AccessTokenLastValidatedAt time.Time                    `json:"access_token_last_validated_at"`
+	ConfiguredRunnerCount      int                          `json:"configured_runner_count"`
+	CreatedAt                  time.Time                    `json:"created_at"`
+	CredentialKind             string                       `json:"credential_kind"`
+	DegradedRunnerCount        int                          `json:"degraded_runner_count"`
+	GitlabNamespaceFullPath    string                       `json:"gitlab_namespace_full_path"`
+	GitlabNamespaceId          int                          `json:"gitlab_namespace_id"`
+	GitlabProjectIds           []int                        `json:"gitlab_project_ids"`
+	InstallationId             string                       `json:"installation_id"`
+	OrganizationId             string                       `json:"organization_id"`
+	ProjectSelectionMode       string                       `json:"project_selection_mode"`
+	SelectedProjectCount       int                          `json:"selected_project_count"`
+	State                      string                       `json:"state"`
+	TargetType                 string                       `json:"target_type"`
+	UpdatedAt                  time.Time                    `json:"updated_at"`
+	WebhookSecretRotatedAt     time.Time                    `json:"webhook_secret_rotated_at"`
+	WebhookSetup               GitLabWebhookSetup           `json:"webhook_setup"`
+}
+
+// GitLabProjectSelectionRequest defines model for GitLabProjectSelectionRequest.
+type GitLabProjectSelectionRequest struct {
+	GitlabProjectIds     *[]int                                            `json:"gitlab_project_ids,omitempty"`
+	ProjectSelectionMode GitLabProjectSelectionRequestProjectSelectionMode `json:"project_selection_mode"`
+}
+
+// GitLabProjectSelectionRequestProjectSelectionMode defines model for GitLabProjectSelectionRequest.ProjectSelectionMode.
+type GitLabProjectSelectionRequestProjectSelectionMode string
+
+// GitLabRegistrationRequest defines model for GitLabRegistrationRequest.
+type GitLabRegistrationRequest struct {
+	AccessToken          *string                                       `json:"access_token,omitempty"`
+	GitlabProjectIds     *[]int                                        `json:"gitlab_project_ids,omitempty"`
+	GroupFullPath        string                                        `json:"group_full_path"`
+	ProjectSelectionMode GitLabRegistrationRequestProjectSelectionMode `json:"project_selection_mode"`
+}
+
+// GitLabRegistrationRequestProjectSelectionMode defines model for GitLabRegistrationRequest.ProjectSelectionMode.
+type GitLabRegistrationRequestProjectSelectionMode string
+
+// GitLabRunner defines model for GitLabRunner.
+type GitLabRunner struct {
+	Architecture   GitLabRunnerArchitecture     `json:"architecture"`
+	Configured     bool                         `json:"configured"`
+	CpuCount       int                          `json:"cpu_count"`
+	Description    string                       `json:"description"`
+	DiskGb         int                          `json:"disk_gb"`
+	InvalidAt      nullable.Nullable[time.Time] `json:"invalid_at"`
+	MachineType    string                       `json:"machine_type"`
+	MemoryMb       int                          `json:"memory_mb"`
+	Paused         *GitLabRunnerPaused          `json:"paused,omitempty"`
+	RunUntagged    *GitLabRunnerRunUntagged     `json:"run_untagged,omitempty"`
+	RunnerId       nullable.Nullable[int]       `json:"runner_id"`
+	Status         GitLabRunnerStatus           `json:"status"`
+	Tag            string                       `json:"tag"`
+	TokenExpiresAt nullable.Nullable[time.Time] `json:"token_expires_at"`
+	VerifiedAt     nullable.Nullable[time.Time] `json:"verified_at"`
+}
+
+// GitLabRunnerArchitecture defines model for GitLabRunner.Architecture.
+type GitLabRunnerArchitecture string
+
+// GitLabRunnerPaused defines model for GitLabRunner.Paused.
+type GitLabRunnerPaused bool
+
+// GitLabRunnerRunUntagged defines model for GitLabRunner.RunUntagged.
+type GitLabRunnerRunUntagged bool
+
+// GitLabRunnerCollection defines model for GitLabRunnerCollection.
+type GitLabRunnerCollection struct {
+	Data  []GitLabRunner    `json:"data"`
+	Setup GitLabRunnerSetup `json:"setup"`
+}
+
+// GitLabRunnerRequest defines model for GitLabRunnerRequest.
+type GitLabRunnerRequest struct {
+	RunnerToken *string `json:"runner_token,omitempty"`
+}
+
+// GitLabRunnerSetup defines model for GitLabRunnerSetup.
+type GitLabRunnerSetup struct {
+	CreateInRegisteredGroup *GitLabRunnerSetupCreateInRegisteredGroup `json:"create_in_registered_group,omitempty"`
+	DedicatedToAvrea        *GitLabRunnerSetupDedicatedToAvrea        `json:"dedicated_to_avrea,omitempty"`
+	DocumentationUrl        *string                                   `json:"documentation_url,omitempty"`
+	FallbackImage           *string                                   `json:"fallback_image,omitempty"`
+	GroupFullPath           string                                    `json:"group_full_path"`
+	GroupId                 int                                       `json:"group_id"`
+	JobExample              string                                    `json:"job_example"`
+	OneTagPerJob            *GitLabRunnerSetupOneTagPerJob            `json:"one_tag_per_job,omitempty"`
+	ProtectedBranches       *string                                   `json:"protected_branches,omitempty"`
+	RunnerType              *GitLabRunnerSetupRunnerType              `json:"runner_type,omitempty"`
+}
+
+// GitLabRunnerSetupCreateInRegisteredGroup defines model for GitLabRunnerSetup.CreateInRegisteredGroup.
+type GitLabRunnerSetupCreateInRegisteredGroup bool
+
+// GitLabRunnerSetupDedicatedToAvrea defines model for GitLabRunnerSetup.DedicatedToAvrea.
+type GitLabRunnerSetupDedicatedToAvrea bool
+
+// GitLabRunnerSetupOneTagPerJob defines model for GitLabRunnerSetup.OneTagPerJob.
+type GitLabRunnerSetupOneTagPerJob bool
+
+// GitLabRunnerSetupRunnerType defines model for GitLabRunnerSetup.RunnerType.
+type GitLabRunnerSetupRunnerType string
+
+// GitLabRunnerStatus defines model for GitLabRunnerStatus.
+type GitLabRunnerStatus string
+
+// GitLabWebhookSetup defines model for GitLabWebhookSetup.
+type GitLabWebhookSetup struct {
+	EnabledTriggers         *[]interface{}                             `json:"enabled_triggers,omitempty"`
+	Secret                  string                                     `json:"secret"`
+	SecretHeader            *GitLabWebhookSetupSecretHeader            `json:"secret_header,omitempty"`
+	SslVerification         *GitLabWebhookSetupSslVerification         `json:"ssl_verification,omitempty"`
+	UnlistedTriggersEnabled *GitLabWebhookSetupUnlistedTriggersEnabled `json:"unlisted_triggers_enabled,omitempty"`
+	Url                     string                                     `json:"url"`
+	Warning                 *string                                    `json:"warning,omitempty"`
+	AdditionalProperties    map[string]interface{}                     `json:"-"`
+}
+
+// GitLabWebhookSetupSecretHeader defines model for GitLabWebhookSetup.SecretHeader.
+type GitLabWebhookSetupSecretHeader string
+
+// GitLabWebhookSetupSslVerification defines model for GitLabWebhookSetup.SslVerification.
+type GitLabWebhookSetupSslVerification bool
+
+// GitLabWebhookSetupUnlistedTriggersEnabled defines model for GitLabWebhookSetup.UnlistedTriggersEnabled.
+type GitLabWebhookSetupUnlistedTriggersEnabled bool
+
 // GitTokenRequest defines model for GitTokenRequest.
 type GitTokenRequest struct {
 	Repos                nullable.Nullable[[]string] `json:"repos,omitempty"`
@@ -2999,6 +3378,25 @@ type IngressSource struct {
 	SrcFqdn              nullable.Nullable[string] `json:"src_fqdn,omitempty"`
 	SrcIp                string                    `json:"src_ip"`
 	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// InstallationResponse Installation response model.
+type InstallationResponse struct {
+	CreatedAt              time.Time                 `json:"created_at"`
+	GithubUrl              nullable.Nullable[string] `json:"github_url"`
+	InstallationId         string                    `json:"installation_id"`
+	IsSyncing              bool                      `json:"is_syncing"`
+	OrganizationId         nullable.Nullable[string] `json:"organization_id"`
+	OrganizationName       nullable.Nullable[string] `json:"organization_name"`
+	OrganizationSlug       nullable.Nullable[string] `json:"organization_slug"`
+	Platform               IntegratedSourcePlatform  `json:"platform"`
+	PlatformInstallationId nullable.Nullable[string] `json:"platform_installation_id"`
+	PlatformSettingsUrl    string                    `json:"platform_settings_url"`
+	State                  string                    `json:"state"`
+	TargetId               int                       `json:"target_id"`
+	TargetName             string                    `json:"target_name"`
+	TargetType             string                    `json:"target_type"`
+	AdditionalProperties   map[string]interface{}    `json:"-"`
 }
 
 // IntegratedSourcePlatform defines model for IntegratedSourcePlatform.
@@ -3597,6 +3995,14 @@ type PagedResponseEmailDomainResponse struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponseGitLabInstallationSummary defines model for PagedResponse_GitLabInstallationSummary_.
+type PagedResponseGitLabInstallationSummary struct {
+	Data []GitLabInstallationSummary `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PagedResponseOrganizationListItem defines model for PagedResponse_OrganizationListItem_.
 type PagedResponseOrganizationListItem struct {
 	Data []OrganizationListItem `json:"data"`
@@ -4190,7 +4596,7 @@ type VmEndpointProtocol string
 
 // VmEndpoints defines model for VmEndpoints.
 type VmEndpoints struct {
-	// Https The VM's live HTTPS URLs, in https_ports order (a port since removed from it last, until the next start). Null while it has none: before its run reports them, once its organization turns sandbox HTTPS off, or for a run started while sandbox HTTPS was off or in a datacenter without it.
+	// Https The VM's live HTTPS URLs, in https_ports order. Null while it has none: before its run reports them, once its organization turns sandbox HTTPS off, or for a run started while sandbox HTTPS was off or in a datacenter without it.
 	Https                nullable.Nullable[[]VmHttpsEndpoint] `json:"https,omitempty"`
 	RemoteDesktop        nullable.Nullable[VmEndpoint]        `json:"remote_desktop,omitempty"`
 	Ssh                  VmEndpoint                           `json:"ssh"`
@@ -4658,8 +5064,53 @@ type ListGitClustersParams struct {
 // ListGitClustersParamsOrder defines parameters for ListGitClusters.
 type ListGitClustersParamsOrder string
 
+// ListGitlabInstallationsParams defines parameters for ListGitlabInstallations.
+type ListGitlabInstallationsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RegisterGitlabInstallationParams defines parameters for RegisterGitlabInstallation.
+type RegisterGitlabInstallationParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetGitlabInstallationParams defines parameters for GetGitlabInstallation.
+type GetGitlabInstallationParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ReplaceGitlabProjectSelectionParams defines parameters for ReplaceGitlabProjectSelection.
+type ReplaceGitlabProjectSelectionParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// RotateGitlabInstallationCredentialsParams defines parameters for RotateGitlabInstallationCredentials.
+type RotateGitlabInstallationCredentialsParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListGitlabRunnersParams defines parameters for ListGitlabRunners.
+type ListGitlabRunnersParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ClearGitlabRunnerParams defines parameters for ClearGitlabRunner.
+type ClearGitlabRunnerParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// SetGitlabRunnerParams defines parameters for SetGitlabRunner.
+type SetGitlabRunnerParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // RemoveOrganizationInstallationParams defines parameters for RemoveOrganizationInstallation.
 type RemoveOrganizationInstallationParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetOrganizationInstallationParams defines parameters for GetOrganizationInstallation.
+type GetOrganizationInstallationParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -4749,6 +5200,7 @@ type ListJobsParamsOrder string
 // AggregateJobsParams defines parameters for AggregateJobs.
 type AggregateJobsParams struct {
 	RepositoryIds *[]string                         `form:"repository_ids,omitempty" json:"repository_ids,omitempty"`
+	CiProvider    *CIProvider                       `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
 	JobNames      *[]string                         `form:"job_names,omitempty" json:"job_names,omitempty"`
 	States        *[]AggregateJobsParamsStates      `form:"states,omitempty" json:"states,omitempty"`
 	Conclusions   *[]AggregateJobsParamsConclusions `form:"conclusions,omitempty" json:"conclusions,omitempty"`
@@ -5344,6 +5796,7 @@ type ListWorkflowRunsParamsOrder string
 // AggregateWorkflowRunsParams defines parameters for AggregateWorkflowRuns.
 type AggregateWorkflowRunsParams struct {
 	RepositoryIds              *[]string                                 `form:"repository_ids,omitempty" json:"repository_ids,omitempty"`
+	CiProvider                 *CIProvider                               `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
 	Statuses                   *[]AggregateWorkflowRunsParamsStatuses    `form:"statuses,omitempty" json:"statuses,omitempty"`
 	Conclusions                *[]AggregateWorkflowRunsParamsConclusions `form:"conclusions,omitempty" json:"conclusions,omitempty"`
 	HeadBranches               *[]string                                 `form:"head_branches,omitempty" json:"head_branches,omitempty"`
@@ -5560,6 +6013,18 @@ type ReorderOrgRulesJSONRequestBody = ReorderRequest
 
 // UpdateOrgRuleJSONRequestBody defines body for UpdateOrgRule for application/json ContentType.
 type UpdateOrgRuleJSONRequestBody = EgressRuleUpdate
+
+// RegisterGitlabInstallationJSONRequestBody defines body for RegisterGitlabInstallation for application/json ContentType.
+type RegisterGitlabInstallationJSONRequestBody = GitLabRegistrationRequest
+
+// ReplaceGitlabProjectSelectionJSONRequestBody defines body for ReplaceGitlabProjectSelection for application/json ContentType.
+type ReplaceGitlabProjectSelectionJSONRequestBody = GitLabProjectSelectionRequest
+
+// RotateGitlabInstallationCredentialsJSONRequestBody defines body for RotateGitlabInstallationCredentials for application/json ContentType.
+type RotateGitlabInstallationCredentialsJSONRequestBody = GitLabCredentialRotationRequest
+
+// SetGitlabRunnerJSONRequestBody defines body for SetGitlabRunner for application/json ContentType.
+type SetGitlabRunnerJSONRequestBody = GitLabRunnerRequest
 
 // RequestPublicMirrorJSONRequestBody defines body for RequestPublicMirror for application/json ContentType.
 type RequestPublicMirrorJSONRequestBody = PublicMirrorRequestCreate
@@ -6088,6 +6553,14 @@ func (a *AggregateWorkflow) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["ci_provider"]; found {
+		err = json.Unmarshal(raw, &a.CiProvider)
+		if err != nil {
+			return fmt.Errorf("error reading 'ci_provider': %w", err)
+		}
+		delete(object, "ci_provider")
+	}
+
 	if raw, found := object["name"]; found {
 		err = json.Unmarshal(raw, &a.Name)
 		if err != nil {
@@ -6162,6 +6635,13 @@ func (a *AggregateWorkflow) UnmarshalJSON(b []byte) error {
 func (a AggregateWorkflow) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.CiProvider != nil {
+		object["ci_provider"], err = json.Marshal(a.CiProvider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ci_provider': %w", err)
+		}
+	}
 
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
@@ -10404,6 +10884,14 @@ func (a *CustomerVmWithPassword) UnmarshalJSON(b []byte) error {
 		delete(object, "egress_rules_applied")
 	}
 
+	if raw, found := object["https_ports_applied"]; found {
+		err = json.Unmarshal(raw, &a.HttpsPortsApplied)
+		if err != nil {
+			return fmt.Errorf("error reading 'https_ports_applied': %w", err)
+		}
+		delete(object, "https_ports_applied")
+	}
+
 	if raw, found := object["password"]; found {
 		err = json.Unmarshal(raw, &a.Password)
 		if err != nil {
@@ -10451,6 +10939,13 @@ func (a CustomerVmWithPassword) MarshalJSON() ([]byte, error) {
 		object["egress_rules_applied"], err = json.Marshal(a.EgressRulesApplied)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'egress_rules_applied': %w", err)
+		}
+	}
+
+	if a.HttpsPortsApplied != nil {
+		object["https_ports_applied"], err = json.Marshal(a.HttpsPortsApplied)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'https_ports_applied': %w", err)
 		}
 	}
 
@@ -12109,6 +12604,160 @@ func (a GitClustersPagination) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for GitLabWebhookSetup. Returns the specified
+// element and whether it was found
+func (a GitLabWebhookSetup) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GitLabWebhookSetup
+func (a *GitLabWebhookSetup) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GitLabWebhookSetup to handle AdditionalProperties
+func (a *GitLabWebhookSetup) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled_triggers"]; found {
+		err = json.Unmarshal(raw, &a.EnabledTriggers)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled_triggers': %w", err)
+		}
+		delete(object, "enabled_triggers")
+	}
+
+	if raw, found := object["secret"]; found {
+		err = json.Unmarshal(raw, &a.Secret)
+		if err != nil {
+			return fmt.Errorf("error reading 'secret': %w", err)
+		}
+		delete(object, "secret")
+	}
+
+	if raw, found := object["secret_header"]; found {
+		err = json.Unmarshal(raw, &a.SecretHeader)
+		if err != nil {
+			return fmt.Errorf("error reading 'secret_header': %w", err)
+		}
+		delete(object, "secret_header")
+	}
+
+	if raw, found := object["ssl_verification"]; found {
+		err = json.Unmarshal(raw, &a.SslVerification)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssl_verification': %w", err)
+		}
+		delete(object, "ssl_verification")
+	}
+
+	if raw, found := object["unlisted_triggers_enabled"]; found {
+		err = json.Unmarshal(raw, &a.UnlistedTriggersEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'unlisted_triggers_enabled': %w", err)
+		}
+		delete(object, "unlisted_triggers_enabled")
+	}
+
+	if raw, found := object["url"]; found {
+		err = json.Unmarshal(raw, &a.Url)
+		if err != nil {
+			return fmt.Errorf("error reading 'url': %w", err)
+		}
+		delete(object, "url")
+	}
+
+	if raw, found := object["warning"]; found {
+		err = json.Unmarshal(raw, &a.Warning)
+		if err != nil {
+			return fmt.Errorf("error reading 'warning': %w", err)
+		}
+		delete(object, "warning")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GitLabWebhookSetup to handle AdditionalProperties
+func (a GitLabWebhookSetup) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.EnabledTriggers != nil {
+		object["enabled_triggers"], err = json.Marshal(a.EnabledTriggers)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled_triggers': %w", err)
+		}
+	}
+
+	object["secret"], err = json.Marshal(a.Secret)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'secret': %w", err)
+	}
+
+	if a.SecretHeader != nil {
+		object["secret_header"], err = json.Marshal(a.SecretHeader)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'secret_header': %w", err)
+		}
+	}
+
+	if a.SslVerification != nil {
+		object["ssl_verification"], err = json.Marshal(a.SslVerification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ssl_verification': %w", err)
+		}
+	}
+
+	if a.UnlistedTriggersEnabled != nil {
+		object["unlisted_triggers_enabled"], err = json.Marshal(a.UnlistedTriggersEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unlisted_triggers_enabled': %w", err)
+		}
+	}
+
+	object["url"], err = json.Marshal(a.Url)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'url': %w", err)
+	}
+
+	if a.Warning != nil {
+		object["warning"], err = json.Marshal(a.Warning)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'warning': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for GitTokenRequest. Returns the specified
 // element and whether it was found
 func (a GitTokenRequest) Get(fieldName string) (value interface{}, found bool) {
@@ -12499,6 +13148,241 @@ func (a IngressSource) MarshalJSON() ([]byte, error) {
 	object["src_ip"], err = json.Marshal(a.SrcIp)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'src_ip': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for InstallationResponse. Returns the specified
+// element and whether it was found
+func (a InstallationResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for InstallationResponse
+func (a *InstallationResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for InstallationResponse to handle AdditionalProperties
+func (a *InstallationResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["github_url"]; found {
+		err = json.Unmarshal(raw, &a.GithubUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'github_url': %w", err)
+		}
+		delete(object, "github_url")
+	}
+
+	if raw, found := object["installation_id"]; found {
+		err = json.Unmarshal(raw, &a.InstallationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'installation_id': %w", err)
+		}
+		delete(object, "installation_id")
+	}
+
+	if raw, found := object["is_syncing"]; found {
+		err = json.Unmarshal(raw, &a.IsSyncing)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_syncing': %w", err)
+		}
+		delete(object, "is_syncing")
+	}
+
+	if raw, found := object["organization_id"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_id': %w", err)
+		}
+		delete(object, "organization_id")
+	}
+
+	if raw, found := object["organization_name"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationName)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_name': %w", err)
+		}
+		delete(object, "organization_name")
+	}
+
+	if raw, found := object["organization_slug"]; found {
+		err = json.Unmarshal(raw, &a.OrganizationSlug)
+		if err != nil {
+			return fmt.Errorf("error reading 'organization_slug': %w", err)
+		}
+		delete(object, "organization_slug")
+	}
+
+	if raw, found := object["platform"]; found {
+		err = json.Unmarshal(raw, &a.Platform)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform': %w", err)
+		}
+		delete(object, "platform")
+	}
+
+	if raw, found := object["platform_installation_id"]; found {
+		err = json.Unmarshal(raw, &a.PlatformInstallationId)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_installation_id': %w", err)
+		}
+		delete(object, "platform_installation_id")
+	}
+
+	if raw, found := object["platform_settings_url"]; found {
+		err = json.Unmarshal(raw, &a.PlatformSettingsUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'platform_settings_url': %w", err)
+		}
+		delete(object, "platform_settings_url")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["target_id"]; found {
+		err = json.Unmarshal(raw, &a.TargetId)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_id': %w", err)
+		}
+		delete(object, "target_id")
+	}
+
+	if raw, found := object["target_name"]; found {
+		err = json.Unmarshal(raw, &a.TargetName)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_name': %w", err)
+		}
+		delete(object, "target_name")
+	}
+
+	if raw, found := object["target_type"]; found {
+		err = json.Unmarshal(raw, &a.TargetType)
+		if err != nil {
+			return fmt.Errorf("error reading 'target_type': %w", err)
+		}
+		delete(object, "target_type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for InstallationResponse to handle AdditionalProperties
+func (a InstallationResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["github_url"], err = json.Marshal(a.GithubUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'github_url': %w", err)
+	}
+
+	object["installation_id"], err = json.Marshal(a.InstallationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'installation_id': %w", err)
+	}
+
+	object["is_syncing"], err = json.Marshal(a.IsSyncing)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'is_syncing': %w", err)
+	}
+
+	object["organization_id"], err = json.Marshal(a.OrganizationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_id': %w", err)
+	}
+
+	object["organization_name"], err = json.Marshal(a.OrganizationName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_name': %w", err)
+	}
+
+	object["organization_slug"], err = json.Marshal(a.OrganizationSlug)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'organization_slug': %w", err)
+	}
+
+	object["platform"], err = json.Marshal(a.Platform)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform': %w", err)
+	}
+
+	object["platform_installation_id"], err = json.Marshal(a.PlatformInstallationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform_installation_id': %w", err)
+	}
+
+	object["platform_settings_url"], err = json.Marshal(a.PlatformSettingsUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'platform_settings_url': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["target_id"], err = json.Marshal(a.TargetId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_id': %w", err)
+	}
+
+	object["target_name"], err = json.Marshal(a.TargetName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_name': %w", err)
+	}
+
+	object["target_type"], err = json.Marshal(a.TargetType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'target_type': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

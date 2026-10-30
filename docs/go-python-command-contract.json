@@ -9,7 +9,7 @@
     "vms": "vm",
     "workflows": "workflow"
   },
-  "baseline": "99e74d119d83c7cef2887c2dd04a724719e6b009",
+  "baseline": "96d1ccb987032f35b10c7bb0b9c90816da1323a0",
   "root": {
     "commands": [
       {
@@ -1004,7 +1004,8 @@
                   "case_sensitive": false,
                   "choices": [
                     "google",
-                    "github"
+                    "github",
+                    "gitlab"
                   ],
                   "name": "choice",
                   "param_type": "Choice"
@@ -4346,6 +4347,32 @@
                 "hidden": false,
                 "is_flag": false,
                 "kind": "option",
+                "multiple": false,
+                "name": "ci_provider",
+                "nargs": 1,
+                "opts": [
+                  "--ci-provider"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "case_sensitive": true,
+                  "choices": [
+                    "github_actions",
+                    "gitlab_ci",
+                    "avrea_ci"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
                 "multiple": true,
                 "name": "workflow_ids",
                 "nargs": 1,
@@ -5570,7 +5597,8 @@
               "case_sensitive": false,
               "choices": [
                 "google",
-                "github"
+                "github",
+                "gitlab"
               ],
               "name": "choice",
               "param_type": "Choice"
@@ -6165,6 +6193,121 @@
                   },
                   {
                     "count": false,
+                    "default": "github",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "platform",
+                    "nargs": 1,
+                    "opts": [
+                      "--platform"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "case_sensitive": false,
+                      "choices": [
+                        "github",
+                        "gitlab"
+                      ],
+                      "name": "choice",
+                      "param_type": "Choice"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "group_full_path",
+                    "nargs": 1,
+                    "opts": [
+                      "--group-full-path"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "project_selection",
+                    "nargs": 1,
+                    "opts": [
+                      "--project-selection"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "case_sensitive": false,
+                      "choices": [
+                        "all",
+                        "selected"
+                      ],
+                      "name": "choice",
+                      "param_type": "Choice"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": true,
+                    "name": "project_ids",
+                    "nargs": 1,
+                    "opts": [
+                      "--project-id"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "clamp": false,
+                      "max": null,
+                      "max_open": false,
+                      "min": 1,
+                      "min_open": false,
+                      "name": "integer range",
+                      "param_type": "IntRange"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": true,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "access_token_stdin",
+                    "nargs": 1,
+                    "opts": [
+                      "--access-token-stdin"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "boolean",
+                      "param_type": "Bool"
+                    }
+                  },
+                  {
+                    "count": false,
                     "default": "Sentinel.UNSET",
                     "envvar": null,
                     "hidden": false,
@@ -6201,6 +6344,47 @@
                     "type": {
                       "name": "integer",
                       "param_type": "Int"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "json_fields",
+                    "nargs": 1,
+                    "opts": [
+                      "--json"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "jq_expr",
+                    "nargs": 1,
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
                     }
                   },
                   {
@@ -6359,6 +6543,47 @@
                   },
                   {
                     "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "json_fields",
+                    "nargs": 1,
+                    "opts": [
+                      "--json"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "jq_expr",
+                    "nargs": 1,
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
                     "default": "Sentinel.UNSET",
                     "envvar": null,
                     "hidden": false,
@@ -6379,6 +6604,881 @@
                   }
                 ],
                 "path": "avr org install remove"
+              },
+              {
+                "hidden": false,
+                "parameters": [
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "org_id",
+                    "nargs": 1,
+                    "opts": [
+                      "--org"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "installation_id",
+                    "nargs": 1,
+                    "opts": [
+                      "--installation-id"
+                    ],
+                    "required": true,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": true,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "access_token_stdin",
+                    "nargs": 1,
+                    "opts": [
+                      "--access-token-stdin"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "boolean",
+                      "param_type": "Bool"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "json_fields",
+                    "nargs": 1,
+                    "opts": [
+                      "--json"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "jq_expr",
+                    "nargs": 1,
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": true,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "_click_default_help",
+                    "nargs": 1,
+                    "opts": [
+                      "--help"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "boolean",
+                      "param_type": "Bool"
+                    }
+                  }
+                ],
+                "path": "avr org install rotate"
+              },
+              {
+                "commands": [
+                  {
+                    "hidden": false,
+                    "parameters": [
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "org_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--org"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "installation_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": true,
+                        "name": "machine_types",
+                        "nargs": 1,
+                        "opts": [
+                          "--machine-type"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "protected",
+                        "nargs": 1,
+                        "opts": [
+                          "--protected"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "personal_access_token_stdin",
+                        "nargs": 1,
+                        "opts": [
+                          "--personal-access-token-stdin"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "json_fields",
+                        "nargs": 1,
+                        "opts": [
+                          "--json"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "jq_expr",
+                        "nargs": 1,
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "_click_default_help",
+                        "nargs": 1,
+                        "opts": [
+                          "--help"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      }
+                    ],
+                    "path": "avr org install runner create"
+                  },
+                  {
+                    "hidden": false,
+                    "parameters": [
+                      {
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "kind": "argument",
+                        "multiple": false,
+                        "name": "machine_type",
+                        "nargs": 1,
+                        "opts": [
+                          "machine_type"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "org_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--org"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "installation_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "confirmed",
+                        "nargs": 1,
+                        "opts": [
+                          "--yes",
+                          "-y"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "json_fields",
+                        "nargs": 1,
+                        "opts": [
+                          "--json"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "jq_expr",
+                        "nargs": 1,
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "_click_default_help",
+                        "nargs": 1,
+                        "opts": [
+                          "--help"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      }
+                    ],
+                    "path": "avr org install runner delete"
+                  },
+                  {
+                    "hidden": false,
+                    "parameters": [
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "org_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--org"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "installation_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "json_fields",
+                        "nargs": 1,
+                        "opts": [
+                          "--json"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "jq_expr",
+                        "nargs": 1,
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "_click_default_help",
+                        "nargs": 1,
+                        "opts": [
+                          "--help"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      }
+                    ],
+                    "path": "avr org install runner list"
+                  },
+                  {
+                    "hidden": false,
+                    "parameters": [
+                      {
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "kind": "argument",
+                        "multiple": false,
+                        "name": "machine_type",
+                        "nargs": 1,
+                        "opts": [
+                          "machine_type"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "org_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--org"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "installation_id",
+                        "nargs": 1,
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "required": true,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "runner_token_stdin",
+                        "nargs": 1,
+                        "opts": [
+                          "--runner-token-stdin"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "json_fields",
+                        "nargs": 1,
+                        "opts": [
+                          "--json"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": null,
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": false,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "jq_expr",
+                        "nargs": 1,
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "text",
+                          "param_type": "String"
+                        }
+                      },
+                      {
+                        "count": false,
+                        "default": "Sentinel.UNSET",
+                        "envvar": null,
+                        "hidden": false,
+                        "is_flag": true,
+                        "kind": "option",
+                        "multiple": false,
+                        "name": "_click_default_help",
+                        "nargs": 1,
+                        "opts": [
+                          "--help"
+                        ],
+                        "required": false,
+                        "secondary_opts": [],
+                        "type": {
+                          "name": "boolean",
+                          "param_type": "Bool"
+                        }
+                      }
+                    ],
+                    "path": "avr org install runner set"
+                  }
+                ],
+                "hidden": false,
+                "parameters": [
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": true,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "_click_default_help",
+                    "nargs": 1,
+                    "opts": [
+                      "--help"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "boolean",
+                      "param_type": "Bool"
+                    }
+                  }
+                ],
+                "path": "avr org install runner"
+              },
+              {
+                "hidden": false,
+                "parameters": [
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "org_id",
+                    "nargs": 1,
+                    "opts": [
+                      "--org"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "installation_id",
+                    "nargs": 1,
+                    "opts": [
+                      "--installation-id"
+                    ],
+                    "required": true,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "project_selection",
+                    "nargs": 1,
+                    "opts": [
+                      "--project-selection"
+                    ],
+                    "required": true,
+                    "secondary_opts": [],
+                    "type": {
+                      "case_sensitive": false,
+                      "choices": [
+                        "all",
+                        "selected"
+                      ],
+                      "name": "choice",
+                      "param_type": "Choice"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": true,
+                    "name": "project_ids",
+                    "nargs": 1,
+                    "opts": [
+                      "--project-id"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "clamp": false,
+                      "max": null,
+                      "max_open": false,
+                      "min": 1,
+                      "min_open": false,
+                      "name": "integer range",
+                      "param_type": "IntRange"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "json_fields",
+                    "nargs": 1,
+                    "opts": [
+                      "--json"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": null,
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": false,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "jq_expr",
+                    "nargs": 1,
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "text",
+                      "param_type": "String"
+                    }
+                  },
+                  {
+                    "count": false,
+                    "default": "Sentinel.UNSET",
+                    "envvar": null,
+                    "hidden": false,
+                    "is_flag": true,
+                    "kind": "option",
+                    "multiple": false,
+                    "name": "_click_default_help",
+                    "nargs": 1,
+                    "opts": [
+                      "--help"
+                    ],
+                    "required": false,
+                    "secondary_opts": [],
+                    "type": {
+                      "name": "boolean",
+                      "param_type": "Bool"
+                    }
+                  }
+                ],
+                "path": "avr org install set-selection"
               }
             ],
             "hidden": false,
@@ -9573,6 +10673,32 @@
                 "type": {
                   "name": "text",
                   "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "ci_provider",
+                "nargs": 1,
+                "opts": [
+                  "--ci-provider"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "case_sensitive": true,
+                  "choices": [
+                    "github_actions",
+                    "gitlab_ci",
+                    "avrea_ci"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
                 }
               },
               {

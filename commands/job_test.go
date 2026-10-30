@@ -144,6 +144,7 @@ func TestJobSSHArgumentsAndPasswordBoundary(t *testing.T) {
 		t.Run(host, func(t *testing.T) {
 			d, out, stderr := testDeps(t)
 			called := false
+			pin := ""
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost || r.URL.Path != "/vms/ssh-forwarding" {
 					t.Error(r.Method, r.URL)
@@ -153,13 +154,25 @@ func TestJobSSHArgumentsAndPasswordBoundary(t *testing.T) {
 				if payload["job_id"] != inspectionJob {
 					t.Error(payload)
 				}
-				_ = json.NewEncoder(w).Encode(map[string]any{"host": host, "port": 2222, "username": "runner", "password": "private-fixture-password", "ssh_keys_installed": false})
+				_ = json.NewEncoder(w).Encode(map[string]any{"host": host, "port": 2222, "username": "runner", "password": "private-fixture-password", "host_key": "ssh-ed25519 fixture", "ssh_keys_installed": false})
 			}))
 			defer server.Close()
 			d.LoadConfig = func() (config.Config, error) { return config.Config{Host: server.URL, Token: "avr_fixture"}, nil }
 			d.RunSSH = func(_ context.Context, args []string) (int, error) {
 				called = true
-				want := []string{"ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-p", "2222", "runner@runner.example.test"}
+				if len(args) != 8 || !strings.HasPrefix(args[4], "UserKnownHostsFile=") {
+					t.Fatalf("invalid pinned SSH invocation: %q", args)
+				}
+				pin = strings.TrimPrefix(args[4], "UserKnownHostsFile=")
+				content, e := os.ReadFile(pin)
+				if e != nil || string(content) != "[runner.example.test]:2222 ssh-ed25519 fixture\n" {
+					t.Fatalf("invalid pin: %q %v", content, e)
+				}
+				info, e := os.Stat(pin)
+				if e != nil || info.Mode().Perm() != 0600 {
+					t.Fatalf("unsafe pin permissions: %v %v", info, e)
+				}
+				want := []string{"ssh", "-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + pin, "-p", "2222", "runner@runner.example.test"}
 				if !reflect.DeepEqual(args, want) {
 					t.Error(args)
 				}
@@ -167,6 +180,9 @@ func TestJobSSHArgumentsAndPasswordBoundary(t *testing.T) {
 			}
 			code := Execute(t.Context(), []string{"job", "ssh", inspectionJob}, d)
 			if host == "runner.example.test" {
+				if _, e := os.Stat(pin); !os.IsNotExist(e) {
+					t.Fatalf("pin not cleaned up: %v", e)
+				}
 				if code != 7 || !called {
 					t.Fatal(code, called)
 				}

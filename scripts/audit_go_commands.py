@@ -34,7 +34,7 @@ def parameter_issues(parameter, flag):
     name = parameter["opts"][0]
     if parameter["is_flag"] != bool(flag["no_opt_default"]):
         issues.append(name + " flag/value arity differs")
-    if parameter["multiple"] != (flag["type"] in {"stringArray", "stringSlice"}):
+    if parameter["multiple"] != (flag["type"] in {"stringArray", "stringSlice", "intSlice"}):
         issues.append(name + " repeatability differs")
     if not compatible_default(parameter["default"], flag["default"]):
         issues.append(name + " declared default differs")

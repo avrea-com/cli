@@ -228,6 +228,7 @@ def scenarios():
                     "args": ["job", "ssh", JOB],
                     "responses": {SSH: (200, SSH_DATA)},
                     "ssh_stub": code,
+                    "ssh_stub_pins": True,
                     "exit": code,
                 }
             )

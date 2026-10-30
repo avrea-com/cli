@@ -127,7 +127,7 @@ func completionParams(c *cobra.Command, spec docgen.HelpSpec) []docgen.Completio
 		if len(names) > 0 && !param.Hidden {
 			param.Names = names
 			param.Flag = live.NoOptDefVal != ""
-			param.Multiple = live.Value.Type() == "stringArray" || live.Value.Type() == "stringSlice"
+			param.Multiple = live.Value.Type() == "stringArray" || live.Value.Type() == "stringSlice" || live.Value.Type() == "intSlice"
 			out = append(out, param)
 		}
 	}
@@ -139,7 +139,7 @@ func completionParams(c *cobra.Command, spec docgen.HelpSpec) []docgen.Completio
 		if flag.Shorthand != "" {
 			names = append([]string{"-" + flag.Shorthand}, names...)
 		}
-		out = append(out, docgen.CompletionParam{Name: flag.Name, Kind: "option", Names: names, Help: flag.Usage, Flag: flag.NoOptDefVal != "", Nargs: 1, Multiple: flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice"})
+		out = append(out, docgen.CompletionParam{Name: flag.Name, Kind: "option", Names: names, Help: flag.Usage, Flag: flag.NoOptDefVal != "", Nargs: 1, Multiple: flag.Value.Type() == "stringArray" || flag.Value.Type() == "stringSlice" || flag.Value.Type() == "intSlice"})
 	})
 	if len(spec.CompletionParams) == 0 {
 		for _, arg := range strings.Fields(c.Use)[1:] {

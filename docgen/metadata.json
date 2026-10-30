@@ -726,8 +726,8 @@
         ],
         "full": "avr run",
         "is_group": true,
-        "short_help": "View and manage GitHub workflow runs.",
-        "help": "View and manage GitHub workflow runs.",
+        "short_help": "View and manage CI workflow runs.",
+        "help": "View and manage CI workflow runs.",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -744,7 +744,7 @@
             "full": "avr run cancel",
             "is_group": false,
             "short_help": "Cancel an in-progress or queued workflow run.",
-            "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
+            "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-019e5a2e474e71c297e452279d4bcdea\n    avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -818,7 +818,7 @@
             "full": "avr run diagnose",
             "is_group": false,
             "short_help": "Explain a failed or unexpectedly slow workflow run.",
-            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-abc123\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -891,7 +891,7 @@
             "full": "avr run list",
             "is_group": false,
             "short_help": "List workflow runs for an organization.",
-            "help": "List workflow runs for an organization.\n\n\b\nExamples:\n    avr run list\n    avr run list --status failure --limit 5\n    avr run list --status in_progress --json status,conclusion,head_branch\n    avr run list --branch main --status completed\n    avr run list --since 24h\n    avr run list --json '?'           # list available fields\n    avr run list --json '*'           # all fields\n    avr run list --json status,conclusion -q '[.[] | select(.status == \"completed\")]'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,\n    run_number, status, triggering_actor, updated_at, workflow, workflow_id\n",
+            "help": "List workflow runs for an organization.\n\n\b\nExamples:\n    avr run list\n    avr run list --status failure --limit 5\n    avr run list --status in_progress --json status,conclusion,head_branch\n    avr run list --branch main --status completed\n    avr run list --since 24h\n    avr run list --json '?'           # list available fields\n    avr run list --json '*'           # all fields\n    avr run list --json status,conclusion -q '[.[] | select(.status == \"completed\")]'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,\n    run_number, status, triggering_actor, updated_at, workflow, workflow_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -984,6 +984,29 @@
                 "default": null
               },
               {
+                "name": "ci_provider",
+                "kind": "option",
+                "opts": [
+                  "--ci-provider"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by CI engine.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "github_actions",
+                  "gitlab_ci",
+                  "avrea_ci"
+                ]
+              },
+              {
                 "name": "workflow_ids",
                 "kind": "option",
                 "opts": [
@@ -997,7 +1020,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1184,8 +1207,8 @@
             ],
             "full": "avr run logs",
             "is_group": false,
-            "short_help": "Fetch logs for a workflow run's GitHub jobs.",
-            "help": "Fetch logs for a workflow run's GitHub jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
+            "short_help": "Fetch logs for a workflow run's jobs.",
+            "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1331,7 +1354,7 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1423,7 +1446,7 @@
             "full": "avr run view",
             "is_group": false,
             "short_help": "View a workflow run with its jobs.",
-            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1623,7 +1646,7 @@
             "full": "avr run watch",
             "is_group": false,
             "short_help": "Watch a workflow run until it completes.",
-            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
+            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\nNDJSON job and run completion events include ci_provider\n(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null\nplatform_job_id; correlate events using run_id and avrea_job_id.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1962,7 +1985,7 @@
             "full": "avr job list",
             "is_group": false,
             "short_help": "List jobs for an organization.",
-            "help": "List jobs for an organization.\n\n\b\nExamples:\n    avr job list\n    avr job list --status failure --limit 5\n    avr job list --status in_progress --json job_name,state,conclusion\n    avr job list --since 24h\n    avr job list --json '?'           # list available fields\n    avr job list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state\n",
+            "help": "List jobs for an organization.\n\n\b\nExamples:\n    avr job list\n    avr job list --status failure --limit 5\n    avr job list --status in_progress --json job_name,state,conclusion\n    avr job list --since 24h\n    avr job list --json '?'           # list available fields\n    avr job list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2075,6 +2098,29 @@
                 "default": null
               },
               {
+                "name": "ci_provider",
+                "kind": "option",
+                "opts": [
+                  "--ci-provider"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by CI engine.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "github_actions",
+                  "gitlab_ci",
+                  "avrea_ci"
+                ]
+              },
+              {
                 "name": "workflow_ids",
                 "kind": "option",
                 "opts": [
@@ -2088,7 +2134,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2619,7 +2665,7 @@
             "full": "avr job view",
             "is_group": false,
             "short_help": "View a single job with its steps.",
-            "help": "View a single job with its steps.\n\n\b\nExamples:\n    avr job view job-abc123\n    avr job view job-abc123 --log-failed\n    avr job view job-abc123 --json conclusion,steps\n    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion==\"failure\")'\n\n\b\nJSON FIELDS\n    completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state, steps, workflow_run\n",
+            "help": "View a single job with its steps.\n\n\b\nExamples:\n    avr job view job-abc123\n    avr job view job-abc123 --log-failed\n    avr job view job-abc123 --json conclusion,steps\n    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion==\"failure\")'\n\n\b\nJSON FIELDS\n    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state, steps, workflow_run\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -7055,7 +7101,8 @@
                 "default": "github",
                 "choices": [
                   "google",
-                  "github"
+                  "github",
+                  "gitlab"
                 ]
               },
               {
@@ -10187,7 +10234,7 @@
             "full": "avr repo clone",
             "is_group": false,
             "short_help": "Clone a repository from its nearest available Avrea mirror.",
-            "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nAvailable placements are raced from this client; the first to serve the\nrepository wins. Use --placement to select an exact URL or hostname.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
+            "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nWhen several placements are available, the first to serve the repository\nwins. A single placement is used directly. Use --placement to select an\nexact URL or hostname. Requires Git 2.31 or newer.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -12197,8 +12244,8 @@
             ],
             "full": "avr org install",
             "is_group": true,
-            "short_help": "Manage GitHub App installations.",
-            "help": "Manage GitHub App installations.",
+            "short_help": "Manage GitHub and GitLab installations.",
+            "help": "Manage GitHub and GitLab installations.",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -12215,8 +12262,8 @@
                 ],
                 "full": "avr org install add",
                 "is_group": false,
-                "short_help": "Start the GitHub App installation flow.",
-                "help": "Start the GitHub App installation flow.",
+                "short_help": "Add a GitHub or GitLab installation.",
+                "help": "Add a GitHub or GitLab installation.\n\nGitHub is the default and retains the browser-based GitHub App flow.\n\nFor GitLab, create an expiring gitlab.com group access token with Reporter\nrole, api, and read_repository. The token is read from a hidden prompt\nor stdin and is never accepted as a command-line value.\n\n\b\nExamples:\n    avr org install add\n    avr org install add --platform gitlab --group-full-path acme/platform --project-selection all\n    printf '%s\\n' \"$GITLAB_TOKEN\" | avr org install add --platform gitlab \\\n        --group-full-path acme/platform --project-selection selected \\\n        --project-id 123 --access-token-stdin\n\nWith --json, GitHub emits the installations detected within --wait-seconds\nas a list and keeps progress messages on stderr; GitLab emits the\nregistered installation, and the field list or jq filter must keep\nwebhook_setup, which carries the one-time webhook secret.\n\n\b\nJSON FIELDS (GitHub)\n    created_at, installation_id, organization_name, organization_slug,\n    platform, platform_installation_id, platform_settings_url, state,\n    target_id, target_name, target_type, configured_runner_count, degraded_runner_count\n\n\b\nJSON FIELDS (GitLab)\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at, webhook_setup\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
@@ -12236,6 +12283,104 @@
                     "is_flag": false,
                     "envvar": null,
                     "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "platform",
+                    "kind": "option",
+                    "opts": [
+                      "--platform"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Source platform to install.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": "github",
+                    "choices": [
+                      "github",
+                      "gitlab"
+                    ]
+                  },
+                  {
+                    "name": "group_full_path",
+                    "kind": "option",
+                    "opts": [
+                      "--group-full-path"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab group full path, such as acme/platform.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "project_selection",
+                    "kind": "option",
+                    "opts": [
+                      "--project-selection"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab project selection mode.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null,
+                    "choices": [
+                      "all",
+                      "selected"
+                    ]
+                  },
+                  {
+                    "name": "project_ids",
+                    "kind": "option",
+                    "opts": [
+                      "--project-id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "integer range",
+                    "required": false,
+                    "multiple": true,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab numeric project ID to select (repeatable, up to 1,000).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "access_token_stdin",
+                    "kind": "option",
+                    "opts": [
+                      "--access-token-stdin"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Read the GitLab group access token from stdin instead of prompting.",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -12275,6 +12420,43 @@
                     "hidden": false,
                     "show_default": true,
                     "default": 120
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
                   }
                 ],
                 "subcommands": []
@@ -12290,7 +12472,7 @@
                 "full": "avr org install list",
                 "is_group": false,
                 "short_help": "List accessible installations across all your organizations.",
-                "help": "List accessible installations across all your organizations.\n\n\b\nJSON FIELDS\n    created_at, platform_installation_id, installation_id, organization_name,\n    organization_slug, state, target_name\n",
+                "help": "List accessible installations across all your organizations.\n\n\b\nJSON FIELDS\n    created_at, installation_id, organization_name, organization_slug,\n    platform, platform_installation_id, platform_settings_url, state,\n    target_id, target_name, target_type, configured_runner_count, degraded_runner_count\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
@@ -12346,8 +12528,8 @@
                 ],
                 "full": "avr org install remove",
                 "is_group": false,
-                "short_help": "Remove/suspend a GitHub installation.",
-                "help": "Remove/suspend a GitHub installation.\n\nConfirms before suspending; pass --yes to skip the prompt (required when\nstdout isn't a TTY, e.g. in CI).\n",
+                "short_help": "Remove an installation using its provider-specific lifecycle.",
+                "help": "Remove an installation using its provider-specific lifecycle.\n\nGitHub installations are suspended. GitLab installations are permanently\ndisconnected, including their Avrea history; use `avr org install rotate`\nfor a credential problem instead. Pass --yes to skip confirmation.\n\n\b\nJSON FIELDS\n    action, installation_id, organization_id, platform\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
@@ -12404,6 +12586,810 @@
                     "is_flag": true,
                     "envvar": null,
                     "help": "Skip confirmation prompt.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "rotate",
+                "path": [
+                  "avr",
+                  "org",
+                  "install",
+                  "rotate"
+                ],
+                "full": "avr org install rotate",
+                "is_group": false,
+                "short_help": "Rotate a GitLab installation's access token and webhook secret.",
+                "help": "Rotate a GitLab installation's access token and webhook secret.\n\nCreate an expiring gitlab.com group access token with Reporter role,\napi, and read_repository. The new token is read from a hidden prompt\nor stdin and is never accepted as a command-line value.\n\nWith --json, the field list or jq filter must keep webhook_setup, which\ncarries the one-time webhook secret.\n\n\b\nJSON FIELDS\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at, webhook_setup\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org install rotate [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "installation_id",
+                    "kind": "option",
+                    "opts": [
+                      "--installation-id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab installation ID (ins-xxx format).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "access_token_stdin",
+                    "kind": "option",
+                    "opts": [
+                      "--access-token-stdin"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Read the GitLab group access token from stdin instead of prompting.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "runner",
+                "path": [
+                  "avr",
+                  "org",
+                  "install",
+                  "runner"
+                ],
+                "full": "avr org install runner",
+                "is_group": true,
+                "short_help": "Manage GitLab runners, one per Linux machine type.",
+                "help": "Manage GitLab runners, one per Linux machine type.",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org install runner [OPTIONS] COMMAND [ARGS]...",
+                "params": [],
+                "subcommands": [
+                  {
+                    "name": "create",
+                    "path": [
+                      "avr",
+                      "org",
+                      "install",
+                      "runner",
+                      "create"
+                    ],
+                    "full": "avr org install runner create",
+                    "is_group": false,
+                    "short_help": "Create group runners in GitLab and configure their machine types in Avrea.",
+                    "help": "Create group runners in GitLab and configure their machine types in Avrea.\n\nSupply your own personal access token with create_runner scope and Owner\nrole. It is sent only to gitlab.com and is never persisted. Already\nconfigured machine types must be replaced with 'runner set'.\n\n\b\nJSON FIELDS\n    data, setup\n",
+                    "epilog": null,
+                    "deprecated": false,
+                    "hidden": false,
+                    "usage": "avr org install runner create [OPTIONS]",
+                    "params": [
+                      {
+                        "name": "org_id",
+                        "kind": "option",
+                        "opts": [
+                          "--org"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "installation_id",
+                        "kind": "option",
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "GitLab installation ID (ins-xxx format).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "machine_types",
+                        "kind": "option",
+                        "opts": [
+                          "--machine-type"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": true,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Machine type to create; repeat for multiple machine types.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "protected",
+                        "kind": "option",
+                        "opts": [
+                          "--protected"
+                        ],
+                        "secondary_opts": [],
+                        "type": "boolean",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": true,
+                        "envvar": null,
+                        "help": "Restrict the runners to protected branches and tags.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "personal_access_token_stdin",
+                        "kind": "option",
+                        "opts": [
+                          "--personal-access-token-stdin"
+                        ],
+                        "secondary_opts": [],
+                        "type": "boolean",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": true,
+                        "envvar": null,
+                        "help": "Read your personal access token from standard input instead of a hidden prompt.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "json_fields",
+                        "kind": "option",
+                        "opts": [
+                          "--json"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "jq_expr",
+                        "kind": "option",
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Filter --json output through a jq expression.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      }
+                    ],
+                    "subcommands": []
+                  },
+                  {
+                    "name": "delete",
+                    "path": [
+                      "avr",
+                      "org",
+                      "install",
+                      "runner",
+                      "delete"
+                    ],
+                    "full": "avr org install runner delete",
+                    "is_group": false,
+                    "short_help": "Remove MACHINE_TYPE's runner configuration from Avrea.",
+                    "help": "Remove MACHINE_TYPE's runner configuration from Avrea.\n\nThe runner object in GitLab remains for the group Owner to remove.\n\n\b\nJSON FIELDS\n    deleted, installation_id, machine_type\n",
+                    "epilog": null,
+                    "deprecated": false,
+                    "hidden": false,
+                    "usage": "avr org install runner delete [OPTIONS] MACHINE_TYPE",
+                    "params": [
+                      {
+                        "name": "machine_type",
+                        "kind": "argument",
+                        "opts": [
+                          "machine_type"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": null,
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "org_id",
+                        "kind": "option",
+                        "opts": [
+                          "--org"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "installation_id",
+                        "kind": "option",
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "GitLab installation ID (ins-xxx format).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "confirmed",
+                        "kind": "option",
+                        "opts": [
+                          "--yes",
+                          "-y"
+                        ],
+                        "secondary_opts": [],
+                        "type": "boolean",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": true,
+                        "envvar": null,
+                        "help": "Skip the confirmation prompt.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "json_fields",
+                        "kind": "option",
+                        "opts": [
+                          "--json"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "jq_expr",
+                        "kind": "option",
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Filter --json output through a jq expression.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      }
+                    ],
+                    "subcommands": []
+                  },
+                  {
+                    "name": "list",
+                    "path": [
+                      "avr",
+                      "org",
+                      "install",
+                      "runner",
+                      "list"
+                    ],
+                    "full": "avr org install runner list",
+                    "is_group": false,
+                    "short_help": "List all machine types, runner status, and exact GitLab setup instructions.",
+                    "help": "List all machine types, runner status, and exact GitLab setup instructions.\n\n\b\nJSON FIELDS\n    data, setup\n",
+                    "epilog": null,
+                    "deprecated": false,
+                    "hidden": false,
+                    "usage": "avr org install runner list [OPTIONS]",
+                    "params": [
+                      {
+                        "name": "org_id",
+                        "kind": "option",
+                        "opts": [
+                          "--org"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "installation_id",
+                        "kind": "option",
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "GitLab installation ID (ins-xxx format).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "json_fields",
+                        "kind": "option",
+                        "opts": [
+                          "--json"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "jq_expr",
+                        "kind": "option",
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Filter --json output through a jq expression.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      }
+                    ],
+                    "subcommands": []
+                  },
+                  {
+                    "name": "set",
+                    "path": [
+                      "avr",
+                      "org",
+                      "install",
+                      "runner",
+                      "set"
+                    ],
+                    "full": "avr org install runner set",
+                    "is_group": false,
+                    "short_help": "Verify and configure MACHINE_TYPE, replacing its previous runner if present.",
+                    "help": "Verify and configure MACHINE_TYPE, replacing its previous runner if present.\n\nRead the token from a hidden prompt or --runner-token-stdin.\n\n\b\nJSON FIELDS\n    architecture, configured, cpu_count, description, disk_gb,\n    invalid_at, machine_type, memory_mb, paused, run_untagged,\n    runner_id, status, tag, token_expires_at, verified_at\n",
+                    "epilog": null,
+                    "deprecated": false,
+                    "hidden": false,
+                    "usage": "avr org install runner set [OPTIONS] MACHINE_TYPE",
+                    "params": [
+                      {
+                        "name": "machine_type",
+                        "kind": "argument",
+                        "opts": [
+                          "machine_type"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": null,
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "org_id",
+                        "kind": "option",
+                        "opts": [
+                          "--org"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "installation_id",
+                        "kind": "option",
+                        "opts": [
+                          "--installation-id"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": true,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "GitLab installation ID (ins-xxx format).",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "runner_token_stdin",
+                        "kind": "option",
+                        "opts": [
+                          "--runner-token-stdin"
+                        ],
+                        "secondary_opts": [],
+                        "type": "boolean",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": true,
+                        "envvar": null,
+                        "help": "Read the runner authentication token from standard input.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "json_fields",
+                        "kind": "option",
+                        "opts": [
+                          "--json"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      },
+                      {
+                        "name": "jq_expr",
+                        "kind": "option",
+                        "opts": [
+                          "-q",
+                          "--jq"
+                        ],
+                        "secondary_opts": [],
+                        "type": "text",
+                        "required": false,
+                        "multiple": false,
+                        "nargs": 1,
+                        "is_flag": false,
+                        "envvar": null,
+                        "help": "Filter --json output through a jq expression.",
+                        "hidden": false,
+                        "show_default": false,
+                        "default": null
+                      }
+                    ],
+                    "subcommands": []
+                  }
+                ]
+              },
+              {
+                "name": "set-selection",
+                "path": [
+                  "avr",
+                  "org",
+                  "install",
+                  "set-selection"
+                ],
+                "full": "avr org install set-selection",
+                "is_group": false,
+                "short_help": "Replace a GitLab installation's project selection.",
+                "help": "Replace a GitLab installation's project selection.\n\nUse `--project-selection selected` without `--project-id` to select no\nprojects. This updates the selection only; the next project sync applies\nit.\n\n\b\nJSON FIELDS\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org install set-selection [OPTIONS]",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "installation_id",
+                    "kind": "option",
+                    "opts": [
+                      "--installation-id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab installation ID (ins-xxx format).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "project_selection",
+                    "kind": "option",
+                    "opts": [
+                      "--project-selection"
+                    ],
+                    "secondary_opts": [],
+                    "type": "choice",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Project selection mode.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null,
+                    "choices": [
+                      "all",
+                      "selected"
+                    ]
+                  },
+                  {
+                    "name": "project_ids",
+                    "kind": "option",
+                    "opts": [
+                      "--project-id"
+                    ],
+                    "secondary_opts": [],
+                    "type": "integer range",
+                    "required": false,
+                    "multiple": true,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "GitLab numeric project ID to select (repeatable, up to 1,000).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
                     "hidden": false,
                     "show_default": false,
                     "default": null
@@ -14352,7 +15338,8 @@
           "type": {
             "choices": [
               "google",
-              "github"
+              "github",
+              "gitlab"
             ],
             "case_sensitive": false,
             "param_type": "Choice"
@@ -14401,7 +15388,7 @@
           "names": [
             "--provider"
           ],
-          "label": "--provider [google|github]",
+          "label": "--provider [google|github|gitlab]",
           "description": "OAuth provider to use for CLI login.  [default: github]"
         },
         {
@@ -18514,13 +19501,34 @@
           }
         },
         {
+          "name": "ci_provider",
+          "kind": "option",
+          "names": [
+            "--ci-provider"
+          ],
+          "help": "Filter by CI engine.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "github_actions",
+              "gitlab_ci",
+              "avrea_ci"
+            ],
+            "case_sensitive": true,
+            "param_type": "Choice"
+          }
+        },
+        {
           "name": "workflow_ids",
           "kind": "option",
           "names": [
             "-w",
             "--workflow"
           ],
-          "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+          "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
           "multiple": true,
           "flag": false,
           "hidden": false,
@@ -18644,7 +19652,7 @@
         }
       ],
       "sections": false,
-      "help": "List jobs for an organization.\n\n\b\nExamples:\n    avr job list\n    avr job list --status failure --limit 5\n    avr job list --status in_progress --json job_name,state,conclusion\n    avr job list --since 24h\n    avr job list --json '?'           # list available fields\n    avr job list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state\n",
+      "help": "List jobs for an organization.\n\n\b\nExamples:\n    avr job list\n    avr job list --status failure --limit 5\n    avr job list --status in_progress --json job_name,state,conclusion\n    avr job list --since 24h\n    avr job list --json '?'           # list available fields\n    avr job list --json '*'           # all fields\n\n\b\nJSON FIELDS\n    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]"
@@ -18688,11 +19696,18 @@
         },
         {
           "names": [
+            "--ci-provider"
+          ],
+          "label": "--ci-provider [github_actions|gitlab_ci|avrea_ci]",
+          "description": "Filter by CI engine."
+        },
+        {
+          "names": [
             "-w",
             "--workflow"
           ],
           "label": "-w, --workflow TEXT",
-          "description": "Filter by workflow ID (wfl-xxx, repeatable)."
+          "description": "Filter by workflow ID (wfl- or awf-, repeatable)."
         },
         {
           "names": [
@@ -19413,7 +20428,7 @@
         }
       ],
       "sections": false,
-      "help": "View a single job with its steps.\n\n\b\nExamples:\n    avr job view job-abc123\n    avr job view job-abc123 --log-failed\n    avr job view job-abc123 --json conclusion,steps\n    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion==\"failure\")'\n\n\b\nJSON FIELDS\n    completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state, steps, workflow_run\n",
+      "help": "View a single job with its steps.\n\n\b\nExamples:\n    avr job view job-abc123\n    avr job view job-abc123 --log-failed\n    avr job view job-abc123 --json conclusion,steps\n    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion==\"failure\")'\n\n\b\nJSON FIELDS\n    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,\n    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,\n    running_on_avrea, started_at, state, steps, workflow_run\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -20023,7 +21038,8 @@
           "type": {
             "choices": [
               "google",
-              "github"
+              "github",
+              "gitlab"
             ],
             "case_sensitive": false,
             "param_type": "Choice"
@@ -20072,7 +21088,7 @@
           "names": [
             "--provider"
           ],
-          "label": "--provider [google|github]",
+          "label": "--provider [google|github|gitlab]",
           "description": "OAuth provider to use for CLI login.  [default: github]"
         },
         {
@@ -20758,7 +21774,7 @@
       "section_order": []
     },
     "avr org install add": {
-      "completion_help": "Start the GitHub App installation flow.",
+      "completion_help": "Add a GitHub or GitLab installation.",
       "completion_params": [
         {
           "name": "org_id",
@@ -20773,6 +21789,91 @@
           "nargs": 1,
           "type": {
             "param_type": "String"
+          }
+        },
+        {
+          "name": "platform",
+          "kind": "option",
+          "names": [
+            "--platform"
+          ],
+          "help": "Source platform to install.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "github",
+              "gitlab"
+            ],
+            "case_sensitive": false,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "group_full_path",
+          "kind": "option",
+          "names": [
+            "--group-full-path"
+          ],
+          "help": "GitLab group full path, such as acme/platform.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "project_selection",
+          "kind": "option",
+          "names": [
+            "--project-selection"
+          ],
+          "help": "GitLab project selection mode.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "all",
+              "selected"
+            ],
+            "case_sensitive": false,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "project_ids",
+          "kind": "option",
+          "names": [
+            "--project-id"
+          ],
+          "help": "GitLab numeric project ID to select (repeatable, up to 1,000).",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "access_token_stdin",
+          "kind": "option",
+          "names": [
+            "--access-token-stdin"
+          ],
+          "help": "Read the GitLab group access token from stdin instead of prompting.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
           }
         },
         {
@@ -20806,6 +21907,37 @@
           }
         },
         {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
           "name": "_click_default_help",
           "kind": "option",
           "names": [
@@ -20823,7 +21955,7 @@
         }
       ],
       "sections": false,
-      "help": "Start the GitHub App installation flow.",
+      "help": "Add a GitHub or GitLab installation.\n\nGitHub is the default and retains the browser-based GitHub App flow.\n\nFor GitLab, create an expiring gitlab.com group access token with Reporter\nrole, api, and read_repository. The token is read from a hidden prompt\nor stdin and is never accepted as a command-line value.\n\n\b\nExamples:\n    avr org install add\n    avr org install add --platform gitlab --group-full-path acme/platform --project-selection all\n    printf '%s\\n' \"$GITLAB_TOKEN\" | avr org install add --platform gitlab \\\n        --group-full-path acme/platform --project-selection selected \\\n        --project-id 123 --access-token-stdin\n\nWith --json, GitHub emits the installations detected within --wait-seconds\nas a list and keeps progress messages on stderr; GitLab emits the\nregistered installation, and the field list or jq filter must keep\nwebhook_setup, which carries the one-time webhook secret.\n\n\b\nJSON FIELDS (GitHub)\n    created_at, installation_id, organization_name, organization_slug,\n    platform, platform_installation_id, platform_settings_url, state,\n    target_id, target_name, target_type, configured_runner_count, degraded_runner_count\n\n\b\nJSON FIELDS (GitLab)\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at, webhook_setup\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]"
@@ -20838,6 +21970,41 @@
         },
         {
           "names": [
+            "--platform"
+          ],
+          "label": "--platform [github|gitlab]",
+          "description": "Source platform to install.  [default: github]"
+        },
+        {
+          "names": [
+            "--group-full-path"
+          ],
+          "label": "--group-full-path TEXT",
+          "description": "GitLab group full path, such as acme/platform."
+        },
+        {
+          "names": [
+            "--project-selection"
+          ],
+          "label": "--project-selection [all|selected]",
+          "description": "GitLab project selection mode."
+        },
+        {
+          "names": [
+            "--project-id"
+          ],
+          "label": "--project-id INTEGER RANGE",
+          "description": "GitLab numeric project ID to select (repeatable, up to 1,000).  [x>=1]"
+        },
+        {
+          "names": [
+            "--access-token-stdin"
+          ],
+          "label": "--access-token-stdin",
+          "description": "Read the GitLab group access token from stdin instead of prompting."
+        },
+        {
+          "names": [
             "--no-browser"
           ],
           "label": "--no-browser",
@@ -20849,6 +22016,21 @@
           ],
           "label": "--wait-seconds INTEGER",
           "description": "Seconds to wait for detection.  [default: 120]"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
         },
         {
           "names": [
@@ -20915,7 +22097,7 @@
         }
       ],
       "sections": false,
-      "help": "List accessible installations across all your organizations.\n\n\b\nJSON FIELDS\n    created_at, platform_installation_id, installation_id, organization_name,\n    organization_slug, state, target_name\n",
+      "help": "List accessible installations across all your organizations.\n\n\b\nJSON FIELDS\n    created_at, installation_id, organization_name, organization_slug,\n    platform, platform_installation_id, platform_settings_url, state,\n    target_id, target_name, target_type, configured_runner_count, degraded_runner_count\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]"
@@ -20950,7 +22132,7 @@
       "section_order": []
     },
     "avr org install remove": {
-      "completion_help": "Remove/suspend a GitHub installation.",
+      "completion_help": "Remove an installation using its...",
       "completion_params": [
         {
           "name": "org_id",
@@ -20999,6 +22181,37 @@
           }
         },
         {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
           "name": "_click_default_help",
           "kind": "option",
           "names": [
@@ -21016,7 +22229,7 @@
         }
       ],
       "sections": false,
-      "help": "Remove/suspend a GitHub installation.\n\nConfirms before suspending; pass --yes to skip the prompt (required when\nstdout isn't a TTY, e.g. in CI).\n",
+      "help": "Remove an installation using its provider-specific lifecycle.\n\nGitHub installations are suspended. GitLab installations are permanently\ndisconnected, including their Avrea history; use `avr org install rotate`\nfor a credential problem instead. Pass --yes to skip confirmation.\n\n\b\nJSON FIELDS\n    action, installation_id, organization_id, platform\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]"
@@ -21046,6 +22259,21 @@
         },
         {
           "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
             "-h",
             "--help"
           ],
@@ -21057,8 +22285,824 @@
       "no_args_is_help": false,
       "section_order": []
     },
-    "avr org install": {
-      "completion_help": "Manage GitHub App installations.",
+    "avr org install rotate": {
+      "completion_help": "Rotate a GitLab installation's access...",
+      "completion_params": [
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "access_token_stdin",
+          "kind": "option",
+          "names": [
+            "--access-token-stdin"
+          ],
+          "help": "Read the GitLab group access token from stdin instead of prompting.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Rotate a GitLab installation's access token and webhook secret.\n\nCreate an expiring gitlab.com group access token with Reporter role,\napi, and read_repository. The new token is read from a hidden prompt\nor stdin and is never accepted as a command-line value.\n\nWith --json, the field list or jq filter must keep webhook_setup, which\ncarries the one-time webhook secret.\n\n\b\nJSON FIELDS\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at, webhook_setup\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--access-token-stdin"
+          ],
+          "label": "--access-token-stdin",
+          "description": "Read the GitLab group access token from stdin instead of prompting."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install runner create": {
+      "completion_help": "Create group runners in GitLab and...",
+      "completion_params": [
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "machine_types",
+          "kind": "option",
+          "names": [
+            "--machine-type"
+          ],
+          "help": "Machine type to create; repeat for multiple machine types.",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "protected",
+          "kind": "option",
+          "names": [
+            "--protected"
+          ],
+          "help": "Restrict the runners to protected branches and tags.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "personal_access_token_stdin",
+          "kind": "option",
+          "names": [
+            "--personal-access-token-stdin"
+          ],
+          "help": "Read your personal access token from standard input instead of a hidden prompt.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Create group runners in GitLab and configure their machine types in Avrea.\n\nSupply your own personal access token with create_runner scope and Owner\nrole. It is sent only to gitlab.com and is never persisted. Already\nconfigured machine types must be replaced with 'runner set'.\n\n\b\nJSON FIELDS\n    data, setup\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--machine-type"
+          ],
+          "label": "--machine-type TEXT",
+          "description": "Machine type to create; repeat for multiple machine types.  [required]"
+        },
+        {
+          "names": [
+            "--protected"
+          ],
+          "label": "--protected",
+          "description": "Restrict the runners to protected branches and tags."
+        },
+        {
+          "names": [
+            "--personal-access-token-stdin"
+          ],
+          "label": "--personal-access-token-stdin",
+          "description": "Read your personal access token from standard input instead of a hidden prompt."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install runner delete": {
+      "completion_help": "Remove MACHINE_TYPE's runner configuration...",
+      "completion_params": [
+        {
+          "name": "machine_type",
+          "kind": "argument",
+          "names": [
+            "machine_type"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "confirmed",
+          "kind": "option",
+          "names": [
+            "--yes",
+            "-y"
+          ],
+          "help": "Skip the confirmation prompt.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Remove MACHINE_TYPE's runner configuration from Avrea.\n\nThe runner object in GitLab remains for the group Owner to remove.\n\n\b\nJSON FIELDS\n    deleted, installation_id, machine_type\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "MACHINE_TYPE"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--yes",
+            "-y"
+          ],
+          "label": "-y, --yes",
+          "description": "Skip the confirmation prompt."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install runner list": {
+      "completion_help": "List all machine types, runner status, and...",
+      "completion_params": [
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "List all machine types, runner status, and exact GitLab setup instructions.\n\n\b\nJSON FIELDS\n    data, setup\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install runner set": {
+      "completion_help": "Verify and configure MACHINE_TYPE,...",
+      "completion_params": [
+        {
+          "name": "machine_type",
+          "kind": "argument",
+          "names": [
+            "machine_type"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "runner_token_stdin",
+          "kind": "option",
+          "names": [
+            "--runner-token-stdin"
+          ],
+          "help": "Read the runner authentication token from standard input.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Verify and configure MACHINE_TYPE, replacing its previous runner if present.\n\nRead the token from a hidden prompt or --runner-token-stdin.\n\n\b\nJSON FIELDS\n    architecture, configured, cpu_count, description, disk_gb,\n    invalid_at, machine_type, memory_mb, paused, run_untagged,\n    runner_id, status, tag, token_expires_at, verified_at\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "MACHINE_TYPE"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--runner-token-stdin"
+          ],
+          "label": "--runner-token-stdin",
+          "description": "Read the runner authentication token from standard input."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install runner": {
+      "completion_help": "Manage GitLab runners, one per Linux...",
       "completion_params": [
         {
           "name": "_click_default_help",
@@ -21078,7 +23122,248 @@
         }
       ],
       "sections": true,
-      "help": "Manage GitHub App installations.",
+      "help": "Manage GitLab runners, one per Linux machine type.",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "COMMAND [ARGS]..."
+      ],
+      "options": [
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [
+        {
+          "name": "create",
+          "description": "Create group runners in GitLab and configure their machine types in Avrea.",
+          "section": null
+        },
+        {
+          "name": "delete",
+          "description": "Remove MACHINE_TYPE's runner configuration from Avrea.",
+          "section": null
+        },
+        {
+          "name": "list",
+          "description": "List all machine types, runner status, and exact GitLab setup instructions.",
+          "section": null
+        },
+        {
+          "name": "set",
+          "description": "Verify and configure MACHINE_TYPE, replacing its previous runner if present.",
+          "section": null
+        }
+      ],
+      "no_args_is_help": true,
+      "section_order": []
+    },
+    "avr org install set-selection": {
+      "completion_help": "Replace a GitLab installation's project...",
+      "completion_params": [
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "installation_id",
+          "kind": "option",
+          "names": [
+            "--installation-id"
+          ],
+          "help": "GitLab installation ID (ins-xxx format).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "project_selection",
+          "kind": "option",
+          "names": [
+            "--project-selection"
+          ],
+          "help": "Project selection mode.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "all",
+              "selected"
+            ],
+            "case_sensitive": false,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "project_ids",
+          "kind": "option",
+          "names": [
+            "--project-id"
+          ],
+          "help": "GitLab numeric project ID to select (repeatable, up to 1,000).",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Replace a GitLab installation's project selection.\n\nUse `--project-selection selected` without `--project-id` to select no\nprojects. This updates the selection only; the next project sync applies\nit.\n\n\b\nJSON FIELDS\n    access_token_expires_on, access_token_invalid_at,\n    access_token_last_validated_at, created_at, credential_kind,\n    gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,\n    installation_id, organization_id, project_selection_mode, configured_runner_count,\n    degraded_runner_count, selected_project_count, state, target_type,\n    updated_at, webhook_secret_rotated_at\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Uses default org if not specified (see: avr config set org)."
+        },
+        {
+          "names": [
+            "--installation-id"
+          ],
+          "label": "--installation-id TEXT",
+          "description": "GitLab installation ID (ins-xxx format).  [required]"
+        },
+        {
+          "names": [
+            "--project-selection"
+          ],
+          "label": "--project-selection [all|selected]",
+          "description": "Project selection mode.  [required]"
+        },
+        {
+          "names": [
+            "--project-id"
+          ],
+          "label": "--project-id INTEGER RANGE",
+          "description": "GitLab numeric project ID to select (repeatable, up to 1,000).  [x>=1]"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr org install": {
+      "completion_help": "Manage GitHub and GitLab installations.",
+      "completion_params": [
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": true,
+      "help": "Manage GitHub and GitLab installations.",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -21097,7 +23382,7 @@
       "commands": [
         {
           "name": "add",
-          "description": "Start the GitHub App installation flow.",
+          "description": "Add a GitHub or GitLab installation.",
           "section": null
         },
         {
@@ -21107,7 +23392,22 @@
         },
         {
           "name": "remove",
-          "description": "Remove/suspend a GitHub installation.",
+          "description": "Remove an installation using its provider-specific lifecycle.",
+          "section": null
+        },
+        {
+          "name": "rotate",
+          "description": "Rotate a GitLab installation's access token and webhook secret.",
+          "section": null
+        },
+        {
+          "name": "runner",
+          "description": "Manage GitLab runners, one per Linux machine type.",
+          "section": null
+        },
+        {
+          "name": "set-selection",
+          "description": "Replace a GitLab installation's project selection.",
           "section": null
         }
       ],
@@ -22195,7 +24495,7 @@
         },
         {
           "name": "install",
-          "description": "Manage GitHub App installations.",
+          "description": "Manage GitHub and GitLab installations.",
           "section": null
         },
         {
@@ -22595,7 +24895,7 @@
         }
       ],
       "sections": false,
-      "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nAvailable placements are raced from this client; the first to serve the\nrepository wins. Use --placement to select an exact URL or hostname.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
+      "help": "Clone a repository from its nearest available Avrea mirror.\n\nREPOSITORY is an owner/repository name or an Avrea repository ID (rep-...).\nWhen several placements are available, the first to serve the repository\nwins. A single placement is used directly. Use --placement to select an\nexact URL or hostname. Requires Git 2.31 or newer.\n\nThe origin remote stays on the selected read-only mirror. A repository-local\nAvrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\noperations using your Avrea login. Push changes to the source repository\nusing a separate remote. Tokens normally last one hour; scoped API keys have\na shorter server-enforced lifetime. Tokens are never saved in the repository.\n\n\b\nExamples:\n    avr repo clone foo/faa\n    avr repo clone foo/faa my-checkout --depth 1\n    avr repo clone foo/faa --placement https://git.fi.a.avrea.io\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -24817,7 +27117,7 @@
         }
       ],
       "sections": false,
-      "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-abc123\n    avr run cancel run-abc123 --yes\n",
+      "help": "Cancel an in-progress or queued workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run cancel run-019e5a2e474e71c297e452279d4bcdea\n    avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -24918,7 +27218,7 @@
         }
       ],
       "sections": false,
-      "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-abc123\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+      "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -25031,13 +27331,34 @@
           }
         },
         {
+          "name": "ci_provider",
+          "kind": "option",
+          "names": [
+            "--ci-provider"
+          ],
+          "help": "Filter by CI engine.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "github_actions",
+              "gitlab_ci",
+              "avrea_ci"
+            ],
+            "case_sensitive": true,
+            "param_type": "Choice"
+          }
+        },
+        {
           "name": "workflow_ids",
           "kind": "option",
           "names": [
             "-w",
             "--workflow"
           ],
-          "help": "Filter by workflow ID (wfl-xxx, repeatable).",
+          "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
           "multiple": true,
           "flag": false,
           "hidden": false,
@@ -25208,7 +27529,7 @@
         }
       ],
       "sections": false,
-      "help": "List workflow runs for an organization.\n\n\b\nExamples:\n    avr run list\n    avr run list --status failure --limit 5\n    avr run list --status in_progress --json status,conclusion,head_branch\n    avr run list --branch main --status completed\n    avr run list --since 24h\n    avr run list --json '?'           # list available fields\n    avr run list --json '*'           # all fields\n    avr run list --json status,conclusion -q '[.[] | select(.status == \"completed\")]'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,\n    run_number, status, triggering_actor, updated_at, workflow, workflow_id\n",
+      "help": "List workflow runs for an organization.\n\n\b\nExamples:\n    avr run list\n    avr run list --status failure --limit 5\n    avr run list --status in_progress --json status,conclusion,head_branch\n    avr run list --branch main --status completed\n    avr run list --since 24h\n    avr run list --json '?'           # list available fields\n    avr run list --json '*'           # all fields\n    avr run list --json status,conclusion -q '[.[] | select(.status == \"completed\")]'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,\n    run_number, status, triggering_actor, updated_at, workflow, workflow_id\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]"
@@ -25244,11 +27565,18 @@
         },
         {
           "names": [
+            "--ci-provider"
+          ],
+          "label": "--ci-provider [github_actions|gitlab_ci|avrea_ci]",
+          "description": "Filter by CI engine."
+        },
+        {
+          "names": [
             "-w",
             "--workflow"
           ],
           "label": "-w, --workflow TEXT",
-          "description": "Filter by workflow ID (wfl-xxx, repeatable)."
+          "description": "Filter by workflow ID (wfl- or awf-, repeatable)."
         },
         {
           "names": [
@@ -25331,7 +27659,7 @@
       "section_order": []
     },
     "avr run logs": {
-      "completion_help": "Fetch logs for a workflow run's GitHub jobs.",
+      "completion_help": "Fetch logs for a workflow run's jobs.",
       "completion_params": [
         {
           "name": "run",
@@ -25457,7 +27785,7 @@
         }
       ],
       "sections": false,
-      "help": "Fetch logs for a workflow run's GitHub jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-abc123\n    avr run logs run-abc123 --failed\n    avr run logs run-abc123 --job test\n    avr run logs run-abc123 --follow\n",
+      "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -25602,7 +27930,7 @@
         }
       ],
       "sections": false,
-      "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-abc123\n    avr run rerun run-abc123 --failed\n    avr run rerun run-abc123 --yes\n",
+      "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -25816,7 +28144,7 @@
         }
       ],
       "sections": false,
-      "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-abc123\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-abc123 --steps\n    avr run view run-abc123 --log-failed\n    avr run view run-abc123 --job Build\n    avr run view run-abc123 --json conclusion,jobs\n    avr run view run-abc123 --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+      "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -26011,7 +28339,7 @@
         }
       ],
       "sections": false,
-      "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-abc123 --exit-status\n    avr run watch run-abc123 --ndjson | jq -c .\n",
+      "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\nNDJSON job and run completion events include ci_provider\n(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null\nplatform_job_id; correlate events using run_id and avrea_job_id.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -26067,7 +28395,7 @@
       "section_order": []
     },
     "avr run": {
-      "completion_help": "View and manage GitHub workflow runs.",
+      "completion_help": "View and manage CI workflow runs.",
       "completion_params": [
         {
           "name": "_click_default_help",
@@ -26087,7 +28415,7 @@
         }
       ],
       "sections": true,
-      "help": "View and manage GitHub workflow runs.",
+      "help": "View and manage CI workflow runs.",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -26121,7 +28449,7 @@
         },
         {
           "name": "logs",
-          "description": "Fetch logs for a workflow run's GitHub jobs.",
+          "description": "Fetch logs for a workflow run's jobs.",
           "section": null
         },
         {
@@ -32373,7 +34701,7 @@
         },
         {
           "name": "run",
-          "description": "View and manage GitHub workflow runs.",
+          "description": "View and manage CI workflow runs.",
           "section": "Core Commands"
         },
         {
