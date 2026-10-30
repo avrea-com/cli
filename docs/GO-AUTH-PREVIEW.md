@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration in Go,
+job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -32,6 +32,9 @@ make go-build
 ./build/go/avr vm update VM_ID --name devbox --ttl 8h
 ./build/go/avr vm ssh-config VM_ID --host-alias devbox --append
 ./build/go/avr vm ssh VM_ID --session dev --login -- claude
+./build/go/avr vm port-forward VM_ID --port 8080
+./build/go/avr vm rdp VM_ID --launch
+./build/go/avr vm vnc VM_ID --print
 ./build/go/avr vm pause VM_ID --org ORG --memory --wait
 ./build/go/avr vm resume VM_ID --org ORG --wait
 ./build/go/avr vm delete VM_ID --org ORG --wait

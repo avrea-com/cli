@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -14,3 +15,5 @@ func vmSSHExitCode(exit *exec.ExitError) int {
 	}
 	return exit.ExitCode()
 }
+
+func vmTerminate(process *os.Process) error { return process.Signal(syscall.SIGTERM) }
