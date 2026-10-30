@@ -887,9 +887,31 @@ The reorder fixture was corrected to the pinned API's 200 JSON-array response.
 Go race tests, lint/build, generation, admin composition, fixture typing and
 workflow checks pass. Both report hashes match the tested executables.
 
+## VM inspection batch
+
+Added vm list, show and usage, shared with avr-admin. Firewall checkpoints:
+public 4555d14, admin ff09039024.
+
+Preserve VM's boolean --json interface, pagination/cursor stderr hints,
+organization selection, raw JSON fields/integers and API error guidance. Human
+output retains table borders, ordered detail labels, SSH key counts, preload
+and fetch-depth details, snapshots, egress rules and platform-specific RDP
+connection guidance. Multi-line connection hints align with the value column;
+external control characters remain escaped. Usage accepts Python's date/date-time
+forms and sends no implicit period when the flags are omitted.
+
+Validation: 98 paired scenarios per binary, including seven terminal cases,
+pass. They cover list filters/limits/cursors, empty/nullable data, JSON/error
+paths, SSH/RDP/VNC endpoint variants, Windows/Linux/macOS guest presentation,
+snapshots, preload state, egress tables, large integers and usage date validation.
+Host-platform-specific client hints were exercised on macOS; native Linux and
+Windows runs remain CI gates. Go race tests, lint/build, generation, admin
+composition, fixture typing and workflow checks pass. Both report hashes match
+the tested executables. No VM mutations or connections were made.
+
 ## Remaining work
 
-VM commands, hidden docs, root/help/completion,
+VM lifecycle/create/update, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

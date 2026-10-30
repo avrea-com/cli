@@ -14,19 +14,19 @@ import (
 
 // Defines values for AccessTokenGrantAccessLevel.
 const (
-	Admin AccessTokenGrantAccessLevel = "admin"
-	Read  AccessTokenGrantAccessLevel = "read"
-	Write AccessTokenGrantAccessLevel = "write"
+	AccessTokenGrantAccessLevelAdmin AccessTokenGrantAccessLevel = "admin"
+	AccessTokenGrantAccessLevelRead  AccessTokenGrantAccessLevel = "read"
+	AccessTokenGrantAccessLevelWrite AccessTokenGrantAccessLevel = "write"
 )
 
 // Valid indicates whether the value is a known member of the AccessTokenGrantAccessLevel enum.
 func (e AccessTokenGrantAccessLevel) Valid() bool {
 	switch e {
-	case Admin:
+	case AccessTokenGrantAccessLevelAdmin:
 		return true
-	case Read:
+	case AccessTokenGrantAccessLevelRead:
 		return true
-	case Write:
+	case AccessTokenGrantAccessLevelWrite:
 		return true
 	default:
 		return false
@@ -84,6 +84,24 @@ func (e AiTaskStatus) Valid() bool {
 	case AiTaskStatusPENDING:
 		return true
 	case AiTaskStatusRUNNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Architecture.
+const (
+	Arm64 Architecture = "arm64"
+	X8664 Architecture = "x86_64"
+)
+
+// Valid indicates whether the value is a known member of the Architecture enum.
+func (e Architecture) Valid() bool {
+	switch e {
+	case Arm64:
+		return true
+	case X8664:
 		return true
 	default:
 		return false
@@ -240,6 +258,66 @@ func (e CancelWorkflowRunResponseStatus) Valid() bool {
 	case AlreadyTerminal:
 		return true
 	case CancelRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerVmAccessLevel.
+const (
+	CustomerVmAccessLevelAdmin CustomerVmAccessLevel = "admin"
+	CustomerVmAccessLevelRead  CustomerVmAccessLevel = "read"
+	CustomerVmAccessLevelWrite CustomerVmAccessLevel = "write"
+)
+
+// Valid indicates whether the value is a known member of the CustomerVmAccessLevel enum.
+func (e CustomerVmAccessLevel) Valid() bool {
+	switch e {
+	case CustomerVmAccessLevelAdmin:
+		return true
+	case CustomerVmAccessLevelRead:
+		return true
+	case CustomerVmAccessLevelWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerVmBootstrapProvider.
+const (
+	ClaudeCode CustomerVmBootstrapProvider = "claude_code"
+	Cursor     CustomerVmBootstrapProvider = "cursor"
+)
+
+// Valid indicates whether the value is a known member of the CustomerVmBootstrapProvider enum.
+func (e CustomerVmBootstrapProvider) Valid() bool {
+	switch e {
+	case ClaudeCode:
+		return true
+	case Cursor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerVmDetailAccessLevel.
+const (
+	CustomerVmDetailAccessLevelAdmin CustomerVmDetailAccessLevel = "admin"
+	CustomerVmDetailAccessLevelRead  CustomerVmDetailAccessLevel = "read"
+	CustomerVmDetailAccessLevelWrite CustomerVmDetailAccessLevel = "write"
+)
+
+// Valid indicates whether the value is a known member of the CustomerVmDetailAccessLevel enum.
+func (e CustomerVmDetailAccessLevel) Valid() bool {
+	switch e {
+	case CustomerVmDetailAccessLevelAdmin:
+		return true
+	case CustomerVmDetailAccessLevelRead:
+		return true
+	case CustomerVmDetailAccessLevelWrite:
 		return true
 	default:
 		return false
@@ -897,6 +975,27 @@ func (e SettingSchemaResponseValueType) Valid() bool {
 	}
 }
 
+// Defines values for VmEndpointProtocol.
+const (
+	Rdp VmEndpointProtocol = "rdp"
+	Ssh VmEndpointProtocol = "ssh"
+	Vnc VmEndpointProtocol = "vnc"
+)
+
+// Valid indicates whether the value is a known member of the VmEndpointProtocol enum.
+func (e VmEndpointProtocol) Valid() bool {
+	switch e {
+	case Rdp:
+		return true
+	case Ssh:
+		return true
+	case Vnc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WorkflowArtifactRunKind.
 const (
 	WorkflowArtifactRunKindAvrea  WorkflowArtifactRunKind = "avrea"
@@ -1422,6 +1521,60 @@ func (e ListCacheEntriesParamsOrder) Valid() bool {
 	}
 }
 
+// Defines values for ListVmsParamsState.
+const (
+	ListVmsParamsStateDELETING ListVmsParamsState = "DELETING"
+	ListVmsParamsStateFAILED   ListVmsParamsState = "FAILED"
+	ListVmsParamsStatePAUSED   ListVmsParamsState = "PAUSED"
+	ListVmsParamsStatePAUSING  ListVmsParamsState = "PAUSING"
+	ListVmsParamsStatePENDING  ListVmsParamsState = "PENDING"
+	ListVmsParamsStateRUNNING  ListVmsParamsState = "RUNNING"
+	ListVmsParamsStateSTARTING ListVmsParamsState = "STARTING"
+	ListVmsParamsStateSTOPPING ListVmsParamsState = "STOPPING"
+)
+
+// Valid indicates whether the value is a known member of the ListVmsParamsState enum.
+func (e ListVmsParamsState) Valid() bool {
+	switch e {
+	case ListVmsParamsStateDELETING:
+		return true
+	case ListVmsParamsStateFAILED:
+		return true
+	case ListVmsParamsStatePAUSED:
+		return true
+	case ListVmsParamsStatePAUSING:
+		return true
+	case ListVmsParamsStatePENDING:
+		return true
+	case ListVmsParamsStateRUNNING:
+		return true
+	case ListVmsParamsStateSTARTING:
+		return true
+	case ListVmsParamsStateSTOPPING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListVmsParamsScope.
+const (
+	All  ListVmsParamsScope = "all"
+	Mine ListVmsParamsScope = "mine"
+)
+
+// Valid indicates whether the value is a known member of the ListVmsParamsScope enum.
+func (e ListVmsParamsScope) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Mine:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListWorkflowRunsParamsStatuses.
 const (
 	ListWorkflowRunsParamsStatusesCompleted  ListWorkflowRunsParamsStatuses = "completed"
@@ -1665,6 +1818,16 @@ type APIResponseCancelWorkflowRunResponse struct {
 	Data CancelWorkflowRunResponse `json:"data"`
 }
 
+// APIResponseCustomerVmDetail defines model for APIResponse_CustomerVmDetail_.
+type APIResponseCustomerVmDetail struct {
+	Data CustomerVmDetail `json:"data"`
+}
+
+// APIResponseCustomerVmUsageReport defines model for APIResponse_CustomerVmUsageReport_.
+type APIResponseCustomerVmUsageReport struct {
+	Data CustomerVmUsageReport `json:"data"`
+}
+
 // APIResponseDeleteSamlConfigResponse defines model for APIResponse_DeleteSamlConfigResponse_.
 type APIResponseDeleteSamlConfigResponse struct {
 	Data DeleteSamlConfigResponse `json:"data"`
@@ -1881,6 +2044,9 @@ type AnalysisTaskResponse struct {
 	Type                 string                 `json:"type"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// Architecture defines model for Architecture.
+type Architecture string
 
 // AttachPaymentMethodRequest defines model for AttachPaymentMethodRequest.
 type AttachPaymentMethodRequest struct {
@@ -2130,6 +2296,168 @@ type CreatedAccessTokenResponse struct {
 	UserId               string                 `json:"user_id"`
 	VmCreateCount        int                    `json:"vm_create_count"`
 	VmCreateLimit        nullable.Nullable[int] `json:"vm_create_limit"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CustomerVm defines model for CustomerVm.
+type CustomerVm struct {
+	// AccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
+	AccessLevel  CustomerVmAccessLevel `json:"access_level"`
+	Architecture Architecture          `json:"architecture"`
+
+	// BootstrapProvider The coding-agent vendor whose worker this agent sandbox starts. Null for a VM a person created.
+	BootstrapProvider nullable.Nullable[CustomerVmBootstrapProvider] `json:"bootstrap_provider,omitempty"`
+	CpuCount          int                                            `json:"cpu_count"`
+	CreatedAt         time.Time                                      `json:"created_at"`
+	CustomerVmId      string                                         `json:"customer_vm_id"`
+
+	// DeletesAt When a paused or failed VM is deleted with its disk unless its TTL is extended first. Null in other states.
+	DeletesAt           nullable.Nullable[time.Time]   `json:"deletes_at,omitempty"`
+	DiskGb              int                            `json:"disk_gb"`
+	DisplayName         string                         `json:"display_name"`
+	EnableRemoteDesktop bool                           `json:"enable_remote_desktop"`
+	Endpoints           nullable.Nullable[VmEndpoints] `json:"endpoints,omitempty"`
+	FetchDepth          nullable.Nullable[int]         `json:"fetch_depth,omitempty"`
+
+	// Forkable Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.
+	Forkable *bool `json:"forkable,omitempty"`
+
+	// HttpsPorts Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.
+	HttpsPorts *[]int `json:"https_ports,omitempty"`
+	MemoryMb   int    `json:"memory_mb"`
+	OsType     string `json:"os_type"`
+
+	// Pausable Whether the VM can be paused now: it is running and its guest supports snapshots.
+	Pausable *bool `json:"pausable,omitempty"`
+
+	// PrecheckoutRef Deprecated alias for repository_ref.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PrecheckoutRef nullable.Nullable[string] `json:"precheckout_ref,omitempty"`
+	PreloadStatus  nullable.Nullable[string] `json:"preload_status,omitempty"`
+
+	// RepositoryFullName The repository the VM preloads. Null when it has none, or when the scoped token calling cannot read the one it has.
+	RepositoryFullName nullable.Nullable[string]         `json:"repository_full_name,omitempty"`
+	RepositoryRef      nullable.Nullable[string]         `json:"repository_ref,omitempty"`
+	Snapshot           nullable.Nullable[VmSnapshotInfo] `json:"snapshot,omitempty"`
+
+	// SshPublicKeys Desired SSH keys, not confirmation of guest installation. Keys first supplied by a scoped token are excluded from owner boots.
+	SshPublicKeys []string `json:"ssh_public_keys"`
+
+	// StartedAt When the latest allocated run reached running; null if that run has not reached running. Pending or failed resumes before allocation retain the previous run.
+	StartedAt   nullable.Nullable[time.Time] `json:"started_at,omitempty"`
+	State       string                       `json:"state"`
+	StateReason nullable.Nullable[string]    `json:"state_reason,omitempty"`
+
+	// StopAt The TTL: the VM is paused then, or deleted when it cannot be paused.
+	StopAt time.Time `json:"stop_at"`
+
+	// StoppedAt When the latest allocated run ended; null if it has not ended. Pending or failed resumes before allocation retain the previous run.
+	StoppedAt nullable.Nullable[time.Time] `json:"stopped_at,omitempty"`
+
+	// TokenCacheRestricted The guest retains cache and private-package restrictions from a scoped-token boot. These persist through snapshot resumes. False once the guest and snapshot are discarded.
+	TokenCacheRestricted *bool `json:"token_cache_restricted,omitempty"`
+
+	// TtlPausable Whether this running VM is paused at stop_at rather than deleted. Null unless the VM is running.
+	TtlPausable          nullable.Nullable[bool] `json:"ttl_pausable,omitempty"`
+	UpdatedAt            time.Time               `json:"updated_at"`
+	AdditionalProperties map[string]interface{}  `json:"-"`
+}
+
+// CustomerVmAccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
+type CustomerVmAccessLevel string
+
+// CustomerVmBootstrapProvider defines model for CustomerVmBootstrapProvider.
+type CustomerVmBootstrapProvider string
+
+// CustomerVmDetail defines model for CustomerVmDetail.
+type CustomerVmDetail struct {
+	// AccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
+	AccessLevel  CustomerVmDetailAccessLevel `json:"access_level"`
+	Architecture Architecture                `json:"architecture"`
+
+	// BootstrapProvider The coding-agent vendor whose worker this agent sandbox starts. Null for a VM a person created.
+	BootstrapProvider nullable.Nullable[CustomerVmBootstrapProvider] `json:"bootstrap_provider,omitempty"`
+	CpuCount          int                                            `json:"cpu_count"`
+	CreatedAt         time.Time                                      `json:"created_at"`
+	CustomerVmId      string                                         `json:"customer_vm_id"`
+
+	// DeletesAt When a paused or failed VM is deleted with its disk unless its TTL is extended first. Null in other states.
+	DeletesAt           nullable.Nullable[time.Time]   `json:"deletes_at,omitempty"`
+	DiskGb              int                            `json:"disk_gb"`
+	DisplayName         string                         `json:"display_name"`
+	EgressRules         *[]EgressRule                  `json:"egress_rules,omitempty"`
+	EnableRemoteDesktop bool                           `json:"enable_remote_desktop"`
+	Endpoints           nullable.Nullable[VmEndpoints] `json:"endpoints,omitempty"`
+	FetchDepth          nullable.Nullable[int]         `json:"fetch_depth,omitempty"`
+
+	// Forkable Whether the VM can be forked: it is paused with an archive a fork can boot on another node. Forking also needs admin access to the VM.
+	Forkable *bool `json:"forkable,omitempty"`
+
+	// HttpsPorts Guest ports the VM publishes as HTTPS URLs from its next start; endpoints.https has the live URLs.
+	HttpsPorts *[]int `json:"https_ports,omitempty"`
+	MemoryMb   int    `json:"memory_mb"`
+	OsType     string `json:"os_type"`
+
+	// Pausable Whether the VM can be paused now: it is running and its guest supports snapshots.
+	Pausable *bool `json:"pausable,omitempty"`
+
+	// PrecheckoutRef Deprecated alias for repository_ref.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PrecheckoutRef nullable.Nullable[string] `json:"precheckout_ref,omitempty"`
+	PreloadStatus  nullable.Nullable[string] `json:"preload_status,omitempty"`
+
+	// RepositoryFullName The repository the VM preloads. Null when it has none, or when the scoped token calling cannot read the one it has.
+	RepositoryFullName nullable.Nullable[string]         `json:"repository_full_name,omitempty"`
+	RepositoryRef      nullable.Nullable[string]         `json:"repository_ref,omitempty"`
+	Snapshot           nullable.Nullable[VmSnapshotInfo] `json:"snapshot,omitempty"`
+
+	// SshPublicKeys Desired SSH keys, not confirmation of guest installation. Keys first supplied by a scoped token are excluded from owner boots.
+	SshPublicKeys []string `json:"ssh_public_keys"`
+
+	// StartedAt When the latest allocated run reached running; null if that run has not reached running. Pending or failed resumes before allocation retain the previous run.
+	StartedAt   nullable.Nullable[time.Time] `json:"started_at,omitempty"`
+	State       string                       `json:"state"`
+	StateReason nullable.Nullable[string]    `json:"state_reason,omitempty"`
+
+	// StopAt The TTL: the VM is paused then, or deleted when it cannot be paused.
+	StopAt time.Time `json:"stop_at"`
+
+	// StoppedAt When the latest allocated run ended; null if it has not ended. Pending or failed resumes before allocation retain the previous run.
+	StoppedAt nullable.Nullable[time.Time] `json:"stopped_at,omitempty"`
+
+	// TokenCacheRestricted The guest retains cache and private-package restrictions from a scoped-token boot. These persist through snapshot resumes. False once the guest and snapshot are discarded.
+	TokenCacheRestricted *bool `json:"token_cache_restricted,omitempty"`
+
+	// TtlPausable Whether this running VM is paused at stop_at rather than deleted. Null unless the VM is running.
+	TtlPausable          nullable.Nullable[bool] `json:"ttl_pausable,omitempty"`
+	UpdatedAt            time.Time               `json:"updated_at"`
+	AdditionalProperties map[string]interface{}  `json:"-"`
+}
+
+// CustomerVmDetailAccessLevel The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.
+type CustomerVmDetailAccessLevel string
+
+// CustomerVmUsage defines model for CustomerVmUsage.
+type CustomerVmUsage struct {
+	CustomerVmId         string                 `json:"customer_vm_id"`
+	DisplayName          string                 `json:"display_name"`
+	MemoryMbSeconds      int                    `json:"memory_mb_seconds"`
+	OsType               string                 `json:"os_type"`
+	RunCount             int                    `json:"run_count"`
+	RuntimeSeconds       int                    `json:"runtime_seconds"`
+	State                string                 `json:"state"`
+	VcpuSeconds          int                    `json:"vcpu_seconds"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CustomerVmUsageReport defines model for CustomerVmUsageReport.
+type CustomerVmUsageReport struct {
+	PeriodEnd            time.Time              `json:"period_end"`
+	PeriodStart          time.Time              `json:"period_start"`
+	TotalMemoryMbSeconds int                    `json:"total_memory_mb_seconds"`
+	TotalRuntimeSeconds  int                    `json:"total_runtime_seconds"`
+	TotalVcpuSeconds     int                    `json:"total_vcpu_seconds"`
+	Vms                  []CustomerVmUsage      `json:"vms"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -2957,6 +3285,14 @@ type PagedResponseAccessTokenResponse struct {
 	Pagination *PaginationMeta `json:"pagination,omitempty"`
 }
 
+// PagedResponseCustomerVm defines model for PagedResponse_CustomerVm_.
+type PagedResponseCustomerVm struct {
+	Data []CustomerVm `json:"data"`
+
+	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
+	Pagination *PaginationMeta `json:"pagination,omitempty"`
+}
+
 // PagedResponseEmailDomainResponse defines model for PagedResponse_EmailDomainResponse_.
 type PagedResponseEmailDomainResponse struct {
 	Data []EmailDomainResponse `json:"data"`
@@ -3541,6 +3877,47 @@ type ValidationErrorLoc1 = int
 // ValidationError_Loc_Item defines model for ValidationError.loc.Item.
 type ValidationError_Loc_Item struct {
 	union json.RawMessage
+}
+
+// VmEndpoint defines model for VmEndpoint.
+type VmEndpoint struct {
+	ExternalIp           string                    `json:"external_ip"`
+	ExternalPort         int                       `json:"external_port"`
+	HostKey              nullable.Nullable[string] `json:"host_key,omitempty"`
+	Protocol             VmEndpointProtocol        `json:"protocol"`
+	Username             string                    `json:"username"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// VmEndpointProtocol defines model for VmEndpoint.Protocol.
+type VmEndpointProtocol string
+
+// VmEndpoints defines model for VmEndpoints.
+type VmEndpoints struct {
+	// Https The VM's live HTTPS URLs, in https_ports order (a port since removed from it last, until the next start). Null while it has none: before its run reports them, once its organization turns sandbox HTTPS off, or for a run started while sandbox HTTPS was off or in a datacenter without it.
+	Https                nullable.Nullable[[]VmHttpsEndpoint] `json:"https,omitempty"`
+	RemoteDesktop        nullable.Nullable[VmEndpoint]        `json:"remote_desktop,omitempty"`
+	Ssh                  VmEndpoint                           `json:"ssh"`
+	AdditionalProperties map[string]interface{}               `json:"-"`
+}
+
+// VmHttpsEndpoint defines model for VmHttpsEndpoint.
+type VmHttpsEndpoint struct {
+	// Port The guest port the URL reaches.
+	Port                 int                    `json:"port"`
+	Url                  string                 `json:"url"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// VmSnapshotInfo Customer-visible summary of the pause snapshot backing a PAUSED VM.
+//
+// Projected from the stored snapshot reference; storage-internal details
+// (bucket, key, node) stay server-side.
+type VmSnapshotInfo struct {
+	ArchiveBytes         nullable.Nullable[int]       `json:"archive_bytes,omitempty"`
+	MemoryIncluded       bool                         `json:"memory_included"`
+	PausedAt             nullable.Nullable[time.Time] `json:"paused_at,omitempty"`
+	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
 // Workflow defines model for Workflow.
@@ -4499,6 +4876,44 @@ type UpdateOrgSettingParams struct {
 
 // DeleteOrgSettingParams defines parameters for DeleteOrgSetting.
 type DeleteOrgSettingParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListVmsParams defines parameters for ListVms.
+type ListVmsParams struct {
+	// State Filter by lifecycle state.
+	State *ListVmsParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Scope List every VM visible to the caller, or narrow the result to VMs created by the caller. This never widens the caller's existing organization role.
+	Scope *ListVmsParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// Sandbox true lists agent sandboxes only, false the VMs people created; omitted lists both.
+	Sandbox *bool `form:"sandbox,omitempty" json:"sandbox,omitempty"`
+	Limit   *int  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor from a previous response.
+	Cursor       *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListVmsParamsState defines parameters for ListVms.
+type ListVmsParamsState string
+
+// ListVmsParamsScope defines parameters for ListVms.
+type ListVmsParamsScope string
+
+// GetVmUsageParams defines parameters for GetVmUsage.
+type GetVmUsageParams struct {
+	// PeriodStart Inclusive period start (default: 30 days ago).
+	PeriodStart *time.Time `form:"period_start,omitempty" json:"period_start,omitempty"`
+
+	// PeriodEnd Exclusive period end (default: now).
+	PeriodEnd    *time.Time `form:"period_end,omitempty" json:"period_end,omitempty"`
+	AvreaSession *string    `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetVmParams defines parameters for GetVm.
+type GetVmParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
@@ -8228,6 +8643,1295 @@ func (a CreatedAccessTokenResponse) MarshalJSON() ([]byte, error) {
 	object["vm_create_limit"], err = json.Marshal(a.VmCreateLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'vm_create_limit': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CustomerVm. Returns the specified
+// element and whether it was found
+func (a CustomerVm) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVm
+func (a *CustomerVm) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVm to handle AdditionalProperties
+func (a *CustomerVm) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["access_level"]; found {
+		err = json.Unmarshal(raw, &a.AccessLevel)
+		if err != nil {
+			return fmt.Errorf("error reading 'access_level': %w", err)
+		}
+		delete(object, "access_level")
+	}
+
+	if raw, found := object["architecture"]; found {
+		err = json.Unmarshal(raw, &a.Architecture)
+		if err != nil {
+			return fmt.Errorf("error reading 'architecture': %w", err)
+		}
+		delete(object, "architecture")
+	}
+
+	if raw, found := object["bootstrap_provider"]; found {
+		err = json.Unmarshal(raw, &a.BootstrapProvider)
+		if err != nil {
+			return fmt.Errorf("error reading 'bootstrap_provider': %w", err)
+		}
+		delete(object, "bootstrap_provider")
+	}
+
+	if raw, found := object["cpu_count"]; found {
+		err = json.Unmarshal(raw, &a.CpuCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'cpu_count': %w", err)
+		}
+		delete(object, "cpu_count")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["customer_vm_id"]; found {
+		err = json.Unmarshal(raw, &a.CustomerVmId)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_vm_id': %w", err)
+		}
+		delete(object, "customer_vm_id")
+	}
+
+	if raw, found := object["deletes_at"]; found {
+		err = json.Unmarshal(raw, &a.DeletesAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'deletes_at': %w", err)
+		}
+		delete(object, "deletes_at")
+	}
+
+	if raw, found := object["disk_gb"]; found {
+		err = json.Unmarshal(raw, &a.DiskGb)
+		if err != nil {
+			return fmt.Errorf("error reading 'disk_gb': %w", err)
+		}
+		delete(object, "disk_gb")
+	}
+
+	if raw, found := object["display_name"]; found {
+		err = json.Unmarshal(raw, &a.DisplayName)
+		if err != nil {
+			return fmt.Errorf("error reading 'display_name': %w", err)
+		}
+		delete(object, "display_name")
+	}
+
+	if raw, found := object["enable_remote_desktop"]; found {
+		err = json.Unmarshal(raw, &a.EnableRemoteDesktop)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_remote_desktop': %w", err)
+		}
+		delete(object, "enable_remote_desktop")
+	}
+
+	if raw, found := object["endpoints"]; found {
+		err = json.Unmarshal(raw, &a.Endpoints)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoints': %w", err)
+		}
+		delete(object, "endpoints")
+	}
+
+	if raw, found := object["fetch_depth"]; found {
+		err = json.Unmarshal(raw, &a.FetchDepth)
+		if err != nil {
+			return fmt.Errorf("error reading 'fetch_depth': %w", err)
+		}
+		delete(object, "fetch_depth")
+	}
+
+	if raw, found := object["forkable"]; found {
+		err = json.Unmarshal(raw, &a.Forkable)
+		if err != nil {
+			return fmt.Errorf("error reading 'forkable': %w", err)
+		}
+		delete(object, "forkable")
+	}
+
+	if raw, found := object["https_ports"]; found {
+		err = json.Unmarshal(raw, &a.HttpsPorts)
+		if err != nil {
+			return fmt.Errorf("error reading 'https_ports': %w", err)
+		}
+		delete(object, "https_ports")
+	}
+
+	if raw, found := object["memory_mb"]; found {
+		err = json.Unmarshal(raw, &a.MemoryMb)
+		if err != nil {
+			return fmt.Errorf("error reading 'memory_mb': %w", err)
+		}
+		delete(object, "memory_mb")
+	}
+
+	if raw, found := object["os_type"]; found {
+		err = json.Unmarshal(raw, &a.OsType)
+		if err != nil {
+			return fmt.Errorf("error reading 'os_type': %w", err)
+		}
+		delete(object, "os_type")
+	}
+
+	if raw, found := object["pausable"]; found {
+		err = json.Unmarshal(raw, &a.Pausable)
+		if err != nil {
+			return fmt.Errorf("error reading 'pausable': %w", err)
+		}
+		delete(object, "pausable")
+	}
+
+	if raw, found := object["precheckout_ref"]; found {
+		err = json.Unmarshal(raw, &a.PrecheckoutRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'precheckout_ref': %w", err)
+		}
+		delete(object, "precheckout_ref")
+	}
+
+	if raw, found := object["preload_status"]; found {
+		err = json.Unmarshal(raw, &a.PreloadStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'preload_status': %w", err)
+		}
+		delete(object, "preload_status")
+	}
+
+	if raw, found := object["repository_full_name"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_full_name': %w", err)
+		}
+		delete(object, "repository_full_name")
+	}
+
+	if raw, found := object["repository_ref"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_ref': %w", err)
+		}
+		delete(object, "repository_ref")
+	}
+
+	if raw, found := object["snapshot"]; found {
+		err = json.Unmarshal(raw, &a.Snapshot)
+		if err != nil {
+			return fmt.Errorf("error reading 'snapshot': %w", err)
+		}
+		delete(object, "snapshot")
+	}
+
+	if raw, found := object["ssh_public_keys"]; found {
+		err = json.Unmarshal(raw, &a.SshPublicKeys)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssh_public_keys': %w", err)
+		}
+		delete(object, "ssh_public_keys")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["state_reason"]; found {
+		err = json.Unmarshal(raw, &a.StateReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'state_reason': %w", err)
+		}
+		delete(object, "state_reason")
+	}
+
+	if raw, found := object["stop_at"]; found {
+		err = json.Unmarshal(raw, &a.StopAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'stop_at': %w", err)
+		}
+		delete(object, "stop_at")
+	}
+
+	if raw, found := object["stopped_at"]; found {
+		err = json.Unmarshal(raw, &a.StoppedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'stopped_at': %w", err)
+		}
+		delete(object, "stopped_at")
+	}
+
+	if raw, found := object["token_cache_restricted"]; found {
+		err = json.Unmarshal(raw, &a.TokenCacheRestricted)
+		if err != nil {
+			return fmt.Errorf("error reading 'token_cache_restricted': %w", err)
+		}
+		delete(object, "token_cache_restricted")
+	}
+
+	if raw, found := object["ttl_pausable"]; found {
+		err = json.Unmarshal(raw, &a.TtlPausable)
+		if err != nil {
+			return fmt.Errorf("error reading 'ttl_pausable': %w", err)
+		}
+		delete(object, "ttl_pausable")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVm to handle AdditionalProperties
+func (a CustomerVm) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["access_level"], err = json.Marshal(a.AccessLevel)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'access_level': %w", err)
+	}
+
+	object["architecture"], err = json.Marshal(a.Architecture)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'architecture': %w", err)
+	}
+
+	if a.BootstrapProvider != nil {
+		object["bootstrap_provider"], err = json.Marshal(a.BootstrapProvider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bootstrap_provider': %w", err)
+		}
+	}
+
+	object["cpu_count"], err = json.Marshal(a.CpuCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cpu_count': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["customer_vm_id"], err = json.Marshal(a.CustomerVmId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'customer_vm_id': %w", err)
+	}
+
+	if a.DeletesAt != nil {
+		object["deletes_at"], err = json.Marshal(a.DeletesAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'deletes_at': %w", err)
+		}
+	}
+
+	object["disk_gb"], err = json.Marshal(a.DiskGb)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'disk_gb': %w", err)
+	}
+
+	object["display_name"], err = json.Marshal(a.DisplayName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'display_name': %w", err)
+	}
+
+	object["enable_remote_desktop"], err = json.Marshal(a.EnableRemoteDesktop)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enable_remote_desktop': %w", err)
+	}
+
+	if a.Endpoints != nil {
+		object["endpoints"], err = json.Marshal(a.Endpoints)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoints': %w", err)
+		}
+	}
+
+	if a.FetchDepth != nil {
+		object["fetch_depth"], err = json.Marshal(a.FetchDepth)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fetch_depth': %w", err)
+		}
+	}
+
+	if a.Forkable != nil {
+		object["forkable"], err = json.Marshal(a.Forkable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forkable': %w", err)
+		}
+	}
+
+	if a.HttpsPorts != nil {
+		object["https_ports"], err = json.Marshal(a.HttpsPorts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'https_ports': %w", err)
+		}
+	}
+
+	object["memory_mb"], err = json.Marshal(a.MemoryMb)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'memory_mb': %w", err)
+	}
+
+	object["os_type"], err = json.Marshal(a.OsType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'os_type': %w", err)
+	}
+
+	if a.Pausable != nil {
+		object["pausable"], err = json.Marshal(a.Pausable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pausable': %w", err)
+		}
+	}
+
+	if a.PrecheckoutRef != nil {
+		object["precheckout_ref"], err = json.Marshal(a.PrecheckoutRef)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'precheckout_ref': %w", err)
+		}
+	}
+
+	if a.PreloadStatus != nil {
+		object["preload_status"], err = json.Marshal(a.PreloadStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'preload_status': %w", err)
+		}
+	}
+
+	if a.RepositoryFullName != nil {
+		object["repository_full_name"], err = json.Marshal(a.RepositoryFullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repository_full_name': %w", err)
+		}
+	}
+
+	if a.RepositoryRef != nil {
+		object["repository_ref"], err = json.Marshal(a.RepositoryRef)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repository_ref': %w", err)
+		}
+	}
+
+	if a.Snapshot != nil {
+		object["snapshot"], err = json.Marshal(a.Snapshot)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'snapshot': %w", err)
+		}
+	}
+
+	if a.SshPublicKeys != nil {
+		object["ssh_public_keys"], err = json.Marshal(a.SshPublicKeys)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ssh_public_keys': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	if a.StateReason != nil {
+		object["state_reason"], err = json.Marshal(a.StateReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state_reason': %w", err)
+		}
+	}
+
+	object["stop_at"], err = json.Marshal(a.StopAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stop_at': %w", err)
+	}
+
+	if a.StoppedAt != nil {
+		object["stopped_at"], err = json.Marshal(a.StoppedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stopped_at': %w", err)
+		}
+	}
+
+	if a.TokenCacheRestricted != nil {
+		object["token_cache_restricted"], err = json.Marshal(a.TokenCacheRestricted)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'token_cache_restricted': %w", err)
+		}
+	}
+
+	if a.TtlPausable != nil {
+		object["ttl_pausable"], err = json.Marshal(a.TtlPausable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ttl_pausable': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CustomerVmDetail. Returns the specified
+// element and whether it was found
+func (a CustomerVmDetail) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVmDetail
+func (a *CustomerVmDetail) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVmDetail to handle AdditionalProperties
+func (a *CustomerVmDetail) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["access_level"]; found {
+		err = json.Unmarshal(raw, &a.AccessLevel)
+		if err != nil {
+			return fmt.Errorf("error reading 'access_level': %w", err)
+		}
+		delete(object, "access_level")
+	}
+
+	if raw, found := object["architecture"]; found {
+		err = json.Unmarshal(raw, &a.Architecture)
+		if err != nil {
+			return fmt.Errorf("error reading 'architecture': %w", err)
+		}
+		delete(object, "architecture")
+	}
+
+	if raw, found := object["bootstrap_provider"]; found {
+		err = json.Unmarshal(raw, &a.BootstrapProvider)
+		if err != nil {
+			return fmt.Errorf("error reading 'bootstrap_provider': %w", err)
+		}
+		delete(object, "bootstrap_provider")
+	}
+
+	if raw, found := object["cpu_count"]; found {
+		err = json.Unmarshal(raw, &a.CpuCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'cpu_count': %w", err)
+		}
+		delete(object, "cpu_count")
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["customer_vm_id"]; found {
+		err = json.Unmarshal(raw, &a.CustomerVmId)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_vm_id': %w", err)
+		}
+		delete(object, "customer_vm_id")
+	}
+
+	if raw, found := object["deletes_at"]; found {
+		err = json.Unmarshal(raw, &a.DeletesAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'deletes_at': %w", err)
+		}
+		delete(object, "deletes_at")
+	}
+
+	if raw, found := object["disk_gb"]; found {
+		err = json.Unmarshal(raw, &a.DiskGb)
+		if err != nil {
+			return fmt.Errorf("error reading 'disk_gb': %w", err)
+		}
+		delete(object, "disk_gb")
+	}
+
+	if raw, found := object["display_name"]; found {
+		err = json.Unmarshal(raw, &a.DisplayName)
+		if err != nil {
+			return fmt.Errorf("error reading 'display_name': %w", err)
+		}
+		delete(object, "display_name")
+	}
+
+	if raw, found := object["egress_rules"]; found {
+		err = json.Unmarshal(raw, &a.EgressRules)
+		if err != nil {
+			return fmt.Errorf("error reading 'egress_rules': %w", err)
+		}
+		delete(object, "egress_rules")
+	}
+
+	if raw, found := object["enable_remote_desktop"]; found {
+		err = json.Unmarshal(raw, &a.EnableRemoteDesktop)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_remote_desktop': %w", err)
+		}
+		delete(object, "enable_remote_desktop")
+	}
+
+	if raw, found := object["endpoints"]; found {
+		err = json.Unmarshal(raw, &a.Endpoints)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoints': %w", err)
+		}
+		delete(object, "endpoints")
+	}
+
+	if raw, found := object["fetch_depth"]; found {
+		err = json.Unmarshal(raw, &a.FetchDepth)
+		if err != nil {
+			return fmt.Errorf("error reading 'fetch_depth': %w", err)
+		}
+		delete(object, "fetch_depth")
+	}
+
+	if raw, found := object["forkable"]; found {
+		err = json.Unmarshal(raw, &a.Forkable)
+		if err != nil {
+			return fmt.Errorf("error reading 'forkable': %w", err)
+		}
+		delete(object, "forkable")
+	}
+
+	if raw, found := object["https_ports"]; found {
+		err = json.Unmarshal(raw, &a.HttpsPorts)
+		if err != nil {
+			return fmt.Errorf("error reading 'https_ports': %w", err)
+		}
+		delete(object, "https_ports")
+	}
+
+	if raw, found := object["memory_mb"]; found {
+		err = json.Unmarshal(raw, &a.MemoryMb)
+		if err != nil {
+			return fmt.Errorf("error reading 'memory_mb': %w", err)
+		}
+		delete(object, "memory_mb")
+	}
+
+	if raw, found := object["os_type"]; found {
+		err = json.Unmarshal(raw, &a.OsType)
+		if err != nil {
+			return fmt.Errorf("error reading 'os_type': %w", err)
+		}
+		delete(object, "os_type")
+	}
+
+	if raw, found := object["pausable"]; found {
+		err = json.Unmarshal(raw, &a.Pausable)
+		if err != nil {
+			return fmt.Errorf("error reading 'pausable': %w", err)
+		}
+		delete(object, "pausable")
+	}
+
+	if raw, found := object["precheckout_ref"]; found {
+		err = json.Unmarshal(raw, &a.PrecheckoutRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'precheckout_ref': %w", err)
+		}
+		delete(object, "precheckout_ref")
+	}
+
+	if raw, found := object["preload_status"]; found {
+		err = json.Unmarshal(raw, &a.PreloadStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'preload_status': %w", err)
+		}
+		delete(object, "preload_status")
+	}
+
+	if raw, found := object["repository_full_name"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryFullName)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_full_name': %w", err)
+		}
+		delete(object, "repository_full_name")
+	}
+
+	if raw, found := object["repository_ref"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryRef)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_ref': %w", err)
+		}
+		delete(object, "repository_ref")
+	}
+
+	if raw, found := object["snapshot"]; found {
+		err = json.Unmarshal(raw, &a.Snapshot)
+		if err != nil {
+			return fmt.Errorf("error reading 'snapshot': %w", err)
+		}
+		delete(object, "snapshot")
+	}
+
+	if raw, found := object["ssh_public_keys"]; found {
+		err = json.Unmarshal(raw, &a.SshPublicKeys)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssh_public_keys': %w", err)
+		}
+		delete(object, "ssh_public_keys")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["state_reason"]; found {
+		err = json.Unmarshal(raw, &a.StateReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'state_reason': %w", err)
+		}
+		delete(object, "state_reason")
+	}
+
+	if raw, found := object["stop_at"]; found {
+		err = json.Unmarshal(raw, &a.StopAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'stop_at': %w", err)
+		}
+		delete(object, "stop_at")
+	}
+
+	if raw, found := object["stopped_at"]; found {
+		err = json.Unmarshal(raw, &a.StoppedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'stopped_at': %w", err)
+		}
+		delete(object, "stopped_at")
+	}
+
+	if raw, found := object["token_cache_restricted"]; found {
+		err = json.Unmarshal(raw, &a.TokenCacheRestricted)
+		if err != nil {
+			return fmt.Errorf("error reading 'token_cache_restricted': %w", err)
+		}
+		delete(object, "token_cache_restricted")
+	}
+
+	if raw, found := object["ttl_pausable"]; found {
+		err = json.Unmarshal(raw, &a.TtlPausable)
+		if err != nil {
+			return fmt.Errorf("error reading 'ttl_pausable': %w", err)
+		}
+		delete(object, "ttl_pausable")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVmDetail to handle AdditionalProperties
+func (a CustomerVmDetail) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["access_level"], err = json.Marshal(a.AccessLevel)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'access_level': %w", err)
+	}
+
+	object["architecture"], err = json.Marshal(a.Architecture)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'architecture': %w", err)
+	}
+
+	if a.BootstrapProvider != nil {
+		object["bootstrap_provider"], err = json.Marshal(a.BootstrapProvider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bootstrap_provider': %w", err)
+		}
+	}
+
+	object["cpu_count"], err = json.Marshal(a.CpuCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cpu_count': %w", err)
+	}
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["customer_vm_id"], err = json.Marshal(a.CustomerVmId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'customer_vm_id': %w", err)
+	}
+
+	if a.DeletesAt != nil {
+		object["deletes_at"], err = json.Marshal(a.DeletesAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'deletes_at': %w", err)
+		}
+	}
+
+	object["disk_gb"], err = json.Marshal(a.DiskGb)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'disk_gb': %w", err)
+	}
+
+	object["display_name"], err = json.Marshal(a.DisplayName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'display_name': %w", err)
+	}
+
+	if a.EgressRules != nil {
+		object["egress_rules"], err = json.Marshal(a.EgressRules)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'egress_rules': %w", err)
+		}
+	}
+
+	object["enable_remote_desktop"], err = json.Marshal(a.EnableRemoteDesktop)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enable_remote_desktop': %w", err)
+	}
+
+	if a.Endpoints != nil {
+		object["endpoints"], err = json.Marshal(a.Endpoints)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoints': %w", err)
+		}
+	}
+
+	if a.FetchDepth != nil {
+		object["fetch_depth"], err = json.Marshal(a.FetchDepth)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fetch_depth': %w", err)
+		}
+	}
+
+	if a.Forkable != nil {
+		object["forkable"], err = json.Marshal(a.Forkable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'forkable': %w", err)
+		}
+	}
+
+	if a.HttpsPorts != nil {
+		object["https_ports"], err = json.Marshal(a.HttpsPorts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'https_ports': %w", err)
+		}
+	}
+
+	object["memory_mb"], err = json.Marshal(a.MemoryMb)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'memory_mb': %w", err)
+	}
+
+	object["os_type"], err = json.Marshal(a.OsType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'os_type': %w", err)
+	}
+
+	if a.Pausable != nil {
+		object["pausable"], err = json.Marshal(a.Pausable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pausable': %w", err)
+		}
+	}
+
+	if a.PrecheckoutRef != nil {
+		object["precheckout_ref"], err = json.Marshal(a.PrecheckoutRef)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'precheckout_ref': %w", err)
+		}
+	}
+
+	if a.PreloadStatus != nil {
+		object["preload_status"], err = json.Marshal(a.PreloadStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'preload_status': %w", err)
+		}
+	}
+
+	if a.RepositoryFullName != nil {
+		object["repository_full_name"], err = json.Marshal(a.RepositoryFullName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repository_full_name': %w", err)
+		}
+	}
+
+	if a.RepositoryRef != nil {
+		object["repository_ref"], err = json.Marshal(a.RepositoryRef)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'repository_ref': %w", err)
+		}
+	}
+
+	if a.Snapshot != nil {
+		object["snapshot"], err = json.Marshal(a.Snapshot)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'snapshot': %w", err)
+		}
+	}
+
+	if a.SshPublicKeys != nil {
+		object["ssh_public_keys"], err = json.Marshal(a.SshPublicKeys)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ssh_public_keys': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
+		}
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	if a.StateReason != nil {
+		object["state_reason"], err = json.Marshal(a.StateReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state_reason': %w", err)
+		}
+	}
+
+	object["stop_at"], err = json.Marshal(a.StopAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stop_at': %w", err)
+	}
+
+	if a.StoppedAt != nil {
+		object["stopped_at"], err = json.Marshal(a.StoppedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stopped_at': %w", err)
+		}
+	}
+
+	if a.TokenCacheRestricted != nil {
+		object["token_cache_restricted"], err = json.Marshal(a.TokenCacheRestricted)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'token_cache_restricted': %w", err)
+		}
+	}
+
+	if a.TtlPausable != nil {
+		object["ttl_pausable"], err = json.Marshal(a.TtlPausable)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ttl_pausable': %w", err)
+		}
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CustomerVmUsage. Returns the specified
+// element and whether it was found
+func (a CustomerVmUsage) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVmUsage
+func (a *CustomerVmUsage) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVmUsage to handle AdditionalProperties
+func (a *CustomerVmUsage) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["customer_vm_id"]; found {
+		err = json.Unmarshal(raw, &a.CustomerVmId)
+		if err != nil {
+			return fmt.Errorf("error reading 'customer_vm_id': %w", err)
+		}
+		delete(object, "customer_vm_id")
+	}
+
+	if raw, found := object["display_name"]; found {
+		err = json.Unmarshal(raw, &a.DisplayName)
+		if err != nil {
+			return fmt.Errorf("error reading 'display_name': %w", err)
+		}
+		delete(object, "display_name")
+	}
+
+	if raw, found := object["memory_mb_seconds"]; found {
+		err = json.Unmarshal(raw, &a.MemoryMbSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'memory_mb_seconds': %w", err)
+		}
+		delete(object, "memory_mb_seconds")
+	}
+
+	if raw, found := object["os_type"]; found {
+		err = json.Unmarshal(raw, &a.OsType)
+		if err != nil {
+			return fmt.Errorf("error reading 'os_type': %w", err)
+		}
+		delete(object, "os_type")
+	}
+
+	if raw, found := object["run_count"]; found {
+		err = json.Unmarshal(raw, &a.RunCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_count': %w", err)
+		}
+		delete(object, "run_count")
+	}
+
+	if raw, found := object["runtime_seconds"]; found {
+		err = json.Unmarshal(raw, &a.RuntimeSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'runtime_seconds': %w", err)
+		}
+		delete(object, "runtime_seconds")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vcpu_seconds"]; found {
+		err = json.Unmarshal(raw, &a.VcpuSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'vcpu_seconds': %w", err)
+		}
+		delete(object, "vcpu_seconds")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVmUsage to handle AdditionalProperties
+func (a CustomerVmUsage) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["customer_vm_id"], err = json.Marshal(a.CustomerVmId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'customer_vm_id': %w", err)
+	}
+
+	object["display_name"], err = json.Marshal(a.DisplayName)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'display_name': %w", err)
+	}
+
+	object["memory_mb_seconds"], err = json.Marshal(a.MemoryMbSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'memory_mb_seconds': %w", err)
+	}
+
+	object["os_type"], err = json.Marshal(a.OsType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'os_type': %w", err)
+	}
+
+	object["run_count"], err = json.Marshal(a.RunCount)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'run_count': %w", err)
+	}
+
+	object["runtime_seconds"], err = json.Marshal(a.RuntimeSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'runtime_seconds': %w", err)
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	object["vcpu_seconds"], err = json.Marshal(a.VcpuSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vcpu_seconds': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CustomerVmUsageReport. Returns the specified
+// element and whether it was found
+func (a CustomerVmUsageReport) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CustomerVmUsageReport
+func (a *CustomerVmUsageReport) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CustomerVmUsageReport to handle AdditionalProperties
+func (a *CustomerVmUsageReport) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["period_end"]; found {
+		err = json.Unmarshal(raw, &a.PeriodEnd)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_end': %w", err)
+		}
+		delete(object, "period_end")
+	}
+
+	if raw, found := object["period_start"]; found {
+		err = json.Unmarshal(raw, &a.PeriodStart)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_start': %w", err)
+		}
+		delete(object, "period_start")
+	}
+
+	if raw, found := object["total_memory_mb_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TotalMemoryMbSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_memory_mb_seconds': %w", err)
+		}
+		delete(object, "total_memory_mb_seconds")
+	}
+
+	if raw, found := object["total_runtime_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TotalRuntimeSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_runtime_seconds': %w", err)
+		}
+		delete(object, "total_runtime_seconds")
+	}
+
+	if raw, found := object["total_vcpu_seconds"]; found {
+		err = json.Unmarshal(raw, &a.TotalVcpuSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_vcpu_seconds': %w", err)
+		}
+		delete(object, "total_vcpu_seconds")
+	}
+
+	if raw, found := object["vms"]; found {
+		err = json.Unmarshal(raw, &a.Vms)
+		if err != nil {
+			return fmt.Errorf("error reading 'vms': %w", err)
+		}
+		delete(object, "vms")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CustomerVmUsageReport to handle AdditionalProperties
+func (a CustomerVmUsageReport) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["period_end"], err = json.Marshal(a.PeriodEnd)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_end': %w", err)
+	}
+
+	object["period_start"], err = json.Marshal(a.PeriodStart)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'period_start': %w", err)
+	}
+
+	object["total_memory_mb_seconds"], err = json.Marshal(a.TotalMemoryMbSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_memory_mb_seconds': %w", err)
+	}
+
+	object["total_runtime_seconds"], err = json.Marshal(a.TotalRuntimeSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_runtime_seconds': %w", err)
+	}
+
+	object["total_vcpu_seconds"], err = json.Marshal(a.TotalVcpuSeconds)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_vcpu_seconds': %w", err)
+	}
+
+	if a.Vms != nil {
+		object["vms"], err = json.Marshal(a.Vms)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vms': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -20744,6 +22448,397 @@ func (a ValidationError) MarshalJSON() ([]byte, error) {
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for VmEndpoint. Returns the specified
+// element and whether it was found
+func (a VmEndpoint) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for VmEndpoint
+func (a *VmEndpoint) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for VmEndpoint to handle AdditionalProperties
+func (a *VmEndpoint) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["external_ip"]; found {
+		err = json.Unmarshal(raw, &a.ExternalIp)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_ip': %w", err)
+		}
+		delete(object, "external_ip")
+	}
+
+	if raw, found := object["external_port"]; found {
+		err = json.Unmarshal(raw, &a.ExternalPort)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_port': %w", err)
+		}
+		delete(object, "external_port")
+	}
+
+	if raw, found := object["host_key"]; found {
+		err = json.Unmarshal(raw, &a.HostKey)
+		if err != nil {
+			return fmt.Errorf("error reading 'host_key': %w", err)
+		}
+		delete(object, "host_key")
+	}
+
+	if raw, found := object["protocol"]; found {
+		err = json.Unmarshal(raw, &a.Protocol)
+		if err != nil {
+			return fmt.Errorf("error reading 'protocol': %w", err)
+		}
+		delete(object, "protocol")
+	}
+
+	if raw, found := object["username"]; found {
+		err = json.Unmarshal(raw, &a.Username)
+		if err != nil {
+			return fmt.Errorf("error reading 'username': %w", err)
+		}
+		delete(object, "username")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for VmEndpoint to handle AdditionalProperties
+func (a VmEndpoint) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["external_ip"], err = json.Marshal(a.ExternalIp)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'external_ip': %w", err)
+	}
+
+	object["external_port"], err = json.Marshal(a.ExternalPort)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'external_port': %w", err)
+	}
+
+	if a.HostKey != nil {
+		object["host_key"], err = json.Marshal(a.HostKey)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'host_key': %w", err)
+		}
+	}
+
+	object["protocol"], err = json.Marshal(a.Protocol)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'protocol': %w", err)
+	}
+
+	object["username"], err = json.Marshal(a.Username)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'username': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for VmEndpoints. Returns the specified
+// element and whether it was found
+func (a VmEndpoints) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for VmEndpoints
+func (a *VmEndpoints) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for VmEndpoints to handle AdditionalProperties
+func (a *VmEndpoints) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["https"]; found {
+		err = json.Unmarshal(raw, &a.Https)
+		if err != nil {
+			return fmt.Errorf("error reading 'https': %w", err)
+		}
+		delete(object, "https")
+	}
+
+	if raw, found := object["remote_desktop"]; found {
+		err = json.Unmarshal(raw, &a.RemoteDesktop)
+		if err != nil {
+			return fmt.Errorf("error reading 'remote_desktop': %w", err)
+		}
+		delete(object, "remote_desktop")
+	}
+
+	if raw, found := object["ssh"]; found {
+		err = json.Unmarshal(raw, &a.Ssh)
+		if err != nil {
+			return fmt.Errorf("error reading 'ssh': %w", err)
+		}
+		delete(object, "ssh")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for VmEndpoints to handle AdditionalProperties
+func (a VmEndpoints) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Https != nil {
+		object["https"], err = json.Marshal(a.Https)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'https': %w", err)
+		}
+	}
+
+	if a.RemoteDesktop != nil {
+		object["remote_desktop"], err = json.Marshal(a.RemoteDesktop)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'remote_desktop': %w", err)
+		}
+	}
+
+	object["ssh"], err = json.Marshal(a.Ssh)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ssh': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for VmHttpsEndpoint. Returns the specified
+// element and whether it was found
+func (a VmHttpsEndpoint) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for VmHttpsEndpoint
+func (a *VmHttpsEndpoint) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for VmHttpsEndpoint to handle AdditionalProperties
+func (a *VmHttpsEndpoint) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["port"]; found {
+		err = json.Unmarshal(raw, &a.Port)
+		if err != nil {
+			return fmt.Errorf("error reading 'port': %w", err)
+		}
+		delete(object, "port")
+	}
+
+	if raw, found := object["url"]; found {
+		err = json.Unmarshal(raw, &a.Url)
+		if err != nil {
+			return fmt.Errorf("error reading 'url': %w", err)
+		}
+		delete(object, "url")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for VmHttpsEndpoint to handle AdditionalProperties
+func (a VmHttpsEndpoint) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["port"], err = json.Marshal(a.Port)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'port': %w", err)
+	}
+
+	object["url"], err = json.Marshal(a.Url)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'url': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for VmSnapshotInfo. Returns the specified
+// element and whether it was found
+func (a VmSnapshotInfo) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for VmSnapshotInfo
+func (a *VmSnapshotInfo) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for VmSnapshotInfo to handle AdditionalProperties
+func (a *VmSnapshotInfo) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["archive_bytes"]; found {
+		err = json.Unmarshal(raw, &a.ArchiveBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'archive_bytes': %w", err)
+		}
+		delete(object, "archive_bytes")
+	}
+
+	if raw, found := object["memory_included"]; found {
+		err = json.Unmarshal(raw, &a.MemoryIncluded)
+		if err != nil {
+			return fmt.Errorf("error reading 'memory_included': %w", err)
+		}
+		delete(object, "memory_included")
+	}
+
+	if raw, found := object["paused_at"]; found {
+		err = json.Unmarshal(raw, &a.PausedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'paused_at': %w", err)
+		}
+		delete(object, "paused_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for VmSnapshotInfo to handle AdditionalProperties
+func (a VmSnapshotInfo) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ArchiveBytes != nil {
+		object["archive_bytes"], err = json.Marshal(a.ArchiveBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'archive_bytes': %w", err)
+		}
+	}
+
+	object["memory_included"], err = json.Marshal(a.MemoryIncluded)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'memory_included': %w", err)
+	}
+
+	if a.PausedAt != nil {
+		object["paused_at"], err = json.Marshal(a.PausedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'paused_at': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
