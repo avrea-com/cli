@@ -1690,6 +1690,42 @@
         "title": "CancelWorkflowRunResponse",
         "type": "object"
       },
+      "ClaudeCodeBootstrap": {
+        "additionalProperties": false,
+        "description": "Claude Code self-hosted runner. ``credential`` is the work-order JWT\nfrom CLAUDE_RUNNER_WORK_ORDER_FILE, never the environment secret.",
+        "properties": {
+          "credential": {
+            "description": "The per-session credential the worker starts with. Write-only: never returned or logged, and dropped once the sandbox is running. Never an environment-level key.",
+            "format": "password",
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Credential",
+            "type": "string",
+            "writeOnly": true
+          },
+          "params": {
+            "$ref": "#/components/schemas/ClaudeCodeBootstrapParams"
+          },
+          "provider": {
+            "const": "claude_code",
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential",
+          "provider"
+        ],
+        "title": "ClaudeCodeBootstrap",
+        "type": "object"
+      },
+      "ClaudeCodeBootstrapParams": {
+        "additionalProperties": false,
+        "description": "None: the work order carries everything the runner needs.",
+        "properties": {},
+        "title": "ClaudeCodeBootstrapParams",
+        "type": "object"
+      },
       "CreateAccessTokenRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1867,6 +1903,63 @@
           "token"
         ],
         "title": "CreatedAccessTokenResponse",
+        "type": "object"
+      },
+      "CursorBootstrap": {
+        "additionalProperties": false,
+        "description": "Cursor self-hosted pool worker. ``credential`` is the per-claim\nCURSOR_AUTH_TOKEN of a controller run with --session-token, never the\nservice-account key.",
+        "properties": {
+          "credential": {
+            "description": "The per-session credential the worker starts with. Write-only: never returned or logged, and dropped once the sandbox is running. Never an environment-level key.",
+            "format": "password",
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Credential",
+            "type": "string",
+            "writeOnly": true
+          },
+          "params": {
+            "$ref": "#/components/schemas/CursorBootstrapParams"
+          },
+          "provider": {
+            "const": "cursor",
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential",
+          "provider",
+          "params"
+        ],
+        "title": "CursorBootstrap",
+        "type": "object"
+      },
+      "CursorBootstrapParams": {
+        "additionalProperties": false,
+        "properties": {
+          "pool": {
+            "description": "CURSOR_POOL from the controller.",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "title": "Pool",
+            "type": "string"
+          },
+          "worker_id": {
+            "description": "CURSOR_AGENT_WORKER_ID from the controller. The worker must start with the id it claimed.",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^[\\x21-\\x7e]+$",
+            "title": "Worker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pool",
+          "worker_id"
+        ],
+        "title": "CursorBootstrapParams",
         "type": "object"
       },
       "CustomerVm": {
@@ -2144,6 +2237,205 @@
         ],
         "title": "CustomerVmBootstrapProvider",
         "type": "string"
+      },
+      "CustomerVmCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "architecture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Architecture"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CPU architecture. Defaults to the OS's default: x86_64 for linux and windows, arm64 for macos. Linux arm64 VMs cannot be paused, have no remote desktop, and offer sizes up to 16-vcpu."
+          },
+          "bootstrap": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "claude_code": "#/components/schemas/ClaudeCodeBootstrap",
+                    "cursor": "#/components/schemas/CursorBootstrap"
+                  },
+                  "propertyName": "provider"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ClaudeCodeBootstrap"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CursorBootstrap"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Makes the VM an agent sandbox that starts a coding-agent vendor's worker at boot. Linux only. A sandbox boots once: it cannot be started again, paused or resumed, and never keeps its disk.",
+            "title": "Bootstrap"
+          },
+          "cache_setting_overrides": {
+            "additionalProperties": {
+              "const": false,
+              "type": "boolean"
+            },
+            "maxProperties": 32,
+            "title": "Cache Setting Overrides",
+            "type": "object"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unique among the organization's live VMs (case-insensitive). Generated when omitted. Surrounding whitespace is trimmed before validation. May not have the shape of a VM id, be a reserved segment such as usage or ssh, or contain '/', control characters, bidirectional controls, or line and paragraph separators.",
+            "title": "Display Name"
+          },
+          "egress_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EgressRuleCreate"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Egress Rules"
+          },
+          "enable_remote_desktop": {
+            "default": false,
+            "title": "Enable Remote Desktop",
+            "type": "boolean"
+          },
+          "ephemeral": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "Ignored. VMs are paused, resumed and deleted; none is stopped and started again.",
+            "title": "Ephemeral"
+          },
+          "fetch_depth": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Git history to preload with repo: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.",
+            "title": "Fetch Depth"
+          },
+          "https_ports": {
+            "description": "Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes.",
+            "items": {
+              "maximum": 65535.0,
+              "minimum": 1.0,
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Https Ports",
+            "type": "array"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[\\x21-\\x7e]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Makes the create idempotent within the organization: a create repeating a key returns the VM the first one made, without a password. A key whose VM was deleted, or that the caller cannot read, is a conflict. Spawn scripts pass the vendor's order id.",
+            "title": "Idempotency Key"
+          },
+          "os_type": {
+            "$ref": "#/components/schemas/OsType"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OsVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref"
+          },
+          "repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo"
+          },
+          "size": {
+            "$ref": "#/components/schemas/VmSize"
+          },
+          "ssh_public_keys": {
+            "items": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Ssh Public Keys",
+            "type": "array"
+          },
+          "ttl_seconds": {
+            "default": 28800,
+            "maximum": 604800.0,
+            "minimum": 300.0,
+            "title": "Ttl Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "os_type",
+          "size"
+        ],
+        "title": "CustomerVmCreateRequest",
+        "type": "object"
       },
       "CustomerVmDeleteResponse": {
         "properties": {
@@ -6676,6 +6968,27 @@
         "title": "OrganizationRepositoryResponse",
         "type": "object"
       },
+      "OsType": {
+        "enum": [
+          "linux",
+          "macos",
+          "windows"
+        ],
+        "title": "OsType",
+        "type": "string"
+      },
+      "OsVersion": {
+        "description": "Customer-facing OS version selector for the customer VM API.\n\nFriendly, OS-qualified tokens (not internal image-series names);\ncustomer_vm_image_series() maps a (OsType, OsVersion) pair to the concrete\nrunner-image series. Add a member here when a new version's image ships.",
+        "enum": [
+          "ubuntu-22.04",
+          "ubuntu-24.04",
+          "ubuntu-26.04",
+          "macos-26",
+          "windows-2025"
+        ],
+        "title": "OsVersion",
+        "type": "string"
+      },
       "PagedResponse_AccessTokenResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -9076,6 +9389,19 @@
         ],
         "title": "VmHttpsEndpoint",
         "type": "object"
+      },
+      "VmSize": {
+        "description": "Customer-facing VM size selector for the customer VM API.\n\nA size is the GitHub larger-runner shape (vCPU tier); customer_vm_spec()\nmaps a (OsType, VmSize) pair to the concrete cpu/memory/disk. Not every\nsize exists for every OS (see CUSTOMER_VM_SPECS), so callers must validate\nthe pair with vm_size_supported().",
+        "enum": [
+          "1-vcpu",
+          "2-vcpu",
+          "4-vcpu",
+          "8-vcpu",
+          "16-vcpu",
+          "32-vcpu"
+        ],
+        "title": "VmSize",
+        "type": "string"
       },
       "VmSnapshotInfo": {
         "description": "Customer-visible summary of the pause snapshot backing a PAUSED VM.\n\nProjected from the stored snapshot reference; storage-internal details\n(bucket, key, node) stay server-side.",
@@ -18909,6 +19235,87 @@
           }
         ],
         "summary": "List Vms",
+        "tags": [
+          "customer-vms"
+        ]
+      },
+      "post": {
+        "description": "Create a long-running VM. Provisioning is asynchronous: poll the\nresource until ``state`` is RUNNING and ``endpoints`` is populated.\n\nA scoped token creates only when it was minted with ``allow_vm_create``,\nup to its ``vm_create_limit``, within its owner's quotas, and without\n``egress_rules``. The new VM joins the token's scope at ``admin``.\n\nWith ``bootstrap`` the VM is an agent sandbox, counted against the same\nquotas as any other VM. A repeated ``idempotency_key`` answers with the\nVM the first create made.",
+        "operationId": "create_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerVmCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_CustomerVmWithPassword_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "A scoped token without allow_vm_create, or one that sets egress_rules; egress_rules from a caller who is not an organization admin; a macOS VM where macOS is not available to the organization; a bootstrap where agent sandboxes are not enabled for the organization; or https_ports where sandbox HTTPS URLs are disabled or not enabled for the organization"
+          },
+          "404": {
+            "description": "Customer VMs are not available for the organization; repository not found or not accessible; or virtual machine not found"
+          },
+          "409": {
+            "description": "A live VM of the organization already has that display_name; the VM's vCPUs do not fit the organization's vCPU quota; the caller or the scoped token is at its VM quota; or the idempotency_key was used for a VM the caller cannot read or that was deleted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Vm",
         "tags": [
           "customer-vms"
         ]

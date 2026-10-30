@@ -960,9 +960,42 @@ organization selection, empty responses and all update flags. Race tests,
 Go lint/build, admin composition, fixture typing and workflow validation pass;
 both report hashes match the tested binaries. No live VM updates were made.
 
+## VM creation and spawn-script batch
+
+Added VM create with every Python option: OS/version/size choices, ephemeral
+acknowledgement, SSH keys, desktop toggles, TTL, egress rules, repository/ref/
+fetch depth, cache overrides, waiting and Claude Code spawn-script mode.
+Update checkpoints: public a29c322, admin 22f6c169e4.
+
+Preserve omitted versus empty values, server validation of OS/size pairings
+and cache membership, sorted cache notices, one-time password formatting,
+precheckout notes, final wait JSON and progress. Create is never retried after
+an uncertain transport outcome. Spawn mode uses the order ID as the idempotency
+key, forwards only the per-session credential and maps HTTP failures to the
+vendor's retry/refusal exit codes. It never reads the environment-wide key.
+Errors redact echoed credentials; work-order reads are bounded to 16 MiB and
+reject invalid UTF-8 cleanly. These are intentional safeguards beyond Python.
+
+The pinned schema deprecates ephemeral as an ignored request field; the Python
+command's required acknowledgement remains for compatibility. The generated
+optional bootstrap union has no exported constructor, so the request uses the
+generated concrete ClaudeCodeBootstrap model through a narrow envelope override.
+No handwritten schema model or new dependency was added.
+
+Validation: 140 paired cases per binary, including six terminal cases, pass.
+Coverage includes every create flag, file inputs, OS/size/version choices,
+cache and branch validation, password quoting, ready/failed/timeout/retry waits,
+spawn credentials and status mapping. Extra-argument diagnostics retain the
+same substantive message; Click/Cobra usage banners follow the existing
+accepted difference. Three Go tests cover credential boundaries/redaction,
+no create retries and invalid/oversized credential files. Go race tests,
+lint/build, schema generation, admin composition, fixture typing and workflow
+validation pass; both report hashes match the tested executables. Validation
+used local fixtures only, with no live provisioning or vendor calls.
+
 ## Remaining work
 
-VM create, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
+VM SSH/tunnels/bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination

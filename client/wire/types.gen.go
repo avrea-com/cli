@@ -264,6 +264,36 @@ func (e CancelWorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for ClaudeCodeBootstrapProvider.
+const (
+	ClaudeCodeBootstrapProviderClaudeCode ClaudeCodeBootstrapProvider = "claude_code"
+)
+
+// Valid indicates whether the value is a known member of the ClaudeCodeBootstrapProvider enum.
+func (e ClaudeCodeBootstrapProvider) Valid() bool {
+	switch e {
+	case ClaudeCodeBootstrapProviderClaudeCode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CursorBootstrapProvider.
+const (
+	CursorBootstrapProviderCursor CursorBootstrapProvider = "cursor"
+)
+
+// Valid indicates whether the value is a known member of the CursorBootstrapProvider enum.
+func (e CursorBootstrapProvider) Valid() bool {
+	switch e {
+	case CursorBootstrapProviderCursor:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerVmAccessLevel.
 const (
 	CustomerVmAccessLevelAdmin CustomerVmAccessLevel = "admin"
@@ -287,16 +317,31 @@ func (e CustomerVmAccessLevel) Valid() bool {
 
 // Defines values for CustomerVmBootstrapProvider.
 const (
-	ClaudeCode CustomerVmBootstrapProvider = "claude_code"
-	Cursor     CustomerVmBootstrapProvider = "cursor"
+	CustomerVmBootstrapProviderClaudeCode CustomerVmBootstrapProvider = "claude_code"
+	CustomerVmBootstrapProviderCursor     CustomerVmBootstrapProvider = "cursor"
 )
 
 // Valid indicates whether the value is a known member of the CustomerVmBootstrapProvider enum.
 func (e CustomerVmBootstrapProvider) Valid() bool {
 	switch e {
-	case ClaudeCode:
+	case CustomerVmBootstrapProviderClaudeCode:
 		return true
-	case Cursor:
+	case CustomerVmBootstrapProviderCursor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerVmCreateRequestCacheSettingOverrides.
+const (
+	False CustomerVmCreateRequestCacheSettingOverrides = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerVmCreateRequestCacheSettingOverrides enum.
+func (e CustomerVmCreateRequestCacheSettingOverrides) Valid() bool {
+	switch e {
+	case False:
 		return true
 	default:
 		return false
@@ -795,6 +840,54 @@ func (e OrganizationRepositoryResponsePlatform) Valid() bool {
 	}
 }
 
+// Defines values for OsType.
+const (
+	Linux   OsType = "linux"
+	Macos   OsType = "macos"
+	Windows OsType = "windows"
+)
+
+// Valid indicates whether the value is a known member of the OsType enum.
+func (e OsType) Valid() bool {
+	switch e {
+	case Linux:
+		return true
+	case Macos:
+		return true
+	case Windows:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OsVersion.
+const (
+	Macos26     OsVersion = "macos-26"
+	Ubuntu2204  OsVersion = "ubuntu-22.04"
+	Ubuntu2404  OsVersion = "ubuntu-24.04"
+	Ubuntu2604  OsVersion = "ubuntu-26.04"
+	Windows2025 OsVersion = "windows-2025"
+)
+
+// Valid indicates whether the value is a known member of the OsVersion enum.
+func (e OsVersion) Valid() bool {
+	switch e {
+	case Macos26:
+		return true
+	case Ubuntu2204:
+		return true
+	case Ubuntu2404:
+		return true
+	case Ubuntu2604:
+		return true
+	case Windows2025:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Platform.
 const (
 	PlatformAvrea     Platform = "avrea"
@@ -1005,6 +1098,36 @@ func (e VmEndpointProtocol) Valid() bool {
 	case Ssh:
 		return true
 	case Vnc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VmSize.
+const (
+	N16Vcpu VmSize = "16-vcpu"
+	N1Vcpu  VmSize = "1-vcpu"
+	N2Vcpu  VmSize = "2-vcpu"
+	N32Vcpu VmSize = "32-vcpu"
+	N4Vcpu  VmSize = "4-vcpu"
+	N8Vcpu  VmSize = "8-vcpu"
+)
+
+// Valid indicates whether the value is a known member of the VmSize enum.
+func (e VmSize) Valid() bool {
+	switch e {
+	case N16Vcpu:
+		return true
+	case N1Vcpu:
+		return true
+	case N2Vcpu:
+		return true
+	case N32Vcpu:
+		return true
+	case N4Vcpu:
+		return true
+	case N8Vcpu:
 		return true
 	default:
 		return false
@@ -2293,6 +2416,23 @@ type CancelWorkflowRunResponse struct {
 // CancelWorkflowRunResponseStatus defines model for CancelWorkflowRunResponse.Status.
 type CancelWorkflowRunResponseStatus string
 
+// ClaudeCodeBootstrap Claude Code self-hosted runner. “credential“ is the work-order JWT
+// from CLAUDE_RUNNER_WORK_ORDER_FILE, never the environment secret.
+type ClaudeCodeBootstrap struct {
+	// Credential The per-session credential the worker starts with. Write-only: never returned or logged, and dropped once the sandbox is running. Never an environment-level key.
+	Credential *string `json:"credential,omitempty"`
+
+	// Params None: the work order carries everything the runner needs.
+	Params   *ClaudeCodeBootstrapParams  `json:"params,omitempty"`
+	Provider ClaudeCodeBootstrapProvider `json:"provider"`
+}
+
+// ClaudeCodeBootstrapProvider defines model for ClaudeCodeBootstrap.Provider.
+type ClaudeCodeBootstrapProvider string
+
+// ClaudeCodeBootstrapParams None: the work order carries everything the runner needs.
+type ClaudeCodeBootstrapParams = map[string]interface{}
+
 // CreateAccessTokenRequest defines model for CreateAccessTokenRequest.
 type CreateAccessTokenRequest struct {
 	AllowVmCreate *bool                  `json:"allow_vm_create,omitempty"`
@@ -2327,6 +2467,28 @@ type CreatedAccessTokenResponse struct {
 	VmCreateCount        int                    `json:"vm_create_count"`
 	VmCreateLimit        nullable.Nullable[int] `json:"vm_create_limit"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CursorBootstrap Cursor self-hosted pool worker. “credential“ is the per-claim
+// CURSOR_AUTH_TOKEN of a controller run with --session-token, never the
+// service-account key.
+type CursorBootstrap struct {
+	// Credential The per-session credential the worker starts with. Write-only: never returned or logged, and dropped once the sandbox is running. Never an environment-level key.
+	Credential *string                 `json:"credential,omitempty"`
+	Params     CursorBootstrapParams   `json:"params"`
+	Provider   CursorBootstrapProvider `json:"provider"`
+}
+
+// CursorBootstrapProvider defines model for CursorBootstrap.Provider.
+type CursorBootstrapProvider string
+
+// CursorBootstrapParams defines model for CursorBootstrapParams.
+type CursorBootstrapParams struct {
+	// Pool CURSOR_POOL from the controller.
+	Pool string `json:"pool"`
+
+	// WorkerId CURSOR_AGENT_WORKER_ID from the controller. The worker must start with the id it claimed.
+	WorkerId string `json:"worker_id"`
 }
 
 // CustomerVm defines model for CustomerVm.
@@ -2398,6 +2560,53 @@ type CustomerVmAccessLevel string
 
 // CustomerVmBootstrapProvider defines model for CustomerVmBootstrapProvider.
 type CustomerVmBootstrapProvider string
+
+// CustomerVmCreateRequest defines model for CustomerVmCreateRequest.
+type CustomerVmCreateRequest struct {
+	// Architecture CPU architecture. Defaults to the OS's default: x86_64 for linux and windows, arm64 for macos. Linux arm64 VMs cannot be paused, have no remote desktop, and offer sizes up to 16-vcpu.
+	Architecture nullable.Nullable[Architecture] `json:"architecture,omitempty"`
+
+	// Bootstrap Makes the VM an agent sandbox that starts a coding-agent vendor's worker at boot. Linux only. A sandbox boots once: it cannot be started again, paused or resumed, and never keeps its disk.
+	Bootstrap nullable.Nullable[struct {
+		union json.RawMessage
+	}] `json:"bootstrap,omitempty"`
+	CacheSettingOverrides *map[string]CustomerVmCreateRequestCacheSettingOverrides `json:"cache_setting_overrides,omitempty"`
+
+	// DisplayName Unique among the organization's live VMs (case-insensitive). Generated when omitted. Surrounding whitespace is trimmed before validation. May not have the shape of a VM id, be a reserved segment such as usage or ssh, or contain '/', control characters, bidirectional controls, or line and paragraph separators.
+	DisplayName         nullable.Nullable[string]             `json:"display_name,omitempty"`
+	EgressRules         nullable.Nullable[[]EgressRuleCreate] `json:"egress_rules,omitempty"`
+	EnableRemoteDesktop *bool                                 `json:"enable_remote_desktop,omitempty"`
+
+	// Ephemeral Ignored. VMs are paused, resumed and deleted; none is stopped and started again.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Ephemeral nullable.Nullable[bool] `json:"ephemeral,omitempty"`
+
+	// FetchDepth Git history to preload with repo: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
+	FetchDepth nullable.Nullable[int] `json:"fetch_depth,omitempty"`
+
+	// HttpsPorts Guest ports the VM publishes as public HTTPS URLs, at most 10 and not 22, 3389 or 5900. The first is the default port. A URL serves anyone who has it; rotate the VM's HTTPS label to replace a leaked one. Ports a scoped token adds are dropped before a boot anyone else starts or resumes.
+	HttpsPorts *[]int `json:"https_ports,omitempty"`
+
+	// IdempotencyKey Makes the create idempotent within the organization: a create repeating a key returns the VM the first one made, without a password. A key whose VM was deleted, or that the caller cannot read, is a conflict. Spawn scripts pass the vendor's order id.
+	IdempotencyKey nullable.Nullable[string]    `json:"idempotency_key,omitempty"`
+	OsType         OsType                       `json:"os_type"`
+	OsVersion      nullable.Nullable[OsVersion] `json:"os_version,omitempty"`
+	Ref            nullable.Nullable[string]    `json:"ref,omitempty"`
+	Repo           nullable.Nullable[string]    `json:"repo,omitempty"`
+
+	// Size Customer-facing VM size selector for the customer VM API.
+	//
+	// A size is the GitHub larger-runner shape (vCPU tier); customer_vm_spec()
+	// maps a (OsType, VmSize) pair to the concrete cpu/memory/disk. Not every
+	// size exists for every OS (see CUSTOMER_VM_SPECS), so callers must validate
+	// the pair with vm_size_supported().
+	Size          VmSize    `json:"size"`
+	SshPublicKeys *[]string `json:"ssh_public_keys,omitempty"`
+	TtlSeconds    *int      `json:"ttl_seconds,omitempty"`
+}
+
+// CustomerVmCreateRequestCacheSettingOverrides defines model for CustomerVmCreateRequest.CacheSettingOverrides.
+type CustomerVmCreateRequestCacheSettingOverrides bool
 
 // CustomerVmDeleteResponse defines model for CustomerVmDeleteResponse.
 type CustomerVmDeleteResponse struct {
@@ -3354,6 +3563,16 @@ type OrganizationRepositoryResponse struct {
 // OrganizationRepositoryResponsePlatform defines model for OrganizationRepositoryResponse.Platform.
 type OrganizationRepositoryResponsePlatform string
 
+// OsType defines model for OsType.
+type OsType string
+
+// OsVersion Customer-facing OS version selector for the customer VM API.
+//
+// Friendly, OS-qualified tokens (not internal image-series names);
+// customer_vm_image_series() maps a (OsType, OsVersion) pair to the concrete
+// runner-image series. Add a member here when a new version's image ships.
+type OsVersion string
+
 // PagedResponseAccessTokenResponse defines model for PagedResponse_AccessTokenResponse_.
 type PagedResponseAccessTokenResponse struct {
 	Data []AccessTokenResponse `json:"data"`
@@ -3985,6 +4204,14 @@ type VmHttpsEndpoint struct {
 	Url                  string                 `json:"url"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// VmSize Customer-facing VM size selector for the customer VM API.
+//
+// A size is the GitHub larger-runner shape (vCPU tier); customer_vm_spec()
+// maps a (OsType, VmSize) pair to the concrete cpu/memory/disk. Not every
+// size exists for every OS (see CUSTOMER_VM_SPECS), so callers must validate
+// the pair with vm_size_supported().
+type VmSize string
 
 // VmSnapshotInfo Customer-visible summary of the pause snapshot backing a PAUSED VM.
 //
@@ -4979,6 +5206,11 @@ type ListVmsParamsState string
 // ListVmsParamsScope defines parameters for ListVms.
 type ListVmsParamsScope string
 
+// CreateVmParams defines parameters for CreateVm.
+type CreateVmParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetVmUsageParams defines parameters for GetVmUsage.
 type GetVmUsageParams struct {
 	// PeriodStart Inclusive period start (default: 30 days ago).
@@ -5358,6 +5590,9 @@ type SetSamlEnforcementJSONRequestBody = EnforcementRequest
 
 // UpdateOrgSettingJSONRequestBody defines body for UpdateOrgSetting for application/json ContentType.
 type UpdateOrgSettingJSONRequestBody = SettingUpdate
+
+// CreateVmJSONRequestBody defines body for CreateVm for application/json ContentType.
+type CreateVmJSONRequestBody = CustomerVmCreateRequest
 
 // UpdateVmJSONRequestBody defines body for UpdateVm for application/json ContentType.
 type UpdateVmJSONRequestBody = CustomerVmUpdateRequest

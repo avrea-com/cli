@@ -109,7 +109,8 @@
     "update_vm",
     "pause_vm",
     "resume_vm",
-    "delete_vm"
+    "delete_vm",
+    "create_vm"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
