@@ -25,8 +25,8 @@ func NewBilling(deps Dependencies) *cobra.Command {
 	invoices := &cobra.Command{Use: "invoices", Short: "Manage invoices."}
 	invoices.AddCommand(newInvoiceList(d), newInvoiceShow(d))
 	methods := &cobra.Command{Use: "payment-methods", Short: "Manage payment methods."}
-	methods.AddCommand(newPaymentMethodList(d))
-	c.AddCommand(newBillingSummary(d), newBillingSettings(d), invoices, methods)
+	methods.AddCommand(newPaymentMethodList(d), newPaymentMethodDefault(d), newPaymentMethodRemove(d))
+	c.AddCommand(newBillingSummary(d), newBillingSettings(d), newBillingUpdate(d), invoices, methods)
 	return c
 }
 func billingBase(org string) string { return "/orgs/" + url.PathEscape(org) + "/billing" }

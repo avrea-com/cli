@@ -118,6 +118,19 @@
         "title": "APIResponse[OrganizationRepositoryResponse]",
         "type": "object"
       },
+      "APIResponse_PaymentMethodResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PaymentMethodResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[PaymentMethodResponse]",
+        "type": "object"
+      },
       "APIResponse_RerunWorkflowRunResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -903,6 +916,83 @@
         ],
         "title": "BillingInvoiceStatus",
         "type": "string"
+      },
+      "BillingSettingsRequest": {
+        "properties": {
+          "billing_address": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Address"
+          },
+          "billing_emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Emails"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "contact_person_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person Name"
+          },
+          "customer_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingCustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          }
+        },
+        "title": "BillingSettingsRequest",
+        "type": "object"
       },
       "BillingSettingsResponse": {
         "properties": {
@@ -9755,6 +9845,188 @@
         ]
       }
     },
+    "/orgs/{org_id}/billing/payment-methods/{pm_id}": {
+      "delete": {
+        "operationId": "remove_payment_method",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "pm_id",
+            "required": true,
+            "schema": {
+              "title": "Pm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Payment method not found"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Payment Method",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/orgs/{org_id}/billing/payment-methods/{pm_id}/default": {
+      "put": {
+        "operationId": "set_default_payment_method",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "pm_id",
+            "required": true,
+            "schema": {
+              "title": "Pm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_PaymentMethodResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Payment method not found"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Default Payment Method",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/orgs/{org_id}/billing/settings": {
       "get": {
         "operationId": "get_billing_settings",
@@ -9819,6 +10091,97 @@
           }
         ],
         "summary": "Get Billing Settings",
+        "tags": [
+          "billing"
+        ]
+      },
+      "put": {
+        "operationId": "update_billing_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_BillingSettingsResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The caller does not hold the capability, or is not an active member of the organization"
+          },
+          "404": {
+            "description": "Billing is not configured for the organization"
+          },
+          "409": {
+            "description": "Management authorization is busy; retry the request",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retrying a busy request",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Delegation authorization readers are not ready; retry after the rollout completes"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Billing Settings",
         "tags": [
           "billing"
         ]

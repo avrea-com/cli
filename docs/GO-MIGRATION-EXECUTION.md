@@ -782,9 +782,27 @@ currencies and invoice detail variants. Public Go race tests/lint/build,
 generation checks, admin composition checks, fixture typing and workflow
 validation passed. Both parity report hashes match the tested binaries.
 
+## Billing settings and payment-method changes
+
+Added update-settings, payment-methods set-default and payment-methods remove.
+Inspection checkpoints: public 4006691, admin ed5cd864c9.
+
+Settings writes preserve omitted versus explicitly empty fields, comma-separated
+email trimming, repeated-option precedence, and JSON discovery before auth.
+Payment-method removal retains the default-no confirmation, prompt-disable
+behavior and long --yes option (Python has no -y alias here). Default selection
+needs no confirmation. Requests use the pinned generated billing request model;
+writes are not retried, and no live billing records were changed.
+
+Validation: 71 paired scenarios per binary, including four terminal cases, pass.
+The fixtures compare exact request bodies/counts, selected organization, output,
+JSON/jq, empty responses, refusal/EOF and HTTP failures. Public Go race tests,
+lint/build, schema generation, admin composition, fixture typing and workflow
+checks pass. Both report hashes match the tested executables.
+
 ## Remaining work
 
-Billing mutations/downloads, firewall, VM commands, hidden docs, root/help/completion,
+Card addition and invoice downloads, firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
