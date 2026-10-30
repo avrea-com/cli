@@ -156,7 +156,7 @@ func linksEnabled(cmd *cobra.Command, d Dependencies) bool {
 // NewOrg returns an independently owned public organization command group.
 func NewOrg(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "org", Short: "Manage organizations and installations."}
+	group := &cobra.Command{Use: "org", Aliases: []string{"orgs"}, Short: "Manage organizations and installations."}
 	var options jsonOptions
 	cmd := &cobra.Command{Use: "list", Short: "List organizations you belong to.", Args: cobra.NoArgs}
 	options.flags(cmd)
@@ -193,7 +193,7 @@ func NewOrg(deps Dependencies) *cobra.Command {
 		}
 		return output.Grid(d.Out, []string{"ID", "Name", "Slug", "Role", "Default"}, rows)
 	})
-	group.AddCommand(cmd, newOrgCreate(d), newOrgMembers(d), newEmailDomains(d), newSAML(d))
+	group.AddCommand(cmd, newOrgCreate(d), newOrgMembers(d), newEmailDomains(d), newSAML(d), newOrgInstall(d))
 	return group
 }
 
