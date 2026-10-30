@@ -246,6 +246,48 @@ func (e CancelWorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for EgressRuleAction.
+const (
+	Allow EgressRuleAction = "allow"
+	Deny  EgressRuleAction = "deny"
+)
+
+// Valid indicates whether the value is a known member of the EgressRuleAction enum.
+func (e EgressRuleAction) Valid() bool {
+	switch e {
+	case Allow:
+		return true
+	case Deny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EgressRuleProtocol.
+const (
+	Any  EgressRuleProtocol = "any"
+	Icmp EgressRuleProtocol = "icmp"
+	Tcp  EgressRuleProtocol = "tcp"
+	Udp  EgressRuleProtocol = "udp"
+)
+
+// Valid indicates whether the value is a known member of the EgressRuleProtocol enum.
+func (e EgressRuleProtocol) Valid() bool {
+	switch e {
+	case Any:
+		return true
+	case Icmp:
+		return true
+	case Tcp:
+		return true
+	case Udp:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GenerateSbomRequestScope.
 const (
 	GenerateSbomRequestScopeFull GenerateSbomRequestScope = "full"
@@ -1936,6 +1978,26 @@ type BillingSummaryResponse struct {
 	AdditionalProperties    map[string]interface{} `json:"-"`
 }
 
+// BlockedDnsQuery A DNS query the per-VM unbound view returned NXDOMAIN for.
+//
+// Captured by “smithy.host_networking.dnstap_observer“ whenever a VM
+// asks for an FQDN that has no ALLOW match in its policy. Drained at
+// VM stop into the flow summary so the console can show "this VM tried
+// to reach example.com (blocked)" — without this, deny-by-default
+// failures are invisible: the VM never gets an IP, so no packet is
+// sent, so the IP-layer drop counters never fire and softflowd has
+// nothing to capture.
+//
+// Bounded per VM in the observer's ring buffer (most recent N) to
+// cap the worst-case Turbopuffer row size from a chatty workload
+// that hammers blocked names.
+type BlockedDnsQuery struct {
+	Count                *int                   `json:"count,omitempty"`
+	Qname                string                 `json:"qname"`
+	Ts                   time.Time              `json:"ts"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // CIProvider defines model for CIProvider.
 type CIProvider string
 
@@ -2106,6 +2168,86 @@ type DispatchWorkflowResponse struct {
 	AdditionalProperties map[string]interface{}    `json:"-"`
 }
 
+// DropCounter Per-rule drop counter snapshot read from the firewall at VM stop.
+type DropCounter struct {
+	Bytes                int                    `json:"bytes"`
+	Label                string                 `json:"label"`
+	Packets              int                    `json:"packets"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// EgressFirewallPolicy A resolved, ordered list of egress firewall rules for one runner VM.
+//
+// Produced by the control plane at dispatch (repo rules prepended to org
+// rules, then the effective default rule) and shipped to smithy in the
+// execution payload.
+type EgressFirewallPolicy struct {
+	Rules                *[]EgressRule          `json:"rules,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// EgressRule A single ordered egress rule.
+//
+// Exactly one of `cidr` or `fqdn` may be set; both NULL means the catch-all
+// rule (matches everything), which must also have `is_default=True`.
+type EgressRule struct {
+	Action               EgressRuleAction          `json:"action"`
+	Cidr                 nullable.Nullable[string] `json:"cidr,omitempty"`
+	Fqdn                 nullable.Nullable[string] `json:"fqdn,omitempty"`
+	IsDefault            *bool                     `json:"is_default,omitempty"`
+	PortEnd              nullable.Nullable[int]    `json:"port_end,omitempty"`
+	PortStart            nullable.Nullable[int]    `json:"port_start,omitempty"`
+	Position             *int                      `json:"position,omitempty"`
+	Protocol             *EgressRuleProtocol       `json:"protocol,omitempty"`
+	RuleId               *string                   `json:"rule_id,omitempty"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// EgressRuleAction defines model for EgressRuleAction.
+type EgressRuleAction string
+
+// EgressRuleCreate defines model for EgressRuleCreate.
+type EgressRuleCreate struct {
+	Action    EgressRuleAction          `json:"action"`
+	Cidr      nullable.Nullable[string] `json:"cidr,omitempty"`
+	Fqdn      nullable.Nullable[string] `json:"fqdn,omitempty"`
+	IsDefault *bool                     `json:"is_default,omitempty"`
+	PortEnd   nullable.Nullable[int]    `json:"port_end,omitempty"`
+	PortStart nullable.Nullable[int]    `json:"port_start,omitempty"`
+	Position  nullable.Nullable[int]    `json:"position,omitempty"`
+	Protocol  *EgressRuleProtocol       `json:"protocol,omitempty"`
+}
+
+// EgressRuleProtocol defines model for EgressRuleProtocol.
+type EgressRuleProtocol string
+
+// EgressRuleUpdate Update payload for an existing rule. Partial-update semantics: only
+// fields explicitly set on the request body are applied; omitted fields
+// keep the existing row's value.
+//
+// “is_default“ is intentionally not exposed on update — flipping the
+// catch-all between ALLOW and DENY is allowed (it's just an action
+// change), but converting a rule from default to non-default (or vice
+// versa) would invalidate the matcher invariants in either direction
+// and is rejected. Callers wanting that effect should delete + create.
+// The matcher fields here are validated in “_update_rule“ against the
+// merged (existing + delta) view, once the existing rule's “is_default“
+// is known.
+//
+// All fields are Optional — clients PATCH only the keys they want to
+// change. The route handler distinguishes "field not present" from
+// "field explicitly set to null" via “model_fields_set“ so a JSON
+// “null“ can clear an optional matcher (cidr/fqdn/port_start/port_end)
+// while an omitted key inherits the existing value.
+type EgressRuleUpdate struct {
+	Action    nullable.Nullable[EgressRuleAction]   `json:"action,omitempty"`
+	Cidr      nullable.Nullable[string]             `json:"cidr,omitempty"`
+	Fqdn      nullable.Nullable[string]             `json:"fqdn,omitempty"`
+	PortEnd   nullable.Nullable[int]                `json:"port_end,omitempty"`
+	PortStart nullable.Nullable[int]                `json:"port_start,omitempty"`
+	Protocol  nullable.Nullable[EgressRuleProtocol] `json:"protocol,omitempty"`
+}
+
 // EmailDomainClaimRequest Request model for creating a DNS-verifiable domain claim.
 type EmailDomainClaimRequest struct {
 	Domain               string                 `json:"domain"`
@@ -2142,6 +2284,18 @@ type FeatureFlagResponse struct {
 	Enabled              bool                   `json:"enabled"`
 	Key                  string                 `json:"key"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// FlowSummarySearchResponse Paginated search response for VM flow summaries.
+type FlowSummarySearchResponse struct {
+	HasMore               *bool                       `json:"has_more,omitempty"`
+	Limit                 int                         `json:"limit"`
+	NamespacesSearched    *int                        `json:"namespaces_searched,omitempty"`
+	NamespacesWithResults nullable.Nullable[[]string] `json:"namespaces_with_results,omitempty"`
+	Offset                int                         `json:"offset"`
+	Results               []VMFlowSummary             `json:"results"`
+	TotalEstimated        int                         `json:"total_estimated"`
+	AdditionalProperties  map[string]interface{}      `json:"-"`
 }
 
 // GenerateSbomRequest defines model for GenerateSbomRequest.
@@ -2218,6 +2372,20 @@ type HealthResponse struct {
 
 // HealthStatus defines model for HealthStatus.
 type HealthStatus string
+
+// IngressSource Received traffic grouped by remote IP, ranked within the per-VM cap.
+//
+// The optional hostname is the latest DNS name observed for that IP. Shared
+// CDN addresses can serve multiple names, so it is an annotation, not an
+// exact attribution of every received byte to a hostname.
+type IngressSource struct {
+	Bytes                int                       `json:"bytes"`
+	Flows                int                       `json:"flows"`
+	Packets              int                       `json:"packets"`
+	SrcFqdn              nullable.Nullable[string] `json:"src_fqdn,omitempty"`
+	SrcIp                string                    `json:"src_ip"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
 
 // IntegratedSourcePlatform defines model for IntegratedSourcePlatform.
 type IntegratedSourcePlatform string
@@ -2956,6 +3124,11 @@ type PullMergeability struct {
 // PullMergeabilityStatus defines model for PullMergeability.Status.
 type PullMergeabilityStatus string
 
+// ReorderRequest defines model for ReorderRequest.
+type ReorderRequest struct {
+	RuleIds []string `json:"rule_ids"`
+}
+
 // RepoCachePurgeResponse Envelope for the purge state, null when no purge is in flight.
 type RepoCachePurgeResponse struct {
 	Purge                nullable.Nullable[RepoCachePurgeStatus] `json:"purge,omitempty"`
@@ -3274,6 +3447,23 @@ type StripeKeyResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// TopDestination One row of the per-VM "top destinations" breakdown.
+type TopDestination struct {
+	Bytes                int                       `json:"bytes"`
+	DstFqdn              nullable.Nullable[string] `json:"dst_fqdn,omitempty"`
+	DstIp                string                    `json:"dst_ip"`
+	Flows                int                       `json:"flows"`
+	AdditionalProperties map[string]interface{}    `json:"-"`
+}
+
+// TopProtoPort One row of the per-VM "top (protocol, port)" breakdown.
+type TopProtoPort struct {
+	Bytes                int                    `json:"bytes"`
+	Port                 int                    `json:"port"`
+	Protocol             string                 `json:"protocol"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // UsageSummaryResponse defines model for UsageSummaryResponse.
 type UsageSummaryResponse struct {
 	BreakdownBySpec      map[string]map[string]interface{} `json:"breakdown_by_spec"`
@@ -3300,6 +3490,36 @@ type UserInstallationItem struct {
 	TargetName             string                    `json:"target_name"`
 	TargetType             string                    `json:"target_type"`
 	AdditionalProperties   map[string]interface{}    `json:"-"`
+}
+
+// VMFlowSummary Aggregate netflow record produced once per VM run.
+//
+// Written to Turbopuffer namespace “{prefix}-{repository_id}“ at VM stop.
+// “repository_id“ is encoded in the namespace path so it is not stored as a
+// field on the record itself.
+type VMFlowSummary struct {
+	BlockedDnsQueries        *[]BlockedDnsQuery     `json:"blocked_dns_queries,omitempty"`
+	BytesEgress              *int                   `json:"bytes_egress,omitempty"`
+	BytesIngress             *int                   `json:"bytes_ingress,omitempty"`
+	BytesIngressUnattributed *int                   `json:"bytes_ingress_unattributed,omitempty"`
+	Drops                    *[]DropCounter         `json:"drops,omitempty"`
+	DurationS                int                    `json:"duration_s"`
+	EndTs                    time.Time              `json:"end_ts"`
+	FlowCount                *int                   `json:"flow_count,omitempty"`
+	Id                       *string                `json:"id,omitempty"`
+	IngressSourceCount       *int                   `json:"ingress_source_count,omitempty"`
+	IngressSources           *[]IngressSource       `json:"ingress_sources,omitempty"`
+	IngressSourcesTruncated  *bool                  `json:"ingress_sources_truncated,omitempty"`
+	PacketsEgress            *int                   `json:"packets_egress,omitempty"`
+	PacketsIngress           *int                   `json:"packets_ingress,omitempty"`
+	RepositoryId             string                 `json:"repository_id"`
+	StartTs                  time.Time              `json:"start_ts"`
+	TopDestinations          *[]TopDestination      `json:"top_destinations,omitempty"`
+	TopProtoPorts            *[]TopProtoPort        `json:"top_proto_ports,omitempty"`
+	VmId                     string                 `json:"vm_id"`
+	VmIndex                  int                    `json:"vm_index"`
+	VmIp                     string                 `json:"vm_ip"`
+	AdditionalProperties     map[string]interface{} `json:"-"`
 }
 
 // ValidationError defines model for ValidationError.
@@ -3719,6 +3939,31 @@ type GetOrgFeatureFlagParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ListOrgRulesParams defines parameters for ListOrgRules.
+type ListOrgRulesParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// CreateOrgRuleParams defines parameters for CreateOrgRule.
+type CreateOrgRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ReorderOrgRulesParams defines parameters for ReorderOrgRules.
+type ReorderOrgRulesParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DeleteOrgRuleParams defines parameters for DeleteOrgRule.
+type DeleteOrgRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateOrgRuleParams defines parameters for UpdateOrgRule.
+type UpdateOrgRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListGitClustersParams defines parameters for ListGitClusters.
 type ListGitClustersParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -4127,6 +4372,48 @@ type DispatchWorkflowEndpointParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// ResolvedRepoRulesParams defines parameters for ResolvedRepoRules.
+type ResolvedRepoRulesParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListRepoRulesParams defines parameters for ListRepoRules.
+type ListRepoRulesParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// CreateRepoRuleParams defines parameters for CreateRepoRule.
+type CreateRepoRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ReorderRepoRulesParams defines parameters for ReorderRepoRules.
+type ReorderRepoRulesParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DeleteRepoRuleParams defines parameters for DeleteRepoRule.
+type DeleteRepoRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// UpdateRepoRuleParams defines parameters for UpdateRepoRule.
+type UpdateRepoRuleParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// ListVmFlowSummariesParams defines parameters for ListVmFlowSummaries.
+type ListVmFlowSummariesParams struct {
+	VmId          *string    `form:"vm_id,omitempty" json:"vm_id,omitempty"`
+	JobId         *string    `form:"job_id,omitempty" json:"job_id,omitempty"`
+	OnlyWithDrops *bool      `form:"only_with_drops,omitempty" json:"only_with_drops,omitempty"`
+	StartAfter    *time.Time `form:"start_after,omitempty" json:"start_after,omitempty"`
+	EndBefore     *time.Time `form:"end_before,omitempty" json:"end_before,omitempty"`
+	Limit         *int       `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset        *int       `form:"offset,omitempty" json:"offset,omitempty"`
+	AvreaSession  *string    `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // GetRepoGitMirrorParams defines parameters for GetRepoGitMirror.
 type GetRepoGitMirrorParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -4515,6 +4802,15 @@ type SetEmailDomainsJSONRequestBody = EmailDomainsRequest
 // ClaimEmailDomainJSONRequestBody defines body for ClaimEmailDomain for application/json ContentType.
 type ClaimEmailDomainJSONRequestBody = EmailDomainClaimRequest
 
+// CreateOrgRuleJSONRequestBody defines body for CreateOrgRule for application/json ContentType.
+type CreateOrgRuleJSONRequestBody = EgressRuleCreate
+
+// ReorderOrgRulesJSONRequestBody defines body for ReorderOrgRules for application/json ContentType.
+type ReorderOrgRulesJSONRequestBody = ReorderRequest
+
+// UpdateOrgRuleJSONRequestBody defines body for UpdateOrgRule for application/json ContentType.
+type UpdateOrgRuleJSONRequestBody = EgressRuleUpdate
+
 // RequestPublicMirrorJSONRequestBody defines body for RequestPublicMirror for application/json ContentType.
 type RequestPublicMirrorJSONRequestBody = PublicMirrorRequestCreate
 
@@ -4523,6 +4819,15 @@ type GenerateSbomJSONRequestBody = GenerateSbomRequest
 
 // DispatchWorkflowEndpointJSONRequestBody defines body for DispatchWorkflowEndpoint for application/json ContentType.
 type DispatchWorkflowEndpointJSONRequestBody = DispatchWorkflowRequest
+
+// CreateRepoRuleJSONRequestBody defines body for CreateRepoRule for application/json ContentType.
+type CreateRepoRuleJSONRequestBody = EgressRuleCreate
+
+// ReorderRepoRulesJSONRequestBody defines body for ReorderRepoRules for application/json ContentType.
+type ReorderRepoRulesJSONRequestBody = ReorderRequest
+
+// UpdateRepoRuleJSONRequestBody defines body for UpdateRepoRule for application/json ContentType.
+type UpdateRepoRuleJSONRequestBody = EgressRuleUpdate
 
 // UpdateRepoGitMirrorJSONRequestBody defines body for UpdateRepoGitMirror for application/json ContentType.
 type UpdateRepoGitMirrorJSONRequestBody = RepoGitMirrorUpdate
@@ -6466,6 +6771,100 @@ func (a BillingSummaryResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for BlockedDnsQuery. Returns the specified
+// element and whether it was found
+func (a BlockedDnsQuery) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockedDnsQuery
+func (a *BlockedDnsQuery) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockedDnsQuery to handle AdditionalProperties
+func (a *BlockedDnsQuery) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["count"]; found {
+		err = json.Unmarshal(raw, &a.Count)
+		if err != nil {
+			return fmt.Errorf("error reading 'count': %w", err)
+		}
+		delete(object, "count")
+	}
+
+	if raw, found := object["qname"]; found {
+		err = json.Unmarshal(raw, &a.Qname)
+		if err != nil {
+			return fmt.Errorf("error reading 'qname': %w", err)
+		}
+		delete(object, "qname")
+	}
+
+	if raw, found := object["ts"]; found {
+		err = json.Unmarshal(raw, &a.Ts)
+		if err != nil {
+			return fmt.Errorf("error reading 'ts': %w", err)
+		}
+		delete(object, "ts")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockedDnsQuery to handle AdditionalProperties
+func (a BlockedDnsQuery) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Count != nil {
+		object["count"], err = json.Marshal(a.Count)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'count': %w", err)
+		}
+	}
+
+	object["qname"], err = json.Marshal(a.Qname)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'qname': %w", err)
+	}
+
+	object["ts"], err = json.Marshal(a.Ts)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ts': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for CIWorkflowResponse. Returns the specified
 // element and whether it was found
 func (a CIWorkflowResponse) Get(fieldName string) (value interface{}, found bool) {
@@ -8109,6 +8508,352 @@ func (a DispatchWorkflowResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for DropCounter. Returns the specified
+// element and whether it was found
+func (a DropCounter) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DropCounter
+func (a *DropCounter) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DropCounter to handle AdditionalProperties
+func (a *DropCounter) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["bytes"]; found {
+		err = json.Unmarshal(raw, &a.Bytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes': %w", err)
+		}
+		delete(object, "bytes")
+	}
+
+	if raw, found := object["label"]; found {
+		err = json.Unmarshal(raw, &a.Label)
+		if err != nil {
+			return fmt.Errorf("error reading 'label': %w", err)
+		}
+		delete(object, "label")
+	}
+
+	if raw, found := object["packets"]; found {
+		err = json.Unmarshal(raw, &a.Packets)
+		if err != nil {
+			return fmt.Errorf("error reading 'packets': %w", err)
+		}
+		delete(object, "packets")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DropCounter to handle AdditionalProperties
+func (a DropCounter) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["bytes"], err = json.Marshal(a.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'bytes': %w", err)
+	}
+
+	object["label"], err = json.Marshal(a.Label)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'label': %w", err)
+	}
+
+	object["packets"], err = json.Marshal(a.Packets)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'packets': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EgressFirewallPolicy. Returns the specified
+// element and whether it was found
+func (a EgressFirewallPolicy) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EgressFirewallPolicy
+func (a *EgressFirewallPolicy) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EgressFirewallPolicy to handle AdditionalProperties
+func (a *EgressFirewallPolicy) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["rules"]; found {
+		err = json.Unmarshal(raw, &a.Rules)
+		if err != nil {
+			return fmt.Errorf("error reading 'rules': %w", err)
+		}
+		delete(object, "rules")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EgressFirewallPolicy to handle AdditionalProperties
+func (a EgressFirewallPolicy) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Rules != nil {
+		object["rules"], err = json.Marshal(a.Rules)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rules': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for EgressRule. Returns the specified
+// element and whether it was found
+func (a EgressRule) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for EgressRule
+func (a *EgressRule) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for EgressRule to handle AdditionalProperties
+func (a *EgressRule) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["action"]; found {
+		err = json.Unmarshal(raw, &a.Action)
+		if err != nil {
+			return fmt.Errorf("error reading 'action': %w", err)
+		}
+		delete(object, "action")
+	}
+
+	if raw, found := object["cidr"]; found {
+		err = json.Unmarshal(raw, &a.Cidr)
+		if err != nil {
+			return fmt.Errorf("error reading 'cidr': %w", err)
+		}
+		delete(object, "cidr")
+	}
+
+	if raw, found := object["fqdn"]; found {
+		err = json.Unmarshal(raw, &a.Fqdn)
+		if err != nil {
+			return fmt.Errorf("error reading 'fqdn': %w", err)
+		}
+		delete(object, "fqdn")
+	}
+
+	if raw, found := object["is_default"]; found {
+		err = json.Unmarshal(raw, &a.IsDefault)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_default': %w", err)
+		}
+		delete(object, "is_default")
+	}
+
+	if raw, found := object["port_end"]; found {
+		err = json.Unmarshal(raw, &a.PortEnd)
+		if err != nil {
+			return fmt.Errorf("error reading 'port_end': %w", err)
+		}
+		delete(object, "port_end")
+	}
+
+	if raw, found := object["port_start"]; found {
+		err = json.Unmarshal(raw, &a.PortStart)
+		if err != nil {
+			return fmt.Errorf("error reading 'port_start': %w", err)
+		}
+		delete(object, "port_start")
+	}
+
+	if raw, found := object["position"]; found {
+		err = json.Unmarshal(raw, &a.Position)
+		if err != nil {
+			return fmt.Errorf("error reading 'position': %w", err)
+		}
+		delete(object, "position")
+	}
+
+	if raw, found := object["protocol"]; found {
+		err = json.Unmarshal(raw, &a.Protocol)
+		if err != nil {
+			return fmt.Errorf("error reading 'protocol': %w", err)
+		}
+		delete(object, "protocol")
+	}
+
+	if raw, found := object["rule_id"]; found {
+		err = json.Unmarshal(raw, &a.RuleId)
+		if err != nil {
+			return fmt.Errorf("error reading 'rule_id': %w", err)
+		}
+		delete(object, "rule_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for EgressRule to handle AdditionalProperties
+func (a EgressRule) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["action"], err = json.Marshal(a.Action)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'action': %w", err)
+	}
+
+	if a.Cidr != nil {
+		object["cidr"], err = json.Marshal(a.Cidr)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cidr': %w", err)
+		}
+	}
+
+	if a.Fqdn != nil {
+		object["fqdn"], err = json.Marshal(a.Fqdn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fqdn': %w", err)
+		}
+	}
+
+	if a.IsDefault != nil {
+		object["is_default"], err = json.Marshal(a.IsDefault)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_default': %w", err)
+		}
+	}
+
+	if a.PortEnd != nil {
+		object["port_end"], err = json.Marshal(a.PortEnd)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'port_end': %w", err)
+		}
+	}
+
+	if a.PortStart != nil {
+		object["port_start"], err = json.Marshal(a.PortStart)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'port_start': %w", err)
+		}
+	}
+
+	if a.Position != nil {
+		object["position"], err = json.Marshal(a.Position)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'position': %w", err)
+		}
+	}
+
+	if a.Protocol != nil {
+		object["protocol"], err = json.Marshal(a.Protocol)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'protocol': %w", err)
+		}
+	}
+
+	if a.RuleId != nil {
+		object["rule_id"], err = json.Marshal(a.RuleId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rule_id': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for EmailDomainClaimRequest. Returns the specified
 // element and whether it was found
 func (a EmailDomainClaimRequest) Get(fieldName string) (value interface{}, found bool) {
@@ -8540,6 +9285,158 @@ func (a FeatureFlagResponse) MarshalJSON() ([]byte, error) {
 	object["key"], err = json.Marshal(a.Key)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FlowSummarySearchResponse. Returns the specified
+// element and whether it was found
+func (a FlowSummarySearchResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FlowSummarySearchResponse
+func (a *FlowSummarySearchResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FlowSummarySearchResponse to handle AdditionalProperties
+func (a *FlowSummarySearchResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["has_more"]; found {
+		err = json.Unmarshal(raw, &a.HasMore)
+		if err != nil {
+			return fmt.Errorf("error reading 'has_more': %w", err)
+		}
+		delete(object, "has_more")
+	}
+
+	if raw, found := object["limit"]; found {
+		err = json.Unmarshal(raw, &a.Limit)
+		if err != nil {
+			return fmt.Errorf("error reading 'limit': %w", err)
+		}
+		delete(object, "limit")
+	}
+
+	if raw, found := object["namespaces_searched"]; found {
+		err = json.Unmarshal(raw, &a.NamespacesSearched)
+		if err != nil {
+			return fmt.Errorf("error reading 'namespaces_searched': %w", err)
+		}
+		delete(object, "namespaces_searched")
+	}
+
+	if raw, found := object["namespaces_with_results"]; found {
+		err = json.Unmarshal(raw, &a.NamespacesWithResults)
+		if err != nil {
+			return fmt.Errorf("error reading 'namespaces_with_results': %w", err)
+		}
+		delete(object, "namespaces_with_results")
+	}
+
+	if raw, found := object["offset"]; found {
+		err = json.Unmarshal(raw, &a.Offset)
+		if err != nil {
+			return fmt.Errorf("error reading 'offset': %w", err)
+		}
+		delete(object, "offset")
+	}
+
+	if raw, found := object["results"]; found {
+		err = json.Unmarshal(raw, &a.Results)
+		if err != nil {
+			return fmt.Errorf("error reading 'results': %w", err)
+		}
+		delete(object, "results")
+	}
+
+	if raw, found := object["total_estimated"]; found {
+		err = json.Unmarshal(raw, &a.TotalEstimated)
+		if err != nil {
+			return fmt.Errorf("error reading 'total_estimated': %w", err)
+		}
+		delete(object, "total_estimated")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FlowSummarySearchResponse to handle AdditionalProperties
+func (a FlowSummarySearchResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.HasMore != nil {
+		object["has_more"], err = json.Marshal(a.HasMore)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'has_more': %w", err)
+		}
+	}
+
+	object["limit"], err = json.Marshal(a.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'limit': %w", err)
+	}
+
+	if a.NamespacesSearched != nil {
+		object["namespaces_searched"], err = json.Marshal(a.NamespacesSearched)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'namespaces_searched': %w", err)
+		}
+	}
+
+	if a.NamespacesWithResults != nil {
+		object["namespaces_with_results"], err = json.Marshal(a.NamespacesWithResults)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'namespaces_with_results': %w", err)
+		}
+	}
+
+	object["offset"], err = json.Marshal(a.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'offset': %w", err)
+	}
+
+	if a.Results != nil {
+		object["results"], err = json.Marshal(a.Results)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'results': %w", err)
+		}
+	}
+
+	object["total_estimated"], err = json.Marshal(a.TotalEstimated)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'total_estimated': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -9239,6 +10136,126 @@ func (a HealthResponse) MarshalJSON() ([]byte, error) {
 	object["status"], err = json.Marshal(a.Status)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for IngressSource. Returns the specified
+// element and whether it was found
+func (a IngressSource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for IngressSource
+func (a *IngressSource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for IngressSource to handle AdditionalProperties
+func (a *IngressSource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["bytes"]; found {
+		err = json.Unmarshal(raw, &a.Bytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes': %w", err)
+		}
+		delete(object, "bytes")
+	}
+
+	if raw, found := object["flows"]; found {
+		err = json.Unmarshal(raw, &a.Flows)
+		if err != nil {
+			return fmt.Errorf("error reading 'flows': %w", err)
+		}
+		delete(object, "flows")
+	}
+
+	if raw, found := object["packets"]; found {
+		err = json.Unmarshal(raw, &a.Packets)
+		if err != nil {
+			return fmt.Errorf("error reading 'packets': %w", err)
+		}
+		delete(object, "packets")
+	}
+
+	if raw, found := object["src_fqdn"]; found {
+		err = json.Unmarshal(raw, &a.SrcFqdn)
+		if err != nil {
+			return fmt.Errorf("error reading 'src_fqdn': %w", err)
+		}
+		delete(object, "src_fqdn")
+	}
+
+	if raw, found := object["src_ip"]; found {
+		err = json.Unmarshal(raw, &a.SrcIp)
+		if err != nil {
+			return fmt.Errorf("error reading 'src_ip': %w", err)
+		}
+		delete(object, "src_ip")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for IngressSource to handle AdditionalProperties
+func (a IngressSource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["bytes"], err = json.Marshal(a.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'bytes': %w", err)
+	}
+
+	object["flows"], err = json.Marshal(a.Flows)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'flows': %w", err)
+	}
+
+	object["packets"], err = json.Marshal(a.Packets)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'packets': %w", err)
+	}
+
+	if a.SrcFqdn != nil {
+		object["src_fqdn"], err = json.Marshal(a.SrcFqdn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'src_fqdn': %w", err)
+		}
+	}
+
+	object["src_ip"], err = json.Marshal(a.SrcIp)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'src_ip': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -18721,6 +19738,205 @@ func (a StripeKeyResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for TopDestination. Returns the specified
+// element and whether it was found
+func (a TopDestination) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for TopDestination
+func (a *TopDestination) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for TopDestination to handle AdditionalProperties
+func (a *TopDestination) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["bytes"]; found {
+		err = json.Unmarshal(raw, &a.Bytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes': %w", err)
+		}
+		delete(object, "bytes")
+	}
+
+	if raw, found := object["dst_fqdn"]; found {
+		err = json.Unmarshal(raw, &a.DstFqdn)
+		if err != nil {
+			return fmt.Errorf("error reading 'dst_fqdn': %w", err)
+		}
+		delete(object, "dst_fqdn")
+	}
+
+	if raw, found := object["dst_ip"]; found {
+		err = json.Unmarshal(raw, &a.DstIp)
+		if err != nil {
+			return fmt.Errorf("error reading 'dst_ip': %w", err)
+		}
+		delete(object, "dst_ip")
+	}
+
+	if raw, found := object["flows"]; found {
+		err = json.Unmarshal(raw, &a.Flows)
+		if err != nil {
+			return fmt.Errorf("error reading 'flows': %w", err)
+		}
+		delete(object, "flows")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for TopDestination to handle AdditionalProperties
+func (a TopDestination) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["bytes"], err = json.Marshal(a.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'bytes': %w", err)
+	}
+
+	if a.DstFqdn != nil {
+		object["dst_fqdn"], err = json.Marshal(a.DstFqdn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dst_fqdn': %w", err)
+		}
+	}
+
+	object["dst_ip"], err = json.Marshal(a.DstIp)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'dst_ip': %w", err)
+	}
+
+	object["flows"], err = json.Marshal(a.Flows)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'flows': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for TopProtoPort. Returns the specified
+// element and whether it was found
+func (a TopProtoPort) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for TopProtoPort
+func (a *TopProtoPort) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for TopProtoPort to handle AdditionalProperties
+func (a *TopProtoPort) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["bytes"]; found {
+		err = json.Unmarshal(raw, &a.Bytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes': %w", err)
+		}
+		delete(object, "bytes")
+	}
+
+	if raw, found := object["port"]; found {
+		err = json.Unmarshal(raw, &a.Port)
+		if err != nil {
+			return fmt.Errorf("error reading 'port': %w", err)
+		}
+		delete(object, "port")
+	}
+
+	if raw, found := object["protocol"]; found {
+		err = json.Unmarshal(raw, &a.Protocol)
+		if err != nil {
+			return fmt.Errorf("error reading 'protocol': %w", err)
+		}
+		delete(object, "protocol")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for TopProtoPort to handle AdditionalProperties
+func (a TopProtoPort) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["bytes"], err = json.Marshal(a.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'bytes': %w", err)
+	}
+
+	object["port"], err = json.Marshal(a.Port)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'port': %w", err)
+	}
+
+	object["protocol"], err = json.Marshal(a.Protocol)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'protocol': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for UsageSummaryResponse. Returns the specified
 // element and whether it was found
 func (a UsageSummaryResponse) Get(fieldName string) (value interface{}, found bool) {
@@ -19052,6 +20268,360 @@ func (a UserInstallationItem) MarshalJSON() ([]byte, error) {
 	object["target_type"], err = json.Marshal(a.TargetType)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'target_type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for VMFlowSummary. Returns the specified
+// element and whether it was found
+func (a VMFlowSummary) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for VMFlowSummary
+func (a *VMFlowSummary) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for VMFlowSummary to handle AdditionalProperties
+func (a *VMFlowSummary) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["blocked_dns_queries"]; found {
+		err = json.Unmarshal(raw, &a.BlockedDnsQueries)
+		if err != nil {
+			return fmt.Errorf("error reading 'blocked_dns_queries': %w", err)
+		}
+		delete(object, "blocked_dns_queries")
+	}
+
+	if raw, found := object["bytes_egress"]; found {
+		err = json.Unmarshal(raw, &a.BytesEgress)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes_egress': %w", err)
+		}
+		delete(object, "bytes_egress")
+	}
+
+	if raw, found := object["bytes_ingress"]; found {
+		err = json.Unmarshal(raw, &a.BytesIngress)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes_ingress': %w", err)
+		}
+		delete(object, "bytes_ingress")
+	}
+
+	if raw, found := object["bytes_ingress_unattributed"]; found {
+		err = json.Unmarshal(raw, &a.BytesIngressUnattributed)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes_ingress_unattributed': %w", err)
+		}
+		delete(object, "bytes_ingress_unattributed")
+	}
+
+	if raw, found := object["drops"]; found {
+		err = json.Unmarshal(raw, &a.Drops)
+		if err != nil {
+			return fmt.Errorf("error reading 'drops': %w", err)
+		}
+		delete(object, "drops")
+	}
+
+	if raw, found := object["duration_s"]; found {
+		err = json.Unmarshal(raw, &a.DurationS)
+		if err != nil {
+			return fmt.Errorf("error reading 'duration_s': %w", err)
+		}
+		delete(object, "duration_s")
+	}
+
+	if raw, found := object["end_ts"]; found {
+		err = json.Unmarshal(raw, &a.EndTs)
+		if err != nil {
+			return fmt.Errorf("error reading 'end_ts': %w", err)
+		}
+		delete(object, "end_ts")
+	}
+
+	if raw, found := object["flow_count"]; found {
+		err = json.Unmarshal(raw, &a.FlowCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'flow_count': %w", err)
+		}
+		delete(object, "flow_count")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["ingress_source_count"]; found {
+		err = json.Unmarshal(raw, &a.IngressSourceCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'ingress_source_count': %w", err)
+		}
+		delete(object, "ingress_source_count")
+	}
+
+	if raw, found := object["ingress_sources"]; found {
+		err = json.Unmarshal(raw, &a.IngressSources)
+		if err != nil {
+			return fmt.Errorf("error reading 'ingress_sources': %w", err)
+		}
+		delete(object, "ingress_sources")
+	}
+
+	if raw, found := object["ingress_sources_truncated"]; found {
+		err = json.Unmarshal(raw, &a.IngressSourcesTruncated)
+		if err != nil {
+			return fmt.Errorf("error reading 'ingress_sources_truncated': %w", err)
+		}
+		delete(object, "ingress_sources_truncated")
+	}
+
+	if raw, found := object["packets_egress"]; found {
+		err = json.Unmarshal(raw, &a.PacketsEgress)
+		if err != nil {
+			return fmt.Errorf("error reading 'packets_egress': %w", err)
+		}
+		delete(object, "packets_egress")
+	}
+
+	if raw, found := object["packets_ingress"]; found {
+		err = json.Unmarshal(raw, &a.PacketsIngress)
+		if err != nil {
+			return fmt.Errorf("error reading 'packets_ingress': %w", err)
+		}
+		delete(object, "packets_ingress")
+	}
+
+	if raw, found := object["repository_id"]; found {
+		err = json.Unmarshal(raw, &a.RepositoryId)
+		if err != nil {
+			return fmt.Errorf("error reading 'repository_id': %w", err)
+		}
+		delete(object, "repository_id")
+	}
+
+	if raw, found := object["start_ts"]; found {
+		err = json.Unmarshal(raw, &a.StartTs)
+		if err != nil {
+			return fmt.Errorf("error reading 'start_ts': %w", err)
+		}
+		delete(object, "start_ts")
+	}
+
+	if raw, found := object["top_destinations"]; found {
+		err = json.Unmarshal(raw, &a.TopDestinations)
+		if err != nil {
+			return fmt.Errorf("error reading 'top_destinations': %w", err)
+		}
+		delete(object, "top_destinations")
+	}
+
+	if raw, found := object["top_proto_ports"]; found {
+		err = json.Unmarshal(raw, &a.TopProtoPorts)
+		if err != nil {
+			return fmt.Errorf("error reading 'top_proto_ports': %w", err)
+		}
+		delete(object, "top_proto_ports")
+	}
+
+	if raw, found := object["vm_id"]; found {
+		err = json.Unmarshal(raw, &a.VmId)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm_id': %w", err)
+		}
+		delete(object, "vm_id")
+	}
+
+	if raw, found := object["vm_index"]; found {
+		err = json.Unmarshal(raw, &a.VmIndex)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm_index': %w", err)
+		}
+		delete(object, "vm_index")
+	}
+
+	if raw, found := object["vm_ip"]; found {
+		err = json.Unmarshal(raw, &a.VmIp)
+		if err != nil {
+			return fmt.Errorf("error reading 'vm_ip': %w", err)
+		}
+		delete(object, "vm_ip")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for VMFlowSummary to handle AdditionalProperties
+func (a VMFlowSummary) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BlockedDnsQueries != nil {
+		object["blocked_dns_queries"], err = json.Marshal(a.BlockedDnsQueries)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'blocked_dns_queries': %w", err)
+		}
+	}
+
+	if a.BytesEgress != nil {
+		object["bytes_egress"], err = json.Marshal(a.BytesEgress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bytes_egress': %w", err)
+		}
+	}
+
+	if a.BytesIngress != nil {
+		object["bytes_ingress"], err = json.Marshal(a.BytesIngress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bytes_ingress': %w", err)
+		}
+	}
+
+	if a.BytesIngressUnattributed != nil {
+		object["bytes_ingress_unattributed"], err = json.Marshal(a.BytesIngressUnattributed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bytes_ingress_unattributed': %w", err)
+		}
+	}
+
+	if a.Drops != nil {
+		object["drops"], err = json.Marshal(a.Drops)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'drops': %w", err)
+		}
+	}
+
+	object["duration_s"], err = json.Marshal(a.DurationS)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'duration_s': %w", err)
+	}
+
+	object["end_ts"], err = json.Marshal(a.EndTs)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'end_ts': %w", err)
+	}
+
+	if a.FlowCount != nil {
+		object["flow_count"], err = json.Marshal(a.FlowCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'flow_count': %w", err)
+		}
+	}
+
+	if a.Id != nil {
+		object["id"], err = json.Marshal(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if a.IngressSourceCount != nil {
+		object["ingress_source_count"], err = json.Marshal(a.IngressSourceCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ingress_source_count': %w", err)
+		}
+	}
+
+	if a.IngressSources != nil {
+		object["ingress_sources"], err = json.Marshal(a.IngressSources)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ingress_sources': %w", err)
+		}
+	}
+
+	if a.IngressSourcesTruncated != nil {
+		object["ingress_sources_truncated"], err = json.Marshal(a.IngressSourcesTruncated)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ingress_sources_truncated': %w", err)
+		}
+	}
+
+	if a.PacketsEgress != nil {
+		object["packets_egress"], err = json.Marshal(a.PacketsEgress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'packets_egress': %w", err)
+		}
+	}
+
+	if a.PacketsIngress != nil {
+		object["packets_ingress"], err = json.Marshal(a.PacketsIngress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'packets_ingress': %w", err)
+		}
+	}
+
+	object["repository_id"], err = json.Marshal(a.RepositoryId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	object["start_ts"], err = json.Marshal(a.StartTs)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'start_ts': %w", err)
+	}
+
+	if a.TopDestinations != nil {
+		object["top_destinations"], err = json.Marshal(a.TopDestinations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'top_destinations': %w", err)
+		}
+	}
+
+	if a.TopProtoPorts != nil {
+		object["top_proto_ports"], err = json.Marshal(a.TopProtoPorts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'top_proto_ports': %w", err)
+		}
+	}
+
+	object["vm_id"], err = json.Marshal(a.VmId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm_id': %w", err)
+	}
+
+	object["vm_index"], err = json.Marshal(a.VmIndex)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm_index': %w", err)
+	}
+
+	object["vm_ip"], err = json.Marshal(a.VmIp)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'vm_ip': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {

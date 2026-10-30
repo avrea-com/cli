@@ -90,7 +90,19 @@
     "download_invoice_pdf",
     "get_stripe_key",
     "create_setup_intent",
-    "attach_payment_method"
+    "attach_payment_method",
+    "list_org_rules",
+    "create_org_rule",
+    "reorder_org_rules",
+    "delete_org_rule",
+    "update_org_rule",
+    "resolved_repo_rules",
+    "list_repo_rules",
+    "create_repo_rule",
+    "reorder_repo_rules",
+    "delete_repo_rule",
+    "update_repo_rule",
+    "list_vm_flow_summaries"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

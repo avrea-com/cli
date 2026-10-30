@@ -1198,6 +1198,31 @@
         "title": "BillingSummaryResponse",
         "type": "object"
       },
+      "BlockedDnsQuery": {
+        "description": "A DNS query the per-VM unbound view returned NXDOMAIN for.\n\nCaptured by ``smithy.host_networking.dnstap_observer`` whenever a VM\nasks for an FQDN that has no ALLOW match in its policy. Drained at\nVM stop into the flow summary so the console can show \"this VM tried\nto reach example.com (blocked)\" \u2014 without this, deny-by-default\nfailures are invisible: the VM never gets an IP, so no packet is\nsent, so the IP-layer drop counters never fire and softflowd has\nnothing to capture.\n\nBounded per VM in the observer's ring buffer (most recent N) to\ncap the worst-case Turbopuffer row size from a chatty workload\nthat hammers blocked names.",
+        "properties": {
+          "count": {
+            "default": 1,
+            "title": "Count",
+            "type": "integer"
+          },
+          "qname": {
+            "title": "Qname",
+            "type": "string"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "qname",
+          "ts"
+        ],
+        "title": "BlockedDnsQuery",
+        "type": "object"
+      },
       "CIProvider": {
         "enum": [
           "github_actions",
@@ -1863,6 +1888,296 @@
         "title": "DispatchWorkflowResponse",
         "type": "object"
       },
+      "DropCounter": {
+        "description": "Per-rule drop counter snapshot read from the firewall at VM stop.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "packets": {
+            "title": "Packets",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "packets",
+          "bytes"
+        ],
+        "title": "DropCounter",
+        "type": "object"
+      },
+      "EgressFirewallPolicy": {
+        "description": "A resolved, ordered list of egress firewall rules for one runner VM.\n\nProduced by the control plane at dispatch (repo rules prepended to org\nrules, then the effective default rule) and shipped to smithy in the\nexecution payload.",
+        "properties": {
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/EgressRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "title": "EgressFirewallPolicy",
+        "type": "object"
+      },
+      "EgressRule": {
+        "description": "A single ordered egress rule.\n\nExactly one of `cidr` or `fqdn` may be set; both NULL means the catch-all\nrule (matches everything), which must also have `is_default=True`.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/EgressRuleAction"
+          },
+          "cidr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cidr"
+          },
+          "fqdn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fqdn"
+          },
+          "is_default": {
+            "default": false,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "port_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port End"
+          },
+          "port_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port Start"
+          },
+          "position": {
+            "default": 0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/EgressRuleProtocol",
+            "default": "any"
+          },
+          "rule_id": {
+            "default": "",
+            "title": "Rule Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "EgressRule",
+        "type": "object"
+      },
+      "EgressRuleAction": {
+        "enum": [
+          "allow",
+          "deny"
+        ],
+        "title": "EgressRuleAction",
+        "type": "string"
+      },
+      "EgressRuleCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/EgressRuleAction"
+          },
+          "cidr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cidr"
+          },
+          "fqdn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fqdn"
+          },
+          "is_default": {
+            "default": false,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "port_end": {
+            "anyOf": [
+              {
+                "maximum": 65535.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port End"
+          },
+          "port_start": {
+            "anyOf": [
+              {
+                "maximum": 65535.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port Start"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/EgressRuleProtocol",
+            "default": "any"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "EgressRuleCreate",
+        "type": "object"
+      },
+      "EgressRuleProtocol": {
+        "enum": [
+          "tcp",
+          "udp",
+          "icmp",
+          "any"
+        ],
+        "title": "EgressRuleProtocol",
+        "type": "string"
+      },
+      "EgressRuleUpdate": {
+        "additionalProperties": false,
+        "description": "Update payload for an existing rule. Partial-update semantics: only\nfields explicitly set on the request body are applied; omitted fields\nkeep the existing row's value.\n\n``is_default`` is intentionally not exposed on update \u2014 flipping the\ncatch-all between ALLOW and DENY is allowed (it's just an action\nchange), but converting a rule from default to non-default (or vice\nversa) would invalidate the matcher invariants in either direction\nand is rejected. Callers wanting that effect should delete + create.\nThe matcher fields here are validated in ``_update_rule`` against the\nmerged (existing + delta) view, once the existing rule's ``is_default``\nis known.\n\nAll fields are Optional \u2014 clients PATCH only the keys they want to\nchange. The route handler distinguishes \"field not present\" from\n\"field explicitly set to null\" via ``model_fields_set`` so a JSON\n``null`` can clear an optional matcher (cidr/fqdn/port_start/port_end)\nwhile an omitted key inherits the existing value.",
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EgressRuleAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cidr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cidr"
+          },
+          "fqdn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fqdn"
+          },
+          "port_end": {
+            "anyOf": [
+              {
+                "maximum": 65535.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port End"
+          },
+          "port_start": {
+            "anyOf": [
+              {
+                "maximum": 65535.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port Start"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EgressRuleProtocol"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "EgressRuleUpdate",
+        "type": "object"
+      },
       "EmailDomainClaimRequest": {
         "description": "Request model for creating a DNS-verifiable domain claim.",
         "properties": {
@@ -1992,6 +2307,62 @@
           "enabled"
         ],
         "title": "FeatureFlagResponse",
+        "type": "object"
+      },
+      "FlowSummarySearchResponse": {
+        "description": "Paginated search response for VM flow summaries.",
+        "properties": {
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "namespaces_searched": {
+            "default": 1,
+            "title": "Namespaces Searched",
+            "type": "integer"
+          },
+          "namespaces_with_results": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Namespaces With Results"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/VMFlowSummary"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "total_estimated": {
+            "title": "Total Estimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "results",
+          "total_estimated",
+          "limit",
+          "offset"
+        ],
+        "title": "FlowSummarySearchResponse",
         "type": "object"
       },
       "GenerateSbomRequest": {
@@ -2193,6 +2564,46 @@
         ],
         "title": "HealthStatus",
         "type": "string"
+      },
+      "IngressSource": {
+        "description": "Received traffic grouped by remote IP, ranked within the per-VM cap.\n\nThe optional hostname is the latest DNS name observed for that IP. Shared\nCDN addresses can serve multiple names, so it is an annotation, not an\nexact attribution of every received byte to a hostname.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "flows": {
+            "title": "Flows",
+            "type": "integer"
+          },
+          "packets": {
+            "title": "Packets",
+            "type": "integer"
+          },
+          "src_fqdn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Src Fqdn"
+          },
+          "src_ip": {
+            "title": "Src Ip",
+            "type": "string"
+          }
+        },
+        "required": [
+          "src_ip",
+          "bytes",
+          "packets",
+          "flows"
+        ],
+        "title": "IngressSource",
+        "type": "object"
       },
       "IntegratedSourcePlatform": {
         "enum": [
@@ -5954,6 +6365,24 @@
         "title": "PullMergeability",
         "type": "object"
       },
+      "ReorderRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Rule Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rule_ids"
+        ],
+        "title": "ReorderRequest",
+        "type": "object"
+      },
       "RepoCachePurgeResponse": {
         "description": "Envelope for the purge state, null when no purge is in flight.",
         "properties": {
@@ -7259,6 +7688,65 @@
         "title": "StripeKeyResponse",
         "type": "object"
       },
+      "TopDestination": {
+        "description": "One row of the per-VM \"top destinations\" breakdown.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "dst_fqdn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dst Fqdn"
+          },
+          "dst_ip": {
+            "title": "Dst Ip",
+            "type": "string"
+          },
+          "flows": {
+            "title": "Flows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dst_ip",
+          "bytes",
+          "flows"
+        ],
+        "title": "TopDestination",
+        "type": "object"
+      },
+      "TopProtoPort": {
+        "description": "One row of the per-VM \"top (protocol, port)\" breakdown.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "protocol": {
+            "title": "Protocol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "protocol",
+          "port",
+          "bytes"
+        ],
+        "title": "TopProtoPort",
+        "type": "object"
+      },
       "UsageSummaryResponse": {
         "properties": {
           "breakdown_by_spec": {
@@ -7405,6 +7893,134 @@
           "created_at"
         ],
         "title": "UserInstallationItem",
+        "type": "object"
+      },
+      "VMFlowSummary": {
+        "description": "Aggregate netflow record produced once per VM run.\n\nWritten to Turbopuffer namespace ``{prefix}-{repository_id}`` at VM stop.\n``repository_id`` is encoded in the namespace path so it is not stored as a\nfield on the record itself.",
+        "properties": {
+          "blocked_dns_queries": {
+            "items": {
+              "$ref": "#/components/schemas/BlockedDnsQuery"
+            },
+            "title": "Blocked Dns Queries",
+            "type": "array"
+          },
+          "bytes_egress": {
+            "default": 0,
+            "title": "Bytes Egress",
+            "type": "integer"
+          },
+          "bytes_ingress": {
+            "default": 0,
+            "title": "Bytes Ingress",
+            "type": "integer"
+          },
+          "bytes_ingress_unattributed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Bytes Ingress Unattributed",
+            "type": "integer"
+          },
+          "drops": {
+            "items": {
+              "$ref": "#/components/schemas/DropCounter"
+            },
+            "title": "Drops",
+            "type": "array"
+          },
+          "duration_s": {
+            "title": "Duration S",
+            "type": "integer"
+          },
+          "end_ts": {
+            "format": "date-time",
+            "title": "End Ts",
+            "type": "string"
+          },
+          "flow_count": {
+            "default": 0,
+            "title": "Flow Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "ingress_source_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Ingress Source Count",
+            "type": "integer"
+          },
+          "ingress_sources": {
+            "items": {
+              "$ref": "#/components/schemas/IngressSource"
+            },
+            "maxItems": 256,
+            "title": "Ingress Sources",
+            "type": "array"
+          },
+          "ingress_sources_truncated": {
+            "default": false,
+            "title": "Ingress Sources Truncated",
+            "type": "boolean"
+          },
+          "packets_egress": {
+            "default": 0,
+            "title": "Packets Egress",
+            "type": "integer"
+          },
+          "packets_ingress": {
+            "default": 0,
+            "title": "Packets Ingress",
+            "type": "integer"
+          },
+          "repository_id": {
+            "title": "Repository Id",
+            "type": "string"
+          },
+          "start_ts": {
+            "format": "date-time",
+            "title": "Start Ts",
+            "type": "string"
+          },
+          "top_destinations": {
+            "items": {
+              "$ref": "#/components/schemas/TopDestination"
+            },
+            "title": "Top Destinations",
+            "type": "array"
+          },
+          "top_proto_ports": {
+            "items": {
+              "$ref": "#/components/schemas/TopProtoPort"
+            },
+            "title": "Top Proto Ports",
+            "type": "array"
+          },
+          "vm_id": {
+            "title": "Vm Id",
+            "type": "string"
+          },
+          "vm_index": {
+            "title": "Vm Index",
+            "type": "integer"
+          },
+          "vm_ip": {
+            "title": "Vm Ip",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository_id",
+          "vm_id",
+          "vm_index",
+          "vm_ip",
+          "start_ts",
+          "end_ts",
+          "duration_s"
+        ],
+        "title": "VMFlowSummary",
         "type": "object"
       },
       "ValidationError": {
@@ -10951,6 +11567,373 @@
         "summary": "Get Org Feature Flag",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/orgs/{org_id}/firewall/rules": {
+      "get": {
+        "description": "List the organization's egress firewall rules.\n\nEvery member sees every rule, unless the organization's group grants\nnarrow that read. A narrowed list holds the default rule and the rules a\ngrant names: it says what applies when nothing matches, and may leave out\nrules that match first.",
+        "operationId": "list_org_rules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EgressRule"
+                  },
+                  "title": "Response List Org Rules",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Org Rules",
+        "tags": [
+          "firewall"
+        ]
+      },
+      "post": {
+        "operationId": "create_org_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EgressRuleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EgressRule"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Org Rule",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/firewall/rules/reorder": {
+      "post": {
+        "operationId": "reorder_org_rules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EgressRule"
+                  },
+                  "title": "Response Reorder Org Rules",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reorder Org Rules",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/firewall/rules/{rule_id}": {
+      "delete": {
+        "operationId": "delete_org_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "title": "Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Firewall rule not found in the organization scope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Org Rule",
+        "tags": [
+          "firewall"
+        ]
+      },
+      "patch": {
+        "operationId": "update_org_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "title": "Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EgressRuleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EgressRule"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Firewall rule not found in the organization scope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Org Rule",
+        "tags": [
+          "firewall"
         ]
       }
     },
@@ -14719,6 +15702,676 @@
         "summary": "Dispatch Workflow Endpoint",
         "tags": [
           "organization-installations"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/firewall/resolved": {
+      "get": {
+        "operationId": "resolved_repo_rules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EgressFirewallPolicy"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resolved Repo Rules",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/firewall/rules": {
+      "get": {
+        "operationId": "list_repo_rules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EgressRule"
+                  },
+                  "title": "Response List Repo Rules",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Repo Rules",
+        "tags": [
+          "firewall"
+        ]
+      },
+      "post": {
+        "operationId": "create_repo_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EgressRuleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EgressRule"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Repo Rule",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/firewall/rules/reorder": {
+      "post": {
+        "operationId": "reorder_repo_rules",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EgressRule"
+                  },
+                  "title": "Response Reorder Repo Rules",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reorder Repo Rules",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/firewall/rules/{rule_id}": {
+      "delete": {
+        "operationId": "delete_repo_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "title": "Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or firewall rule not found in the repository scope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Repo Rule",
+        "tags": [
+          "firewall"
+        ]
+      },
+      "patch": {
+        "operationId": "update_repo_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "title": "Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EgressRuleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EgressRule"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or firewall rule not found in the repository scope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Repo Rule",
+        "tags": [
+          "firewall"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/firewall/vm-flow-summaries": {
+      "get": {
+        "description": "List per-VM netflow summaries for a repository.\n\nReads the ``avrea-vm-flow-summary-{repo_id}`` Turbopuffer namespace\npopulated by smithy at VM stop time. Each row is the totals + top-N\nbreakdown + per-rule drop counters for one VM run.\n\nFilters:\n  * ``vm_id`` \u2014 single-VM lookup when correlating from job logs.\n  * ``job_id`` \u2014 resolves to every ``vm_id`` that ran the job\n    (one per execution attempt) via the executions table; the\n    flow-summary search then filters by that set. Useful for the\n    per-job network-activity tab in the console.\n  * ``only_with_drops=True`` \u2014 triage \"what did the firewall block?\"\n    after editing a rule.\n  * ``start_after`` / ``end_before`` \u2014 time-window filter.",
+        "operationId": "list_vm_flow_summaries",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vm_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vm Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "only_with_drops",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Only With Drops",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowSummarySearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found in the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Vm Flow Summaries",
+        "tags": [
+          "firewall"
         ]
       }
     },
