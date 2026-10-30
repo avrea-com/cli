@@ -377,9 +377,45 @@ now accepts equivalent carriage returns while retaining real extra blank lines.
 The original raw capture was re-evaluated with that correction and retained with
 its prior difference/provenance. All 48 comparator regression tests pass.
 
+## SBOM generation batch
+
+Added sbom generate with optional REF/--ref, --wait, --wait-timeout and JSON/jq,
+shared with avr-admin. Download checkpoints: public 0ec10c7, admin 33bfa10ae0.
+
+Decisions:
+- Preserve a single generation POST, join-existing behavior, ref normalization
+  and JSON field discovery before authentication or mutation.
+- Without a pinned commit, report the task outcome. With one, keep checking the
+  commit snapshot until a new recorded_at appears, even after the task fails,
+  completes or is superseded. Read a full-SHA baseline before the POST; read an
+  API-expanded SHA baseline afterwards, matching Python.
+- Retry only reads on network failures, 408, 429 and 5xx. Honor Retry-After up to
+  30 seconds and bound reads/sleeps by the wait budget, including Python's final
+  deadline poll. Cancellation stops the wait without cancelling the server task.
+- Keep human progress, success/failure hints, nullable JSON fields and exit
+  statuses. A completed wait followed by a jq error does not announce an
+  interrupted wait. Escape external task IDs and error codes in terminal text.
+- Preserve Python's tolerance of malformed optional commit expansion; a paired
+  fixture exposed the initial typed-decoding mismatch.
+- Preserve sanitized transport errors while classifying interrupted response
+  bodies for retry. A failing test demonstrated a truncated poll incorrectly
+  stopping the wait before this correction.
+- No new dependencies or live remote mutations.
+
+Validation: 71 paired cases per binary, including six terminal cases, cover
+generation requests, refs, scopes, JSON/jq, validation ordering, joins, baseline
+ordering, older/superseding tasks, delayed delivery, transient/permanent failures
+and timeouts. Eight focused Go tests cover single POSTs, cancellation, bounded
+backoff/read budgets, delivery after failure, jq failures and interrupted reads.
+Failure JSON is compared structurally even on nonzero exits; five regression
+tests ensure null/type changes and wrong exit codes are detected.
+Go race tests, lint, schema generation, vulnerability scan, admin composition
+checks, fixture typing and workflow validation pass. Both report hashes match
+the final tested binaries.
+
 ## Remaining work
 
-SBOM generate, configuration/tokens/settings, organization and repository
+Configuration/tokens/settings, organization and repository
 management, billing/audit/firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;

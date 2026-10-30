@@ -28,7 +28,7 @@ const noSBOMHint = "No SBOM is recorded for this repository or commit yet. Run "
 func NewSBOM(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "sbom", Short: "View, generate, and download repository SBOMs."}
-	c.AddCommand(newSBOMList(d), newSBOMView(d), newSBOMDownload(d))
+	c.AddCommand(newSBOMList(d), newSBOMView(d), newSBOMDownload(d), newSBOMGenerate(d))
 	return c
 }
 func shellQuotePython(value string) string {

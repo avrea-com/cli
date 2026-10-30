@@ -196,6 +196,16 @@
         "title": "AggregateWorkflow",
         "type": "object"
       },
+      "AiTaskStatus": {
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED"
+        ],
+        "title": "AiTaskStatus",
+        "type": "string"
+      },
       "AnalysisArtifact": {
         "properties": {
           "filename": {
@@ -218,6 +228,92 @@
           "raw_bytes"
         ],
         "title": "AnalysisArtifact",
+        "type": "object"
+      },
+      "AnalysisStateResponse": {
+        "description": "Where the repository's latest analysis stands, with no report attached.\n\nAll fields are null when no analysis has ever been created for the repo --\nthe \"never examined\" case, which is deliberately not an error. `status`\nmirrors `ai_tasks.status` (PENDING / RUNNING / COMPLETED / FAILED).\n\n`error_message` is intentionally NOT exposed: it is written for operators\nand would reach anyone with read access to the repository. A failed\nanalysis is reported as failed, not explained.\n\n`error_code` is the bounded exception to that: a value from\n`ANALYSIS_FAILURE_CODES`, never free text, so a failure can be phrased for\nthe customer without leaking an operator diagnostic. Null unless the\nlatest analysis FAILED with a code this build recognises.",
+        "properties": {
+          "ai_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Task Id"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "sbom_refresh": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SbomRefreshState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Automatic default-branch SBOM target, independent of the latest task. Pending includes a refresh waiting for another scan to finish. Null when automatic refresh is disabled, not yet discovered, or scope is full."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiTaskStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "AnalysisStateResponse",
         "type": "object"
       },
       "AnalysisTaskResponse": {
@@ -774,6 +870,66 @@
           "enabled"
         ],
         "title": "FeatureFlagResponse",
+        "type": "object"
+      },
+      "GenerateSbomRequest": {
+        "properties": {
+          "ref": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Git ref (branch, tag, or full or abbreviated commit SHA) to analyse. Default: the repository's default-branch tip.",
+            "title": "Ref"
+          },
+          "scope": {
+            "default": "full",
+            "description": "What the run produces. 'sbom' runs the clone and dependency inventory only. 'full' additionally produces the repo-intel report the Insights tab renders, which costs an LLM round-trip taking minutes. Default 'full' for backward compatibility with clients that predate the split.",
+            "enum": [
+              "full",
+              "sbom"
+            ],
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "title": "GenerateSbomRequest",
+        "type": "object"
+      },
+      "GenerateSbomResponse": {
+        "properties": {
+          "ai_task_id": {
+            "title": "Ai Task Id",
+            "type": "string"
+          },
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Full SHA of the commit the run analyses, when the ref is a full or abbreviated commit SHA. Null for a branch, a tag, or the default branch.",
+            "title": "Commit Sha"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ai_task_id",
+          "status"
+        ],
+        "title": "GenerateSbomResponse",
         "type": "object"
       },
       "GovernanceHoldReason": {
@@ -3946,6 +4102,90 @@
           "pagination"
         ],
         "title": "SbomListResponse",
+        "type": "object"
+      },
+      "SbomRefreshState": {
+        "properties": {
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Sha"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "rate_limited",
+                  "repository_unavailable",
+                  "unavailable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "result_recorded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Publication time of the completed target result, before inventory promotion.",
+            "title": "Result Recorded At"
+          },
+          "retry_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry At"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "current",
+              "failed",
+              "deferred"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "commit_sha",
+          "branch",
+          "status"
+        ],
+        "title": "SbomRefreshState",
         "type": "object"
       },
       "StepAggregation": {
@@ -7902,6 +8142,98 @@
         ]
       }
     },
+    "/orgs/{org_id}/repos/{repo_id}/ai-task/state": {
+      "get": {
+        "description": "State of the latest tooling analysis, whatever its status.\n\nCompanion to `get_ai_task`, which by design serves only COMPLETED reports\nand 404s otherwise. That is right for the report itself, but it collapses\nthree different situations into one 404 -- never analysed, running right\nnow, and failed -- so a client cannot tell \"we looked and found nothing\"\nfrom \"we never looked\". This route answers that question and nothing else:\nno report body, so it stays cheap enough to poll while an analysis runs.\n\nNever analysed is a 200 with a null status, not a 404: it is a real answer\nabout the repository, and making the client read it out of an error is how\nit gets confused with a failure again.",
+        "operationId": "get_ai_task_state",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Output whose latest task state is requested. Full runs satisfy both scopes; SBOM-only runs satisfy only the SBOM scope.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "full",
+              "description": "Output whose latest task state is requested. Full runs satisfy both scopes; SBOM-only runs satisfy only the SBOM scope.",
+              "enum": [
+                "full",
+                "sbom"
+              ],
+              "title": "Scope",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisStateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Ai Task State",
+        "tags": [
+          "ai-insights"
+        ]
+      }
+    },
     "/orgs/{org_id}/repos/{repo_id}/analysis/sbom": {
       "get": {
         "description": "The repository's SBOM history, keyset-paginated on (recorded_at, id).\n\nLiteral `sbom` rather than the `{type}` template the sibling routes use:\n`SbomListItem` carries SBOM-only counts, and serving those under a generic\ntype parameter would answer a `repo_intel` request with fields that cannot\nmean anything for it. Generalise behind a discriminated response if a second\ntype ever produces rows.\n\nOnly completed results are listed, so every row here is downloadable. A run\nthat failed, or one still in flight, is reported by the analysis-state\nendpoint instead, including the interval after analysis completion while a\nretained terminal result is still retrying SBOM delivery.",
@@ -8013,6 +8345,98 @@
           }
         ],
         "summary": "List the repository's completed SBOMs, newest first",
+        "tags": [
+          "analysis"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/analysis/sbom/generate": {
+      "post": {
+        "description": "On-demand SBOM generation for a commit.\n\nThe caller checks the read endpoints first and only hits this on a cache\nmiss. Cost is bounded three ways: `require_repo_read` limits the reachable\nrepos to those the caller can read on GitHub, a scan already in flight for\nthe repo coalesces onto that task (one-active-per-repo) rather than queueing\na second, and `_SBOM_COOLDOWN` rejects a fresh scan of a repo that was\nscanned moments ago. The route is per-user rate-limited on top. The result\nis downloadable via the artifact endpoints once the task completes.",
+        "operationId": "generate_sbom",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSbomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSbomResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible"
+          },
+          "409": {
+            "description": "An analysis for a different ref is running, or the GitHub App cannot reach the repository to look up an abbreviated commit SHA"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "An abbreviated commit SHA could not be looked up; retry or pass the full SHA"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Trigger an SBOM analysis for a ref (default-branch tip if none given)",
         "tags": [
           "analysis"
         ]
