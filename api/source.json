@@ -105,7 +105,11 @@
     "list_vm_flow_summaries",
     "list_vms",
     "get_vm",
-    "get_vm_usage"
+    "get_vm_usage",
+    "update_vm",
+    "pause_vm",
+    "resume_vm",
+    "delete_vm"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

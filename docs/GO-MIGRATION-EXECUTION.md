@@ -909,9 +909,41 @@ Windows runs remain CI gates. Go race tests, lint/build, generation, admin
 composition, fixture typing and workflow checks pass. Both report hashes match
 the tested executables. No VM mutations or connections were made.
 
+## VM lifecycle and wait batch
+
+Added start, stop, pause, resume and delete, including --wait and timeout flags.
+Inspection checkpoints: public 9578e79, admin 6aeb1d5433.
+
+Preserve mutation requests, full-envelope JSON before waiting, final-record JSON
+after waiting, one-time password output/colors, default-no delete confirmation,
+memory/discard-memory flags and human progress. Polling retries transport
+failures, 408/429 and 5xx, caps Retry-After at 30 seconds and surfaces permanent
+4xx immediately. Delete treats 404 as complete. Pause/resume detect operation-
+specific failed transitions; start waits for required connection endpoints.
+Poll sleeps are bounded by the remaining deadline. Mutations are never retried.
+Human start output prints a fresh password before waiting so interruption does
+not lose it; JSON waits merge it into the final record.
+
+Contract gap: the Python oracle's start/stop PATCH desired_state field is absent
+from the pinned current API schema. A small explicit legacy request type retains
+that wire contract. No automatic substitution with pause/resume/delete is made,
+because those operations have different disk/password behavior. These two
+commands need live integration verification; fixture parity does not establish
+current-server support. No live VM operations were used in validation.
+
+Validation: 172 paired cases per binary, including eight terminal cases, pass.
+Coverage includes normal and empty responses, all mutation/error paths, ready/
+failed/timeout waits, endpoint readiness, permanent poll errors, 408/429/503
+retries, deletion by 404, confirmations, password quoting and styled output.
+Nonzero-exit JSON is structurally compared. Three Go tests cover bounded retry
+delays/permanent errors, no mutation retries across all five operations, and
+password retention on Ctrl-C. Go race tests, lint/build, schema generation,
+admin composition, fixture typing and workflow checks pass. Both report hashes
+match the tested executables.
+
 ## Remaining work
 
-VM lifecycle/create/update, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
+VM create/update, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
