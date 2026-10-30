@@ -1,5 +1,10 @@
 # Go migration execution record
 
+Status (2026-10-30): the public-command implementation and local parity goal
+is complete. The full public tree is native Go and reused by the admin preview.
+See the final validation and next-phase sections at the end for evidence and
+the boundaries of this completion. Earlier sections are chronological checkpoints.
+
 The target is the full public Python avr command surface, reused by avr-admin.
 Repo-intel remains excluded. No Python fallback counts as a native implementation.
 Commits are unsigned as requested. No release, push, or deployment is implied.
@@ -1407,15 +1412,120 @@ All 65 public auth, 74 admin auth, and 55 config cases for each binary pass
 against matching binary hashes. Public race tests, lint/build and all 1,626
 Python tests pass; admin checks, adapter lint/types and workflow validation pass.
 Both workflows retain all differential report variants as artifacts; admin CI
-uses its own configuration oracle for auth and config. The full fresh sweep
-still remains below.
+uses its own configuration oracle for auth and config. The subsequent full
+fresh sweep is recorded below.
 
-## Remaining work
+## Final local validation and requirement reconciliation
 
-Run the complete current public and shared-admin regression suites against
-freshly built binaries, then reconcile command/flag/argument requirements with
-the resulting reports and produce the final decisions/status report. Input
-coverage and a passing registration audit alone are not completion evidence.
+Validated on 2026-10-30 against public source f3eaacb3a18b88e648041dbad52effbf8fc6ee03
+and admin source 890df1fb7087d858a4e6932bda36a4dbeb638e01. Later documentation-only
+commits do not change the tested runtime sources.
 
-Packaging, native OS CI execution and later admin-only families remain separate
-migration phases. repo-intel is untouched.
+The complete pinned public surface is implemented natively: 142 command/group
+nodes, including 115 executable leaves, 514 declared option records plus the
+standard help option on each node, 65 positional arguments and eight aliases.
+The live registry audit has no missing commands, aliases or parameter issues.
+The fixture catalog contains 4,689 non-help/completion inputs, with no missing
+leaf, option spelling or positional slot. Version flags are eager discovery;
+watch fixtures intentionally exercise interruption/failure and nonzero exit
+status, so those inputs do not all classify as zero-exit operational cases.
+
+That input audit is backed by a fresh complete executable sweep, not used as a
+substitute for it:
+
+| Validation | Public avr | Shared avr-admin |
+| --- | ---: | ---: |
+| Differential suite modules | 51 passed | 51 passed |
+| Paired scenarios | 6,928 passed | 6,937 passed |
+| Additional native card pre-Stripe cases | 26 passed | 26 passed |
+| Native subprocess/lifecycle tests | 32 passed | 32 passed |
+| Actual Fish shell integration | 1 skipped | 1 skipped |
+
+This is 13,917 paired executions in total, including the additional native card
+checks. Some scenarios deliberately overlap coverage. The card success suite
+uses the same command roots with an injected loopback Stripe transport; it
+does not contact Stripe or establish production payment integration.
+
+Each binary passed 848 parser cases, 98 default cases, 45 global cases, 392 help
+cases and 1,847 completion cases within those totals. The suite also covers
+terminal colors/underlines/links/layout, JSON/jq and types, API requests, file
+contents/modes, prompts, logs/follow, polling, failures and interruption. Native
+process checks exercise Git, SSH, tunnels, hidden-input restoration, bootstrap,
+documentation and Bash/Zsh completion with isolated fixtures. Fish protocol
+comparisons pass; the actual Fish shell is not installed locally.
+
+The final report manifest is build/go/final-parity/manifest.json. It records all
+104 successful suite/process executions, source commits, arguments, logs and
+binary hashes. Per-suite JSON and raw captures are retained below that directory.
+Every report was checked against its complete expected scenario list and the
+fixed binary hash, including the native card subreports. No meaningful
+unaccepted differences remain in this corpus.
+
+Tested SHA-256 values:
+
+- Public: 35e6c34a52b5bb2ef342808993d7aef7fd8999e8edc7d121902ab17ba595f8cf
+- Admin: fee54c3f490a5eaae3258e8961f95885bb5d756f27f8892206cc1618a1d6c5e7
+
+Public Go race tests, lint/build, Python lint and all 1,626 Python unit tests
+pass. Admin race/lint/build, adapter lint/types and both workflow validators
+pass. API/metadata generation and command-registry checks passed; the unchanged
+dependency scan reports no vulnerabilities in called code or imported packages,
+with two advisories in unused module code. Reports remain ignored local
+artifacts; both CI workflows now retain their differential reports.
+
+## Consolidated implementation decisions
+
+- Implement the pinned public command tree in Go and compose fresh shared
+  commands into admin. No public command uses a Python runtime fallback.
+  Admin-only commands and overrides remain in the existing Python admin CLI.
+- Use Cobra/pflag, direct gojq, standard net/http, generated oapi-codegen wire
+  models, zstd, x/term, runewidth, shellquote and x/text. Existing public behavior
+  did not require Lip Gloss, Huh, Bubble Tea, go-cmp or testscript. go-gh is not
+  a dependency; no upstream CLI application source was copied.
+- Preserve credential storage and normal public configuration precedence.
+  Preserve admin environment host selection through its loader and validate
+  auth/config against the pinned Python AdminCliConfig.
+- Keep Python's visible content, tables, symbols, colors, underlines, emphasis
+  and links close. Permit harmless padding, redraw sequences, executable names
+  and ordinary Click/Cobra usage wording differences. Do not pursue exact
+  resize/event reproduction.
+- Preserve option/argument behavior, omitted versus explicit values, request
+  bodies, confirmations and exit status. Embed jq through gojq instead of
+  requiring the user's system jq. The Python oracle uses pinned jq.
+- Retain external Git/OpenSSH/pagers where Python uses those tools. Configured
+  pager strings use direct argument parsing. Installed Go help, completion and
+  documentation do not require Python; bundled README lookup is explicit.
+- Keep intentional safeguards documented in the command-family sections:
+  bounded inputs/waits, credential and terminal-control sanitization, origin
+  restrictions, private temporary files, atomic downloads and subprocess cleanup.
+  Writes are not automatically retried after ambiguous outcomes. These changes
+  have focused tests and explicit differential assertions where behavior differs.
+- Preserve VM bootstrap --install-avr's existing remote pipx/pip installation
+  until native release artifacts exist. Keep legacy VM start/stop requests for
+  Python compatibility even though the pinned API schema lacks those routes.
+- Use isolated API/file/process fixtures for mutation and lifecycle validation.
+  No real billing changes, VM provisioning, firewall writes or remote SSH
+  sessions were performed in the final sweep. repo-intel remains untouched.
+- Keep work in the two migration worktrees with unsigned checkpoint commits.
+  No push, publication, deployment or installation cutover was performed.
+
+The chronological sections above retain the command-specific decisions,
+intentional differences, regressions fixed and validation details.
+
+## Next migration phases
+
+The requested public-command implementation and local Python parity work is
+complete. This is not a production release or full admin migration.
+
+1. Package native preview artifacts and validate install/uninstall/upgrade,
+   offline startup and bundled notices/docs. Run the existing CI gates natively
+   on Linux, macOS and Windows, including actual Fish integration. Measure
+   packaged startup before making new performance claims.
+2. Port admin-only families and public-command overrides using the same
+   differential method and the actual Python admin entry point. Preserve the
+   existing Python path for repo-intel and unported admin work until cutover.
+3. Complete release/legacy-dispatch integration and staged cutover after those
+   gates. Real runner SSH and the legacy VM lifecycle endpoints need environment
+   validation before release; fixture parity does not establish live support.
+
+CodeRabbit remains signed out, so no external CodeRabbit review is claimed.
