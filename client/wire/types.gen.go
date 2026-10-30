@@ -1035,6 +1035,24 @@ func (e WorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for DownloadInvoicePdfParamsDocumentKind.
+const (
+	Invoice DownloadInvoicePdfParamsDocumentKind = "invoice"
+	Receipt DownloadInvoicePdfParamsDocumentKind = "receipt"
+)
+
+// Valid indicates whether the value is a known member of the DownloadInvoicePdfParamsDocumentKind enum.
+func (e DownloadInvoicePdfParamsDocumentKind) Valid() bool {
+	switch e {
+	case Invoice:
+		return true
+	case Receipt:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListGitClustersParamsOrder.
 const (
 	ClusterId        ListGitClustersParamsOrder = "cluster_id"
@@ -3597,6 +3615,15 @@ type ListInvoicesParams struct {
 type GetInvoiceParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
+
+// DownloadInvoicePdfParams defines parameters for DownloadInvoicePdf.
+type DownloadInvoicePdfParams struct {
+	DocumentKind *DownloadInvoicePdfParamsDocumentKind `form:"document_kind,omitempty" json:"document_kind,omitempty"`
+	AvreaSession *string                               `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// DownloadInvoicePdfParamsDocumentKind defines parameters for DownloadInvoicePdf.
+type DownloadInvoicePdfParamsDocumentKind string
 
 // ListPaymentMethodsParams defines parameters for ListPaymentMethods.
 type ListPaymentMethodsParams struct {

@@ -1,4 +1,5 @@
-// Package client owns authenticated API transport. It never follows redirects.
+// Package client owns authenticated API transport. Only invoice downloads
+// follow redirects, dropping credentials when leaving the original origin.
 package client
 
 import (
