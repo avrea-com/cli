@@ -11,6 +11,9 @@ import (
 
 func prepareGlobalOptions(cmd *cobra.Command, d Dependencies) error {
 	flags := cmd.Root().PersistentFlags()
+	if flags.Lookup("links") == nil {
+		return nil // Standalone command constructors do not own root options.
+	}
 	if !flags.Changed("links") && !flags.Changed("no-links") {
 		value := d.Getenv("AVR_LINKS")
 		switch strings.ToLower(strings.TrimSpace(value)) {
