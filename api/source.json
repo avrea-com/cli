@@ -102,7 +102,10 @@
     "reorder_repo_rules",
     "delete_repo_rule",
     "update_repo_rule",
-    "list_vm_flow_summaries"
+    "list_vm_flow_summaries",
+    "list_vms",
+    "get_vm",
+    "get_vm_usage"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",

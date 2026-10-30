@@ -21,6 +21,9 @@ make go-build
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
 ./build/go/avr health
+./build/go/avr vm list --org ORG
+./build/go/avr vm show VM_ID --org ORG
+./build/go/avr vm usage --org ORG --start 2026-10-01 --end 2026-10-30
 ./build/go/avr firewall list --org ORG
 ./build/go/avr firewall show --org ORG --repo REPO_ID
 ./build/go/avr firewall flow-summaries --org ORG --repo REPO_ID --with-drops
