@@ -1263,6 +1263,26 @@ admin composition, Python tooling and workflow validation pass. The existing
 reports identify the exact tested binaries. Native Linux/Windows execution and
 the real Fish shell remain CI validation, not locally observed results.
 
+## Explicit option-use validation
+
+Completion checkpoints: public d629eb5, admin c46e3ab1f2.
+
+Added 91 paired cases per executable for explicit organization ID/slug
+precedence and unknown organizations across 24 operations; job relative-time
+filters and invalid values; job JSON jq projection; all log levels; pager
+bypass with and without color; run-list browser output; and the hidden login
+email alias. All writes and browser/login operations use isolated fixtures.
+
+The first run reproduced two presentation differences: run list --web omitted
+Python's terminal Opening: prefix, and invalid --since errors used different
+capitalization. Both are fixed; piped browser output remains the plain URL.
+
+All 91 cases pass for both public and admin binaries, with report hashes
+matching the tested executables. Public race tests/lint/build, admin composition
+tests/lint/build, fixture lint/types and workflow validation pass. The suite
+is now part of both CI workflows and the public go-parity target. This closes
+the initial option-use gaps, not the remaining aliases and argument audit.
+
 ## Remaining work
 
 Remaining root/global-flag behavior and a final per-command
