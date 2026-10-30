@@ -941,9 +941,28 @@ password retention on Ctrl-C. Go race tests, lint/build, schema generation,
 admin composition, fixture typing and workflow checks pass. Both report hashes
 match the tested executables.
 
+## VM update batch
+
+Added name/TTL changes, repeated literal or file-based SSH keys, password
+rotation and inline/file egress rules. Lifecycle checkpoints: public 137307b,
+admin ee16cd568f.
+
+Preserve omitted versus explicitly empty values, key order and duplicates,
+raw egress rule properties and large integers, full-envelope JSON, human
+VM details and one-time password colors. Private keys are rejected before
+authentication or requests. File reads are bounded to 16 MiB and invalid UTF-8
+gets a concise error instead of Python's traceback. Rule shape remains server
+validated. The comparison caught and fixed a successful null-response mismatch.
+
+Validation: 76 paired cases per binary, including three terminal cases, pass.
+These cover input files, private-key rejection, TTL bounds, API errors,
+organization selection, empty responses and all update flags. Race tests,
+Go lint/build, admin composition, fixture typing and workflow validation pass;
+both report hashes match the tested binaries. No live VM updates were made.
+
 ## Remaining work
 
-VM create/update, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
+VM create, SSH/tunnels/bootstrap, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
