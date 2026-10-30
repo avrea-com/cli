@@ -140,6 +140,18 @@ def scenarios():
     ]:
         case(name, args, presentation=True)
         case(name + " JSON", args + ["--json", "*"], json=True)
+        case(name + " explicit org", args + ["--org", ORG], env=ENV | {"AVR_ORG": "org-other"}, presentation=True)
+        field, expression = {
+            "add": ("webhook_setup", ".webhook_setup.secret"),
+            "rotate": ("webhook_setup", ".webhook_setup.secret"),
+            "selection": ("installation_id", ".installation_id"),
+            "runner list": ("data", ".data[].machine_type"),
+            "runner set": ("machine_type", ".machine_type"),
+            "runner delete": ("machine_type", ".machine_type"),
+            "disconnect": ("installation_id", ".installation_id"),
+        }[name]
+        for flag in ("--jq", "-q"):
+            case(name + " filter " + flag, args + ["--json", field, flag, expression])
         case(name + " discovery", args + ["--json", "?"], env={}, responses={}, stdin="")
         case(name + " unknown field", args + ["--json", "typo"], exit=1, responses={})
         case(
@@ -237,6 +249,13 @@ def scenarios():
         exit=1,
     )
     case("runner create", CREATE, native=False, presentation=True)
+    case(
+        "runner create explicit org",
+        CREATE + ["--org", ORG],
+        env=ENV | {"AVR_ORG": "org-other"},
+        native=False,
+        presentation=True,
+    )
     case("runner create JSON", CREATE + ["--json", "*"], native=False, json=True)
     for flag in ("--jq", "-q"):
         case("runner create filter " + flag, CREATE + ["--json", "data", flag, ".data[].machine_type"], native=False)
