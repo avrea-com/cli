@@ -123,7 +123,7 @@ def invocation(args):
 def executable_suites(include_derived=True):
     excluded = {"compare_help", "compare_completion"}
     if not include_derived:
-        excluded |= {"compare_option_aliases", "compare_argument_contract"}
+        excluded |= {"compare_option_aliases", "compare_argument_contract", "compare_defaults"}
     for path in sorted(Path("scripts").glob("compare_*.py")):
         if path.stem in excluded:
             continue

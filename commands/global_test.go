@@ -69,3 +69,25 @@ func TestDebugWarningIsSortedAndEagerVersionIsOffline(t *testing.T) {
 		t.Fatal(code, out, stderr)
 	}
 }
+
+func TestVMSSHGlobalFlagsAreParsedBeforeEnvironmentValidation(t *testing.T) {
+	for _, flags := range [][]string{{"--links"}, {"--no-links"}, {}} {
+		d, out, stderr := testDeps(t)
+		d.Getenv = func(key string) string {
+			if key == "AVR_LINKS" {
+				return "invalid"
+			}
+			return ""
+		}
+		args := append([]string{"vm", "ssh"}, flags...)
+		args = append(args, "--help")
+		code := Execute(t.Context(), args, d)
+		if len(flags) == 0 {
+			if code != 2 || out.Len() != 0 || !strings.Contains(stderr.String(), "--links") {
+				t.Fatal(code, out, stderr)
+			}
+		} else if code != 0 || stderr.Len() != 0 || !strings.Contains(out.String(), "Usage:") {
+			t.Fatal(code, out, stderr)
+		}
+	}
+}

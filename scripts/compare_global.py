@@ -61,6 +61,14 @@ def scenarios():
             if flags == ["--no-links"]:
                 case["links"] = []
             cases.append(case)
+    for flag in ["--links", "--no-links"]:
+        case = gaps.derive("vm_ssh", "vm ssh print", "global override " + flag)
+        case["args"] += [flag]
+        case["env"]["AVR_LINKS"] = "invalid"
+        cases.append(case)
+    case = gaps.derive("vm_ssh", "vm ssh print", "global debug warning")
+    case["env"]["AVR_DEBUG"] = "unknown"
+    cases.append(case)
     return cases
 
 
