@@ -264,19 +264,29 @@ def print_failed_step_logs(
     OSC 133 boundaries so terminals can navigate between failed sections."""
     failed_steps = [s for s in steps if s.get("conclusion") and s["conclusion"] not in ("success", "skipped")]
     if not failed_steps:
-        emit("No failed steps.")
+        if job_id.startswith("awj-") and (not steps or any(not step.get("conclusion") for step in steps)):
+            emit(f"Step outcomes are unavailable; use `avr job logs {job_id}` for all output.")
+        else:
+            emit("No failed steps.")
         return
 
     all_logs = fetch_all_logs(client, job_id, show_all_levels=show_all_levels)
-    failed_conclusion = {s["name"]: s.get("conclusion", "failure") for s in failed_steps}
 
     prev_conclusion: str | None = None
     for step in failed_steps:
         name = step["name"]
-        step_logs = [e for e in all_logs if e.get("step_name") == name]
+        step_logs = [
+            entry
+            for entry in all_logs
+            if (
+                entry.get("step_record_id") == step["log_record_id"]
+                if step.get("log_record_id")
+                else entry.get("step_name") == name
+            )
+        ]
         if not step_logs:
             continue
-        conclusion = failed_conclusion.get(name, "failure")
+        conclusion = step.get("conclusion", "failure")
         indicator = status_indicator("completed", conclusion)
         emit("")
         header = click.style(f"--- {indicator} {name} ({conclusion}) ---", bold=True)
@@ -381,11 +391,16 @@ def follow_logs(
                     # Soft-retry on 404/429/5xx; other 4xx is terminal and
                     # routes through handle_http_error so 401 honors the
                     # auth-hint exit-4 contract.
-                    if code == 404 or code == 429 or code >= 500:
+                    if code == 404:
+                        # Queued jobs may finish without ever acquiring a VM.
+                        # Let the regular idle check observe that completion.
+                        idle_polls += 1
+                    elif code == 429 or code >= 500:
                         idle_polls += 1
                         time.sleep(interval)
                         continue
-                    handle_http_error(exc, "fetch logs")
+                    else:
+                        handle_http_error(exc, "fetch logs")
                 except httpx.ConnectError, httpx.TimeoutException:
                     # Network blip — `--follow` is interactive; we'd rather
                     # hold the session open and retry than crash the user.

@@ -41,6 +41,17 @@ _SCOPED_TOKEN_REJECTED_HINT = (
 )
 
 
+def require_external_ci(record: Mapping[str, Any], feature: str) -> None:
+    """Gate operations whose public native CI implementation has not landed."""
+    match record.get("ci_provider"):
+        case "avrea_ci":
+            raise click.ClickException(f"{feature} are not available for Avrea CI yet.")
+        case None | "github_actions" | "gitlab_ci":
+            return
+        case provider:
+            raise click.ClickException(f"Unsupported CI provider: {provider}")
+
+
 def exit_with_auth_hint() -> NoReturn:
     """Print the auth suggestion and exit with code 4. Used for both no-token
     (boundary check) and 401 (server rejected our token).

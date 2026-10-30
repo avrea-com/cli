@@ -99,7 +99,8 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by head branch (repeatable). _(repeatable)_
-- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl-xxx, repeatable). _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;ci-provider</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
+- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl- or awf-, repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;since</code> <code class="cli-value">&lt;TEXT&gt;</code> — Relative time window: '7d', '24h', etc. Sugar for --created-after.
 - <code class="cli-flag">&#x2D;&#x2D;from, &#x2D;&#x2D;created-after</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only runs created after this ISO timestamp.
 - <code class="cli-flag">&#x2D;&#x2D;to, &#x2D;&#x2D;created-before</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only runs created before this ISO timestamp.
@@ -112,7 +113,7 @@ JSON FIELDS
 
 ### `avr run logs`
 
-Fetch logs for a workflow run's GitHub jobs.
+Fetch logs for a workflow run's jobs.
 
 ```sh
 avr run logs [OPTIONS] RUN
@@ -238,6 +239,10 @@ RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`. Without RUN, auto-selects the latest in-progress run.
 Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
+
+NDJSON job and run completion events include ci_provider
+(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+platform_job_id; correlate events using run_id and avrea_job_id.
 
 ```sh
 Examples:

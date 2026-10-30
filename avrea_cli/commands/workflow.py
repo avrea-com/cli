@@ -19,6 +19,7 @@ from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_since
+from avrea_cli.helpers import require_external_ci
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
@@ -58,6 +59,7 @@ _WORKFLOW_LIST_FIELDS = make_schema(
     "failure_count",
     "flaked_count",
     "median_duration_seconds",
+    ci_provider="workflow.ci_provider",
     workflow_id="workflow.workflow_id",
     platform_workflow_id="workflow.platform_id",
     name="workflow.name",
@@ -256,7 +258,7 @@ def workflow_view(ctx, workflow_identifier: str, org_id, repo_flag, since, json_
 
     org_id = get_org_id(config, org_id, client=client)
 
-    if workflow_identifier.startswith("wfl-"):
+    if workflow_identifier.startswith(("wfl-", "awf-")):
         workflow_id = workflow_identifier
     else:
         repo_id = resolve_repo_or_detect(client, config, org_id, repo_flag, required=True)
@@ -530,7 +532,7 @@ def _lookup_workflow(client: ApiClient, org_id: str, repo_id: str, identifier: s
         )
         handle_http_error(exc, "list workflows for resolution", hint=hint)
 
-    if identifier.startswith("wfl-"):
+    if identifier.startswith(("wfl-", "awf-")):
         for wf in workflows:
             if wf.get("workflow_id") == identifier:
                 return wf
@@ -545,7 +547,9 @@ def _lookup_workflow(client: ApiClient, org_id: str, repo_id: str, identifier: s
         raise click.ClickException(f"Workflow with platform ID {identifier!r} not found in this repository")
 
     ident_lower = identifier.lower()
-    matches = [wf for wf in workflows if (wf.get("name") or "").lower() == ident_lower]
+    matches = [wf for wf in workflows if (wf.get("path") or "").lower() == ident_lower]
+    if not matches:
+        matches = [wf for wf in workflows if (wf.get("name") or "").lower() == ident_lower]
     if not matches:
         # Filename match — full ("ci.yml") or stem ("ci").
         matches = [
@@ -559,7 +563,9 @@ def _lookup_workflow(client: ApiClient, org_id: str, repo_id: str, identifier: s
         )
     if len(matches) > 1:
         names = ", ".join(wf.get("name", "") for wf in matches)
-        raise click.ClickException(f"Ambiguous workflow {identifier!r}. Matches: {names}. Pass --wfl-id instead.")
+        raise click.ClickException(
+            f"Ambiguous workflow {identifier!r}. Matches: {names}. Pass the full workflow ID or file path instead."
+        )
     return matches[0]
 
 
@@ -574,6 +580,7 @@ def _resolve_workflow_filename(client: ApiClient, org_id: str, repo_id: str, ide
         return ResolvedWorkflow(identifier, None, None)
 
     wf = _lookup_workflow(client, org_id, repo_id, identifier)
+    require_external_ci(wf, "Manual workflow dispatch")
     path = wf.get("path")
     # GitHub serves workflows that lack a ``.yml`` path while disabled or
     # mid-rename. Surface the cause instead of dispatching ``workflow=""``,

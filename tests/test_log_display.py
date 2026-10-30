@@ -6,6 +6,7 @@ from avrea_cli.log_display import format_log_line
 from avrea_cli.log_display import print_failed_step_logs
 from avrea_cli.log_display import print_logs_grouped
 from unittest.mock import MagicMock
+import httpx
 import pytest
 
 
@@ -223,3 +224,25 @@ class TestFollowLogs:
             follow_logs(client, "org-1", "job-1")
         assert exit_info.value.code == 130
         assert "Stopped following." in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("conclusion", ["cancelled", "skipped"])
+def test_follow_native_job_without_a_vm_stops_when_terminal(monkeypatch, capsys, conclusion):
+    client = MagicMock()
+    error = httpx.HTTPStatusError(
+        "No execution", request=httpx.Request("POST", "https://example.test/logs/search"), response=httpx.Response(404)
+    )
+    client.public_post.side_effect = [error] * 5 + [AssertionError("follow did not stop")]
+    client.public_get.return_value = {"data": {"state": "completed", "conclusion": conclusion}}
+    monkeypatch.setattr("avrea_cli.log_display.time.sleep", lambda _: None)
+    monkeypatch.setattr("avrea_cli.log_display.notify", lambda _: None)
+    follow_logs(client, "org-019e5a2e474e72d711642b726b044016", "awj-019e5a2e474e72d711642b726b044016")
+    assert f"Job completed: {conclusion}" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("steps", [[], [{"name": "Build", "conclusion": None}]])
+def test_native_missing_step_outcomes_are_not_reported_as_success(capsys, steps):
+    client = MagicMock()
+    print_failed_step_logs(client, "awj-019e5a2e474e72d711642b726b044016", steps)
+    assert "Step outcomes are unavailable" in capsys.readouterr().out
+    client.public_post.assert_not_called()

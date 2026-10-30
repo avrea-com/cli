@@ -8,6 +8,7 @@ from avrea_cli.commands.workflow import _resolve_workflow_filename
 from avrea_cli.main import cli
 from click.testing import CliRunner
 from unittest.mock import MagicMock
+import click
 import httpx
 import pytest
 
@@ -293,3 +294,30 @@ class TestWorkflowRunDispatch:
 
         result = runner.invoke(cli, ["workflow", "run", "build.yml", "--repo", "rep-foo"])
         assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("reference", ["awf-019d9533fc2f7b59948243a10b312d2e", ".avrea/workflows/ci.yml"])
+def test_native_workflow_identity_does_not_dispatch_a_same_named_github_workflow(reference):
+    client = MagicMock()
+    client.public_get.return_value = {
+        "data": [
+            {
+                "workflow_id": "wfl-019d9533fc2f7b59948243a10b312d2e",
+                "name": "CI",
+                "path": ".github/workflows/ci.yml",
+                "platform_id": 123,
+            },
+            {
+                "workflow_id": "awf-019d9533fc2f7b59948243a10b312d2e",
+                "name": "CI",
+                "path": ".avrea/workflows/ci.yml",
+                "platform_id": None,
+                "ci_provider": "avrea_ci",
+            },
+        ]
+    }
+    with pytest.raises(click.ClickException, match="not available for Avrea CI"):
+        _resolve_workflow_filename(
+            client, "org-019d9533fc2f7b59948243a10b312d2e", "rep-019d9533fc2f7b59948243a10b312d2e", reference
+        )
+    client.public_post.assert_not_called()

@@ -5,6 +5,7 @@ from avrea_cli.commands.run import _emit_ndjson_event
 from avrea_cli.commands.run import _watch_title
 from avrea_cli.commands.run import watch_run_loop
 from avrea_cli.main import cli
+from click.testing import CliRunner
 from io import StringIO
 from unittest.mock import MagicMock
 import click
@@ -315,6 +316,45 @@ class TestRunView:
 
 
 class TestRunWatch:
+    @pytest.mark.parametrize("provider", ["github_actions", "gitlab_ci", "avrea_ci"])
+    def test_watch_labels_and_hints_match_provider(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, provider: str
+    ) -> None:
+        native = provider == "avrea_ci"
+        run_id = f"{'awr' if native else 'run'}-019e5a2e474e72d711642b726b044016"
+        run_label = run_id if native else "#42"
+        client = MagicMock()
+        client.public_get.return_value = {
+            "data": {
+                "run_id": run_id,
+                "ci_provider": provider,
+                "run_number": None if native else 42,
+                "display_title": "Build",
+                "status": "completed",
+                "conclusion": "success",
+                "jobs": [
+                    {
+                        "job_id": f"{'awj' if native else 'job'}-{'1' * 32}",
+                        "job_name": "Build",
+                        "state": "completed",
+                    }
+                ],
+            }
+        }
+        notify = MagicMock()
+        monkeypatch.setattr("avrea_cli.commands.run.notify", notify)
+
+        watch_run_loop(client, "org-default", run_id, interval=1, exit_status=False)
+
+        output = capsys.readouterr().out
+        assert f"Watching run {run_label}: Build" in output
+        assert provider in output
+        assert f"Run {run_label} completed:" in output
+        notify.assert_called_once_with(f"Run {run_label} Build: success")
+        assert "avr job logs" in output
+        for command in ("avr job metrics", "avr job ssh"):
+            assert command in output
+
     def test_stopped_by_ctrl_c_exits_130(self, capsys):
         """Exit 0 would read as a successful run under --exit-status."""
         client = MagicMock()
@@ -355,6 +395,49 @@ class TestRunWatch:
 
 class TestRunWatchJson:
     """NDJSON event stream: one JSON object per line, transitions only."""
+
+    @pytest.mark.parametrize("provider", ["github_actions", "gitlab_ci", "avrea_ci", None])
+    @pytest.mark.parametrize("conclusion", ["success", "failure"])
+    def test_provider_survives_watch_transitions(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch, provider: str | None, conclusion: str
+    ) -> None:
+        native = provider == "avrea_ci"
+        run_id = f"{'awr' if native else 'run'}-019e5a2e474e72d711642b726b044016"
+        job_id = f"{'awj' if native else 'job'}-019e5a2e474e72d711642b726b044017"
+        platform_job_id = None if native else 100
+        snapshots = []
+        for state in ["queued", "in_progress", "in_progress", "completed"]:
+            run = {
+                "run_id": run_id,
+                "status": "completed" if state == "completed" else "in_progress",
+                "conclusion": conclusion if state == "completed" else None,
+                "duration_seconds": 30 if state == "completed" else None,
+                "jobs": [
+                    {
+                        "job_id": job_id,
+                        "platform_job_id": platform_job_id,
+                        "job_name": "Build",
+                        "state": state,
+                        "conclusion": conclusion if state == "completed" else None,
+                    }
+                ],
+            }
+            if provider is not None:
+                run["ci_provider"] = provider
+            snapshots.append({"data": run})
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", self._stateful_get(snapshots))
+        monkeypatch.setattr("time.sleep", lambda _: None)
+
+        result = runner.invoke(cli, ["run", "watch", run_id, "--ndjson", "--exit-status"])
+
+        assert result.exit_code == (0 if conclusion == "success" else 1), result.output
+        events = [json.loads(line) for line in result.output.splitlines() if line.startswith("{")]
+        assert [event["event"] for event in events] == ["job_started", "job_completed", "run_completed"]
+        assert [event["ci_provider"] for event in events] == [provider or "github_actions"] * 3
+        assert [event["run_id"] for event in events] == [run_id] * 3
+        assert [event["avrea_job_id"] for event in events[:2]] == [job_id] * 2
+        assert [event["platform_job_id"] for event in events[:2]] == [platform_job_id] * 2
+        assert events[-1]["conclusion"] == conclusion
 
     def _stateful_get(self, snapshots):
         """Return a public_get fake that returns each snapshot in turn."""

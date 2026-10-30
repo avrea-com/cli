@@ -32,6 +32,7 @@ from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import parse_since
+from avrea_cli.helpers import require_external_ci
 from avrea_cli.helpers import validate_cursor
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
@@ -162,7 +163,12 @@ def run(ctx):
     help="Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable.",
 )
 @click.option("--branch", "head_branches", multiple=True, help="Filter by head branch (repeatable).")
-@click.option("-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl-xxx, repeatable).")
+@click.option(
+    "--ci-provider", type=click.Choice(["github_actions", "gitlab_ci", "avrea_ci"]), help="Filter by CI engine."
+)
+@click.option(
+    "-w", "--workflow", "workflow_ids", multiple=True, help="Filter by workflow ID (wfl- or awf-, repeatable)."
+)
 @click.option("--since", default=None, help="Relative time window: '7d', '24h', etc. Sugar for --created-after.")
 @click.option(
     "--from",
@@ -203,6 +209,7 @@ def run_list(
     status_values,
     head_branches,
     workflow_ids,
+    ci_provider,
     since,
     created_after,
     created_before,
@@ -282,6 +289,8 @@ def run_list(
         params["conclusions"] = platform_conclusions
     if head_branches:
         params["head_branches"] = list(head_branches)
+    if ci_provider:
+        params["ci_provider"] = ci_provider
     if workflow_ids:
         params["workflow_ids"] = list(workflow_ids)
     if created_after:
@@ -820,6 +829,7 @@ def run_diagnose(ctx, run: str, org_id: str | None, json_output: bool) -> None:
     )
 
     try:
+        require_external_ci(resolved, "Diagnostics")
         report = build_run_diagnostics(client, org_id, resolved)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "diagnose workflow run")
@@ -883,11 +893,14 @@ def _emit_ndjson_event(event: dict[str, Any]) -> None:
         raise SystemExit(0) from None
 
 
-def _job_event_payload(event: str, run_id: str, job: dict[str, Any], timestamp: str) -> dict[str, Any]:
+def _job_event_payload(
+    event: str, run_id: str, job: dict[str, Any], timestamp: str, ci_provider: str
+) -> dict[str, Any]:
     return {
         "event": event,
         "timestamp": timestamp,
         "run_id": run_id,
+        "ci_provider": ci_provider,
         "avrea_job_id": job.get("job_id"),
         "platform_job_id": job.get("platform_job_id"),
         "job_name": job.get("job_name"),
@@ -903,12 +916,12 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
     event kinds, with intentionally different payloads:
 
     - ``job_started`` / ``job_completed`` — emitted via ``_job_event_payload``
-      and share the keys ``event``, ``timestamp``, ``run_id``,
+      and share the keys ``event``, ``timestamp``, ``run_id``, ``ci_provider``,
       ``avrea_job_id``, ``platform_job_id``, ``job_name``, ``state``,
       ``conclusion``. ``conclusion`` is ``null`` until ``job_completed``.
 
     - ``run_completed`` — top-level run summary; carries ``event``,
-      ``timestamp``, ``run_id``, ``status``, ``conclusion``,
+      ``timestamp``, ``run_id``, ``ci_provider``, ``status``, ``conclusion``,
       ``duration_seconds``. It deliberately omits the per-job fields —
       consumers correlate via ``run_id`` to the preceding ``job_*`` events.
 
@@ -965,6 +978,7 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
             continue
 
         now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        ci_provider = run_data.get("ci_provider", "github_actions")
         for j in run_data.get("jobs") or []:
             j_id = j.get("job_id")
             if not j_id:
@@ -974,9 +988,9 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
             if prev != j_state:
                 last_state[j_id] = j_state
                 if j_state == "in_progress":
-                    _emit_ndjson_event(_job_event_payload("job_started", run_id, j, now))
+                    _emit_ndjson_event(_job_event_payload("job_started", run_id, j, now, ci_provider))
                 elif j_state == "completed":
-                    _emit_ndjson_event(_job_event_payload("job_completed", run_id, j, now))
+                    _emit_ndjson_event(_job_event_payload("job_completed", run_id, j, now, ci_provider))
 
         status = run_data.get("status", "unknown")
         if status == "completed":
@@ -985,6 +999,7 @@ def watch_run_loop_ndjson(client: ApiClient, org_id: str, run_id: str, *, interv
                     "event": "run_completed",
                     "timestamp": now,
                     "run_id": run_id,
+                    "ci_provider": ci_provider,
                     "status": status,
                     "conclusion": run_data.get("conclusion"),
                     "duration_seconds": run_data.get("duration_seconds"),
@@ -1095,10 +1110,12 @@ def watch_run_loop(
                 now_str = datetime.now(UTC).strftime("%H:%M:%S UTC")
                 title = run_data.get("display_title", "")
                 run_number = run_data.get("run_number", "?")
+                run_label = f"#{run_number}" if run_number is not None else run_id
+                ci_provider = run_data.get("ci_provider", "github_actions")
                 status = run_data.get("status", "unknown")
                 conclusion = run_data.get("conclusion")
 
-                header = f"Watching run #{run_number}: {title} -- {now_str}"
+                header = f"Watching run {run_label}: {title} [{ci_provider}] -- {now_str}"
                 if console_url and slug:
                     header = hyperlink(header, run_url(console_url, slug, run_id))
                 click.echo(header + "\n")
@@ -1106,27 +1123,29 @@ def watch_run_loop(
                 run_jobs = run_data.get("jobs") or []
                 if run_jobs:
                     _print_run_jobs(run_jobs, console_url=console_url, slug=slug)
-                    # Hints for drilling into a job. Static lines (job ids
-                    # vary across rows), but the verbs are the demo flow.
                     click.echo()
-                    click.echo(
-                        click.style(
-                            "  → avr job logs --follow <job-id>    # tail logs of a running job",
-                            fg=DIM_FG,
-                        )
-                    )
-                    click.echo(
-                        click.style(
-                            "  → avr job metrics --watch <job-id>  # live CPU/mem/IO gauges",
-                            fg=DIM_FG,
-                        )
-                    )
-                    click.echo(
-                        click.style(
-                            "  → avr job ssh <job-id>              # ssh into the runner VM",
-                            fg=DIM_FG,
-                        )
-                    )
+                    match ci_provider:
+                        case "avrea_ci" | "github_actions" | "gitlab_ci":
+                            click.echo(
+                                click.style(
+                                    "  → avr job logs --follow <job-id>    # tail logs of a running job",
+                                    fg=DIM_FG,
+                                )
+                            )
+                            click.echo(
+                                click.style(
+                                    "  → avr job metrics --watch <job-id>  # live CPU/mem/IO gauges",
+                                    fg=DIM_FG,
+                                )
+                            )
+                            click.echo(
+                                click.style(
+                                    "  → avr job ssh <job-id>              # ssh into the runner VM",
+                                    fg=DIM_FG,
+                                )
+                            )
+                        case _:
+                            raise ValueError(f"Unsupported CI provider: {ci_provider}")
                 else:
                     click.echo("  No jobs yet.")
 
@@ -1137,13 +1156,13 @@ def watch_run_loop(
                 if status == "completed":
                     dur = format_duration(run_data.get("duration_seconds"))
                     conclusion_str = format_conclusion_colored(status, conclusion)
-                    click.echo(f"\nRun #{run_number} completed: {conclusion_str} ({dur})")
+                    click.echo(f"\nRun {run_label} completed: {conclusion_str} ({dur})")
                     # Reset title to bare ``avr ▸ <workflow>`` before notify
                     # so the conclusion isn't echoed twice (once via Ghostty's
                     # source line, once in the notification body).
                     wf_name = ((run_data.get("workflow") or {}).get("name") or "run").strip()
                     term_title.set(f"avr ▸ {wf_name}")
-                    notify(f"Run #{run_number} {title}: {conclusion or 'completed'}")
+                    notify(f"Run {run_label} {title}: {conclusion or 'completed'}")
                     if exit_status and conclusion != "success":
                         sys.exit(1)
                     return
@@ -1187,6 +1206,10 @@ def run_watch(
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`. Without RUN, auto-selects the latest in-progress run.
     Pass --repo (repeatable) to scope the auto-select to specific repositories.
+
+    NDJSON job and run completion events include ci_provider
+    (github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+    platform_job_id; correlate events using run_id and avrea_job_id.
 
     \b
     Examples:
@@ -1363,6 +1386,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
         action="look up workflow run before rerun",
     )
 
+    require_external_ci(existing_data, "Reruns")
     if not yes:
         scope = "failed jobs only" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
@@ -1440,7 +1464,7 @@ def run_logs(
     show_all_levels: bool,
     no_pager: bool,
 ):
-    """Fetch logs for a workflow run's GitHub jobs.
+    """Fetch logs for a workflow run's jobs.
 
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`.

@@ -43,8 +43,11 @@ Filter by state (queued, in_progress, completed) or conclusion (success, failure
 \fB\-\-branch\fR \fITEXT\fR
 Filter by head branch (repeatable). (repeatable)
 .TP
+\fB\-\-ci\-provider\fR \fICHOICE\fR
+Filter by CI engine. (choices: github_actions, gitlab_ci, avrea_ci)
+.TP
 \fB\-w\fR, \fB\-\-workflow\fR \fITEXT\fR
-Filter by workflow ID (wfl-xxx, repeatable). (repeatable)
+Filter by workflow ID (wfl- or awf-, repeatable). (repeatable)
 .TP
 \fB\-\-since\fR \fITEXT\fR
 Relative time window: '7d', '24h', etc. Sugar for --created-after.
