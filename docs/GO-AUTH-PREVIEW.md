@@ -21,6 +21,11 @@ make go-build
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
 ./build/go/avr health
+./build/go/avr billing summary --org ORG
+./build/go/avr billing settings --org ORG
+./build/go/avr billing invoices list --org ORG
+./build/go/avr billing invoices show INVOICE_ID --org ORG
+./build/go/avr billing payment-methods list --org ORG
 ./build/go/avr health --json status
 ./build/go/avr audit-events list --org ORG --resource-type api_key
 ./build/go/avr repo clone acme/web

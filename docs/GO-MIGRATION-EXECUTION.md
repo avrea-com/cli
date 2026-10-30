@@ -764,9 +764,27 @@ failures, retained JSON, and sanitized network diagnostics. Go race tests,
 lint, schema generation, admin composition, fixture typing and workflow
 validation pass. Both parity report hashes match the tested executables.
 
+## Billing inspection batch
+
+Added billing summary/settings, invoices list/show and payment-methods list.
+Audit/health checkpoints: public 62fd22c, admin 85b6b39804.
+
+Preserve Python's aligned records, bordered tables, nullable card fields,
+currency symbols and zero-decimal currencies, raw invoice dates and timestamps,
+line items, pagination hints and JSON/jq projections. Invoice JSON retains large
+integers and unknown nested fields. Organization resolution and error semantics
+are shared with the existing commands. No new dependencies or live writes.
+
+Validation: 131 paired cases per binary, including six terminal cases, passed
+against Python. Coverage includes all five commands, organization precedence,
+authentication and HTTP errors, field discovery, limits/cursors, empty data,
+currencies and invoice detail variants. Public Go race tests/lint/build,
+generation checks, admin composition checks, fixture typing and workflow
+validation passed. Both parity report hashes match the tested binaries.
+
 ## Remaining work
 
-Billing/firewall, VM commands, hidden docs, root/help/completion,
+Billing mutations/downloads, firewall, VM commands, hidden docs, root/help/completion,
 remaining aliases, and a final per-command flag/argument/behavior coverage audit.
 Existing implemented commands also remain subject to that exhaustive audit;
 the prior suites are substantial evidence, not a claim that every flag combination
