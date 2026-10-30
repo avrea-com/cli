@@ -17,6 +17,7 @@ help: ## Show available targets
 	@echo "  help             - Show this help message"
 	@echo "  go-check         - Test, lint, compare and scan the Go preview"
 	@echo "  go-build         - Build the Go preview in build/go/avr"
+	@echo "  go-package       - Build and validate a native Go preview archive"
 	@echo "  test             - Run unit tests (fast, no Docker)"
 	@echo "  lint             - Check for linting issues"
 	@echo "  fix              - Auto-fix linting issues"
@@ -179,3 +180,7 @@ go-command-check: ## Check the complete command registry and migrated documentat
 
 go-docs: go-build ## Generate the public reference with the native CLI
 	@./build/go/avr internal docs --format all --out . --readme README.md
+
+.PHONY: go-package
+go-package: ## Build and validate a native Go preview archive
+	@$(UV) run --python 3.14 --frozen python scripts/go_package.py --go "$(GO)"
