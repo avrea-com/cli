@@ -42,8 +42,8 @@ traversal and symlinks, and exercise both tar and ZIP extraction. Checksums
 detect corruption; these preview artifacts are not signed release assets.
 
 `.github/workflows/go-package.yml` is reusable through `workflow_call` and
-can also be started manually. CI calls it after the existing Go validation
-jobs pass. It builds and validates natively on macOS ARM64, Linux AMD64
+can also be started manually. CI calls it alongside the existing Go validation
+jobs, so artifact checks can finish even when a separate parity check fails. It builds and validates natively on macOS ARM64, Linux AMD64
 (Ubuntu 22.04), and Windows AMD64, then uploads `avr-go-package-TARGET`
 artifacts containing the archive, checksum and report. A manual invocation
 runs package checks; it does not run the full CI suite. No release is published.
@@ -151,3 +151,20 @@ requires a clean source tree. The resulting reports are uploaded separately
 as `avr-go-download-validation-TARGET`. This tests the downloaded bytes and
 their native execution without rebuilding the executable on the validation
 runner. Neither job publishes a release.
+
+## CI portability findings — 2026-10-30
+
+The first draft-PR runs exposed host-specific fixture assumptions. Windows now
+uses LF checkouts, explicit UTF-8 metadata, and native fixture seeds that do not
+require POSIX PTYs. The SSH test checks Unix mode bits only on Unix, while every
+platform still validates pinned host contents, arguments, and cleanup. The HTTP
+timing test delays the first body read, so a busy runner cannot consume its
+server-side sleep before recording response headers.
+
+A macOS traceback located the Python login stall in
+`HTTPServer.server_bind -> socket.getfqdn`. The login oracle wrapper supplies
+`localhost` only for loopback reverse-name lookups. It delegates all other names
+to the normal resolver, and the pinned Python code still binds a real socket,
+handles callback HTTP, and writes credentials. Focused tests cover this boundary;
+all 67 auth parity scenarios pass locally. This fixture does not establish that
+stock Python login avoids reverse-DNS delays on hosted macOS.

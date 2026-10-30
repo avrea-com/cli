@@ -16,6 +16,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Fixture subprocess output and committed metadata are UTF-8 on every runner.
+env:
+  PYTHONUTF8: "1"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -231,6 +235,6 @@ jobs:
           (cd tools && go mod tidy)
           git diff --exit-code -- go.mod go.sum tools/go.mod tools/go.sum
 
+  # Build/test downloadable previews independently; full parity still runs above.
   go-packages:
-    needs: [go-preview, go-checks]
     uses: ./.github/workflows/go-package.yml
