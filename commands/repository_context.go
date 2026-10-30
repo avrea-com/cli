@@ -126,9 +126,19 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 		fmt.Fprintf(&message, "Repository %q is not in org %q.", output.CellText(repo), output.CellText(org))
 	} else {
 		fmt.Fprintf(&message, "Failed to resolve repository %s (HTTP 404).", pythonQuote(output.CellText(repo)))
-		if he.Detail != "" {
-			fmt.Fprintf(&message, "\n  %s", output.CellText(he.Detail))
+	}
+	reason := ""
+	if !structured {
+		reason, _ = he.Payload["detail"].(string)
+	}
+	if platform == "gitlab" {
+		if reason != "" {
+			reason += " "
 		}
+		reason += "Check the GitLab repository connection, your access, and whether GitLab support is enabled."
+	}
+	if reason != "" {
+		fmt.Fprintf(&message, "\n  %s", output.CellText(reason))
 	}
 	if names, ok := detail["nearby_full_names"].([]any); ok && len(names) > 0 {
 		message.WriteString("\n\n  Did you mean one of these?")
@@ -140,15 +150,12 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 		message.WriteString("\n\n  You also belong to:")
 		for _, item := range orgs {
 			if o, ok := item.(map[string]any); ok {
-				fmt.Fprintf(&message, "\n    %s (%s)", output.CellText(fieldText(o, "slug")), output.CellText(fieldText(o, "organization_id")))
+				fmt.Fprintf(&message, "\n    %s  (%s)", output.CellText(pythonValue(fallback(o["slug"], fieldText(o, "organization_id")))), output.CellText(fieldText(o, "organization_id")))
 			}
 		}
-		message.WriteString("\n  Try --org <id>, or avr config set org <slug> to switch default.")
-	} else if structured {
+		message.WriteString("\n  Try \x60--org <id>\x60 for one-shot, or \x60avr config set org <slug>\x60 to switch default.")
+	} else if structured && reason == "" {
 		message.WriteString("\n\n  Connect this repo: open the Avrea console and add it to the org.")
-	}
-	if platform == "gitlab" {
-		message.WriteString("\nCheck the GitLab repository connection, your access, and whether GitLab support is enabled.")
 	}
 	message.WriteString("\nAborted!")
 	return "", &missingRepository{message.String()}
