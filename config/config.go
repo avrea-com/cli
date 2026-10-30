@@ -14,10 +14,12 @@ import (
 const DefaultHost = "https://api.avrea.com"
 
 type Config struct {
-	Host  string
-	Token string
-	Org   string
-	Repo  string
+	// HostSource records resolution provenance for composed CLI configuration.
+	HostSource string
+	Host       string
+	Token      string
+	Org        string
+	Repo       string
 }
 
 func IsScoped(token string) bool { return strings.HasPrefix(token, "avs_") }
@@ -61,12 +63,15 @@ func DefaultStore() (*Store, error) {
 func Load(store *Store, getenv func(string) string) (Config, error) {
 	data := store.Read()
 	host := getenv("AVR_HOST")
+	hostSource := "AVR_HOST"
 	stored := host == "" && data.DefaultHost != ""
 	if host == "" {
 		host = data.DefaultHost
+		hostSource = "hosts.json"
 	}
 	if host == "" {
 		host = DefaultHost
+		hostSource = "default"
 	}
 	host = strings.TrimRight(host, "/")
 	if err := ValidateHost(host); err != nil {
@@ -75,7 +80,7 @@ func Load(store *Store, getenv func(string) string) (Config, error) {
 		}
 		return Config{}, err
 	}
-	c := Config{Host: host, Token: getenv("AVR_TOKEN"), Org: getenv("AVR_ORG"), Repo: getenv("AVR_REPO")}
+	c := Config{Host: host, HostSource: hostSource, Token: getenv("AVR_TOKEN"), Org: getenv("AVR_ORG"), Repo: getenv("AVR_REPO")}
 	if c.Token == "" {
 		c.Token = data.Value(host, "token")
 	}
