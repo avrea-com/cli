@@ -140,7 +140,7 @@ def compare(scenario, python, go):
         # The interpreter emits a source-location warning once before getpass's
         # actual warning/prompt. It is not part of the CLI's terminal contract.
         python["stderr"] = re.sub(
-            r"[^\n]*getpass.py:\d+: GetPassWarning: Can not control echo on the terminal.\n[^\n]*\n",
+            r"[^\n]*(?:getpass|termui)\.py:\d+: GetPassWarning: Can not control echo on the terminal.\n[^\n]*\n",
             "",
             python["stderr"],
         )

@@ -337,6 +337,10 @@ the real console despite redirected stdin. Secret validation, API calls, and
 leak checks still run. Path fixtures use explicit home paths to keep shell/Click
 tilde expansion outside the command comparison; JSON wildcards use `--json=*`.
 The loopback server has a 128-connection backlog for concurrent diagnostic requests.
+SSH text-file comparisons accept LF/CRLF differences; their contents and file effects
+remain checked. Binary downloads and Git protocol output remain byte-exact.
+Windows clone probe cases use native Git, including its successful empty-repository
+result for the HTTP-200 fixture; POSIX stub cases verify child exit propagation.
 Actual provider login with a human
 browser remains a manual smoke check before a user-facing release.
 
