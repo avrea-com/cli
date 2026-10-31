@@ -34,6 +34,8 @@ _SNAPSHOT_FIELDS = (
 )
 _FIELDS = make_schema("organization_id", "repository_id", *_SNAPSHOT_FIELDS, "data", "pagination")
 _MAX_PAGES = 20
+_JOB_ID = re.compile(r"(job|awj)-[0-9a-f]{32}")
+_INVALID_NEXT_CURSOR = "The API returned an invalid next cursor."
 
 
 class JobTestsGroup(GhGroup):
@@ -42,29 +44,37 @@ class JobTestsGroup(GhGroup):
     def resolve_command(
         self, ctx: click.Context, args: list[str]
     ) -> tuple[str | None, click.Command | None, list[str]]:
-        if args and args[0].startswith("job-"):
+        if args and args[0].startswith(("job-", "awj-")):
             args = ["list", *args]
         return super().resolve_command(ctx, args)
 
 
 def _job_id(_ctx: click.Context, param: click.Parameter, value: str) -> str:
-    if not re.fullmatch(r"job-[0-9a-f]{32}", value):
+    if not _JOB_ID.fullmatch(value):
         raise click.BadParameter(
-            "use the Avrea job ID from 'avr job list' (job- followed by 32 lowercase hex characters)", param=param
+            "use the Avrea job ID from 'avr job list' (job- or awj- followed by 32 lowercase hex characters)",
+            param=param,
         )
     return value
 
 
-def _get(client: ApiClient, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+def _get(
+    client: ApiClient, path: str, action: str, not_found_hint: str, params: dict[str, Any] | None = None
+) -> dict[str, Any]:
     try:
         response = client.public_get(path, params=params)
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "read job test results")
+        handle_http_error(exc, action, hints={404: not_found_hint})
     return response
 
 
 def _job_repository(client: ApiClient, organization: str, job: str) -> str:
-    response = _get(client, f"/orgs/{organization}/jobs/{job}")
+    response = _get(
+        client,
+        f"/orgs/{organization}/jobs/{job}",
+        "read the job",
+        "Check the job ID, or pass --org with the job's organization.",
+    )
     data = response.get("data", response)
     repository = data.get("repository_id") if isinstance(data, dict) else None
     if not isinstance(repository, str) or not re.fullmatch(r"rep-[0-9a-f]{32}", repository):
@@ -84,7 +94,16 @@ def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | N
         params: dict[str, Any] = {"limit": page_limit}
         if cursor is not None:
             params["cursor"] = cursor
-        page = _get(client, path, params)
+        page = _get(
+            client,
+            path,
+            "read job test results",
+            # A new runtime invalidates old cursors, and the route also answers 404
+            # when Repository Tests are off or the job is outside the repository.
+            "If you passed --cursor, restart without it. Otherwise check that Repository"
+            " Tests are enabled and that the job belongs to the repository.",
+            params,
+        )
         data = page.get("data")
         pagination = page.get("pagination")
         if page.get("job_id") != job or not isinstance(data, list) or not isinstance(pagination, dict):
@@ -98,8 +117,12 @@ def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | N
         cursor = pagination.get("next_cursor")
         if cursor is not None:
             if not isinstance(cursor, str):
-                raise click.ClickException("The API returned an invalid next cursor.")
-            validate_cursor(cursor, max_length=1024)
+                raise click.ClickException(_INVALID_NEXT_CURSOR)
+            try:
+                validate_cursor(cursor, max_length=1024)
+            except click.BadParameter:
+                # The server's cursor is not user input, so it gets no usage error.
+                raise click.ClickException(_INVALID_NEXT_CURSOR) from None
             if cursor in seen:
                 raise click.ClickException("The API repeated a test-results cursor; stopping pagination.")
             seen.add(cursor)
@@ -137,6 +160,8 @@ def _show(response: dict[str, Any]) -> None:
                 click.echo(f"\n{label or 'unknown'}: {_text(row['failure_summary'])}")
     elif response.get("status") == "available" and response.get("total_count") == 0:
         click.echo("The retained report contains zero test occurrences. This does not establish that no tests ran.")
+    elif response.get("status") == "available":
+        click.echo("No more results.")
     else:
         click.echo("No test results returned. Missing or expired reports do not mean that zero tests ran.")
     if response.get("reporting_state") == "complete":
@@ -148,8 +173,8 @@ def _show(response: dict[str, Any]) -> None:
 def tests(ctx: click.Context) -> None:
     """Read a job's tests, timings and recorded failure messages.
 
-    Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from
-    avr job list.
+    Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID
+    (job- or awj-) from avr job list.
     """
     ensure_ctx(ctx)
 
@@ -167,11 +192,6 @@ def tests(ctx: click.Context) -> None:
     help=f"Maximum occurrences to return; short pages are followed, up to {_MAX_PAGES} result pages.",
 )
 @click.option("--cursor", help="Continue from a previous response's next_cursor.")
-@click.option(
-    "--output",
-    type=click.Choice(["text", "json"]),
-    help="Output format. JSON includes status, context and the next cursor.",
-)
 @json_options
 @click.pass_context
 def tests_list(
@@ -181,7 +201,6 @@ def tests_list(
     repo_id: str | None,
     limit: int,
     cursor: str | None,
-    output: str | None,
     json_fields: str | None,
     jq_expr: str | None,
 ) -> None:
@@ -192,14 +211,10 @@ def tests_list(
     pending, partial and expired evidence are reported explicitly; an older
     execution is never substituted. Complete describes collected reports.
 
-    Use --output json for the complete response or --json FIELDS to select
+    Use --json '*' for the complete response or --json FIELDS to select
     fields. Continue with --cursor when pagination.next_cursor is present.
     API refusal or a changed report fails the command without partial output.
     """
-    if output == "text" and json_fields is not None:
-        raise click.UsageError("--output text cannot be combined with --json")
-    if output == "json" and json_fields is None:
-        json_fields = "*"
     if handle_json_meta(json_fields, jq_expr, _FIELDS):
         return
     cursor = validate_cursor(cursor, max_length=1024)

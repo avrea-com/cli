@@ -166,13 +166,13 @@ avr job logs <job-id> --follow         # tail one job in real time
 
 ```sh
 avr tests <job-id>                    # names, outcomes, timings and failure messages
-avr tests <job-id> --output json      # results with reporting state and pagination
+avr tests <job-id> --json '*'         # results with reporting state and pagination
 avr tests <job-id> --limit 500         # follow short pages up to the requested count
 avr tests <job-id> --cursor '<cursor>' # continue with pagination.next_cursor
 ```
 
-Use the Avrea job ID from `avr job list`; the repository is resolved from that
-job. `avr tests list <job-id>` is equivalent. `--json FIELDS` and `--jq` also
+Use the Avrea job ID (`job-` or `awj-`) from `avr job list`; the repository is
+resolved from that job. `avr tests list <job-id>` is equivalent. `--json FIELDS` and `--jq` also
 work. Each invocation reads at most 1,000 occurrences and 20 result pages,
 preserving repeated tests and returning a cursor when more results remain.
 Missing or expired reports are distinct from a retained report containing zero

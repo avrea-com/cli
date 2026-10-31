@@ -1312,8 +1312,8 @@ Read a job's tests, timings and recorded failure messages.
 avr tests [OPTIONS] COMMAND [ARGS]...
 ```
 
-Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID from
-avr job list.
+Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID
+(job- or awj-) from avr job list.
 
 #### `avr tests list`
 
@@ -1328,7 +1328,7 @@ shown together. A failed test is data, not a command error. Missing,
 pending, partial and expired evidence are reported explicitly; an older
 execution is never substituted. Complete describes collected reports.
 
-Use --output json for the complete response or --json FIELDS to select
+Use --json '*' for the complete response or --json FIELDS to select
 fields. Continue with --cursor when pagination.next_cursor is present.
 API refusal or a changed report fails the command without partial output.
 
@@ -1342,7 +1342,6 @@ API refusal or a changed report fails the command without partial output.
 - `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
 - `--cursor <TEXT>` — Continue from a previous response's next_cursor.
-- `--output <CHOICE>` — Output format. JSON includes status, context and the next cursor. _(choices: `text`, `json`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

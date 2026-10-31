@@ -9,7 +9,7 @@ Read the latest confirmed execution of JOB, including repeated tests.
 .PP
 Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
 .PP
-Use --output json for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. API refusal or a changed report fails the command without partial output.
+Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. API refusal or a changed report fails the command without partial output.
 .SH ARGUMENTS
 .TP
 \fIJOB\fR
@@ -27,9 +27,6 @@ Maximum occurrences to return; short pages are followed, up to 20 result pages. 
 .TP
 \fB\-\-cursor\fR \fITEXT\fR
 Continue from a previous response's next_cursor.
-.TP
-\fB\-\-output\fR \fICHOICE\fR
-Output format. JSON includes status, context and the next cursor. (choices: text, json)
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
