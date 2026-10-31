@@ -413,6 +413,10 @@ def run(executable, scenario, root, host):
             for item in candidates:
                 if item.is_file():
                     data = item.read_bytes()
+                    if scenario.get("normalize_file_newlines"):
+                        # Opt-in for text configs consumed equivalently with LF/CRLF.
+                        # Artifact payload and protocol comparisons remain byte-exact.
+                        data = data.replace(b"\r\n", b"\n")
                     if scenario.get("normalize_file_home"):
                         data = data.replace(directory.encode(), b"<home>")
                     captured[item.relative_to(home).as_posix()] = {

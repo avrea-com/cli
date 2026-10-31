@@ -27,6 +27,7 @@ def scenarios():
                 "responses": {vm.SHOW: (200, {"data": row})},
                 "capture_files": [".ssh", "custom"],
                 "normalize_file_home": True,
+                "normalize_file_newlines": True,
                 **kwargs,
             }
         )

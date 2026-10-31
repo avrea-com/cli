@@ -7,6 +7,7 @@ from scripts import compare_inspection as inspection
 from scripts import compare_job_watch as watch
 from scripts import compare_vm_inspection as vm
 from scripts import compare_vm_ssh_config as ssh_config
+import re
 import sys
 
 ALL_FLAGS = [
@@ -242,8 +243,14 @@ def compare(scenario, python, go):
     differences = watch.compare(scenario, python, go)
     if python.get("bootstrap") != go.get("bootstrap"):
         differences.append("bootstrap helper calls/stdin/pins differ")
-    if "--print" in scenario["args"] and python["stdout"] != go["stdout"]:
-        differences.append("printed script content differs")
+    if "--print" in scenario["args"]:
+        printed = [result["stdout"] for result in (python, go)]
+        if scenario.get("tty"):
+            # PTY output processing may insert an extra CR on macOS. Keep
+            # script text exact after terminal newline conversion only.
+            printed = [re.sub(r"\r+\n", "\n", text) for text in printed]
+        if printed[0] != printed[1]:
+            differences.append("printed script content differs")
     for label, result in [("Python", python), ("Go", go)]:
         rows = result.get("bootstrap", [])
         if "--print" in scenario["args"] and rows:

@@ -145,7 +145,9 @@ def scenarios():
                 ),
             },
             git_stub=128,
-            exit=128,
+            # Windows uses native Git: HTTP 200 is an empty repository. POSIX
+            # uses the exit-128 stub to check exact subprocess exit propagation.
+            exit=0 if sys.platform == "win32" and status == 200 else 128,
         )
     if sys.platform != "win32":
         for placement in ["git.fi.example.test", "https://git.fi.example.test/", "https://git.fi.example.test"]:

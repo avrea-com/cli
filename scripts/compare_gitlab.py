@@ -337,7 +337,7 @@ def compare(scenario, python, go):
                     pass
     if scenario.get("hidden_prompt"):
         python["stderr"] = re.sub(
-            r"[^\n]*getpass.py:\d+: GetPassWarning: Can not control echo on the terminal.\n[^\n]*\n",
+            r"[^\n]*(?:getpass|termui)\.py:\d+: GetPassWarning: Can not control echo on the terminal.\n[^\n]*\n",
             "",
             python["stderr"],
         )

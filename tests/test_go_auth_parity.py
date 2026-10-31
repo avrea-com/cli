@@ -146,3 +146,53 @@ def test_hidden_prompt_oracle_uses_standard_fallback(monkeypatch):
     parity_prompt_oracle.main()
     assert seen == [("avrea_cli.main", "__main__", fallback)]
     assert getpass.getpass is original
+
+
+def test_ssh_text_newline_tolerance_does_not_hide_content_or_binary_changes(tmp_path):
+    from scripts import compare_auth
+
+    def capture(payload, normalize):
+        script = "from pathlib import Path; Path('config.txt').write_bytes(" + repr(payload) + ")"
+        scenario = {"args": [], "capture_files": ["config.txt"], "normalize_file_newlines": normalize}
+        return compare_auth.run([sys.executable, "-c", script], scenario, tmp_path, "http://127.0.0.1")["files"]
+
+    expected = capture(b"Host fixture\n", True)
+    assert capture(b"Host fixture\r\n", True) == expected
+    assert capture(b"Host changed\r\n", True) != expected
+    assert capture(b"Host fixture\r\n", False) != expected
+
+
+@pytest.mark.parametrize("source", ["getpass.py", "termui.py"])
+def test_hidden_prompt_warning_location_is_not_command_output(source):
+    from scripts import compare_billing_card
+    from scripts import compare_gitlab
+
+    python = captured()
+    go = deepcopy(python)
+    python["stderr"] = (
+        f"/fixture/{source}:82: GetPassWarning: Can not control echo on the terminal.\n"
+        "  return getpass.getpass(prompt)\nWarning: Password input may be echoed.\nToken: "
+    )
+    go["stderr"] = "Warning: Password input may be echoed.\nToken: \n"
+    scenario = {"name": "hidden prompt", "args": [], "hidden_prompt": True}
+    for comparator in (compare_billing_card.compare, compare_gitlab.compare):
+        assert not comparator(scenario, python, go)
+        changed = deepcopy(go)
+        changed["stderr"] += "unexpected warning"
+        assert "stderr" in comparator(scenario, python, changed)
+
+
+def test_bootstrap_terminal_newlines_keep_script_content_checks():
+    from scripts import compare_vm_bootstrap
+
+    python = captured()
+    go = deepcopy(python)
+    python["stdout"] = "echo one\r\r\n"
+    go["stdout"] = "echo one\r\n"
+    scenario = {"name": "bootstrap print", "args": ["vm", "bootstrap", "--print"], "tty": True}
+    assert not compare_vm_bootstrap.compare(scenario, python, go)
+    go["stdout"] = "echo  one\r\n"
+    assert "printed script content differs" in compare_vm_bootstrap.compare(scenario, python, go)
+    go["stdout"] = "echo one\r\n"
+    scenario["tty"] = False
+    assert "printed script content differs" in compare_vm_bootstrap.compare(scenario, python, go)
