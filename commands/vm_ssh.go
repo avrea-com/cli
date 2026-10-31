@@ -108,6 +108,9 @@ func vmSSHPassthrough(c *cobra.Command, args []string) ([]string, error) {
 			for j := 1; j < len(arg); j++ {
 				short := arg[j : j+1]
 				flag := f.ShorthandLookup(short)
+				if len(arg) > 2 && c.InheritedFlags().ShorthandLookup(short) != nil {
+					flag = nil
+				}
 				if flag == nil {
 					unknown += short
 					continue

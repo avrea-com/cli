@@ -269,12 +269,14 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 			err = &ExitError{Code: 130}
 		}
 	}()
-	finish := func(message, conclusion string) error {
+	finish := func(message, conclusion, notification string) error {
 		if current != "" && d.IsTerminal() {
 			if _, e := fmt.Fprintln(d.Out, logMark(d, fmt.Sprintf("D;%d", stepExit(conclusion)))); e != nil {
 				return e
 			}
 		}
+		setTitle("")
+		notifyCompletion(d, name+": "+notification)
 		_, e := fmt.Fprintln(d.Out, "\n"+message)
 		return e
 	}
@@ -325,11 +327,15 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 			}
 		}
 		if finished {
-			_, _ = api.Job(ctx, org, id, nil)
+			job, lookupErr := api.Job(ctx, org, id, nil)
+			final := "completed"
+			if lookupErr == nil && fieldText(job.Fields, "conclusion") != "" {
+				final = fieldText(job.Fields, "conclusion")
+			}
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			return finish("Job completed.", conclusions[current])
+			return finish("Job completed.", conclusions[current], final)
 		}
 		if idle > 0 && idle%2 == 0 {
 			job, e := api.Job(ctx, org, id, url.Values{"include": {"steps"}})
@@ -371,7 +377,7 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 					if codeConclusion == "" {
 						codeConclusion = conclusion
 					}
-					return finish("Job completed: "+output.CellText(conclusion), codeConclusion)
+					return finish("Job completed: "+output.CellText(conclusion), codeConclusion, conclusion)
 				}
 			} else if ctx.Err() != nil {
 				return ctx.Err()

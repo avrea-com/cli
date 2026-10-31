@@ -22,11 +22,25 @@ type Hosts struct {
 
 func emptyHosts() Hosts { return Hosts{Entries: make(map[string]any)} }
 
+// Read is a convenience for callers that have already loaded configuration.
 func (s *Store) Read() Hosts {
+	h, _ := s.ReadChecked()
+	return h
+}
+
+// ReadChecked distinguishes an absent store from an unreadable one.
+func (s *Store) ReadChecked() (Hosts, error) {
 	data, err := os.ReadFile(s.Path)
-	if err != nil {
-		return emptyHosts()
+	if errors.Is(err, os.ErrNotExist) {
+		return emptyHosts(), nil
 	}
+	if err != nil {
+		return emptyHosts(), fmt.Errorf("read credentials: %w", err)
+	}
+	return decodeHosts(data), nil
+}
+
+func decodeHosts(data []byte) Hosts {
 	var root map[string]json.RawMessage
 	if json.Unmarshal(data, &root) != nil {
 		return emptyHosts()
@@ -136,7 +150,10 @@ func (s *Store) Write(h Hosts) error {
 }
 
 func (s *Store) Set(host, key, value string) error {
-	h := s.Read()
+	h, err := s.ReadChecked()
+	if err != nil {
+		return err
+	}
 	entry, ok := h.Entries[host].(map[string]any)
 	if !ok || entry == nil {
 		if _, exists := h.Entries[host]; !exists {
@@ -153,7 +170,10 @@ func (s *Store) Set(host, key, value string) error {
 }
 
 func (s *Store) Switch(host string) error {
-	h := s.Read()
+	h, err := s.ReadChecked()
+	if err != nil {
+		return err
+	}
 	if _, ok := h.Entries[host]; !ok {
 		return fmt.Errorf("no stored credentials for host %q", host)
 	}
@@ -162,7 +182,10 @@ func (s *Store) Switch(host string) error {
 }
 
 func (s *Store) Clear(host string) (bool, error) {
-	h := s.Read()
+	h, err := s.ReadChecked()
+	if err != nil {
+		return false, err
+	}
 	if _, ok := h.Entries[host]; !ok {
 		return false, nil
 	}
@@ -190,7 +213,10 @@ func (s *Store) Clear(host string) (bool, error) {
 // ClearDefaultOrg removes only the active host's stored organization override.
 // Tokens, unknown fields, host ordering and the selected default host survive.
 func (s *Store) ClearDefaultOrg(host string) (bool, error) {
-	h := s.Read()
+	h, err := s.ReadChecked()
+	if err != nil {
+		return false, err
+	}
 	entry, ok := h.Entries[host].(map[string]any)
 	if !ok {
 		return false, nil

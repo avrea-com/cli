@@ -25,6 +25,13 @@ func TestPagerChild(t *testing.T) {
 	if mode == "quit" {
 		os.Exit(0)
 	}
+	if mode == "ignore-interrupt" {
+		signal.Ignore(os.Interrupt)
+		_, _ = fmt.Fprintln(os.Stdout, "ready")
+		time.Sleep(2500 * time.Millisecond)
+		_, _ = fmt.Fprintln(os.Stdout, "restored")
+		os.Exit(0)
+	}
 	if mode == "wait" {
 		interrupt := make(chan os.Signal, 1)
 		signal.Notify(interrupt, os.Interrupt)
@@ -148,5 +155,50 @@ func TestLogTabsPreserveIndentationAndLiteralEscapes(t *testing.T) {
 	writeStyledLogLine(&b, map[string]any{"content": "actual\ttab; literal\\ttext"}, d, "")
 	if b.String() != "actual\ttab; literal\\ttext\n" {
 		t.Fatalf("log whitespace changed: %q", b.String())
+	}
+}
+
+type interruptPagerWriter struct {
+	output strings.Builder
+	sent   bool
+}
+
+func (w *interruptPagerWriter) Write(p []byte) (int, error) {
+	_, _ = w.output.Write(p)
+	if !w.sent {
+		w.sent = true
+		process, _ := os.FindProcess(os.Getpid())
+		_ = process.Signal(os.Interrupt)
+	}
+	return len(p), nil
+}
+func TestPagerOwnsTerminalInterrupt(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX terminal interrupt delivery")
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AVR_TEST_PAGER_CHILD", "ignore-interrupt")
+	t.Setenv("AVR_PAGER", shellquote.Join(executable, "-test.run=^TestPagerChild$"))
+	t.Setenv("LESS", "-R")
+	ctx, stop := InterruptContext(t.Context())
+	defer stop()
+	d, _, _ := testDeps(t)
+	writer := &interruptPagerWriter{}
+	d.Out = writer
+	d.IsTerminal = func() bool { return true }
+	d.LookupEnv = os.LookupEnv
+	d = d.defaults()
+	if err := pageOutput(ctx, d, "content", false); err != nil {
+		t.Fatal(err)
+	}
+	if ctx.Err() != nil || !strings.Contains(writer.output.String(), "restored") {
+		t.Fatal("pager was killed", ctx.Err(), writer.output.String())
+	}
+	policy, _ := ctx.Value(interruptPolicyKey{}).(*interruptPolicy)
+	if policy.childOwnsInterrupt.Load() {
+		t.Fatal("pager retained interrupt ownership")
 	}
 }

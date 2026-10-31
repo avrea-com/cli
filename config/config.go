@@ -61,7 +61,10 @@ func DefaultStore() (*Store, error) {
 }
 
 func Load(store *Store, getenv func(string) string) (Config, error) {
-	data := store.Read()
+	data, err := store.ReadChecked()
+	if err != nil {
+		return Config{}, err
+	}
 	host := getenv("AVR_HOST")
 	hostSource := "AVR_HOST"
 	stored := host == "" && data.DefaultHost != ""

@@ -218,6 +218,9 @@ func vmPinningOverrides(path string) ([]string, error) {
 			continue
 		}
 		tokens := strings.Fields(strings.Replace(line, "=", " ", 1))
+		if len(tokens) == 0 {
+			continue
+		}
 		keyword := strings.ToLower(tokens[0])
 		if keyword == "host" || keyword == "match" {
 			catchall = false

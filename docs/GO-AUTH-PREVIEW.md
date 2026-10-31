@@ -350,6 +350,31 @@ To rerun only that batch:
 uv run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr
 ```
 
+## JSON ordering and embedded jq compatibility
+
+Go AVR follows GitHub CLI's object-ordering behavior: plain JSON keys are
+sorted, and the order in `--json status,conclusion,run_id` selects fields but
+does not prescribe their printed or iterated order. The embedded gojq engine
+uses unordered Go objects and sorted object iteration. Python AVR preserves
+insertion order, so this is an intentional migration difference.
+
+For stable CSV/TSV columns, name the fields explicitly:
+
+```sh
+avr run list --json status,conclusion,run_id \
+  --jq '.[] | [.status, .conclusion, .run_id] | @tsv'
+```
+
+Do not depend on `[.[]]` or `to_entries` retaining requested-field or API
+member order. Array order remains significant and is preserved. gojq does not
+provide `keys_unsorted`; unsupported expressions fail rather than invoking an
+external jq. Tests cover sorted objects, explicit column ordering, missing
+function errors, and exact TSV row/column boundaries.
+
+This choice matches [GitHub CLI's exporter](https://github.com/cli/cli/blob/trunk/pkg/cmdutil/json_flags.go)
+and [gojq's documented differences](https://github.com/itchyny/gojq/blob/v0.12.19/README.md).
+It does not claim complete compatibility with every external jq expression.
+
 ## Deliberate differences and bounded safeguards
 
 - gojq v0.12.19 replaces the user's system jq. It preserves integer precision and

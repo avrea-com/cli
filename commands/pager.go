@@ -37,6 +37,10 @@ func pageOutput(ctx context.Context, d Dependencies, content string, bypass bool
 	if err != nil {
 		return direct()
 	}
+	// Terminal Ctrl-C belongs to the pager (e.g. aborting a less search).
+	// Explicit parent cancellation still uses the bounded teardown below.
+	restore := sshOwnsInterrupt(ctx)
+	defer restore()
 	cmd := exec.CommandContext(ctx, binary, args[1:]...)
 	// Give terminal pagers a chance to restore terminal modes on Ctrl-C.
 	// Windows does not support Process.Signal(os.Interrupt); use its kill path.

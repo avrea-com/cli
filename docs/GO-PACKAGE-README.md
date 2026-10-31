@@ -19,3 +19,9 @@ For Bash, add this directory to PATH and source `completions/avr.bash`.
 For Zsh, add this directory to PATH and source `completions/_avr` after compinit.
 For Fish, add this directory to PATH and source `completions/avr.fish`.
 Remove that PATH entry and directory to stop using the preview.
+
+JSON object keys follow GitHub CLI/gojq ordering, not Python AVR's insertion
+order. `--json` field order does not define CSV/TSV column order. Name columns
+explicitly, for example:
+`avr run list --json status,conclusion,run_id --jq '.[] | [.status,.conclusion,.run_id] | @tsv'`.
+Array order is preserved. `keys_unsorted` is not supported by embedded gojq.
