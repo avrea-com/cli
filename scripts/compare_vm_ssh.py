@@ -76,6 +76,8 @@ def scenarios():
         },
         presentation=True,
     )
+    case("grouped remote verbose flag", ["grep", "-lv", "needle", "file"])
+    case("grouped remote recursive verbose flag", ["rm", "-rv", "directory"])
     case("no auth", env={}, responses={}, exit=4)
     for status in [401, 403, 404, 422, 429, 503]:
         case(

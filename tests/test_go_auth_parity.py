@@ -90,3 +90,42 @@ def test_captured_output_is_utf8_with_terminal_newline_normalization():
     )
     assert result.returncode == 0
     assert result.stdout == "✓\n"
+
+
+@pytest.mark.parametrize("changed", ["a b\tc\n", "a\tb c\n", "a\tb\nc\n"])
+def test_tsv_column_and_row_changes_are_detected(changed):
+    python = captured()
+    python["stdout"] = "a\tb\tc\n"
+    go = deepcopy(python)
+    go["stdout"] = changed
+    assert "TSV rows/columns" in compare({"args": ["cache", "list"], "tsv": True}, python, go)
+
+
+def test_notification_loss_is_detected_before_terminal_normalization():
+    from scripts.compare_inspection import compare as inspection_compare
+
+    python = captured()
+    python["stdout"] = "completed\x1b]9;Build: success\a"
+    go = deepcopy(python)
+    go["stdout"] = "completed"
+    assert "terminal completion notifications" in inspection_compare(
+        {"name": "notification fixture", "args": ["run", "watch"], "stdout_terms": ["completed"]}, python, go
+    )
+
+
+def test_windows_oracle_pipe_exception_does_not_hide_go_errors(monkeypatch):
+    from scripts import compare_inspection as inspection
+
+    monkeypatch.setattr(inspection.sys, "platform", "win32")
+    python = captured()
+    python["exit"] = 120
+    python["stderr"] = "sys.stdout.flush()\nOSError: [Errno 22] Invalid argument\n"
+    go = deepcopy(python)
+    go["exit"], go["stderr"] = 0, ""
+    scenario = {"name": "pipe fixture", "args": ["run", "watch"], "python_windows_pipe_flush_bug": True}
+    assert not inspection.compare(scenario, python, go)
+    go["exit"] = 1
+    assert inspection.compare(scenario, python, go)
+    go["exit"] = 0
+    python["stderr"] = "unexpected failure"
+    assert inspection.compare(scenario, python, go)
