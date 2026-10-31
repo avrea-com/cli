@@ -42,8 +42,9 @@ traversal and symlinks, and exercise both tar and ZIP extraction. Checksums
 detect corruption; these preview artifacts are not signed release assets.
 
 `.github/workflows/go-package.yml` is reusable through `workflow_call` and
-can also be started manually. CI calls it alongside the existing Go validation
-jobs, so artifact checks can finish even when a separate parity check fails. It builds and validates natively on macOS ARM64, Linux AMD64
+can also be started manually. The independent Go preview workflow calls it
+alongside the Go validation jobs, so artifact checks can finish even when a
+separate parity check fails. It builds and validates natively on macOS ARM64, Linux AMD64
 (Ubuntu 22.04), and Windows AMD64, then uploads `avr-go-package-TARGET`
 artifacts containing the archive, checksum and report. A manual invocation
 runs package checks; it does not run the full CI suite. No release is published.
@@ -176,3 +177,31 @@ capture helper sends UTF-8 stdin bytes directly, preventing subprocess text
 mode from converting LF Git-protocol fixtures into CRLF; output is decoded as
 UTF-8 with normal terminal newline normalization. These boundaries have focused
 tests. Go does not emulate Click's Windows filesystem glob expansion.
+
+
+## Preview checks and Python releases
+
+Go checks now run in `go-preview.yml` on pull requests, main pushes, and
+manual dispatches. It invokes the reusable `go-package.yml` artifact matrix.
+Python `release.yml` continues to invoke only `ci.yml`; it does not depend on
+the experimental Go build, parity, or packaging jobs. No release was published
+as part of these changes.
+
+Documentation metadata generation extracts the public Python package from
+the pinned commit in `scripts.compare_auth.BASELINE` into a temporary directory
+and imports it in an isolated subprocess. It never requires the current
+`avrea_cli/` tree to match that snapshot. To upgrade the migration baseline,
+update the oracle pins together, regenerate documentation metadata and the
+Python command inventory, inspect their changes, and rerun the parity matrix.
+
+The pinned Python run-watch oracle has a Windows closed-pipe flush bug:
+it can exit 120 with `OSError: [Errno 22] Invalid argument`. That single
+fixture accepts this identified Python diagnostic while still requiring Go
+to exit 0 without stderr and emit the expected event. Other Python exceptions
+and every Go failure remain failures; the case is not skipped.
+
+Full parity runs in four independent chunks per platform, with fail-fast
+disabled. Each comparison script runs once per platform. Go generation/unit
+checks and native process tests run in chunk 0; every chunk builds the same
+source and uploads its raw captures. A failure in one chunk does not prevent
+the other chunks from providing evidence.

@@ -350,6 +350,38 @@ def run_scenarios():
             },
         ]
     )
+    result.append(
+        {
+            "name": "run jq explicit TSV columns",
+            "args": [
+                "run",
+                "list",
+                "--json",
+                "status,conclusion,run_id",
+                "--jq",
+                ".[] | [.status,.conclusion,.run_id] | @tsv",
+            ],
+            "responses": response({}),
+            "tsv": True,
+        }
+    )
+    for timestamp in [
+        "2026-10-01T10:00",
+        "2026-10-01T10",
+        "2026-10-01 10:00:00+02:00",
+        "2026-10-01T10:00:00+0200",
+        "20261001",
+        "20261001T100000,1234567Z",
+        "2026-10-01T10:00:00.1+0200",
+    ]:
+        result.append(
+            {
+                "name": "run ISO timestamp " + timestamp,
+                "args": ["run", "list", "--from", timestamp, "--json", "*"],
+                "responses": response({"created_after": datetime.fromisoformat(timestamp).isoformat()}),
+                "json": True,
+            }
+        )
     for case in result:
         case.setdefault("env", env)
     return result
@@ -526,6 +558,7 @@ def watch_scenarios():
     result.append(
         {
             "name": "watch consumer closes pipe",
+            "python_windows_pipe_flush_bug": True,
             "args": args,
             "responses": {endpoint: [active, finished]},
             "close_pipe_after_event": True,
@@ -989,6 +1022,22 @@ def compare(scenario, python, go):
             lines = [line for line in result["stdout"].splitlines() if not re.fullmatch(r"[+\-\s]+", line)]
             result["stdout"] = "\n".join(line.replace("|", " ") for line in lines)
     event_differences = []
+    # Keep the raw capture in the report. Only the known pinned Python flush
+    # failure is accepted; Go must still exit cleanly and emit valid events.
+    if (
+        sys.platform == "win32"
+        and scenario.get("python_windows_pipe_flush_bug")
+        and python["exit"] == 120
+        and "OSError: [Errno 22] Invalid argument" in python["stderr"]
+        and "flush" in python["stderr"]
+    ):
+        python["exit"] = 0
+        python["stderr"] = ""
+    notifications = [
+        re.findall(r"\x1b\]9;([^\x07\x1b]*)(?:\x07|\x1b\\)", r["stdout"] + r["stderr"]) for r in (python, go)
+    ]
+    if notifications[0] != notifications[1]:
+        event_differences.append("terminal completion notifications")
     if scenario.get("presentation"):
         # Normalize moving clocks/ages before comparing, but retain semantic styles.
         def stable(value):
