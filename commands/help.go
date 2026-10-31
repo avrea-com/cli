@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/avrea-com/cli/docgen"
 	"github.com/spf13/cobra"
@@ -189,12 +188,9 @@ func renderHelp(c *cobra.Command, d Dependencies, spec docgen.HelpSpec, stderr b
 }
 func configureHelp(root *cobra.Command, d Dependencies) {
 	root.CompletionOptions.DisableDefaultCmd = true
-	var once sync.Once
-	var specs map[string]docgen.HelpSpec
-	var metadataErr error
 	get := func(c *cobra.Command) (docgen.HelpSpec, error) {
-		once.Do(func() { specs, metadataErr = docgen.HelpTemplates() })
-		return specs[canonicalHelpPath(c)], metadataErr
+		spec, _, err := docgen.HelpTemplate(canonicalHelpPath(c))
+		return spec, err
 	}
 	previous := root.HelpFunc()
 	root.SetHelpFunc(func(c *cobra.Command, args []string) {
@@ -245,7 +241,7 @@ func configureHelp(root *cobra.Command, d Dependencies) {
 		if len(args) > 0 {
 			return &ExitError{2, "Error: No such command " + pythonQuote(args[0]) + "."}
 		}
-		cfg, _, _, err := d.load()
+		cfg, _, err := d.configuration()
 		if err != nil {
 			return err
 		}

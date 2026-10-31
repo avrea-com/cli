@@ -317,6 +317,8 @@ def run(executable, scenario, root, host):
                 chunks = []
 
                 def drain_terminal():
+                    interrupted = False
+                    marker = scenario.get("interrupt_after_text", "").encode()
                     while True:
                         try:
                             chunk = os.read(master, 65536)
@@ -325,6 +327,12 @@ def run(executable, scenario, root, host):
                         if not chunk:
                             break
                         chunks.append(chunk)
+                        if marker and not interrupted and marker in b"".join(chunks):
+                            interrupted = True
+                            try:
+                                process.send_signal(signal.SIGINT)
+                            except ProcessLookupError:
+                                pass
 
                 # Drain while the child is alive: PTYs can discard unread
                 # output on close, and a full PTY buffer blocks the child.
@@ -455,6 +463,28 @@ def run(executable, scenario, root, host):
         }
 
 
+def reused_organization_lookup(scenario, python_requests, go_requests):
+    """Allow removal of duplicate successful org reads, never extra Go requests.
+
+    Only fixed 200-response fixtures qualify. Moving responses, writes, changed
+    credentials/bodies/paths and all other request ordering remain strict.
+    Captured reports retain the original sequences for auditing.
+    """
+    path = "/users/me/organizations"
+    response = scenario.get("responses", {}).get(("GET", path))
+    if not isinstance(response, tuple) or response[0] != 200:
+        return False
+    unique = []
+    seen = []
+    for request in python_requests:
+        if request["method"] == "GET" and request["path"] == path and request.get("body") is None:
+            if request in seen:
+                continue
+            seen.append(request)
+        unique.append(request)
+    return json.dumps(unique, sort_keys=True) == json.dumps(go_requests, sort_keys=True)
+
+
 def compare(scenario, python, go):
     differences = []
     expected = scenario.get("exit", 0)
@@ -473,6 +503,8 @@ def compare(scenario, python, go):
 
     for key in ("exit", "hosts", "requests", "browser"):
         if typed(python[key]) != typed(go[key]):
+            if key == "requests" and reused_organization_lookup(scenario, python[key], go[key]):
+                continue
             differences.append(key)
 
     if scenario.get("json") and python["exit"] == go["exit"] == 0:

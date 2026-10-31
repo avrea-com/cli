@@ -170,13 +170,20 @@ type completionContext struct {
 	pending     *docgen.CompletionParam
 }
 
-func resolveCompletion(root *cobra.Command, args []string, specs map[string]docgen.HelpSpec) completionContext {
+func resolveCompletion(root *cobra.Command, args []string) (completionContext, error) {
 	args = expandTestsShorthand(root, args)
 	state := completionContext{}
-	selectCommand := func(c *cobra.Command) {
-		state = completionContext{command: c, params: completionParams(c, specs[canonicalHelpPath(c)]), used: map[string]bool{}}
+	selectCommand := func(c *cobra.Command) error {
+		spec, _, err := docgen.HelpTemplate(canonicalHelpPath(c))
+		if err != nil {
+			return err
+		}
+		state = completionContext{command: c, params: completionParams(c, spec), used: map[string]bool{}}
+		return nil
 	}
-	selectCommand(root)
+	if err := selectCommand(root); err != nil {
+		return state, err
+	}
 	stopped := false
 	for _, arg := range args {
 		if state.pending != nil {
@@ -229,13 +236,15 @@ func resolveCompletion(root *cobra.Command, args []string, specs map[string]docg
 			if target == nil {
 				break
 			}
-			selectCommand(target)
+			if err := selectCommand(target); err != nil {
+				return state, err
+			}
 			stopped = false
 		} else {
 			state.positionals++
 		}
 	}
-	return state
+	return state, nil
 }
 
 func completionValues(param docgen.CompletionParam, prefix string) []completionItem {
@@ -265,10 +274,6 @@ func completionValues(param docgen.CompletionParam, prefix string) []completionI
 }
 
 func completeCommand(root *cobra.Command, args []string, incomplete string) ([]completionItem, error) {
-	specs, err := docgen.HelpTemplates()
-	if err != nil {
-		return nil, err
-	}
 	if incomplete == "=" {
 		incomplete = ""
 	} else if strings.HasPrefix(incomplete, "-") {
@@ -277,7 +282,10 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 			incomplete = value
 		}
 	}
-	state := resolveCompletion(root, args, specs)
+	state, err := resolveCompletion(root, args)
+	if err != nil {
+		return nil, err
+	}
 	optionPrefix := strings.HasPrefix(incomplete, "-") && !slices.Contains(args, "--")
 	if !optionPrefix {
 		if state.pending != nil {
@@ -300,7 +308,11 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 			continue
 		}
 		description := child.Short
-		if spec, known := specs[canonicalHelpPath(child)]; known {
+		spec, known, err := docgen.HelpTemplate(canonicalHelpPath(child))
+		if err != nil {
+			return nil, err
+		}
+		if known {
 			description = spec.CompletionHelp
 		}
 		out = append(out, completionItem{"plain", child.Name(), description})

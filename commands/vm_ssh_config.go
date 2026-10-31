@@ -46,7 +46,7 @@ func vmSSHAddress(ep map[string]any) (string, string, int, error) {
 	if err != nil || port < 1 || port > 65535 {
 		return "", "", 0, &ExitError{1, "Error: VM endpoint returned an invalid SSH port: " + pythonValue(ep["external_port"]) + "."}
 	}
-	if host == "" || !sshHost.MatchString(host) || strings.HasPrefix(host, "-") || !sshUser.MatchString(user) || strings.HasPrefix(user, "-") {
+	if host == "" || !sshHost().MatchString(host) || strings.HasPrefix(host, "-") || !sshUser().MatchString(user) || strings.HasPrefix(user, "-") {
 		return "", "", 0, &ExitError{1, "Error: VM endpoint returned an invalid SSH host or username."}
 	}
 	return host, user, port, nil
@@ -258,7 +258,7 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 		if alias == "" {
 			alias = "avr-" + args[0]
 		}
-		if !sshUser.MatchString(alias) {
+		if !sshUser().MatchString(alias) {
 			return &ExitError{2, "Error: --host-alias '" + output.CellText(alias) + "' is not valid; use letters, digits, '.', '_' or '-' (no whitespace)."}
 		}
 		cfg, api, orgID, err := organizationContext(cmd.Context(), d, org)

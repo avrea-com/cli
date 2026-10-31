@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,8 +18,8 @@ import (
 
 var sbomListFields = []string{"commit_sha", "branch", "is_release", "schema_version", "generated_at", "recorded_at", "total_dependencies", "unresolved", "copyleft_count", "artifacts"}
 var sbomViewFields = []string{"commit_sha", "branch", "is_release", "schema_version", "generated_at", "recorded_at", "artifacts", "summary"}
-var sbomCommitPattern = regexp.MustCompile("^[0-9a-f]{7,64}$")
-var shellSafePattern = regexp.MustCompile("^[a-zA-Z0-9_@%+=:,./-]+$")
+var sbomCommitPattern = lazyRegexp("^[0-9a-f]{7,64}$")
+var shellSafePattern = lazyRegexp("^[a-zA-Z0-9_@%+=:,./-]+$")
 
 const noSBOMHint = "No SBOM is recorded for this repository or commit yet. Run " + "\x60avr sbom generate\x60" + " to create one."
 
@@ -32,7 +31,7 @@ func NewSBOM(deps Dependencies) *cobra.Command {
 	return c
 }
 func shellQuotePython(value string) string {
-	if shellSafePattern.MatchString(value) {
+	if shellSafePattern().MatchString(value) {
 		return value
 	}
 	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
@@ -142,7 +141,7 @@ func newSBOMList(d Dependencies) *cobra.Command {
 }
 func validatedSBOMCommit(value string) (string, error) {
 	value = strings.ToLower(strings.TrimSpace(value))
-	if !sbomCommitPattern.MatchString(value) {
+	if !sbomCommitPattern().MatchString(value) {
 		return "", &ExitError{2, "Error: must be a hex commit SHA or a prefix of at least 7 characters."}
 	}
 	return value, nil

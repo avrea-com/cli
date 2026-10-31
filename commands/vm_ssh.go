@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,10 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var vmSessionName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+var vmSessionName = lazyRegexp(`^[A-Za-z0-9_-]{1,64}$`)
 
 func validateVMSession(value string) error {
-	if !vmSessionName.MatchString(value) {
+	if !vmSessionName().MatchString(value) {
 		return &ExitError{2, "Error: --session '" + output.CellText(value) + "' is not a valid session name; use letters, digits, '_' or '-' (max 64 chars)."}
 	}
 	return nil

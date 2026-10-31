@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/avrea-com/cli/client"
@@ -18,7 +17,7 @@ import (
 
 var settingsFields = []string{"key", "value", "source"}
 var settingsSchemaFields = []string{"key", "value_type", "default", "scopes", "inherits", "description", "choices", "min_value", "max_value"}
-var settingInteger = regexp.MustCompile("^[+-]?[0-9]+(_[0-9]+)*$")
+var settingInteger = lazyRegexp("^[+-]?[0-9]+(_[0-9]+)*$")
 
 // NewSettings shares public settings scope selection and output with avr-admin.
 func NewSettings(deps Dependencies) *cobra.Command {
@@ -219,7 +218,7 @@ func parseSettingValue(raw string) any {
 		return false
 	}
 	text := strings.TrimSpace(raw)
-	if settingInteger.MatchString(text) {
+	if settingInteger().MatchString(text) {
 		number, ok := new(big.Int).SetString(strings.ReplaceAll(text, "_", ""), 10)
 		if ok {
 			return json.Number(number.String())

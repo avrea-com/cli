@@ -153,6 +153,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_option_values --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_option_aliases --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_global --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_usage_errors --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_argument_contract --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_defaults --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr --go-tool "$(GO)"

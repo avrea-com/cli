@@ -150,7 +150,7 @@ func lookupWorkflow(ctx context.Context, cfg config.Config, api *client.Client, 
 		}
 		return nil, &ExitError{1, fmt.Sprintf("Error: Workflow '%s' not found in this repository", safe)}
 	}
-	if decimalPattern.MatchString(identifier) {
+	if decimalPattern().MatchString(identifier) {
 		value := strings.TrimLeft(identifier, "0")
 		if value == "" {
 			value = "0"

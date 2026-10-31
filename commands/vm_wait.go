@@ -28,7 +28,7 @@ func vmConnectable(row map[string]any) bool {
 }
 func vmRetryDelay(header string) time.Duration {
 	raw := strings.TrimSpace(header)
-	if !sbomRetrySeconds.MatchString(raw) {
+	if !sbomRetrySeconds().MatchString(raw) {
 		return 3 * time.Second
 	}
 	value, err := strconv.ParseUint(raw, 10, 64)

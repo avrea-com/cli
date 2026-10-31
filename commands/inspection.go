@@ -75,6 +75,9 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 	if err != nil {
 		return "", apiError(cfg, err, "resolve the organization")
 	}
+	for _, r := range page.Items {
+		rememberOrganizationSlug(ctx, cfg, r.Value.OrganizationId, r.Value.Slug)
+	}
 	if value != "" {
 		// Exact match first, then case-insensitive slugs, matching Python.
 		for _, r := range page.Items {
@@ -111,6 +114,9 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 }
 
 func orgSlug(ctx context.Context, cfg config.Config, api *client.Client, org string) string {
+	if slug := knownOrganizationSlug(ctx, cfg, org); slug != "" {
+		return slug
+	}
 	if config.IsScoped(cfg.Token) {
 		return org
 	}
@@ -120,6 +126,7 @@ func orgSlug(ctx context.Context, cfg config.Config, api *client.Client, org str
 	}
 	for _, r := range page.Items {
 		if r.Value.OrganizationId == org && r.Value.Slug != "" {
+			rememberOrganizationSlug(ctx, cfg, org, r.Value.Slug)
 			return r.Value.Slug
 		}
 	}

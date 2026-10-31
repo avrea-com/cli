@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"text/template"
 	"unicode"
 
@@ -14,7 +15,9 @@ import (
 
 //go:embed bootstrap/*.tmpl
 var bootstrapScripts embed.FS
-var bootstrapTemplates = template.Must(template.ParseFS(bootstrapScripts, "bootstrap/*.tmpl"))
+var bootstrapTemplates = sync.OnceValues(func() (*template.Template, error) {
+	return template.ParseFS(bootstrapScripts, "bootstrap/*.tmpl")
+})
 
 type bootstrapVariable struct{ name, value string }
 type bootstrapEnvironment []bootstrapVariable
@@ -122,7 +125,11 @@ type bootstrapOptions struct {
 
 func bootstrapScript(name string, fields map[string]any) (string, error) {
 	var output bytes.Buffer
-	err := bootstrapTemplates.ExecuteTemplate(&output, name+".sh.tmpl", fields)
+	templates, err := bootstrapTemplates()
+	if err != nil {
+		return "", err
+	}
+	err = templates.ExecuteTemplate(&output, name+".sh.tmpl", fields)
 	return output.String(), err
 }
 func bootstrapSteps(o bootstrapOptions, env bootstrapEnvironment, agents []string, token string, runScript *string) ([]bootstrapStep, error) {

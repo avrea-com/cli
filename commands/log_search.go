@@ -123,7 +123,7 @@ func searchLogContent(d Dependencies, content string) string {
 	for i, line := range lines {
 		var b strings.Builder
 		offset := 0
-		for _, span := range logSGR.FindAllStringIndex(line, -1) {
+		for _, span := range logSGR().FindAllStringIndex(line, -1) {
 			b.WriteString(logText(line[offset:span[0]]))
 			if d.paint("x", "1") != "x" {
 				b.WriteString(line[span[0]:span[1]])

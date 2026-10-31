@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,11 +34,11 @@ func (p *sbomPoller) stopped() {
 	_, _ = fmt.Fprintf(p.d.Err, "Stopped waiting; SBOM generation was started as task %s. Check \x60avr sbom list\x60 later.\n", output.CellText(p.taskID))
 }
 
-var sbomRetrySeconds = regexp.MustCompile("^[0-9]+$")
+var sbomRetrySeconds = lazyRegexp("^[0-9]+$")
 
 func sbomRetryBackoff(value string) time.Duration {
 	value = strings.TrimSpace(value)
-	if !sbomRetrySeconds.MatchString(value) {
+	if !sbomRetrySeconds().MatchString(value) {
 		return 5 * time.Second
 	}
 	seconds, err := strconv.ParseUint(value, 10, 64)

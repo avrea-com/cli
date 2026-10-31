@@ -1,13 +1,12 @@
 package commands
 
 import (
-	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
 
-var helpWordPattern = regexp.MustCompile(`[^\t\n\r\v\f ]+`)
+var helpWordPattern = lazyRegexp(`[^\t\n\r\v\f ]+`)
 
 func helpLength(value string) int { return utf8.RuneCountInString(value) }
 func helpWords(value string, width int) []string {
@@ -17,7 +16,7 @@ func helpWords(value string, width int) []string {
 	out := []string{}
 	line := ""
 	previous := 0
-	for _, location := range helpWordPattern.FindAllStringIndex(value, -1) {
+	for _, location := range helpWordPattern().FindAllStringIndex(value, -1) {
 		word := value[location[0]:location[1]]
 		gap := strings.Map(func(r rune) rune {
 			if unicode.IsSpace(r) {

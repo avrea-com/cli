@@ -15,7 +15,7 @@ import (
 var sbomGenerateFields = []string{"ai_task_id", "status", "task_status", "error_code", "commit_sha", "recorded_at"}
 
 func fullSBOMCommit(ref string) bool {
-	return (len(ref) == 40 || len(ref) == 64) && sbomCommitPattern.MatchString(ref)
+	return (len(ref) == 40 || len(ref) == 64) && sbomCommitPattern().MatchString(ref)
 }
 
 func newSBOMGenerate(d Dependencies) *cobra.Command {

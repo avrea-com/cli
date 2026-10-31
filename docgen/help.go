@@ -50,3 +50,15 @@ func HelpTemplates() (map[string]HelpSpec, error) {
 	err := json.Unmarshal(metadata, &value)
 	return value.Terminal, err
 }
+
+// HelpTemplate decodes only the requested command and returns independently owned
+// state. Unknown paths let composed commands fall back to their live metadata.
+func HelpTemplate(path string) (HelpSpec, bool, error) {
+	data := helpTemplateJSON(path)
+	if data == nil {
+		return HelpSpec{}, false, nil
+	}
+	var spec HelpSpec
+	err := json.Unmarshal(data, &spec)
+	return spec, true, err
+}

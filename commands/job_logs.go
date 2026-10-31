@@ -181,7 +181,7 @@ func newJobLogs(d Dependencies) *cobra.Command {
 	f.BoolVar(&o.noPager, "no-pager", false, "Print without a pager.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if o.follow && o.failed {
-			return &ExitError{2, "Error: --follow and --failed cannot be combined"}
+			return usageError(cmd, "--follow and --failed cannot be combined")
 		}
 		if o.level != "" {
 			valid := false

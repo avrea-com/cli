@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +14,7 @@ import (
 var runFields = []string{"run_id", "ci_provider", "workflow_name", "workflow_path", "platform_run_id", "display_title", "status", "conclusion", "head_branch", "head_sha", "event", "run_number", "run_attempt", "duration_seconds", "created_at", "updated_at", "workflow_id", "workflow", "repository", "triggering_actor"}
 var runStates = map[string]bool{"queued": true, "in_progress": true, "completed": true}
 var runConclusions = map[string]bool{"success": true, "failure": true, "neutral": true, "cancelled": true, "skipped": true, "timed_out": true, "action_required": true, "stale": true, "startup_failure": true}
-var sincePattern = regexp.MustCompile("^([0-9]+)([dhm])$")
+var sincePattern = lazyRegexp("^([0-9]+)([dhm])$")
 
 // NewRun returns shared CI-run inspection commands.
 func NewRun(deps Dependencies) *cobra.Command {
@@ -25,10 +24,10 @@ func NewRun(deps Dependencies) *cobra.Command {
 	return group
 }
 
-var isoTimestamp = regexp.MustCompile(`^(\d{4})-?(\d{2})-?(\d{2})(?:[Tt ](\d{2})(?::?(\d{2}))?(?::?(\d{2}))?(?:[.,](\d+))?(Z|[+-]\d{2}(?::?\d{2})?)?)?$`)
+var isoTimestamp = lazyRegexp(`^(\d{4})-?(\d{2})-?(\d{2})(?:[Tt ](\d{2})(?::?(\d{2}))?(?::?(\d{2}))?(?:[.,](\d+))?(Z|[+-]\d{2}(?::?\d{2})?)?)?$`)
 
 func normalizeTimestamp(value string) (string, error) {
-	m := isoTimestamp.FindStringSubmatch(value)
+	m := isoTimestamp().FindStringSubmatch(value)
 	if m == nil {
 		return "", fmt.Errorf("invalid timestamp")
 	}

@@ -196,3 +196,57 @@ def test_bootstrap_terminal_newlines_keep_script_content_checks():
     go["stdout"] = "echo one\r\n"
     scenario["tty"] = False
     assert "printed script content differs" in compare_vm_bootstrap.compare(scenario, python, go)
+
+
+def test_only_redundant_successful_organization_reads_can_be_removed():
+    python = captured()
+    request = {"method": "GET", "path": "/users/me/organizations", "authorization": "Bearer fixture", "body": None}
+    python["requests"] = [request, {"method": "GET", "path": "/repos", "body": None}, deepcopy(request)]
+    go = deepcopy(python)
+    go["requests"].pop()
+    scenario = {"args": ["repo", "list"], "responses": {("GET", "/users/me/organizations"): (200, {"data": []})}}
+    assert not compare(scenario, python, go)
+    # Additional Go reads, missing non-org reads, changed credentials and failures
+    # must not disappear under the performance exception.
+    assert "requests" in compare(scenario, go, python)
+    for mutation in ("missing", "auth", "write", "error", "moving"):
+        case, changed = deepcopy(scenario), deepcopy(go)
+        if mutation == "missing":
+            changed["requests"].pop()
+        elif mutation == "auth":
+            changed["requests"][0]["authorization"] = "Bearer other"
+        elif mutation == "write":
+            changed["requests"][1]["method"] = "POST"
+        elif mutation == "error":
+            case["responses"][("GET", "/users/me/organizations")] = (503, {})
+        else:
+            case["responses"][("GET", "/users/me/organizations")] = [(200, {}), (200, {})]
+        assert "requests" in compare(case, python, changed)
+
+
+def test_org_lookup_reuse_preserves_log_search_body_and_types():
+    python = captured()
+    org = {"method": "GET", "path": "/users/me/organizations", "body": None}
+    search = {"method": "POST", "path": "/logs/search", "body": {"limit": 1}}
+    python["requests"] = [org, search, deepcopy(org)]
+    go = deepcopy(python)
+    go["requests"].pop()
+    scenario = {"args": ["job", "view"], "responses": {("GET", "/users/me/organizations"): (200, {"data": []})}}
+    assert not compare(scenario, python, go)
+    go["requests"][1]["body"]["limit"] = True
+    assert "requests" in compare(scenario, python, go)
+
+
+def test_org_lookup_reuse_never_removes_or_changes_writes():
+    python = captured()
+    org = {"method": "GET", "path": "/users/me/organizations", "body": None}
+    write = {"method": "POST", "path": "/runs/run-fixture/cancel", "body": {"force": False}}
+    python["requests"] = [org, write, deepcopy(org)]
+    go = deepcopy(python)
+    go["requests"].pop()
+    scenario = {"args": ["run", "cancel"], "responses": {("GET", "/users/me/organizations"): (200, {"data": []})}}
+    assert not compare(scenario, python, go)
+    go["requests"][1]["body"]["force"] = True
+    assert "requests" in compare(scenario, python, go)
+    go["requests"].pop()
+    assert "requests" in compare(scenario, python, go)

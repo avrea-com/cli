@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,10 +11,10 @@ import (
 	"github.com/avrea-com/cli/config"
 )
 
-var runIDPattern = regexp.MustCompile(`^(?:run|awr)-[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$`)
-var decimalPattern = regexp.MustCompile(`^[0-9]+$`)
-var githubNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
-var orgSlugPattern = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
+var runIDPattern = lazyRegexp(`^(?:run|awr)-[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$`)
+var decimalPattern = lazyRegexp(`^[0-9]+$`)
+var githubNamePattern = lazyRegexp(`^[A-Za-z0-9_.-]+$`)
+var orgSlugPattern = lazyRegexp(`^[A-Za-z0-9-]+$`)
 
 type runReference struct {
 	id, platformID, repository, orgSlug string
@@ -27,7 +26,7 @@ func invalidRunReference() error {
 }
 
 func positiveDecimal(raw string) (string, bool) {
-	if !decimalPattern.MatchString(raw) {
+	if !decimalPattern().MatchString(raw) {
 		return "", false
 	}
 	value := strings.TrimLeft(raw, "0")
@@ -41,7 +40,7 @@ func parseRunReference(raw, host string) (runReference, error) {
 	if strings.HasPrefix(raw, "https://gitlab.com/") {
 		return runReference{}, &ExitError{2, "Error: Run commands support GitHub workflow runs. Use 'avr job view JOB_ID' for GitLab jobs."}
 	}
-	if runIDPattern.MatchString(raw) {
+	if runIDPattern().MatchString(raw) {
 		return runReference{id: raw}, nil
 	}
 	if id, ok := positiveDecimal(raw); ok {
@@ -60,7 +59,7 @@ func parseRunReference(raw, host string) (runReference, error) {
 	// meaning as URL structure after validation.
 	parts := strings.Split(strings.TrimSuffix(u.EscapedPath(), "/"), "/")
 	if strings.EqualFold(u.Hostname(), "github.com") {
-		if (len(parts) != 6 && len(parts) != 8) || parts[0] != "" || parts[3] != "actions" || parts[4] != "runs" || !githubNamePattern.MatchString(parts[1]) || !githubNamePattern.MatchString(parts[2]) {
+		if (len(parts) != 6 && len(parts) != 8) || parts[0] != "" || parts[3] != "actions" || parts[4] != "runs" || !githubNamePattern().MatchString(parts[1]) || !githubNamePattern().MatchString(parts[2]) {
 			return runReference{}, invalidRunReference()
 		}
 		id, ok := positiveDecimal(parts[5])
@@ -70,7 +69,7 @@ func parseRunReference(raw, host string) (runReference, error) {
 		ref := runReference{platformID: id, repository: parts[1] + "/" + parts[2]}
 		if len(parts) == 8 {
 			n, e := strconv.ParseInt(parts[7], 10, 64)
-			if parts[6] != "attempts" || !decimalPattern.MatchString(parts[7]) || e != nil || n < 1 {
+			if parts[6] != "attempts" || !decimalPattern().MatchString(parts[7]) || e != nil || n < 1 {
 				return runReference{}, invalidRunReference()
 			}
 			ref.attempt = n
@@ -88,7 +87,7 @@ func parseRunReference(raw, host string) (runReference, error) {
 	if u.Hostname() == "console.avrea.com" && apiURL.Hostname() != "api.avrea.com" {
 		return runReference{}, fmt.Errorf("this run URL belongs to a different Avrea environment. Switch with `avr auth switch https://api.avrea.com` and try again")
 	}
-	if u.Hostname() != expected || len(parts) != 5 || parts[0] != "" || parts[1] != "org" || parts[3] != "runs" || !orgSlugPattern.MatchString(parts[2]) || !runIDPattern.MatchString(parts[4]) {
+	if u.Hostname() != expected || len(parts) != 5 || parts[0] != "" || parts[1] != "org" || parts[3] != "runs" || !orgSlugPattern().MatchString(parts[2]) || !runIDPattern().MatchString(parts[4]) {
 		return runReference{}, invalidRunReference()
 	}
 	return runReference{id: parts[4], orgSlug: parts[2]}, nil
