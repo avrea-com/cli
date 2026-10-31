@@ -9,7 +9,7 @@ Trigger a workflow_dispatch event.
 .PP
 WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub numeric workflow ID, a workflow path, or the workflow's display name. Bare filenames (build.yml) select GitHub Actions; use the full .avrea/workflows/build.yml path for Avrea CI.
 .PP
-Native -f inputs use the workflow's declared types. JSON preserves booleans and numbers. A receipt identifies the exact native run. If a response is lost, use the printed retry command to recover the same invocation with its resolved ref, inputs and --idempotency-key.
+Native -f inputs use the workflow's declared types. JSON preserves booleans and numbers. A receipt identifies the exact native run. If a response is lost, use the printed retry command to recover the same invocation with its resolved ref, inputs and --idempotency-key. --no-watch prints the accepted ref and commit plus a command to resume following a pending native dispatch.
 .PP
 .RS 4
 .nf

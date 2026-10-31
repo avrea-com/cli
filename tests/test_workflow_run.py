@@ -55,6 +55,15 @@ class TestResolveWorkflowFilename:
         assert result.display_name is None
         client.public_get.assert_not_called()
 
+    def test_gitlab_workflow_refuses_manual_dispatch(self) -> None:
+        client = MagicMock()
+        client.public_get.return_value = {
+            "data": [{"workflow_id": "wfl-" + "1" * 32, "name": "Build", "ci_provider": "gitlab_ci"}]
+        }
+        with pytest.raises(click.ClickException, match="not available for GitLab CI"):
+            _resolve_workflow_filename(client, "org-1", "rep-1", "Build")
+        client.public_post.assert_not_called()
+
     def test_resolves_wfl_id_to_filename(self):
         client = MagicMock()
         client.public_get.return_value = {

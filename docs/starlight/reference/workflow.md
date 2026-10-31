@@ -61,6 +61,8 @@ Native -f inputs use the workflow's declared types. JSON preserves
 booleans and numbers. A receipt identifies the exact native run. If a
 response is lost, use the printed retry command to recover the same
 invocation with its resolved ref, inputs and --idempotency-key.
+--no-watch prints the accepted ref and commit plus a command to resume
+following a pending native dispatch.
 
 ```sh
 Examples:

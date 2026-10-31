@@ -25,7 +25,27 @@ class NativeDispatch(BaseModel):
     state: Literal["pending", "admitted", "rejected"]
     reason: str | None = None
     run_ids: list[Annotated[str, Field(pattern=r"^awr-[0-9a-f]{32}$")]]
+    ref: str
+    commit_sha: str
     _retry_command: str | None = PrivateAttr(default=None)
+
+    def pending_message(self) -> str:
+        message = f"Dispatch {self.dispatch_id} was accepted and is awaiting admission."
+        if self._retry_command:
+            message += f"\nResume following this dispatch:\n{self._retry_command}"
+        return message
+
+
+class NativeDispatchInput(BaseModel):
+    name: str
+    type: str
+
+
+class NativeDispatchMetadata(BaseModel):
+    ref: str
+    dispatchable: bool
+    can_dispatch: bool
+    inputs: list[NativeDispatchInput]
 
 
 def _receipt(response: dict[str, Any]) -> NativeDispatch:
@@ -58,24 +78,31 @@ def submit_native_workflow(
     invocation_key: UUID | None,
 ) -> NativeDispatch:
     base = f"/orgs/{organization_id}/repos/{repository_id}"
-    metadata: dict[str, Any] = {}
+    metadata: NativeDispatchMetadata | None = None
     if ref is None or fields:
         try:
-            metadata = client.public_get(
+            response = client.public_get(
                 f"{base}/workflows/{workflow_id}/dispatch-metadata", params={"ref": ref} if ref else None
-            ).get("data", {})
+            )
+            metadata = NativeDispatchMetadata.model_validate(response.get("data"))
+        except ValidationError as exc:
+            raise click.ClickException("The API returned invalid native workflow metadata.") from exc
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "read native workflow inputs")
         except httpx.TransportError as exc:
             raise click.ClickException("Could not read native workflow inputs; no dispatch was submitted.") from exc
-    ref = ref or metadata.get("ref")
+        if not metadata.dispatchable:
+            raise click.ClickException("Manual dispatch is not enabled for this native workflow at the selected ref.")
+        if not metadata.can_dispatch:
+            raise click.ClickException("Native workflow dispatch is not permitted for this repository and user.")
+    ref = ref or (metadata.ref if metadata is not None else None)
     if not ref:
         raise click.ClickException("Could not determine the workflow's default branch. Pass --ref explicitly.")
     values: dict[str, Any]
     if raw_json is not None:
         values = json.loads(raw_json, parse_float=Decimal, parse_constant=Decimal)
     else:
-        types = {item["name"]: item["type"] for item in metadata.get("inputs", [])}
+        types = {item.name: item.type for item in metadata.inputs} if metadata is not None else {}
         values = dict(fields)
         for name, value in fields.items():
             match types.get(name, "string"):
@@ -121,7 +148,17 @@ def submit_native_workflow(
     )
     click.echo(f"Invocation key: {key}", err=True)
     try:
-        response = client.public_post(f"{base}/workflow-dispatches", content=content, idempotency_key=key)
+        for attempt in range(2):
+            try:
+                # The server budgets 45 seconds for source and permission checks.
+                response = client.public_post(
+                    f"{base}/workflow-dispatches", content=content, idempotency_key=key, timeout=60
+                )
+                break
+            except httpx.TransportError:
+                # The identical keyed request recovers a receipt if the response was lost.
+                if attempt == 1:
+                    raise
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code >= 500 or exc.response.status_code == 429:
             click.echo(f"Retry the exact request:\n{retry_command}", err=True)
@@ -156,8 +193,7 @@ def follow_native_dispatch(client: ApiClient, base: str, receipt: NativeDispatch
                 raise click.ClickException("Unsupported native dispatch state.")
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            retry = f" Retry the exact request:\n{receipt._retry_command}" if receipt._retry_command else ""
-            raise click.ClickException(f"Dispatch {dispatch_id} is still pending.{retry}")
+            raise click.ClickException(receipt.pending_message())
         try:
             next_receipt = _receipt(
                 client.public_get(f"{base}/workflow-dispatches/{dispatch_id}", timeout=min(client.timeout, remaining))

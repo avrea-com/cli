@@ -769,6 +769,8 @@ def workflow_run(
     booleans and numbers. A receipt identifies the exact native run. If a
     response is lost, use the printed retry command to recover the same
     invocation with its resolved ref, inputs and --idempotency-key.
+    --no-watch prints the accepted ref and commit plus a command to resume
+    following a pending native dispatch.
 
     \b
     Examples:
@@ -826,11 +828,15 @@ def workflow_run(
             idempotency_key,
         )
         click.echo(f"Avrea CI dispatch: {receipt.dispatch_id}")
-        if receipt.state == "rejected" or watch:
+        click.echo(f"  Ref: {receipt.ref}\n  Commit: {receipt.commit_sha}")
+        if not watch and receipt.state == "pending":
+            click.echo(receipt.pending_message(), err=True)
+        else:
             run_id = follow_native_dispatch(client, base, receipt)
-            _watch_workflow_run(ctx, org_id_resolved, run_id, interval, exit_status)
-        elif receipt.run_ids:
-            click.echo(f"Run: {receipt.run_ids[0]}")
+            if watch:
+                _watch_workflow_run(ctx, org_id_resolved, run_id, interval, exit_status)
+            else:
+                click.echo(f"Run: {run_id}")
         return
     if idempotency_key is not None:
         raise click.ClickException("--idempotency-key is supported only for Avrea CI workflows.")
@@ -861,7 +867,10 @@ def workflow_run(
         response = client.public_post(f"/orgs/{org_id_resolved}/repos/{repo_id}/dispatch-workflow", json=body)
         data = response.get("data", {})
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "dispatch workflow")
+        hint = None
+        if workflow_identifier.endswith(_WF_FILENAME_SUFFIXES) and "/" not in workflow_identifier:
+            hint = "For Avrea CI, pass the full .avrea/workflows/ path or an awf- workflow ID."
+        handle_http_error(exc, "dispatch workflow", hints={404: hint, 422: hint} if hint else None)
 
     platform_run_id = data.get("platform_run_id")
     # Show the matched display name when we have one — keeps a fuzzy
