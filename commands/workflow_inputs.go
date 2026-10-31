@@ -54,6 +54,11 @@ func readWorkflowInput(decoder *json.Decoder, depth int) (workflowInput, error) 
 		value.text = token.String()
 		if strings.ContainsAny(value.text, ".eE") {
 			number, err := strconv.ParseFloat(value.text, 64)
+			if math.IsInf(number, 0) {
+				value.text = strings.ToLower(strconv.FormatFloat(number, 'g', -1, 64))
+				value.text = strings.TrimPrefix(value.text, "+")
+				break
+			}
 			if err != nil {
 				return value, err
 			}

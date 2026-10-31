@@ -216,12 +216,12 @@ def scenarios():
             )
     cases.append(
         {
-            "name": "native workflow dispatch unavailable",
+            "name": "native workflow dispatch malformed metadata",
             "args": ["workflow", "run", native(workflow.WF), "--repo", inspection.REPO, "--no-watch"],
             "env": ENV,
             "responses": {workflow.LOOKUP: (200, {"data": [native(workflow.WORKFLOW)]})},
             "exit": 1,
-            "error_terms": ["Manual workflow dispatch", "not available for Avrea CI yet"],
+            "error_terms": ["invalid native workflow metadata"],
         }
     )
     exact = deepcopy(next(c for c in workflow.scenarios() if c["name"] == "workflow view human"))

@@ -16,6 +16,46 @@ VM bootstrap preserves Python's scripts and credential forwarding. Its
 --install-avr step still installs the Python package in the VM; selecting a Go
 release artifact belongs to the later release-packaging work.
 
+## Native workflow dispatch (origin/main refresh, 2026-10-31)
+
+The Go migration is locally rebased onto `df6d102` and its Python oracle is
+pinned to that commit. The public tree still contains 151 command/group nodes;
+this upstream slice extends `workflow run`, adding `--idempotency-key` and
+native Avrea CI dispatch rather than a new command group.
+
+`workflow run` now resolves native workflow IDs, full `.avrea/workflows/` paths,
+and display names. Bare YAML filenames keep their GitHub Actions behavior.
+Native `-f` values use declared workflow types; JSON preserves scalar types and
+exact decimal values. Duplicate keys keep the last value before validation.
+
+A native submission prints an invocation key and receipt with the accepted ref
+and commit. Pending `--no-watch` submissions print a shell-quoted replay command
+that freezes the host, org, repo, workflow, ref, typed inputs, and key. A lost
+response gets one identical retry. HTTP failures are not automatically reposted;
+retry guidance accompanies 429/5xx and malformed receipts. Go's implicit
+transport POST replay is disabled for this operation so it cannot add retries
+outside that budget. Receipt polling retries transient reads for at most 90
+seconds, checks receipt identity, and watches only the exact admitted run.
+
+The native POST has a 60-second timeout for the server's source/permission
+checks without changing the shared client's default. UUID parsing reuses the
+existing `google/uuid` dependency. New endpoint adapters validate receipt and
+metadata shapes explicitly; the pinned generated API schema is unchanged.
+Existing bounded/cancellable stdin parsing and terminal rendering are reused.
+
+The native fixture suite covers 76 paired cases, including exact decimals,
+replay commands, lost responses, transient receipt reads, permission errors,
+invalid receipts, duplicate inputs, native/GitHub selection, and terminal
+styles. Go tests exercise the printed replay against the same server, enforce
+identical bodies/keys, check timeouts and cancellation, and guard the retry
+limit on reused connections. All dispatches in validation target loopback
+fixtures; no workflows were dispatched in staging or production.
+
+The existing strict-JSON boundary remains: Go rejects non-standard JSON
+`NaN`/`Infinity` before lookup; Python rejects them later during native input
+validation. Both refuse submission. Ordinary JSON numbers, including large
+finite exponents and decimals beyond binary float precision, are preserved.
+
 ## Live read-only output validation
 
 `scripts/compare_staging_readonly.py` compares the checkout Python CLI and the

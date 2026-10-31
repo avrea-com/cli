@@ -74,6 +74,8 @@ jobs:
         if: matrix.shard == 3
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_workflow --go build/go/avr.exe
         if: matrix.shard == 0
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_native_dispatch --go build/go/avr.exe
+        if: matrix.shard == 1
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_workflow_run --go build/go/avr.exe
         if: matrix.shard == 1
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_job_watch --go build/go/avr.exe

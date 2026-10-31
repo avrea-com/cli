@@ -1699,3 +1699,29 @@ The CI matrix is unchanged pending native ARM validation.
 Linux ARM64 was subsequently deferred at the user’s request and removed from
 the allowed packaging targets. The first packaging milestone remains macOS
 ARM64, Linux AMD64 and Windows AMD64; the trial evidence is retained.
+
+
+## Native workflow dispatch refresh — 2026-10-31
+
+Rebased onto `origin/main` at `df6d102` (PR #76). The startup and
+terminal-parity changes are recorded separately in `33a7aa6`; this change
+adds the newly merged native workflow dispatch behavior. The existing PR
+remains a draft, with no release or installer cutover.
+
+The updated Python command snapshot remains 151 nodes. The new behavior belongs
+to `workflow run`: native IDs/full paths/names, metadata-based default refs and
+typed inputs, `--idempotency-key`, durable receipts, exact replay after lost
+responses, bounded receipt following, and watching the receipt's admitted run.
+GitHub filename dispatch remains available and now explains native selection
+on 404/422. GitLab and unknown providers retain explicit refusal messages.
+
+The shared Go library carries this into avr-admin. Native requests are validated
+only against local mocks, including replay, failure, and cancellation paths.
+The detailed behavior and accepted strict-JSON boundary are recorded in
+[GO-AUTH-PREVIEW.md](GO-AUTH-PREVIEW.md#native-workflow-dispatch-originmain-refresh-2026-10-31).
+Validation artifacts are under `build/go/main-refresh/`.
+
+Final refresh validation: 7,668 public paired fixture cases, 76 native cases
+through the real admin binary, and 116 Python tests passed. Race/lint/schema/
+command/vulnerability checks and Linux/Windows cross-builds passed. Validation
+did not dispatch workflows in staging or production; no release was created.
