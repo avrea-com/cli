@@ -35,6 +35,7 @@ def test_docs_default_bundled_readme_matches_python(tmp_path):
         "env": {},
         "capture_files": ["out/index.md"],
         "capture_text_files": True,
+        "normalize_file_newlines": True,
     }
     python = harness.run([sys.executable, "-m", "avrea_cli.main"], scenario, oracle, "http://127.0.0.1:1")
     native = harness.run([str(binary)], scenario, oracle, "http://127.0.0.1:1")
