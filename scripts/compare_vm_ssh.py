@@ -34,7 +34,7 @@ def scenarios():
     case("default user", endpoint=EP | {"username": ""}, presentation=True)
     case("port 22", endpoint=EP | {"external_port": 22}, presentation=True)
     for name, flags in [
-        ("identity", ["-i", "~/.ssh/id_ed25519"]),
+        ("identity", ["-i", "FIXTURE_HOME/.ssh/id_ed25519"]),
         ("long identity", ["--identity", "key with spaces"]),
         ("attached short identity", ["-ikey"]),
         ("equals identity", ["--identity=key"]),
