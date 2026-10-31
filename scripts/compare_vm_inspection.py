@@ -87,7 +87,7 @@ def scenarios():
             presentation=True,
         )
         case(name + " explicit org", args + ["--org", ORG], env=ENV | {"AVR_ORG": "org-other"}, presentation=True)
-        case(name + " no JSON fields", args + ["--json", "*"], responses={}, exit=2, error_terms=["*"])
+        case(name + " no JSON fields", args + ["--json=*"], responses={}, exit=2, error_terms=["--json"])
         case(name + " no jq", args + ["--jq", "."], responses={}, exit=2, error_terms=["--jq"])
         for status in [401, 403, 404, 409, 422, 429, 503]:
             case(

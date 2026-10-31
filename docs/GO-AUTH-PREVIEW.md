@@ -331,7 +331,13 @@ credential persistence, and blocking credential-bearing redirects.
 CI is configured for native build/test/parity on Linux, macOS, and Windows, retaining preview
 binaries, notices, and reports. Windows runs piped-output checks; the small PTY
 smoke subset runs on POSIX. Cross-compilation is useful additional evidence but
-does not substitute for those native jobs. Actual provider login with a human
+does not substitute for those native jobs. Hidden-prompt Windows fixtures select
+Python's standard piped-input fallback, because Windows getpass otherwise reads
+the real console despite redirected stdin. Secret validation, API calls, and
+leak checks still run. Path fixtures use explicit home paths to keep shell/Click
+tilde expansion outside the command comparison; JSON wildcards use `--json=*`.
+The loopback server has a 128-connection backlog for concurrent diagnostic requests.
+Actual provider login with a human
 browser remains a manual smoke check before a user-facing release.
 
 The job batch has its own `build/go/job-parity.json` report and runs under

@@ -51,6 +51,12 @@ def canonical_path(path):
     return urlunsplit(parts._replace(query=query))
 
 
+class FixtureServer(http.server.ThreadingHTTPServer):
+    # Diagnosis fans out concurrent evidence requests. Windows may refuse
+    # connects beyond the default five-slot backlog before accept catches up.
+    request_queue_size = 128
+
+
 class Fixture(http.server.BaseHTTPRequestHandler):
     server: Any
 
@@ -263,6 +269,9 @@ def run(executable, scenario, root, host):
             )
             env["AVR_BROWSER"] = '"' + sys.executable + '" "' + str(browser) + '" %s'
             env["BROWSER"] = env["AVR_BROWSER"]
+
+        if scenario.get("hidden_prompt") and os.name == "nt" and executable[1:] == ["-m", "avrea_cli.main"]:
+            executable = [executable[0], str(Path(__file__).with_name("parity_prompt_oracle.py"))]
 
         if scenario.get("login"):
             if executable[1:] == ["-m", "avrea_cli.main"]:
@@ -819,7 +828,7 @@ def main(
             tar.extractall(oracle, filter="data")
         if prepare_oracle is not None:
             prepare_oracle(Path(oracle))
-        server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), Fixture))
+        server = cast(Any, FixtureServer(("127.0.0.1", 0), Fixture))
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         host = f"http://127.0.0.1:{server.server_port}"
