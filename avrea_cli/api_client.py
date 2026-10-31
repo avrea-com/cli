@@ -112,6 +112,7 @@ class ApiClient:
         content: str | bytes | None = None,
         params: dict[str, Any] | None = None,
         content_type: str | None = None,
+        idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         """POST request to public API."""
         if json is not None and content is not None:
@@ -121,6 +122,8 @@ class ApiClient:
         headers = self.config.get_api_headers()
         if content_type is not None:
             headers = {**headers, "Content-Type": content_type}
+        if idempotency_key is not None:
+            headers = {**headers, "Idempotency-Key": idempotency_key}
         try:
             response = self._http.post(
                 url,

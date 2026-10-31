@@ -19,7 +19,6 @@ from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import parse_since
-from avrea_cli.helpers import require_external_ci
 from avrea_cli.json_output import emit_json
 from avrea_cli.json_output import emit_json_record
 from avrea_cli.json_output import handle_json_meta
@@ -27,6 +26,8 @@ from avrea_cli.json_output import json_options
 from avrea_cli.json_output import make_schema
 from avrea_cli.json_output import reject_web_with_json
 from avrea_cli.json_output import split_fields
+from avrea_cli.native_dispatch import follow_native_dispatch
+from avrea_cli.native_dispatch import submit_native_workflow
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repo_or_detect
 from avrea_cli.repo_context import resolve_repos_or_detect
@@ -35,6 +36,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Any
 from typing import NamedTuple
+from uuid import UUID
 import click
 import httpx
 import json
@@ -491,6 +493,7 @@ class ResolvedWorkflow(NamedTuple):
     filename: str
     display_name: str | None
     platform_workflow_id: int | None
+    native_workflow_id: str | None = None
 
 
 def _basename(path: str | None) -> str:
@@ -570,9 +573,11 @@ def _lookup_workflow(client: ApiClient, org_id: str, repo_id: str, identifier: s
 
 
 def _resolve_workflow_filename(client: ApiClient, org_id: str, repo_id: str, identifier: str) -> ResolvedWorkflow:
-    """Resolve a user-provided workflow identifier to a filename GitHub will accept.
+    """Resolve native IDs/paths/names or a GitHub workflow filename.
 
-    Accepts: Avrea ``wfl-xxx`` ID, a filename (``build.yml``), or a display name."""
+    Bare filenames retain GitHub passthrough. Use an awf- ID or full
+    .avrea/workflows/path for native workflows with a matching basename.
+    """
     # Filename passthrough — GitHub accepts these directly. We don't have a
     # display name or platform id to surface in this branch (no API call),
     # so the caller's success line will print just the filename.
@@ -580,7 +585,18 @@ def _resolve_workflow_filename(client: ApiClient, org_id: str, repo_id: str, ide
         return ResolvedWorkflow(identifier, None, None)
 
     wf = _lookup_workflow(client, org_id, repo_id, identifier)
-    require_external_ci(wf, "Manual workflow dispatch")
+    match wf.get("ci_provider"):
+        case "avrea_ci":
+            workflow_id = wf.get("workflow_id")
+            if not isinstance(workflow_id, str) or not workflow_id.startswith("awf-"):
+                raise click.ClickException("Native workflow has no valid Avrea workflow ID.")
+            return ResolvedWorkflow(wf.get("path") or identifier, wf.get("name"), None, workflow_id)
+        case None | "github_actions":
+            pass
+        case "gitlab_ci":
+            raise click.ClickException("Manual dispatch is not available for GitLab CI.")
+        case provider:
+            raise click.ClickException(f"Unsupported CI provider: {provider}")
     path = wf.get("path")
     # GitHub serves workflows that lack a ``.yml`` path while disabled or
     # mid-rename. Surface the cause instead of dispatching ``workflow=""``,
@@ -718,6 +734,7 @@ def _row_matches_dispatch(row: dict[str, Any], dispatch_time: datetime, platform
 )
 @click.option("-f", "--raw-field", "raw_fields", multiple=True, help="Workflow input: key=value (repeatable).")
 @click.option("--json", "json_inputs", is_flag=True, help="Read a JSON object of inputs from stdin.")
+@click.option("--idempotency-key", type=click.UUID, help="For Avrea CI, reuse this key to retry the same invocation.")
 @click.option(
     "-w/-W",
     "--watch/--no-watch",
@@ -729,22 +746,31 @@ def _row_matches_dispatch(row: dict[str, Any], dispatch_time: datetime, platform
 @click.option("--interval", type=int, default=3, show_default=True, help="With --watch, refresh interval in seconds.")
 @click.pass_context
 def workflow_run(
-    ctx,
+    ctx: click.Context,
     workflow_identifier: str,
     org_id: str | None,
     repo_flag: str | None,
     ref: str | None,
     raw_fields: tuple[str, ...],
     json_inputs: bool,
+    idempotency_key: UUID | None,
     watch: bool,
     exit_status: bool,
     interval: int,
-):
+) -> None:
     """Trigger a workflow_dispatch event.
 
-    WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric
-    workflow ID, a workflow filename (build.yml), or the workflow's
-    display name.
+    WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub
+    numeric workflow ID, a workflow path, or the workflow's display name.
+    Bare filenames (build.yml) select GitHub Actions; use the full
+    .avrea/workflows/build.yml path for Avrea CI.
+
+    Native -f inputs use the workflow's declared types. JSON preserves
+    booleans and numbers. A receipt identifies the exact native run. If a
+    response is lost, use the printed retry command to recover the same
+    invocation with its resolved ref, inputs and --idempotency-key.
+    --no-watch prints the accepted ref and commit plus a command to resume
+    following a pending native dispatch.
 
     \b
     Examples:
@@ -766,6 +792,7 @@ def workflow_run(
     # Validate inputs *before* any network call — fail fast on bad args
     # without burning a round-trip on resolve / default-branch lookup.
     inputs: dict[str, str] = {}
+    raw_json: str | None = None
     if json_inputs:
         if sys.stdin.isatty():
             raise click.ClickException(
@@ -779,6 +806,7 @@ def workflow_run(
             raise click.ClickException(f"Invalid JSON on stdin: {exc}") from exc
         if not isinstance(parsed, dict):
             raise click.ClickException("JSON inputs must be an object.")
+        raw_json = raw if raw.strip() else "{}"
         inputs = {str(k): str(v) for k, v in parsed.items()}
     elif raw_fields:
         inputs = _parse_raw_fields(raw_fields)
@@ -787,6 +815,31 @@ def workflow_run(
     repo_id = resolve_repo_or_detect(client, config, org_id_resolved, repo_flag, required=True)
     resolved = _resolve_workflow_filename(client, org_id_resolved, repo_id, workflow_identifier)
     workflow_file = resolved.filename
+    if resolved.native_workflow_id is not None:
+        base = f"/orgs/{org_id_resolved}/repos/{repo_id}"
+        receipt = submit_native_workflow(
+            client,
+            org_id_resolved,
+            repo_id,
+            resolved.native_workflow_id,
+            ref,
+            inputs if raw_json is None else {},
+            raw_json,
+            idempotency_key,
+        )
+        click.echo(f"Avrea CI dispatch: {receipt.dispatch_id}")
+        click.echo(f"  Ref: {receipt.ref}\n  Commit: {receipt.commit_sha}")
+        if not watch and receipt.state == "pending":
+            click.echo(receipt.pending_message(), err=True)
+        else:
+            run_id = follow_native_dispatch(client, base, receipt)
+            if watch:
+                _watch_workflow_run(ctx, org_id_resolved, run_id, interval, exit_status)
+            else:
+                click.echo(f"Run: {run_id}")
+        return
+    if idempotency_key is not None:
+        raise click.ClickException("--idempotency-key is supported only for Avrea CI workflows.")
 
     if ref is None:
         # Don't silently substitute "main": for master/trunk repos that would
@@ -814,7 +867,10 @@ def workflow_run(
         response = client.public_post(f"/orgs/{org_id_resolved}/repos/{repo_id}/dispatch-workflow", json=body)
         data = response.get("data", {})
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "dispatch workflow")
+        hint = None
+        if workflow_identifier.endswith(_WF_FILENAME_SUFFIXES) and "/" not in workflow_identifier:
+            hint = "For Avrea CI, pass the full .avrea/workflows/ path or an awf- workflow ID."
+        handle_http_error(exc, "dispatch workflow", hints={404: hint, 422: hint} if hint else None)
 
     platform_run_id = data.get("platform_run_id")
     # Show the matched display name when we have one — keeps a fuzzy
@@ -874,7 +930,15 @@ def workflow_run(
         )
         return
 
-    avrea_run_id = run.get("run_id", "")
+    _watch_workflow_run(ctx, org_id_resolved, run.get("run_id", ""), interval, exit_status)
+
+
+def _watch_workflow_run(
+    ctx: click.Context, org_id_resolved: str, avrea_run_id: str, interval: int, exit_status: bool
+) -> None:
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    links_enabled = ctx.obj.get("links_enabled", False)
     slug = get_org_slug(client, org_id_resolved)
     console_url = get_console_url(config.public_api_url)
     if avrea_run_id:
