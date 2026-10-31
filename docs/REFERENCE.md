@@ -42,6 +42,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
+- [`avr tests`](#avr-tests) — Read a job's tests, timings and recorded failure messages.
 - [`avr sbom`](#avr-sbom) — View, generate, and download repository SBOMs.
 - [`avr log`](#avr-log) — Search across runner execution logs.
 
@@ -1300,6 +1301,47 @@ JSON FIELDS
 
 - `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr tests`
+
+Read a job's tests, timings and recorded failure messages.
+
+```sh
+avr tests [OPTIONS] COMMAND [ARGS]...
+```
+
+Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID
+(job- or awj-) from avr job list.
+
+#### `avr tests list`
+
+Read the latest confirmed execution of JOB, including repeated tests.
+
+```sh
+avr tests list [OPTIONS] JOB
+```
+
+Names, outcomes, recorded durations and available failure messages are
+shown together. A failed test is data, not a command error. Missing,
+pending, partial and expired evidence are reported explicitly; an older
+execution is never substituted. Complete describes collected reports.
+
+Use --json '*' for the complete response or --json FIELDS to select
+fields. Continue with --cursor when pagination.next_cursor is present.
+API refusal or a changed report fails the command without partial output.
+
+**Arguments**
+
+- `JOB`
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
+- `-L, --limit <INTEGER RANGE>` — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
+- `--cursor <TEXT>` — Continue from a previous response's next_cursor.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

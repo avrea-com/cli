@@ -6249,6 +6249,171 @@
         ]
       },
       {
+        "name": "tests",
+        "path": [
+          "avr",
+          "tests"
+        ],
+        "full": "avr tests",
+        "is_group": true,
+        "short_help": "Read a job's tests, timings and recorded failure messages.",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr tests [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "tests",
+              "list"
+            ],
+            "full": "avr tests list",
+            "is_group": false,
+            "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
+            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr tests list [OPTIONS] JOB",
+            "params": [
+              {
+                "name": "job",
+                "kind": "argument",
+                "opts": [
+                  "job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to the job's repository.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Maximum occurrences to return; short pages are followed, up to 20 result pages.",
+                "hidden": false,
+                "show_default": true,
+                "default": 100
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Continue from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "sbom",
         "path": [
           "avr",

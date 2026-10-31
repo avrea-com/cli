@@ -1,0 +1,38 @@
+.TH AVR\-TESTS\-LIST 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-tests-list \- Read the latest confirmed execution of JOB, including repeated tests.
+.SH SYNOPSIS
+.B avr tests list
+[OPTIONS] JOB
+.SH DESCRIPTION
+Read the latest confirmed execution of JOB, including repeated tests.
+.PP
+Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
+.PP
+Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. API refusal or a changed report fails the command without partial output.
+.SH ARGUMENTS
+.TP
+\fIJOB\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the job's repository.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Maximum occurrences to return; short pages are followed, up to 20 result pages. (default: 100)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Continue from a previous response's next_cursor.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1)
