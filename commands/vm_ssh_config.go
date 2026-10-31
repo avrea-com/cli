@@ -283,6 +283,7 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			knownPath = filepath.FromSlash(knownPath)
 			line, err := vmKnownHostsLine(key, host, port)
 			if err != nil {
 				return err
@@ -313,6 +314,7 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		path = filepath.FromSlash(path)
 		action, err := vmUpsertSSHBlock(path, alias, block)
 		if err != nil {
 			return err
