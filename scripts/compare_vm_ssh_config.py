@@ -40,7 +40,7 @@ def scenarios():
     case("port 22", endpoint=EP | {"external_port": 22}, presentation=True)
     case("IPv6", endpoint=EP | {"external_ip": "2001:db8::1"}, presentation=True)
     case("default user", endpoint=EP | {"username": ""}, presentation=True)
-    case("identity", ["-i", "~/.ssh/id_ed25519"], presentation=True)
+    case("identity", ["-i", "FIXTURE_HOME/.ssh/id_ed25519"], presentation=True)
     case("identity spaced", ["--identity", "path with spaces/key"], presentation=True)
     case("alias", ["--host-alias", "dev_box.example-1"], presentation=True)
     case("empty alias default", ["--host-alias", ""], presentation=True)

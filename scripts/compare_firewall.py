@@ -130,7 +130,7 @@ def scenarios():
             )
         if name in ["list", "show", "flows"]:
             case(name + " JSON", args + ["--json"], json=True)
-            case(name + " no JSON fields", args + ["--json", "*"], responses={}, exit=2, error_terms=["*"])
+            case(name + " no JSON fields", args + ["--json=*"], responses={}, exit=2, error_terms=["--json"])
             case(name + " no jq", args + ["--jq", "."], responses={}, exit=2, error_terms=["--jq"])
         else:
             case(name + " repo scope", args + ["--repo", REPO], responses=responses(REPO_BASE), presentation=True)
