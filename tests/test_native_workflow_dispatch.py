@@ -55,7 +55,7 @@ def native_api(monkeypatch: pytest.MonkeyPatch) -> tuple[MagicMock, MagicMock, M
             return {"data": {"dispatch_id": DISPATCH, "state": "admitted", "reason": None, "run_ids": [RUN]}}
         if path == "/orgs/org-default":
             return {"data": {"slug": "my-org"}}
-        pytest.fail(f"Unexpected GET {path}")
+        raise AssertionError(f"Unexpected GET {path}")
 
     get_mock = MagicMock(side_effect=get)
     post_mock = MagicMock(

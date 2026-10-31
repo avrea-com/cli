@@ -172,5 +172,6 @@ def follow_native_dispatch(client: ApiClient, base: str, receipt: NativeDispatch
             if exc.response.status_code < 500 and exc.response.status_code != 429:
                 handle_http_error(exc, "follow native dispatch")
         except httpx.TransportError:
+            # Receipt reads are safe to retry after the delay until the deadline.
             pass
         time.sleep(min(1, max(0, deadline - time.monotonic())))
