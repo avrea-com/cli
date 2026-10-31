@@ -6274,7 +6274,7 @@
             "full": "avr tests list",
             "is_group": false,
             "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
-            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nFilters match literally and are combined with AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -6366,7 +6366,195 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Continue from a previous response's next_cursor.",
+                "help": "Continue from a previous response's next_cursor with the same filters.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "test_name",
+                "kind": "option",
+                "opts": [
+                  "--test"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact test name (case-sensitive; no wildcards).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "suite",
+                "kind": "option",
+                "opts": [
+                  "--suite"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact suite name; combined with other filters using AND.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "class_name",
+                "kind": "option",
+                "opts": [
+                  "--class"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact nonempty class name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "outcome",
+                "kind": "option",
+                "opts": [
+                  "--status"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Recorded test outcome.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "passed",
+                  "failed",
+                  "skipped",
+                  "errored"
+                ]
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "tests",
+              "view"
+            ],
+            "full": "avr tests view",
+            "is_group": false,
+            "short_help": "Open a saved exact result reference from avr tests JOB --json data.",
+            "help": "Open a saved exact result reference from avr tests JOB --json data.\n\nReruns never substitute a newer result. Expired reports return an explicit\nstatus; deleted or inaccessible results fail the command. Use --repo when\nopening a result outside its repository checkout.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr tests view [OPTIONS] RESULT",
+            "params": [
+              {
+                "name": "result",
+                "kind": "argument",
+                "opts": [
+                  "result"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to AVR_REPO or the current checkout.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

@@ -166,21 +166,43 @@ avr job logs <job-id> --follow         # tail one job in real time
 
 ```sh
 avr tests <job-id>                    # names, outcomes, timings and failure messages
+avr tests <job-id> --status failed
+avr tests <job-id> --test test_login
+avr tests <job-id> --suite Authentication --class TestLogin
 avr tests <job-id> --json '*'         # results with reporting state and pagination
-avr tests <job-id> --limit 500         # follow short pages up to the requested count
-avr tests <job-id> --cursor '<cursor>' # continue with pagination.next_cursor
+avr tests <job-id> --limit 500         # maximum matching occurrences to return
+avr tests <job-id> --cursor '<cursor>' # resume with the same filters
 ```
 
 Use the Avrea job ID (`job-` or `awj-`) from `avr job list`; the repository is
-resolved from that job. `avr tests list <job-id>` is equivalent. `--json FIELDS` and `--jq` also
-work. Each invocation reads at most 1,000 occurrences and 20 result pages,
-preserving repeated tests and returning a cursor when more results remain.
-Missing or expired reports are distinct from a retained report containing zero
-tests. A report marked complete does not establish that every expected test ran.
+resolved from that job. `avr tests list <job-id>` is equivalent. `--json FIELDS`
+and `--jq` also work. Names match exactly and case-sensitively; filters combine
+with AND. Outcomes are `passed`, `failed`, `skipped` and `errored`. Repeated
+matches remain separate, with their recorded failure messages shown directly.
 
-This requires an API deployment supporting job test results and access to the
-repository's test evidence. Only Avrea job IDs are supported. The command does
-not rerun tests or change collection.
+Each invocation returns at most 1,000 occurrences and reads at most 20 result
+pages. Filtering can produce empty pages with a continuation. If the search
+stops before the report ends, the command says so; resume with the same filters
+and `--cursor`. The retained count covers all tests, before filtering. Missing
+or expired reports are distinct from zero matches or a retained report
+containing zero tests. Complete describes collected reports, not whether every
+expected test ran.
+
+For automation or a saved reference, the JSON results also contain `result_id`:
+
+```sh
+avr tests view <result-id> --repo <owner/name>
+```
+
+This opens the exact recorded occurrence even after a rerun. Expired reports
+return an explicit status. Pass `--repo` outside the repository checkout, or set
+`AVR_REPO`.
+
+These commands require an API deployment supporting the corresponding reads.
+Filtering fails explicitly if the server does not acknowledge the selectors.
+Job listings currently accept only Avrea job IDs. Run and provider identifiers,
+file filters and explicit attempt selection are not supported yet. The commands
+do not rerun tests or change collection.
 
 **Trigger a workflow_dispatch**
 
