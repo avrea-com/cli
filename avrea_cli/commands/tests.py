@@ -32,6 +32,7 @@ _SNAPSHOT_FIELDS = (
     "commit_sha",
     "observed_at",
     "total_count",
+    "filters",
 )
 _FIELDS = make_schema("organization_id", "repository_id", *_SNAPSHOT_FIELDS, "data", "pagination")
 _MAX_PAGES = 20
@@ -60,12 +61,21 @@ def _job_id(_ctx: click.Context, param: click.Parameter, value: str) -> str:
 
 
 def _get(
-    client: ApiClient, path: str, action: str, not_found_hint: str, params: dict[str, Any] | None = None
+    client: ApiClient,
+    path: str,
+    action: str,
+    not_found_hint: str,
+    params: dict[str, Any] | None = None,
+    *,
+    invalid_cursor_hint: str | None = None,
 ) -> dict[str, Any]:
     try:
         response = client.public_get(path, params=params)
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, action, hints={404: not_found_hint})
+        hints = {404: not_found_hint}
+        if invalid_cursor_hint is not None:
+            hints[400] = invalid_cursor_hint
+        handle_http_error(exc, action, hints=hints)
     return response
 
 
@@ -85,14 +95,16 @@ def _job_repository(client: ApiClient, organization: str, job: str) -> str:
     return repository
 
 
-def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | None) -> dict[str, Any]:
+def _results(
+    client: ApiClient, path: str, job: str, limit: int, cursor: str | None, filters: dict[str, str]
+) -> dict[str, Any]:
     """Follow short pages within a row and request budget, retaining the resume cursor."""
     rows: list[dict[str, Any]] = []
     snapshot: dict[str, Any] | None = None
     seen = {cursor} if cursor else set()
     for _ in range(_MAX_PAGES):
         page_limit = limit - len(rows)
-        params: dict[str, Any] = {"limit": page_limit}
+        params: dict[str, Any] = {"limit": page_limit, **{key: f"eq.{value}" for key, value in filters.items()}}
         if cursor is not None:
             params["cursor"] = cursor
         page = _get(
@@ -104,7 +116,17 @@ def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | N
             "If you passed --cursor, restart without it. Otherwise check that Repository"
             " Tests are enabled and that the job belongs to the repository.",
             params,
+            invalid_cursor_hint="Use the same filters the cursor was issued with, or restart without --cursor.",
         )
+        applied = page.get("filters", {})
+        if not isinstance(applied, dict):
+            raise click.ClickException("The API did not confirm the requested test filters. It may need an update.")
+        applied = {key: value for key, value in applied.items() if value is not None}
+        if applied != filters:
+            raise click.ClickException("The API did not confirm the requested test filters. It may need an update.")
+        # Old deployments omit the echo; new ones include nullable fields.
+        # Normalize both before checking that later pages use the same query.
+        page["filters"] = applied
         data = page.get("data")
         pagination = page.get("pagination")
         if page.get("job_id") != job or not isinstance(data, list) or not isinstance(pagination, dict):
@@ -141,11 +163,17 @@ def _text(value: Any) -> str:
 def _show(response: dict[str, Any]) -> None:
     click.echo(f"Job: {_text(response['job_id'])}")
     click.echo(f"Organization: {_text(response['organization_id'])}  Repository: {_text(response['repository_id'])}")
-    click.echo(f"Execution: {_text(response.get('execution_id'))}  Commit: {_text(response.get('commit_sha'))}")
+    if response.get("execution_id") is not None:
+        click.echo(f"Execution: {_text(response['execution_id'])}")
+    click.echo(f"Commit: {_text(response.get('commit_sha'))}")
     click.echo(f"Reporting: {_text(response.get('reporting_state'))}  Results: {_text(response.get('status'))}")
     if response.get("reason"):
         click.echo(f"Reason: {_text(response['reason'])}")
-    click.echo(f"Retained occurrences: {_text(response.get('total_count'))}; shown: {len(response['data'])}")
+    filtered = any(value is not None for value in (response.get("filters") or {}).values())
+    label = "matching shown" if filtered else "shown"
+    click.echo(
+        f"Retained occurrences (all tests): {_text(response.get('total_count'))}; {label}: {len(response['data'])}"
+    )
     rows = response["data"]
     if rows:
         columns = ("suite", "class_name", "name", "outcome", "duration_ms")
@@ -159,16 +187,17 @@ def _show(response: dict[str, Any]) -> None:
             label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key)) or "unknown"
             if row.get("failure_summary"):
                 click.echo(f"\n{label}: {_text(row['failure_summary'])}")
-            if row.get("result_id") and row.get("outcome") in ("failed", "errored"):
-                click.echo(
-                    f"View {label}: avr tests view {shlex.quote(_text(row['result_id']))} "
-                    f"--org {shlex.quote(_text(response['organization_id']))} "
-                    f"--repo {shlex.quote(_text(response['repository_id']))}"
-                )
     elif response.get("status") == "available" and response.get("total_count") == 0:
         click.echo("The retained report contains zero test occurrences. This does not establish that no tests ran.")
     elif response.get("status") == "available":
-        click.echo("No more results.")
+        if filtered:
+            click.echo(
+                "No matches in the searched portion."
+                if response["pagination"]["next_cursor"]
+                else "No matching tests in the remaining retained results."
+            )
+        else:
+            click.echo("No more results.")
     else:
         click.echo("No test results returned. Missing or expired reports do not mean that zero tests ran.")
     if response.get("reporting_state") == "complete":
@@ -198,7 +227,13 @@ def tests(ctx: click.Context) -> None:
     show_default=True,
     help=f"Maximum occurrences to return; short pages are followed, up to {_MAX_PAGES} result pages.",
 )
-@click.option("--cursor", help="Continue from a previous response's next_cursor.")
+@click.option("--cursor", help="Continue from a previous response's next_cursor with the same filters.")
+@click.option("--test", "test_name", help="Exact test name (case-sensitive; no wildcards).")
+@click.option("--suite", help="Exact suite name; combined with other filters using AND.")
+@click.option("--class", "class_name", help="Exact nonempty class name.")
+@click.option(
+    "--status", "outcome", type=click.Choice(["passed", "failed", "skipped", "errored"]), help="Recorded test outcome."
+)
 @json_options
 @click.pass_context
 def tests_list(
@@ -208,6 +243,10 @@ def tests_list(
     repo_id: str | None,
     limit: int,
     cursor: str | None,
+    test_name: str | None,
+    suite: str | None,
+    class_name: str | None,
+    outcome: str | None,
     json_fields: str | None,
     jq_expr: str | None,
 ) -> None:
@@ -220,10 +259,21 @@ def tests_list(
 
     Use --json '*' for the complete response or --json FIELDS to select
     fields. Continue with --cursor when pagination.next_cursor is present.
+    Filters match literally and are combined with AND. Every matching
+    occurrence is retained, including duplicate names. A continuation means
+    more of the report remains to be searched, not necessarily more matches.
     API refusal or a changed report fails the command without partial output.
     """
     if handle_json_meta(json_fields, jq_expr, _FIELDS):
         return
+    filters = {
+        key: value
+        for key, value in {"name": test_name, "suite": suite, "class_name": class_name, "outcome": outcome}.items()
+        if value is not None
+    }
+    for option, value, maximum in (("--test", test_name, 4096), ("--suite", suite, 256), ("--class", class_name, 512)):
+        if value is not None and not 1 <= len(value) <= maximum:
+            raise click.BadParameter(f"use between 1 and {maximum} characters", param_hint=option)
     cursor = validate_cursor(cursor, max_length=1024)
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -232,7 +282,9 @@ def tests_list(
     repository = (
         resolve_repo(client, config, organization, repo_id) if repo_id else _job_repository(client, organization, job)
     )
-    response = _results(client, f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests", job, limit, cursor)
+    response = _results(
+        client, f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests", job, limit, cursor, filters
+    )
     response.update(organization_id=organization, repository_id=repository)
     if json_fields is not None:
         emit_json_record(response, split_fields(json_fields, _FIELDS), _FIELDS, jq_expr)
@@ -240,7 +292,8 @@ def tests_list(
         _show(response)
     next_cursor = response["pagination"]["next_cursor"]
     if next_cursor:
-        click.echo(f"More results available. Continue with --cursor {shlex.quote(_text(next_cursor))}", err=True)
+        message = "Search incomplete; more of the report remains." if filters else "More results available."
+        click.echo(f"{message} Continue with the same filters and --cursor {shlex.quote(_text(next_cursor))}", err=True)
 
 
 _RESULT_FIELDS = make_schema(
@@ -257,7 +310,7 @@ _RESULT_FIELDS = make_schema(
 
 
 @tests.command("view")
-@click.argument("result_id", metavar="RESULT")
+@click.argument("result", metavar="RESULT")
 @click.option("--org", "org_id", help="Organization ID or slug. Defaults to the configured organization.")
 @click.option(
     "--repo", "repo_id", help="Repository (owner/name or rep-ID). Defaults to AVR_REPO or the current checkout."
@@ -266,18 +319,19 @@ _RESULT_FIELDS = make_schema(
 @click.pass_context
 def tests_view(
     ctx: click.Context,
-    result_id: str,
+    result: str,
     org_id: str | None,
     repo_id: str | None,
     json_fields: str | None,
     jq_expr: str | None,
 ) -> None:
-    """Read one exact test result using its result_id from avr tests JOB.
+    """Open a saved exact result reference from avr tests JOB --json data.
 
     Reruns never substitute a newer result. Expired reports return an explicit
     status; deleted or inaccessible results fail the command. Use --repo when
     opening a result outside its repository checkout.
     """
+    result_id = result
     if handle_json_meta(json_fields, jq_expr, _RESULT_FIELDS):
         return
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,1024}", result_id):
@@ -316,7 +370,9 @@ def tests_view(
         click.echo("No retained report is available for this result.")
     else:
         assert isinstance(row, dict)
-        click.echo(f"Original job: {_text(response.get('job_id'))}  Execution: {_text(response.get('execution_id'))}")
+        click.echo(f"Original job: {_text(response.get('job_id'))}")
+        if response.get("execution_id") is not None:
+            click.echo(f"Execution: {_text(response['execution_id'])}")
         click.echo(f"Recorded job commit: {_text(response.get('commit_sha'))}")
         click.echo(f"Report finished: {_text(response.get('report_finished_at'))}")
         click.echo(

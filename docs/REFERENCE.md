@@ -1330,6 +1330,9 @@ execution is never substituted. Complete describes collected reports.
 
 Use --json '*' for the complete response or --json FIELDS to select
 fields. Continue with --cursor when pagination.next_cursor is present.
+Filters match literally and are combined with AND. Every matching
+occurrence is retained, including duplicate names. A continuation means
+more of the report remains to be searched, not necessarily more matches.
 API refusal or a changed report fails the command without partial output.
 
 **Arguments**
@@ -1341,13 +1344,17 @@ API refusal or a changed report fails the command without partial output.
 - `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
 - `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
-- `--cursor <TEXT>` — Continue from a previous response's next_cursor.
+- `--cursor <TEXT>` — Continue from a previous response's next_cursor with the same filters.
+- `--test <TEXT>` — Exact test name (case-sensitive; no wildcards).
+- `--suite <TEXT>` — Exact suite name; combined with other filters using AND.
+- `--class <TEXT>` — Exact nonempty class name.
+- `--status <CHOICE>` — Recorded test outcome. _(choices: `passed`, `failed`, `skipped`, `errored`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 #### `avr tests view`
 
-Read one exact test result using its result_id from avr tests JOB.
+Open a saved exact result reference from avr tests JOB --json data.
 
 ```sh
 avr tests view [OPTIONS] RESULT
@@ -1359,7 +1366,7 @@ opening a result outside its repository checkout.
 
 **Arguments**
 
-- `RESULT_ID`
+- `RESULT`
 
 **Options**
 

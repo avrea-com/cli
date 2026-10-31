@@ -9,7 +9,7 @@ Read the latest confirmed execution of JOB, including repeated tests.
 .PP
 Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
 .PP
-Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. API refusal or a changed report fails the command without partial output.
+Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. Filters match literally and are combined with AND. Every matching occurrence is retained, including duplicate names. A continuation means more of the report remains to be searched, not necessarily more matches. API refusal or a changed report fails the command without partial output.
 .SH ARGUMENTS
 .TP
 \fIJOB\fR
@@ -26,7 +26,19 @@ Repository (owner/name or rep-ID). Defaults to the job's repository.
 Maximum occurrences to return; short pages are followed, up to 20 result pages. (default: 100)
 .TP
 \fB\-\-cursor\fR \fITEXT\fR
-Continue from a previous response's next_cursor.
+Continue from a previous response's next_cursor with the same filters.
+.TP
+\fB\-\-test\fR \fITEXT\fR
+Exact test name (case-sensitive; no wildcards).
+.TP
+\fB\-\-suite\fR \fITEXT\fR
+Exact suite name; combined with other filters using AND.
+.TP
+\fB\-\-class\fR \fITEXT\fR
+Exact nonempty class name.
+.TP
+\fB\-\-status\fR \fICHOICE\fR
+Recorded test outcome. (choices: passed, failed, skipped, errored)
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
