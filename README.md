@@ -164,6 +164,7 @@ avr tests <job-id>                    # names, outcomes, timings and failure mes
 avr tests <job-id> --json '*'         # results with reporting state and pagination
 avr tests <job-id> --limit 500         # follow short pages up to the requested count
 avr tests <job-id> --cursor '<cursor>' # continue with pagination.next_cursor
+avr tests view <result-id> --repo <owner/name> # open one exact recorded result
 ```
 
 Use the Avrea job ID (`job-` or `awj-`) from `avr job list`; the repository is
@@ -173,9 +174,13 @@ preserving repeated tests and returning a cursor when more results remain.
 Missing or expired reports are distinct from a retained report containing zero
 tests. A report marked complete does not establish that every expected test ran.
 
-This requires an API deployment supporting job test results and access to the
-repository's test evidence. Only Avrea job IDs are supported. The command does
-not rerun tests or change collection.
+Use a `result_id` from the listing to reopen that exact occurrence. Reruns never
+substitute a newer result, and expired reports return an explicit status. Pass
+`--repo` outside the repository checkout, or set `AVR_REPO`.
+
+These commands require an API deployment supporting the corresponding test
+result reads and access to the repository's test evidence. Job listings accept
+only Avrea job IDs. The commands do not rerun tests or change collection.
 
 **Trigger a workflow_dispatch**
 
