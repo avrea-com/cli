@@ -9,7 +9,7 @@
     "vms": "vm",
     "workflows": "workflow"
   },
-  "baseline": "56a09f5fdf1e644f10370d337af879959f4a511f",
+  "baseline": "df6d102dce45014c55d0929307b29603c6806e94",
   "root": {
     "commands": [
       {
@@ -16621,6 +16621,26 @@
                 "type": {
                   "name": "boolean",
                   "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "idempotency_key",
+                "nargs": 1,
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "uuid",
+                  "param_type": "UUID"
                 }
               },
               {

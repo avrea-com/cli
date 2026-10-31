@@ -10,13 +10,14 @@ import (
 )
 
 type rawRequestContent struct {
-	data        []byte
-	contentType string
+	data             []byte
+	contentType      string
+	noTransportRetry bool
 }
 
 // RawContent uses the same authenticated, bounded transport for non-JSON bodies.
 func (c *Client) RawContent(ctx context.Context, method, path string, content []byte, contentType string) ([]byte, error) {
-	return c.Raw(ctx, method, path, rawRequestContent{content, contentType})
+	return c.Raw(ctx, method, path, rawRequestContent{data: content, contentType: contentType})
 }
 func samlRecord(body map[string]any) (Record[wire.SamlConfigResponse], error) {
 	fields, ok := body["data"].(map[string]any)

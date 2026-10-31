@@ -5,6 +5,7 @@ go 1.27.0
 toolchain go1.27.3
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/itchyny/gojq v0.12.19
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.3
@@ -22,7 +23,6 @@ require (
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.9 // indirect
 )

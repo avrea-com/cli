@@ -35,7 +35,7 @@ import threading
 import time
 import urllib.request
 
-BASELINE = "56a09f5fdf1e644f10370d337af879959f4a511f"
+BASELINE = "df6d102dce45014c55d0929307b29603c6806e94"
 TOKEN = "avr_fixture_key_never_a_real_secret"
 USER = {
     "id": "usr-fixture",
@@ -98,6 +98,8 @@ class Fixture(http.server.BaseHTTPRequestHandler):
                 ),
             }
         )
+        if key := self.headers.get("Idempotency-Key"):
+            self.server.requests[-1].update(idempotency_key=key, raw_body=body.decode())
         key = (self.command, canonical_path(self.path))
         if key in self.server.responses:
             response = self.server.responses[key]
@@ -110,6 +112,9 @@ class Fixture(http.server.BaseHTTPRequestHandler):
         if isinstance(response, list):
             response = response.pop(0) if len(response) > 1 else response[0]
         status, payload, *extra = response
+        if status == 0:
+            self.close_connection = True
+            return
         if getattr(self.server, "expand_host", False) and not isinstance(payload, bytes):
             payload = json.loads(json.dumps(payload).replace("FIXTURE_HOST", self.server.fixture_host))
         self.send_response(status)

@@ -130,6 +130,11 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 	if err != nil {
 		return nil, errors.New("could not construct API request")
 	}
+	// Native dispatch owns its bounded retry loop. Idempotency-Key otherwise
+	// lets net/http silently replay a POST on a reused connection as well.
+	if content, ok := body.(rawRequestContent); ok && content.noTransportRetry {
+		req.GetBody = nil
+	}
 	req.Header = headers.Clone()
 	if req.Header == nil {
 		req.Header = make(http.Header)
