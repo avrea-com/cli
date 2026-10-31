@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,7 +34,7 @@ func (w cloneDiagnosticWriter) Write(p []byte) (int, error) {
 	return w.writer.Write(p)
 }
 
-var cloneRepositoryID = regexp.MustCompile("^rep-[0-9a-f]{32}$")
+var cloneRepositoryID = lazyRegexp("^rep-[0-9a-f]{32}$")
 
 func mirrorEndpoint(raw string) (string, error) {
 	raw = strings.TrimRight(raw, "/")
@@ -65,7 +64,7 @@ func issueGitToken(ctx context.Context, d Dependencies, cfg config.Config, api *
 	}
 	token := fieldText(record.Fields, "token")
 	expires, err := time.Parse(time.RFC3339Nano, fieldText(record.Fields, "expires_at"))
-	if err != nil || !expires.After(d.Now()) || !repoPart.MatchString(token) {
+	if err != nil || !expires.After(d.Now()) || !repoPart().MatchString(token) {
 		return "", time.Time{}, &ExitError{1, "Error: Avrea returned an invalid or expired Git token."}
 	}
 	return token, expires, nil
@@ -248,7 +247,7 @@ func newRepoClone(d Dependencies) *cobra.Command {
 			if strings.Count(repository, "/") != 1 {
 				return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 			}
-		} else if !cloneRepositoryID.MatchString(repository) {
+		} else if !cloneRepositoryID().MatchString(repository) {
 			return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name or an Avrea repository ID (rep-...)"}
 		}
 		if _, err := exec.LookPath("git"); err != nil {

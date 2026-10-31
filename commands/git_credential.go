@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,8 +14,8 @@ import (
 	"golang.org/x/net/idna"
 )
 
-var repoPart = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
-var dnsLabel = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$`)
+var repoPart = lazyRegexp(`^[A-Za-z0-9_.-]+$`)
+var dnsLabel = lazyRegexp(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$`)
 
 func gitURL(raw, repo string) (*url.URL, error) {
 	parts := strings.Split(repo, "/")
@@ -24,7 +23,7 @@ func gitURL(raw, repo string) (*url.URL, error) {
 		return nil, &ExitError{2, "Error: REPOSITORY must be an owner/repository name"}
 	}
 	for _, part := range parts {
-		if part == "." || part == ".." || !repoPart.MatchString(part) {
+		if part == "." || part == ".." || !repoPart().MatchString(part) {
 			return nil, &ExitError{2, "Error: REPOSITORY must be an owner/repository name"}
 		}
 	}
@@ -45,7 +44,7 @@ func gitURL(raw, repo string) (*url.URL, error) {
 			return nil, invalid
 		}
 		for _, label := range strings.Split(strings.TrimSuffix(host, "."), ".") {
-			if !dnsLabel.MatchString(label) {
+			if !dnsLabel().MatchString(label) {
 				return nil, invalid
 			}
 		}
@@ -71,10 +70,9 @@ func newGitCredential(d Dependencies) *cobra.Command {
 	cmd := &cobra.Command{Use: "git-credential <get|store|erase>", Short: "Git credential protocol adapter.", Hidden: true, Args: cobra.ExactArgs(1)}
 	cmd.Flags().StringVar(&rawURL, "url", "", "Exact clone URL this helper may authenticate.")
 	cmd.Flags().StringVar(&repo, "repo", "", "Repository whose Git token to request.")
+	_ = cmd.MarkFlagRequired("url")
+	_ = cmd.MarkFlagRequired("repo")
 	cmd.RunE = run(func(cmd *cobra.Command, args []string) error {
-		if rawURL == "" || repo == "" {
-			return &ExitError{2, "Error: --url and --repo are required"}
-		}
 		switch args[0] {
 		case "store", "erase":
 			return nil

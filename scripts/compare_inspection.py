@@ -152,6 +152,21 @@ def scenarios():
                 "error_terms": ["--limit", "1", "1000"],
             }
         )
+    # Width-library upgrades must retain Python's Unicode table geometry.
+    unicode_orgs = [
+        ORGANIZATIONS[0] | {"name": "研发团队 e\u0301 👩‍💻 🇫🇮"},
+        ORGANIZATIONS[0] | {"organization_id": ORG[:-1] + "2", "name": "word\u2060join", "slug": "second"},
+    ]
+    for tty in [False, True] if sys.platform != "win32" else [False]:
+        cases.append(
+            {
+                "name": "org Unicode widths " + ("TTY" if tty else "pipe"),
+                "args": ["org", "list"],
+                "responses": {("GET", "/users/me/organizations"): (200, {"data": unicode_orgs})},
+                "tty": tty,
+                "presentation": True,
+            }
+        )
     for case in cases:
         case.setdefault("env", env)
     return (
@@ -523,7 +538,21 @@ def watch_scenarios():
                 "interrupt_after_event": True,
                 "events": ["job_started"],
                 "exit": 130,
-                "error_terms": [],
+                "error_terms": ["Aborted!"],
+            }
+        )
+        result.append(
+            {
+                "name": "watch Ctrl-C terminal",
+                "args": ["--no-links"] + args,
+                "tty": True,
+                "responses": {
+                    ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}"): active,
+                    ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}?include=jobs&include=workflow"): active,
+                },
+                "interrupt_after_text": "Unit tests",
+                "exit": 130,
+                "stdout_terms": ["Stopped watching."],
             }
         )
         result.append(

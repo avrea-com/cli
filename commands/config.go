@@ -39,7 +39,7 @@ func NewConfig(deps Dependencies) *cobra.Command {
 	}
 	get := &cobra.Command{Use: "get {org}", Short: "Print the value of a configuration key.", Args: keyArgs(1)}
 	get.RunE = run(func(_ *cobra.Command, _ []string) error {
-		cfg, _, _, err := d.load()
+		cfg, _, err := d.configuration()
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func NewConfig(deps Dependencies) *cobra.Command {
 	})
 	unset := &cobra.Command{Use: "unset {org}", Short: "Remove a configuration override.", Args: keyArgs(1)}
 	unset.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		cfg, store, _, err := d.load()
+		cfg, store, err := d.configuration()
 		if err != nil {
 			return err
 		}

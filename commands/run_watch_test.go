@@ -118,11 +118,11 @@ func TestWatchCancellationRestoresTerminal(t *testing.T) {
 			if code := Execute(ctx, []string{"--no-links", "run", "watch", inspectionRun}, d); code != 130 {
 				t.Fatal(code, stderr)
 			}
-			if terminal && (!strings.Contains(out.String(), "No jobs yet.") || !strings.HasSuffix(out.String(), "\x1b[23;0t\x1b[?25h")) {
+			if terminal && (!strings.Contains(out.String(), "No jobs yet.") || !strings.Contains(out.String(), "\x1b[23;0t\x1b[?25h") || !strings.HasSuffix(out.String(), "\nStopped watching.\n")) {
 				t.Fatal("terminal state not restored", out)
 			}
-			if !terminal && strings.Contains(out.String(), "\x1b") {
-				t.Fatal("terminal controls in stream")
+			if !terminal && (strings.Contains(out.String(), "\x1b") || stderr.String() != "\nAborted!\n") {
+				t.Fatal("stream interruption diagnostic", out, stderr)
 			}
 		})
 	}

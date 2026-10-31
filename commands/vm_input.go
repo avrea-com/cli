@@ -20,7 +20,7 @@ func parseVMTTL(value string) (int, error) {
 			text = strings.TrimSpace(text[:len(text)-1])
 		}
 	}
-	if !settingInteger.MatchString(text) {
+	if !settingInteger().MatchString(text) {
 		return 0, &ExitError{2, "Error: Invalid value for --ttl: invalid duration " + pythonQuote(value) + ": use e.g. 8h, 7d, 1800s, or a number of seconds"}
 	}
 	number, ok := new(big.Int).SetString(strings.ReplaceAll(text, "_", ""), 10)

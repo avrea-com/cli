@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/url"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -21,7 +20,7 @@ import (
 
 var testSnapshotFields = []string{"job_id", "execution_id", "status", "reporting_state", "reason", "commit_sha", "observed_at", "total_count"}
 var testResultFields = append(append([]string{"organization_id", "repository_id"}, testSnapshotFields...), "data", "pagination")
-var testJobID = regexp.MustCompile("^(job|awj)-[0-9a-f]{32}$")
+var testJobID = lazyRegexp("^(job|awj)-[0-9a-f]{32}$")
 
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
@@ -38,7 +37,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		job := args[0]
-		if !testJobID.MatchString(job) {
+		if !testJobID().MatchString(job) {
 			return &ExitError{2, "Error: Invalid value for JOB: use the Avrea job ID from 'avr job list' (job- or awj- followed by 32 lowercase hex characters)"}
 		}
 		if limit < 1 || limit > 1000 {
@@ -70,7 +69,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 					data, _ = nested.(map[string]any)
 				}
 				repository, _ = data["repository_id"].(string)
-				if !cloneRepositoryID.MatchString(repository) {
+				if !cloneRepositoryID().MatchString(repository) {
 					return &ExitError{1, "Error: The job has no available repository. Check the job and selected organization."}
 				}
 				if data["job_id"] != job {

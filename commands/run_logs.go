@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/avrea-com/cli/client"
@@ -78,7 +77,7 @@ func runLogs(ctx context.Context, d Dependencies, api *client.Client, jobs []map
 	return strings.TrimSuffix(b.String(), "\n"), nil
 }
 
-var logSGR = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
+var logSGR = lazyRegexp(`\x1b\[[0-9;:]*m`)
 
 func writeStyledLogLine(b *strings.Builder, entry map[string]any, d Dependencies, target string) {
 	content := fieldText(entry, "content")
@@ -111,7 +110,7 @@ func writeStyledLogLine(b *strings.Builder, entry map[string]any, d Dependencies
 		}
 		var safe strings.Builder
 		offset := 0
-		for _, span := range logSGR.FindAllStringIndex(line, -1) {
+		for _, span := range logSGR().FindAllStringIndex(line, -1) {
 			safe.WriteString(logText(line[offset:span[0]]))
 			if d.paint("x", "1") != "x" {
 				safe.WriteString(line[span[0]:span[1]])

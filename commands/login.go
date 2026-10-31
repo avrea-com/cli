@@ -153,7 +153,11 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, BaseContext: nil}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(listener) }()
-	defer func() { _ = server.Close(); <-serveErr }()
+	// Closing the server deliberately stops Serve; still join the goroutine.
+	defer func() {
+		_ = server.Close()
+		<-serveErr //nolint:errcheck // Serve termination after Close is expected; join only.
+	}()
 	if _, err := fmt.Fprintf(d.Out, "Opening browser to: %s\nWaiting for authentication...\n", authURL); err != nil {
 		return "", err
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var runnerCPU = regexp.MustCompile(`(?i)-(\d+)-vcpu\b`)
+var runnerCPU = lazyRegexp(`(?i)-(\d+)-vcpu\b`)
 
 func runnerSpecs(job map[string]any) (int, float64, string) {
 	cpus, ram, label := 0, 0.0, ""
@@ -34,7 +33,7 @@ func runnerSpecs(job map[string]any) (int, float64, string) {
 		if !ok {
 			continue
 		}
-		if parts := runnerCPU.FindStringSubmatch(s); parts != nil {
+		if parts := runnerCPU().FindStringSubmatch(s); parts != nil {
 			cpus, _ = strconv.Atoi(parts[1])
 			ram = float64(map[int]int{1: 2, 2: 8, 4: 16, 8: 32, 16: 64, 32: 128}[cpus]) * (1 << 30)
 			break

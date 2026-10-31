@@ -33,7 +33,7 @@ func projectJob(fields map[string]any) map[string]any {
 }
 
 func sinceTimestamp(value string, now time.Time) (string, error) {
-	parts := sincePattern.FindStringSubmatch(value)
+	parts := sincePattern().FindStringSubmatch(value)
 	if parts == nil {
 		return "", &ExitError{1, "Error: Invalid --since value: " + output.CellText(value) + " (use e.g. 30d, 7d, 24h, 30m)"}
 	}

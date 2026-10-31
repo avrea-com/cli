@@ -58,7 +58,7 @@ func newPaymentMethodAdd(d Dependencies) *cobra.Command {
 					break
 				}
 				parsed, e := strconv.Atoi(strings.ReplaceAll(strings.TrimSpace(value), "_", ""))
-				if !settingInteger.MatchString(strings.TrimSpace(value)) {
+				if !settingInteger().MatchString(strings.TrimSpace(value)) {
 					e = errors.New("invalid integer")
 				}
 				if e != nil {

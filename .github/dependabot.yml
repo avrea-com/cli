@@ -27,3 +27,15 @@ updates:
       - dependency-name: "ty"
     cooldown:
       default-days: 7
+
+  # Runtime and development-tool modules are kept current; compatibility and
+  # startup reports validate updates. Exceptions need a documented reason.
+  - package-ecosystem: "gomod"
+    directories: ["/", "/tools"]
+    schedule:
+      interval: "weekly"
+    groups:
+      go-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 10

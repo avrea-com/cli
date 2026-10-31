@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -151,10 +150,10 @@ func newVMShow(d Dependencies) *cobra.Command {
 	return c
 }
 
-var vmUsageDatePattern = regexp.MustCompile("^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}(T[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2})?$")
+var vmUsageDatePattern = lazyRegexp("^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}(T[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2})?$")
 
 func vmUsageDate(value, flag string) (string, error) {
-	if vmUsageDatePattern.MatchString(value) {
+	if vmUsageDatePattern().MatchString(value) {
 		for _, layout := range []string{"2006-1-2", "2006-1-2T15:4:5"} {
 			if parsed, err := time.Parse(layout, value); err == nil {
 				return parsed.Format("2006-01-02T15:04:05"), nil

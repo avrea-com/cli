@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -12,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var vmBranchName = regexp.MustCompile(`^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$`)
-var vmCommitSHA = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
-var vmCacheAlias = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
-var vmCacheKey = regexp.MustCompile(`^cache\.[a-z0-9][a-z0-9-]*\.enabled$`)
+var vmBranchName = lazyRegexp(`^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$`)
+var vmCommitSHA = lazyRegexp(`^[0-9a-fA-F]{40}$`)
+var vmCacheAlias = lazyRegexp(`^[a-z0-9][a-z0-9-]*$`)
+var vmCacheKey = lazyRegexp(`^cache\.[a-z0-9][a-z0-9-]*\.enabled$`)
 
 func validateVMBranch(value string) (string, error) {
 	value = strings.TrimSpace(value)
-	if value == "" || len(value) > 255 || vmCommitSHA.MatchString(value) || strings.HasPrefix(value, "refs/") || strings.Contains(value, "..") || !vmBranchName.MatchString(value) {
+	if value == "" || len(value) > 255 || vmCommitSHA().MatchString(value) || strings.HasPrefix(value, "refs/") || strings.Contains(value, "..") || !vmBranchName().MatchString(value) {
 		return "", &ExitError{2, "Error: --ref '" + output.CellText(value) + "' is not a branch name; tags, pull-request refs, and raw commit SHAs are not supported."}
 	}
 	return value, nil
@@ -39,9 +38,9 @@ func vmDisabledCaches(values []string) (map[string]wire.CustomerVmCreateRequestC
 				continue
 			}
 			switch {
-			case vmCacheKey.MatchString(token):
+			case vmCacheKey().MatchString(token):
 				result[token] = false
-			case vmCacheAlias.MatchString(token):
+			case vmCacheAlias().MatchString(token):
 				result["cache."+token+".enabled"] = false
 			default:
 				return nil, &ExitError{2, "Error: --disable-cache '" + output.CellText(token) + "' is not a cache name; use e.g. 'gha' or 'cache.gha.enabled'."}

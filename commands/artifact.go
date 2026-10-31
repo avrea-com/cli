@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -28,8 +27,8 @@ import (
 var artifactFields = []string{"id", "name", "repository_id", "workflow_run_id", "run_kind", "run_attempt", "size_bytes", "digest_sha256", "file_name", "file_count", "archived", "state", "created_at", "completed_at", "expires_at"}
 var artifactDownloadFields = []string{"id", "path", "size_bytes", "digest_sha256"}
 var artifactDeleteFields = []string{"id", "deleted"}
-var artifactIDPattern = regexp.MustCompile("^art-[0-9a-f]{32}$")
-var artifactDigestPattern = regexp.MustCompile("^[0-9a-f]{64}$")
+var artifactIDPattern = lazyRegexp("^art-[0-9a-f]{32}$")
+var artifactDigestPattern = lazyRegexp("^[0-9a-f]{64}$")
 
 // NewArtifact shares artifact inspection and verified file transfers with admin.
 func NewArtifact(deps Dependencies) *cobra.Command {
@@ -150,7 +149,7 @@ func newArtifactRecord(d Dependencies, action string) *cobra.Command {
 			return err
 		}
 		id := args[0]
-		if !artifactIDPattern.MatchString(id) {
+		if !artifactIDPattern().MatchString(id) {
 			return &ExitError{2, "Error: Expected an Avrea art- ID"}
 		}
 		endpoint := base + "/" + id
@@ -290,7 +289,7 @@ func downloadArtifact(ctx context.Context, api *client.Client, endpoint string, 
 	size, ok := row["size_bytes"].(json.Number)
 	count, err := size.Int64()
 	digest, digestOK := row["digest_sha256"].(string)
-	if row["state"] != "complete" || !ok || err != nil || count < 0 || count > 10<<30 || !digestOK || !artifactDigestPattern.MatchString(digest) {
+	if row["state"] != "complete" || !ok || err != nil || count < 0 || count > 10<<30 || !digestOK || !artifactDigestPattern().MatchString(digest) {
 		return "", errors.New("Artifact is unavailable or has invalid integrity metadata") //nolint:staticcheck // Preserve the Python user-facing diagnostic.
 	}
 	name, ok := row["file_name"].(string)

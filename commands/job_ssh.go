@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var sshHost = regexp.MustCompile(`^[A-Za-z0-9._:\[\]-]+$`)
-var sshUser = regexp.MustCompile("^[A-Za-z0-9_.-]+$")
+var sshHost = lazyRegexp(`^[A-Za-z0-9._:\[\]-]+$`)
+var sshUser = lazyRegexp("^[A-Za-z0-9_.-]+$")
 
 func newJobSSH(d Dependencies) *cobra.Command {
 	var printCommand, showPassword bool
@@ -42,7 +41,7 @@ func newJobSSH(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "connect to VM")
 		}
 		host, user, port := rec.Value.Host, rec.Value.Username, rec.Value.Port
-		if host == "" || !sshHost.MatchString(host) || strings.HasPrefix(host, "-") || !sshUser.MatchString(user) || strings.HasPrefix(user, "-") || port < 1 || port > 65535 {
+		if host == "" || !sshHost().MatchString(host) || strings.HasPrefix(host, "-") || !sshUser().MatchString(user) || strings.HasPrefix(user, "-") || port < 1 || port > 65535 {
 			return fmt.Errorf("avrea returned an invalid SSH endpoint")
 		}
 		argv := []string{"ssh", "-o", "StrictHostKeyChecking=accept-new", "-p", strconv.Itoa(port), user + "@" + host}

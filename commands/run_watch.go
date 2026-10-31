@@ -115,7 +115,15 @@ func newRunWatch(d Dependencies) *cobra.Command {
 				slug = orgSlug(cmd.Context(), cfg, api, orgID)
 			}
 		}
-		return watchRun(cmd.Context(), d, cfg, api, orgID, runID, time.Duration(interval)*time.Second, exitStatus, streaming, slug)
+		err = watchRun(cmd.Context(), d, cfg, api, orgID, runID, time.Duration(interval)*time.Second, exitStatus, streaming, slug)
+		if errors.Is(err, context.Canceled) {
+			if !streaming {
+				_, _ = fmt.Fprintln(d.Out, "\nStopped watching.")
+				return &ExitError{Code: 130}
+			}
+			return &ExitError{130, "\nAborted!"}
+		}
+		return err
 	})
 	return cmd
 }

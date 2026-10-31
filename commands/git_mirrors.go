@@ -24,7 +24,7 @@ func validateRepositoryName(value string) error {
 		return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 	}
 	for _, part := range parts {
-		if part == "." || part == ".." || !repoPart.MatchString(part) {
+		if part == "." || part == ".." || !repoPart().MatchString(part) {
 			return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 		}
 	}

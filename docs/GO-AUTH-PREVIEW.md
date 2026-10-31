@@ -16,6 +16,239 @@ VM bootstrap preserves Python's scripts and credential forwarding. Its
 --install-avr step still installs the Python package in the VM; selecting a Go
 release artifact belongs to the later release-packaging work.
 
+## Live read-only output validation
+
+`scripts/compare_staging_readonly.py` compares the checkout Python CLI and the
+Go binary against existing staging data. The October 31 audit exercises 51
+read-only command paths in 193 paired cases: pipes, 120-column terminals,
+JSON where supported, successful/failed/native runs and jobs, completed log
+following, bounded live watches, and an SBOM download into a private temporary
+directory. The 151-node command inventory and local fixture suites cover the
+rest of the public command tree, including aliases and help.
+The completed audit passed 7,591 public fixture pairs and 42 shared usage-error
+pairs in the real `avr-admin` binary, with no unaccepted differences in the
+193 live pairs. Permission-denied and unavailable paths are listed below.
+
+Run it from this worktree with the checkout virtualenv (not an older installed
+Python `avr`):
+
+```sh
+.venv/bin/python -m scripts.compare_staging_readonly \
+  --targets build/go/staging-readonly/targets.json \
+  --go build/go/avr \
+  --report build/go/staging-readonly/verified.json
+```
+
+The private target manifest contains `HOST`, `ORG`, `REPO`, `RUN_OK`, `RUN_FAIL`,
+`RUN_NATIVE`, `JOB_OK`, `JOB_FAIL`, `JOB_NATIVE`, `WORKFLOW`, and `COMMIT`.
+Choose existing avrea-core records; the script never creates test data. It
+requires an explicit HTTPS staging host, reads its existing credential from
+`hosts.json`, and isolates local CLI configuration. Use `--only 'run watch'`
+to repeat a family. Captures may contain private job logs, so reports belong
+under ignored `build/` with owner-only permissions and never in a PR.
+
+Live execution has an explicit read-only allowlist. SSH, VM sessions, browser
+opening, login, credential issuance, and every mutation stay in local mock
+fixtures. Log search uses the API's read-only POST query. SAML test uses
+`--no-browser` to print the URL without opening it. Downloads use private
+local destinations. The harness rejects side-effect flags before spawning a
+CLI process; its tests also check that styles, fields, exit codes, and download
+contents cannot disappear unnoticed.
+
+Comparisons preserve visible text, table layout, colors, bold/underline styles,
+JSON values, and exit codes. Accepted differences are JSON object-key ordering,
+equivalent ANSI encodings, fresh timestamps/ages, URL query-key ordering,
+refresh cadence, floating-point roundoff in diagnostic metrics (1e-12 relative
+or absolute tolerance), and one extra blank row before a piped log completion
+footer. Changing list order, repeated query-value order, missing fields, or
+lost colors remains a failure. Dynamic watch data can change between the two
+invocations; distinct snapshots remain visible in the report rather than being
+silently removed.
+
+The audit found and fixed shared missing-option diagnostics (usage/help
+preamble and allowed choices), the Git credential helper's required options,
+incompatible follow/failed flag diagnostics, and piped versus terminal run
+watch interruption messages. `compare_usage_errors` checks all required-option
+errors and log-flag conflicts exactly in both pipes and terminals, including
+write commands, without making API requests. It runs in `make go-parity` and
+the three-platform preview CI. The shared command library also carries these
+fixes into `avr-admin`.
+
+Coverage limits from this staging account must not be counted as successful
+live validation: SAML configuration, audit events, and billing reads return
+403; there are no selected artifacts, VMs, scoped tokens, public-mirror
+requests, or GitLab installations for their detail/download success paths.
+Their local fixture suites cover those branches. Default `pr list` also has
+a shared Python/server compatibility issue: both CLIs send `scope=all`, which
+staging rejects; explicit `--scope authored` succeeds and is compared too.
+
+## Startup performance
+
+Help and completion decode only the command records they need. A generated
+UTF-8 byte-offset index points into the existing embedded metadata, avoiding a
+full scan of the 1.1 MB documentation JSON on each invocation. The generator
+updates and checks the index together with the pinned metadata. Commands and
+flags still come from the live Cobra registry, including admin extensions;
+each decoded help record remains independently owned.
+
+Measured on an Apple M5, macOS 26.6.2, Go 1.27.3, against baseline `9e0ef5b`:
+101 paired samples per case, five warmups, alternating executable order,
+isolated home, piped output, warmed filesystem caches and fresh processes.
+All output and exit codes matched between the two binaries.
+
+| Invocation | Before median | After median | Reduction |
+| --- | ---: | ---: | ---: |
+| `avr --help` | 6.43 ms | 4.61 ms | 28.2% |
+| `avr help` | 6.40 ms | 4.59 ms | 28.3% |
+| `avr repo list --help` | 6.36 ms | 4.52 ms | 29.0% |
+| Root completion | 6.27 ms | 4.59 ms | 26.8% |
+| Nested completion | 6.29 ms | 4.54 ms | 27.8% |
+| `avr --version` (control) | 4.23 ms | 4.26 ms | Effectively unchanged |
+
+The full process did not reach the requested 50% reduction. In-process root
+help work fell from 1.94 ms to 0.17 ms (about 91%), with allocations falling
+from roughly 1.18 MB to 0.54 MB. The old full metadata decode alone cost
+1.73 ms; command-tree construction cost 0.11 ms. A separate probe that imports
+the CLI but runs no command still takes about 3.9 ms end to end on this host.
+These measurements include process-launch/exit and runtime/package startup;
+they do not isolate individual OS costs or simulate a cold machine.
+
+Changing CGO or stripping debug symbols did not improve startup materially.
+Skipping signal setup saved less than 0.1 ms, so signal handling and build
+settings are preserved. Network-bound commands retain their separate HTTP
+latency; this measurement makes no claim of halving their total duration.
+
+Reproduce the measurements using baseline and candidate executables built
+with the same flags and version labels:
+
+```sh
+.venv/bin/python -m scripts.benchmark_startup --before /path/to/avr-before --after /path/to/avr-after
+# Separate command work from process startup:
+go test ./commands -run '^$' -bench BenchmarkStartup -benchmem -count=3
+```
+
+The benchmark writes raw samples, medians, p90 values and binary hashes to
+`build/go/startup/comparison.json`. Timing is diagnostic, not a flaky CI
+threshold. Help, completion, Unicode offsets, independent records and live
+command composition are covered by regression and Python parity tests.
+
+### Further startup and context work
+
+Command-specific regular expressions and VM bootstrap templates now initialize
+on first use with `sync.OnceValue`/`sync.OnceValues`. Config-only operations no
+longer construct an API client. Config and Git providers remain on-demand;
+there is no process-global credential/config cache. `auth status --json ?`
+retains Python's config-loading/error ordering, but does not construct a client.
+
+Successful organization ID/slug resolution is reused only inside one
+`ExecuteRoot` invocation and is keyed by host, credential and organization ID.
+A subsequent invocation always starts fresh; lookup failures are not cached.
+For example, the linked `job view --log` fixture makes one organization-list
+request instead of Python's three while preserving text, styles and links.
+The differential comparator permits only removal of identical duplicate
+organization GETs with a fixed successful fixture response. All other requests
+(including read-only POST log searches and their bodies) remain ordered and
+strict; moving responses do not qualify and writes are never removed. Reports
+keep the raw calls.
+
+Opt-in CPU profiling works through both `Execute` and `ExecuteRoot`:
+
+```sh
+AVR_CPU_PROFILE=/tmp/avr-cpu.pprof ./build/go/avr --help
+go tool pprof -top /tmp/avr-cpu.pprof
+# Package initialization happens before the CPU profile starts:
+GODEBUG=inittrace=1 ./build/go/avr --version
+```
+
+Choose a new profile filename: existing files are never overwritten. Profiles
+are private (0600 on POSIX) and flushed on success, error and handled interrupt.
+Completion ignores profiling. Profiling adds sampling/flush overhead, so do not
+use a profiled invocation as a latency benchmark; very short commands may have
+no CPU samples. The standalone profile includes command construction; embedded
+`ExecuteRoot` consumers begin profiling after constructing their own tree.
+
+`Dependencies.UpdateNotices` is a disabled-by-default notifier scaffold. There
+is no version lookup, cache, producer, background task or updater. A future
+producer can offer a buffered notice tied to the invocation context. The CLI
+only reads an already-ready notice, never waits for one at shutdown, and writes
+to stderr only after successful interactive commands. Help, version,
+completion, JSON/format output, pipes, hidden commands, CI, automation and
+`AVR_NO_UPDATE_NOTIFIER` suppress notices. No telemetry was added.
+
+CI now records fresh-process startup samples, hashes, p90/median timings,
+package init traces and command allocation benchmarks on macOS, Linux and
+Windows. These are uploaded with the preview artifacts; noisy wall-clock
+measurements do not impose a hard timing threshold. For a single-build report:
+
+```sh
+python scripts/benchmark_startup.py --binary build/go/avr --report build/go/startup/current.json
+```
+
+Follow-up measurements on the same host used 101 paired samples after the
+validation workload finished. Relative to the earlier help-index optimization:
+
+| Invocation | Prior optimized median | Current median | Further reduction |
+| --- | ---: | ---: | ---: |
+| `avr --help` | 4.98 ms | 4.88 ms | 2.0% |
+| `avr help` | 5.09 ms | 4.89 ms | 3.9% |
+| Nested help | 4.86 ms | 4.71 ms | 3.0% |
+| `avr --version` | 4.73 ms | 4.52 ms | 4.3% |
+| JSON field discovery | 4.77 ms | 4.50 ms | 5.6% |
+| Root completion | 5.14 ms | 4.90 ms | 4.6% |
+
+A separate paired comparison against the original baseline measured root help
+at 6.94 → 4.89 ms (29.6% cumulative improvement). Absolute times vary between
+batches; compare paired results rather than subtracting medians from different
+runs. The 50% end-to-end goal remains unmet. Package init tracing shows command
+initialization at about 0.006 ms / 9,088 bytes / 115 allocations, versus the
+previous 0.20 ms / 383,424 bytes / 3,970 allocations. go-runewidth initialization
+is now about 0.008 ms with zero allocations. Init-trace timings are diagnostic,
+separate from the fresh-process wall-clock samples.
+
+Local validation completed 7,495 public and 549 actual admin paired cases with
+zero unaccepted differences. These include CJK, combining marks, emoji and
+invisible format characters in piped and TTY tables. Race tests, lint,
+vulnerability checks, generated API/help checks, the 151-node command audit,
+workflow validation and Linux/Windows amd64 cross-builds pass. A real CLI CPU
+profile was read successfully by `go tool pprof`; short help had zero samples,
+as expected from sampling a sub-millisecond command body. CI changes are local;
+no new remote run, release or publication was initiated.
+
+Raw reports: `build/go/startup/followup-final.json`, `cumulative-final.json`,
+`current.json`/`current.inittrace.txt`, and `validation-summary.json` in that
+same directory. The original job/option-gaps run detected the intended removed
+organization requests; targeted reruns after the bounded comparator update are
+recorded in `job-parity-final.json` and `option-gaps-parity-final.json`.
+
+### Go dependency policy
+
+Prefer current published versions and pin them in `go.mod`/`go.sum` for
+reproducible builds. Check updates for runtime and tooling modules, run output
+parity and startup checks, and document concrete incompatibilities. Weekly
+Dependabot checks cover both modules. This policy does not imply taking
+prereleases or changing major module APIs without validation.
+
+As of 2026-10-31, all 17 retained runtime requirements resolve to their latest
+published versions. Updates include go-runewidth 0.0.31, compress 1.20.3,
+pflag 1.0.10, x/net 0.62.0, uax29/v2 2.7.0 and timefmt-go 0.1.9.
+go-runewidth supplies terminal-column widths for bordered tables, including
+combining characters, emoji and CJK. The previous 0.0.24 pin predated the
+upstream startup regression; no compatibility exception was needed to update.
+
+The top-level development tools are current (golangci-lint 2.15.0,
+oapi-codegen 2.8.1, govulncheck/x-vuln 1.9.0). These transitive exceptions were
+confirmed by failed compiler checks and are annotated in `tools/go.mod`:
+
+| Dependency retained | Reason newer versions cannot currently be used |
+| --- | --- |
+| gobwas/glob 0.2.3 | 1.1.0 removes `glob.Glob`, required by protogetter 1.0.1. |
+| depguard/v2 2.2.1 | 2.3.0 requires that incompatible glob 1.1.0. |
+| speakeasy-api/openapi 1.25.6 | 1.26.x overlay methods use `go.yaml.in/yaml/v3.Node`; oapi-codegen passes `gopkg.in/yaml.v3.Node`. |
+| speakeasy-api/jsonpath 0.6.3 | 0.7.0 changes YAML node packages in the generator dependency chain. |
+| dprotaso/go-yit revision 9ba8df137936 | Newer revisions change YAML node packages; vmware-labs/yaml-jsonpath still requires `gopkg.in/yaml.v3`. |
+
+Revisit these exceptions when the consuming tools adopt the changed APIs.
+
 ## Build and try
 
 Use Go 1.27.3 (the module records the toolchain), Python 3.14, and the repository's

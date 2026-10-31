@@ -162,7 +162,7 @@ func firewallPorts(value string, specified bool) (*int, *int, error) {
 	values := []int{}
 	for _, text := range []string{first, last} {
 		trimmed := strings.TrimSpace(text)
-		if !settingInteger.MatchString(trimmed) {
+		if !settingInteger().MatchString(trimmed) {
 			return nil, nil, &ExitError{2, "Error: Invalid --ports " + pythonQuote(value) + ": must be 'N' or 'N-M'"}
 		}
 		port, err := strconv.Atoi(strings.ReplaceAll(trimmed, "_", ""))

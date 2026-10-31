@@ -23,7 +23,7 @@ func newStatus(d Dependencies) *cobra.Command {
 	cmd.Flags().StringVar(&fields, "json", "", "Output comma-separated fields, * for all, or ? to list fields.")
 	cmd.Flags().StringVarP(&expression, "jq", "q", "", "Filter JSON with an embedded jq expression.")
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		cfg, _, api, err := d.load()
+		cfg, _, err := d.configuration()
 		if err != nil {
 			return err
 		}
@@ -45,7 +45,7 @@ func newStatus(d Dependencies) *cobra.Command {
 		scoped := config.IsScoped(cfg.Token)
 		result := map[string]any{}
 		if !scoped {
-			result, err = api.Do(cmd.Context(), http.MethodGet, "/users/me", nil)
+			result, err = d.apiClient(cfg).Do(cmd.Context(), http.MethodGet, "/users/me", nil)
 			if err != nil {
 				return apiError(cfg, err, "fetch user info")
 			}
@@ -176,7 +176,7 @@ func NewLogout(deps Dependencies) *cobra.Command {
 func newSwitch(d Dependencies) *cobra.Command {
 	return &cobra.Command{Use: "switch [host]", Short: "Switch the default host used when AVR_HOST isn't set.", Args: cobra.MaximumNArgs(1),
 		RunE: run(func(_ *cobra.Command, args []string) error {
-			_, store, _, err := d.load()
+			_, store, err := d.configuration()
 			if err != nil {
 				return err
 			}

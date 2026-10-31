@@ -18,7 +18,7 @@ type vmForward struct{ local, guest int }
 
 func vmPort(value, label string) (int, error) {
 	text := strings.TrimSpace(value)
-	if !settingInteger.MatchString(text) {
+	if !settingInteger().MatchString(text) {
 		return 0, &ExitError{2, "Error: --port " + label + " '" + output.CellText(value) + "' is not an integer."}
 	}
 	number, ok := new(big.Int).SetString(strings.ReplaceAll(text, "_", ""), 10)

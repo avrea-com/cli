@@ -8,7 +8,6 @@ import (
 	"io"
 	"math/big"
 	"net/url"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -19,7 +18,7 @@ import (
 )
 
 var tokenCreateFields = append(slices.Clone(tokenFields), "token")
-var tokenDurationDigits = regexp.MustCompile("^[0-9]+$")
+var tokenDurationDigits = lazyRegexp("^[0-9]+$")
 
 const tokenUnknownOutcome = "A token may have been created; check \x60avr token list\x60 before retrying."
 const tokenGrantOrderHint = "grants[N] counts from 0 after resources are resolved and duplicates removed: the --repo values first, then the --vm values, in the order given."
@@ -58,7 +57,7 @@ func tokenTTL(value string) (int, error) {
 			multiplier = 86400
 		}
 	}
-	if !tokenDurationDigits.MatchString(number) {
+	if !tokenDurationDigits().MatchString(number) {
 		return 0, &ExitError{2, fmt.Sprintf("Error: Invalid value for --ttl: invalid duration %s: use e.g. 30m, 8h, 7d, or a number of seconds", pythonQuote(output.CellText(value)))}
 	}
 	seconds, _ := new(big.Int).SetString(number, 10)
@@ -187,7 +186,7 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 	return c
 }
 func tokenDiscardHint(record map[string]any, org string) string {
-	if id, ok := record["id"].(string); ok && tokenIDPattern.MatchString(id) {
+	if id, ok := record["id"].(string); ok && tokenIDPattern().MatchString(id) {
 		return " To discard it, run \x60avr token revoke " + id + " --org " + shellQuotePython(org) + "\x60."
 	}
 	return " Check \x60avr token list\x60 before retrying."
@@ -224,7 +223,7 @@ func tokenCreateError(cfg config.Config, he *client.HTTPError, namesVMs bool) er
 			if he.Status == 503 && he.Detail != "" {
 				retry := "Retry shortly."
 				value := strings.TrimSpace(he.RetryAfter)
-				if tokenDurationDigits.MatchString(value) {
+				if tokenDurationDigits().MatchString(value) {
 					seconds, _ := new(big.Int).SetString(value, 10)
 					retry = "Retry in " + seconds.String() + "s."
 				}

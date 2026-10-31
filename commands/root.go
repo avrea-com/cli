@@ -21,6 +21,10 @@ import (
 
 // Dependencies are explicit so admin can reuse commands without package globals.
 type Dependencies struct {
+	// UpdateNotices is reserved for a future notifier. Nil disables it. ExecuteRoot
+	// only consumes an already-ready message; it never starts or waits for work.
+	// Producers must use the invocation context and a buffered channel.
+	UpdateNotices   <-chan string
 	Verbose         func() bool
 	ColorEnabled    func() bool
 	RunSSH          func(context.Context, []string) (int, error)
@@ -114,13 +118,13 @@ func (d Dependencies) defaults() Dependencies {
 	return d
 }
 
-func (d Dependencies) load() (config.Config, *config.Store, *client.Client, error) {
+func (d Dependencies) configuration() (config.Config, *config.Store, error) {
 	store := d.Store
 	if store == nil {
 		var err error
 		store, err = config.DefaultStore()
 		if err != nil {
-			return config.Config{}, nil, nil, err
+			return config.Config{}, nil, err
 		}
 	}
 	var cfg config.Config
@@ -130,9 +134,18 @@ func (d Dependencies) load() (config.Config, *config.Store, *client.Client, erro
 	} else {
 		cfg, err = config.Load(store, d.Getenv)
 	}
+	return cfg, store, err
+}
+
+func (d Dependencies) load() (config.Config, *config.Store, *client.Client, error) {
+	cfg, store, err := d.configuration()
 	if err != nil {
 		return cfg, store, nil, err
 	}
+	return cfg, store, d.apiClient(cfg), nil
+}
+
+func (d Dependencies) apiClient(cfg config.Config) *client.Client {
 	agent := fmt.Sprintf("avr-cli/%s (%s %s; %s)", d.Version, runtime.GOOS, runtime.GOARCH, runtime.Version())
 	api := client.New(cfg, d.HTTP, agent)
 	if d.Verbose() {
@@ -141,7 +154,7 @@ func (d Dependencies) load() (config.Config, *config.Store, *client.Client, erro
 	if d.timingEnabled() {
 		api.Timings = d.Err
 	}
-	return cfg, store, api, nil
+	return api
 }
 
 type ExitError struct {
@@ -239,9 +252,16 @@ func NewAuth(deps Dependencies) *cobra.Command {
 
 // Execute is the standalone entry boundary; embedded consumers can execute their
 // own root and inspect ExitError without a library ever calling os.Exit.
-func Execute(ctx context.Context, args []string, deps Dependencies) int {
+func Execute(ctx context.Context, args []string, deps Dependencies) (code int) {
 	started := time.Now()
 	d := deps.defaults()
+	ctx, finish, err := startCPUProfile(ctx, d)
+	if err != nil {
+		return profileFailure(d.Err, err)
+	}
+	if finish != nil {
+		defer finishProfile(finish, d.Err, &code)
+	}
 	if d.timingEnabled() && d.Getenv("_AVR_COMPLETE") == "" {
 		defer func() {
 			_, _ = fmt.Fprintf(d.Err, "avr-timing {\"kind\":\"command\",\"duration_ms\":%.6f}\n", float64(time.Since(started))/float64(time.Millisecond))
@@ -253,19 +273,37 @@ func Execute(ctx context.Context, args []string, deps Dependencies) int {
 
 // ExecuteRoot applies the shared exit-code contract to a composed command tree.
 // Optional dependencies provide environment lookup for shell completion.
-func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr io.Writer, dependencies ...Dependencies) int {
+func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr io.Writer, dependencies ...Dependencies) (code int) {
 	if code, handled := executeCompletion(root, dependencies); handled {
 		return code
 	}
 	if stderr == nil {
 		stderr = os.Stderr
 	}
+	d := Dependencies{Err: stderr}
+	if len(dependencies) > 0 {
+		d = dependencies[0]
+		d.Err = stderr
+	}
+	d = d.defaults()
+	ctx, finish, err := startCPUProfile(ctx, d)
+	if err != nil {
+		return profileFailure(stderr, err)
+	}
+	if finish != nil {
+		defer finishProfile(finish, stderr, &code)
+	}
+	ctx = context.WithValue(ctx, organizationSlugsKey{}, &organizationSlugs{})
 	root.SetArgs(expandTestsShorthand(root, args))
-	err := root.ExecuteContext(ctx)
-	if err == nil || errors.Is(err, errPagerInterrupted) {
+	executed, err := root.ExecuteContextC(ctx)
+	if err == nil {
+		printUpdateNotice(executed, d)
 		return 0
 	}
-	code := 2
+	if errors.Is(err, errPagerInterrupted) {
+		return 0
+	}
+	code = 2
 	var exit *ExitError
 	if errors.As(err, &exit) {
 		code = exit.Code
@@ -277,6 +315,7 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 		}
 	}
 	if err.Error() != "" {
+		err = requiredOptionError(executed, err)
 		_, _ = fmt.Fprintln(stderr, err)
 	}
 	return code

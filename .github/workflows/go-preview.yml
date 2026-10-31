@@ -54,6 +54,14 @@ jobs:
       - run: go test -race ./...
         if: matrix.shard == 0
       - run: go build -trimpath -o build/go/avr.exe ./cmd/avr
+      # Report trends without flaky wall-clock thresholds on shared runners.
+      - name: Measure fresh-process startup
+        if: matrix.shard == 0
+        run: python scripts/benchmark_startup.py --binary build/go/avr.exe --samples 101 --report build/go/startup/current.json
+      - name: Measure command setup allocations
+        if: matrix.shard == 0
+        shell: bash
+        run: go test ./commands -run '^$' -bench '^BenchmarkStartup$' -benchmem > build/go/startup/benchmarks.txt
       - run: uv run --python 3.14 --frozen --extra dev python scripts/go_notices.py
       - run: uv run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
       - run: uv run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr.exe
@@ -158,6 +166,8 @@ jobs:
         if: matrix.shard == 0
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_global --go build/go/avr.exe
         if: matrix.shard == 1
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_usage_errors --go build/go/avr.exe
+        if: matrix.shard == 2
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_argument_contract --go build/go/avr.exe
         if: matrix.shard == 2
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_defaults --go build/go/avr.exe
@@ -177,6 +187,7 @@ jobs:
             build/go/*parity*.json
             build/go/command-surface-audit.json
             build/go/THIRD-PARTY-NOTICES.txt
+            build/go/startup/
           if-no-files-found: error
 
   go-checks:

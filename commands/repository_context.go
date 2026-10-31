@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,12 +21,12 @@ func gitOrigin(ctx context.Context) (string, error) {
 	return strings.TrimSpace(string(data)), err
 }
 
-var scpRemote = regexp.MustCompile("^[^/@:]+@([^/:]+):(.+)$")
+var scpRemote = lazyRegexp("^[^/@:]+@([^/:]+):(.+)$")
 
 func parseGitRemote(raw string) (name, platform string) {
 	raw = strings.TrimPrefix(raw, "git+")
 	var host string
-	if parts := scpRemote.FindStringSubmatch(raw); parts != nil {
+	if parts := scpRemote().FindStringSubmatch(raw); parts != nil {
 		host, name = parts[1], parts[2]
 	} else {
 		u, err := url.Parse(raw)

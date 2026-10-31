@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +17,7 @@ import (
 )
 
 var tokenFields = []string{"id", "organization_id", "user_id", "name", "created_at", "expires_at", "last_used_at", "revoked_at", "revoked_reason", "allow_vm_create", "vm_create_limit", "vm_create_count", "grants"}
-var tokenIDPattern = regexp.MustCompile("^key-[0-9a-f]{32}$")
+var tokenIDPattern = lazyRegexp("^key-[0-9a-f]{32}$")
 
 const noTokenHint = "Run \x60avr token list\x60 to see the tokens visible to you."
 
@@ -33,7 +32,7 @@ func tokenIDArgs(cmd *cobra.Command, args []string) error {
 	if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 		return err
 	}
-	if !tokenIDPattern.MatchString(args[0]) {
+	if !tokenIDPattern().MatchString(args[0]) {
 		return &ExitError{2, "Error: Expected a token ID: key- followed by 32 lowercase hexadecimal characters."}
 	}
 	return nil
