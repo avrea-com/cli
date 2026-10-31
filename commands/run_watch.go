@@ -235,6 +235,13 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 				if e := emit(map[string]any{"event": "run_completed", "ci_provider": runCIValue(fields), "status": fields["status"], "conclusion": fields["conclusion"], "duration_seconds": fields["duration_seconds"]}); e != nil {
 					return e
 				}
+				if !streaming {
+					conclusion := fieldText(fields, "conclusion")
+					if conclusion == "" {
+						conclusion = "completed"
+					}
+					notifyCompletion(d, fmt.Sprintf("Run %s %s: %s", runLabel(fields, runID), fieldText(fields, "display_title"), conclusion))
+				}
 				return watchExit(fields, exitStatus)
 			}
 		}

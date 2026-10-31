@@ -53,3 +53,28 @@ func TestProjection(t *testing.T) {
 		t.Fatal("accepted unknown field")
 	}
 }
+
+// gh-style map ordering is intentional; explicit arrays define column order.
+func TestJQOrderingContract(t *testing.T) {
+	row := map[string]any{"status": "completed", "conclusion": "failure", "run_id": "run-123"}
+	for _, tc := range []struct{ query, want string }{
+		{".[] | [.[]] | @tsv", "failure\trun-123\tcompleted\n"},
+		{".[] | [.status,.conclusion,.run_id] | @tsv", "completed\tfailure\trun-123\n"},
+		{".[] | to_entries | map(.key) | join(\",\")", "conclusion,run_id,status\n"},
+	} {
+		var b bytes.Buffer
+		if err := JSONList(t.Context(), &b, []map[string]any{row}, []string{"status", "conclusion", "run_id"}, tc.query); err != nil || b.String() != tc.want {
+			t.Fatalf("%s: %q %v", tc.query, b.String(), err)
+		}
+	}
+	var b bytes.Buffer
+	if err := JSON(t.Context(), &b, row, []string{"status", "conclusion", "run_id"}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Index(b.String(), "conclusion") >= strings.Index(b.String(), "run_id") || strings.Index(b.String(), "run_id") >= strings.Index(b.String(), "status") {
+		t.Fatal(b.String())
+	}
+	if err := JSON(t.Context(), &b, row, []string{"status"}, "keys_unsorted"); err == nil {
+		t.Fatal("unsupported function unexpectedly accepted")
+	}
+}

@@ -132,3 +132,14 @@ func TestVMKnownHostsPreservesOtherPinsAndRestrictsNewDirectories(t *testing.T) 
 		}
 	}
 }
+
+func TestVMSSHConfigBareEqualsDoesNotPanic(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config")
+	if err := os.WriteFile(path, []byte("=\nHost *\n  StrictHostKeyChecking no\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	overrides, err := vmPinningOverrides(path)
+	if err != nil || len(overrides) != 1 || overrides[0] != "StrictHostKeyChecking" {
+		t.Fatal(overrides, err)
+	}
+}

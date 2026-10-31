@@ -185,3 +185,58 @@ func TestHostSourceTracksResolutionInsteadOfOnlyTheSelectedURL(t *testing.T) {
 		}
 	}
 }
+
+func TestUnreadableStoreDoesNotReplaceCredentials(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix read permissions; IO failure covered separately")
+	}
+	s := &Store{Path: filepath.Join(t.TempDir(), "hosts.json")}
+	if err := s.Set("https://saved.test", "token", "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(s.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Chmod(s.Path, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chmod(s.Path, 0600) }()
+	if _, err = os.ReadFile(s.Path); err == nil {
+		t.Skip("user can bypass read permissions")
+	}
+	assertStoreReadFailure(t, s)
+	if err = os.Chmod(s.Path, 0600); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(s.Path)
+	if err != nil || string(before) != string(after) {
+		t.Fatal("credentials changed", err)
+	}
+}
+
+func TestStoreIOFailureIsNotAnEmptyStore(t *testing.T) {
+	assertStoreReadFailure(t, &Store{Path: t.TempDir()})
+}
+
+func assertStoreReadFailure(t *testing.T, s *Store) {
+	t.Helper()
+	if _, err := s.ReadChecked(); err == nil {
+		t.Fatal("missing read error")
+	}
+	if _, err := Load(s, func(string) string { return "" }); err == nil {
+		t.Fatal("missing load error")
+	}
+	if err := s.Set("https://new.test", "token", "fixture"); err == nil {
+		t.Fatal("set accepted unreadable store")
+	}
+	if err := s.Switch("https://saved.test"); err == nil {
+		t.Fatal("switch accepted unreadable store")
+	}
+	if _, err := s.Clear("https://saved.test"); err == nil {
+		t.Fatal("clear accepted unreadable store")
+	}
+	if _, err := s.ClearDefaultOrg("https://saved.test"); err == nil {
+		t.Fatal("org clear accepted unreadable store")
+	}
+}
