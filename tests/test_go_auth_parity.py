@@ -136,6 +136,7 @@ def test_hidden_prompt_oracle_uses_standard_fallback(monkeypatch):
     import getpass
 
     original = getpass.getpass
+    fallback = getpass.fallback_getpass  # ty: ignore[unresolved-attribute] - omitted by stdlib stubs
     seen = []
     monkeypatch.setattr(
         parity_prompt_oracle.runpy,
@@ -143,5 +144,5 @@ def test_hidden_prompt_oracle_uses_standard_fallback(monkeypatch):
         lambda name, run_name: seen.append((name, run_name, getpass.getpass)),
     )
     parity_prompt_oracle.main()
-    assert seen == [("avrea_cli.main", "__main__", getpass.fallback_getpass)]
+    assert seen == [("avrea_cli.main", "__main__", fallback)]
     assert getpass.getpass is original
