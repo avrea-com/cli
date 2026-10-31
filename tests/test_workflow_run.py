@@ -70,7 +70,6 @@ class TestResolveWorkflowFilename:
     def test_wfl_id_not_found_raises(self):
         client = MagicMock()
         client.public_get.return_value = {"data": []}
-        import click
 
         with pytest.raises(click.ClickException, match="not found"):
             _resolve_workflow_filename(client, "org-1", "rep-1", "wfl-missing")
@@ -105,7 +104,6 @@ class TestResolveWorkflowFilename:
                 {"workflow_id": "wfl-2", "name": "Build", "path": ".github/workflows/build-old.yml"},
             ]
         }
-        import click
 
         with pytest.raises(click.ClickException, match="Ambiguous"):
             _resolve_workflow_filename(client, "org-1", "rep-1", "Build")
@@ -113,7 +111,6 @@ class TestResolveWorkflowFilename:
     def test_unknown_identifier_raises(self):
         client = MagicMock()
         client.public_get.return_value = {"data": []}
-        import click
 
         with pytest.raises(click.ClickException, match="not found"):
             _resolve_workflow_filename(client, "org-1", "rep-1", "nonexistent")
@@ -122,7 +119,6 @@ class TestResolveWorkflowFilename:
         """A workflow row without a `path` (disabled / mid-rename) must
         raise with an actionable hint instead of dispatching workflow="
         which the GitHub endpoint rejects with an opaque 422."""
-        import click
 
         client = MagicMock()
         client.public_get.return_value = {
@@ -134,7 +130,6 @@ class TestResolveWorkflowFilename:
 
     def test_empty_string_path_raises_same(self):
         """Same shape: empty string ``path`` is treated as 'not on disk'."""
-        import click
 
         client = MagicMock()
         client.public_get.return_value = {
@@ -316,8 +311,8 @@ def test_native_workflow_identity_does_not_dispatch_a_same_named_github_workflow
             },
         ]
     }
-    with pytest.raises(click.ClickException, match="not available for Avrea CI"):
-        _resolve_workflow_filename(
-            client, "org-019d9533fc2f7b59948243a10b312d2e", "rep-019d9533fc2f7b59948243a10b312d2e", reference
-        )
+    resolved = _resolve_workflow_filename(
+        client, "org-019d9533fc2f7b59948243a10b312d2e", "rep-019d9533fc2f7b59948243a10b312d2e", reference
+    )
+    assert resolved.native_workflow_id == "awf-019d9533fc2f7b59948243a10b312d2e"
     client.public_post.assert_not_called()

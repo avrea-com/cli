@@ -1136,9 +1136,15 @@ Trigger a workflow_dispatch event.
 avr workflow run [OPTIONS] WORKFLOW
 ```
 
-WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric
-workflow ID, a workflow filename (build.yml), or the workflow's
-display name.
+WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub
+numeric workflow ID, a workflow path, or the workflow's display name.
+Bare filenames (build.yml) select GitHub Actions; use the full
+.avrea/workflows/build.yml path for Avrea CI.
+
+Native -f inputs use the workflow's declared types. JSON preserves
+booleans and numbers. A receipt identifies the exact native run. If a
+response is lost, use the printed retry command to recover the same
+invocation with its resolved ref, inputs and --idempotency-key.
 
 ```sh
 Examples:
@@ -1160,6 +1166,7 @@ Examples:
 - `-r, --ref <TEXT>` — Branch or tag to run at. Defaults to the repository's default branch.
 - `-f, --raw-field <TEXT>` — Workflow input: key=value (repeatable). _(repeatable)_
 - `--json` — Read a JSON object of inputs from stdin.
+- `--idempotency-key <UUID>` — For Avrea CI, reuse this key to retry the same invocation.
 - `-w, --watch / -W, --no-watch` — Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately. _(default: `True`)_
 - `--exit-status` — With --watch, exit non-zero if the run failed.
 - `--interval <INTEGER>` — With --watch, refresh interval in seconds. _(default: `3`)_
