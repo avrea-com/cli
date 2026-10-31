@@ -1,10 +1,10 @@
 # Go migration plan for avr and avr-admin
 
 Status: public implementation rebased onto origin/main; refreshed local parity validation complete. Release/admin-only phases remain.
-Updated: 2026-10-30.
+Updated: 2026-10-31.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
-Current public/Python baseline: `96d1ccb987032f35b10c7bb0b9c90816da1323a0` from `origin/main`.
+Current public/Python baseline: `56a09f5fdf1e644f10370d337af879959f4a511f` from `origin/main`.
 Current admin reference baseline: `85e8b2af0d66f55da8989d0718aeb35887e43349` from `origin/main`.
 
 Rewrite the public `avr` CLI in Go, expose a small reusable command and client
@@ -135,6 +135,39 @@ OpenSSH is invoked with the existing Python job-SSH options. The compatibility
 tests do not establish a real runner connection or alter forwarding on staging.
 Read-only staging validation covers job listing, job details, and static logs.
 Native remote CI and a real interactive runner SSH session remain unverified.
+
+## Test-results checkpoint (2026-10-31)
+
+Rebased the migration branch onto public `origin/main` at `56a09f5`. The new
+public surface is `tests list JOB` and the `tests JOB` shorthand; both accept
+`job-` and native `awj-` IDs. The complete inventory now has 151 command/group
+nodes, with no missing registrations or flags in Go.
+
+The shared command reads the job's repository unless explicitly overridden,
+follows short and empty result pages within a row limit and 20-request budget,
+and retains a usable resume cursor. It validates job identity and snapshot
+consistency before emitting any results. Recorded test failures are data and
+exit successfully; API refusals, malformed pages and changing snapshots fail
+without printing partial results. Terminal tables, class-qualified failure
+messages, reporting caveats and control-character escaping follow Python.
+JSON and embedded gojq preserve raw result data.
+
+The new differential suite covers explicit and shorthand routes, both ID
+prefixes, scopes, JSON/jq, terminal presentation, pagination budgets, malformed
+responses, changed snapshots, HTTP failures and usage errors. It runs in the
+existing Linux/macOS/Windows CI matrix. Shared-entry tests also cover admin
+composition, cancellation and late-page failures. The Python oracle, command
+inventory and generated help/reference metadata advance together to `56a09f5`.
+No admin-only commands, repo-intel changes or release are included.
+
+Local validation passed: 7,735 paired public executions across 54 suites
+(including their native transport checks), plus 86 test-result cases through
+the actual admin executable, with no differences. All 1,850 Python tests pass;
+Go race tests, vet, lint, generation and command audits pass. The process/docs/
+shell tests pass (32 passed, one Fish-shell test skipped because Fish is not
+installed locally). The native macOS archive validates, and Linux/Windows
+cross-builds succeed. Native Linux/Windows CI validation of this follow-up
+remains pending publication of the rebased branch.
 
 ## Decisions and boundaries
 

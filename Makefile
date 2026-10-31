@@ -116,6 +116,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_artifact --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_cache --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_log_search --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_tests --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom_download --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom_generate --go build/go/avr
