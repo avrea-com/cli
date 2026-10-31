@@ -129,3 +129,19 @@ def test_windows_oracle_pipe_exception_does_not_hide_go_errors(monkeypatch):
     go["exit"] = 0
     python["stderr"] = "unexpected failure"
     assert inspection.compare(scenario, python, go)
+
+
+def test_hidden_prompt_oracle_uses_standard_fallback(monkeypatch):
+    from scripts import parity_prompt_oracle
+    import getpass
+
+    original = getpass.getpass
+    seen = []
+    monkeypatch.setattr(
+        parity_prompt_oracle.runpy,
+        "run_module",
+        lambda name, run_name: seen.append((name, run_name, getpass.getpass)),
+    )
+    parity_prompt_oracle.main()
+    assert seen == [("avrea_cli.main", "__main__", getpass.fallback_getpass)]
+    assert getpass.getpass is original
