@@ -217,7 +217,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 		return prepareGlobalOptions(cmd, d)
 	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewBilling(d), NewFirewall(d), NewVM(d))
+	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)
@@ -260,7 +260,7 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	root.SetArgs(args)
+	root.SetArgs(expandTestsShorthand(root, args))
 	err := root.ExecuteContext(ctx)
 	if err == nil || errors.Is(err, errPagerInterrupted) {
 		return 0

@@ -79,6 +79,8 @@ def scenarios():
                         case(shell, node["path"] + " value " + param["name"] + " " + repr(prefix), supplied, prefix)
                     )
     special = [
+        ("tests shorthand", ["tests", "job-" + "a" * 32], "--"),
+        ("tests native shorthand", ["tests", "awj-" + "a" * 32, "--json", "*"], "--"),
         ("unknown command", ["no-such-command"], ""),
         ("unknown flag", ["repo", "list", "--unknown"], "-"),
         ("alias", ["repos"], ""),

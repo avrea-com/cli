@@ -35,7 +35,7 @@ import threading
 import time
 import urllib.request
 
-BASELINE = "96d1ccb987032f35b10c7bb0b9c90816da1323a0"
+BASELINE = "56a09f5fdf1e644f10370d337af879959f4a511f"
 TOKEN = "avr_fixture_key_never_a_real_secret"
 USER = {
     "id": "usr-fixture",
