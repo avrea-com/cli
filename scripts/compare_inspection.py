@@ -550,7 +550,10 @@ def watch_scenarios():
                     ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}"): active,
                     ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}?include=jobs&include=workflow"): active,
                 },
-                "interrupt_after_text": "Unit tests",
+                # Interrupt only after the whole frame is visible. A job-name
+                # marker can interrupt Python between footer writes (or match
+                # Go's terminal title before the visible frame even starts).
+                "interrupt_after_text": "# ssh into the runner VM",
                 "exit": 130,
                 "stdout_terms": ["Stopped watching."],
             }

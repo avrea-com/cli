@@ -4,6 +4,7 @@ from copy import deepcopy
 from scripts.compare_auth import compare
 from scripts.compare_auth import run_captured
 from scripts.compare_auth import windows_literal_json_args
+from typing import Any
 import pytest
 import sys
 
@@ -204,7 +205,10 @@ def test_only_redundant_successful_organization_reads_can_be_removed():
     python["requests"] = [request, {"method": "GET", "path": "/repos", "body": None}, deepcopy(request)]
     go = deepcopy(python)
     go["requests"].pop()
-    scenario = {"args": ["repo", "list"], "responses": {("GET", "/users/me/organizations"): (200, {"data": []})}}
+    scenario: dict[str, Any] = {
+        "args": ["repo", "list"],
+        "responses": {("GET", "/users/me/organizations"): (200, {"data": []})},
+    }
     assert not compare(scenario, python, go)
     # Additional Go reads, missing non-org reads, changed credentials and failures
     # must not disappear under the performance exception.
