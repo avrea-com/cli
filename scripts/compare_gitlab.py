@@ -334,7 +334,8 @@ def compare(scenario, python, go):
                 try:
                     result["stdout"] = json.dumps(json.loads(result["stdout"]), sort_keys=True)
                 except ValueError:
-                    pass
+                    # Error scenarios can emit non-JSON output; retain it for comparison.
+                    continue
     if scenario.get("hidden_prompt"):
         python["stderr"] = re.sub(
             r"[^\n]*(?:getpass|termui)\.py:\d+: GetPassWarning: Can not control echo on the terminal.\n[^\n]*\n",
