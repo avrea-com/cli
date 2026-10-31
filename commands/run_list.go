@@ -25,18 +25,53 @@ func NewRun(deps Dependencies) *cobra.Command {
 	return group
 }
 
+var isoTimestamp = regexp.MustCompile(`^(\d{4})-?(\d{2})-?(\d{2})(?:[Tt ](\d{2})(?::?(\d{2}))?(?::?(\d{2}))?(?:[.,](\d+))?(Z|[+-]\d{2}(?::?\d{2})?)?)?$`)
+
 func normalizeTimestamp(value string) (string, error) {
-	for _, layout := range []string{time.RFC3339Nano, "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
-		parsed, err := time.Parse(layout, value)
-		if err != nil {
-			continue
-		}
-		if layout == time.RFC3339Nano {
-			return parsed.Format("2006-01-02T15:04:05.999999-07:00"), nil
-		}
-		return parsed.Format("2006-01-02T15:04:05.999999"), nil
+	m := isoTimestamp.FindStringSubmatch(value)
+	if m == nil {
+		return "", fmt.Errorf("invalid timestamp")
 	}
-	return "", fmt.Errorf("invalid timestamp")
+	for _, i := range []int{4, 5, 6} {
+		if m[i] == "" {
+			m[i] = "00"
+		}
+	}
+	canonical := m[1] + "-" + m[2] + "-" + m[3] + "T" + m[4] + ":" + m[5] + ":" + m[6]
+	if m[7] != "" {
+		// Python datetime stores microseconds, truncating additional digits.
+		canonical += "." + m[7][:min(6, len(m[7]))]
+	}
+	layout := "2006-01-02T15:04:05"
+	zone := m[8]
+	if zone != "" {
+		if zone != "Z" {
+			zone = strings.ReplaceAll(zone, ":", "")
+			if len(zone) == 3 {
+				zone += "00"
+			}
+			h, _ := strconv.Atoi(zone[1:3])
+			minute, _ := strconv.Atoi(zone[3:5])
+			if h > 23 || minute > 59 {
+				return "", fmt.Errorf("invalid timestamp")
+			}
+			zone = zone[:3] + ":" + zone[3:]
+		}
+		canonical += zone
+		layout = time.RFC3339Nano
+	}
+	parsed, err := time.Parse(layout, canonical)
+	if err != nil {
+		return "", err
+	}
+	format := "2006-01-02T15:04:05"
+	if parsed.Nanosecond() != 0 {
+		format += ".000000"
+	}
+	if zone != "" {
+		format += "-07:00"
+	}
+	return parsed.Format(format), nil
 }
 
 func newRunList(d Dependencies) *cobra.Command {

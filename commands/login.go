@@ -157,21 +157,36 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 	if _, err := fmt.Fprintf(d.Out, "Opening browser to: %s\nWaiting for authentication...\n", authURL); err != nil {
 		return "", err
 	}
-	// Browser invocations can wait for the callback, so serve concurrently.
-	if err := d.OpenBrowser(ctx, authURL); err != nil {
-		_, _ = fmt.Fprintln(d.Err, "Failed to open browser. Please visit:")
-		if _, err := fmt.Fprintln(d.Out, authURL); err != nil {
-			return "", err
-		}
-	}
+	// A browser may stay open long after authentication. Do not wait for it
+	// before consuming the callback, or kill the user's browser on CLI exit.
+	browserDone := make(chan error, 1)
+	go func() { browserDone <- d.OpenBrowser(context.WithoutCancel(ctx), authURL) }()
 	var cb callback
-	select {
-	case cb = <-received:
-	case <-ctx.Done():
-		if parent.Err() != nil {
-			return "", parent.Err()
+waitCallback:
+	for {
+		select {
+		case cb = <-received:
+			break waitCallback
+		case err := <-browserDone:
+			browserDone = nil
+			if err != nil {
+				_, _ = fmt.Fprintln(d.Err, "Failed to open browser. Please visit:")
+				if _, err := fmt.Fprintln(d.Out, authURL); err != nil {
+					return "", err
+				}
+			}
+		case <-ctx.Done():
+			if parent.Err() != nil {
+				return "", parent.Err()
+			}
+			// Prefer a callback already delivered at the timeout boundary.
+			select {
+			case cb = <-received:
+				break waitCallback
+			default:
+				return "", errors.New("authentication timed out waiting for browser callback")
+			}
 		}
-		return "", errors.New("authentication timed out waiting for browser callback")
 	}
 	if cb.session == "" {
 		if cb.sso != "" {
