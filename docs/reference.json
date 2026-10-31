@@ -5444,7 +5444,7 @@
             "full": "avr workflow run",
             "is_group": false,
             "short_help": "Trigger a workflow_dispatch event.",
-            "help": "Trigger a workflow_dispatch event.\n\nWORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric\nworkflow ID, a workflow filename (build.yml), or the workflow's\ndisplay name.\n\n\b\nExamples:\n    avr workflow run build.yml\n    avr workflow run \"Build and Deploy\" --ref feat/x\n    avr workflow run wfl-abc123 -f env=prod -f region=eu\n    echo '{\"env\":\"prod\"}' | avr workflow run build.yml --json\n    avr workflow run build.yml --watch --exit-status\n",
+            "help": "Trigger a workflow_dispatch event.\n\nWORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub\nnumeric workflow ID, a workflow path, or the workflow's display name.\nBare filenames (build.yml) select GitHub Actions; use the full\n.avrea/workflows/build.yml path for Avrea CI.\n\nNative -f inputs use the workflow's declared types. JSON preserves\nbooleans and numbers. A receipt identifies the exact native run. If a\nresponse is lost, use the printed retry command to recover the same\ninvocation with its resolved ref, inputs and --idempotency-key.\n--no-watch prints the accepted ref and commit plus a command to resume\nfollowing a pending native dispatch.\n\n\b\nExamples:\n    avr workflow run build.yml\n    avr workflow run \"Build and Deploy\" --ref feat/x\n    avr workflow run wfl-abc123 -f env=prod -f region=eu\n    echo '{\"env\":\"prod\"}' | avr workflow run build.yml --json\n    avr workflow run build.yml --watch --exit-status\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -5556,6 +5556,24 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Read a JSON object of inputs from stdin.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "uuid",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "For Avrea CI, reuse this key to retry the same invocation.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

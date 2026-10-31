@@ -52,9 +52,17 @@ Trigger a workflow_dispatch event.
 avr workflow run [OPTIONS] WORKFLOW
 ```
 
-WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric
-workflow ID, a workflow filename (build.yml), or the workflow's
-display name.
+WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub
+numeric workflow ID, a workflow path, or the workflow's display name.
+Bare filenames (build.yml) select GitHub Actions; use the full
+.avrea/workflows/build.yml path for Avrea CI.
+
+Native -f inputs use the workflow's declared types. JSON preserves
+booleans and numbers. A receipt identifies the exact native run. If a
+response is lost, use the printed retry command to recover the same
+invocation with its resolved ref, inputs and --idempotency-key.
+--no-watch prints the accepted ref and commit plus a command to resume
+following a pending native dispatch.
 
 ```sh
 Examples:
@@ -76,6 +84,7 @@ Examples:
 - <code class="cli-flag">-r, &#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch or tag to run at. Defaults to the repository's default branch.
 - <code class="cli-flag">-f, &#x2D;&#x2D;raw-field</code> <code class="cli-value">&lt;TEXT&gt;</code> — Workflow input: key=value (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Read a JSON object of inputs from stdin.
+- <code class="cli-flag">&#x2D;&#x2D;idempotency-key</code> <code class="cli-value">&lt;UUID&gt;</code> — For Avrea CI, reuse this key to retry the same invocation.
 - <code class="cli-flag">-w, &#x2D;&#x2D;watch / -W, &#x2D;&#x2D;no-watch</code> — Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately. _(default: `True`)_
 - <code class="cli-flag">&#x2D;&#x2D;exit-status</code> — With --watch, exit non-zero if the run failed.
 - <code class="cli-flag">&#x2D;&#x2D;interval</code> <code class="cli-value">&lt;INTEGER&gt;</code> — With --watch, refresh interval in seconds. _(default: `3`)_
