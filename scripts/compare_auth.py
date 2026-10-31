@@ -467,6 +467,11 @@ def compare(scenario, python, go):
             json.loads(go["stdout"], parse_float=decimal.Decimal)
         ):
             differences.append("JSON values")
+    elif scenario.get("tsv"):
+        if [line.split("\t") for line in python["stdout"].splitlines()] != [
+            line.split("\t") for line in go["stdout"].splitlines()
+        ]:
+            differences.append("TSV rows/columns")
     elif scenario["args"][:2] == ["auth", "git-credential"]:
         if python["stdout"] != go["stdout"]:
             differences.append("Git protocol stdout")

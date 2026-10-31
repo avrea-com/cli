@@ -275,6 +275,9 @@ def scenarios():
         item["tty"] = item["merge_terminal"] = item["browser_capture"] = True
         item["env"] |= {"NO_COLOR": "", "TERM": "xterm-256color"}
         cases.append(item)
+    for item in cases:
+        if item["args"][:2] == ["cache", "list"] and not item.get("tty") and "--json" not in item["args"]:
+            item["tsv"] = True
     return cases
 
 
