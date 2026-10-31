@@ -171,6 +171,7 @@ type completionContext struct {
 }
 
 func resolveCompletion(root *cobra.Command, args []string, specs map[string]docgen.HelpSpec) completionContext {
+	args = expandTestsShorthand(root, args)
 	state := completionContext{}
 	selectCommand := func(c *cobra.Command) {
 		state = completionContext{command: c, params: completionParams(c, specs[canonicalHelpPath(c)]), used: map[string]bool{}}

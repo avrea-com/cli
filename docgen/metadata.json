@@ -6249,6 +6249,171 @@
         ]
       },
       {
+        "name": "tests",
+        "path": [
+          "avr",
+          "tests"
+        ],
+        "full": "avr tests",
+        "is_group": true,
+        "short_help": "Read a job's tests, timings and recorded failure messages.",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr tests [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "tests",
+              "list"
+            ],
+            "full": "avr tests list",
+            "is_group": false,
+            "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
+            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr tests list [OPTIONS] JOB",
+            "params": [
+              {
+                "name": "job",
+                "kind": "argument",
+                "opts": [
+                  "job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to the job's repository.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Maximum occurrences to return; short pages are followed, up to 20 result pages.",
+                "hidden": false,
+                "show_default": true,
+                "default": 100
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Continue from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
         "name": "sbom",
         "path": [
           "avr",
@@ -29998,6 +30163,245 @@
       "no_args_is_help": false,
       "section_order": []
     },
+    "avr tests list": {
+      "completion_help": "Read the latest confirmed execution of...",
+      "completion_params": [
+        {
+          "name": "job",
+          "kind": "argument",
+          "names": [
+            "job"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug. Defaults to the configured organization.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "repo_id",
+          "kind": "option",
+          "names": [
+            "--repo"
+          ],
+          "help": "Repository (owner/name or rep-ID). Defaults to the job's repository.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "limit",
+          "kind": "option",
+          "names": [
+            "-L",
+            "--limit"
+          ],
+          "help": "Maximum occurrences to return; short pages are followed, up to 20 result pages.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "cursor",
+          "kind": "option",
+          "names": [
+            "--cursor"
+          ],
+          "help": "Continue from a previous response's next_cursor.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "json_fields",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "jq_expr",
+          "kind": "option",
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "help": "Filter --json output through a jq expression.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "JOB"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug. Defaults to the configured organization."
+        },
+        {
+          "names": [
+            "--repo"
+          ],
+          "label": "--repo TEXT",
+          "description": "Repository (owner/name or rep-ID). Defaults to the job's repository."
+        },
+        {
+          "names": [
+            "-L",
+            "--limit"
+          ],
+          "label": "-L, --limit INTEGER RANGE",
+          "description": "Maximum occurrences to return; short pages are followed, up to 20 result pages.  [default: 100; 1<=x<=1000]"
+        },
+        {
+          "names": [
+            "--cursor"
+          ],
+          "label": "--cursor TEXT",
+          "description": "Continue from a previous response's next_cursor."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json TEXT",
+          "description": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields."
+        },
+        {
+          "names": [
+            "-q",
+            "--jq"
+          ],
+          "label": "-q, --jq TEXT",
+          "description": "Filter --json output through a jq expression."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr tests": {
+      "completion_help": "Read a job's tests, timings and recorded...",
+      "completion_params": [
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": true,
+      "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "COMMAND [ARGS]..."
+      ],
+      "options": [
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [
+        {
+          "name": "list",
+          "description": "Read the latest confirmed execution of JOB, including repeated tests.",
+          "section": null
+        }
+      ],
+      "no_args_is_help": true,
+      "section_order": []
+    },
     "avr token create": {
       "completion_help": "Create a scoped token and print its...",
       "completion_params": [
@@ -34717,6 +35121,11 @@
         {
           "name": "status",
           "description": "Show recent runs, performance stats, and cache health.",
+          "section": "Core Commands"
+        },
+        {
+          "name": "tests",
+          "description": "Read a job's tests, timings and recorded failure messages.",
           "section": "Core Commands"
         },
         {

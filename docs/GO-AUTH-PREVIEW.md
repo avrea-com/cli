@@ -1,7 +1,7 @@
 # Go CLI preview
 
 This preview implements public authentication, CI-run/job inspection, logs,
-job SSH/watch/metrics, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels/bootstrap and native reference generation in Go,
+job SSH/watch/metrics, retained job test results, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels/bootstrap and native reference generation in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not
 replace the installed Python `avr`, migrate admin-only command families, or
 modify repo-intel. The remaining migration is described in
@@ -27,6 +27,9 @@ make go-build
 ./build/go/avr auth --help
 ./build/go/avr auth status
 ./build/go/avr auth status --json email,host --jq .email
+./build/go/avr tests JOB_ID
+./build/go/avr tests list JOB_ID --limit 100 --json data,pagination
+./build/go/avr tests JOB_ID --json data --jq '.data[] | select(.outcome == "failed")'
 ./build/go/avr org list
 ./build/go/avr org create 'My Team'
 ./build/go/avr org members --org ORG
@@ -238,9 +241,29 @@ colored status symbols, matching table widths/truncation, and bordered org table
 Auth confirmations and hints retain their emphasis. Both --no-color and NO_COLOR
 suppress styling; piped JSON/TSV remains unstyled. Terminal links are independent; `AVR_LINKS=0` or `--no-links` disables links. `AVR_DEBUG=api` enables request diagnostics without printing credentials.
 
+## Retained job test results
+
+`tests JOB` and `tests list JOB` accept the `job-` or `awj-` IDs from `job list`.
+The default repository comes from that job; `--repo` overrides it. `--limit`
+counts test occurrences, including repeated tests, and short or empty pages
+are followed up to 20 requests. A remaining cursor is printed on stderr for
+resumption with `--cursor`. Failed tests do not cause a command error.
+
+All pages must describe the same confirmed execution. API errors, malformed
+pages or a changed snapshot fail without partial output. Missing and expired
+reports do not establish that no tests ran, and complete reporting does not
+establish that every expected test ran. The displayed caveats match Python.
+The migration's Python reference is pinned to public main at `56a09f5`.
+
+Run the dedicated terminal/API comparison with:
+
+```sh
+.venv/bin/python -m scripts.compare_tests --go build/go/avr
+```
+
 ## Shared boundaries and admin reuse
 
-`commands.NewRoot`, `NewAuth`, `NewOrg`, `NewRepo`, `NewRun`, and `NewJob` create fresh
+`commands.NewRoot`, `NewAuth`, `NewOrg`, `NewRepo`, `NewRun`, `NewJob`, and `NewTests` create fresh
 Cobra command objects with explicit dependencies. `ExecuteRoot` applies the
 shared exit-code contract to an admin-composed tree. Only executable entry
 points call `os.Exit`; they opt into closed-pipe handling.

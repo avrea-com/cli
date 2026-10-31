@@ -9,7 +9,7 @@
     "vms": "vm",
     "workflows": "workflow"
   },
-  "baseline": "96d1ccb987032f35b10c7bb0b9c90816da1323a0",
+  "baseline": "56a09f5fdf1e644f10370d337af879959f4a511f",
   "root": {
     "commands": [
       {
@@ -12858,6 +12858,204 @@
           }
         ],
         "path": "avr status"
+      },
+      {
+        "commands": [
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "kind": "argument",
+                "multiple": false,
+                "name": "job",
+                "nargs": 1,
+                "opts": [
+                  "job"
+                ],
+                "required": true,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "org_id",
+                "nargs": 1,
+                "opts": [
+                  "--org"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "repo_id",
+                "nargs": 1,
+                "opts": [
+                  "--repo"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": 100,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "limit",
+                "nargs": 1,
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "clamp": false,
+                  "max": 1000,
+                  "max_open": false,
+                  "min": 1,
+                  "min_open": false,
+                  "name": "integer range",
+                  "param_type": "IntRange"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "cursor",
+                "nargs": 1,
+                "opts": [
+                  "--cursor"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": null,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "json_fields",
+                "nargs": 1,
+                "opts": [
+                  "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": null,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "jq_expr",
+                "nargs": 1,
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
+            "path": "avr tests list"
+          }
+        ],
+        "hidden": false,
+        "parameters": [
+          {
+            "count": false,
+            "default": "Sentinel.UNSET",
+            "envvar": null,
+            "hidden": false,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "_click_default_help",
+            "nargs": 1,
+            "opts": [
+              "--help"
+            ],
+            "required": false,
+            "secondary_opts": [],
+            "type": {
+              "name": "boolean",
+              "param_type": "Bool"
+            }
+          }
+        ],
+        "path": "avr tests"
       },
       {
         "commands": [
