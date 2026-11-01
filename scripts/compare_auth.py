@@ -337,7 +337,9 @@ def run(executable, scenario, root, host):
                             try:
                                 process.send_signal(signal.SIGINT)
                             except ProcessLookupError:
-                                pass
+                                # The child can exit after emitting the marker but
+                                # before SIGINT arrives. Drain any remaining output.
+                                continue
 
                 # Drain while the child is alive: PTYs can discard unread
                 # output on close, and a full PTY buffer blocks the child.
