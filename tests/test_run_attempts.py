@@ -37,6 +37,72 @@ def runner(monkeypatch):
 
 
 class TestRunRerunPoll:
+    def test_avrea_rerun_uses_new_id_without_platform_polling(self, runner, monkeypatch):
+        original = "awr-" + "a" * 32
+        new = "awr-" + "b" * 32
+        key = "c" * 32
+
+        def get(self, path, params=None):
+            assert path.endswith(original)
+            return {"data": {"run_id": original, "ci_provider": "avrea_ci", "platform_run_id": None}}
+
+        post = MagicMock(
+            side_effect=[
+                httpx.ReadTimeout("lost"),
+                {
+                    "data": {
+                        "run_id": new,
+                        "run_attempt": 2,
+                        "status": "rerun_requested",
+                    }
+                },
+            ]
+        )
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+        result = runner.invoke(cli, ["run", "rerun", original, "--yes", "--idempotency-key", key])
+        assert result.exit_code == 0, result.output
+        assert f"/runs/{new}" in result.output
+        assert f"avr run watch {new}" in result.output
+        assert "attempt 2" in result.output
+        assert "Waiting for" not in result.output
+        assert post.call_count == 2
+        assert post.call_args_list[0] == post.call_args_list[1]
+        assert post.call_args.kwargs["json"] == {"failed_only": False, "invocation_key": key}
+
+    def test_avrea_failed_only_is_refused_before_post(self, runner, monkeypatch):
+        original = "awr-" + "a" * 32
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda *a, **kw: {
+                "data": {"run_id": original, "ci_provider": "avrea_ci"},
+            },
+        )
+        post = MagicMock()
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+        result = runner.invoke(cli, ["run", "rerun", original, "--yes", "--failed"])
+        assert result.exit_code == 2
+        assert "whole-workflow reruns only" in result.output
+        post.assert_not_called()
+
+    @pytest.mark.parametrize("failure", [httpx.ReadTimeout("lost"), {"data": {"run_id": "bad"}}])
+    def test_avrea_lost_response_prints_exact_recovery_command(self, runner, monkeypatch, failure):
+        original = "awr-" + "a" * 32
+        key = "c" * 32
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda *a, **kw: {
+                "data": {"run_id": original, "ci_provider": "avrea_ci"},
+            },
+        )
+        post = MagicMock(side_effect=failure) if isinstance(failure, Exception) else MagicMock(return_value=failure)
+        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+        result = runner.invoke(cli, ["run", "rerun", original, "--yes", "--idempotency-key", key])
+        assert result.exit_code == 1
+        assert "Recover the same attempt" in result.output
+        assert f"--idempotency-key {key}" in result.output
+        assert f"avr run rerun {original} --org org-default" in result.output
+
     def test_prints_new_run_id_when_attempt_appears(self, runner, monkeypatch):
         # 1st GET: fetch the existing run (attempt 1, platform_run_id=42)
         # POST: rerun

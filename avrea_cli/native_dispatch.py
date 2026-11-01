@@ -41,6 +41,56 @@ class NativeDispatchInput(BaseModel):
     type: str
 
 
+class AvreaRerun(BaseModel):
+    run_id: str = Field(pattern=r"^awr-[0-9a-f]{32}$")
+    run_attempt: int = Field(ge=2)
+    status: Literal["rerun_requested"]
+
+
+def submit_avrea_rerun(
+    client: ApiClient,
+    organization_id: str,
+    run_id: str,
+    invocation_key: UUID | None,
+) -> AvreaRerun:
+    key = (invocation_key or uuid4()).hex
+    retry = shlex.join(
+        [
+            "env",
+            f"AVR_HOST={client.config.public_api_url}",
+            "avr",
+            "run",
+            "rerun",
+            run_id,
+            "--org",
+            organization_id,
+            "--idempotency-key",
+            key,
+            "--yes",
+        ]
+    )
+    click.echo(f"Invocation key: {key}", err=True)
+    try:
+        for attempt in range(2):
+            try:
+                response = client.public_post(
+                    f"/orgs/{organization_id}/workflow-runs/{run_id}/rerun",
+                    json={"failed_only": False, "invocation_key": key},
+                    timeout=60,
+                )
+                return AvreaRerun.model_validate(response.get("data"))
+            except httpx.TransportError:
+                if attempt == 1:
+                    raise
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500 or exc.response.status_code == 429:
+            click.echo(f"Retry the same request:\n{retry}", err=True)
+        handle_http_error(exc, "rerun Avrea workflow")
+    except (httpx.TransportError, ValidationError) as exc:
+        raise click.ClickException(f"Could not confirm the rerun. Recover the same attempt:\n{retry}") from exc
+    raise click.ClickException(f"Could not confirm the rerun. Retry the same request:\n{retry}")
+
+
 class NativeDispatchMetadata(BaseModel):
     ref: str
     dispatchable: bool
