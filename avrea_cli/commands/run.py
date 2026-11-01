@@ -44,6 +44,7 @@ from avrea_cli.log_display import fetch_all_logs
 from avrea_cli.log_display import follow_logs
 from avrea_cli.log_display import print_failed_step_logs
 from avrea_cli.log_display import print_logs_grouped
+from avrea_cli.native_dispatch import submit_avrea_rerun
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
@@ -55,6 +56,7 @@ from avrea_cli.run_refs import resolve_run_reference
 from datetime import UTC
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 import click
 import httpx
 import json
@@ -1360,13 +1362,17 @@ def _poll_for_new_attempt(
 @click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--failed", is_flag=True, help="Re-run only the failed jobs.")
+@click.option("--idempotency-key", type=click.UUID, help="Reuse a previous Avrea CI rerun request UUID.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
-def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
+def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None, yes: bool):
     """Re-run a completed workflow run.
 
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`.
+
+    Avrea CI reruns the whole workflow at its original revision. The new
+    attempt can be opened or watched immediately; --failed is GitHub-only.
 
     \b
     Examples:
@@ -1386,7 +1392,11 @@ def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
         action="look up workflow run before rerun",
     )
 
-    require_external_ci(existing_data, "Reruns")
+    avrea = existing_data.get("ci_provider") == "avrea_ci" or run_id.startswith("awr-")
+    if avrea and failed:
+        raise click.UsageError("Avrea CI supports whole-workflow reruns only; omit --failed.")
+    if idempotency_key is not None and not avrea:
+        raise click.UsageError("--idempotency-key applies to Avrea CI reruns.")
     if not yes:
         scope = "failed jobs only" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
@@ -1396,18 +1406,23 @@ def run_rerun(ctx, run: str, org_id, failed: bool, yes: bool):
     platform_run_id = existing_data.get("platform_run_id")
     current_attempt = existing_data.get("run_attempt", 1)
 
-    try:
-        client.public_post(
-            f"/orgs/{org_id}/workflow-runs/{run_id}/rerun",
-            json={"failed_only": failed},
-        )
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, "rerun workflow run")
+    if avrea:
+        receipt = submit_avrea_rerun(client, org_id, run_id, idempotency_key)
+        run_id = receipt.run_id
+        click.echo(f"Run: {click.style(run_id, fg='cyan')} (attempt {receipt.run_attempt})")
+    else:
+        try:
+            client.public_post(
+                f"/orgs/{org_id}/workflow-runs/{run_id}/rerun",
+                json={"failed_only": failed},
+            )
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "rerun workflow run")
 
     scope = "failed jobs" if failed else "all jobs"
     click.echo(f"{click.style('✓', fg='green')} Re-run requested for {click.style(run_id, fg='cyan')} ({scope}).")
 
-    if platform_run_id is not None:
+    if not avrea and platform_run_id is not None:
         click.echo(click.style("Waiting for the new attempt to appear...", dim=True), err=True)
         new_run = _poll_for_new_attempt(client, org_id, int(platform_run_id), int(current_attempt))
         if new_run:
