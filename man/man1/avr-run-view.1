@@ -10,8 +10,8 @@ View a workflow run with its jobs.
 .RS 4
 .nf
 RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
-run URL, or an Avrea console run URL. Without RUN, shows 10 most recent
-runs.
+run or job URL, or an Avrea console run URL. A job URL opens the attempt
+that job belongs to. Without RUN, shows 10 most recent runs.
 .fi
 .RE
 .PP
@@ -22,6 +22,7 @@ Examples:
     avr run view run-019e5a2e474e71c297e452279d4bcdea
     avr run view 123456789
     avr run view https://github.com/acme/widgets/actions/runs/123456789
+    avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321
     avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
     avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
     avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
