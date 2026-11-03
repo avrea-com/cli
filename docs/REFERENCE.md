@@ -803,7 +803,7 @@ update --rotate-password if needed. Requires admin access to the source.
 - `--ttl <TEXT>` — Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.
 - `--org <TEXT>` — Organization ID or slug.
 - `--wait` — Wait for the fork to become connectable.
-- `--wait-timeout <INTEGER RANGE>` _(default: `300`)_
+- `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the fork VM as JSON.
 
 #### `avr vm list`
@@ -956,8 +956,9 @@ Replace public HTTPS URLs to invalidate leaked URLs.
 avr vm rotate-https-label [OPTIONS] VM_ID_OR_NAME
 ```
 
-Routes change once ingress applies the rotation. Guest environment variables
-and /vm/info retain the old URLs until the next resume.
+Routes change once ingress applies the rotation. On a running VM,
+AVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;
+a paused VM picks up the new URLs at resume.
 
 **Arguments**
 
@@ -1088,8 +1089,8 @@ Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
 - `--rotate-password` — Provision a fresh one-time password (returned in the response).
 - `--egress-rules <TEXT>` — Replace the per-VM egress rules with this JSON array (or @path to a file).
 - `--json` — Emit the raw API response as JSON.
-- `--https-port <INTEGER RANGE>` — Replace public HTTPS ports. Repeatable; applies on next resume. _(repeatable)_
-- `--clear-https-ports` — Publish no HTTPS ports on next resume.
+- `--https-port <INTEGER RANGE>` — Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume. _(repeatable)_
+- `--clear-https-ports` — Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.
 
 #### `avr vm usage`
 

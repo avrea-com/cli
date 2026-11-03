@@ -3911,7 +3911,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": null,
+                "help": "Seconds to wait when --wait is set.",
                 "hidden": false,
                 "show_default": true,
                 "default": 300
@@ -4776,7 +4776,7 @@
             "full": "avr vm rotate-https-label",
             "is_group": false,
             "short_help": "Replace public HTTPS URLs to invalidate leaked URLs.",
-            "help": "Replace public HTTPS URLs to invalidate leaked URLs.\n\nRoutes change once ingress applies the rotation. Guest environment variables\nand /vm/info retain the old URLs until the next resume.\n",
+            "help": "Replace public HTTPS URLs to invalidate leaked URLs.\n\nRoutes change once ingress applies the rotation. On a running VM,\nAVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;\na paused VM picks up the new URLs at resume.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -5377,7 +5377,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Replace public HTTPS ports. Repeatable; applies on next resume.",
+                "help": "Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5395,7 +5395,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Publish no HTTPS ports on next resume.",
+                "help": "Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

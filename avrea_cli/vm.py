@@ -511,7 +511,7 @@ def _wait_for_vm(
     timeout: float,
     is_ready: Callable[[dict[str, Any]], bool],
     *,
-    wait_for_change: Callable[[str, float], None] | None = None,
+    wait_for_change: Callable[[float], None] | None = None,
     gone_is_ready: bool = False,
     is_failed: Callable[[dict[str, Any]], bool] | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
@@ -571,7 +571,7 @@ def _wait_for_vm(
             return vm, "timeout"
         remaining = max(0, deadline - time.monotonic())
         if wait_for_change is not None:
-            wait_for_change(org_id, min(_WAIT_POLL_SECONDS, remaining))
+            wait_for_change(min(_WAIT_POLL_SECONDS, remaining))
         else:
             time.sleep(min(_WAIT_POLL_SECONDS, remaining))
 
@@ -641,7 +641,13 @@ def _validate_https_ports(ports: tuple[int, ...]) -> list[int]:
 @click.option("--ttl", help="Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--wait", is_flag=True, help="Wait for the fork to become connectable.")
-@click.option("--wait-timeout", type=click.IntRange(min=0), default=_WAIT_DEFAULT_TIMEOUT, show_default=True)
+@click.option(
+    "--wait-timeout",
+    type=click.IntRange(min=0),
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    help="Seconds to wait when --wait is set.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit the fork VM as JSON.")
 @click.pass_context
 def vm_fork(ctx, vm_id, display_name, ttl, org_id, wait, wait_timeout, as_json):
@@ -689,8 +695,9 @@ def vm_fork(ctx, vm_id, display_name, ttl, org_id, wait, wait_timeout, as_json):
 def vm_rotate_https_label(ctx, vm_id, org_id, as_json):
     """Replace public HTTPS URLs to invalidate leaked URLs.
 
-    Routes change once ingress applies the rotation. Guest environment variables
-    and /vm/info retain the old URLs until the next resume.
+    Routes change once ingress applies the rotation. On a running VM,
+    AVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;
+    a paused VM picks up the new URLs at resume.
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -704,6 +711,12 @@ def vm_rotate_https_label(ctx, vm_id, org_id, as_json):
         click.echo(json.dumps(response["data"], indent=2, default=str))
     else:
         _print_vm(response["data"])
+
+
+def _cap_value(key: str, value: Any) -> Any:
+    if value is not None:
+        return value
+    return "unlimited" if key.startswith("max_") else "n/a"
 
 
 @vm.command("capabilities")
@@ -724,17 +737,24 @@ def vm_capabilities(ctx, org_id, as_json):
     if as_json:
         click.echo(json.dumps(data, indent=2, default=str))
         return
+    # Null limits mean exempt, and null counts mean the cap is not tracked.
     click.echo(
         format_key_value(
             {
-                key.replace("_", " "): data.get(key)
+                key.replace("_", " "): _cap_value(key, data.get(key))
                 for key in ("max_active_vcpus", "active_vcpus", "max_active_per_user", "active_count")
             }
         )
     )
     rows = []
     for os_cap in data.get("os_types", []):
-        click.echo(f"\n{os_cap.get('os_type')}: active {os_cap.get('active_count')}, limit {os_cap.get('max_active')}")
+        if os_cap.get("max_active") is None:
+            click.echo(f"\n{os_cap.get('os_type')}: no per-OS limit")
+        else:
+            click.echo(
+                f"\n{os_cap.get('os_type')}: active {_cap_value('active_count', os_cap.get('active_count'))}, "
+                f"limit {os_cap['max_active']}"
+            )
         for arch in os_cap.get("architectures", []):
             for spec in arch.get("size_specs") or []:
                 rows.append(
@@ -780,14 +800,18 @@ def vm_metrics(ctx, vm_id, org_id, sources, start, end, watch, as_json):
     memory = vm_record.get("memory_mb")
     ram_bytes = memory * 1024**2 if memory is not None else None
 
-    def render(metrics: dict[str, Any], *, live: bool) -> None:
+    def render(metrics: dict[str, Any], *, live: bool, note: str | None = None, error: str | None = None) -> None:
         if watch:
             clear_live_frame()
         click.echo(format_key_value({"VM": vm_record["customer_vm_id"], "Name": vm_record.get("display_name")}))
-        if not metrics:
+        if note:
+            click.echo(note)
+        elif not metrics:
             click.echo("No metrics available for this run.")
         for source in selected:
             click.echo(render_gauge_line(source, metrics.get(source, {"series": []}), ram_bytes, live=live))
+        if error:
+            click.echo("\n" + error)
 
     if not watch:
         params: dict[str, Any] = {"source": list(selected)}
@@ -807,11 +831,17 @@ def vm_metrics(ctx, vm_id, org_id, sources, start, end, watch, as_json):
         return
     path = f"/orgs/{org_id}/vms/{vm_record['customer_vm_id']}/observability/stream"
     try:
+        drawn = False
         for update in watch_updates(metrics_frames(config, path), selected, as_json=as_json):
-            if update.changed:
-                render(update.metrics, live=update.running)
-            elif update.complete and not update.saw_bundle:
-                render({}, live=False)
+            if update.complete:
+                if not update.saw_bundle:
+                    render({}, live=False, error=update.error)
+            elif update.changed or not drawn:
+                # A starting VM holds the metrics signal until its run is live;
+                # draw the header at once rather than a blank terminal.
+                note = None if update.saw_bundle else "Waiting for metrics..."
+                render(update.metrics, live=update.running, note=note, error=update.error)
+            drawn = True
     except KeyboardInterrupt:
         ctx.exit(EXIT_INTERRUPTED)
 
@@ -1082,7 +1112,7 @@ def vm_create(
                 click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
             click.echo()
         click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
-        with vm_state_notifications(config) as wait_for_change:
+        with vm_state_notifications(config, org_id, vm_id) as wait_for_change:
             vm_state, disposition = _wait_for_vm(
                 client, org_id, vm_id, wait_timeout, _endpoints_ready, wait_for_change=wait_for_change
             )
@@ -1597,9 +1627,13 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
     "https_ports",
     multiple=True,
     type=click.IntRange(1, 65535),
-    help="Replace public HTTPS ports. Repeatable; applies on next resume.",
+    help="Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.",
 )
-@click.option("--clear-https-ports", is_flag=True, help="Publish no HTTPS ports on next resume.")
+@click.option(
+    "--clear-https-ports",
+    is_flag=True,
+    help="Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.",
+)
 @click.pass_context
 def vm_update(
     ctx,
@@ -1668,6 +1702,15 @@ def vm_update(
                 "applied to the running guest."
                 if data["egress_rules_applied"]
                 else "live enforcement unconfirmed; stored rules apply on next resume."
+            )
+        )
+    if data.get("https_ports_applied") is not None:
+        click.echo(
+            "HTTPS ports: "
+            + (
+                "served by the running VM now."
+                if data["https_ports_applied"]
+                else "stored; they apply on next start or resume."
             )
         )
 

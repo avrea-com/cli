@@ -223,6 +223,18 @@ def test_capabilities(runner, api, as_json):
     else:
         assert "arm64" in result.output
         assert "ubuntu-26.04" in result.output
+        assert "linux: no per-OS limit" in result.output
+        assert "None" not in result.output
+
+
+def test_capabilities_null_caps_are_readable(runner, api):
+    data = {"max_active_vcpus": None, "active_vcpus": None, "os_types": [{"os_type": "macos", "max_active": 2}]}
+    api.reply("GET", f"{BASE}/capabilities", json={"data": data})
+    result = runner.invoke(cli, ["vm", "capabilities"])
+    assert result.exit_code == 0, result.output
+    assert "unlimited" in result.output
+    assert "macos: active n/a, limit 2" in result.output
+    assert "None" not in result.output
 
 
 def test_egress_apply_result(runner, api):
@@ -230,6 +242,15 @@ def test_egress_apply_result(runner, api):
     result = runner.invoke(cli, ["vm", "update", VM_ID, "--egress-rules", "[]"])
     assert result.exit_code == 0, result.output
     assert "unconfirmed" in result.output
+
+
+@pytest.mark.parametrize("applied,expected", [(True, "served by the running VM now"), (False, "next start or resume")])
+def test_https_ports_apply_result(runner, api, applied, expected):
+    api.reply("PATCH", f"{BASE}/{VM_ID}", json={"data": {"vm": VM, "https_ports_applied": applied}})
+    result = runner.invoke(cli, ["vm", "update", VM_ID, "--https-port", "3000"])
+    assert result.exit_code == 0, result.output
+    assert "HTTPS ports: " in result.output
+    assert expected in result.output
 
 
 def test_metrics_single_shot_window_and_sources(runner, api):
@@ -298,6 +319,17 @@ def test_metrics_empty_completion(runner, api, monkeypatch):
     result = runner.invoke(cli, ["vm", "metrics", VM_ID, "--watch"])
     assert result.exit_code == 0
     assert "No metrics" in result.output
+
+
+def test_metrics_watch_draws_before_first_bundle(runner, api, monkeypatch):
+    api.reply("GET", f"{BASE}/{VM_ID}", json={"data": VM})
+    frames = [None, {"signal": "metrics", "type": "error", "message": "backend unavailable"}, {"type": "complete"}]
+    monkeypatch.setattr("avrea_cli.vm.metrics_frames", lambda *a: iter(frames))
+    result = runner.invoke(cli, ["vm", "metrics", VM_ID, "--watch"])
+    assert result.exit_code == 0, result.output
+    first, *_ = result.output.split("Metrics: backend unavailable")
+    assert VM_ID in first
+    assert "Waiting for metrics..." in first
 
 
 def test_metrics_watch_interrupt(runner, api, monkeypatch):

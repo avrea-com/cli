@@ -236,6 +236,24 @@ class TestJobMetricsStream:
         assert result.exit_code == 0, result.output
         assert "final error" in result.output
 
+    def test_signal_error_stays_in_frame(self, runner, monkeypatch):
+        self.setup_stream(
+            monkeypatch,
+            [
+                {"signal": "metrics", "type": "error", "message": "backend unavailable"},
+                None,
+                {"type": "bundle", "metrics": {"cpu": CPU_RESPONSE}},
+                {"type": "complete"},
+            ],
+        )
+        frames = []
+        monkeypatch.setattr("avrea_cli.commands.job.clear_live_frame", lambda: frames.append(""))
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
+        assert result.exit_code == 0, result.output
+        drawn = result.output.split("(metrics streamed")
+        assert "Metrics: backend unavailable" in drawn[0]
+        assert "Metrics: backend unavailable" not in drawn[-1]
+
     def test_empty_completion_reports_no_metrics(self, runner, monkeypatch):
         self.setup_stream(monkeypatch, [{"type": "complete"}])
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])

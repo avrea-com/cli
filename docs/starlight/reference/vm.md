@@ -156,7 +156,7 @@ update --rotate-password if needed. Requires admin access to the source.
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;wait</code> — Wait for the fork to become connectable.
-- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> _(default: `300`)_
+- <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the fork VM as JSON.
 
 ### `avr vm list`
@@ -309,8 +309,9 @@ Replace public HTTPS URLs to invalidate leaked URLs.
 avr vm rotate-https-label [OPTIONS] VM_ID_OR_NAME
 ```
 
-Routes change once ingress applies the rotation. Guest environment variables
-and /vm/info retain the old URLs until the next resume.
+Routes change once ingress applies the rotation. On a running VM,
+AVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;
+a paused VM picks up the new URLs at resume.
 
 **Arguments**
 
@@ -441,8 +442,8 @@ Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
 - <code class="cli-flag">&#x2D;&#x2D;rotate-password</code> — Provision a fresh one-time password (returned in the response).
 - <code class="cli-flag">&#x2D;&#x2D;egress-rules</code> <code class="cli-value">&lt;TEXT&gt;</code> — Replace the per-VM egress rules with this JSON array (or @path to a file).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
-- <code class="cli-flag">&#x2D;&#x2D;https-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Replace public HTTPS ports. Repeatable; applies on next resume. _(repeatable)_
-- <code class="cli-flag">&#x2D;&#x2D;clear-https-ports</code> — Publish no HTTPS ports on next resume.
+- <code class="cli-flag">&#x2D;&#x2D;https-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;clear-https-ports</code> — Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.
 
 ### `avr vm usage`
 

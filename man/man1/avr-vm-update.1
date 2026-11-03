@@ -36,10 +36,10 @@ Replace the per-VM egress rules with this JSON array (or @path to a file).
 Emit the raw API response as JSON.
 .TP
 \fB\-\-https\-port\fR \fIINTEGER RANGE\fR
-Replace public HTTPS ports. Repeatable; applies on next resume. (repeatable)
+Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume. (repeatable)
 .TP
 \fB\-\-clear\-https\-ports\fR
-Publish no HTTPS ports on next resume.
+Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-vm (1),

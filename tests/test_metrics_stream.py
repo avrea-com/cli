@@ -61,6 +61,8 @@ def test_authentication_url_frames_and_completion(monkeypatch):
     assert calls[0][0] == "wss://api.example/base/vms/job-1/observability/stream?signals=metrics"
     assert calls[0][1]["additional_headers"]["Authorization"] == "Bearer secret-token"
     assert calls[0][1]["open_timeout"] == 10
+    assert calls[0][1]["proxy"] is None
+    assert calls[0][1]["ssl"] is not None
     assert sock.closed
 
 
@@ -91,7 +93,7 @@ def test_retries_are_bounded(monkeypatch):
 
     monkeypatch.setattr("avrea_cli.metrics_stream.connect", connect)
     monkeypatch.setattr("avrea_cli.metrics_stream.time.sleep", delays.append)
-    with pytest.raises(click.ClickException, match="exhausted"):
+    with pytest.raises(click.ClickException, match=r"exhausted \(last error: OSError: offline\)"):
         list(metrics_frames(cfg, "/stream"))
     assert len(calls) == 4
     assert delays == [1, 2, 4]
@@ -131,7 +133,19 @@ def test_policy_close_is_terminal(monkeypatch):
     assert sock.closed
 
 
-def test_stream_errors_are_reported_and_can_recover(monkeypatch, capsys):
+def test_plain_ws_has_no_tls_context(monkeypatch):
+    config(monkeypatch)
+    monkeypatch.setenv("AVR_HOST", "http://127.0.0.1:8080")
+    cfg = CliConfig()
+    calls = []
+    sock = Socket([{"type": "complete"}])
+    monkeypatch.setattr("avrea_cli.metrics_stream.connect", lambda url, **kw: calls.append((url, kw)) or sock)
+    list(metrics_frames(cfg, "/stream"))
+    assert calls[0][0].startswith("ws://")
+    assert calls[0][1]["ssl"] is None
+
+
+def test_stream_errors_are_yielded_and_can_recover(monkeypatch, capsys):
     cfg = config(monkeypatch)
     sock = Socket(
         [
@@ -142,10 +156,10 @@ def test_stream_errors_are_reported_and_can_recover(monkeypatch, capsys):
         ]
     )
     monkeypatch.setattr("avrea_cli.metrics_stream.connect", lambda *a, **kw: sock)
-    assert len(list(metrics_frames(cfg, "/stream"))) == 4
-    captured = capsys.readouterr()
-    assert "backend unavailable" in captured.err
-    assert captured.out == ""
+    frames = list(metrics_frames(cfg, "/stream"))
+    assert [f["type"] for f in frames if f] == ["error", "state", "bundle", "complete"]
+    # Rendering owns the error, so a cleared live frame cannot wipe it.
+    assert capsys.readouterr() == ("", "")
 
 
 def test_connection_error_frame_is_terminal(monkeypatch):

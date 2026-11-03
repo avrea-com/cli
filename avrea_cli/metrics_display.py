@@ -100,6 +100,7 @@ class WatchUpdate:
     running: bool
     changed: bool
     complete: bool
+    error: str | None = None
 
 
 def watch_updates(
@@ -109,28 +110,38 @@ def watch_updates(
 
     JSON output is written here as one snapshot per line and yields no updates,
     so callers only handle human rendering. Idle ticks yield an unchanged update.
+    A signal error stays on every update until the next bundle, so a cleared
+    live frame cannot hide it; JSON mode reports it once on stderr.
     """
     metrics: dict[str, Any] = {}
     saw_bundle = False
     running = True
+    error: str | None = None
     for frame in frames:
         frame = frame or {}
         kind = frame.get("type")
         if kind == "window":
             running = frame.get("running", True)
+        elif kind == "error":
+            error = f"Metrics: {frame.get('message') or 'Metrics stream error'}"
+            if as_json:
+                click.echo(error, err=True)
         elif kind == "bundle":
             metrics = filter_metrics(frame.get("metrics") or {}, selected)
             saw_bundle = True
+            error = None
             if as_json:
                 click.echo(metrics_json(metrics))
         elif kind == "complete":
             if not as_json:
-                yield WatchUpdate(metrics, saw_bundle, running, changed=False, complete=True)
+                yield WatchUpdate(metrics, saw_bundle, running, changed=False, complete=True, error=error)
             elif not saw_bundle:
                 click.echo(metrics_json({}))
             return
         if not as_json:
-            yield WatchUpdate(metrics, saw_bundle, running, changed=kind == "bundle", complete=False)
+            yield WatchUpdate(
+                metrics, saw_bundle, running, changed=kind in ("bundle", "error"), complete=False, error=error
+            )
 
 
 def aggregate_values(series: list[dict[str, Any]]) -> list[tuple[int, float]]:

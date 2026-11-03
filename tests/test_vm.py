@@ -522,6 +522,7 @@ class TestVmCreateWait:
         socket = Socket([{"signal": "status", "type": "changed"}])
         connections = []
         monkeypatch.setattr("avrea_cli.vm_state_stream.connect", lambda url, **kw: connections.append(url) or socket)
+        monkeypatch.setattr("avrea_cli.vm_state_stream.time.sleep", lambda _: None)
         calls = {"n": 0}
         pending = {"data": {**RD_VM, "state": "PENDING", "endpoints": None}}
 
@@ -534,7 +535,7 @@ class TestVmCreateWait:
         assert result.exit_code == 0
         assert calls["n"] == 2
         assert len(connections) == 1
-        assert "/orgs/org-default/vms/observability/stream?signals=status" in connections[0]
+        assert "/orgs/org-default/vms/cvm-abc123/observability/stream?signals=status" in connections[0]
         assert socket.closed
         assert (
             "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output

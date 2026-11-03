@@ -7,7 +7,7 @@ avr-vm-rotate-https-label \- Replace public HTTPS URLs to invalidate leaked URLs
 .SH DESCRIPTION
 Replace public HTTPS URLs to invalidate leaked URLs.
 .PP
-Routes change once ingress applies the rotation. Guest environment variables and /vm/info retain the old URLs until the next resume.
+Routes change once ingress applies the rotation. On a running VM, AVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds; a paused VM picks up the new URLs at resume.
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR

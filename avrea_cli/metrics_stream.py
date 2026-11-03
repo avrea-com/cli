@@ -12,8 +12,10 @@ from websockets.exceptions import InvalidHandshake
 from websockets.exceptions import InvalidStatus
 from websockets.sync.client import ClientConnection
 from websockets.sync.client import connect
+import certifi
 import click
 import json
+import ssl
 import time
 
 _MAX_CONSECUTIVE_FAILURES = 4
@@ -36,6 +38,11 @@ def _connection_without_redirects() -> type[ClientConnection]:
     return Connection
 
 
+def _ssl_context(scheme: str) -> ssl.SSLContext | None:
+    # Trust the same CA bundle as the REST client, which verifies with certifi.
+    return ssl.create_default_context(cafile=certifi.where()) if scheme == "wss" else None
+
+
 def metrics_frames(config: CliConfig, path: str) -> Iterator[dict[str, Any] | None]:
     """Yield frames, or None on an idle tick so callers can refresh their logs.
 
@@ -44,11 +51,11 @@ def metrics_frames(config: CliConfig, path: str) -> Iterator[dict[str, Any] | No
     on the configured host. Completion belongs to the signal, not the socket.
     """
     base = urlsplit(config.public_api_url)
-    url = urlunsplit(
-        ("wss" if base.scheme == "https" else "ws", base.netloc, base.path.rstrip("/") + path, "signals=metrics", "")
-    )
+    scheme = "wss" if base.scheme == "https" else "ws"
+    url = urlunsplit((scheme, base.netloc, base.path.rstrip("/") + path, "signals=metrics", ""))
     last_error: str | None = None
     failures = 0
+    cause = ""
     while True:
         try:
             with connect(
@@ -57,6 +64,9 @@ def metrics_frames(config: CliConfig, path: str) -> Iterator[dict[str, Any] | No
                 open_timeout=10,
                 close_timeout=5,
                 max_size=16 * 1024 * 1024,
+                # The REST client ignores proxy environment variables; match it.
+                proxy=None,
+                ssl=_ssl_context(scheme),
                 create_connection=_connection_without_redirects(),
             ) as connection:
                 while True:
@@ -78,7 +88,6 @@ def metrics_frames(config: CliConfig, path: str) -> Iterator[dict[str, Any] | No
                         if frame.get("signal") is None:
                             raise click.ClickException(message)
                         last_error = message
-                        click.echo(f"Metrics: {message}", err=True)
                     if frame.get("type") == "bundle":
                         last_error = None
                         failures = 0  # The budget covers consecutive failures, not a whole watch.
@@ -93,14 +102,20 @@ def metrics_frames(config: CliConfig, path: str) -> Iterator[dict[str, Any] | No
             code = exc.response.status_code
             if code != 429 and code < 500:
                 raise click.ClickException(f"Metrics stream refused: HTTP {code}.") from None
+            cause = f"HTTP {code}"
         except ConnectionClosed as exc:
             if exc.rcvd is not None and exc.rcvd.code in (1008, 4001, 4003, 4401, 4403):
                 raise click.ClickException(f"Metrics stream refused: {exc.rcvd.reason or 'access denied'}.") from None
-        except OSError, TimeoutError, InvalidHandshake:
-            pass
+            cause = f"{type(exc).__name__}: {exc}"
+        except (OSError, InvalidHandshake) as exc:
+            # TimeoutError is an OSError. Keep the cause so TLS, DNS or proxy
+            # trouble is diagnosable once the retry budget runs out.
+            cause = f"{type(exc).__name__}: {exc}"
         failures += 1
         if failures == _MAX_CONSECUTIVE_FAILURES:
-            raise click.ClickException("Metrics stream disconnected; reconnect attempts exhausted.")
+            raise click.ClickException(
+                f"Metrics stream disconnected; reconnect attempts exhausted (last error: {cause})."
+            )
         delay = 2 ** (failures - 1)
         click.echo(f"Metrics stream disconnected; reconnecting in {delay}s...", err=True)
         time.sleep(delay)

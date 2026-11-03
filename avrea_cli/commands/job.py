@@ -978,10 +978,12 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
             log_tail.extend(new_entries)
             last_log_line = new_cursor
 
-    def _render_watch(metrics: dict[str, Any], footer: str | None = None) -> None:
+    def _render_watch(metrics: dict[str, Any], footer: str | None = None, metrics_error: str | None = None) -> None:
         frame = _build_frame({src: metrics.get(src, {"series": []}) for src in selected}, list(log_tail))
         if log_error:
             frame += "\n\n" + log_error
+        if metrics_error:
+            frame += "\n\n" + metrics_error
         if footer:
             frame += "\n\n" + footer
         clear_live_frame()
@@ -1004,6 +1006,6 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
             if refresh_logs:
                 last_logs_at = now
                 _refresh_logs()
-            _render_watch(update.metrics, "(metrics streamed; logs every second; Ctrl-C to exit)")
+            _render_watch(update.metrics, "(metrics streamed; logs every second; Ctrl-C to exit)", update.error)
     except KeyboardInterrupt:
         sys.exit(EXIT_INTERRUPTED)
