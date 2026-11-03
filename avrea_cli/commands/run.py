@@ -28,9 +28,7 @@ from avrea_cli.helpers import ensure_ctx
 from avrea_cli.helpers import ensure_prompts_allowed
 from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import get_org_slug
-from avrea_cli.helpers import get_verified_org_slug
 from avrea_cli.helpers import handle_http_error
-from avrea_cli.helpers import is_scoped_token
 from avrea_cli.helpers import parse_since
 from avrea_cli.helpers import require_external_ci
 from avrea_cli.helpers import validate_cursor
@@ -50,8 +48,9 @@ from avrea_cli.output import format_relative_timestamp
 from avrea_cli.repo_context import resolve_repos_or_detect
 from avrea_cli.run_diagnostics import build_run_diagnostics
 from avrea_cli.run_diagnostics_display import render_run_diagnostics
-from avrea_cli.run_refs import RunReference
+from avrea_cli.run_refs import filter_run_jobs
 from avrea_cli.run_refs import parse_run_reference
+from avrea_cli.run_refs import resolve_run_org
 from avrea_cli.run_refs import resolve_run_reference
 from datetime import UTC
 from datetime import datetime
@@ -473,30 +472,6 @@ def _print_run_jobs(
             click.echo("")
 
 
-def _run_reference_and_org(
-    client: ApiClient,
-    config: CliConfig,
-    value: str,
-    org_id: str | None,
-) -> tuple[RunReference, str]:
-    """Parse RUN and resolve/verify the organization embedded in a URL."""
-    reference = parse_run_reference(value, api_url=config.public_api_url)
-    if reference.organization_slug is not None and is_scoped_token(config.auth_token):
-        raise click.ClickException("A scoped token cannot resolve a run URL's organization. Pass the run ID instead.")
-    if reference.organization_slug is not None and org_id is None:
-        org_id = reference.organization_slug
-    resolved_org_id = get_org_id(config, org_id, client=client)
-
-    if reference.organization_slug is not None:
-        active_org_slug = get_verified_org_slug(client, resolved_org_id)
-        if active_org_slug.casefold() != reference.organization_slug.casefold():
-            raise click.ClickException(
-                f"Avrea run URL organization {reference.organization_slug!r} does not match "
-                f"the selected organization {active_org_slug!r}."
-            )
-    return reference, resolved_org_id
-
-
 def _resolve_run_argument(
     client: ApiClient,
     config: CliConfig,
@@ -507,7 +482,8 @@ def _resolve_run_argument(
     include: list[str] | None = None,
 ) -> tuple[dict[str, Any], str, str]:
     """Resolve any supported run reference to its canonical Avrea run ID."""
-    reference, resolved_org_id = _run_reference_and_org(client, config, value, org_id)
+    reference = parse_run_reference(value, api_url=config.public_api_url)
+    resolved_org_id = resolve_run_org(client, config, reference, org_id)
     try:
         run_data = resolve_run_reference(client, resolved_org_id, reference, include=include)
     except httpx.HTTPStatusError as exc:
@@ -534,7 +510,8 @@ def _resolve_run_id_argument(
     action: str,
 ) -> tuple[str, str]:
     """Resolve a run reference without re-fetching an embedded Avrea ID."""
-    reference, resolved_org_id = _run_reference_and_org(client, config, value, org_id)
+    reference = parse_run_reference(value, api_url=config.public_api_url)
+    resolved_org_id = resolve_run_org(client, config, reference, org_id)
     if reference.run_id is not None:
         return resolved_org_id, reference.run_id
 
@@ -747,8 +724,7 @@ def run_view(
 
     run_jobs = run_data.get("jobs") or []
     if job_name_filter:
-        needle = job_name_filter.lower()
-        matched = [j for j in run_jobs if needle in (j.get("job_name") or "").lower()]
+        matched = filter_run_jobs(run_jobs, job_name_filter)
         if not matched:
             click.echo(f"No job matching '{job_name_filter}' in this run.", err=True)
             return
@@ -1513,9 +1489,7 @@ def run_logs(
     )
 
     jobs_list: list[dict[str, Any]] = run_data.get("jobs") or []
-    if job_name_filter:
-        needle = job_name_filter.lower()
-        jobs_list = [j for j in jobs_list if needle in (j.get("job_name") or "").lower()]
+    jobs_list = filter_run_jobs(jobs_list, job_name_filter)
     if not jobs_list:
         click.echo("No matching jobs found.")
         return

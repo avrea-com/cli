@@ -16,6 +16,11 @@ from avrea_cli.json_output import make_schema
 from avrea_cli.json_output import split_fields
 from avrea_cli.output import output_list
 from avrea_cli.repo_context import resolve_repo
+from avrea_cli.run_refs import InvalidRunReference
+from avrea_cli.run_refs import filter_run_jobs
+from avrea_cli.run_refs import parse_run_reference
+from avrea_cli.run_refs import resolve_run_org
+from avrea_cli.run_refs import resolve_run_reference
 from typing import Any
 import click
 import httpx
@@ -31,6 +36,7 @@ _SNAPSHOT_FIELDS = (
     "commit_sha",
     "observed_at",
     "total_count",
+    "filters",
 )
 _FIELDS = make_schema("organization_id", "repository_id", *_SNAPSHOT_FIELDS, "data", "pagination")
 _MAX_PAGES = 20
@@ -39,32 +45,85 @@ _INVALID_NEXT_CURSOR = "The API returned an invalid next cursor."
 
 
 class JobTestsGroup(GhGroup):
-    """Accept the documented job shorthand without swallowing unknown verbs."""
+    """Accept run/job shorthand without swallowing unknown verbs."""
 
     def resolve_command(
         self, ctx: click.Context, args: list[str]
     ) -> tuple[str | None, click.Command | None, list[str]]:
-        if args and args[0].startswith(("job-", "awj-")):
+        if args and (
+            args[0].startswith(("job-", "awj-", "run-", "awr-", "https://"))
+            or args[0].isascii()
+            and args[0].isdecimal()
+        ):
             args = ["list", *args]
         return super().resolve_command(ctx, args)
 
 
-def _job_id(_ctx: click.Context, param: click.Parameter, value: str) -> str:
-    if not _JOB_ID.fullmatch(value):
-        raise click.BadParameter(
-            "use the Avrea job ID from 'avr job list' (job- or awj- followed by 32 lowercase hex characters)",
-            param=param,
+def _resolve_job(
+    client: ApiClient,
+    config: CliConfig,
+    target: str,
+    org_id: str | None,
+    job_name: str | None,
+) -> tuple[str, str]:
+    if target.startswith(("job-", "awj-")):
+        if not _JOB_ID.fullmatch(target):
+            raise click.BadParameter(
+                "use job- or awj- followed by 32 lowercase hex characters", param_hint="RUN_OR_JOB"
+            )
+        if job_name is not None:
+            raise click.UsageError("--job selects a job within a run. Omit it when passing a job ID.")
+        return get_org_id(config, org_id, client=client), target
+    if job_name is not None and not job_name.strip():
+        raise click.BadParameter("use a nonempty job name", param_hint="--job")
+    try:
+        reference = parse_run_reference(target, api_url=config.public_api_url)
+    except (InvalidRunReference, click.BadParameter) as exc:
+        hint = (
+            "Use an Avrea run or job ID, a positive GitHub run ID, "
+            "a GitHub Actions run URL or an Avrea console run URL. "
+            "For GitLab jobs, use their Avrea job ID (job- or awj-)."
         )
-    return value
+        raise click.BadParameter(hint, param_hint="RUN_OR_JOB") from exc
+    organization = resolve_run_org(client, config, reference, org_id)
+    try:
+        run = resolve_run_reference(client, organization, reference, include=["jobs"])
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "resolve the run's jobs")
+    jobs = run.get("jobs")
+    if not isinstance(jobs, list) or not all(isinstance(job, dict) for job in jobs):
+        raise click.ClickException("The API returned invalid run jobs.")
+    if not jobs:
+        raise click.ClickException("This run has no available jobs. Pass an Avrea job ID to inspect a known job.")
+    matched = filter_run_jobs(jobs, job_name)
+    if len(matched) != 1:
+        choices = "\n".join(f"  {_text(job.get('job_name'))}: {_text(job.get('job_id'))}" for job in jobs)
+        raise click.ClickException(
+            f"{'No jobs' if not matched else 'Several jobs'} match. Use --job NAME to select one job "
+            f"or pass its Avrea job ID.\nAvailable jobs:\n{choices}"
+        )
+    job_id = matched[0].get("job_id")
+    if not isinstance(job_id, str) or not _JOB_ID.fullmatch(job_id):
+        raise click.ClickException("The selected job has no available Avrea job ID.")
+    return organization, job_id
 
 
 def _get(
-    client: ApiClient, path: str, action: str, not_found_hint: str, params: dict[str, Any] | None = None
+    client: ApiClient,
+    path: str,
+    action: str,
+    not_found_hint: str,
+    params: dict[str, Any] | None = None,
+    *,
+    invalid_cursor_hint: str | None = None,
 ) -> dict[str, Any]:
     try:
         response = client.public_get(path, params=params)
     except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, action, hints={404: not_found_hint})
+        hints = {404: not_found_hint}
+        if invalid_cursor_hint is not None:
+            hints[400] = invalid_cursor_hint
+        handle_http_error(exc, action, hints=hints)
     return response
 
 
@@ -84,14 +143,16 @@ def _job_repository(client: ApiClient, organization: str, job: str) -> str:
     return repository
 
 
-def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | None) -> dict[str, Any]:
+def _results(
+    client: ApiClient, path: str, job: str, limit: int, cursor: str | None, filters: dict[str, str]
+) -> dict[str, Any]:
     """Follow short pages within a row and request budget, retaining the resume cursor."""
     rows: list[dict[str, Any]] = []
     snapshot: dict[str, Any] | None = None
     seen = {cursor} if cursor else set()
     for _ in range(_MAX_PAGES):
         page_limit = limit - len(rows)
-        params: dict[str, Any] = {"limit": page_limit}
+        params: dict[str, Any] = {"limit": page_limit, **{key: f"eq.{value}" for key, value in filters.items()}}
         if cursor is not None:
             params["cursor"] = cursor
         page = _get(
@@ -103,7 +164,17 @@ def _results(client: ApiClient, path: str, job: str, limit: int, cursor: str | N
             "If you passed --cursor, restart without it. Otherwise check that Repository"
             " Tests are enabled and that the job belongs to the repository.",
             params,
+            invalid_cursor_hint="Use the same filters the cursor was issued with, or restart without --cursor.",
         )
+        applied = page.get("filters", {})
+        if not isinstance(applied, dict):
+            raise click.ClickException("The API did not confirm the requested test filters. It may need an update.")
+        applied = {key: value for key, value in applied.items() if value is not None}
+        if applied != filters:
+            raise click.ClickException("The API did not confirm the requested test filters. It may need an update.")
+        # Old deployments omit the echo; new ones include nullable fields.
+        # Normalize both before checking that later pages use the same query.
+        page["filters"] = applied
         data = page.get("data")
         pagination = page.get("pagination")
         if page.get("job_id") != job or not isinstance(data, list) or not isinstance(pagination, dict):
@@ -140,11 +211,17 @@ def _text(value: Any) -> str:
 def _show(response: dict[str, Any]) -> None:
     click.echo(f"Job: {_text(response['job_id'])}")
     click.echo(f"Organization: {_text(response['organization_id'])}  Repository: {_text(response['repository_id'])}")
-    click.echo(f"Execution: {_text(response.get('execution_id'))}  Commit: {_text(response.get('commit_sha'))}")
+    if response.get("execution_id") is not None:
+        click.echo(f"Execution: {_text(response['execution_id'])}")
+    click.echo(f"Commit: {_text(response.get('commit_sha'))}")
     click.echo(f"Reporting: {_text(response.get('reporting_state'))}  Results: {_text(response.get('status'))}")
     if response.get("reason"):
         click.echo(f"Reason: {_text(response['reason'])}")
-    click.echo(f"Retained occurrences: {_text(response.get('total_count'))}; shown: {len(response['data'])}")
+    filtered = any(value is not None for value in (response.get("filters") or {}).values())
+    label = "matching shown" if filtered else "shown"
+    click.echo(
+        f"Retained occurrences (all tests): {_text(response.get('total_count'))}; {label}: {len(response['data'])}"
+    )
     rows = response["data"]
     if rows:
         columns = ("suite", "class_name", "name", "outcome", "duration_ms")
@@ -154,14 +231,21 @@ def _show(response: dict[str, Any]) -> None:
             column_labels=["Suite", "Class", "Test", "Outcome", "Time (ms)"],
         )
         for row in rows:
+            # The class keeps same-named tests in different classes apart.
+            label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key)) or "unknown"
             if row.get("failure_summary"):
-                # The class keeps same-named tests in different classes apart.
-                label = ".".join(_text(row.get(key)) for key in ("class_name", "name") if row.get(key))
-                click.echo(f"\n{label or 'unknown'}: {_text(row['failure_summary'])}")
+                click.echo(f"\n{label}: {_text(row['failure_summary'])}")
     elif response.get("status") == "available" and response.get("total_count") == 0:
         click.echo("The retained report contains zero test occurrences. This does not establish that no tests ran.")
     elif response.get("status") == "available":
-        click.echo("No more results.")
+        if filtered:
+            click.echo(
+                "No matches in the searched portion."
+                if response["pagination"]["next_cursor"]
+                else "No matching tests in the remaining retained results."
+            )
+        else:
+            click.echo("No more results.")
     else:
         click.echo("No test results returned. Missing or expired reports do not mean that zero tests ran.")
     if response.get("reporting_state") == "complete":
@@ -173,14 +257,17 @@ def _show(response: dict[str, Any]) -> None:
 def tests(ctx: click.Context) -> None:
     """Read a job's tests, timings and recorded failure messages.
 
-    Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID
-    (job- or awj-) from avr job list.
+    Use avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea
+    run/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.
+    A single-job run is selected automatically. Use --job NAME to select
+    one job from a run with several jobs.
     """
     ensure_ctx(ctx)
 
 
 @tests.command("list")
-@click.argument("job", metavar="JOB", callback=_job_id)
+@click.argument("target", metavar="RUN_OR_JOB")
+@click.option("--job", "job_name", help="Select one run job by case-insensitive name substring.")
 @click.option("--org", "org_id", help="Organization ID or slug. Defaults to the configured organization.")
 @click.option("--repo", "repo_id", help="Repository (owner/name or rep-ID). Defaults to the job's repository.")
 @click.option(
@@ -191,20 +278,35 @@ def tests(ctx: click.Context) -> None:
     show_default=True,
     help=f"Maximum occurrences to return; short pages are followed, up to {_MAX_PAGES} result pages.",
 )
-@click.option("--cursor", help="Continue from a previous response's next_cursor.")
+@click.option("--cursor", help="Continue from a previous response's next_cursor with the same filters.")
+@click.option("--test", "test_name", help="Exact test name (case-sensitive; no wildcards).")
+@click.option("--suite", help="Exact suite name; combined with other filters using AND.")
+@click.option("--class", "class_name", help="Exact nonempty class name.")
+@click.option(
+    "--status", "outcome", type=click.Choice(["passed", "failed", "skipped", "errored"]), help="Recorded test outcome."
+)
 @json_options
 @click.pass_context
 def tests_list(
     ctx: click.Context,
-    job: str,
+    target: str,
+    job_name: str | None,
     org_id: str | None,
     repo_id: str | None,
     limit: int,
     cursor: str | None,
+    test_name: str | None,
+    suite: str | None,
+    class_name: str | None,
+    outcome: str | None,
     json_fields: str | None,
     jq_expr: str | None,
 ) -> None:
-    """Read the latest confirmed execution of JOB, including repeated tests.
+    """Read one job's latest confirmed execution, including repeated tests.
+
+    RUN_OR_JOB accepts the same run references as avr run view, or an Avrea
+    job ID (job- or awj-). A run selects one job, never combines all jobs.
+    --job NAME must match exactly one job; without it a run must have one job.
 
     Names, outcomes, recorded durations and available failure messages are
     shown together. A failed test is data, not a command error. Missing,
@@ -213,19 +315,32 @@ def tests_list(
 
     Use --json '*' for the complete response or --json FIELDS to select
     fields. Continue with --cursor when pagination.next_cursor is present.
+    Filters match literally and are combined with AND. Every matching
+    occurrence is retained, including duplicate names. A continuation means
+    more of the report remains to be searched, not necessarily more matches.
     API refusal or a changed report fails the command without partial output.
     """
     if handle_json_meta(json_fields, jq_expr, _FIELDS):
         return
+    filters = {
+        key: value
+        for key, value in {"name": test_name, "suite": suite, "class_name": class_name, "outcome": outcome}.items()
+        if value is not None
+    }
+    for option, value, maximum in (("--test", test_name, 4096), ("--suite", suite, 256), ("--class", class_name, 512)):
+        if value is not None and not 1 <= len(value) <= maximum:
+            raise click.BadParameter(f"use between 1 and {maximum} characters", param_hint=option)
     cursor = validate_cursor(cursor, max_length=1024)
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
-    organization = get_org_id(config, org_id, client=client)
+    organization, job = _resolve_job(client, config, target, org_id, job_name)
     repository = (
         resolve_repo(client, config, organization, repo_id) if repo_id else _job_repository(client, organization, job)
     )
-    response = _results(client, f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests", job, limit, cursor)
+    response = _results(
+        client, f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests", job, limit, cursor, filters
+    )
     response.update(organization_id=organization, repository_id=repository)
     if json_fields is not None:
         emit_json_record(response, split_fields(json_fields, _FIELDS), _FIELDS, jq_expr)
@@ -233,4 +348,5 @@ def tests_list(
         _show(response)
     next_cursor = response["pagination"]["next_cursor"]
     if next_cursor:
-        click.echo(f"More results available. Continue with --cursor {shlex.quote(_text(next_cursor))}", err=True)
+        message = "Search incomplete; more of the report remains." if filters else "More results available."
+        click.echo(f"{message} Continue with the same filters and --cursor {shlex.quote(_text(next_cursor))}", err=True)
