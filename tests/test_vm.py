@@ -44,7 +44,7 @@ SAMPLE_VM = {
     "disk_gb": 20,
     "enable_remote_desktop": False,
     "ssh_public_keys": ["ssh-ed25519 AAAA test@host"],
-    "desired_state": "RUNNING",
+    "architecture": "x86_64",
     "state": "PENDING",
     "state_reason": None,
     "endpoints": None,
@@ -66,10 +66,9 @@ RD_ROTATE_RESPONSE = {
     "data": {"vm": {**RD_VM, "state": "RUNNING", "endpoints": RD_ENDPOINTS}, "password": "hunter2hunter2"}
 }
 
-PAUSING_VM = {**SAMPLE_VM, "desired_state": "PAUSED", "state": "PAUSING", "endpoints": None}
+PAUSING_VM = {**SAMPLE_VM, "state": "PAUSING", "endpoints": None}
 PAUSED_VM = {
     **SAMPLE_VM,
-    "desired_state": "PAUSED",
     "state": "PAUSED",
     "state_reason": "user_pause",
     "endpoints": None,
@@ -94,7 +93,7 @@ def _capture(store):
 
 
 class TestVmCreate:
-    def test_requires_ephemeral_acknowledgement(self, runner, monkeypatch):
+    def test_create_without_ephemeral_acknowledgement(self, runner, monkeypatch):
         called = {"n": 0}
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
@@ -113,9 +112,8 @@ class TestVmCreate:
                 "2-vcpu",
             ],
         )
-        assert result.exit_code == 2
-        assert "ephemeral" in result.output.lower()
-        assert called["n"] == 0  # never hit the API
+        assert result.exit_code == 0, result.output
+        assert called["n"] == 1
 
     @pytest.mark.parametrize("fetch_depth", [None, 0, 1, 500])
     def test_create_success(self, runner, monkeypatch, fetch_depth: int | None) -> None:
@@ -147,7 +145,7 @@ class TestVmCreate:
         assert result.exit_code == 0
         assert store["path"] == "/orgs/org-default/vms"
         body = store["json"]
-        assert body["ephemeral"] is True
+        assert "ephemeral" not in body
         assert body["os_type"] == "linux"
         assert body["size"] == "2-vcpu"
         assert body["ttl_seconds"] == 8 * 3600
@@ -397,14 +395,14 @@ class TestVmCreate:
                 "--os",
                 "linux",
                 "--os-version",
-                "ubuntu-22.04",
+                "ubuntu-26.04",
                 "--size",
                 "8-vcpu",
                 "--ephemeral",
             ],
         )
         assert result.exit_code == 0
-        assert store["json"]["os_version"] == "ubuntu-22.04"
+        assert store["json"]["os_version"] == "ubuntu-26.04"
         assert store["json"]["size"] == "8-vcpu"
 
     def test_disable_cache_maps_aliases_to_overrides(self, runner, monkeypatch):
@@ -468,12 +466,21 @@ class TestVmCreate:
         assert result.exit_code != 0
         assert "is not a cache name" in result.output
 
-    def test_invalid_size_rejected(self, runner):
+    def test_size_is_validated_by_the_server(self, runner, monkeypatch):
+        response = httpx.Response(
+            422, json={"detail": "Unknown size 3-vcpu"}, request=httpx.Request("POST", "https://x")
+        )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_post",
+            lambda *a, **kw: (_ for _ in ()).throw(
+                httpx.HTTPStatusError("bad", request=response.request, response=response)
+            ),
+        )
         result = runner.invoke(
             cli,
             ["vm", "create", "--name", "dev", "--os", "linux", "--size", "3-vcpu", "--ephemeral"],
         )
-        assert result.exit_code == 2
+        assert result.exit_code != 0
         assert "3-vcpu" in result.output
 
 
@@ -484,6 +491,9 @@ class TestVmCreateWait:
     def _post(self, monkeypatch):
         monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
         monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
+        monkeypatch.setattr(
+            "avrea_cli.vm_state_stream.connect", lambda *a, **kw: (_ for _ in ()).throw(OSError("offline"))
+        )
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post",
             lambda self, path, json=None, timeout=None: RD_CREATE_RESPONSE,
@@ -506,7 +516,13 @@ class TestVmCreateWait:
         assert "hunter2hunter2" in result.output
 
     def test_wait_polls_past_pending(self, runner, monkeypatch):
+        from tests.test_metrics_stream import Socket
+
         self._post(monkeypatch)
+        socket = Socket([{"signal": "status", "type": "changed"}])
+        connections = []
+        monkeypatch.setattr("avrea_cli.vm_state_stream.connect", lambda url, **kw: connections.append(url) or socket)
+        monkeypatch.setattr("avrea_cli.vm_state_stream.time.sleep", lambda _: None)
         calls = {"n": 0}
         pending = {"data": {**RD_VM, "state": "PENDING", "endpoints": None}}
 
@@ -517,7 +533,10 @@ class TestVmCreateWait:
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _get)
         result = runner.invoke(cli, [*self._ARGS, "--wait"])
         assert result.exit_code == 0
-        assert calls["n"] >= 2  # kept polling past the first PENDING
+        assert calls["n"] == 2
+        assert len(connections) == 1
+        assert "/orgs/org-default/vms/cvm-abc123/observability/stream?signals=status" in connections[0]
+        assert socket.closed
         assert (
             "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
         )
@@ -686,55 +705,7 @@ class TestVmCreateWait:
 
 
 class TestVmLifecycleWait:
-    """--wait on start / stop / delete."""
-
-    def test_start_wait_prints_full_connect(self, runner, monkeypatch):
-        monkeypatch.setattr("avrea_cli.vm.sys.platform", "linux")
-        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
-        patch_resp = {"data": {"vm": {**RD_VM, "state": "PENDING", "endpoints": None}, "password": "hunter2hunter2"}}
-        monkeypatch.setattr(
-            "avrea_cli.api_client.ApiClient.public_patch",
-            lambda self, path, json=None, params=None, timeout=None: patch_resp,
-        )
-        monkeypatch.setattr(
-            "avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: RD_SHOW_RESPONSE
-        )
-        result = runner.invoke(cli, ["vm", "start", "cvm-abc123", "--wait"])
-        assert result.exit_code == 0
-        # Same paste-ready payoff as create: real endpoint + the fresh password.
-        assert (
-            "xfreerdp /v:203.0.113.1:33389 /u:runner /p:hunter2hunter2 /gfx:rfx +clipboard /cert:tofu" in result.output
-        )
-
-    def test_stop_wait_blocks_until_stopped(self, runner, monkeypatch):
-        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
-        patch_resp = {"data": {"vm": {**RD_VM, "state": "STOPPING", "endpoints": None}}}
-        stopped = {"data": {**RD_VM, "state": "STOPPED", "desired_state": "STOPPED", "endpoints": None}}
-        monkeypatch.setattr(
-            "avrea_cli.api_client.ApiClient.public_patch",
-            lambda self, path, json=None, params=None, timeout=None: patch_resp,
-        )
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: stopped)
-        result = runner.invoke(cli, ["vm", "stop", "cvm-abc123", "--wait"])
-        assert result.exit_code == 0
-        assert "is now STOPPED" in result.output
-        assert "IP:PORT" not in result.output  # concise confirmation, no connect-line noise
-        assert "Re-run once ready" not in result.output  # target reached, no timeout note
-
-    def test_stop_wait_timeout_does_not_claim_stopped(self, runner, monkeypatch):
-        # On a timed-out stop, we must not print "is now STOPPED" (it is not).
-        monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
-        patch_resp = {"data": {"vm": {**RD_VM, "state": "STOPPING", "endpoints": None}}}
-        stopping = {"data": {**RD_VM, "state": "STOPPING", "endpoints": None}}
-        monkeypatch.setattr(
-            "avrea_cli.api_client.ApiClient.public_patch",
-            lambda self, path, json=None, params=None, timeout=None: patch_resp,
-        )
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", lambda self, path, params=None: stopping)
-        result = runner.invoke(cli, ["vm", "stop", "cvm-abc123", "--wait", "--wait-timeout", "0"])
-        assert result.exit_code == 1
-        assert "is now STOPPED" not in result.output  # never claim success on timeout
-        assert "Not STOPPED yet" in result.output  # the timeout message instead
+    """--wait on delete."""
 
     def test_delete_wait_until_gone(self, runner, monkeypatch):
         monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
@@ -923,23 +894,6 @@ class TestVmUpdate:
         assert "hunter2hunter2" in result.output
 
 
-class TestVmPower:
-    def test_start_sets_desired_running(self, runner, monkeypatch):
-        store = {"return": CREATE_RESPONSE}
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_patch", _capture(store))
-        result = runner.invoke(cli, ["vm", "start", "cvm-abc123"])
-        assert result.exit_code == 0
-        assert store["json"] == {"desired_state": "RUNNING"}
-        assert "hunter2hunter2" in result.output
-
-    def test_stop_sets_desired_stopped(self, runner, monkeypatch):
-        store = {"return": {"data": {"vm": {**SAMPLE_VM, "state": "STOPPING"}, "password": None}}}
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_patch", _capture(store))
-        result = runner.invoke(cli, ["vm", "stop", "cvm-abc123"])
-        assert result.exit_code == 0
-        assert store["json"] == {"desired_state": "STOPPED"}
-
-
 class TestVmPauseResume:
     def test_pause_posts_disk_only_request_by_default(self, runner, monkeypatch):
         store = {"return": {"data": PAUSING_VM}}
@@ -962,7 +916,7 @@ class TestVmPauseResume:
         assert store["json"] == {"memory": True}
 
     def test_resume_posts_restore_request_by_default(self, runner, monkeypatch):
-        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        pending = {**PAUSED_VM, "state": "PENDING"}
         store = {"return": {"data": pending}}
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
 
@@ -974,7 +928,7 @@ class TestVmPauseResume:
         assert "PENDING" in result.output
 
     def test_resume_discard_memory_flag_is_forwarded(self, runner, monkeypatch):
-        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        pending = {**PAUSED_VM, "state": "PENDING"}
         store = {"return": {"data": pending}}
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", _capture(store))
 
@@ -1002,7 +956,7 @@ class TestVmPauseResume:
 
     def test_resume_wait_blocks_until_connectable(self, runner, monkeypatch):
         monkeypatch.setattr("avrea_cli.vm.time.sleep", lambda *_a: None)
-        pending = {**PAUSED_VM, "desired_state": "RUNNING", "state": "PENDING"}
+        pending = {**PAUSED_VM, "state": "PENDING"}
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_post", lambda self, path, json=None, timeout=None: {"data": pending}
         )

@@ -3,7 +3,7 @@
 avr-vm-bootstrap \- Set up a RUNNING VM with your dev essentials over SSH.
 .SH SYNOPSIS
 .B avr vm bootstrap
-[OPTIONS] VM_ID
+[OPTIONS] VM_ID_OR_NAME
 .SH DESCRIPTION
 Set up a RUNNING VM with your dev essentials over SSH.
 .PP
@@ -13,8 +13,8 @@ Each selected step runs on the VM and streams its output; bootstrap stops at
 the first failure. Secrets (GitHub token, forwarded env values, agent
 credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
 is a year-long, subscription-wide bearer, so it is only carried under the
-explicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run
-bootstrap after every `avr vm start`. Example:
+explicit --forward-agent-creds opt-in. Bootstrap changes survive pause
+and resume on the preserved disk. Example:
 .fi
 .RE
 .PP
@@ -68,18 +68,20 @@ Print the ordered plan (secrets redacted) without running.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-vm (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

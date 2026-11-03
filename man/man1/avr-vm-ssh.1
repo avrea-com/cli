@@ -3,7 +3,7 @@
 avr-vm-ssh \- Open an SSH session to a RUNNING VM, or run a command on it.
 .SH SYNOPSIS
 .B avr vm ssh
-[OPTIONS] VM_ID [SSH_ARGS]...
+[OPTIONS] VM_ID_OR_NAME [SSH_ARGS]...
 .SH DESCRIPTION
 Open an SSH session to a RUNNING VM, or run a command on it.
 .PP
@@ -45,17 +45,19 @@ Print the ssh command instead of running it.
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

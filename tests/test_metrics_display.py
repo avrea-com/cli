@@ -7,6 +7,7 @@ from avrea_cli.metrics_display import format_bytes
 from avrea_cli.metrics_display import format_rate
 from avrea_cli.metrics_display import render_bar
 from avrea_cli.metrics_display import render_gauge_line
+from avrea_cli.metrics_display import watch_updates
 import click
 import pytest
 
@@ -14,6 +15,27 @@ import pytest
 def _plain(line: str) -> str:
     """Strip ANSI escape codes so tests assert on the visible text only."""
     return click.unstyle(line)
+
+
+def test_watch_error_persists_until_next_bundle(capsys):
+    frames = [
+        {"signal": "metrics", "type": "error", "message": "backend unavailable"},
+        None,
+        {"type": "bundle", "metrics": {}},
+        {"type": "complete"},
+    ]
+    updates = list(watch_updates(frames, ["cpu"], as_json=False))
+    assert [u.error for u in updates] == ["Metrics: backend unavailable"] * 2 + [None, None]
+    assert updates[0].changed
+    assert capsys.readouterr().err == ""
+
+
+def test_watch_error_goes_to_stderr_in_json_mode(capsys):
+    frames = [{"signal": "metrics", "type": "error", "message": "backend unavailable"}, {"type": "complete"}]
+    assert list(watch_updates(frames, ["cpu"], as_json=True)) == []
+    captured = capsys.readouterr()
+    assert "Metrics: backend unavailable" in captured.err
+    assert captured.out == "{}\n"
 
 
 class TestAggregateValues:

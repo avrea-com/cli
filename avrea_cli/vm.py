@@ -5,12 +5,18 @@ plus RDP (Windows) or VNC (macOS Screen Sharing). Lifecycle transitions are
 asynchronous: the API records intent and the resource moves through an
 intermediate state before reaching its target state.
 
-Disks are ephemeral today: stopping a VM (or losing its node) discards the
-disk, and a restart boots fresh from the image. Pausing is the exception: it
-archives the disk (and optionally memory) for a later resume. ``create``
-therefore requires an explicit ``--ephemeral`` acknowledgement so the normal
-stop/start semantics are a conscious opt-in.
+Pause preserves the disk and optionally memory; resume restores it. TTL expiry
+pauses the VM, or deletes it when pausing is unavailable. Agent sandboxes boot
+once and cannot be paused or resumed.
 """
+
+__lazy_modules__ = [
+    "avrea_cli.metrics_stream",
+    "avrea_cli.vm_state_stream",
+    "tempfile",
+    "socket",
+    "signal",
+]
 
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import EXIT_INTERRUPTED
@@ -23,6 +29,15 @@ from avrea_cli.helpers import get_org_id
 from avrea_cli.helpers import handle_http_error
 from avrea_cli.helpers import retry_after_seconds
 from avrea_cli.helpers import validate_cursor
+from avrea_cli.metrics_display import ALL_SOURCES
+from avrea_cli.metrics_display import check_watch_window
+from avrea_cli.metrics_display import clear_live_frame
+from avrea_cli.metrics_display import filter_metrics
+from avrea_cli.metrics_display import metrics_json
+from avrea_cli.metrics_display import render_gauge_line
+from avrea_cli.metrics_display import select_sources
+from avrea_cli.metrics_display import watch_updates
+from avrea_cli.metrics_stream import metrics_frames
 from avrea_cli.output import format_key_value
 from avrea_cli.output import output_list
 from avrea_cli.spawn_script import DEFAULT_SANDBOX_SIZE
@@ -32,10 +47,12 @@ from avrea_cli.spawn_script import SPAWN_PROVIDERS
 from avrea_cli.spawn_script import SpawnInputError
 from avrea_cli.spawn_script import exit_code_for_status
 from avrea_cli.spawn_script import read_spawn_order
+from avrea_cli.vm_state_stream import vm_state_notifications
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 import click
 import httpx
 import json
@@ -50,14 +67,6 @@ import tempfile
 import time
 
 _OS_CHOICES = ["linux", "macos", "windows"]
-
-# Hardware tiers and OS versions the API accepts (see the runner docs at
-# https://docs.avrea.com/runners/). The customer picks an OS, an optional
-# version and a size tier, and the control plane resolves those to a concrete
-# image and cpu/memory/disk. The server validates the (os, size) and (os,
-# version) pairs (sizes are OS-specific) and remains the source of truth.
-_SIZE_CHOICES = ["1-vcpu", "2-vcpu", "4-vcpu", "8-vcpu", "16-vcpu", "32-vcpu"]
-_OS_VERSION_CHOICES = ["ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "macos-26", "windows-2025"]
 
 # Bounds / default mirror the API; kept here only to fail obviously-bad input
 # locally with a clear message. The server remains the source of truth and
@@ -297,14 +306,29 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
         "OS": vm.get("os_type"),
         "Resources": f"{vm.get('cpu_count')} vCPU / {vm.get('memory_mb')} MB / {vm.get('disk_gb')} GB disk",
         "State": vm.get("state"),
-        "Desired state": vm.get("desired_state"),
         "Reason": vm.get("state_reason") or "-",
         "Remote desktop": "yes" if vm.get("enable_remote_desktop") else "no",
         "Endpoints": _format_endpoints(vm.get("endpoints")),
     }
     # Only shown for a VM created with a precheckout repo. preload_status is
     # null until the first start stamps the current boot's outcome.
-    ref = vm.get("precheckout_ref")
+    for label, key in (
+        ("Architecture", "architecture"),
+        ("Repository", "repository_full_name"),
+        ("Access", "access_level"),
+        ("Started", "started_at"),
+        ("Stopped", "stopped_at"),
+    ):
+        if vm.get(key) is not None:
+            summary[label] = vm[key]
+    if vm.get("https_ports"):
+        summary["HTTPS ports"] = ", ".join(map(str, vm["https_ports"]))
+    https = (vm.get("endpoints") or {}).get("https")
+    if https:
+        urls = [f"{entry.get('port')}: {entry['url']}" for entry in https if entry.get("url")]
+        if urls:
+            summary["HTTPS URLs"] = "; ".join(urls)
+    ref = vm.get("repository_ref") or vm.get("precheckout_ref")
     if ref:
         summary["Preload"] = f"{ref} ({vm.get('preload_status') or '-'})"
     fetch_depth = vm.get("fetch_depth")
@@ -315,7 +339,7 @@ def _vm_summary(vm: dict[str, Any]) -> dict[str, Any]:
         summary["Snapshot"] = "memory + disk" if snapshot.get("memory_included") else "disk only"
         if snapshot.get("paused_at"):
             summary["Paused at"] = snapshot["paused_at"]
-    summary["Auto-stop at"] = vm.get("stop_at")
+    summary["TTL expires"] = vm.get("stop_at")
     summary["Created"] = vm.get("created_at")
     return summary
 
@@ -373,7 +397,7 @@ def _rdp_connect_lines(
     The one-time password is deliberately baked into the command (``/p:`` /
     ``cmdkey``) so the line is true paste-and-go, accepting that it lands in shell
     history and ``ps`` for the session. This is a conscious convenience tradeoff:
-    the password is single-use, rotates on every stop/start, and the exposure is
+    the password is returned once on creation or rotation, and the exposure is
     local to the operator's own machine. Do not switch this to a client prompt
     without revisiting that decision.
     """
@@ -406,7 +430,7 @@ def _connect_block(vm: dict[str, Any], password: str | None) -> list[str]:
 
     Empty when there is nothing to show: remote desktop disabled, or a non-RDP
     (macOS/VNC) guest. Bakes the password in only when it is known (create, and
-    the password-rotation path of update/start).
+    the password-rotation path of update).
     """
     if not vm.get("enable_remote_desktop"):
         return []
@@ -487,6 +511,7 @@ def _wait_for_vm(
     timeout: float,
     is_ready: Callable[[dict[str, Any]], bool],
     *,
+    wait_for_change: Callable[[float], None] | None = None,
     gone_is_ready: bool = False,
     is_failed: Callable[[dict[str, Any]], bool] | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
@@ -499,15 +524,15 @@ def _wait_for_vm(
     Transient poll errors (connection resets, timeouts, 5xx) are retried until
     the deadline rather than aborting the wait; only a 404 with ``gone_is_ready``
     is a definitive answer. Only the unambiguous ERROR/FAILED markers count as
-    general failure: STOPPED/DELETING are legitimate targets or progress for
-    stop/delete. ``is_failed`` can additionally identify operation-specific
+    general failure: DELETING is legitimate progress for delete. ``is_failed``
+    can additionally identify operation-specific
     terminal states, such as a failed pause returning the VM to RUNNING."""
     deadline = time.monotonic() + timeout
     vm: dict[str, Any] | None = None
     last_state: str | None = None
     while True:
         try:
-            resp = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+            resp = client.public_get(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}")
         except httpx.HTTPError as exc:
             if isinstance(exc, httpx.HTTPStatusError):
                 status = exc.response.status_code
@@ -544,11 +569,15 @@ def _wait_for_vm(
             return vm, "failed"
         if time.monotonic() >= deadline:
             return vm, "timeout"
-        time.sleep(_WAIT_POLL_SECONDS)
+        remaining = max(0, deadline - time.monotonic())
+        if wait_for_change is not None:
+            wait_for_change(min(_WAIT_POLL_SECONDS, remaining))
+        else:
+            time.sleep(min(_WAIT_POLL_SECONDS, remaining))
 
 
 def _state_is(target: str) -> Callable[[dict[str, Any]], bool]:
-    """Readiness predicate matching a specific VM state (e.g. STOPPED)."""
+    """Readiness predicate matching a specific VM state (e.g. PAUSED)."""
 
     def _pred(vm: dict[str, Any]) -> bool:
         return (vm.get("state") or "").upper() == target
@@ -596,11 +625,230 @@ def vm(ctx):
     ensure_ctx(ctx)
 
 
+def _validate_https_ports(ports: tuple[int, ...]) -> list[int]:
+    if len(ports) > 10:
+        raise click.UsageError("At most ten --https-port values are allowed.")
+    if len(set(ports)) != len(ports):
+        raise click.UsageError("--https-port values must be unique.")
+    if set(ports) & {22, 3389, 5900}:
+        raise click.UsageError("Ports 22, 3389, and 5900 are reserved for SSH and remote desktop.")
+    return list(ports)
+
+
+@vm.command("fork")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
+@click.option("--name", "display_name", help="Fork name. Defaults to a name derived from the source.")
+@click.option("--ttl", help="Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option("--wait", is_flag=True, help="Wait for the fork to become connectable.")
+@click.option(
+    "--wait-timeout",
+    type=click.IntRange(min=0),
+    default=_WAIT_DEFAULT_TIMEOUT,
+    show_default=True,
+    help="Seconds to wait when --wait is set.",
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit the fork VM as JSON.")
+@click.pass_context
+def vm_fork(ctx, vm_id, display_name, ttl, org_id, wait, wait_timeout, as_json):
+    """Boot a copy of a PAUSED VM's disk; the source remains paused.
+
+    Copies the source's machine configuration and disk, including its SSH host
+    keys and password, but discards memory state. A scoped-token password may
+    be replaced without returning its replacement. No password is returned; use
+    update --rotate-password if needed. Requires admin access to the source.
+    """
+    body: dict[str, Any] = {}
+    if display_name is not None:
+        body["display_name"] = display_name
+    if ttl is not None:
+        body["ttl_seconds"] = _parse_ttl(ttl)
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}/fork", json=body)
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "fork VM")
+    data = response["data"]
+    if wait:
+        fork_id = data["customer_vm_id"]
+        click.echo(f"Waiting up to {wait_timeout}s for {fork_id} to become RUNNING...", err=True)
+        record, disposition = _wait_for_vm(client, org_id, fork_id, wait_timeout, _endpoints_ready)
+        if as_json:
+            _emit_wait_json(ctx, record or data, None, disposition)
+            return
+        _print_vm(record or data)
+        _wait_exit(ctx, record, disposition, "connectable", wait_timeout, fork_id)
+    elif as_json:
+        click.echo(json.dumps(data, indent=2, default=str))
+    else:
+        _print_vm(data)
+
+
+@vm.command("rotate-https-label")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option("--json", "as_json", is_flag=True, help="Emit the updated VM as JSON.")
+@click.pass_context
+def vm_rotate_https_label(ctx, vm_id, org_id, as_json):
+    """Replace public HTTPS URLs to invalidate leaked URLs.
+
+    Routes change once ingress applies the rotation. On a running VM,
+    AVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;
+    a paused VM picks up the new URLs at resume.
+    """
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    try:
+        response = client.public_post(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}/https-label-rotations", json={})
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "rotate VM HTTPS label")
+    if as_json:
+        click.echo(json.dumps(response["data"], indent=2, default=str))
+    else:
+        _print_vm(response["data"])
+
+
+def _cap_value(key: str, value: Any) -> Any:
+    if value is not None:
+        return value
+    return "unlimited" if key.startswith("max_") else "n/a"
+
+
+@vm.command("capabilities")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option("--json", "as_json", is_flag=True, help="Emit capabilities and quotas as JSON.")
+@click.pass_context
+def vm_capabilities(ctx, org_id, as_json):
+    """List available operating systems, architectures, sizes, and quotas."""
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    try:
+        response = client.public_get(f"/orgs/{org_id}/vms/capabilities")
+    except httpx.HTTPStatusError as exc:
+        handle_http_error(exc, "get VM capabilities")
+    data = response["data"]
+    if as_json:
+        click.echo(json.dumps(data, indent=2, default=str))
+        return
+    # Null limits mean exempt, and null counts mean the cap is not tracked.
+    click.echo(
+        format_key_value(
+            {
+                key.replace("_", " "): _cap_value(key, data.get(key))
+                for key in ("max_active_vcpus", "active_vcpus", "max_active_per_user", "active_count")
+            }
+        )
+    )
+    rows = []
+    for os_cap in data.get("os_types", []):
+        if os_cap.get("max_active") is None:
+            click.echo(f"\n{os_cap.get('os_type')}: no per-OS limit")
+        else:
+            click.echo(
+                f"\n{os_cap.get('os_type')}: active {_cap_value('active_count', os_cap.get('active_count'))}, "
+                f"limit {os_cap['max_active']}"
+            )
+        for arch in os_cap.get("architectures", []):
+            for spec in arch.get("size_specs") or []:
+                rows.append(
+                    {
+                        "os": os_cap.get("os_type"),
+                        "arch": arch.get("architecture"),
+                        "versions": ", ".join(arch.get("versions") or []),
+                        "default": arch.get("default_version"),
+                        **spec,
+                    }
+                )
+    output_list(
+        rows,
+        columns=["os", "arch", "versions", "default", "size", "cpu_count", "memory_mb", "disk_gb"],
+        column_labels=["OS", "Arch", "Versions", "Default", "Size", "vCPU", "Mem (MB)", "Disk (GB)"],
+    )
+
+
+@vm.command("metrics")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
+@click.option("--org", "org_id", help="Organization ID or slug.")
+@click.option(
+    "--source",
+    "sources",
+    multiple=True,
+    type=click.Choice(list(ALL_SOURCES)),
+    help="Metric source. Repeatable; defaults to cpu and memory.",
+)
+@click.option("--start", type=int, help="Start time in Unix seconds (single-shot only).")
+@click.option("--end", type=int, help="End time in Unix seconds (single-shot only).")
+@click.option("--watch", "-w", is_flag=True, help="Stream live metrics until the run completes; Ctrl-C to exit.")
+@click.option("--json", "as_json", is_flag=True, help="Emit metrics JSON; watch emits one snapshot per line.")
+@click.pass_context
+def vm_metrics(ctx, vm_id, org_id, sources, start, end, watch, as_json):
+    """Show CPU/memory/IO metrics for a VM's current or last run."""
+    check_watch_window(watch, start, end)
+    client: ApiClient = ctx.obj["client"]
+    config: CliConfig = ctx.obj["config"]
+    ensure_authenticated(config)
+    org_id = get_org_id(config, org_id, client=client)
+    selected = select_sources(sources)
+    vm_record = _get_vm(client, org_id, vm_id)
+    memory = vm_record.get("memory_mb")
+    ram_bytes = memory * 1024**2 if memory is not None else None
+
+    def render(metrics: dict[str, Any], *, live: bool, note: str | None = None, error: str | None = None) -> None:
+        if watch:
+            clear_live_frame()
+        click.echo(format_key_value({"VM": vm_record["customer_vm_id"], "Name": vm_record.get("display_name")}))
+        if note:
+            click.echo(note)
+        elif not metrics:
+            click.echo("No metrics available for this run.")
+        for source in selected:
+            click.echo(render_gauge_line(source, metrics.get(source, {"series": []}), ram_bytes, live=live))
+        if error:
+            click.echo("\n" + error)
+
+    if not watch:
+        params: dict[str, Any] = {"source": list(selected)}
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
+        try:
+            data = client.public_get(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}/metrics", params=params)["data"]
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "get VM metrics")
+        metrics = filter_metrics(data.get("metrics") or {}, selected)
+        if as_json:
+            click.echo(metrics_json(metrics, pretty=True))
+        else:
+            render(metrics, live=False)
+        return
+    path = f"/orgs/{org_id}/vms/{vm_record['customer_vm_id']}/observability/stream"
+    try:
+        drawn = False
+        for update in watch_updates(metrics_frames(config, path), selected, as_json=as_json):
+            if update.complete:
+                if not update.saw_bundle:
+                    render({}, live=False, error=update.error)
+            elif update.changed or not drawn:
+                # A starting VM holds the metrics signal until its run is live;
+                # draw the header at once rather than a blank terminal.
+                note = None if update.saw_bundle else "Waiting for metrics..."
+                render(update.metrics, live=update.running, note=note, error=update.error)
+            drawn = True
+    except KeyboardInterrupt:
+        ctx.exit(EXIT_INTERRUPTED)
+
+
 @vm.command("create")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option(
-    "--name", "display_name", default=None, help="Human-readable VM name. Required unless --from-spawn-script."
-)
+@click.option("--name", "display_name", default=None, help="Unique VM name. Generated by the server when omitted.")
 @click.option(
     "--os",
     "os_type",
@@ -609,18 +857,33 @@ def vm(ctx):
     help="Guest operating system. Required unless --from-spawn-script, which is always linux.",
 )
 @click.option(
+    "--arch",
+    "architecture",
+    help="CPU architecture (see: avr vm capabilities). Defaults to the selected OS's default.",
+)
+@click.option("--idempotency-key", default=None, help="Retry creates safely with the same organization-scoped key.")
+@click.option(
+    "--https-port",
+    "https_ports",
+    multiple=True,
+    type=click.IntRange(1, 65535),
+    help="Publish a guest port as public HTTPS. Repeatable; the first is default.",
+)
+@click.option(
     "--os-version",
     "os_version",
-    type=click.Choice(_OS_VERSION_CHOICES),
     default=None,
-    help="Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os.",
+    help=(
+        "Guest OS version (e.g. ubuntu-26.04; see: avr vm capabilities). "
+        "Defaults to the latest version for the chosen --os."
+    ),
 )
 @click.option(
     "--size",
-    type=click.Choice(_SIZE_CHOICES),
     default=None,
     help=(
-        "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. "
+        "Hardware tier, e.g. 2-vcpu (see: avr vm capabilities). "
+        "Availability: linux x86_64 1-32 vCPU, linux arm64 up to 16, macos 8/16, windows 2-16. "
         f"Required unless --from-spawn-script, which defaults to {DEFAULT_SANDBOX_SIZE}."
     ),
 )
@@ -639,7 +902,11 @@ def vm(ctx):
         "Availability depends on OS version; the server validates."
     ),
 )
-@click.option("--ttl", default=None, help="Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.")
+@click.option(
+    "--ttl",
+    default=None,
+    help="TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
+)
 @click.option(
     "--egress-rules",
     "egress_rules_raw",
@@ -688,7 +955,8 @@ def vm(ctx):
     "--ephemeral",
     is_flag=True,
     default=False,
-    help="Required: acknowledge that the VM's disk is ephemeral (discarded on stop).",
+    hidden=True,
+    help="Ignored compatibility flag.",
 )
 @click.option(
     "--wait",
@@ -723,6 +991,9 @@ def vm_create(
     display_name,
     os_type,
     os_version,
+    architecture,
+    idempotency_key,
+    https_ports,
     size,
     ssh_keys,
     remote_desktop,
@@ -753,7 +1024,12 @@ def vm_create(
     example, as Claude Code's spawn-runner hook:
         exec avr vm create --from-spawn-script claude-code --org <org-id>
     """
+    ports = _validate_https_ports(https_ports)
     if spawn_provider is not None:
+        if architecture not in (None, "x86_64"):
+            raise click.UsageError("Agent sandboxes require --arch x86_64.")
+        if idempotency_key is not None:
+            raise click.UsageError("--idempotency-key is derived from the work order with --from-spawn-script.")
         _create_from_spawn_script(
             ctx,
             spawn_provider,
@@ -770,18 +1046,15 @@ def vm_create(
             ref=ref,
             fetch_depth=fetch_depth,
             disable_cache=disable_cache,
+            architecture=architecture,
+            https_ports=ports,
             wait=wait,
             as_json=as_json,
         )
         return
-    for value, flag in ((display_name, "--name"), (os_type, "--os"), (size, "--size")):
+    for value, flag in ((os_type, "--os"), (size, "--size")):
         if value is None:
             raise click.UsageError(f"Missing option '{flag}'.")
-    if not ephemeral:
-        raise click.UsageError(
-            "These VMs have no persistent storage yet: stopping a VM (or losing its node) discards "
-            "the disk, and a restart boots fresh from the image. Pass --ephemeral to acknowledge."
-        )
     if ref and not repo:
         raise click.UsageError("--ref requires --repo.")
     if fetch_depth is not None and not repo:
@@ -802,6 +1075,12 @@ def vm_create(
         fetch_depth=fetch_depth,
         disable_cache=disable_cache,
     )
+    if architecture is not None:
+        body["architecture"] = architecture
+    if idempotency_key is not None:
+        body["idempotency_key"] = idempotency_key
+    if ports:
+        body["https_ports"] = ports
     cache_overrides: dict[str, bool] = body.get("cache_setting_overrides", {})
 
     client: ApiClient = ctx.obj["client"]
@@ -833,7 +1112,10 @@ def vm_create(
                 click.secho(f"Caches disabled: {disabled_caches}", fg="yellow", err=True)
             click.echo()
         click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become RUNNING...", err=True)
-        vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, _endpoints_ready)
+        with vm_state_notifications(config, org_id, vm_id) as wait_for_change:
+            vm_state, disposition = _wait_for_vm(
+                client, org_id, vm_id, wait_timeout, _endpoints_ready, wait_for_change=wait_for_change
+            )
         if as_json:
             _emit_wait_json(ctx, vm_state or data["vm"], password, disposition)
             return
@@ -881,7 +1163,6 @@ def _create_body(
     egress_rules = _load_egress_rules(egress_rules_raw)
     cache_overrides = _parse_disable_cache(disable_cache)
     body: dict[str, Any] = {
-        "ephemeral": True,
         "os_type": os_type,
         "size": size,
         "ssh_public_keys": keys,
@@ -924,6 +1205,8 @@ def _create_from_spawn_script(
     ref: str | None,
     fetch_depth: int | None,
     disable_cache: tuple[str, ...],
+    architecture: str | None,
+    https_ports: list[int],
     wait: bool,
     as_json: bool,
 ) -> None:
@@ -970,6 +1253,10 @@ def _create_from_spawn_script(
         fetch_depth=None,
         disable_cache=disable_cache,
     )
+    if architecture is not None:
+        body["architecture"] = architecture
+    if https_ports:
+        body["https_ports"] = https_ports
     try:
         order = read_spawn_order(provider, os.environ)
     except SpawnInputError as exc:
@@ -1002,12 +1289,20 @@ def _create_from_spawn_script(
 
 @vm.command("list")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--state", default=None, help="Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).")
+@click.option(
+    "--state",
+    type=click.Choice(
+        ["PENDING", "STARTING", "RUNNING", "PAUSING", "PAUSED", "STOPPING", "DELETING", "FAILED"], case_sensitive=False
+    ),
+    help="Filter by lifecycle state.",
+)
+@click.option("--scope", type=click.Choice(["all", "mine"]), default="all", help="Visible VMs or only your own.")
+@click.option("--sandbox/--no-sandbox", default=None, help="Agent sandboxes only, or human-created VMs only.")
 @click.option("-L", "--limit", type=click.IntRange(1, 100), default=50, show_default=True, help="Max VMs to return.")
 @click.option("--cursor", default=None, help="Pagination cursor from a previous response.")
 @click.option("--json", "as_json", is_flag=True, help="Emit the VM list as JSON.")
 @click.pass_context
-def vm_list(ctx, org_id, state, limit, cursor, as_json):
+def vm_list(ctx, org_id, state, scope, sandbox, limit, cursor, as_json):
     """List the organization's VMs, newest first (deleted ones excluded)."""
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -1015,7 +1310,9 @@ def vm_list(ctx, org_id, state, limit, cursor, as_json):
     org_id = get_org_id(config, org_id, client=client)
 
     cursor = validate_cursor(cursor)
-    params: dict[str, Any] = {"limit": limit}
+    params: dict[str, Any] = {"limit": limit, "scope": scope}
+    if sandbox is not None:
+        params["sandbox"] = str(sandbox).lower()
     if state:
         params["state"] = state
     if cursor:
@@ -1043,12 +1340,12 @@ def vm_list(ctx, org_id, state, limit, cursor, as_json):
             "display_name",
             "os_type",
             "state",
-            "desired_state",
+            "architecture",
             "cpu_count",
             "memory_mb",
             "created_at",
         ],
-        column_labels=["VM ID", "Name", "OS", "State", "Desired", "vCPU", "Mem (MB)", "Created"],
+        column_labels=["VM ID", "Name", "OS", "State", "Arch", "vCPU", "Mem (MB)", "Created"],
     )
 
     if next_cursor:
@@ -1056,7 +1353,7 @@ def vm_list(ctx, org_id, state, limit, cursor, as_json):
 
 
 @vm.command("show")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--json", "as_json", is_flag=True, help="Emit the full VM record (with egress rules) as JSON.")
 @click.pass_context
@@ -1068,7 +1365,7 @@ def vm_show(ctx, vm_id, org_id, as_json):
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -1092,7 +1389,7 @@ def vm_show(ctx, vm_id, org_id, as_json):
 
 
 @vm.command("ssh", context_settings={"ignore_unknown_options": True})
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.argument("ssh_args", nargs=-1, type=click.UNPROCESSED)
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
@@ -1209,7 +1506,7 @@ _HOST_ALIAS_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 @vm.command("ssh-config")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "-i", "--identity", "identity_file", type=click.Path(), default=None, help="IdentityFile to write into the block."
@@ -1244,7 +1541,7 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
         avr vm ssh-config cvm-abc123 >> ~/.ssh/config
 
     or let --append manage the block for you (idempotent — re-run after a
-    restart to refresh the endpoint in place):
+    resume to refresh the endpoint in place):
 
         avr vm ssh-config cvm-abc123 --append
 
@@ -1256,10 +1553,9 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
     if config_file and not append:
         raise click.UsageError("--config-file requires --append.")
 
-    alias = host_alias or f"avr-{vm_id}"
-    if not _HOST_ALIAS_RE.fullmatch(alias):
+    if host_alias is not None and not _HOST_ALIAS_RE.fullmatch(host_alias):
         raise click.UsageError(
-            f"--host-alias '{alias}' is not valid; use letters, digits, '.', '_' or '-' (no whitespace)."
+            f"--host-alias '{host_alias}' is not valid; use letters, digits, '.', '_' or '-' (no whitespace)."
         )
 
     client: ApiClient = ctx.obj["client"]
@@ -1267,7 +1563,9 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
     ensure_authenticated(config)
     org_id = get_org_id(config, org_id, client=client)
 
-    ssh_ep = _resolve_ssh_endpoint(client, org_id, vm_id)
+    record = _get_vm(client, org_id, vm_id)
+    ssh_ep = _vm_ssh_endpoint(record, vm_id)
+    alias = host_alias or f"avr-{record['customer_vm_id']}"
 
     host_key = ssh_ep.get("host_key")
     known_hosts_path: Path | None = None
@@ -1300,16 +1598,16 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
 
 
 @vm.command("update")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--name", "display_name", default=None, help="New display name.")
-@click.option("--ttl", default=None, help="Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.")
+@click.option("--ttl", default=None, help="Extend the TTL window from now (e.g. 8h, 7d). Max 7d.")
 @click.option(
     "--ssh-key",
     "ssh_keys",
     multiple=True,
     help="Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, "
-    "otherwise at next start.",
+    "otherwise at next resume.",
 )
 @click.option(
     "--rotate-password",
@@ -1324,12 +1622,39 @@ def vm_ssh_config(ctx, vm_id, org_id, identity_file, host_alias, known_hosts_fil
     help="Replace the per-VM egress rules with this JSON array (or @path to a file).",
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
+@click.option(
+    "--https-port",
+    "https_ports",
+    multiple=True,
+    type=click.IntRange(1, 65535),
+    help="Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.",
+)
+@click.option(
+    "--clear-https-ports",
+    is_flag=True,
+    help="Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.",
+)
 @click.pass_context
-def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, egress_rules_raw, as_json):
+def vm_update(
+    ctx,
+    vm_id,
+    org_id,
+    display_name,
+    ttl,
+    ssh_keys,
+    rotate_password,
+    egress_rules_raw,
+    as_json,
+    https_ports,
+    clear_https_ports,
+):
     """Update a VM's name, TTL, or SSH keys, or rotate its password.
 
-    Power state is controlled separately with avr vm start / avr vm stop.
+    Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
     """
+    if clear_https_ports and https_ports:
+        raise click.UsageError("--clear-https-ports cannot be combined with --https-port.")
+    ports = _validate_https_ports(https_ports)
     ttl_seconds = _parse_ttl(ttl) if ttl is not None else None
     keys = _resolve_ssh_keys(ssh_keys) if ssh_keys else None
     egress_rules = _load_egress_rules(egress_rules_raw)
@@ -1344,9 +1669,12 @@ def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, 
     if egress_rules is not None:
         body["egress_rules"] = egress_rules
 
+    if https_ports or clear_https_ports:
+        body["https_ports"] = ports
     if not rotate_password and len(body) == 1:
         raise click.UsageError(
-            "Nothing to update. Pass --name, --ttl, --ssh-key, --rotate-password, or --egress-rules."
+            "Nothing to update. Pass --name, --ttl, --ssh-key, --rotate-password, "
+            "--egress-rules, --https-port, or --clear-https-ports."
         )
 
     client: ApiClient = ctx.obj["client"]
@@ -1355,7 +1683,7 @@ def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, 
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_patch(f"/orgs/{org_id}/vms/{vm_id}", json=body)
+        response = client.public_patch(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}", json=body)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "update VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -1367,51 +1695,28 @@ def vm_update(ctx, vm_id, org_id, display_name, ttl, ssh_keys, rotate_password, 
     if data.get("vm"):
         _print_vm(data["vm"], password=data.get("password"))
     _print_password(data.get("password"))
-
-
-@vm.command("start")
-@click.argument("vm_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option(
-    "--wait",
-    is_flag=True,
-    default=False,
-    help="Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.",
-)
-@click.option(
-    "--wait-timeout",
-    default=_WAIT_DEFAULT_TIMEOUT,
-    show_default=True,
-    type=int,
-    help="Seconds to wait when --wait is set.",
-)
-@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
-@click.pass_context
-def vm_start(ctx, vm_id, org_id, wait, wait_timeout, as_json):
-    """Start a stopped VM. Boots a fresh disk and returns a one-time password."""
-    _set_desired_state(ctx, vm_id, org_id, "RUNNING", as_json, action="start VM", wait=wait, wait_timeout=wait_timeout)
-
-
-@vm.command("stop")
-@click.argument("vm_id")
-@click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
-@click.option("--wait", is_flag=True, default=False, help="Wait until the VM reaches STOPPED before returning.")
-@click.option(
-    "--wait-timeout",
-    default=_WAIT_DEFAULT_TIMEOUT,
-    show_default=True,
-    type=int,
-    help="Seconds to wait when --wait is set.",
-)
-@click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
-@click.pass_context
-def vm_stop(ctx, vm_id, org_id, wait, wait_timeout, as_json):
-    """Stop a running VM. The ephemeral disk is discarded."""
-    _set_desired_state(ctx, vm_id, org_id, "STOPPED", as_json, action="stop VM", wait=wait, wait_timeout=wait_timeout)
+    if data.get("egress_rules_applied") is not None:
+        click.echo(
+            "Egress rules: "
+            + (
+                "applied to the running guest."
+                if data["egress_rules_applied"]
+                else "live enforcement unconfirmed; stored rules apply on next resume."
+            )
+        )
+    if data.get("https_ports_applied") is not None:
+        click.echo(
+            "HTTPS ports: "
+            + (
+                "served by the running VM now."
+                if data["https_ports_applied"]
+                else "stored; they apply on next start or resume."
+            )
+        )
 
 
 @vm.command("pause")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--memory",
@@ -1430,7 +1735,7 @@ def vm_stop(ctx, vm_id, org_id, wait, wait_timeout, as_json):
 @click.option("--json", "as_json", is_flag=True, help="Emit the raw API response as JSON.")
 @click.pass_context
 def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
-    """Pause a RUNNING Linux VM while preserving its disk.
+    """Pause a RUNNING Linux x86_64 VM while preserving its disk.
 
     By default the snapshot is disk-only: the filesystem survives, but resume
     performs a fresh boot and running processes do not. Pass --memory to also
@@ -1453,7 +1758,7 @@ def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
 
 
 @vm.command("resume")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--discard-memory",
@@ -1474,7 +1779,9 @@ def vm_pause(ctx, vm_id, org_id, memory, wait, wait_timeout, as_json):
 def vm_resume(ctx, vm_id, org_id, discard_memory, wait, wait_timeout, as_json):
     """Resume a PAUSED VM from its preserved snapshot.
 
-    The existing password remains valid. If a memory restore cannot complete,
+    The existing password remains unless resume withdraws credentials supplied
+    to a scoped token. Use update --rotate-password to obtain a fresh one.
+    If a memory restore cannot complete,
     retry with --discard-memory to boot the preserved disk without restoring
     running processes.
     """
@@ -1516,7 +1823,7 @@ def _post_vm_transition(
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_post(f"/orgs/{org_id}/vms/{vm_id}/{endpoint}", json=body)
+        response = client.public_post(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}/{endpoint}", json=body)
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
 
@@ -1547,68 +1854,6 @@ def _post_vm_transition(
 
     if data:
         _print_vm(data)
-
-
-def _set_desired_state(
-    ctx,
-    vm_id: str,
-    org_id: str | None,
-    desired_state: str,
-    as_json: bool,
-    *,
-    action: str,
-    wait: bool = False,
-    wait_timeout: int = _WAIT_DEFAULT_TIMEOUT,
-):
-    """Shared body for ``start`` / ``stop`` (both PATCH ``desired_state``)."""
-    client: ApiClient = ctx.obj["client"]
-    config: CliConfig = ctx.obj["config"]
-    ensure_authenticated(config)
-    org_id = get_org_id(config, org_id, client=client)
-
-    try:
-        response = client.public_patch(f"/orgs/{org_id}/vms/{vm_id}", json={"desired_state": desired_state})
-    except httpx.HTTPStatusError as exc:
-        handle_http_error(exc, action, hint="Run `avr vm list` to see your VMs.")
-
-    data = (response or {}).get("data") or {}
-    password = data.get("password")
-
-    if wait:
-        running = desired_state == "RUNNING"
-        is_ready = _endpoints_ready if running else _state_is(desired_state)
-        fail_target = "connectable" if running else desired_state
-        # start returns a fresh one-time password; surface it (human mode) before
-        # waiting so a timeout or Ctrl-C cannot lose it.
-        if not as_json:
-            _print_password(password)
-            click.echo()
-        click.echo(f"Waiting up to {wait_timeout}s for {vm_id} to become {desired_state}...", err=True)
-        vm_state, disposition = _wait_for_vm(client, org_id, vm_id, wait_timeout, is_ready)
-        if as_json:
-            _emit_wait_json(ctx, vm_state or data.get("vm"), password, disposition)
-            return
-        click.echo()
-        if running:
-            # Reprint with real endpoints + the fresh password baked into the connect line.
-            shown = vm_state or data.get("vm")
-            if shown:
-                _print_vm(shown, password=password)
-        elif disposition == "ready":
-            # Stopping has no connect payload; a concise confirmation is cleaner,
-            # but only once actually stopped (never on a timed-out wait).
-            final = (vm_state or {}).get("state") or desired_state
-            click.echo(f"VM {vm_id} is now {final}.")
-        _wait_exit(ctx, vm_state, disposition, fail_target, wait_timeout, vm_id)
-        return
-
-    if as_json:
-        click.echo(json.dumps(response, indent=2, default=str))
-        return
-
-    if data.get("vm"):
-        _print_vm(data["vm"], password=password)
-    _print_password(password)
 
 
 @vm.command("usage")
@@ -1685,7 +1930,7 @@ def vm_usage(ctx, org_id, period_start, period_end, as_json):
 
 
 @vm.command("delete")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option("--yes", "-y", is_flag=True, help="Skip the confirmation prompt.")
 @click.option("--wait", is_flag=True, default=False, help="Wait until the VM is fully deleted before returning.")
@@ -1710,7 +1955,7 @@ def vm_delete(ctx, vm_id, org_id, yes, wait, wait_timeout, as_json):
         click.confirm(f"Delete VM {vm_id}? This is permanent.", abort=True)
 
     try:
-        response = client.public_delete(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_delete(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "delete VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -1991,7 +2236,7 @@ def _ssh_config_block(
 def _upsert_ssh_config_block(config_path: Path, alias: str, block: str) -> str:
     """Write ``block`` into an ssh_config file between avrea markers keyed by
     ``alias``, replacing a prior block for the same alias in place rather than
-    duplicating — an ephemeral VM's endpoint changes on restart, so re-running
+    duplicating — a VM's endpoint changes on resume, so re-running
     must update, not append again. Everything outside the markers is preserved;
     the file is created 0600. Returns ``"updated"`` or ``"added"``."""
     begin = f"# >>> avrea vm {alias} >>>"
@@ -2057,22 +2302,27 @@ def _catchall_pinning_overrides(config_path: Path) -> list[str]:
     return found
 
 
-def _resolve_ssh_endpoint(client: ApiClient, org_id: str, vm_id: str) -> dict[str, Any]:
-    """Fetch the VM and return its SSH endpoint, raising if it has none yet
-    (endpoints appear once the VM is RUNNING)."""
+def _get_vm(client: ApiClient, org_id: str, vm_id: str) -> dict[str, Any]:
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
+    return response["data"]
 
-    data = response["data"]
-    ssh_ep = (data.get("endpoints") or {}).get("ssh")
+
+def _vm_ssh_endpoint(record: dict[str, Any], vm_id: str) -> dict[str, Any]:
+    ssh_ep = (record.get("endpoints") or {}).get("ssh")
     if not ssh_ep:
         raise click.ClickException(
-            f"VM {vm_id} has no SSH endpoint yet (state: {data.get('state')}). "
+            f"VM {vm_id} has no SSH endpoint yet (state: {record.get('state')}). "
             "Endpoints appear once the VM is RUNNING; check `avr vm show`."
         )
     return ssh_ep
+
+
+def _resolve_ssh_endpoint(client: ApiClient, org_id: str, vm_id: str) -> dict[str, Any]:
+    """Resolve an ID or name to the live SSH endpoint."""
+    return _vm_ssh_endpoint(_get_vm(client, org_id, vm_id), vm_id)
 
 
 def _ssh_connect_argv(
@@ -2325,7 +2575,7 @@ def _vm_remote_desktop(
     org_id = get_org_id(config, org_id, client=client)
 
     try:
-        response = client.public_get(f"/orgs/{org_id}/vms/{vm_id}")
+        response = client.public_get(f"/orgs/{org_id}/vms/{quote(vm_id, safe='')}")
     except httpx.HTTPStatusError as exc:
         handle_http_error(exc, "fetch VM", hint="Run `avr vm list` to see your VMs.")
 
@@ -2376,7 +2626,7 @@ def _vm_remote_desktop(
         click.echo("Connect with:", err=True)
         for line in connect_lines:
             click.echo(f"  {line}", err=True)
-        click.echo("(use the one-time password saved at create / last start)", err=True)
+        click.echo("(use the one-time password saved at create / last rotation)", err=True)
         if launch:
             if want_protocol == "vnc":
                 argv, detaches = _vnc_launch_argv(ip_port, sys.platform)
@@ -2391,7 +2641,7 @@ def _vm_remote_desktop(
 
 
 @vm.command("rdp")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--local-port",
@@ -2436,7 +2686,7 @@ def vm_rdp(ctx, vm_id, org_id, local_port, identity_file, launch, print_only):
 
 
 @vm.command("vnc")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--local-port",
@@ -2481,7 +2731,7 @@ def vm_vnc(ctx, vm_id, org_id, local_port, identity_file, launch, print_only):
 
 
 @vm.command("port-forward")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "--port",
@@ -2555,8 +2805,7 @@ def vm_port_forward(ctx, vm_id, org_id, port_specs, local_port, identity_file, p
 # non-secret and is passed as a single shell-quoted argument so OpenSSH's
 # space-join to the remote login shell survives one extra parse intact.
 #
-# Disks are ephemeral (a fresh boot each start), so bootstrap is per-boot; run
-# it again after every `avr vm start`.
+# Bootstrap writes to the guest disk, which survives pause and resume.
 
 # claude / codex: the npm package to install, and the local credential env vars
 # --forward-agent-creds carries into the VM so the agent is usable
@@ -2981,7 +3230,7 @@ def _run_bootstrap_steps(ssh_ep: dict[str, Any], steps: list[_BootstrapStep], id
 
 
 @vm.command("bootstrap")
-@click.argument("vm_id")
+@click.argument("vm_id", metavar="VM_ID_OR_NAME")
 @click.option("--org", "org_id", help="Organization ID. Uses default org if not specified (see: avr config set org).")
 @click.option(
     "-i", "--identity", "identity_file", type=click.Path(), default=None, help="Private key file to pass to ssh as -i."
@@ -3046,8 +3295,8 @@ def vm_bootstrap(
     the first failure. Secrets (GitHub token, forwarded env values, agent
     credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
     is a year-long, subscription-wide bearer, so it is only carried under the
-    explicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run
-    bootstrap after every `avr vm start`. Example:
+    explicit --forward-agent-creds opt-in. Bootstrap changes survive pause
+    and resume on the preserved disk. Example:
 
     \b
         avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\

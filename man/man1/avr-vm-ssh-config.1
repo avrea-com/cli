@@ -3,7 +3,7 @@
 avr-vm-ssh-config \- Print (or --append) an ssh_config Host block for a RUNNING VM.
 .SH SYNOPSIS
 .B avr vm ssh-config
-[OPTIONS] VM_ID
+[OPTIONS] VM_ID_OR_NAME
 .SH DESCRIPTION
 Print (or --append) an ssh_config Host block for a RUNNING VM.
 .PP
@@ -11,7 +11,7 @@ Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH, host 
 .PP
 avr vm ssh-config cvm-abc123 >> ~/.ssh/config
 .PP
-or let --append manage the block for you (idempotent — re-run after a restart to refresh the endpoint in place):
+or let --append manage the block for you (idempotent — re-run after a resume to refresh the endpoint in place):
 .PP
 avr vm ssh-config cvm-abc123 --append
 .PP
@@ -43,17 +43,19 @@ SSH config file for --append (default: ~/.ssh/config).
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)
