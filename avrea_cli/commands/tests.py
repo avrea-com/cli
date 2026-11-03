@@ -36,12 +36,15 @@ _SNAPSHOT_FIELDS = (
     "commit_sha",
     "observed_at",
     "total_count",
+    "counts",
     "filters",
 )
 _FIELDS = make_schema("organization_id", "repository_id", *_SNAPSHOT_FIELDS, "data", "pagination")
+_SUMMARY_FIELDS = make_schema("organization_id", "repository_id", *[f for f in _SNAPSHOT_FIELDS if f != "filters"])
 _MAX_PAGES = 20
 _JOB_ID = re.compile(r"(job|awj)-[0-9a-f]{32}")
 _INVALID_NEXT_CURSOR = "The API returned an invalid next cursor."
+_OUTCOMES = ("passed", "failed", "skipped", "errored")
 
 
 class JobTestsGroup(GhGroup):
@@ -144,7 +147,7 @@ def _job_repository(client: ApiClient, organization: str, job: str) -> str:
 
 
 def _results(
-    client: ApiClient, path: str, job: str, limit: int, cursor: str | None, filters: dict[str, str]
+    client: ApiClient, path: str, job: str, limit: int, cursor: str | None, filters: dict[str, str | list[str]]
 ) -> dict[str, Any]:
     """Follow short pages within a row and request budget, retaining the resume cursor."""
     rows: list[dict[str, Any]] = []
@@ -152,7 +155,12 @@ def _results(
     seen = {cursor} if cursor else set()
     for _ in range(_MAX_PAGES):
         page_limit = limit - len(rows)
-        params: dict[str, Any] = {"limit": page_limit, **{key: f"eq.{value}" for key, value in filters.items()}}
+        params: dict[str, Any] = {"limit": page_limit}
+        for key, value in filters.items():
+            if isinstance(value, list):
+                params["outcome"] = f"in.({','.join(value)})"
+            else:
+                params[key] = f"eq.{value}"
         if cursor is not None:
             params["cursor"] = cursor
         page = _get(
@@ -181,6 +189,7 @@ def _results(
             raise click.ClickException("The API returned invalid job test results.")
         if len(data) > page_limit or not all(isinstance(row, dict) for row in data):
             raise click.ClickException("The API returned an invalid test result page.")
+        _validate_counts(page)
         if snapshot is None:
             snapshot = page
         elif any(page.get(key) != snapshot.get(key) for key in _SNAPSHOT_FIELDS):
@@ -208,7 +217,21 @@ def _text(value: Any) -> str:
     return "unknown" if value is None else escape_control_characters(str(value))
 
 
-def _show(response: dict[str, Any]) -> None:
+def _validate_counts(response: dict[str, Any]) -> None:
+    counts = response.get("counts")
+    if counts is None:
+        return
+    if (
+        not isinstance(counts, dict)
+        or set(counts) != set(_OUTCOMES)
+        or any(type(value) is not int or value < 0 for value in counts.values())
+        or response.get("status") != "available"
+        or sum(counts.values()) != response.get("total_count")
+    ):
+        raise click.ClickException("The API returned invalid test outcome counts.")
+
+
+def _show(response: dict[str, Any], *, summary: bool = False) -> None:
     click.echo(f"Job: {_text(response['job_id'])}")
     click.echo(f"Organization: {_text(response['organization_id'])}  Repository: {_text(response['repository_id'])}")
     if response.get("execution_id") is not None:
@@ -217,6 +240,15 @@ def _show(response: dict[str, Any]) -> None:
     click.echo(f"Reporting: {_text(response.get('reporting_state'))}  Results: {_text(response.get('status'))}")
     if response.get("reason"):
         click.echo(f"Reason: {_text(response['reason'])}")
+    counts = response.get("counts")
+    if counts is None:
+        click.echo("Counts: unknown. Older, missing or expired reports may not have a summary.")
+    else:
+        click.echo("Recorded outcomes: " + "; ".join(f"{key}: {_text(counts[key])}" for key in _OUTCOMES))
+    if response.get("reporting_state") == "complete":
+        click.echo("Complete describes the collected reports, not whether every expected test ran.")
+    if summary:
+        return
     filtered = any(value is not None for value in (response.get("filters") or {}).values())
     label = "matching shown" if filtered else "shown"
     click.echo(
@@ -248,8 +280,6 @@ def _show(response: dict[str, Any]) -> None:
             click.echo("No more results.")
     else:
         click.echo("No test results returned. Missing or expired reports do not mean that zero tests ran.")
-    if response.get("reporting_state") == "complete":
-        click.echo("Complete describes the collected reports, not whether every expected test ran.")
 
 
 @click.group(cls=JobTestsGroup)
@@ -283,7 +313,14 @@ def tests(ctx: click.Context) -> None:
 @click.option("--suite", help="Exact suite name; combined with other filters using AND.")
 @click.option("--class", "class_name", help="Exact nonempty class name.")
 @click.option(
-    "--status", "outcome", type=click.Choice(["passed", "failed", "skipped", "errored"]), help="Recorded test outcome."
+    "--status",
+    "outcomes",
+    type=click.Choice(_OUTCOMES),
+    multiple=True,
+    help="Recorded test outcome. Repeat to match any selected status.",
+)
+@click.option(
+    "--summary", is_flag=True, help="Show report counts and collection state without downloading test results."
 )
 @json_options
 @click.pass_context
@@ -298,7 +335,8 @@ def tests_list(
     test_name: str | None,
     suite: str | None,
     class_name: str | None,
-    outcome: str | None,
+    outcomes: tuple[str, ...],
+    summary: bool,
     json_fields: str | None,
     jq_expr: str | None,
 ) -> None:
@@ -315,18 +353,33 @@ def tests_list(
 
     Use --json '*' for the complete response or --json FIELDS to select
     fields. Continue with --cursor when pagination.next_cursor is present.
-    Filters match literally and are combined with AND. Every matching
+    Name filters match literally and combine with AND. Repeated --status
+    values match any selected outcome, combined with name filters using AND. Every matching
     occurrence is retained, including duplicate names. A continuation means
     more of the report remains to be searched, not necessarily more matches.
     API refusal or a changed report fails the command without partial output.
+
+    Counts describe all recorded occurrences before filtering, including repeats.
+    Older reports may have unknown counts. --summary cannot be combined with
+    test filters, --cursor or --limit; it does not list individual results.
     """
-    if handle_json_meta(json_fields, jq_expr, _FIELDS):
+    fields = _SUMMARY_FIELDS if summary else _FIELDS
+    if handle_json_meta(json_fields, jq_expr, fields):
         return
-    filters = {
+    filters: dict[str, str | list[str]] = {
         key: value
-        for key, value in {"name": test_name, "suite": suite, "class_name": class_name, "outcome": outcome}.items()
+        for key, value in {"name": test_name, "suite": suite, "class_name": class_name}.items()
         if value is not None
     }
+    selected_outcomes = sorted(set(outcomes))
+    if len(selected_outcomes) == 1:
+        filters["outcome"] = selected_outcomes[0]
+    elif selected_outcomes:
+        filters["outcomes"] = selected_outcomes
+    if summary and (
+        filters or cursor is not None or ctx.get_parameter_source("limit") == click.core.ParameterSource.COMMANDLINE
+    ):
+        raise click.UsageError("--summary cannot be combined with test filters, --cursor or --limit")
     for option, value, maximum in (("--test", test_name, 4096), ("--suite", suite, 256), ("--class", class_name, 512)):
         if value is not None and not 1 <= len(value) <= maximum:
             raise click.BadParameter(f"use between 1 and {maximum} characters", param_hint=option)
@@ -338,14 +391,26 @@ def tests_list(
     repository = (
         resolve_repo(client, config, organization, repo_id) if repo_id else _job_repository(client, organization, job)
     )
-    response = _results(
-        client, f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests", job, limit, cursor, filters
-    )
+    path = f"/orgs/{organization}/repos/{repository}/jobs/{job}/tests"
+    if summary:
+        response = _get(
+            client,
+            path + "/summary",
+            "read the job test summary",
+            "Check the job, repository and organization, and that Repository Tests and summaries are available.",
+        )
+        if response.get("job_id") != job or response.get("status") not in ("available", "expired", "not_recorded"):
+            raise click.ClickException("The API returned an invalid job test summary.")
+        _validate_counts(response)
+    else:
+        response = _results(client, path, job, limit, cursor, filters)
     response.update(organization_id=organization, repository_id=repository)
     if json_fields is not None:
-        emit_json_record(response, split_fields(json_fields, _FIELDS), _FIELDS, jq_expr)
+        emit_json_record(response, split_fields(json_fields, fields), fields, jq_expr)
     else:
-        _show(response)
+        _show(response, summary=summary)
+    if summary:
+        return
     next_cursor = response["pagination"]["next_cursor"]
     if next_cursor:
         message = "Search incomplete; more of the report remains." if filters else "More results available."

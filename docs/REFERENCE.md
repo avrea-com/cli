@@ -1396,10 +1396,15 @@ execution is never substituted. Complete describes collected reports.
 
 Use --json '*' for the complete response or --json FIELDS to select
 fields. Continue with --cursor when pagination.next_cursor is present.
-Filters match literally and are combined with AND. Every matching
+Name filters match literally and combine with AND. Repeated --status
+values match any selected outcome, combined with name filters using AND. Every matching
 occurrence is retained, including duplicate names. A continuation means
 more of the report remains to be searched, not necessarily more matches.
 API refusal or a changed report fails the command without partial output.
+
+Counts describe all recorded occurrences before filtering, including repeats.
+Older reports may have unknown counts. --summary cannot be combined with
+test filters, --cursor or --limit; it does not list individual results.
 
 **Arguments**
 
@@ -1415,7 +1420,8 @@ API refusal or a changed report fails the command without partial output.
 - `--test <TEXT>` — Exact test name (case-sensitive; no wildcards).
 - `--suite <TEXT>` — Exact suite name; combined with other filters using AND.
 - `--class <TEXT>` — Exact nonempty class name.
-- `--status <CHOICE>` — Recorded test outcome. _(choices: `passed`, `failed`, `skipped`, `errored`)_
+- `--status <CHOICE>` — Recorded test outcome. Repeat to match any selected status. _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
+- `--summary` — Show report counts and collection state without downloading test results.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
