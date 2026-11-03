@@ -3,11 +3,11 @@
 avr-vm-resume \- Resume a PAUSED VM from its preserved snapshot.
 .SH SYNOPSIS
 .B avr vm resume
-[OPTIONS] VM_ID
+[OPTIONS] VM_ID_OR_NAME
 .SH DESCRIPTION
 Resume a PAUSED VM from its preserved snapshot.
 .PP
-The existing password remains valid. If a memory restore cannot complete, retry with --discard-memory to boot the preserved disk without restoring running processes.
+The existing password remains unless resume withdraws credentials supplied to a scoped token. Use update --rotate-password to obtain a fresh one. If a memory restore cannot complete, retry with --discard-memory to boot the preserved disk without restoring running processes.
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR
@@ -32,17 +32,19 @@ Emit the raw API response as JSON.
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

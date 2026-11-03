@@ -1,11 +1,11 @@
 .TH AVR\-VM\-PAUSE 1 "" "avr 0.5.0" "Avrea CLI"
 .SH NAME
-avr-vm-pause \- Pause a RUNNING Linux VM while preserving its disk.
+avr-vm-pause \- Pause a RUNNING Linux x86_64 VM while preserving its disk.
 .SH SYNOPSIS
 .B avr vm pause
-[OPTIONS] VM_ID
+[OPTIONS] VM_ID_OR_NAME
 .SH DESCRIPTION
-Pause a RUNNING Linux VM while preserving its disk.
+Pause a RUNNING Linux x86_64 VM while preserving its disk.
 .PP
 By default the snapshot is disk-only: the filesystem survives, but resume performs a fresh boot and running processes do not. Pass --memory to also preserve guest memory and continue processes from where they stopped.
 .SH ARGUMENTS
@@ -32,17 +32,19 @@ Emit the raw API response as JSON.
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

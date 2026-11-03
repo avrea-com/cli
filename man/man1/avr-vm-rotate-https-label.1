@@ -1,0 +1,41 @@
+.TH AVR\-VM\-ROTATE\-HTTPS\-LABEL 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-vm-rotate-https-label \- Replace public HTTPS URLs to invalidate leaked URLs.
+.SH SYNOPSIS
+.B avr vm rotate-https-label
+[OPTIONS] VM_ID_OR_NAME
+.SH DESCRIPTION
+Replace public HTTPS URLs to invalidate leaked URLs.
+.PP
+Routes change once ingress applies the rotation. Guest environment variables and /vm/info retain the old URLs until the next resume.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug.
+.TP
+\fB\-\-json\fR
+Emit the updated VM as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
+.BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
+.BR avr-vm-pause (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-resume (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)

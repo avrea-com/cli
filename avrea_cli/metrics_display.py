@@ -12,9 +12,14 @@ memory-with-known-RAM) get a green/yellow/red color tier so high-pressure runs
 jump out at a glance.
 """
 
+from collections.abc import Iterable
+from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import Any
 from typing import Final
 import click
+import json
+import sys
 
 GAUGE_WIDTH: Final[int] = 20
 BAR_FILL: Final[str] = "█"  # █
@@ -58,6 +63,74 @@ SOURCE_KIND: Final[dict[str, tuple[str, str]]] = {
 }
 
 ALL_SOURCES: Final[tuple[str, ...]] = tuple(SOURCE_KIND)
+DEFAULT_SOURCES: Final[tuple[str, ...]] = ("cpu", "memory")
+
+
+def check_watch_window(watch: bool, start: int | None, end: int | None) -> None:
+    """A stream follows the current run, so an explicit window cannot apply."""
+    if watch and (start is not None or end is not None):
+        raise click.UsageError("--start and --end require single-shot mode; drop --watch.")
+
+
+def select_sources(sources: Iterable[str]) -> tuple[str, ...]:
+    """Requested sources in first-seen order, or the defaults when none were given."""
+    return tuple(dict.fromkeys(sources)) or DEFAULT_SOURCES
+
+
+def filter_metrics(metrics: dict[str, Any], selected: Iterable[str]) -> dict[str, Any]:
+    return {source: metrics[source] for source in selected if source in metrics}
+
+
+def metrics_json(metrics: dict[str, Any], *, pretty: bool = False) -> str:
+    """Serialize a per-source map, the one JSON shape of every metrics command."""
+    return json.dumps(metrics, default=str, indent=2 if pretty else None)
+
+
+def clear_live_frame() -> None:
+    if sys.stdout.isatty():
+        click.clear()
+
+
+@dataclass(frozen=True)
+class WatchUpdate:
+    """The state of a metrics watch after one stream event."""
+
+    metrics: dict[str, Any]
+    saw_bundle: bool
+    running: bool
+    changed: bool
+    complete: bool
+
+
+def watch_updates(
+    frames: Iterable[dict[str, Any] | None], selected: Iterable[str], *, as_json: bool
+) -> Iterator[WatchUpdate]:
+    """Reduce stream frames to replaceable snapshots of the selected sources.
+
+    JSON output is written here as one snapshot per line and yields no updates,
+    so callers only handle human rendering. Idle ticks yield an unchanged update.
+    """
+    metrics: dict[str, Any] = {}
+    saw_bundle = False
+    running = True
+    for frame in frames:
+        frame = frame or {}
+        kind = frame.get("type")
+        if kind == "window":
+            running = frame.get("running", True)
+        elif kind == "bundle":
+            metrics = filter_metrics(frame.get("metrics") or {}, selected)
+            saw_bundle = True
+            if as_json:
+                click.echo(metrics_json(metrics))
+        elif kind == "complete":
+            if not as_json:
+                yield WatchUpdate(metrics, saw_bundle, running, changed=False, complete=True)
+            elif not saw_bundle:
+                click.echo(metrics_json({}))
+            return
+        if not as_json:
+            yield WatchUpdate(metrics, saw_bundle, running, changed=kind == "bundle", complete=False)
 
 
 def aggregate_values(series: list[dict[str, Any]]) -> list[tuple[int, float]]:

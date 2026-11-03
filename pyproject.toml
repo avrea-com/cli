@@ -16,6 +16,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Libraries",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
 ]
 dependencies = [
   "anyio>=4.14.2",  # security floor for HTTPX's transitive dependency
@@ -27,6 +28,7 @@ dependencies = [
   "pydantic>=2.12.4",
   "typing-extensions>=4.15.0",
   "idna>=3.15",
+  "websockets>=15",
 ]
 
 [project.optional-dependencies]

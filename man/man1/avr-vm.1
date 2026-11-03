@@ -12,17 +12,26 @@ Manage long-running VMs (SSH/RDP/VNC).
 bootstrap
 Set up a RUNNING VM with your dev essentials over SSH.
 .TP
+capabilities
+List available operating systems, architectures, sizes, and quotas.
+.TP
 create
 Create a long-running VM.
 .TP
 delete
 Delete a VM.
 .TP
+fork
+Boot a copy of a PAUSED VM's disk; the source remains paused.
+.TP
 list
 List the organization's VMs, newest first (deleted ones excluded).
 .TP
+metrics
+Show CPU/memory/IO metrics for a VM's current or last run.
+.TP
 pause
-Pause a RUNNING Linux VM while preserving its disk.
+Pause a RUNNING Linux x86_64 VM while preserving its disk.
 .TP
 port-forward
 Forward one or more local ports to TCP ports on the VM over SSH.
@@ -33,6 +42,9 @@ Open an RDP desktop on a Windows or Linux VM over an SSH tunnel.
 resume
 Resume a PAUSED VM from its preserved snapshot.
 .TP
+rotate-https-label
+Replace public HTTPS URLs to invalidate leaked URLs.
+.TP
 show
 Show a VM's details, including connection endpoints and egress rules.
 .TP
@@ -41,12 +53,6 @@ Open an SSH session to a RUNNING VM, or run a command on it.
 .TP
 ssh-config
 Print (or --append) an ssh_config Host block for a RUNNING VM.
-.TP
-start
-Start a stopped VM.
-.TP
-stop
-Stop a running VM.
 .TP
 update
 Update a VM's name, TTL, or SSH keys, or rotate its password.
@@ -79,18 +85,20 @@ Open a VNC desktop on a macOS VM (Screen Sharing) over an SSH tunnel.
 .BR avr-org (1),
 .BR avr-health (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
 .BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

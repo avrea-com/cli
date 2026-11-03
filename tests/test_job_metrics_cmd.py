@@ -163,140 +163,137 @@ class TestJobMetricsStatus:
         # No "finished N ago" suffix while the job is still running.
         assert "finished" not in result.output
 
-    def test_live_falls_back_to_static_for_completed_job(self, runner, monkeypatch):
-        """`--live` on a finished job has nothing to watch — render the static
-        post-mortem and exit instead of looping forever."""
-        routes = {
-            "/orgs/org-default/jobs/job-1/metrics/cpu": CPU_RESPONSE,
-            "/orgs/org-default/jobs/job-1/metrics/memory": MEMORY_RESPONSE,
-            "/orgs/org-default/jobs/job-1": _job_response(
-                state="completed", conclusion="success", completed_at="2026-04-28T10:00:00Z"
-            ),
-        }
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _make_get(routes))
-        # If the live loop ever fires, time.sleep would be called — fail loudly.
+    def test_watch_completed_job_uses_stream(self, runner, monkeypatch):
         monkeypatch.setattr(
-            "avrea_cli.commands.job.time.sleep",
-            lambda _: pytest.fail("--live should not enter the polling loop on a finished job"),
+            "avrea_cli.api_client.ApiClient.public_get",
+            _make_get(
+                {
+                    "/orgs/org-default/jobs/job-1": _job_response(state="completed", conclusion="success"),
+                }
+            ),
+        )
+        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", lambda *a, **kw: ([], None))
+        monkeypatch.setattr(
+            "avrea_cli.commands.job.metrics_frames",
+            lambda *a: iter(
+                [
+                    {"signal": "metrics", "type": "bundle", "metrics": {"cpu": CPU_RESPONSE}},
+                    {"signal": "metrics", "type": "complete"},
+                ]
+            ),
         )
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
         assert result.exit_code == 0, result.output
-        assert "already finished" in result.output
-        # Static gauge output (avg/peak/last) should be present.
-        assert "avg " in result.output
-        assert "peak " in result.output
+        assert "60%" in result.output
 
 
-class TestJobMetricsLiveResilience:
-    """``--live`` polls on a tight loop; transient httpx errors must not kill
-    the watcher. We exit the loop after one iteration via KeyboardInterrupt
-    (exit 130) so we can assert the rendered frame's footer carries the error
-    label."""
+class TestJobMetricsStream:
+    def setup_stream(self, monkeypatch, frames):
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            _make_get(
+                {
+                    "/orgs/org-default/jobs/job-1": _job_response(state="in_progress"),
+                }
+            ),
+        )
+        monkeypatch.setattr("avrea_cli.commands.job.metrics_frames", lambda *a: iter(frames))
+        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", lambda *a, **kw: ([], None))
 
-    def _running_job(self):
-        return _job_response(state="in_progress")
+    def test_json_replaces_snapshots_and_filters_sources(self, runner, monkeypatch):
+        self.setup_stream(
+            monkeypatch,
+            [
+                {"type": "bundle", "metrics": {"cpu": CPU_RESPONSE, "memory": MEMORY_RESPONSE}},
+                {"type": "bundle", "metrics": {"cpu": {"series": []}}},
+                {"type": "complete"},
+            ],
+        )
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch", "--json", "--source", "cpu"])
+        assert result.exit_code == 0, result.output
+        assert [json.loads(line) for line in result.stdout.splitlines()] == [
+            {"cpu": json.loads(json.dumps(CPU_RESPONSE))},
+            {"cpu": {"series": []}},
+        ]
 
-    def test_log_fetch_failure_surfaces_in_footer(self, runner, monkeypatch):
-        routes = {
-            "/orgs/org-default/jobs/job-1/metrics/cpu": CPU_RESPONSE,
-            "/orgs/org-default/jobs/job-1/metrics/memory": MEMORY_RESPONSE,
-            "/orgs/org-default/jobs/job-1": self._running_job(),
-        }
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", _make_get(routes))
-        # Make the log search blow up.
+    def test_log_failure_surfaces_with_streamed_metrics(self, runner, monkeypatch):
+        self.setup_stream(monkeypatch, [{"type": "bundle", "metrics": {"cpu": CPU_RESPONSE}}, {"type": "complete"}])
         monkeypatch.setattr(
             "avrea_cli.commands.job.fetch_logs_after",
             lambda *a, **kw: (_ for _ in ()).throw(httpx.TimeoutException("slow")),
         )
-        # Exit the loop after the first frame draws.
-        monkeypatch.setattr(
-            "avrea_cli.commands.job.time.sleep",
-            lambda _: (_ for _ in ()).throw(KeyboardInterrupt()),
-        )
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
-        assert result.exit_code == 130, result.output
+        assert result.exit_code == 0, result.output
         assert "log fetch failed: TimeoutException" in result.output
+        assert "60%" in result.output
 
-    def test_metrics_fetch_failure_surfaces_in_footer(self, runner, monkeypatch):
-        # The metrics fetch raises but the watcher must keep running and show
-        # the error in the footer instead of dying with a traceback.
-        def fake_get(self, path, params=None, **kw):
-            if path == "/orgs/org-default/jobs/job-1":
-                return _job_response(state="in_progress")
-            if "/metrics/" in path:
-                req = httpx.Request("GET", f"https://api.example{path}")
-                raise httpx.HTTPStatusError("503", request=req, response=httpx.Response(503, request=req))
-            raise AssertionError(f"unexpected GET {path}")
+    def test_completion_shows_logs_written_since_last_tick(self, runner, monkeypatch):
+        self.setup_stream(monkeypatch, [{"type": "bundle", "metrics": {"cpu": CPU_RESPONSE}}, {"type": "complete"}])
+        batches = iter([([], None), ([{"line_number": 1, "message": "final error", "level": "info"}], 1)])
+        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", lambda *a, **kw: next(batches))
+        monkeypatch.setattr("avrea_cli.commands.job.format_log_line", lambda entry: entry["message"])
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
+        assert result.exit_code == 0, result.output
+        assert "final error" in result.output
 
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
-        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", lambda *a, **kw: ([], None))
+    def test_empty_completion_reports_no_metrics(self, runner, monkeypatch):
+        self.setup_stream(monkeypatch, [{"type": "complete"}])
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
+        assert result.exit_code == 0, result.output
+        assert "No metrics available" in result.output
+
+    def test_stream_path_encodes_job_id(self, runner, monkeypatch):
+        paths = []
+        self.setup_stream(monkeypatch, [])
         monkeypatch.setattr(
-            "avrea_cli.commands.job.time.sleep",
-            lambda _: (_ for _ in ()).throw(KeyboardInterrupt()),
+            "avrea_cli.commands.job.metrics_frames",
+            lambda config, path: paths.append(path) or iter([{"type": "complete"}]),
         )
+        monkeypatch.setattr(
+            "avrea_cli.api_client.ApiClient.public_get",
+            lambda *a, **kw: _job_response(state="in_progress"),
+        )
+        result = runner.invoke(cli, ["job", "metrics", "../x?y", "--watch"])
+        assert result.exit_code == 0, result.output
+        assert paths == ["/vms/..%2Fx%3Fy/observability/stream"]
+
+    def test_interrupt_closes_watch(self, runner, monkeypatch):
+        def frames(*args):
+            yield {"type": "bundle", "metrics": {"cpu": CPU_RESPONSE}}
+            raise KeyboardInterrupt
+
+        self.setup_stream(monkeypatch, [])
+        monkeypatch.setattr("avrea_cli.commands.job.metrics_frames", frames)
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch", "--json"])
+        assert result.exit_code == 130
+
+    def test_explicit_window_refuses_watch(self, runner):
+        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch", "--start", "100"])
+        assert result.exit_code == 2
+        assert "single-shot" in result.output
+
+    @pytest.mark.parametrize("detail,pending", [("No execution found for job", True), ("Job not found", False)])
+    def test_logs_wait_for_vm_but_preserve_denial(self, runner, monkeypatch, detail, pending):
+        self.setup_stream(monkeypatch, [{"type": "bundle", "metrics": {"cpu": CPU_RESPONSE}}, {"type": "complete"}])
+        request = httpx.Request("GET", "https://api.example/logs")
+        response = httpx.Response(404, json={"detail": detail}, request=request)
+        calls = []
+
+        def fetch(*args, **kwargs):
+            calls.append(kwargs["after_line"])
+            if len(calls) == 1:
+                raise httpx.HTTPStatusError("404", request=request, response=response)
+            return ([{"message": "VM started", "line_number": 1}], 1)
+
+        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", fetch)
+        monkeypatch.setattr("avrea_cli.commands.job.format_log_line", lambda entry: entry["message"])
         result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
-        assert result.exit_code == 130, result.output
-        # 5xx is treated as soft (transient backend hiccup) — surface in
-        # the footer with the status code, keep the watcher alive.
-        assert "metrics fetch failed: HTTP 503" in result.output
-
-    def test_metrics_fetch_4xx_exits_rather_than_loops_on_stale_frame(self, runner, monkeypatch):
-        """A 401/403/410 on metrics is terminal — auth lost or job deleted.
-        Looping forever rendering the previous metrics frame would lie about
-        the job's current state. Exit non-zero via handle_http_error."""
-
-        def fake_get(self, path, params=None, **kw):
-            if path == "/orgs/org-default/jobs/job-1":
-                return _job_response(state="in_progress")
-            if "/metrics/" in path:
-                req = httpx.Request("GET", f"https://api.example{path}")
-                raise httpx.HTTPStatusError("401", request=req, response=httpx.Response(401, request=req))
-            raise AssertionError(f"unexpected GET {path}")
-
-        monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", fake_get)
-        monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", lambda *a, **kw: ([], None))
-        result = runner.invoke(cli, ["job", "metrics", "job-1", "--watch"])
-        assert result.exit_code != 0, result.output
-        assert "metrics fetch failed: HTTP" not in result.output  # never reached the soft-fail branch
-
-
-@pytest.mark.parametrize("detail,pending", [("No execution found for job", True), ("Job not found", False)])
-def test_native_metrics_watch_waits_for_vm_but_preserves_denial(runner, monkeypatch, detail, pending):
-    job_id = "awj-019d9533fc2f7b59948243a10b312d2e"
-    monkeypatch.setattr(
-        "avrea_cli.api_client.ApiClient.public_get",
-        _make_get(
-            {
-                f"/orgs/org-default/jobs/{job_id}/metrics/cpu": CPU_RESPONSE,
-                f"/orgs/org-default/jobs/{job_id}/metrics/memory": MEMORY_RESPONSE,
-                f"/orgs/org-default/jobs/{job_id}": _job_response(state="queued"),
-            }
-        ),
-    )
-    request = httpx.Request("GET", "https://api.example/logs")
-    response = httpx.Response(404, json={"detail": detail}, request=request)
-    calls = []
-
-    def fetch(*args, **kwargs):
-        calls.append(kwargs["after_line"])
-        if len(calls) == 1:
-            raise httpx.HTTPStatusError("404", request=request, response=response)
-        return ([{"content": "VM started", "line_number": 1}], 1)
-
-    def sleep(_):
-        if len(calls) == 2:
-            raise KeyboardInterrupt()
-        assert pending, "authorization failure must exit before polling"
-
-    monkeypatch.setattr("avrea_cli.commands.job.fetch_logs_after", fetch)
-    monkeypatch.setattr("avrea_cli.commands.job.time.sleep", sleep)
-    result = runner.invoke(cli, ["job", "metrics", job_id, "--watch"])
-    if pending:
-        assert result.exit_code == 130, result.output
-        assert calls == [None, None]
-        assert "VM started" in result.output
-        assert "log fetch failed" not in result.output
-    else:
-        assert result.exit_code != 0
-        assert calls == [None]
-        assert "Job not found" in result.output
+        if pending:
+            assert result.exit_code == 0, result.output
+            assert calls == [None, None]
+            assert "VM started" in result.output
+            assert "log fetch failed" not in result.output
+        else:
+            assert result.exit_code != 0
+            assert calls == [None]
+            assert "Job not found" in result.output

@@ -12,8 +12,14 @@ List the organization's VMs, newest first (deleted ones excluded).
 \fB\-\-org\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
-\fB\-\-state\fR \fITEXT\fR
-Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).
+\fB\-\-state\fR \fICHOICE\fR
+Filter by lifecycle state. (choices: PENDING, STARTING, RUNNING, PAUSING, PAUSED, STOPPING, DELETING, FAILED)
+.TP
+\fB\-\-scope\fR \fICHOICE\fR
+Visible VMs or only your own. (choices: all, mine; default: all)
+.TP
+\fB\-\-sandbox\fR / \fB\-\-no\-sandbox\fR
+Agent sandboxes only, or human-created VMs only.
 .TP
 \fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
 Max VMs to return. (default: 50)
@@ -27,17 +33,19 @@ Emit the VM list as JSON.
 .BR avr (1),
 .BR avr-vm (1),
 .BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
+.BR avr-vm-metrics (1),
 .BR avr-vm-pause (1),
 .BR avr-vm-port-forward (1),
 .BR avr-vm-rdp (1),
 .BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
 .BR avr-vm-show (1),
 .BR avr-vm-ssh (1),
 .BR avr-vm-ssh-config (1),
-.BR avr-vm-start (1),
-.BR avr-vm-stop (1),
 .BR avr-vm-update (1),
 .BR avr-vm-usage (1),
 .BR avr-vm-vnc (1)

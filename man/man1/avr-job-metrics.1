@@ -28,13 +28,13 @@ Organization ID or slug.
 Metric source (repeatable). Defaults to cpu and memory. (choices: cpu, memory, filesystem, load, disk-io, disk-ops, network; repeatable)
 .TP
 \fB\-\-start\fR \fIINTEGER\fR
-Start time (Unix seconds). Defaults to execution start.
+Start time (Unix seconds). Single-shot only; defaults to execution start.
 .TP
 \fB\-\-end\fR \fIINTEGER\fR
-End time (Unix seconds). Defaults to execution end or now.
+End time (Unix seconds). Single-shot only; defaults to execution end or now.
 .TP
 \fB\-w\fR, \fB\-\-watch\fR
-Refresh every 5 seconds (Ctrl-C to exit).
+Stream live metrics until completion (Ctrl-C to exit).
 .TP
 \fB\-\-json\fR
 Output raw metrics responses as JSON.

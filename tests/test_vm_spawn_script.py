@@ -43,7 +43,7 @@ def _sent_body(api: FakeApi) -> dict[str, Any]:
 def test_claude_code_creates_a_sandbox_from_the_work_order(runner, api: FakeApi) -> None:
     api.reply("POST", VMS_PATH, 202, json=CREATED)
 
-    result = _spawn(runner, "claude-code", "--os-version", "ubuntu-24.04")
+    result = _spawn(runner, "claude-code", "--os-version", "ubuntu-26.04")
 
     assert result.exit_code == 0, result.output
     assert result.stdout.strip() == "cvm-0123456789abcdef0123456789abcdef"
@@ -52,8 +52,8 @@ def test_claude_code_creates_a_sandbox_from_the_work_order(runner, api: FakeApi)
     assert body["bootstrap"] == {"provider": "claude_code", "credential": WORK_ORDER_JWT}
     assert body["os_type"] == "linux"
     assert body["size"] == "4-vcpu"
-    assert body["os_version"] == "ubuntu-24.04"
-    assert body["ephemeral"] is True
+    assert body["os_version"] == "ubuntu-26.04"
+    assert "ephemeral" not in body
     assert "repo" not in body
     assert "display_name" not in body
     assert WORK_ORDER_JWT not in result.output
@@ -175,10 +175,10 @@ def test_an_organization_id_is_used_as_given(runner, api: FakeApi) -> None:
 
 
 def test_a_plain_create_still_needs_its_shape(runner, api: FakeApi) -> None:
-    result = runner.invoke(cli, ["vm", "create", "--os", "linux", "--size", "2-vcpu", "--ephemeral"])
+    result = runner.invoke(cli, ["vm", "create", "--os", "linux"])
 
     assert result.exit_code == 2
-    assert "Missing option '--name'" in result.output
+    assert "Missing option '--size'" in result.output
     assert api.requests == []
 
 

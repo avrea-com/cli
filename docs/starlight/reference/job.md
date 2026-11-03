@@ -105,9 +105,9 @@ Examples:
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;source</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Metric source (repeatable). Defaults to cpu and memory. _(choices: `cpu`, `memory`, `filesystem`, `load`, `disk-io`, `disk-ops`, `network` · repeatable)_
-- <code class="cli-flag">&#x2D;&#x2D;start</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Start time (Unix seconds). Defaults to execution start.
-- <code class="cli-flag">&#x2D;&#x2D;end</code> <code class="cli-value">&lt;INTEGER&gt;</code> — End time (Unix seconds). Defaults to execution end or now.
-- <code class="cli-flag">-w, &#x2D;&#x2D;watch</code> — Refresh every 5 seconds (Ctrl-C to exit).
+- <code class="cli-flag">&#x2D;&#x2D;start</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Start time (Unix seconds). Single-shot only; defaults to execution start.
+- <code class="cli-flag">&#x2D;&#x2D;end</code> <code class="cli-value">&lt;INTEGER&gt;</code> — End time (Unix seconds). Single-shot only; defaults to execution end or now.
+- <code class="cli-flag">-w, &#x2D;&#x2D;watch</code> — Stream live metrics until completion (Ctrl-C to exit).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Output raw metrics responses as JSON.
 
 ### `avr job ssh`

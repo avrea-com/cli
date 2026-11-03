@@ -1,5 +1,7 @@
 """Avrea job CLI commands — inspect VMs that run CI work."""
 
+__lazy_modules__ = ["avrea_cli.metrics_stream", "subprocess", "webbrowser"]
+
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import EXIT_INTERRUPTED
 from avrea_cli.click_ext import GhGroup
@@ -44,7 +46,13 @@ from avrea_cli.log_display import format_log_line
 from avrea_cli.log_display import print_failed_step_logs
 from avrea_cli.log_display import print_logs_grouped
 from avrea_cli.metrics_display import ALL_SOURCES
+from avrea_cli.metrics_display import check_watch_window
+from avrea_cli.metrics_display import clear_live_frame
+from avrea_cli.metrics_display import metrics_json
 from avrea_cli.metrics_display import render_gauge_line
+from avrea_cli.metrics_display import select_sources
+from avrea_cli.metrics_display import watch_updates
+from avrea_cli.metrics_stream import metrics_frames
 from avrea_cli.output import format_key_value
 from avrea_cli.output import format_relative_timestamp
 from avrea_cli.output import format_timestamp
@@ -55,6 +63,7 @@ from collections import deque
 from datetime import UTC
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 import click
 import httpx
 import json
@@ -96,12 +105,8 @@ _JOBS_TABLE_W = {"name": 38, "repo": 28, "status": 15, "on": 7, "age": 10, "id":
 # Sized so a typical terminal still fits the metrics + footer above the fold.
 _LIVE_LOG_TAIL_LINES = 12
 
-# Decoupled refresh cadences for `avr job metrics --live`. Logs feel live at
-# 1s; metrics scrape at the OTel collector's interval (every ~5s), so polling
-# them faster wouldn't surface new data and would burn through the 60/min IP
-# rate limit on /metrics quickly.
+# Logs retain their one-second polling cadence alongside streamed metrics.
 _LIVE_LOG_REFRESH_S = 1.0
-_LIVE_METRICS_REFRESH_S = 5.0
 
 
 def _hdr_cell(label: str, width: int) -> str:
@@ -879,9 +884,9 @@ def _resolve_vm_specs(job_data: dict[str, Any]) -> tuple[int | None, int | None,
     type=click.Choice(list(ALL_SOURCES)),
     help="Metric source (repeatable). Defaults to cpu and memory.",
 )
-@click.option("--start", type=int, help="Start time (Unix seconds). Defaults to execution start.")
-@click.option("--end", type=int, help="End time (Unix seconds). Defaults to execution end or now.")
-@click.option("-w", "--watch", "live", is_flag=True, help="Refresh every 5 seconds (Ctrl-C to exit).")
+@click.option("--start", type=int, help="Start time (Unix seconds). Single-shot only; defaults to execution start.")
+@click.option("--end", type=int, help="End time (Unix seconds). Single-shot only; defaults to execution end or now.")
+@click.option("-w", "--watch", "live", is_flag=True, help="Stream live metrics until completion (Ctrl-C to exit).")
 @click.option("--json", "json_output", is_flag=True, help="Output raw metrics responses as JSON.")
 @click.pass_context
 def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
@@ -893,12 +898,13 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
         avr job metrics job-abc123 --source cpu --source network
         avr job metrics job-abc123 --watch
     """
+    check_watch_window(live, start, end)
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
 
     org_id = get_org_id(config, org_id, client=client)
-    selected = sources or ("cpu", "memory")
+    selected = select_sources(sources)
 
     try:
         job_resp = client.public_get(f"/orgs/{org_id}/jobs/{job_id}")
@@ -907,20 +913,8 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
         handle_http_error(exc, "get job")
 
     vm_cpus, vm_ram_bytes, vm_label = _resolve_vm_specs(job_data)
-    job_finished = job_data.get("state") == "completed" or bool(job_data.get("conclusion"))
-
-    # --live on a finished job has nothing to watch; fall through to the
-    # static post-mortem path instead of looping over unchanging data.
-    if live and job_finished:
-        click.echo(
-            click.style("Job already finished — showing static metrics.", fg=DIM_FG),
-            err=True,
-        )
-        live = False
 
     def _build_frame(fetched: dict[str, dict[str, Any]], log_tail: list[dict[str, Any]] | None = None) -> str:
-        if json_output:
-            return json.dumps(fetched, indent=2, default=str)
         header: dict[str, str] = {"Job": job_id, "Name": job_data.get("job_name", "-")}
         status_line = _format_job_status(job_data)
         if status_line:
@@ -949,75 +943,67 @@ def job_metrics(ctx, job_id, org_id, sources, start, end, live, json_output):
             fetched = _fetch_metrics_sources(client, org_id, job_id, selected, start=start, end=end)
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "get metrics")
+        if json_output:
+            click.echo(metrics_json(fetched, pretty=True))
+            return
         click.echo(_build_frame(fetched))
-        if not json_output:
-            _hint(f"View logs:  avr job logs {job_id}")
+        _hint(f"View logs:  avr job logs {job_id}")
         return
 
-    # Build the next frame in memory before clearing the screen — the
-    # ~1-2s fetch would otherwise leave the user staring at a blank
-    # screen until the response lands.
     log_tail: deque[dict[str, Any]] = deque(maxlen=_LIVE_LOG_TAIL_LINES)
     last_log_line: int | None = None
-    fetched: dict[str, dict[str, Any]] | None = None
-    last_metrics_at = 0.0
-    footer = click.style(
-        f"(logs every {_LIVE_LOG_REFRESH_S:g}s, metrics every {_LIVE_METRICS_REFRESH_S:g}s — Ctrl-C to exit)",
-        fg=DIM_FG,
-    )
+    last_logs_at: float | None = None
     log_error: str | None = None
-    metrics_error: str | None = None
+
+    def _refresh_logs() -> None:
+        nonlocal last_log_line, log_error
+        try:
+            new_entries, new_cursor = fetch_logs_after(client, job_id, after_line=last_log_line)
+        except httpx.HTTPStatusError as exc:
+            code = exc.response.status_code
+            pending = _runtime_pending(exc.response)
+            if 400 <= code < 500 and code != 429 and not pending:
+                handle_http_error(exc, "fetch logs")
+            new_entries, new_cursor = [], last_log_line
+            log_error = None if pending else f"log fetch failed: HTTP {code}"
+        except (httpx.ConnectError, httpx.TimeoutException) as exc:
+            # Live mode polls on a tight loop — a transient API blip
+            # shouldn't kill the watcher. Surface it in the LOGS pane so
+            # the user knows we're stalled, then retry next tick.
+            new_entries, new_cursor = [], last_log_line
+            log_error = f"log fetch failed: {type(exc).__name__}"
+        else:
+            log_error = None
+        if new_entries:
+            log_tail.extend(new_entries)
+            last_log_line = new_cursor
+
+    def _render_watch(metrics: dict[str, Any], footer: str | None = None) -> None:
+        frame = _build_frame({src: metrics.get(src, {"series": []}) for src in selected}, list(log_tail))
+        if log_error:
+            frame += "\n\n" + log_error
+        if footer:
+            frame += "\n\n" + footer
+        clear_live_frame()
+        click.echo(frame)
+
+    path = f"/vms/{quote(job_id, safe='')}/observability/stream"
     try:
-        while True:
+        for update in watch_updates(metrics_frames(config, path), selected, as_json=json_output):
+            if update.complete:
+                # Logs written since the last tick often hold the job's final error.
+                _refresh_logs()
+                _render_watch(update.metrics)
+                if not update.saw_bundle:
+                    click.echo("No metrics available for this job.")
+                break
             now = time.monotonic()
-            if fetched is None or (now - last_metrics_at) >= _LIVE_METRICS_REFRESH_S:
-                # Soft-retry on 5xx/429/transport errors so a transient hiccup
-                # doesn't kill the watcher; previous frame stays visible. Other
-                # 4xx (auth lost, job deleted) is terminal — surface it rather
-                # than render a stale frame indefinitely.
-                try:
-                    fetched = _fetch_metrics_sources(client, org_id, job_id, selected, start=start, end=end)
-                except httpx.HTTPStatusError as exc:
-                    code = exc.response.status_code
-                    if 400 <= code < 500 and code != 429:
-                        handle_http_error(exc, "fetch metrics")
-                    metrics_error = f"metrics fetch failed: HTTP {code}"
-                except (httpx.ConnectError, httpx.TimeoutException) as exc:
-                    metrics_error = f"metrics fetch failed: {type(exc).__name__}"
-                else:
-                    metrics_error = None
-                last_metrics_at = time.monotonic()
-            try:
-                new_entries, new_cursor = fetch_logs_after(client, job_id, after_line=last_log_line)
-            except httpx.HTTPStatusError as exc:
-                code = exc.response.status_code
-                pending = _runtime_pending(exc.response)
-                if 400 <= code < 500 and code != 429 and not pending:
-                    handle_http_error(exc, "fetch logs")
-                new_entries, new_cursor = [], last_log_line
-                log_error = None if pending else f"log fetch failed: HTTP {code}"
-            except (httpx.ConnectError, httpx.TimeoutException) as exc:
-                # Live mode polls on a tight loop — a transient API blip
-                # shouldn't kill the watcher. Surface it in the LOGS pane so
-                # the user knows we're stalled, then retry next tick.
-                new_entries, new_cursor = [], last_log_line
-                log_error = f"log fetch failed: {type(exc).__name__}"
-            else:
-                log_error = None
-            if new_entries:
-                log_tail.extend(new_entries)
-                last_log_line = new_cursor
-            frame_footer = footer
-            if metrics_error or log_error:
-                error_lines = [click.style(e, fg="red") for e in (metrics_error, log_error) if e]
-                frame_footer = "\n".join(error_lines) + "\n" + footer
-            # `fetched` may still be None on the very first tick if the initial
-            # metrics fetch raised. Render an empty placeholder so the frame
-            # still draws — the error footer tells the user why values are absent.
-            frame = _build_frame(fetched or {src: {"series": []} for src in selected}, list(log_tail))
-            frame = frame + "\n\n" + frame_footer
-            click.clear()
-            click.echo(frame)
-            time.sleep(_LIVE_LOG_REFRESH_S)
+            refresh_logs = last_logs_at is None or now - last_logs_at >= _LIVE_LOG_REFRESH_S
+            if not refresh_logs and not update.changed:
+                continue
+            if refresh_logs:
+                last_logs_at = now
+                _refresh_logs()
+            _render_watch(update.metrics, "(metrics streamed; logs every second; Ctrl-C to exit)")
     except KeyboardInterrupt:
         sys.exit(EXIT_INTERRUPTED)

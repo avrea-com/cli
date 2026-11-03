@@ -1,0 +1,53 @@
+.TH AVR\-VM\-FORK 1 "" "avr 0.5.0" "Avrea CLI"
+.SH NAME
+avr-vm-fork \- Boot a copy of a PAUSED VM's disk; the source remains paused.
+.SH SYNOPSIS
+.B avr vm fork
+[OPTIONS] VM_ID_OR_NAME
+.SH DESCRIPTION
+Boot a copy of a PAUSED VM's disk; the source remains paused.
+.PP
+Copies the source's machine configuration and disk, including its SSH host keys and password, but discards memory state. A scoped-token password may be replaced without returning its replacement. No password is returned; use update --rotate-password if needed. Requires admin access to the source.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-name\fR \fITEXT\fR
+Fork name. Defaults to a name derived from the source.
+.TP
+\fB\-\-ttl\fR \fITEXT\fR
+Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug.
+.TP
+\fB\-\-wait\fR
+Wait for the fork to become connectable.
+.TP
+\fB\-\-wait\-timeout\fR \fIINTEGER RANGE\fR
+(default: 300)
+.TP
+\fB\-\-json\fR
+Emit the fork VM as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
+.BR avr-vm-pause (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)
