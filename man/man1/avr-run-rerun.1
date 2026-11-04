@@ -9,7 +9,7 @@ Re-run a completed workflow run.
 .PP
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`.
 .PP
-Avrea CI reruns the whole workflow at its original revision. The new attempt can be opened or watched immediately; --failed is GitHub-only.
+Avrea CI keeps the original revision. Use --failed for failed/cancelled jobs or repeat --job for selected jobs. Their downstream dependents also rerun; other results are retained. The new attempt can be watched immediately.
 .PP
 .RS 4
 .nf
@@ -30,6 +30,9 @@ Organization ID or slug.
 .TP
 \fB\-\-failed\fR
 Re-run only the failed jobs.
+.TP
+\fB\-\-job\fR \fITEXT\fR
+Avrea job ID to rerun with its dependents; repeat for multiple jobs. (repeatable)
 .TP
 \fB\-\-idempotency\-key\fR \fIUUID\fR
 Reuse a previous Avrea CI rerun request UUID.

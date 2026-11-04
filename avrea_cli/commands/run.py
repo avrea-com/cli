@@ -1362,17 +1362,21 @@ def _poll_for_new_attempt(
 @click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
 @click.option("--failed", is_flag=True, help="Re-run only the failed jobs.")
+@click.option(
+    "--job", "job_ids", multiple=True, help="Avrea job ID to rerun with its dependents; repeat for multiple jobs."
+)
 @click.option("--idempotency-key", type=click.UUID, help="Reuse a previous Avrea CI rerun request UUID.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
 @click.pass_context
-def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None, yes: bool):
+def run_rerun(ctx, run: str, org_id, failed: bool, job_ids: tuple[str, ...], idempotency_key: UUID | None, yes: bool):
     """Re-run a completed workflow run.
 
     RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
     `avr run view`.
 
-    Avrea CI reruns the whole workflow at its original revision. The new
-    attempt can be opened or watched immediately; --failed is GitHub-only.
+    Avrea CI keeps the original revision. Use --failed for failed/cancelled
+    jobs or repeat --job for selected jobs. Their downstream dependents also
+    rerun; other results are retained. The new attempt can be watched immediately.
 
     \b
     Examples:
@@ -1383,6 +1387,8 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
     ensure_authenticated(config)
+    if failed and job_ids:
+        raise click.UsageError("Choose --failed or --job, not both.")
 
     existing_data, org_id, run_id = _resolve_run_argument(
         client,
@@ -1393,12 +1399,12 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
     )
 
     avrea = existing_data.get("ci_provider") == "avrea_ci" or run_id.startswith("awr-")
-    if avrea and failed:
-        raise click.UsageError("Avrea CI supports whole-workflow reruns only; omit --failed.")
+    if job_ids and not avrea:
+        raise click.UsageError("--job applies to Avrea CI reruns.")
     if idempotency_key is not None and not avrea:
         raise click.UsageError("--idempotency-key applies to Avrea CI reruns.")
     if not yes:
-        scope = "failed jobs only" if failed else "all jobs"
+        scope = "selected jobs and dependents" if job_ids else "failed jobs and dependents" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
         click.confirm(f"Re-run {run_id} ({scope})?", abort=True)
 
@@ -1408,7 +1414,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
 
     receipt = None
     if avrea:
-        receipt = submit_avrea_rerun(client, org_id, run_id, idempotency_key)
+        receipt = submit_avrea_rerun(client, org_id, run_id, idempotency_key, failed_only=failed, job_ids=job_ids)
     else:
         try:
             client.public_post(
@@ -1418,7 +1424,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
         except httpx.HTTPStatusError as exc:
             handle_http_error(exc, "rerun workflow run")
 
-    scope = "failed jobs" if failed else "all jobs"
+    scope = "selected jobs" if job_ids else "failed jobs" if failed else "all jobs"
     click.echo(f"{click.style('✓', fg='green')} Re-run requested for {click.style(run_id, fg='cyan')} ({scope}).")
 
     if receipt is not None:

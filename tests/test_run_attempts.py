@@ -70,7 +70,17 @@ class TestRunRerunPoll:
         assert post.call_args_list[0] == post.call_args_list[1]
         assert post.call_args.kwargs["json"] == {"failed_only": False, "invocation_key": key}
 
-    def test_avrea_failed_only_is_refused_before_post(self, runner, monkeypatch):
+    @pytest.mark.parametrize(
+        "options,selection",
+        [
+            (["--failed"], {"failed_only": True}),
+            (
+                ["--job", "awj-" + "d" * 32, "--job", "awj-" + "e" * 32],
+                {"failed_only": False, "job_ids": ["awj-" + "d" * 32, "awj-" + "e" * 32]},
+            ),
+        ],
+    )
+    def test_avrea_subset_retries_preserve_selection(self, runner, monkeypatch, options, selection):
         original = "awr-" + "a" * 32
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",
@@ -78,12 +88,21 @@ class TestRunRerunPoll:
                 "data": {"run_id": original, "ci_provider": "avrea_ci"},
             },
         )
-        post = MagicMock()
+        post = MagicMock(side_effect=httpx.ReadTimeout("lost"))
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
-        result = runner.invoke(cli, ["run", "rerun", original, "--yes", "--failed"])
+        result = runner.invoke(cli, ["run", "rerun", original, "--yes", "--idempotency-key", "c" * 32, *options])
+        assert result.exit_code == 1
+        assert post.call_count == 2
+        assert post.call_args_list[0] == post.call_args_list[1]
+        assert post.call_args.kwargs["json"] == {"invocation_key": "c" * 32, **selection}
+        assert " ".join(options) in result.output
+
+    def test_failed_and_selected_are_mutually_exclusive(self, runner):
+        result = runner.invoke(
+            cli, ["run", "rerun", "awr-" + "a" * 32, "--yes", "--failed", "--job", "awj-" + "b" * 32]
+        )
         assert result.exit_code == 2
-        assert "whole-workflow reruns only" in result.output
-        post.assert_not_called()
+        assert "Choose --failed or --job" in result.output
 
     @pytest.mark.parametrize(
         ("failure", "message", "post_count"),

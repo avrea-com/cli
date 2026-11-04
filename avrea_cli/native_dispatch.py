@@ -52,6 +52,9 @@ def submit_avrea_rerun(
     organization_id: str,
     run_id: str,
     invocation_key: UUID | None,
+    *,
+    failed_only: bool = False,
+    job_ids: tuple[str, ...] = (),
 ) -> AvreaRerun:
     key = (invocation_key or uuid4()).hex
     retry = shlex.join(
@@ -67,6 +70,8 @@ def submit_avrea_rerun(
             "--idempotency-key",
             key,
             "--yes",
+            *(["--failed"] if failed_only else []),
+            *[part for job_id in job_ids for part in ("--job", job_id)],
         ]
     )
     click.echo(f"Invocation key: {key}", err=True)
@@ -75,7 +80,11 @@ def submit_avrea_rerun(
             try:
                 response = client.public_post(
                     f"/orgs/{organization_id}/workflow-runs/{run_id}/rerun",
-                    json={"failed_only": False, "invocation_key": key},
+                    json={
+                        "failed_only": failed_only,
+                        "invocation_key": key,
+                        **({"job_ids": list(job_ids)} if job_ids else {}),
+                    },
                     timeout=60,
                 )
                 return AvreaRerun.model_validate(response.get("data"))
