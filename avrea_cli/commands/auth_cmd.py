@@ -1,6 +1,7 @@
 """Authentication CLI commands (avr auth login/logout/status)."""
 
 from avrea_cli import auth
+from avrea_cli import device_auth
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
@@ -87,6 +88,10 @@ def _do_login(ctx, provider, email=None):
     # it propagate hands control back to Click's runner, which exits cleanly
     # without our generic "Login failed:" prefix duplicating the message.
 
+    _complete_login(config, api_key)
+
+
+def _complete_login(config: CliConfig, api_key: str) -> None:
     auth.store_token(api_key, host=config.public_api_url)
 
     check = click.style("✓", fg="green")
@@ -209,6 +214,25 @@ def git_credential(ctx: click.Context, url: str, full_name: str, operation: str)
 def auth_login(ctx, provider: str, email: str | None):
     """Authenticate via browser and store credentials."""
     _do_login(ctx, provider, email)
+
+
+@auth_group.command("device-login")
+@click.option("--no-qr", is_flag=True, help="Hide the terminal QR code; still display the sign-in link and code.")
+@click.pass_context
+def auth_device_login(ctx: click.Context, no_qr: bool) -> None:
+    """Sign in from a remote machine using a browser on any device.
+
+    Open the displayed link or scan the QR code, confirm the code, and approve
+    access. The CLI waits for approval and saves your credentials. No browser
+    is opened on this machine. QR codes appear only in compatible terminals
+    wide enough to display them. Requires device-login support on the server.
+    """
+    config: CliConfig = ctx.obj["config"]
+    try:
+        api_key = device_auth.login(config.public_api_url, show_qr=not no_qr)
+    except click.ClickException as exc:
+        raise click.ClickException(f"Login failed: {exc.format_message()}") from None
+    _complete_login(config, api_key)
 
 
 @auth_group.command("logout")

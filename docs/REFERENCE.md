@@ -1648,6 +1648,23 @@ Authenticate and manage credentials.
 avr auth [OPTIONS] COMMAND [ARGS]...
 ```
 
+#### `avr auth device-login`
+
+Sign in from a remote machine using a browser on any device.
+
+```sh
+avr auth device-login [OPTIONS]
+```
+
+Open the displayed link or scan the QR code, confirm the code, and approve
+access. The CLI waits for approval and saves your credentials. No browser
+is opened on this machine. QR codes appear only in compatible terminals
+wide enough to display them. Requires device-login support on the server.
+
+**Options**
+
+- `--no-qr` — Hide the terminal QR code; still display the sign-in link and code.
+
 #### `avr auth login`
 
 Authenticate via browser and store credentials.
