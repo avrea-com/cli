@@ -86,9 +86,13 @@ def submit_avrea_rerun(
         if exc.response.status_code >= 500 or exc.response.status_code == 429:
             click.echo(f"Retry the same request:\n{retry}", err=True)
         handle_http_error(exc, "rerun Avrea workflow")
-    except (httpx.TransportError, ValidationError) as exc:
+    except ValidationError as exc:
+        raise click.ClickException(
+            f"The API returned an invalid Avrea CI rerun receipt. Recover the same attempt:\n{retry}"
+        ) from exc
+    except httpx.TransportError as exc:
         raise click.ClickException(f"Could not confirm the rerun. Recover the same attempt:\n{retry}") from exc
-    raise click.ClickException(f"Could not confirm the rerun. Retry the same request:\n{retry}")
+    raise click.ClickException(f"Could not confirm the rerun. Recover the same attempt:\n{retry}")
 
 
 class NativeDispatchMetadata(BaseModel):

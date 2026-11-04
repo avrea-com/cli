@@ -1406,10 +1406,9 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
     platform_run_id = existing_data.get("platform_run_id")
     current_attempt = existing_data.get("run_attempt", 1)
 
+    receipt = None
     if avrea:
         receipt = submit_avrea_rerun(client, org_id, run_id, idempotency_key)
-        run_id = receipt.run_id
-        click.echo(f"Run: {click.style(run_id, fg='cyan')} (attempt {receipt.run_attempt})")
     else:
         try:
             client.public_post(
@@ -1422,7 +1421,10 @@ def run_rerun(ctx, run: str, org_id, failed: bool, idempotency_key: UUID | None,
     scope = "failed jobs" if failed else "all jobs"
     click.echo(f"{click.style('✓', fg='green')} Re-run requested for {click.style(run_id, fg='cyan')} ({scope}).")
 
-    if not avrea and platform_run_id is not None:
+    if receipt is not None:
+        run_id = receipt.run_id
+        click.echo(f"  Run: {click.style(run_id, fg='cyan')}  (attempt {receipt.run_attempt})")
+    elif platform_run_id is not None:
         click.echo(click.style("Waiting for the new attempt to appear...", dim=True), err=True)
         new_run = _poll_for_new_attempt(client, org_id, int(platform_run_id), int(current_attempt))
         if new_run:
