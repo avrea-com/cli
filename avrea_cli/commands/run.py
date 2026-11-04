@@ -60,6 +60,7 @@ from uuid import UUID
 import click
 import httpx
 import json
+import re
 import sys
 import time
 import webbrowser
@@ -1361,9 +1362,9 @@ def _poll_for_new_attempt(
 @run.command("rerun")
 @click.argument("run")
 @click.option("--org", "org_id", help="Organization ID or slug.")
-@click.option("--failed", is_flag=True, help="Re-run only the failed jobs.")
+@click.option("--failed", is_flag=True, help="Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.")
 @click.option(
-    "--job", "job_ids", multiple=True, help="Avrea job ID to rerun with its dependents; repeat for multiple jobs."
+    "--job", "job_ids", multiple=True, help="Avrea job name or ID to rerun with dependents; repeat for multiple jobs."
 )
 @click.option("--idempotency-key", type=click.UUID, help="Reuse a previous Avrea CI rerun request UUID.")
 @click.option("-y", "--yes", is_flag=True, help="Skip the confirmation prompt.")
@@ -1383,6 +1384,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, job_ids: tuple[str, ...], ide
         avr run rerun run-019e5a2e474e71c297e452279d4bcdea
         avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
         avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
+        avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test
     """
     client: ApiClient = ctx.obj["client"]
     config: CliConfig = ctx.obj["config"]
@@ -1396,6 +1398,7 @@ def run_rerun(ctx, run: str, org_id, failed: bool, job_ids: tuple[str, ...], ide
         run,
         org_id,
         action="look up workflow run before rerun",
+        include=["jobs"] if job_ids else None,
     )
 
     avrea = existing_data.get("ci_provider") == "avrea_ci" or run_id.startswith("awr-")
@@ -1403,6 +1406,31 @@ def run_rerun(ctx, run: str, org_id, failed: bool, job_ids: tuple[str, ...], ide
         raise click.UsageError("--job applies to Avrea CI reruns.")
     if idempotency_key is not None and not avrea:
         raise click.UsageError("--idempotency-key applies to Avrea CI reruns.")
+    if avrea and (failed or job_ids):
+        try:
+            options = client.public_get(f"/orgs/{org_id}/workflow-runs/{run_id}/rerun").get("data", {})
+        except httpx.HTTPStatusError as exc:
+            handle_http_error(exc, "check Avrea rerun availability")
+        # Recovery must remain possible after admission is disabled or another
+        # attempt is active, but an old server must never ignore job_ids.
+        if options.get("can_rerun_subset") is not True and (
+            idempotency_key is None or "can_rerun_subset" not in options
+        ):
+            raise click.ClickException("This server does not currently allow Avrea subset reruns.")
+        resolved = []
+        jobs = existing_data.get("jobs") or []
+        for selector in job_ids:
+            if re.fullmatch(r"awj-[0-9a-f]{32}", selector):
+                resolved.append(selector)
+                continue
+            matches = [job for job in jobs if job.get("job_name") == selector]
+            if len(matches) != 1:
+                candidates = ", ".join(f"{job.get('job_name')} ({job.get('job_id')})" for job in (matches or jobs))
+                raise click.UsageError(
+                    f"Job {selector!r} must match exactly one job. Available matches: {candidates or 'none'}"
+                )
+            resolved.append(matches[0]["job_id"])
+        job_ids = tuple(dict.fromkeys(resolved))
     if not yes:
         scope = "selected jobs and dependents" if job_ids else "failed jobs and dependents" if failed else "all jobs"
         ensure_prompts_allowed("run rerun needs confirmation")
