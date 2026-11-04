@@ -322,6 +322,9 @@ avr run rerun [OPTIONS] RUN
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`.
 
+Avrea CI reruns the whole workflow at its original revision. The new
+attempt can be opened or watched immediately; --failed is GitHub-only.
+
 ```sh
 Examples:
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea
@@ -337,6 +340,7 @@ Examples:
 
 - `--org <TEXT>` — Organization ID or slug.
 - `--failed` — Re-run only the failed jobs.
+- `--idempotency-key <UUID>` — Reuse a previous Avrea CI rerun request UUID.
 - `-y, --yes` — Skip the confirmation prompt.
 
 #### `avr run view`

@@ -1354,7 +1354,7 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI reruns the whole workflow at its original revision. The new\nattempt can be opened or watched immediately; --failed is GitHub-only.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1410,6 +1410,24 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Re-run only the failed jobs.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "uuid",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Reuse a previous Avrea CI rerun request UUID.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

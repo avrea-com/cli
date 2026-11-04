@@ -147,7 +147,6 @@ def test_native_list_json_provider(runner: CliRunner, monkeypatch: MonkeyPatch, 
     "args,data,feature",
     [
         (["run", "diagnose", _RUN], _RUN_DATA, "Diagnostics"),
-        (["run", "rerun", _RUN, "--yes"], _RUN_DATA, "Reruns"),
     ],
 )
 def test_native_unsupported_operations_are_explicit(
