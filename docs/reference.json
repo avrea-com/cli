@@ -1354,7 +1354,7 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI reruns the whole workflow at its original revision. The new\nattempt can be opened or watched immediately; --failed is GitHub-only.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI keeps the original revision. Use --failed for failed/cancelled\njobs or repeat --job for selected jobs. Their downstream dependents also\nrerun; other results are retained. The new attempt can be watched immediately.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1409,7 +1409,25 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Re-run only the failed jobs.",
+                "help": "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "job_ids",
+                "kind": "option",
+                "opts": [
+                  "--job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Avrea job name or ID to rerun with dependents; repeat for multiple jobs.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
