@@ -509,7 +509,7 @@ def reused_organization_lookup(scenario, python_requests, go_requests):
     return json.dumps(unique, sort_keys=True) == json.dumps(go_requests, sort_keys=True)
 
 
-def secret_differences(scenario, python, go):
+def has_fixture_disclosure(scenario, python, go):
     """Check raw captures before per-suite normalization or loose error wording."""
     secrets = {TOKEN, "session-fixture", "csrf-fixture", "credential-fixture"}
     secrets.update(scenario.get("secret_values", []))
@@ -539,11 +539,9 @@ def secret_differences(scenario, python, go):
     collect(scenario)
     collect(python.get("hosts", {}))
     collect(go.get("hosts", {}))
-    return [
-        "new fixture secret disclosure on " + stream
-        for stream in ("stdout", "stderr")
-        if any(secret in go[stream] and secret not in python[stream] for secret in secrets)
-    ]
+    return any(
+        secret in go[stream] and secret not in python[stream] for stream in ("stdout", "stderr") for secret in secrets
+    )
 
 
 def compare(scenario, python, go):
@@ -952,8 +950,10 @@ def main(
                     results.append(result)
                 # Specialized comparators may normalize or remove output fields.
                 # Enforce this boundary on their unmodified captures first.
-                secret_leaks = secret_differences(scenario, *results)
-                differences = secret_leaks + compare_results(scenario, *results)
+                fixture_disclosed = has_fixture_disclosure(scenario, *results)
+                differences = compare_results(scenario, *results)
+                if fixture_disclosed:
+                    differences.insert(0, "new fixture credential disclosure")
                 report["scenarios"].append(
                     {"name": scenario["name"], "python": results[0], "go": results[1], "differences": differences}
                 )

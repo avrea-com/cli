@@ -47,12 +47,12 @@ def test_secret_boundary_ignores_loose_error_comparison():
     for secret in ["fixture-sensitive-value", "session-fixture", "credential-fixture"]:
         go = deepcopy(python)
         go["stderr"] += " " + secret
-        assert harness.secret_differences(scenario, python, go) == ["new fixture secret disclosure on stderr"]
+        assert harness.has_fixture_disclosure(scenario, python, go) is True
     # Explicit secret-delivery commands may match Python's stdout, but must not
     # move that secret to stderr.
     python["stdout"] = "fixture-sensitive-value"
-    assert harness.secret_differences(scenario, python, python) == []
-    assert harness.secret_differences(scenario, python, python | {"stderr": "fixture-sensitive-value"})
+    assert harness.has_fixture_disclosure(scenario, python, python) is False
+    assert harness.has_fixture_disclosure(scenario, python, python | {"stderr": "fixture-sensitive-value"}) is True
 
 
 @pytest.mark.skipif(os.name == "nt", reason="executable script fixture uses a POSIX shebang")
@@ -66,8 +66,11 @@ def test_main_process_returns_failure_for_mismatching_binary(tmp_path):
     binary.write_text("#!/bin/sh\nprintf 'deliberately wrong output\\n'\n")
     binary.chmod(0o700)
     report = tmp_path / "report.json"
+    # This gate test must also work in shallow CI checkouts. Only this synthetic
+    # subprocess uses HEAD; production parity retains its pinned Python baseline.
     code = (
         "from scripts import compare_auth as h; import sys; "
+        "h.BASELINE = 'HEAD'; "
         "sys.exit(h.main(case_factory=lambda: [{'name':'different config', "
         "'args':['config','get','org'], 'env':{'AVR_ORG':'expected'}}]))"
     )
@@ -79,6 +82,7 @@ def test_main_process_returns_failure_for_mismatching_binary(tmp_path):
         timeout=30,
     )
     assert result.returncode == 1, result.stderr
+    assert report.exists(), result.stderr
     assert "stdout" in json.loads(report.read_text())["scenarios"][0]["differences"]
 
 
