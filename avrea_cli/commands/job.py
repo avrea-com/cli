@@ -500,7 +500,7 @@ def job_ssh(ctx, job_id: str, print_command: bool, show_password: bool):
             str(port),
             f"{username}@{host}",
         ]
-        sys.exit(subprocess.run(ssh_exec).returncode)
+        sys.exit(subprocess.run(ssh_exec, check=False).returncode)
     finally:
         known_hosts.unlink(missing_ok=True)
 
@@ -655,8 +655,8 @@ def job_view(
             s_dur = ""
             if step.get("started_at") and step.get("completed_at"):
                 try:
-                    started = datetime.fromisoformat(step["started_at"].replace("Z", "+00:00"))
-                    completed = datetime.fromisoformat(step["completed_at"].replace("Z", "+00:00"))
+                    started = datetime.fromisoformat(step["started_at"])
+                    completed = datetime.fromisoformat(step["completed_at"])
                     s_dur = f" ({format_duration((completed - started).total_seconds())})"
                 except ValueError, TypeError:
                     pass

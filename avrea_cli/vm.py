@@ -499,9 +499,7 @@ def _endpoints_ready(vm: dict[str, Any]) -> bool:
     eps = vm.get("endpoints") or {}
     if not eps.get("ssh"):
         return False
-    if vm.get("enable_remote_desktop") and not eps.get("remote_desktop"):
-        return False
-    return True
+    return not (vm.get("enable_remote_desktop") and not eps.get("remote_desktop"))
 
 
 def _wait_for_vm(
@@ -1490,7 +1488,7 @@ def vm_ssh(ctx, vm_id, ssh_args, org_id, identity_file, session_name, login, pri
     # remote session), not this process.
     previous_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
-        completed = subprocess.run(argv)
+        completed = subprocess.run(argv, check=False)
     except OSError as exc:  # ssh not on PATH, etc.
         raise click.ClickException(f"failed to launch ssh: {exc}") from exc
     finally:
@@ -2375,7 +2373,7 @@ def run_ssh(
             extra_opts=("-o", "BatchMode=yes", "-o", "ConnectTimeout=15"),
         )
         argv += command
-        return subprocess.run(argv, input=stdin_data, capture_output=capture, text=True, timeout=timeout)
+        return subprocess.run(argv, input=stdin_data, capture_output=capture, text=True, timeout=timeout, check=False)
     finally:
         if known_hosts is not None:
             known_hosts.unlink(missing_ok=True)
@@ -2848,7 +2846,7 @@ def _local_gh_token() -> str:
     """The local user's GitHub token from ``gh auth token``, to forward into the
     VM. Fails with a clear message if the GitHub CLI is missing or logged out."""
     try:
-        completed = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=15)
+        completed = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=15, check=False)
     except FileNotFoundError as exc:
         raise click.ClickException(
             "`gh` CLI not found locally; install the GitHub CLI or drop --setup-github."
@@ -2947,7 +2945,9 @@ def _prompt_claude_setup_token(env: dict[str, str]) -> None:
     )
     if click.confirm("Run `claude setup-token` now to create a 1-year subscription token?", default=False):
         try:
-            subprocess.run(["claude", "setup-token"])  # inherits the terminal: opens a browser, prints the token
+            subprocess.run(
+                ["claude", "setup-token"], check=False
+            )  # inherits the terminal: opens a browser, prints the token
         except OSError:
             click.echo(
                 "Could not launch `claude` (is it installed?). Paste an existing token below, or skip.", err=True

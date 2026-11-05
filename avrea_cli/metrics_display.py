@@ -19,6 +19,7 @@ from typing import Any
 from typing import Final
 import click
 import json
+import math
 import sys
 
 GAUGE_WIDTH: Final[int] = 20
@@ -40,7 +41,7 @@ _SAT_YELLOW_TO_RED: Final[float] = 0.85
 
 def _saturation_color(ratio: float) -> str | None:
     """Pick a color tier for a 0..1 saturation ratio. ``None`` if uncolored."""
-    if ratio != ratio:  # NaN guard
+    if math.isnan(ratio):
         return None
     if ratio >= _SAT_YELLOW_TO_RED:
         return "red"
@@ -253,12 +254,12 @@ def render_bar(
     equals avg — so a flat-loaded run (peak == avg) still has a visible ▲ at
     the boundary indicating "this was both the avg and the high-water mark".
     """
-    if fill != fill:  # NaN guard
+    if math.isnan(fill):
         fill = 0.0
     fill = max(0.0, min(1.0, fill))
     fill_n = round(fill * width)
     peak_n = -1
-    if peak is not None and peak == peak:
+    if peak is not None and not math.isnan(peak):
         peak_clamped = max(0.0, min(1.0, peak))
         peak_n = round(peak_clamped * width) - 1
         peak_n = max(0, min(peak_n, width - 1))

@@ -20,7 +20,7 @@ def format_key_value(data: dict[str, Any], title: str | None = None) -> str:
     """
     if not data:
         return "No data."
-    max_key_len = max(len(str(k)) for k in data.keys())
+    max_key_len = max(len(str(k)) for k in data)
     lines = []
     if title:
         lines.append(title)
@@ -54,7 +54,7 @@ def format_timestamp(value: str | None) -> str:
     if not value:
         return "unknown"
     try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(value)
     except ValueError:
         return value
     if dt.tzinfo is None:
@@ -70,7 +70,7 @@ def format_relative_timestamp(value: str | None) -> str:
     if not value:
         return "unknown"
     try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(value)
     except ValueError:
         return value
     if dt.tzinfo is None:

@@ -133,9 +133,7 @@ def _install_api(
 
     def fake_get(self, path, params=None, **kwargs):
         get_calls.append((path, params))
-        if path.endswith("/by-platform-id/123456789") or path.endswith(
-            "/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f"
-        ):
+        if path.endswith(("/by-platform-id/123456789", "/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f")):
             return RUN
         if path.endswith("/workflow-runs/run-019e5a2e474e76ca13d52ca70c883e0f/jobs"):
             return jobs_response

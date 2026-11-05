@@ -31,7 +31,7 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
         "status",
         "Show recent runs, performance stats, and cache health.",
         "Core Commands",
-    ),  # noqa: E501
+    ),
     ("run", "avrea_cli.commands.run", "run", "View and manage CI workflow runs.", "Core Commands"),
     ("pr", "avrea_cli.commands.pr", "pr", "View pull requests.", "Core Commands"),
     ("job", "avrea_cli.commands.job", "job", "Inspect Avrea job VMs (SSH, metrics, logs).", "Core Commands"),
@@ -56,14 +56,14 @@ LAZY_COMMANDS: tuple[LazyCommandSpec, ...] = (
         "settings",
         "View and toggle cache and runner settings.",
         "Setup & Config",
-    ),  # noqa: E501
+    ),
     (
         "firewall",
         "avrea_cli.firewall",
         "firewall",
         "Manage the egress firewall rule list for orgs and repositories.",
         "Setup & Config",
-    ),  # noqa: E501
+    ),
     ("billing", "avrea_cli.billing", "billing", "Manage billing, invoices, and payment methods.", "Setup & Config"),
     ("audit-events", "avrea_cli.audit", "audit_events", "View audit events for organization writes.", "Setup & Config"),
     (

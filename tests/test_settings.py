@@ -399,7 +399,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
         result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled", "--org", "org-default"])
@@ -412,7 +411,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
         result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled", "--repo", "rep-xyz"])
@@ -424,7 +422,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
         runner.invoke(cli, ["settings", "reset", "cache.gha.enabled", "--org", "org-default"])
@@ -438,7 +435,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
         result = runner.invoke(cli, ["settings", "reset", "some.org-scoped.setting", "--org", "org-explicit"])
@@ -457,7 +453,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
@@ -474,7 +469,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             captured["path"] = path
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)
         result = runner.invoke(cli, ["settings", "reset", "cache.gha.enabled"])
@@ -495,7 +489,6 @@ class TestSettingsReset:
 
         def mock_delete(self, path, params=None):
             delete_called.append(path)
-            return None
 
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
         monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)

@@ -486,10 +486,7 @@ def detect_repo_context_from_git() -> tuple[str, str | None] | None:
     """
     try:
         result = subprocess.run(
-            ["git", "remote", "get-url", "origin"],
-            capture_output=True,
-            text=True,
-            timeout=5,
+            ["git", "remote", "get-url", "origin"], capture_output=True, text=True, timeout=5, check=False
         )
         if result.returncode != 0:
             return None
@@ -514,12 +511,7 @@ def _list_git_remotes() -> list[str]:
     fails. Used purely for diagnostics — the auto-detect path stays pinned
     to ``origin`` so behavior is predictable."""
     try:
-        result = subprocess.run(
-            ["git", "remote"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
+        result = subprocess.run(["git", "remote"], capture_output=True, text=True, timeout=5, check=False)
     except subprocess.TimeoutExpired, FileNotFoundError:
         return []
     if result.returncode != 0:
@@ -553,8 +545,7 @@ def parse_remote_url(url: str) -> str | None:
     if not url:
         return None
 
-    if url.startswith("git+"):
-        url = url[4:]
+    url = url.removeprefix("git+")
 
     m = _SCP_RE.match(url)
     if m:
@@ -567,8 +558,7 @@ def parse_remote_url(url: str) -> str | None:
         if parsed.scheme not in ("ssh", "https", "http", "git"):
             return None
         path = parsed.path.lstrip("/")
-    if path.endswith(".git"):
-        path = path[:-4]
+    path = path.removesuffix(".git")
 
     parts = path.split("/")
     if len(parts) < 2 or any(part in {"", ".", ".."} for part in parts):

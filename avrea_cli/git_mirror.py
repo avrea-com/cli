@@ -229,7 +229,7 @@ def clone_mirror(
         argv.extend(["--depth", str(depth)])
     argv.extend(["--", url, directory if directory is not None else full_name.rsplit("/", 1)[1]])
     try:
-        return subprocess.run(argv, env=env).returncode
+        return subprocess.run(argv, env=env, check=False).returncode
     except FileNotFoundError:
         raise click.ClickException("Git is required. Install git and try again.") from None
     except OSError:

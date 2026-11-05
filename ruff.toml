@@ -27,6 +27,8 @@ extend-select = [
 [lint.per-file-ignores]
 # Tests use lazy imports inside fixtures
 "tests/**/*.py" = ["PLC0415"]
+# Invalid API payloads use ValueError so the diagnostics fallback catches them.
+"avrea_cli/run_diagnostics.py" = ["TRY004"]
 
 [lint.isort]
 force-single-line = true
