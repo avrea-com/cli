@@ -94,6 +94,14 @@ def test_parse_supported_references(value, api_url, kind, run_id, platform_run_i
         "https://github.com:443/acme/widgets/actions/runs/123",
         "https://github.com/acme/widgets/actions/runs/123/attempts/0",
         "https://github.com/acme/widgets/actions/runs/123/extra",
+        "https://github.com/acme/widgets/actions/runs/123/job/0",
+        "https://github.com/acme/widgets/actions/runs/123/job/abc",
+        "https://github.com/acme/widgets/actions/runs/123/job/456/extra",
+        "https://github.com/acme/widgets/actions/runs/123/attempts/2/job/456",
+        "https://github.com/acme/widgets/actions/runs/123/job/456#other",
+        "https://github.com/acme/widgets/actions/runs/123#step:3:10",
+        "https://github.com/acme/widgets/actions/runs/123/attempts/2#step:3:10",
+        "https://console.avrea.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f#step:3:10",
         "https://pr-12.console.test.example.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f",
         "https://console.local.test.example.com/org/acme/runs/run-019e5a2e474e76ca13d52ca70c883e0f",
         "https://console.avrea.com/org/acme/jobs/job-abc123",
@@ -196,3 +204,147 @@ def test_avrea_url_exposes_org_slug_for_command_context_validation():
     )
 
     assert parsed.organization_slug == "acme"
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    ["", "/", "?pr=78", "#step:3:10", "?pr=78#step:3:10"],
+)
+def test_parse_github_job_url(suffix):
+    parsed = parse_run_reference(
+        f"https://github.com/acme/widgets/actions/runs/123/job/456{suffix}",
+        api_url="https://api.avrea.com",
+    )
+
+    assert parsed.kind is RunReferenceKind.GITHUB_URL
+    assert parsed.platform_run_id == 123
+    assert parsed.platform_job_id == 456
+    assert parsed.attempt is None
+    assert parsed.repository_full_name == "acme/widgets"
+
+
+def _attempt(attempt, *job_ids):
+    return {
+        "run_id": f"run-attempt-{attempt}",
+        "run_attempt": attempt,
+        "repository": {"full_name": "acme/widgets"},
+        "jobs": [{"job_id": f"job-{job_id}", "platform_job_id": job_id} for job_id in job_ids],
+    }
+
+
+def _job_reference(job_id=456):
+    return parse_run_reference(
+        f"https://github.com/acme/widgets/actions/runs/123/job/{job_id}",
+        api_url="https://api.avrea.com",
+    )
+
+
+def _client(*attempts):
+    """The attempt list comes back without jobs; one attempt fetched by ID comes back with them."""
+    by_id = {a["run_id"]: a for a in attempts if isinstance(a, dict) and "run_id" in a}
+
+    def get(path, params=None):
+        if path == "/orgs/org-1/workflow-runs":
+            listed = [{k: v for k, v in a.items() if k != "jobs"} if isinstance(a, dict) else a for a in attempts]
+            return {"data": listed}
+        return {"data": by_id[path.removeprefix("/orgs/org-1/workflow-runs/")]}
+
+    client = MagicMock()
+    client.public_get.side_effect = get
+    return client
+
+
+def _fetched(client):
+    return [call.args[0] for call in client.public_get.call_args_list]
+
+
+def test_resolve_job_url_returns_the_attempt_containing_the_job():
+    """The job is in attempt 1, not the latest attempt, and that is the one the link means."""
+    client = _client(_attempt(2, 789), _attempt(1, 456))
+
+    result = resolve_run_reference(client, "org-1", _job_reference(), include=["workflow"])
+
+    assert result["run_id"] == "run-attempt-1"
+    assert client.public_get.call_args_list[0].kwargs["params"] == {
+        "platform_run_id": 123,
+        "limit": 1000,
+        "order": "created_at.desc",
+        "include": ["workflow"],
+    }
+    assert _fetched(client)[1:] == [
+        "/orgs/org-1/workflow-runs/run-attempt-2",
+        "/orgs/org-1/workflow-runs/run-attempt-1",
+    ]
+    assert client.public_get.call_args.kwargs["params"] == {"include": ["workflow", "jobs"]}
+
+
+def test_resolve_job_url_in_latest_attempt_fetches_only_its_jobs():
+    client = _client(_attempt(2, 456), _attempt(1, 123))
+
+    assert resolve_run_reference(client, "org-1", _job_reference())["run_id"] == "run-attempt-2"
+    assert "include" not in client.public_get.call_args_list[0].kwargs["params"]
+    assert _fetched(client)[1:] == ["/orgs/org-1/workflow-runs/run-attempt-2"]
+
+
+def test_resolve_job_url_does_not_repeat_jobs_include():
+    client = _client(_attempt(1, 456))
+
+    resolve_run_reference(client, "org-1", _job_reference(), include=["jobs", "workflow"])
+
+    assert client.public_get.call_args_list[0].kwargs["params"]["include"] == ["workflow"]
+    assert client.public_get.call_args.kwargs["params"]["include"] == ["jobs", "workflow"]
+
+
+def test_resolve_job_url_prefers_newest_attempt_if_a_job_id_repeats():
+    client = _client(_attempt(2, 456), _attempt(1, 456))
+
+    assert resolve_run_reference(client, "org-1", _job_reference())["run_id"] == "run-attempt-2"
+
+
+def test_resolve_job_url_fails_rather_than_returning_another_attempt():
+    client = _client(_attempt(2, 789), {"run_attempt": 1}, "bad")
+
+    with pytest.raises(click.ClickException) as excinfo:
+        resolve_run_reference(client, "org-1", _job_reference())
+
+    message = excinfo.value.format_message()
+    assert "GitHub job 456 is not listed" in message
+    assert "run 123" in message
+    assert excinfo.value.exit_code == 1
+    assert "Invalid run reference" not in message
+
+
+def test_resolve_job_url_reports_missing_job_data_separately():
+    client = _client(_attempt(1))
+
+    with pytest.raises(click.ClickException, match="returned no job data for GitHub run 123"):
+        resolve_run_reference(client, "org-1", _job_reference())
+
+
+def test_resolve_job_url_for_a_run_not_in_the_org_does_not_suggest_run_view():
+    client = _client()
+
+    with pytest.raises(click.ClickException) as excinfo:
+        resolve_run_reference(client, "org-1", _job_reference())
+
+    message = excinfo.value.format_message()
+    assert message == "GitHub run 123 has no visible attempts in this organization."
+    assert _fetched(client) == ["/orgs/org-1/workflow-runs"]
+
+
+def test_resolve_job_url_matches_a_string_job_id():
+    run = _attempt(1)
+    run["jobs"] = [{"job_id": "job-1", "platform_job_id": "456"}]
+    client = _client(run)
+
+    assert resolve_run_reference(client, "org-1", _job_reference())["run_id"] == "run-attempt-1"
+
+
+def test_resolve_job_url_validates_repository():
+    client = MagicMock()
+    other = _attempt(1, 456)
+    other["repository"] = {"full_name": "acme/other"}
+    client = _client(other)
+
+    with pytest.raises(click.ClickException, match="does not match"):
+        resolve_run_reference(client, "org-1", _job_reference())

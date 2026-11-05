@@ -7,7 +7,7 @@ avr-run-diagnose \- Explain a failed or unexpectedly slow workflow run.
 .SH DESCRIPTION
 Explain a failed or unexpectedly slow workflow run.
 .PP
-RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`. The report combines jobs and failed steps, bounded failed-job log tails, queue/execution timings, runner metrics, and a prior-success workflow baseline.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`. A job URL selects that job's attempt; the report still covers the whole attempt. The report combines jobs and failed steps, bounded failed-job log tails, queue/execution timings, runner metrics, and a prior-success workflow baseline.
 .PP
 .RS 4
 .nf
@@ -15,6 +15,7 @@ Examples:
     avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
     avr run diagnose 123456789 --json
     avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321
 .fi
 .RE
 .SH ARGUMENTS

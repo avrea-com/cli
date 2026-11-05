@@ -46,7 +46,8 @@ avr run diagnose [OPTIONS] RUN
 ```
 
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
-`avr run view`. The report combines jobs and failed steps, bounded
+`avr run view`. A job URL selects that job's attempt; the report still
+covers the whole attempt. The report combines jobs and failed steps, bounded
 failed-job log tails, queue/execution timings, runner metrics, and a
 prior-success workflow baseline.
 
@@ -55,6 +56,7 @@ Examples:
     avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
     avr run diagnose 123456789 --json
     avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321
 ```
 
 **Arguments**
@@ -120,7 +122,7 @@ avr run logs [OPTIONS] RUN
 ```
 
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
-`avr run view`.
+`avr run view`. A GitHub job URL shows only that job's logs.
 
 Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
@@ -132,6 +134,7 @@ Examples:
     avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed
     avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test
     avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow
+    avr run logs https://github.com/acme/widgets/actions/runs/123456789/job/987654321
 ```
 
 **Arguments**
@@ -192,8 +195,8 @@ avr run view [OPTIONS] [RUN]
 
 ```sh
 RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
-run URL, or an Avrea console run URL. Without RUN, shows 10 most recent
-runs.
+run or job URL, or an Avrea console run URL. A job URL opens the attempt
+that job belongs to. Without RUN, shows 10 most recent runs.
 ```
 
 ```sh
@@ -202,6 +205,7 @@ Examples:
     avr run view run-019e5a2e474e71c297e452279d4bcdea
     avr run view 123456789
     avr run view https://github.com/acme/widgets/actions/runs/123456789
+    avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321
     avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
     avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
     avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
