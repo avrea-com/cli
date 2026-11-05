@@ -520,17 +520,114 @@ class TestRunViewOtherAttempts:
         assert "OTHER ATTEMPTS" not in result.output
 
 
-@pytest.mark.parametrize("availability", [{}, {"can_rerun_subset": False}])
-def test_subset_requires_server_support(runner, monkeypatch, availability):
+@pytest.mark.parametrize(
+    "availability,key",
+    [
+        ({}, None),
+        ({}, "c" * 32),
+        ({"can_rerun": False}, None),
+        ({"can_rerun": False}, "c" * 32),
+        ({"can_rerun_subset": False}, None),
+        ({"can_rerun": True, "can_rerun_subset": False}, None),
+    ],
+)
+def test_subset_requires_server_support(runner, monkeypatch, availability, key):
     get = MagicMock(side_effect=[{"data": {"run_id": "awr-" + "a" * 32}}, {"data": availability}])
     post = MagicMock()
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
-    result = runner.invoke(cli, ["run", "rerun", "awr-" + "a" * 32, "--job", "build"])
+    options = ["--idempotency-key", key] if key else []
+    result = runner.invoke(cli, ["run", "rerun", "awr-" + "a" * 32, "--job", "build", *options])
     assert result.exit_code == 1
     assert "does not currently allow" in result.output
     post.assert_not_called()
     assert "Invocation key:" not in result.output
+
+
+@pytest.mark.parametrize("selection", [["--failed"], ["--job", "build"]])
+def test_unavailable_subset_reports_the_server_reason(runner, monkeypatch, selection):
+    original = "awr-" + "a" * 32
+    job_id = "awj-" + "d" * 32
+    get = MagicMock(
+        side_effect=[
+            {"data": {"run_id": original, "jobs": [{"job_id": job_id, "job_name": "build"}]}},
+            {"data": {"can_rerun": False, "can_rerun_subset": False}},
+        ]
+    )
+    request = httpx.Request("POST", f"https://api.example/orgs/org-default/workflow-runs/{original}/rerun")
+    post = MagicMock(
+        side_effect=httpx.HTTPStatusError(
+            "Conflict",
+            request=request,
+            response=httpx.Response(409, request=request, json={"detail": "An attempt is still running"}),
+        )
+    )
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+
+    result = runner.invoke(cli, ["run", "rerun", original, *selection, "--yes"])
+
+    assert result.exit_code == 1, result.output
+    assert "An attempt is still running" in result.output
+    assert "HTTP 409" in result.output
+    post.assert_called_once()
+    payload = post.call_args.kwargs["json"]
+    assert payload["failed_only"] == (selection == ["--failed"])
+    assert payload.get("job_ids") == ([job_id] if selection[0] == "--job" else None)
+
+
+@pytest.mark.parametrize("selection", [["--failed"], ["--job", "build"]])
+@pytest.mark.parametrize(
+    "availability",
+    [
+        {"can_rerun_subset": False},
+        {"can_rerun": False, "can_rerun_subset": False},
+        {"can_rerun": True, "can_rerun_subset": False},
+    ],
+)
+def test_subset_recovery_with_disabled_admission(runner, monkeypatch, selection, availability):
+    original = "awr-" + "a" * 32
+    recovered = "awr-" + "b" * 32
+    job_id = "awj-" + "d" * 32
+    key = "c" * 32
+    get = MagicMock(
+        side_effect=[
+            {"data": {"run_id": original, "jobs": [{"job_id": job_id, "job_name": "build"}]}},
+            {"data": availability},
+        ]
+    )
+    post = MagicMock(return_value={"data": {"run_id": recovered, "run_attempt": 2, "status": "rerun_requested"}})
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+
+    result = runner.invoke(cli, ["run", "rerun", original, *selection, "--idempotency-key", key, "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert f"Run: {recovered}  (attempt 2)" in result.output
+    post.assert_called_once()
+    payload: dict[str, object] = {"failed_only": selection == ["--failed"], "invocation_key": key}
+    if selection[0] == "--job":
+        payload["job_ids"] = [job_id]
+    assert post.call_args.kwargs["json"] == payload
+
+
+def test_job_suggestions_are_listed_on_separate_lines(runner, monkeypatch):
+    jobs = [{"job_id": "awj-" + f"{index:032x}", "job_name": f"build ({index})"} for index in range(256)]
+    get = MagicMock(
+        side_effect=[{"data": {"run_id": "awr-" + "a" * 32, "jobs": jobs}}, {"data": {"can_rerun_subset": True}}]
+    )
+    post = MagicMock()
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", get)
+    monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
+
+    result = runner.invoke(cli, ["run", "rerun", "awr-" + "a" * 32, "--job", "missing", "--yes"])
+
+    assert result.exit_code == 2, result.output
+    assert "Available matches:\n" in result.output
+    assert result.output.split("Available matches:\n", 1)[1].splitlines() == [
+        f"  {job['job_name']} ({job['job_id']})" for job in jobs
+    ]
+    post.assert_not_called()
 
 
 @pytest.mark.parametrize(
