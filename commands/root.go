@@ -264,7 +264,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	login.Hidden = true
 	logout := NewLogout(d)
 	logout.Hidden = true
-	root.AddCommand(login, logout, NewInternal(d))
+	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d))
 	configureHelp(root, d)
 	return root
 }

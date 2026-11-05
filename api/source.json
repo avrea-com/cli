@@ -133,5 +133,16 @@
   "nullable": {
     "version": "v1.2.0",
     "released": "2026-06-22T15:02:30Z"
-  }
+  },
+  "supplements": [
+    {
+      "commit": "d3cb9b104b1692bec219038cb78f5c540dc983f0",
+      "path": "control/openapi/public.json",
+      "sha256": "683f6565763de4b6a011151122e08f3a31521585d0e69cae05edb006f1c0134a",
+      "operations": [
+        "submit_feedback",
+        "get_feedback"
+      ]
+    }
+  ]
 }

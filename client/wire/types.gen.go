@@ -411,6 +411,51 @@ func (e EgressRuleProtocol) Valid() bool {
 	}
 }
 
+// Defines values for FeedbackRequestKind.
+const (
+	Bug      FeedbackRequestKind = "bug"
+	Feedback FeedbackRequestKind = "feedback"
+)
+
+// Valid indicates whether the value is a known member of the FeedbackRequestKind enum.
+func (e FeedbackRequestKind) Valid() bool {
+	switch e {
+	case Bug:
+		return true
+	case Feedback:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FeedbackStatus.
+const (
+	FeedbackStatusDelivered      FeedbackStatus = "delivered"
+	FeedbackStatusFailed         FeedbackStatus = "failed"
+	FeedbackStatusNeedsAttention FeedbackStatus = "needs_attention"
+	FeedbackStatusQueued         FeedbackStatus = "queued"
+	FeedbackStatusSending        FeedbackStatus = "sending"
+)
+
+// Valid indicates whether the value is a known member of the FeedbackStatus enum.
+func (e FeedbackStatus) Valid() bool {
+	switch e {
+	case FeedbackStatusDelivered:
+		return true
+	case FeedbackStatusFailed:
+		return true
+	case FeedbackStatusNeedsAttention:
+		return true
+	case FeedbackStatusQueued:
+		return true
+	case FeedbackStatusSending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GenerateSbomRequestScope.
 const (
 	GenerateSbomRequestScopeFull GenerateSbomRequestScope = "full"
@@ -3099,6 +3144,27 @@ type FeatureFlagResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// FeedbackRequest defines model for FeedbackRequest.
+type FeedbackRequest struct {
+	Kind           *FeedbackRequestKind      `json:"kind,omitempty"`
+	Message        string                    `json:"message"`
+	OrganizationId nullable.Nullable[string] `json:"organization_id,omitempty"`
+}
+
+// FeedbackRequestKind defines model for FeedbackRequest.Kind.
+type FeedbackRequestKind string
+
+// FeedbackResponse defines model for FeedbackResponse.
+type FeedbackResponse struct {
+	CreatedAt            time.Time              `json:"created_at"`
+	Id                   string                 `json:"id"`
+	Status               FeedbackStatus         `json:"status"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// FeedbackStatus defines model for FeedbackStatus.
+type FeedbackStatus string
+
 // FlowSummarySearchResponse Paginated search response for VM flow summaries.
 type FlowSummarySearchResponse struct {
 	HasMore               *bool                       `json:"has_more,omitempty"`
@@ -4888,6 +4954,17 @@ type WorkflowsListResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// SubmitFeedbackParams defines parameters for SubmitFeedback.
+type SubmitFeedbackParams struct {
+	IdempotencyKey string  `json:"Idempotency-Key"`
+	AvreaSession   *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetFeedbackParams defines parameters for GetFeedback.
+type GetFeedbackParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // SearchLogsParams defines parameters for SearchLogs.
 type SearchLogsParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
@@ -5986,6 +6063,9 @@ type CreateOrganizationParams struct {
 type SshForwardingParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
+
+// SubmitFeedbackJSONRequestBody defines body for SubmitFeedback for application/json ContentType.
+type SubmitFeedbackJSONRequestBody = FeedbackRequest
 
 // SearchLogsJSONRequestBody defines body for SearchLogs for application/json ContentType.
 type SearchLogsJSONRequestBody = LogSearchParams
@@ -12023,6 +12103,98 @@ func (a FeatureFlagResponse) MarshalJSON() ([]byte, error) {
 	object["key"], err = json.Marshal(a.Key)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'key': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FeedbackResponse. Returns the specified
+// element and whether it was found
+func (a FeedbackResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FeedbackResponse
+func (a *FeedbackResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FeedbackResponse to handle AdditionalProperties
+func (a *FeedbackResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FeedbackResponse to handle AdditionalProperties
+func (a FeedbackResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
