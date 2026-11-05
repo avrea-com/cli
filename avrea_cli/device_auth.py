@@ -1,0 +1,247 @@
+"""Browserless CLI login using RFC 8628 device authorization."""
+
+from avrea_cli.config import _LOOPBACK_HOSTS
+from avrea_cli.config import CliConfig
+from avrea_cli.display import is_piped
+from avrea_cli.helpers import exit_on_transport_error
+from avrea_cli.helpers import retry_after_seconds
+from avrea_cli.version import USER_AGENT
+from io import StringIO
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import ValidationError
+from pydantic import field_validator
+import click
+import httpx
+import os
+import segno
+import shutil
+import sys
+import time
+
+CLIENT_ID = "avr-cli"
+GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
+REQUEST_TIMEOUT = 15.0
+
+
+class AuthorizationServer(BaseModel):
+    issuer: str
+    device_authorization_endpoint: str
+    token_endpoint: str
+
+
+class DeviceRequest(BaseModel):
+    device_code: str = Field(min_length=1, repr=False)
+    user_code: str = Field(min_length=1, max_length=32)
+    verification_uri: str
+    verification_uri_complete: str | None = None
+    # Avrea currently issues ten-minute requests; allow up to a day without
+    # accepting unbounded integers in deadline arithmetic.
+    expires_in: int = Field(gt=0, le=86400, strict=True)
+    # RFC 8628 sections 3.2 and 3.5 specify this default, the slow_down
+    # increment, and timeout backoff: https://www.rfc-editor.org/rfc/rfc8628.html#section-3.5
+    interval: int = Field(default=5, gt=0, le=86400, strict=True)
+
+    @field_validator("user_code")
+    @classmethod
+    def printable_code(cls, value: str) -> str:
+        if not value.isascii() or not value.isprintable():
+            raise ValueError("User code must be printable ASCII")
+        return value
+
+
+class DeviceToken(BaseModel):
+    # Matches Avrea API key generation: avk_ plus 32 URL-safe random bytes.
+    access_token: str = Field(pattern=r"^avk_[A-Za-z0-9_-]{43}$", min_length=47, max_length=47, repr=False)
+    token_type: str
+    expires_in: int = Field(gt=0, strict=True)
+    scope: str
+
+    @field_validator("token_type")
+    @classmethod
+    def bearer_token(cls, value: str) -> str:
+        if value.lower() != "bearer":
+            raise ValueError("Expected a bearer token")
+        return value
+
+    @field_validator("scope")
+    @classmethod
+    def avrea_scope(cls, value: str) -> str:
+        if value != "avrea":
+            raise ValueError("Unexpected scope")
+        return value
+
+
+class OAuthError(BaseModel):
+    error: str
+
+
+def _safe_url(value: str, *, configured_host: bool = False) -> httpx.URL:
+    try:
+        if any(char.isspace() or ord(char) < 32 or ord(char) == 127 for char in value):
+            raise ValueError("Invalid URL characters")
+        url = httpx.URL(value)
+        secure = url.scheme == "https" or (url.scheme == "http" and url.host in _LOOPBACK_HOSTS)
+        if not secure or not url.host or url.userinfo or url.fragment:
+            raise ValueError("Unsafe URL")
+    except ValueError, httpx.InvalidURL:
+        message = (
+            "Invalid API host for device login. Check your host configuration."
+            if configured_host
+            else "The server returned an unsafe device-login URL."
+        )
+        raise click.ClickException(message) from None
+    return url
+
+
+def _origin(url: httpx.URL) -> tuple[str, str, int | None]:
+    return url.scheme, url.host, url.port
+
+
+def _parse_response[T: BaseModel](response: httpx.Response, model: type[T]) -> T:
+    try:
+        return model.model_validate_json(response.content)
+    except ValidationError:
+        # Validation errors can include device secrets and access tokens.
+        raise click.ClickException("The server returned an invalid device-login response.") from None
+
+
+def _failure(response: httpx.Response) -> click.ClickException:
+    if response.status_code in {404, 405, 501}:
+        return click.ClickException("This server does not support device login yet. Use avr auth login instead.")
+    try:
+        error = OAuthError.model_validate_json(response.content).error
+    except ValidationError:
+        error = ""
+    messages = {
+        "access_denied": "Device access was denied. Start a new login if needed.",
+        "expired_token": "The login code expired. Run avr auth device-login again.",
+        "invalid_grant": "This login request is no longer usable. Run avr auth device-login again.",
+        "invalid_client": "This server does not accept this CLI for device login.",
+        "invalid_scope": "This server does not support the requested Avrea access.",
+        "invalid_request": "The server rejected the device-login request.",
+        "unsupported_grant_type": "This server does not support device login.",
+    }
+    if response.status_code == 429:
+        return click.ClickException("Too many login attempts. Wait a minute before trying again.")
+    return click.ClickException(messages.get(error, f"Device login failed (HTTP {response.status_code}). Try again."))
+
+
+def _show_qr(url: str) -> None:
+    stream = sys.stdout
+    context = click.get_current_context(silent=True)
+    if is_piped() or os.environ.get("TERM") == "dumb" or (context is not None and context.color is False):
+        return
+    try:
+        "▀▄█".encode(stream.encoding or "utf-8")
+        qr = segno.make_qr(url, error="m")
+    except UnicodeEncodeError, LookupError, segno.DataOverflowError:
+        return
+    if qr.symbol_size()[0] >= shutil.get_terminal_size().columns:
+        return
+    output = StringIO()
+    qr.terminal(out=output, compact=True)
+    click.echo("\nOr scan with your phone:")
+    # Segno's compact renderer draws light modules as blocks. Explicit colors
+    # keep the quiet zone white on both light and dark terminal themes.
+    for line in output.getvalue().splitlines():
+        click.echo(click.style(line, fg="white", bg="black"), color=True)
+
+
+def _show_request(request: DeviceRequest, *, show_qr: bool) -> None:
+    link = request.verification_uri_complete or request.verification_uri
+    click.echo(f"Open this link in a browser on any device:\n\n  {link}\n")
+    if not request.verification_uri_complete:
+        click.echo(f"Code: {request.user_code}")
+    if show_qr:
+        _show_qr(link)
+    click.echo(f"\nWaiting for approval (expires in {request.expires_in} seconds). Press Ctrl+C to cancel.")
+
+
+def _poll(client: httpx.Client, endpoint: str, request: DeviceRequest, deadline: float) -> str:
+    interval = float(request.interval)
+    delay = interval
+    last_error: str | None = None
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            time.sleep(min(delay, remaining))
+        if deadline - time.monotonic() <= 0:
+            if last_error:
+                raise click.ClickException(
+                    f"Could not complete device login before expiry ({last_error}). "
+                    "Check your connection and run avr auth device-login again."
+                )
+            raise click.ClickException("The login code expired. Run avr auth device-login again.")
+        try:
+            response = client.post(
+                endpoint,
+                data={"client_id": CLIENT_ID, "grant_type": GRANT_TYPE, "device_code": request.device_code},
+                # Expiry prevents new polls; let an eligible poll finish receiving
+                # its single-use credential within the normal request timeout.
+                timeout=REQUEST_TIMEOUT,
+            )
+        except httpx.TransportError as exc:
+            # RFC 8628 section 3.5 recommends exponential timeout backoff.
+            # Keep it separate from the server's persistent slow_down interval.
+            delay *= 2
+            last_error = type(exc).__name__
+            click.echo(f"Warning: could not check device approval ({last_error}); retrying.", err=True)
+            continue
+        if response.status_code == 200:
+            return _parse_response(response, DeviceToken).access_token
+        if response.status_code in {404, 405, 501}:
+            raise _failure(response)
+        if response.status_code == 408 or response.status_code >= 500:
+            last_error = f"HTTP {response.status_code}"
+            click.echo(f"Warning: could not check device approval ({last_error}); retrying.", err=True)
+            delay = max(interval * 2, retry_after_seconds(response) or 0)
+            continue
+        try:
+            error = OAuthError.model_validate_json(response.content).error
+        except ValidationError:
+            error = ""
+        if error == "slow_down":
+            interval += 5
+        elif error != "authorization_pending" and response.status_code != 429:
+            raise _failure(response)
+        last_error = None
+        delay = max(interval, retry_after_seconds(response) or 0)
+
+
+def login(public_api_url: str, *, show_qr: bool = True) -> str:
+    """Obtain a credential without launching a browser or listening locally."""
+    base = _safe_url(public_api_url, configured_host=True)
+    try:
+        with httpx.Client(
+            timeout=REQUEST_TIMEOUT, headers={"User-Agent": USER_AGENT}, follow_redirects=False
+        ) as client:
+            response = client.get(f"{public_api_url}/.well-known/oauth-authorization-server")
+            if response.status_code != 200:
+                raise _failure(response)
+            server = _parse_response(response, AuthorizationServer)
+            if server.issuer.rstrip("/") != public_api_url.rstrip("/"):
+                raise click.ClickException("The device-login issuer does not match the configured API host.")
+            for endpoint in (server.device_authorization_endpoint, server.token_endpoint):
+                if _origin(_safe_url(endpoint)) != _origin(base):
+                    raise click.ClickException("Device-login endpoints must use the configured API origin.")
+            started = time.monotonic()
+            response = client.post(
+                server.device_authorization_endpoint, data={"client_id": CLIENT_ID, "scope": "avrea"}
+            )
+            if response.status_code != 200:
+                raise _failure(response)
+            request = _parse_response(response, DeviceRequest)
+            verification = _safe_url(request.verification_uri)
+            request.verification_uri = str(verification)
+            if request.verification_uri_complete:
+                complete = _safe_url(request.verification_uri_complete)
+                if _origin(complete) != _origin(verification):
+                    raise click.ClickException("The device-login links must use the same console origin.")
+                request.verification_uri_complete = str(complete)
+            if base != httpx.URL(CliConfig.DEFAULT_API_URL):
+                click.echo(f"API: {base}")
+            _show_request(request, show_qr=show_qr)
+            return _poll(client, server.token_endpoint, request, started + request.expires_in)
+    except httpx.RequestError as exc:
+        exit_on_transport_error(exc, "sign in with device login")

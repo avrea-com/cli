@@ -7719,6 +7719,43 @@
         "params": [],
         "subcommands": [
           {
+            "name": "device-login",
+            "path": [
+              "avr",
+              "auth",
+              "device-login"
+            ],
+            "full": "avr auth device-login",
+            "is_group": false,
+            "short_help": "Sign in from a remote machine using a browser on any device.",
+            "help": "Sign in from a remote machine using a browser on any device.\n\nOpen the displayed link or scan the QR code, confirm the code, and approve\naccess. The CLI waits for approval and saves your credentials. No browser\nis opened on this machine. QR codes appear only in compatible terminals\nwide enough to display them. Requires device-login support on the server.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr auth device-login [OPTIONS]",
+            "params": [
+              {
+                "name": "no_qr",
+                "kind": "option",
+                "opts": [
+                  "--no-qr"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Hide the terminal QR code; still display the sign-in link.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "login",
             "path": [
               "avr",

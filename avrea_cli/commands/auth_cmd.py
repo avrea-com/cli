@@ -87,7 +87,18 @@ def _do_login(ctx, provider, email=None):
     # it propagate hands control back to Click's runner, which exits cleanly
     # without our generic "Login failed:" prefix duplicating the message.
 
-    auth.store_token(api_key, host=config.public_api_url)
+    _complete_login(config, api_key)
+
+
+def _complete_login(config: CliConfig, api_key: str) -> None:
+    try:
+        auth.store_token(api_key, host=config.public_api_url)
+    except OSError:
+        raise click.ClickException(
+            f"Could not save credentials to {auth.HOSTS_FILE}. "
+            "Fix the file permissions or available disk space, then run "
+            "avr auth device-login or avr auth login again."
+        ) from None
 
     check = click.style("✓", fg="green")
     email = _fetch_email(config.public_api_url, api_key)
@@ -209,6 +220,27 @@ def git_credential(ctx: click.Context, url: str, full_name: str, operation: str)
 def auth_login(ctx, provider: str, email: str | None):
     """Authenticate via browser and store credentials."""
     _do_login(ctx, provider, email)
+
+
+@auth_group.command("device-login")
+@click.option("--no-qr", is_flag=True, help="Hide the terminal QR code; still display the sign-in link.")
+@click.pass_context
+def auth_device_login(ctx: click.Context, no_qr: bool) -> None:
+    """Sign in from a remote machine using a browser on any device.
+
+    Open the displayed link or scan the QR code, confirm the code, and approve
+    access. The CLI waits for approval and saves your credentials. No browser
+    is opened on this machine. QR codes appear only in compatible terminals
+    wide enough to display them. Requires device-login support on the server.
+    """
+    from avrea_cli import device_auth  # noqa: PLC0415
+
+    config: CliConfig = ctx.obj["config"]
+    try:
+        api_key = device_auth.login(config.public_api_url, show_qr=not no_qr)
+    except click.ClickException as exc:
+        raise click.ClickException(f"Login failed: {exc.format_message()}") from None
+    _complete_login(config, api_key)
 
 
 @auth_group.command("logout")
