@@ -64,13 +64,17 @@ func TestWatchMultipleJobsTransitionsAndFinalPayload(t *testing.T) {
 		return config.Config{Host: server.URL, Token: "avr_fixture", Org: inspectionOrg}, nil
 	}
 	d.Wait = func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
-	d.Now = func() time.Time { return time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC) }
+	clockReads := 0
+	d.Now = func() time.Time {
+		clockReads++
+		return time.Date(2026, 10, 29, 12, 0, clockReads, 123456789, time.UTC)
+	}
 	if code := Execute(t.Context(), []string{"run", "watch", inspectionRun, "--exit-status"}, d); code != 0 {
 		t.Fatal(code, stderr)
 	}
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
 	want := []string{"job_started", "job_completed", "job_completed", "run_completed"}
-	if len(lines) != len(want) || polls != 3 {
+	if len(lines) != len(want) || polls != 3 || clockReads != polls {
 		t.Fatal(polls, out)
 	}
 	for i, line := range lines {
@@ -80,7 +84,11 @@ func TestWatchMultipleJobsTransitionsAndFinalPayload(t *testing.T) {
 		if err := decoder.Decode(&event); err != nil {
 			t.Fatal(err)
 		}
-		if event["event"] != want[i] || event["run_id"] != inspectionRun || event["timestamp"] != "2026-10-29T12:00:00Z" {
+		wantTimestamp := "2026-10-29T12:00:03.123456Z"
+		if i == 0 {
+			wantTimestamp = "2026-10-29T12:00:01.123456Z"
+		}
+		if event["event"] != want[i] || event["run_id"] != inspectionRun || event["timestamp"] != wantTimestamp {
 			t.Fatal(event)
 		}
 		if i == 0 && event["conclusion"] != nil {

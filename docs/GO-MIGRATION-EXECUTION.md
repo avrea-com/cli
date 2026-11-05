@@ -1902,3 +1902,56 @@ public suites passed 930 paired case executions, and admin suites passed 811,
 including each GitLab suite's native and injected-transport phases. Python
 passed 2,209 tests with 29 skips. The local native archive passed the strengthened
 completion check. Reports are under ignored `build/go/review-fixes*`.
+
+## PR review follow-up — 2026-11-05
+
+The seven previously addressed threads were replied to and resolved against
+published commit `9bce863`. The next batch addresses sixteen concrete findings:
+
+- Normalize integer negative zero recursively in GitHub workflow inputs while
+  retaining floating negative zero; reject comma-separated project IDs.
+- Start default desktop openers without waiting for the window to close, preserve
+  whole executable paths in `BROWSER`, and warn without failing a successful
+  `--web` lookup when launching fails. Explicit browser candidates retain their
+  ordered fallback behavior.
+- Preserve cancellation during installation runner-count lookup; restore the
+  default SIGPIPE disposition for child programs while handling EPIPE in Go.
+- Remove invoice redirect Referer headers; reject server-selected Git metadata
+  clone directories in Go and Python; validate Go RDP instructions/URI fields.
+- Warn on JSON VM-create wait failures after password issuance, without repeating
+  creation or printing credentials; use one microsecond-precision timestamp per
+  streaming run-watch poll.
+- Set gzip header timestamps explicitly for reproducible archives. Validate
+  embedded executable build settings against package metadata and reject empty
+  third-party notices. The downloaded-package job installs Go for inspection;
+  the CLI itself still executes with an empty PATH.
+
+Every parity scenario now uses a recording browser outside its captured working
+directory. A raw-output secret check runs before specialized comparators can
+normalize output, including scenarios with loose `error_terms`. Empty suites
+fail immediately. `scripts/parity_suites.json` records independent report names,
+per-platform minimum case counts, shard assignments and required native vendor
+subreports. The CI report gate rejects missing/empty/differing reports, duplicate
+case names, a different Python baseline, or a different tested executable.
+Update these explicit floors deliberately when adding/removing cases; do not
+derive them from the current Makefile or dynamically accept a shrinking suite.
+
+Local validation: all 59 public suites passed the report gate, comprising 61
+reports and 8,288 paired case executions with zero differences. Ten affected
+admin suites produced 11 reports and 1,184 paired executions with zero
+differences. These counts include native and injected-vendor fixture phases.
+Full Go race tests, Go/Python lint and type checks, schema generation, and the
+154-node command audit passed. Python passed 2,215 tests; native subprocess and
+shell integrations passed 32 tests with one skip. Two native macOS archive builds
+had identical SHA-256s, and final package validation checked embedded build
+settings and completion bytes. Evidence is under ignored `build/go/review-*`.
+
+Twelve threads remain open for policy decisions or coordinated API work: TLS
+trust; atomic credential-file behavior, corrupt-store writes and environment
+credential fallback; schema coverage and typed response tolerance; callback
+login protections; GitLab runner authorization/confirmation; artifact overwrite
+policy; bootstrap without a pinned host key; terminal sanitization; decoded
+download limits. The committed public API schema inspected at core commit
+`62590194cda75bd512714bbfbd2a6fc87e76ac3d` contains dispatch metadata but not the
+native dispatch receipt endpoints. Handwritten fixtures are not a substitute for
+that missing server contract. No release, merge or installer cutover is included.

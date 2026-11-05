@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -83,6 +84,34 @@ func TestVMCreateDoesNotRetryUncertainOutcome(t *testing.T) {
 	code := Execute(t.Context(), []string{"vm", "create", "--name", "fixture", "--os", "linux", "--size", "4-vcpu", "--ephemeral", "--wait"}, d)
 	if code != 1 || calls != 1 {
 		t.Fatal(code, calls)
+	}
+}
+
+func TestVMCreateJSONWaitFailureReportsCommittedPassword(t *testing.T) {
+	for _, canceled := range []bool{false, true} {
+		d, out, stderr := testDeps(t)
+		ctx, cancel := context.WithCancel(t.Context())
+		d.LoadConfig = func() (config.Config, error) {
+			return config.Config{Host: "https://api.example.test", Token: "fixture", Org: inspectionOrg}, nil
+		}
+		posts := 0
+		d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+			status, body := 403, `{"detail":"denied"}`
+			if r.Method == http.MethodPost {
+				posts++
+				status = 201
+				body = `{"data":{"vm":{"customer_vm_id":"cvm-fixture","state":"PENDING"},"password":"one-time-fixture-secret"}}`
+			} else if canceled {
+				cancel()
+				return nil, ctx.Err()
+			}
+			return &http.Response{StatusCode: status, Header: http.Header{}, Request: r, Body: io.NopCloser(strings.NewReader(body))}, nil
+		})}
+		code := Execute(ctx, []string{"vm", "create", "--os", "windows", "--size", "2-vcpu", "--json", "--wait"}, d)
+		cancel()
+		if code == 0 || (canceled && code != 130) || posts != 1 || out.Len() != 0 || !strings.Contains(stderr.String(), "VM cvm-fixture was created") || strings.Contains(stderr.String(), "one-time-fixture-secret") {
+			t.Fatal(code, posts, out, stderr)
+		}
 	}
 }
 func TestVMSpawnRejectsInvalidCredentialFilesBeforeRequest(t *testing.T) {

@@ -73,7 +73,7 @@ func newJobView(d Dependencies) *cobra.Command {
 				}
 			}
 			if d.IsTerminal() {
-				return d.OpenBrowser(cmd.Context(), target)
+				return d.openWeb(cmd.Context(), target)
 			}
 			return nil
 		}

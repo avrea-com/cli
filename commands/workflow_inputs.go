@@ -52,6 +52,9 @@ func readWorkflowInput(decoder *json.Decoder, depth int) (workflowInput, error) 
 		return workflowInput{text: token, repr: pythonQuote(token)}, nil
 	case json.Number:
 		value.text = token.String()
+		if value.text == "-0" {
+			value.text = "0"
+		}
 		if strings.ContainsAny(value.text, ".eE") {
 			number, err := strconv.ParseFloat(value.text, 64)
 			if math.IsInf(number, 0) {

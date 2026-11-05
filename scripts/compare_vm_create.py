@@ -124,7 +124,7 @@ def scenarios():
         "a" * 256,
     ]:
         case(
-            "bad branch " + repr(ref[:20]),
+            "bad branch " + repr(ref[:20]) + f" ({len(ref)} chars)",
             ["--repo", "owner/repo", "--ref", ref],
             env={},
             responses={},

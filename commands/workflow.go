@@ -244,8 +244,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 				if _, err := fmt.Fprintln(d.Out, "Opening: "+target); err != nil {
 					return err
 				}
-				_ = d.OpenBrowser(cmd.Context(), target)
-				return nil
+				return d.openWeb(cmd.Context(), target)
 			}
 			_, err = fmt.Fprintln(d.Out, target)
 			return err

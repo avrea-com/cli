@@ -202,6 +202,14 @@ def scenarios():
         error_terms=["--project-id"],
     )
     case("selection empty", ["set-selection", *ID, "--project-selection", "selected"], json=False, presentation=True)
+    for action in (ADD, SELECT):
+        case(
+            action[0] + " rejects comma project IDs",
+            action + ["--project-id", "1,2"],
+            exit=2,
+            responses={},
+            error_terms=["--project-id"],
+        )
     case("selection 204", SELECT, responses=RESPONSES | {("PATCH", PATH): (204, None)}, exit=1)
     case(
         "add GitHub options",

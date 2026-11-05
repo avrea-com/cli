@@ -15,6 +15,35 @@ import zipfile
 
 
 class PackageTests(unittest.TestCase):
+    def test_binary_settings_must_match_manifest(self):
+        manifest = {"target": "linux_amd64", "commit": "current", "dirty": False, "cgo_enabled": False}
+        settings = {
+            "GOOS": "linux",
+            "GOARCH": "amd64",
+            "vcs.revision": "current",
+            "vcs.modified": "false",
+            "CGO_ENABLED": "0",
+            "-trimpath": "true",
+        }
+
+        def info(values):
+            return {
+                "Path": "github.com/avrea-com/cli/cmd/avr",
+                "Settings": [{"Key": k, "Value": v} for k, v in values.items()],
+            }
+
+        package.validate_build_info(info(settings), manifest)
+        for key, wrong in {
+            "GOOS": "darwin",
+            "GOARCH": "arm64",
+            "vcs.revision": "old",
+            "vcs.modified": "true",
+            "CGO_ENABLED": "1",
+            "-trimpath": "false",
+        }.items():
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "build setting"):
+                package.validate_build_info(info(settings | {key: wrong}), manifest)
+
     def test_crlf_completion_rejected_despite_matching_manifest(self):
         content = dict.fromkeys(
             [

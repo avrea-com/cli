@@ -79,6 +79,9 @@ func (c *Client) DownloadInvoice(ctx context.Context, path string) (io.ReadClose
 }
 
 func invoiceRedirect(req *http.Request, via []*http.Request) error {
+	// Invoice paths and intermediate signed URLs are private, even without
+	// an Authorization header. Match the Python client's no-referrer behavior.
+	req.Header.Del("Referer")
 	if len(via) > 20 {
 		return errors.New("too many invoice redirects")
 	}

@@ -60,6 +60,7 @@ def scenarios():
         stdin='{"list":[1,true,null,"hi"],"object":{"z":"last","a":"first","z":"new"},"float":1000000.0}',
     )
     add("JSON empty", ["--json"], stdin="")
+    add("JSON negative zero", ["--json"], stdin='{"count":-0,"nested":[-0,{"n":-0}],"float":-0.0,"exponent":-0e0}')
     add("JSON empty object", ["--json"], stdin="{}")
     for identifier in [WF, "build", "Build web", "9007199254740993"]:
         add("resolve " + identifier, workflow=identifier)

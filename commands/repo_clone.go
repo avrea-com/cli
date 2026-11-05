@@ -326,6 +326,9 @@ func newRepoClone(d Dependencies) *cobra.Command {
 		if err = validateRepositoryName(fullName); err != nil {
 			return err
 		}
+		if len(args) == 1 && strings.EqualFold(strings.TrimRight(fullName[strings.LastIndex(fullName, "/")+1:], ". "), ".git") {
+			return &ExitError{1, "Error: The API returned a reserved Git metadata directory as the repository name."}
+		}
 		var endpoints []string
 		seen := map[string]bool{}
 		for _, value := range rawEndpoints {

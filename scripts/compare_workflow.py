@@ -286,6 +286,8 @@ def scenarios():
                 case = deepcopy(original)
                 case["name"] += " terminal" + (" no color" if no_color else "")
                 case["tty"] = case["merge_terminal"] = case["presentation"] = True
+                if "--web" in case["args"]:
+                    case["browser_capture"] = True
                 case["args"] = ["--no-links", *case["args"]]
                 if no_color:
                     case["args"].insert(0, "--no-color")

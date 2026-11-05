@@ -155,11 +155,12 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 	failures := 0
 	encoder := json.NewEncoder(d.Out)
 	encoder.SetEscapeHTML(false)
+	var timestamp string
 	emit := func(event map[string]any) error {
 		if !streaming {
 			return nil
 		}
-		event["timestamp"] = d.Now().UTC().Format(time.RFC3339Nano)
+		event["timestamp"] = timestamp
 		event["run_id"] = runID
 		return encoder.Encode(event)
 	}
@@ -177,6 +178,12 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 			include = append(include, "workflow")
 		}
 		record, err := api.RunByReference(ctx, org, runID, false, url.Values{"include": include})
+		now := d.Now().UTC().Truncate(time.Microsecond)
+		layout := "2006-01-02T15:04:05.000000Z07:00"
+		if now.Nanosecond() == 0 {
+			layout = time.RFC3339
+		}
+		timestamp = now.Format(layout)
 		if err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()

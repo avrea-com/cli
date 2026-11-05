@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -24,6 +25,19 @@ var gitLabInstallationFields = []string{"installation_id", "organization_id", "g
 var gitLabWriteFields = append(slices.Clone(gitLabInstallationFields), "webhook_setup")
 
 const gitLabNotEnabled = "GitLab is not enabled for this organization, the installation belongs to another organization, or the ID is not a GitLab installation. Check it with 'avr org install list'."
+
+// Each flag supplies exactly one integer. IntSlice would also accept CSV.
+type projectIDArray struct{ ids *[]int }
+
+func (v projectIDArray) String() string { return fmt.Sprint(*v.ids) }
+func (v projectIDArray) Type() string   { return "intSlice" }
+func (v projectIDArray) Set(value string) error {
+	id, err := strconv.Atoi(value)
+	if err == nil {
+		*v.ids = append(*v.ids, id)
+	}
+	return err
+}
 
 func gitLabRows(value any) []map[string]any {
 	rows := []map[string]any{}
@@ -281,7 +295,7 @@ func newGitLabSelection(d Dependencies) *cobra.Command {
 	orgFlag(c, &org)
 	c.Flags().StringVar(&id, "installation-id", "", "GitLab installation ID.")
 	c.Flags().StringVar(&selection, "project-selection", "", "Project selection mode.")
-	c.Flags().IntSliceVar(&ids, "project-id", nil, "Project ID (repeatable).")
+	c.Flags().Var(projectIDArray{&ids}, "project-id", "Project ID (repeatable).")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		for _, flag := range []string{"installation-id", "project-selection"} {

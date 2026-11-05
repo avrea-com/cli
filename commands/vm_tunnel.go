@@ -210,7 +210,7 @@ func vmDesktopLaunch(protocol, address, user, guestOS, platform string) ([]strin
 	case "windows":
 		return []string{"mstsc", "/v:" + address}, false
 	case "darwin":
-		return []string{"open", "rdp://full%20address=s:" + address + "&username=s:" + user}, true
+		return []string{"open", vmRDPURI(address, user)}, true
 	default:
 		args := []string{"xfreerdp", "/v:" + address, "/u:" + user, "+clipboard", "/cert:ignore"}
 		if guestOS == "linux" {
@@ -289,6 +289,9 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 		}
 		forwards := []vmForward{{local, guestPort}}
 		address := fmt.Sprintf("127.0.0.1:%d", local)
+		if protocol == "rdp" && !validDesktopAddress(address, user) {
+			return &ExitError{1, "Error: VM endpoint returned an invalid remote desktop username."}
+		}
 		lines := vmDesktopLines(protocol, address, user, guestOS, runtime.GOOS)
 		if printOnly {
 			if _, err = fmt.Fprintln(d.Out, "Open the tunnel:\n  "+vmShellJoin(vmTunnelArgv(host, sshUser, port, forwards, identity, ""))+"\nThen connect with:"); err != nil {

@@ -683,6 +683,17 @@ It does not claim complete compatibility with every external jq expression.
 
 ## Deliberate differences and bounded safeguards
 
+- Server-selected clone destinations cannot be Git metadata directories (`.git`,
+  case variants, or trailing-dot variants). Both implementations now refuse them;
+  the pinned Python comparison baseline predates this safety fix.
+- Go rejects unsafe remote-desktop usernames/addresses before constructing RDP
+  instructions or launching a client. RDP URI fields are escaped independently;
+  JSON projection still retains original API values. Python's corresponding
+  instruction rendering has not been changed in this batch.
+- If a VM was created but JSON `--wait` fails before password delivery, Go keeps
+  the failure status and prints recovery guidance without disclosing the password
+  or issuing another create request. This warning improves on the pinned Python
+  behavior; it does not retrieve a password that the server no longer retains.
 - gojq v0.12.19 replaces the user's system jq. It preserves integer precision and
   runs in-process. Query errors use fixed diagnostics so a failing expression
   cannot echo credentials to stderr. No fallback to system jq. Tests cover raw

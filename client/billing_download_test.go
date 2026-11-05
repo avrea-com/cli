@@ -14,6 +14,9 @@ func TestInvoiceRedirectsDoNotRestoreCredentialsAcrossOrigins(t *testing.T) {
 	var origin *httptest.Server
 	calls := []string{}
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Referer") != "" {
+			t.Error("private invoice URL crossed origins")
+		}
 		calls = append(calls, "target")
 		if r.Header.Get("Authorization") != "" || r.Header.Get("Cookie") != "" {
 			t.Error("credentials crossed origins")
@@ -22,6 +25,9 @@ func TestInvoiceRedirectsDoNotRestoreCredentialsAcrossOrigins(t *testing.T) {
 	}))
 	defer target.Close()
 	origin = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Referer") != "" {
+			t.Error("redirect forwarded private URL")
+		}
 		calls = append(calls, r.URL.Path)
 		switch r.URL.Path {
 		case "/start":

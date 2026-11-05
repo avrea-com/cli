@@ -714,6 +714,16 @@ def test_clone_mirror_handles_missing_git(monkeypatch):
         clone_mirror("https://api.avrea.com", ENDPOINTS[0], "foo/faa", None, token=TOKEN, branch=None, depth=None)
 
 
+@pytest.mark.parametrize("name", [".git", ".GIT", ".git.", ".Git..."])
+def test_clone_refuses_server_selected_git_metadata_directory(monkeypatch, name):
+    def forbidden(*args, **kwargs):
+        pytest.fail("unsafe clone started Git")
+
+    monkeypatch.setattr("avrea_cli.git_mirror.subprocess.run", forbidden)
+    with pytest.raises(click.ClickException, match="reserved Git metadata"):
+        clone_mirror("https://api.avrea.com", ENDPOINTS[0], "foo/" + name, None, token=TOKEN, branch=None, depth=None)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [

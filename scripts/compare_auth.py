@@ -170,7 +170,10 @@ def run_captured(args, *, stdin, **kwargs):
 
 
 def run(executable, scenario, root, host):
-    with tempfile.TemporaryDirectory(prefix="avr-parity-") as directory:
+    with (
+        tempfile.TemporaryDirectory(prefix="avr-parity-") as directory,
+        tempfile.TemporaryDirectory(prefix="avr-browser-fixture-") as browser_directory,
+    ):
         home = Path(directory)
         cfg = home / "config"
         cfg.mkdir()
@@ -279,14 +282,15 @@ def run(executable, scenario, root, host):
             )
         callback_errors = []
         callback_worker = None
-        browser_target = home / "browser-target"
-        if scenario.get("login") or scenario.get("browser_capture"):
-            browser = home / "browser.py"
-            browser.write_text(
-                "import pathlib,sys; pathlib.Path(" + repr(str(browser_target)) + ").write_text(sys.argv[1])"
-            )
-            env["AVR_BROWSER"] = '"' + sys.executable + '" "' + str(browser) + '" %s'
-            env["BROWSER"] = env["AVR_BROWSER"]
+        browser_target = Path(browser_directory) / "browser-target"
+        # Every scenario is isolated from the user's desktop, including new
+        # terminal variants that forgot to opt into browser capture.
+        browser = Path(browser_directory) / "browser.py"
+        browser.write_text(
+            "import pathlib,sys; pathlib.Path(" + repr(str(browser_target)) + ").write_text(sys.argv[1])"
+        )
+        env["AVR_BROWSER"] = '"' + sys.executable + '" "' + str(browser) + '" %s'
+        env["BROWSER"] = env["AVR_BROWSER"]
 
         if scenario.get("hidden_prompt") and os.name == "nt" and executable[1:] == ["-m", "avrea_cli.main"]:
             executable = [executable[0], str(Path(__file__).with_name("parity_prompt_oracle.py"))]
@@ -503,6 +507,43 @@ def reused_organization_lookup(scenario, python_requests, go_requests):
             seen.append(request)
         unique.append(request)
     return json.dumps(unique, sort_keys=True) == json.dumps(go_requests, sort_keys=True)
+
+
+def secret_differences(scenario, python, go):
+    """Check raw captures before per-suite normalization or loose error wording."""
+    secrets = {TOKEN, "session-fixture", "csrf-fixture", "credential-fixture"}
+    secrets.update(scenario.get("secret_values", []))
+    keys = {
+        "token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "password",
+        "session",
+        "csrf_token",
+        "client_secret",
+        "api_key",
+        "avr_token",
+    }
+
+    def collect(value):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if str(key).lower() in keys and isinstance(child, str) and child:
+                    secrets.add(child)
+                collect(child)
+        elif isinstance(value, (list, tuple)):
+            for child in value:
+                collect(child)
+
+    collect(scenario)
+    collect(python.get("hosts", {}))
+    collect(go.get("hosts", {}))
+    return [
+        "new fixture secret disclosure on " + stream
+        for stream in ("stdout", "stderr")
+        if any(secret in go[stream] and secret not in python[stream] for secret in secrets)
+    ]
 
 
 def compare(scenario, python, go):
@@ -863,6 +904,9 @@ def main(
     parser.add_argument("--report", default=default_report)
     parser.add_argument("--jq-dir", default="build/go/oracle")
     args = parser.parse_args()
+    cases = list(case_factory())
+    if not cases:
+        raise SystemExit("Parity suite must contain at least one scenario")
     jq_dir = Path(args.jq_dir).resolve()
     os.environ["PATH"] = str(jq_dir) + os.pathsep + os.environ["PATH"]
     jq_version = subprocess.check_output(["jq", "--version"], text=True).strip()
@@ -889,7 +933,7 @@ def main(
         worker.start()
         host = f"http://127.0.0.1:{server.server_port}"
         try:
-            for scenario in case_factory():
+            for scenario in cases:
                 results = []
                 for executable in ([sys.executable, "-m", "avrea_cli.main"], [str(Path(args.go).resolve())]):
                     server.requests = []
@@ -906,7 +950,10 @@ def main(
                     result = run(executable, scenario, Path(oracle), host)
                     result["requests"] = copy.deepcopy(server.requests)
                     results.append(result)
-                differences = compare_results(scenario, *results)
+                # Specialized comparators may normalize or remove output fields.
+                # Enforce this boundary on their unmodified captures first.
+                secret_leaks = secret_differences(scenario, *results)
+                differences = secret_leaks + compare_results(scenario, *results)
                 report["scenarios"].append(
                     {"name": scenario["name"], "python": results[0], "go": results[1], "differences": differences}
                 )

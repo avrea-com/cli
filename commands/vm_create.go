@@ -198,6 +198,9 @@ func newVMCreate(d Dependencies) *cobra.Command {
 			defer notifications.Close()
 			final, disposition, err := waitForVM(cmd.Context(), d, cfg, api, path, o.timeout, vmConnectable, false, nil, notifications.Wait)
 			if err != nil {
+				if o.json && password != "" {
+					_, _ = fmt.Fprintf(d.Err, "VM %s was created, but waiting failed before its one-time password was delivered. Do not create it again. Use 'avr vm show %s' to inspect it, or delete it if it is no longer needed.\n", output.CellText(vmID), output.CellText(vmID))
+				}
 				return err
 			}
 			shown := final

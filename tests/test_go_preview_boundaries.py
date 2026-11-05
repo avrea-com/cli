@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from scripts import generate_go_doc_metadata as metadata
+from scripts.validate_parity_reports import inventory
 import json
 import re
 import subprocess
@@ -57,7 +58,9 @@ def test_every_parity_script_has_one_ci_shard():
     root = Path(__file__).resolve().parents[1]
     workflow = (root / ".github/workflows/go-preview.yml").read_text(encoding="utf-8")
     makefile = (root / "Makefile").read_text(encoding="utf-8")
-    expected = set(re.findall(r"scripts[./](compare_[a-z_]+)", makefile))
+    suites = inventory()
+    expected = set(suites)
+    assert set(re.findall(r"scripts[./](compare_[a-z_]+)", makefile)) == expected
     assigned = re.findall(
         r"- run: [^\n]*scripts[./](compare_[a-z_]+)[^\n]*\n        if: matrix.shard == ([0-3])",
         workflow,
@@ -65,3 +68,7 @@ def test_every_parity_script_has_one_ci_shard():
     assert {name for name, _ in assigned} == expected
     assert len(assigned) == len(expected)
     assert {shard for _, shard in assigned} == {"0", "1", "2", "3"}
+    assert all(suites[name]["shard"] == int(shard) for name, shard in assigned)
+    assert "continue-on-error:" not in workflow
+    gate = "run: python scripts/validate_parity_reports.py --binary build/go/avr.exe --shard ${{ matrix.shard }}"
+    assert gate in workflow

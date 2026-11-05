@@ -71,3 +71,24 @@ func TestInstallationRemoveCancellationPreventsSuspension(t *testing.T) {
 		t.Fatal(code, stderr)
 	}
 }
+
+func TestInstallationCountsCancellationStopsWithoutWarnings(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: "https://api.example.test", Token: "fixture"}, nil
+	}
+	calls := 0
+	d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		if calls == 2 {
+			cancel()
+			return nil, ctx.Err()
+		}
+		return &http.Response{StatusCode: 200, Header: http.Header{}, Request: r, Body: io.NopCloser(strings.NewReader(`{"data":[{"platform":"gitlab","organization_id":"org-a"},{"platform":"gitlab","organization_id":"org-b"}]}`))}, nil
+	})}
+	if code := Execute(ctx, []string{"org", "install", "list"}, d); code != 130 || calls != 2 || out.Len() != 0 || strings.Contains(stderr.String(), "Warning") {
+		t.Fatal(code, calls, out, stderr)
+	}
+}

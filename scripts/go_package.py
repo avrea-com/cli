@@ -3,6 +3,7 @@
 from pathlib import Path
 from pathlib import PurePosixPath
 import argparse
+import gzip
 import hashlib
 import http.server
 import json
@@ -99,7 +100,28 @@ def extract(archive, destination):
     return roots[0]
 
 
-def verify(archive):
+def validate_build_info(info, manifest):
+    settings = {entry["Key"]: entry["Value"] for entry in info.get("Settings", [])}
+    target_os, target_arch = manifest["target"].split("_", 1)
+    expected = {
+        "vcs.revision": manifest["commit"],
+        "vcs.modified": str(manifest["dirty"]).lower(),
+        "CGO_ENABLED": "0",
+        "-trimpath": "true",
+        "GOOS": target_os,
+        "GOARCH": target_arch,
+    }
+    if info.get("Path") != "github.com/avrea-com/cli/cmd/avr":
+        raise ValueError("Unexpected executable module path")
+    for key, value in expected.items():
+        if settings.get(key) != value:
+            raise ValueError(f"Executable build setting {key} does not match: {settings.get(key)!r} != {value!r}")
+    if manifest.get("cgo_enabled") is not False:
+        raise ValueError("Package must declare a CGO-disabled build")
+    return settings
+
+
+def verify(archive, go="go"):
     archive = archive.resolve()
     archive.with_name(archive.name + ".validation.json").unlink(missing_ok=True)
     expected = archive.with_name(archive.name + ".sha256").read_text(encoding="utf-8").strip()
@@ -134,6 +156,8 @@ def verify(archive):
         }
         if not required <= files.keys() or not any(p.startswith("man/") for p in files):
             raise ValueError("Package is missing required content")
+        if not (package / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8").strip():
+            raise ValueError("Package has empty third-party notices")
         binary = package / binary_name
         home = base / "clean home"
         home.mkdir()
@@ -166,6 +190,7 @@ def verify(archive):
             )
             if (package / "completions" / filename).read_bytes() != source.encode("utf-8"):
                 raise ValueError(f"{shell} completion source: packaged bytes differ from LF source")
+        build_settings = validate_build_info(json.loads(run([go, "version", "-m", "-json", str(binary)])), manifest)
         check("bundled README lookup", ["internal", "docs", "--format", "starlight", "--out", str(home / "docs")])
         if "This package contains the native public AVR CLI." not in (home / "docs" / "index.md").read_text(
             encoding="utf-8"
@@ -206,6 +231,7 @@ def verify(archive):
         "sha256": checksum,
         "bytes": archive.stat().st_size,
         "manifest": manifest,
+        "binary_build_settings": build_settings,
         "checks": checks,
         "environment": "Isolated HOME and empty PATH; HTTP test uses a loopback fixture. Network is not OS-blocked.",
     }
@@ -308,7 +334,11 @@ def build(args):
                     info.compress_type = zipfile.ZIP_DEFLATED
                     bundle.writestr(info, path.read_bytes())
         else:
-            with tarfile.open(archive, "w:gz") as bundle:
+            with (
+                archive.open("wb") as raw,
+                gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=epoch) as compressed,
+                tarfile.open(fileobj=compressed, mode="w") as bundle,
+            ):
                 for path in members:
                     info = bundle.gettarinfo(str(path), path.relative_to(base).as_posix())
                     info.uid = info.gid = 0
@@ -318,7 +348,7 @@ def build(args):
                     with path.open("rb") as source:
                         bundle.addfile(info, source)
     archive.with_name(archive.name + ".sha256").write_text(f"{digest(archive)}  {archive.name}\n", encoding="utf-8")
-    return verify(archive)
+    return verify(archive, go=go)
 
 
 def main():
@@ -330,7 +360,7 @@ def main():
     parser.add_argument("--verify", type=Path, help="Verify an existing archive and its SHA-256 sidecar")
     args = parser.parse_args()
     if args.verify:
-        verify(args.verify)
+        verify(args.verify, go=args.go)
     else:
         build(args)
 

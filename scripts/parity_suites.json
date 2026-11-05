@@ -1,0 +1,484 @@
+{
+  "compare_aliases": {
+    "report": "aliases-parity.json",
+    "minimum_cases": {
+      "posix": 8,
+      "windows": 8
+    },
+    "shard": 2
+  },
+  "compare_argument_contract": {
+    "report": "argument-contract-parity.json",
+    "minimum_cases": {
+      "posix": 966,
+      "windows": 966
+    },
+    "shard": 2
+  },
+  "compare_artifact": {
+    "report": "artifact-parity.json",
+    "minimum_cases": {
+      "posix": 92,
+      "windows": 84
+    },
+    "shard": 3
+  },
+  "compare_audit_health": {
+    "report": "audit-health-parity.json",
+    "minimum_cases": {
+      "posix": 73,
+      "windows": 68
+    },
+    "shard": 1
+  },
+  "compare_auth": {
+    "report": "auth-parity.json",
+    "minimum_cases": {
+      "posix": 67,
+      "windows": 65
+    },
+    "shard": 0
+  },
+  "compare_billing": {
+    "report": "billing-inspection-parity.json",
+    "minimum_cases": {
+      "posix": 131,
+      "windows": 125
+    },
+    "shard": 2
+  },
+  "compare_billing_card": {
+    "report": "billing-card-parity.json",
+    "minimum_cases": {
+      "posix": 55,
+      "windows": 51
+    },
+    "shard": 0,
+    "minimum_native_cases": {
+      "posix": 26,
+      "windows": 26
+    },
+    "native_report": "billing-card-parity-native.json"
+  },
+  "compare_billing_writes": {
+    "report": "billing-write-parity.json",
+    "minimum_cases": {
+      "posix": 71,
+      "windows": 67
+    },
+    "shard": 3
+  },
+  "compare_cache": {
+    "report": "cache-parity.json",
+    "minimum_cases": {
+      "posix": 72,
+      "windows": 61
+    },
+    "shard": 0
+  },
+  "compare_clone": {
+    "report": "clone-parity.json",
+    "minimum_cases": {
+      "posix": 96,
+      "windows": 79
+    },
+    "shard": 0
+  },
+  "compare_completion": {
+    "report": "completion-parity.json",
+    "minimum_cases": {
+      "posix": 2058,
+      "windows": 2058
+    },
+    "shard": 1
+  },
+  "compare_config": {
+    "report": "config-parity.json",
+    "minimum_cases": {
+      "posix": 56,
+      "windows": 48
+    },
+    "shard": 1
+  },
+  "compare_defaults": {
+    "report": "defaults-parity.json",
+    "minimum_cases": {
+      "posix": 102,
+      "windows": 102
+    },
+    "shard": 3
+  },
+  "compare_device_login": {
+    "report": "device-login-parity.json",
+    "minimum_cases": {
+      "posix": 60,
+      "windows": 53
+    },
+    "shard": 0
+  },
+  "compare_firewall": {
+    "report": "firewall-parity.json",
+    "minimum_cases": {
+      "posix": 175,
+      "windows": 168
+    },
+    "shard": 1
+  },
+  "compare_git_mirrors": {
+    "report": "git-mirror-parity.json",
+    "minimum_cases": {
+      "posix": 191,
+      "windows": 183
+    },
+    "shard": 3
+  },
+  "compare_gitlab": {
+    "report": "gitlab-parity.json",
+    "minimum_cases": {
+      "posix": 187,
+      "windows": 181
+    },
+    "shard": 1,
+    "minimum_native_cases": {
+      "posix": 167,
+      "windows": 162
+    },
+    "native_report": "gitlab-parity-native.json"
+  },
+  "compare_global": {
+    "report": "global-parity.json",
+    "minimum_cases": {
+      "posix": 45,
+      "windows": 25
+    },
+    "shard": 1
+  },
+  "compare_help": {
+    "report": "help-parity.json",
+    "minimum_cases": {
+      "posix": 422,
+      "windows": 349
+    },
+    "shard": 0
+  },
+  "compare_inspection": {
+    "report": "inspection-parity.json",
+    "minimum_cases": {
+      "posix": 179,
+      "windows": 135
+    },
+    "shard": 1
+  },
+  "compare_installations": {
+    "report": "installation-parity.json",
+    "minimum_cases": {
+      "posix": 59,
+      "windows": 53
+    },
+    "shard": 3
+  },
+  "compare_internal_docs": {
+    "report": "internal-docs-parity.json",
+    "minimum_cases": {
+      "posix": 42,
+      "windows": 40
+    },
+    "shard": 3
+  },
+  "compare_invoice_download": {
+    "report": "invoice-download-parity.json",
+    "minimum_cases": {
+      "posix": 29,
+      "windows": 27
+    },
+    "shard": 0
+  },
+  "compare_job_metrics": {
+    "report": "job-metrics-parity.json",
+    "minimum_cases": {
+      "posix": 37,
+      "windows": 32
+    },
+    "shard": 3
+  },
+  "compare_job_watch": {
+    "report": "job-watch-parity.json",
+    "minimum_cases": {
+      "posix": 28,
+      "windows": 18
+    },
+    "shard": 2
+  },
+  "compare_jobs": {
+    "report": "job-parity.json",
+    "minimum_cases": {
+      "posix": 80,
+      "windows": 55
+    },
+    "shard": 2
+  },
+  "compare_log_search": {
+    "report": "log-search-parity.json",
+    "minimum_cases": {
+      "posix": 38,
+      "windows": 33
+    },
+    "shard": 1
+  },
+  "compare_metrics_stream": {
+    "report": "metrics-stream-parity.json",
+    "minimum_cases": {
+      "posix": 118,
+      "windows": 108
+    },
+    "shard": 3
+  },
+  "compare_native_ci": {
+    "report": "native-ci-parity.json",
+    "minimum_cases": {
+      "posix": 63,
+      "windows": 46
+    },
+    "shard": 0
+  },
+  "compare_native_dispatch": {
+    "report": "native-dispatch-parity.json",
+    "minimum_cases": {
+      "posix": 76,
+      "windows": 71
+    },
+    "shard": 1
+  },
+  "compare_option_aliases": {
+    "report": "option-aliases-parity.json",
+    "minimum_cases": {
+      "posix": 73,
+      "windows": 72
+    },
+    "shard": 0
+  },
+  "compare_option_gaps": {
+    "report": "option-gaps-parity.json",
+    "minimum_cases": {
+      "posix": 91,
+      "windows": 83
+    },
+    "shard": 2
+  },
+  "compare_option_values": {
+    "report": "option-values-parity.json",
+    "minimum_cases": {
+      "posix": 25,
+      "windows": 25
+    },
+    "shard": 3
+  },
+  "compare_organization": {
+    "report": "organization-parity.json",
+    "minimum_cases": {
+      "posix": 127,
+      "windows": 119
+    },
+    "shard": 1
+  },
+  "compare_pr": {
+    "report": "pr-parity.json",
+    "minimum_cases": {
+      "posix": 61,
+      "windows": 49
+    },
+    "shard": 1
+  },
+  "compare_public_mirrors": {
+    "report": "public-mirror-parity.json",
+    "minimum_cases": {
+      "posix": 132,
+      "windows": 125
+    },
+    "shard": 2
+  },
+  "compare_run_control": {
+    "report": "run-control-parity.json",
+    "minimum_cases": {
+      "posix": 101,
+      "windows": 90
+    },
+    "shard": 3
+  },
+  "compare_run_diagnose": {
+    "report": "run-diagnose-parity.json",
+    "minimum_cases": {
+      "posix": 54,
+      "windows": 50
+    },
+    "shard": 0
+  },
+  "compare_saml": {
+    "report": "saml-parity.json",
+    "minimum_cases": {
+      "posix": 106,
+      "windows": 98
+    },
+    "shard": 2
+  },
+  "compare_sbom": {
+    "report": "sbom-inspection-parity.json",
+    "minimum_cases": {
+      "posix": 76,
+      "windows": 69
+    },
+    "shard": 2
+  },
+  "compare_sbom_download": {
+    "report": "sbom-download-parity.json",
+    "minimum_cases": {
+      "posix": 34,
+      "windows": 31
+    },
+    "shard": 3
+  },
+  "compare_sbom_generate": {
+    "report": "sbom-generate-parity.json",
+    "minimum_cases": {
+      "posix": 71,
+      "windows": 65
+    },
+    "shard": 0
+  },
+  "compare_settings": {
+    "report": "settings-parity.json",
+    "minimum_cases": {
+      "posix": 114,
+      "windows": 105
+    },
+    "shard": 0
+  },
+  "compare_status": {
+    "report": "status-parity.json",
+    "minimum_cases": {
+      "posix": 44,
+      "windows": 35
+    },
+    "shard": 2
+  },
+  "compare_tests": {
+    "report": "tests-parity.json",
+    "minimum_cases": {
+      "posix": 124,
+      "windows": 117
+    },
+    "shard": 2
+  },
+  "compare_token": {
+    "report": "token-inspection-parity.json",
+    "minimum_cases": {
+      "posix": 87,
+      "windows": 78
+    },
+    "shard": 2
+  },
+  "compare_token_create": {
+    "report": "token-create-parity.json",
+    "minimum_cases": {
+      "posix": 76,
+      "windows": 74
+    },
+    "shard": 3
+  },
+  "compare_usage_errors": {
+    "report": "usage-errors-parity.json",
+    "minimum_cases": {
+      "posix": 42,
+      "windows": 21
+    },
+    "shard": 2
+  },
+  "compare_vm_bootstrap": {
+    "report": "vm-bootstrap-parity.json",
+    "minimum_cases": {
+      "posix": 92,
+      "windows": 57
+    },
+    "shard": 1
+  },
+  "compare_vm_create": {
+    "report": "vm-create-parity.json",
+    "minimum_cases": {
+      "posix": 144,
+      "windows": 138
+    },
+    "shard": 1
+  },
+  "compare_vm_inspection": {
+    "report": "vm-inspection-parity.json",
+    "minimum_cases": {
+      "posix": 98,
+      "windows": 91
+    },
+    "shard": 2
+  },
+  "compare_vm_lifecycle": {
+    "report": "vm-lifecycle-parity.json",
+    "minimum_cases": {
+      "posix": 114,
+      "windows": 106
+    },
+    "shard": 3
+  },
+  "compare_vm_release": {
+    "report": "vm-release-parity.json",
+    "minimum_cases": {
+      "posix": 101,
+      "windows": 96
+    },
+    "shard": 2
+  },
+  "compare_vm_ssh": {
+    "report": "vm-ssh-parity.json",
+    "minimum_cases": {
+      "posix": 72,
+      "windows": 56
+    },
+    "shard": 3
+  },
+  "compare_vm_ssh_config": {
+    "report": "vm-ssh-config-parity.json",
+    "minimum_cases": {
+      "posix": 59,
+      "windows": 54
+    },
+    "shard": 2
+  },
+  "compare_vm_tunnel": {
+    "report": "vm-tunnel-parity.json",
+    "minimum_cases": {
+      "posix": 107,
+      "windows": 96
+    },
+    "shard": 0
+  },
+  "compare_vm_update": {
+    "report": "vm-update-parity.json",
+    "minimum_cases": {
+      "posix": 76,
+      "windows": 73
+    },
+    "shard": 0
+  },
+  "compare_workflow": {
+    "report": "workflow-parity.json",
+    "minimum_cases": {
+      "posix": 72,
+      "windows": 61
+    },
+    "shard": 0
+  },
+  "compare_workflow_run": {
+    "report": "workflow-run-parity.json",
+    "minimum_cases": {
+      "posix": 44,
+      "windows": 38
+    },
+    "shard": 1
+  }
+}

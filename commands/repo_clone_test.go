@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -35,6 +36,24 @@ func TestNearestMirrorCancelsUnresponsiveProbe(t *testing.T) {
 	case <-stopped:
 	case <-time.After(2 * time.Second):
 		t.Fatal("losing probe was not cancelled")
+	}
+}
+
+func TestCloneRefusesServerSelectedGitMetadataDirectory(t *testing.T) {
+	for _, name := range []string{".git", ".GIT", ".git.", ".Git..."} {
+		d, _, stderr := testDeps(t)
+		d.LoadConfig = func() (config.Config, error) {
+			return config.Config{Host: "https://api.example.test", Token: "fixture"}, nil
+		}
+		d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+			if r.URL.Path != "/repos/rep-019a0000000070008000000000000002/mirror/session" {
+				t.Errorf("unexpected request %s", r.URL)
+			}
+			return &http.Response{StatusCode: 200, Header: http.Header{}, Request: r, Body: io.NopCloser(strings.NewReader(fmt.Sprintf(`{"full_name":%q,"browsable":true,"endpoints":["https://mirror.example.test"]}`, "acme/"+name)))}, nil
+		})}
+		if code := Execute(t.Context(), []string{"repo", "clone", "rep-019a0000000070008000000000000002"}, d); code != 1 || !strings.Contains(stderr.String(), "reserved Git metadata") {
+			t.Fatal(code, stderr)
+		}
 	}
 }
 func TestNearestMirrorRefusesRedirects(t *testing.T) {

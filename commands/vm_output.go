@@ -2,7 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -41,7 +44,7 @@ func vmPasswordQuote(password string) string {
 	return "'" + strings.ReplaceAll(password, "'", "'\\''") + "'"
 }
 func vmFreeRDP(binary, address, user, password string, rfx bool, cert string) string {
-	parts := []string{binary + " /v:" + address + " /u:" + user}
+	parts := []string{binary + " " + shellQuotePython("/v:"+address) + " " + shellQuotePython("/u:"+user)}
 	if password != "" {
 		parts = append(parts, "/p:"+vmPasswordQuote(password))
 	}
@@ -57,9 +60,12 @@ func vmFreeRDP(binary, address, user, password string, rfx bool, cert string) st
 	return strings.Join(parts, " ")
 }
 func vmRDPConnect(address, user, password, platform string, rfx bool, cert string) []string {
+	if !validDesktopAddress(address, user) {
+		return []string{"Invalid remote desktop endpoint; refusing to print connection commands."}
+	}
 	switch platform {
 	case "darwin":
-		lines := []string{"open \"rdp://full%20address=s:" + address + "&username=s:" + user + "\""}
+		lines := []string{"open \"" + vmRDPURI(address, user) + "\""}
 		if password != "" {
 			lines = append(lines, "(no password in the URI; use the one-time password shown below)")
 		}
@@ -74,6 +80,22 @@ func vmRDPConnect(address, user, password, platform string, rfx bool, cert strin
 	default:
 		return []string{vmFreeRDP("xfreerdp", address, user, password, rfx, cert)}
 	}
+}
+
+func validDesktopAddress(address, user string) bool {
+	if !sshUser().MatchString(user) || strings.HasPrefix(user, "-") {
+		return false
+	}
+	if address == "IP:PORT" {
+		return true
+	}
+	host, port, err := net.SplitHostPort(address)
+	n, numberErr := strconv.Atoi(port)
+	return err == nil && numberErr == nil && n > 0 && n <= 65535 && host != "" && sshHost().MatchString(host) && !strings.HasPrefix(host, "-")
+}
+
+func vmRDPURI(address, user string) string {
+	return "rdp://full%20address=s:" + strings.ReplaceAll(url.QueryEscape(address), "%3A", ":") + "&username=s:" + url.QueryEscape(user)
 }
 func vmConnect(vm map[string]any, password string) []string {
 	if vm["enable_remote_desktop"] != true {
@@ -91,7 +113,7 @@ func vmConnect(vm map[string]any, password string) []string {
 		if rd["protocol"] != "rdp" {
 			return nil
 		}
-		address = pythonValue(rd["external_ip"]) + ":" + pythonValue(rd["external_port"])
+		address = net.JoinHostPort(pythonValue(rd["external_ip"]), pythonValue(rd["external_port"]))
 		user = pythonValue(fallback(rd["username"], "USER"))
 	}
 	lines := vmRDPConnect(address, user, password, runtime.GOOS, vm["os_type"] == "linux", "")

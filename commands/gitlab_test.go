@@ -44,6 +44,22 @@ func TestGitLabWriteDeadlineAndRecovery(t *testing.T) {
 		}
 	}
 }
+
+func TestGitLabProjectIDFlagsRejectCommaBeforeAPI(t *testing.T) {
+	for _, args := range [][]string{
+		{"org", "install", "add", "--platform", "gitlab", "--group-full-path", "acme", "--project-selection", "selected", "--project-id", "1,2"},
+		{"org", "install", "set-selection", "--installation-id", "ins-fixture", "--project-selection", "selected", "--project-id", "1,2"},
+	} {
+		d, _, stderr := testDeps(t)
+		d.LoadConfig = func() (config.Config, error) {
+			t.Fatal("invalid IDs reached configuration/API")
+			return config.Config{}, nil
+		}
+		if code := Execute(t.Context(), args, d); code != 2 || !strings.Contains(stderr.String(), "project-id") {
+			t.Fatal(code, stderr)
+		}
+	}
+}
 func TestGitLabCreatedRunnerUncertainAndRejected(t *testing.T) {
 	for _, status := range []int{403, 422, 503} {
 		err := gitLabRunnerPutError(&client.HTTPError{Status: status, Detail: "fixture denied"}, "42", "small")

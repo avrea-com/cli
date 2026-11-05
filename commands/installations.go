@@ -56,6 +56,9 @@ func newInstallationList(d Dependencies) *cobra.Command {
 			for _, org := range slices.Compact(orgs) {
 				result, e := api.Get(cmd.Context(), "/orgs/"+url.PathEscape(org)+"/gitlab-installations", nil)
 				if e != nil {
+					if cmd.Context().Err() != nil {
+						return cmd.Context().Err()
+					}
 					var he *client.HTTPError
 					reason := "Avrea could not be reached"
 					if errors.As(e, &he) {
@@ -150,7 +153,7 @@ func newInstallationAdd(d Dependencies) *cobra.Command {
 	c.Flags().StringVar(&platform, "platform", "github", "Source platform to install.")
 	c.Flags().StringVar(&group, "group-full-path", "", "GitLab group full path.")
 	c.Flags().StringVar(&selection, "project-selection", "", "GitLab project selection mode.")
-	c.Flags().IntSliceVar(&projectIDs, "project-id", nil, "GitLab project ID (repeatable).")
+	c.Flags().Var(projectIDArray{&projectIDs}, "project-id", "GitLab project ID (repeatable).")
 	c.Flags().BoolVar(&tokenStdin, "access-token-stdin", false, "Read the GitLab group access token from stdin.")
 	o.flags(c)
 	c.Flags().BoolVar(&noBrowser, "no-browser", false, "Do not open browser automatically.")

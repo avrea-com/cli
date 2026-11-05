@@ -147,8 +147,11 @@ mismatch, restore the packaging target, and rerun native validation.
 
 After uploading the three native packages, the reusable workflow downloads
 each artifact on a fresh runner of the matching platform. It repeats archive
-and executable validation, checks the target and exact workflow commit, and
-requires a clean source tree. The resulting reports are uploaded separately
+and executable validation. `go version -m -json` checks the executable's embedded
+VCS revision, dirty flag, target, CGO setting and `-trimpath` against the manifest;
+CI then compares the manifest with the workflow commit and requires a clean build.
+This catches packaging mistakes; it is not a cryptographic provenance attestation.
+Notices must be nonempty. The resulting reports are uploaded separately
 as `avr-go-download-validation-TARGET`. This tests the downloaded bytes and
 their native execution without rebuilding the executable on the validation
 runner. Neither job publishes a release.

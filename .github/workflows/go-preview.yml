@@ -198,6 +198,10 @@ jobs:
             build/go/startup/
           if-no-files-found: error
 
+      - name: Validate differential report gate
+        if: always()
+        run: python scripts/validate_parity_reports.py --binary build/go/avr.exe --shard ${{ matrix.shard }}
+
   go-checks:
     runs-on: ubuntu-latest
     steps:
