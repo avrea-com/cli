@@ -6648,7 +6648,7 @@
         "full": "avr tests",
         "is_group": true,
         "short_help": "Read a job's tests, timings and recorded failure messages.",
-        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -6664,18 +6664,18 @@
             ],
             "full": "avr tests list",
             "is_group": false,
-            "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
-            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "short_help": "Read one job's latest confirmed execution, including repeated tests.",
+            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nFilters match literally and are combined with AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr tests list [OPTIONS] JOB",
+            "usage": "avr tests list [OPTIONS] RUN_OR_JOB",
             "params": [
               {
-                "name": "job",
+                "name": "target",
                 "kind": "argument",
                 "opts": [
-                  "job"
+                  "target"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6685,6 +6685,24 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "job_name",
+                "kind": "option",
+                "opts": [
+                  "--job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select one run job by case-insensitive name substring.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6757,10 +6775,88 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Continue from a previous response's next_cursor.",
+                "help": "Continue from a previous response's next_cursor with the same filters.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "test_name",
+                "kind": "option",
+                "opts": [
+                  "--test"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact test name (case-sensitive; no wildcards).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "suite",
+                "kind": "option",
+                "opts": [
+                  "--suite"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact suite name; combined with other filters using AND.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "class_name",
+                "kind": "option",
+                "opts": [
+                  "--class"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact nonempty class name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "outcome",
+                "kind": "option",
+                "opts": [
+                  "--status"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Recorded test outcome.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "passed",
+                  "failed",
+                  "skipped",
+                  "errored"
+                ]
               },
               {
                 "name": "json_fields",

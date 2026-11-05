@@ -1375,16 +1375,22 @@ Read a job's tests, timings and recorded failure messages.
 avr tests [OPTIONS] COMMAND [ARGS]...
 ```
 
-Use avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID
-(job- or awj-) from avr job list.
+Use avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea
+run/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.
+A single-job run is selected automatically. Use --job NAME to select
+one job from a run with several jobs.
 
 #### `avr tests list`
 
-Read the latest confirmed execution of JOB, including repeated tests.
+Read one job's latest confirmed execution, including repeated tests.
 
 ```sh
-avr tests list [OPTIONS] JOB
+avr tests list [OPTIONS] RUN_OR_JOB
 ```
+
+RUN_OR_JOB accepts the same run references as avr run view, or an Avrea
+job ID (job- or awj-). A run selects one job, never combines all jobs.
+--job NAME must match exactly one job; without it a run must have one job.
 
 Names, outcomes, recorded durations and available failure messages are
 shown together. A failed test is data, not a command error. Missing,
@@ -1393,18 +1399,26 @@ execution is never substituted. Complete describes collected reports.
 
 Use --json '*' for the complete response or --json FIELDS to select
 fields. Continue with --cursor when pagination.next_cursor is present.
+Filters match literally and are combined with AND. Every matching
+occurrence is retained, including duplicate names. A continuation means
+more of the report remains to be searched, not necessarily more matches.
 API refusal or a changed report fails the command without partial output.
 
 **Arguments**
 
-- `JOB`
+- `TARGET`
 
 **Options**
 
+- `--job <TEXT>` — Select one run job by case-insensitive name substring.
 - `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
 - `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
-- `--cursor <TEXT>` — Continue from a previous response's next_cursor.
+- `--cursor <TEXT>` — Continue from a previous response's next_cursor with the same filters.
+- `--test <TEXT>` — Exact test name (case-sensitive; no wildcards).
+- `--suite <TEXT>` — Exact suite name; combined with other filters using AND.
+- `--class <TEXT>` — Exact nonempty class name.
+- `--status <CHOICE>` — Recorded test outcome. _(choices: `passed`, `failed`, `skipped`, `errored`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

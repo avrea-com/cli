@@ -1,6 +1,10 @@
 """Parse and resolve workflow-run references accepted by CLI commands."""
 
 from avrea_cli.api_client import ApiClient
+from avrea_cli.config import CliConfig
+from avrea_cli.helpers import get_org_id
+from avrea_cli.helpers import get_verified_org_slug
+from avrea_cli.helpers import is_scoped_token
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -39,8 +43,12 @@ class RunReference:
     organization_slug: str | None = None
 
 
-def _invalid_reference() -> click.ClickException:
-    return click.ClickException(
+class InvalidRunReference(click.ClickException):
+    """The input does not have a supported run-reference shape."""
+
+
+def _invalid_reference() -> InvalidRunReference:
+    return InvalidRunReference(
         "Invalid run reference. Expected an Avrea run ID, a positive GitHub run ID, "
         "a GitHub Actions run URL, or an Avrea console run URL."
     )
@@ -246,3 +254,34 @@ def resolve_run_reference(
 
     _validate_github_repository(run, reference)
     return run
+
+
+def resolve_run_org(
+    client: ApiClient,
+    config: CliConfig,
+    reference: RunReference,
+    org_id: str | None,
+) -> str:
+    """Resolve and verify the organization of a parsed run reference."""
+    if reference.organization_slug is not None and is_scoped_token(config.auth_token):
+        raise click.ClickException("A scoped token cannot resolve a run URL's organization. Pass the run ID instead.")
+    if reference.organization_slug is not None and org_id is None:
+        org_id = reference.organization_slug
+    resolved_org_id = get_org_id(config, org_id, client=client)
+
+    if reference.organization_slug is not None:
+        active_org_slug = get_verified_org_slug(client, resolved_org_id)
+        if active_org_slug.casefold() != reference.organization_slug.casefold():
+            raise click.ClickException(
+                f"Avrea run URL organization {reference.organization_slug!r} does not match "
+                f"the selected organization {active_org_slug!r}."
+            )
+    return resolved_org_id
+
+
+def filter_run_jobs(jobs: list[dict[str, Any]], name: str | None) -> list[dict[str, Any]]:
+    """Match job names as run view and run logs do: case-insensitive substrings."""
+    if not name:
+        return jobs
+    needle = name.lower()
+    return [job for job in jobs if needle in (job.get("job_name") or "").lower()]
