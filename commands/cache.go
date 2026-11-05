@@ -209,7 +209,7 @@ func newCacheUsage(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, row, fields, o.expression)
+			return output.JSON(cmd.Context(), d.Out, row, fields, o.expression, d.IsTerminal())
 		}
 		total, quota := metricNumber(row["total_size_bytes"]), metricNumber(row["quota_bytes"])
 		pct := 0.0

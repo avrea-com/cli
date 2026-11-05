@@ -86,8 +86,8 @@ func TestMalformedStoreAndUnknownFields(t *testing.T) {
 		if len(s.Read().Order) != 0 {
 			t.Fatal(raw)
 		}
-		if err := s.Set("https://api.test", "token", "fixture"); err != nil {
-			t.Fatal(err)
+		if err := s.Set("https://api.test", "token", "fixture"); err == nil {
+			t.Fatal("accepted malformed store")
 		}
 	}
 	raw := `{"default_host":"https://api.test","hosts":{"https://api.test":{"token":"old","future":{"integer":9007199254740993}},"https://bad.test":null}}`

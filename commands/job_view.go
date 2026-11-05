@@ -50,7 +50,7 @@ func newJobView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, projectJob(j), selected, o.expression)
+			return output.JSON(cmd.Context(), d.Out, projectJob(j), selected, o.expression, d.IsTerminal())
 		}
 		slug := ""
 		if web || linksEnabled(cmd, d) {

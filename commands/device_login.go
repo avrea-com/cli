@@ -36,6 +36,9 @@ func NewDeviceLogin(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if err := store.ValidateMutation(); err != nil {
+			return err
+		}
 		key, err := deviceLogin(cmd.Context(), d, api, !noQR)
 		if err != nil {
 			if cmd.Context().Err() != nil {

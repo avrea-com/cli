@@ -1,10 +1,42 @@
 """Executable contract checks for the OpenAPI preparation step."""
 
+from pathlib import Path
 from scripts.prepare_go_schema import dereference
 from scripts.prepare_go_schema import prepare
 from scripts.prepare_go_schema import subset
 import copy
+import hashlib
+import json
 import pytest
+import shutil
+import subprocess
+import sys
+
+
+@pytest.mark.parametrize("corruption", ["checksum", "selection"])
+def test_generation_rejects_unverified_schema_before_running_go(tmp_path, corruption):
+    root = Path(__file__).resolve().parents[1]
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "api").mkdir()
+    for script in ("generate_go_api.py", "prepare_go_schema.py"):
+        shutil.copyfile(root / "scripts" / script, tmp_path / "scripts" / script)
+    source = {"paths": {"/test": {"get": {"operationId": "test"}}}, "components": {"schemas": {}}}
+    raw = json.dumps(source).encode()
+    (tmp_path / "api/source-public.json").write_bytes(raw)
+    metadata = {"sha256": hashlib.sha256(raw).hexdigest(), "operations": ["test"]}
+    if corruption == "checksum":
+        metadata["sha256"] = "0" * 64
+    (tmp_path / "api/source.json").write_text(json.dumps(metadata))
+    (tmp_path / "api/public.json").write_text("{}")
+    result = subprocess.run(
+        [sys.executable, str(tmp_path / "scripts/generate_go_api.py"), "--check", "--go", "must-not-run"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    assert result.returncode != 0
+    assert ("checksum mismatch" if corruption == "checksum" else "does not match selected operations") in result.stderr
 
 
 def test_hoisted_definitions_keep_references_and_constraints():

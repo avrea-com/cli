@@ -53,7 +53,7 @@ func newSBOMDownload(d Dependencies) *cobra.Command {
 		if err != nil {
 			return sbomDownloadError(cfg, err, filename)
 		}
-		spool, count, err := spoolDownload(stream)
+		spool, count, err := spoolDownload(stream, 2<<30)
 		if err != nil {
 			return sbomDownloadError(cfg, err, filename)
 		}

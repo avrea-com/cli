@@ -251,7 +251,7 @@ func newSBOMView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, record.Fields, fields, o.expression)
+			return output.JSON(cmd.Context(), d.Out, record.Fields, fields, o.expression, d.IsTerminal())
 		}
 		return renderSBOMView(d, record.Fields, id, rid, full)
 	})

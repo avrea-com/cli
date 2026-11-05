@@ -233,6 +233,6 @@ func renderGitLabRunners(d Dependencies, collection map[string]any) error {
 			return e
 		}
 	}
-	_, e := fmt.Fprintf(d.Out, "%s\n%s\n\n.gitlab-ci.yml example:\n%s\nDocumentation: %s\n", pythonValue(setup["protected_branches"]), pythonValue(setup["fallback_image"]), pythonValue(setup["job_example"]), pythonValue(setup["documentation_url"]))
+	_, e := fmt.Fprintf(d.Out, "%s\n%s\n\n.gitlab-ci.yml example:\n%s\nDocumentation: %s\n", output.MultilineText(pythonValue(setup["protected_branches"])), output.MultilineText(pythonValue(setup["fallback_image"])), output.MultilineText(pythonValue(setup["job_example"])), output.MultilineText(pythonValue(setup["documentation_url"])))
 	return e
 }

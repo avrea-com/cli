@@ -40,6 +40,29 @@ func (s *Store) ReadChecked() (Hosts, error) {
 	return decodeHosts(data), nil
 }
 
+// ValidateMutation refuses to discard a present but unreadable or malformed store.
+// Reads remain lenient for commands that do not change credentials.
+func (s *Store) ValidateMutation() error {
+	_, err := s.readForMutation()
+	return err
+}
+
+func (s *Store) readForMutation() (Hosts, error) {
+	data, err := os.ReadFile(s.Path)
+	if errors.Is(err, os.ErrNotExist) {
+		return emptyHosts(), nil
+	}
+	if err != nil {
+		return emptyHosts(), fmt.Errorf("read credentials: %w", err)
+	}
+	var root map[string]json.RawMessage
+	var hosts map[string]json.RawMessage
+	if json.Unmarshal(data, &root) != nil || root == nil || json.Unmarshal(root["hosts"], &hosts) != nil || hosts == nil {
+		return emptyHosts(), fmt.Errorf("credentials file %s is malformed; repair it or move it aside before changing credentials", s.Path)
+	}
+	return decodeHosts(data), nil
+}
+
 func decodeHosts(data []byte) Hosts {
 	var root map[string]json.RawMessage
 	if json.Unmarshal(data, &root) != nil {
@@ -86,9 +109,12 @@ func (h Hosts) Value(host, key string) string {
 	return value
 }
 
-// Write uses a private temporary file and atomic replacement to avoid partial
-// credential files. Existing per-host fields and insertion order are retained.
+// Write updates the file directly, preserving symlinks and mounted-file behavior.
+// Existing per-host fields and insertion order are retained.
 func (s *Store) Write(h Hosts) error {
+	if err := s.ValidateMutation(); err != nil {
+		return err
+	}
 	var b bytes.Buffer
 	b.WriteString("{\"default_host\":")
 	var def any
@@ -127,30 +153,32 @@ func (s *Store) Write(h Hosts) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("create credentials directory: %w", err)
 	}
-	f, err := os.CreateTemp(dir, ".hosts-*")
+	// Open without truncation so permissions are restricted before data changes.
+	f, err := os.OpenFile(s.Path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		return fmt.Errorf("create credentials file: %w", err)
+		return fmt.Errorf("open credentials file: %w", err)
 	}
-	defer func() { _ = os.Remove(f.Name()) }()
+	defer func() { _ = f.Close() }()
+	if err = f.Chmod(0600); err != nil {
+		return fmt.Errorf("secure credentials file: %w", err)
+	}
+	if err = f.Truncate(0); err != nil {
+		return fmt.Errorf("truncate credentials file: %w", err)
+	}
 	if _, err = io.Copy(f, &formatted); err != nil {
-		_ = f.Close()
-		return err
+		return fmt.Errorf("write credentials: %w", err)
 	}
 	if err = f.Sync(); err != nil {
-		_ = f.Close()
-		return err
+		return fmt.Errorf("sync credentials: %w", err)
 	}
 	if err = f.Close(); err != nil {
-		return err
-	}
-	if err = os.Rename(f.Name(), s.Path); err != nil {
-		return fmt.Errorf("save credentials: %w", err)
+		return fmt.Errorf("close credentials: %w", err)
 	}
 	return nil
 }
 
 func (s *Store) Set(host, key, value string) error {
-	h, err := s.ReadChecked()
+	h, err := s.readForMutation()
 	if err != nil {
 		return err
 	}
@@ -170,7 +198,7 @@ func (s *Store) Set(host, key, value string) error {
 }
 
 func (s *Store) Switch(host string) error {
-	h, err := s.ReadChecked()
+	h, err := s.readForMutation()
 	if err != nil {
 		return err
 	}
@@ -182,7 +210,7 @@ func (s *Store) Switch(host string) error {
 }
 
 func (s *Store) Clear(host string) (bool, error) {
-	h, err := s.ReadChecked()
+	h, err := s.readForMutation()
 	if err != nil {
 		return false, err
 	}
@@ -213,7 +241,7 @@ func (s *Store) Clear(host string) (bool, error) {
 // ClearDefaultOrg removes only the active host's stored organization override.
 // Tokens, unknown fields, host ordering and the selected default host survive.
 func (s *Store) ClearDefaultOrg(host string) (bool, error) {
-	h, err := s.ReadChecked()
+	h, err := s.readForMutation()
 	if err != nil {
 		return false, err
 	}

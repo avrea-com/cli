@@ -100,7 +100,14 @@ def extract(archive, destination):
     return roots[0]
 
 
+def require_patched_go(version):
+    match = re.fullmatch(r"go(\d+)\.(\d+)\.(\d+)", version)
+    if match is None or tuple(map(int, match.groups())) < (1, 27, 3):
+        raise ValueError("Distributable binaries require stable Go 1.27.3 or newer")
+
+
 def validate_build_info(info, manifest):
+    require_patched_go(info.get("GoVersion", ""))
     settings = {entry["Key"]: entry["Value"] for entry in info.get("Settings", [])}
     target_os, target_arch = manifest["target"].split("_", 1)
     expected = {
@@ -246,6 +253,7 @@ def build(args):
     if go is None:
         raise ValueError(f"Go executable not found: {args.go}")
     goenv = json.loads(run([go, "env", "-json", "GOHOSTOS", "GOHOSTARCH", "GOVERSION"], cwd=ROOT))
+    require_patched_go(goenv["GOVERSION"])
     target = goenv["GOHOSTOS"] + "_" + goenv["GOHOSTARCH"]
     if target not in TARGETS or (args.target and args.target != target):
         raise ValueError(f"Native build/validation required: host={target}, requested={args.target}")

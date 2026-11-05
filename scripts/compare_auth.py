@@ -27,6 +27,7 @@ import json
 import os
 import re
 import signal
+import socketserver
 import subprocess
 import sys
 import tarfile
@@ -55,6 +56,13 @@ class FixtureServer(http.server.ThreadingHTTPServer):
     # Diagnosis fans out concurrent evidence requests. Windows may refuse
     # connects beyond the default five-slot backlog before accept catches up.
     request_queue_size = 128
+
+    def server_bind(self):
+        # Fixtures bind loopback only. HTTPServer otherwise performs a cosmetic
+        # reverse-DNS lookup here, which can stall hosted macOS CI for minutes.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
 
 
 class Fixture(http.server.BaseHTTPRequestHandler):
@@ -309,11 +317,25 @@ def run(executable, scenario, root, host):
                     callback_errors.append("browser was not invoked")
                     return
                 try:
-                    request = urllib.request.Request(
-                        "http://localhost:8765/callback?"
-                        + scenario.get("callback", "session=session-fixture&csrf_token=csrf-fixture")
-                    )
-                    with urllib.request.urlopen(request, timeout=10) as response:
+                    opened = urlsplit(browser_target.read_text())
+                    launch = dict(parse_qsl(opened.query))
+                    target = launch.get("next", launch.get("final_redirect", ""))
+                    parsed = urlsplit(target)
+                    binding = dict(parse_qsl(parsed.query)).get("cli_state")
+                    payload = scenario.get("callback", "session=session-fixture&csrf_token=csrf-fixture")
+                    callback_url = target + ("&" if parsed.query else "?") + payload
+                    if binding and payload == "":
+                        # Go ignores empty callbacks; Python terminates. Require
+                        # rejection, then send a valid SSO result to finish Go.
+                        try:
+                            urllib.request.urlopen(callback_url, timeout=10)
+                        except urllib.error.HTTPError as exc:
+                            if exc.code != 400:
+                                raise
+                        else:
+                            raise RuntimeError("empty callback was accepted")
+                        callback_url += "&sso_required=acme"
+                    with urllib.request.urlopen(callback_url, timeout=10) as response:
                         response.read()
                 except (OSError, ValueError) as exc:
                     callback_errors.append(str(exc))
@@ -544,8 +566,39 @@ def has_fixture_disclosure(scenario, python, go):
     )
 
 
-def compare(scenario, python, go):
+def comparable_login(scenario, python, go):
+    """Validate the deliberate callback binding difference before comparing output."""
     differences = []
+    if scenario.get("login") and python.get("browser") and go.get("browser"):
+        python, go = dict(python), dict(go)
+        for label, result in (("Python", python), ("Go", go)):
+            original = result["browser"]
+            opened = urlsplit(original)
+            query = dict(parse_qsl(opened.query))
+            parameter = "next" if "next" in query else "final_redirect"
+            callback = urlsplit(query[parameter])
+            binding = dict(parse_qsl(callback.query))
+            if label == "Go" and (
+                callback.scheme != "http"
+                or callback.netloc != "127.0.0.1:8765"
+                or callback.path != "/callback"
+                or callback.fragment
+                or not re.fullmatch(r"[A-Z2-7]{26,}", binding.get("cli_state", ""))
+            ):
+                differences.append("Go callback binding")
+            query[parameter] = "http://localhost:8765/callback"
+            result["browser"] = urlunsplit(opened._replace(query=urlencode(query)))
+            result["stdout"] = result["stdout"].replace(original, result["browser"])
+        if scenario.get("callback") == "":
+            if "requires single sign-on" not in go["stderr"] or go["requests"] or go["exit"] != 1:
+                differences.append("Go did not ignore empty callback before SSO result")
+            go["stderr"] = python["stderr"]
+
+    return python, go, differences
+
+
+def compare(scenario, python, go):
+    python, go, differences = comparable_login(scenario, python, go)
     expected = scenario.get("exit", 0)
     if python["exit"] != expected or go["exit"] != expected:
         differences.append(f"expected exit {expected}")

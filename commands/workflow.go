@@ -270,7 +270,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return output.JSON(cmd.Context(), d.Out, workflowProjection(bucket), fields, o.expression)
+			return output.JSON(cmd.Context(), d.Out, workflowProjection(bucket), fields, o.expression, d.IsTerminal())
 		}
 		if len(page.Items) == 0 {
 			_, err = fmt.Fprintf(d.Out, "No runs found for workflow %s in the selected window.\n", output.CellText(workflow))

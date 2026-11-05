@@ -1955,3 +1955,75 @@ download limits. The committed public API schema inspected at core commit
 `62590194cda75bd512714bbfbd2a6fc87e76ac3d` contains dispatch metadata but not the
 native dispatch receipt endpoints. Handwritten fixtures are not a substitute for
 that missing server contract. No release, merge or installer cutover is included.
+
+## Agreed policy/API follow-up — 2026-11-05
+
+The twelve remaining review decisions are implemented in Go. Python application
+code is unchanged; changes to Python files in this batch concern build and
+comparison tooling only.
+
+- Distributable packages require stable Go 1.27.3 or newer. Both the build
+  toolchain and the executable's embedded Go version are checked.
+- Credential writes use the simple direct-write behavior, retaining symlinks
+  and supporting writable files in non-writable directories. Permissions are
+  restricted before truncation. This deliberately does not promise atomicity,
+  concurrent-writer coordination, backups or writability preflights.
+- Reads remain lenient for malformed stores, but credential mutations refuse
+  malformed or unreadable existing files with repair/move-aside guidance.
+  Browser/device login and logout check before their remote side effects.
+  Complete `AVR_HOST` and `AVR_TOKEN` credentials can bypass a store read error
+  with a warning that stored defaults are unavailable; writes still fail.
+- The public schema is pinned to avrea-core
+  `0b396fdc8ba3056a9e535ab97fbe2f755458af89`, whose committed schema includes
+  native dispatch metadata and receipt endpoints. These responses now use
+  generated models, retaining receipt ID/state checks and idempotent recovery.
+  The checked-in public source snapshot is verified against its recorded SHA-256,
+  selected operations and generated output by the existing CI generation gate.
+  Local `--core` validation additionally compares the snapshot with the actual
+  recorded Git commit and compiles both complete public/internal schemas.
+- Typed decoding remains strict. Errors name the row, schema-owned field and
+  expected type without repeating response values. Read-only staging responses
+  successfully decoded 2 organizations, 42 repositories, 100 runs and 100 jobs.
+  This sample verifies current observed formats, not all future API responses.
+- Browser login binds and redirects to numeric `127.0.0.1`, with a random
+  per-login nonce carried in the nested callback URL. Foreign hosts, wrong or
+  missing state, wrong paths and empty/invalid results do not finish login.
+  The pinned server allowlist and OAuth/SAML redirect code preserve this query
+  parameter. No live login or server changes were needed. Paired fixtures
+  validate the binding before normalizing this deliberate URL difference.
+- GitLab runner target authorization remains unchanged, accepting the existing
+  trust in the Avrea API without an additional GitLab confirmation flow.
+- Artifact downloads into a directory refuse to replace a server-named existing
+  path, including one created during download. Explicit `--path FILE` may still
+  replace a file. A verified temporary file is published with an exclusive hard
+  link for directory targets; filesystem failures are reported without an
+  overwrite fallback. Filenames containing controls or bidi formatting fail.
+- A bootstrap plan containing any secret step requires an API-provided SSH host
+  key before any step runs. Non-secret plans retain the SSH fallback with a
+  warning; `--print` remains unchanged.
+- Untrusted terminal fields and errors escape controls and bidi formatting.
+  Multiline examples retain newlines/tabs. JSON/jq and SAML output are sanitized
+  on a terminal while piped data remains raw. Sanitization occurs before trusted
+  styling, so colors, underlines and hyperlinks remain functional; raw SSH/log
+  streams retain their existing behavior. Injection regressions include shared
+  rendering, GitLab setup, SAML, errors and firewall mutation output.
+- Decoded invoice downloads are capped at 256 MiB and SBOMs at 2 GiB. Limit
+  failures close the response and delete the spool before opening the output
+  destination, preserving existing files and avoiding partial stdout.
+
+The artifact overwrite, bootstrap warning and login callback differences are
+explicit assertions in the Python-versus-Go comparisons, not broad output
+exclusions. The local fixture server no longer performs cosmetic reverse DNS
+on bind; a regression test prohibits that lookup to avoid CI startup stalls.
+
+Validation: all 59 public differential suites passed the report gate, with 61
+reports and 8,288 paired case executions. Eighteen affected admin suites passed
+with 19 reports and 1,776 paired executions. Both sets have zero unexpected
+differences and verified baseline/executable hashes; admin reports also record
+the pinned admin configuration. Public and admin race tests, Go/Python lint,
+type checks, vulnerability scan, schema checks and the 154-node command audit
+passed. Python's full suite passed 2,219 tests; the subsequently added login
+comparator regression passed its focused suite. Native subprocess/shell checks
+passed 32 tests with one platform skip, and the native macOS package passed
+validation including its embedded Go version. Reports are under ignored
+`build/go/policy*`. Review remained local/manual.

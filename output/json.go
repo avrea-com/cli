@@ -59,15 +59,15 @@ func Discovery(w io.Writer, fields []string) error {
 	return err
 }
 
-func JSON(ctx context.Context, w io.Writer, record map[string]any, fields []string, expression string) error {
+func JSON(ctx context.Context, w io.Writer, record map[string]any, fields []string, expression string, terminal ...bool) error {
 	selected := make(map[string]any, len(fields))
 	for _, field := range fields {
 		selected[field] = record[field]
 	}
-	return jsonValue(ctx, w, selected, expression)
+	return jsonValue(ctx, w, selected, expression, terminal...)
 }
 
-func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields []string, expression string) error {
+func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields []string, expression string, terminal ...bool) error {
 	selected := make([]any, 0, len(records))
 	for _, record := range records {
 		row := make(map[string]any, len(fields))
@@ -76,15 +76,27 @@ func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields
 		}
 		selected = append(selected, row)
 	}
-	return jsonValue(ctx, w, selected, expression)
+	return jsonValue(ctx, w, selected, expression, terminal...)
 }
 
-func jsonValue(ctx context.Context, w io.Writer, selected any, expression string) error {
+func jsonValue(ctx context.Context, w io.Writer, selected any, expression string, terminal ...bool) error {
 	if expression == "" {
-		encoder := json.NewEncoder(w)
+		var buffer bytes.Buffer
+		target := w
+		if len(terminal) > 0 && terminal[0] {
+			target = &buffer
+		}
+		encoder := json.NewEncoder(target)
 		encoder.SetIndent("", "  ")
 		encoder.SetEscapeHTML(false)
-		return encoder.Encode(selected)
+		if err := encoder.Encode(selected); err != nil {
+			return err
+		}
+		if target == &buffer {
+			_, err := io.WriteString(w, MultilineText(buffer.String()))
+			return err
+		}
+		return nil
 	}
 	query, err := gojq.Parse(expression)
 	if err != nil {
@@ -123,6 +135,10 @@ func jsonValue(ctx context.Context, w io.Writer, selected any, expression string
 			return errors.New("jq error: output exceeds 16 MiB")
 		}
 	}
+	if len(terminal) > 0 && terminal[0] {
+		_, err = io.WriteString(w, MultilineText(b.String()))
+		return err
+	}
 	_, err = w.Write(b.Bytes())
 	return err
 }
@@ -131,7 +147,26 @@ func jsonValue(ctx context.Context, w io.Writer, selected any, expression string
 func Text(s string) string {
 	var b strings.Builder
 	for _, r := range s {
-		if r < 32 || r == 127 || (r >= 0x80 && r <= 0x9f) {
+		if UnsafeControl(r) {
+			fmt.Fprintf(&b, "\\u%04x", r)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// UnsafeControl identifies external controls, including bidi formatting. Trusted
+// ANSI styling and links are applied only after external values are escaped.
+func UnsafeControl(r rune) bool {
+	return r < 32 || r >= 127 && r <= 159 || r == 0x61c || r == 0x200e || r == 0x200f || r >= 0x2028 && r <= 0x202e || r >= 0x2066 && r <= 0x2069
+}
+
+// MultilineText preserves readable layout while escaping terminal instructions.
+func MultilineText(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r != '\n' && r != '\t' && UnsafeControl(r) {
 			fmt.Fprintf(&b, "\\u%04x", r)
 		} else {
 			b.WriteRune(r)

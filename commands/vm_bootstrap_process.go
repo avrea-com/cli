@@ -95,6 +95,17 @@ func bootstrapSSH(ctx context.Context, d Dependencies, ep map[string]any, args [
 	return 0, err
 }
 func runBootstrapSteps(ctx context.Context, d Dependencies, ep map[string]any, steps []bootstrapStep, identity string) error {
+	if fieldText(ep, "host_key") == "" {
+		for _, step := range steps {
+			if step.secret {
+				return errors.New("VM endpoint has no SSH host key; refusing to send bootstrap secrets over an unverified connection")
+			}
+		}
+		if _, err := fmt.Fprintln(d.Err, "Warning: this VM's endpoint has no SSH host key; the connection falls back to trust-on-first-use instead of pinning."); err != nil {
+			return err
+		}
+	}
+
 	for attempt := 0; attempt < 5; attempt++ {
 		code, err := bootstrapSSH(ctx, d, ep, []string{"true"}, identity, "", 20*time.Second, true)
 		if ctx.Err() != nil {

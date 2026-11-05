@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"html"
@@ -17,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const callbackURI = "http://localhost:8765/callback"
+const callbackURI = "http://127.0.0.1:8765/callback"
 
 type callback struct{ session, csrf, sso string }
 
@@ -34,6 +35,9 @@ func NewLogin(deps Dependencies) *cobra.Command {
 		}
 		cfg, store, api, err := d.load()
 		if err != nil {
+			return err
+		}
+		if err := store.ValidateMutation(); err != nil {
 			return err
 		}
 		key, err := login(cmd.Context(), d, api, provider, email)
@@ -87,9 +91,11 @@ func completeLogin(parent context.Context, d Dependencies, cfg config.Config, st
 }
 
 func login(parent context.Context, d Dependencies, api *client.Client, provider, email string) (string, error) {
-	authURL := api.Config.Host + "/oauth/" + provider + "/login?next=" + callbackURI
+	callbackState := rand.Text()
+	callbackTarget := callbackURI + "?cli_state=" + callbackState
+	authURL := api.Config.Host + "/oauth/" + provider + "/login?" + url.Values{"next": {callbackTarget}}.Encode()
 	if provider == "google" {
-		authURL = api.Config.Host + "/oauth/google/login?final_redirect=" + callbackURI
+		authURL = api.Config.Host + "/oauth/google/login?" + url.Values{"final_redirect": {callbackTarget}}.Encode()
 	}
 	if email != "" {
 		ctx, cancel := context.WithTimeout(parent, 10*time.Second)
@@ -108,7 +114,7 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 			if err != nil || !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || parsed.IsAbs() || parsed.RawQuery != "" || parsed.Fragment != "" {
 				return "", errors.New("login failed: invalid SSO login path")
 			}
-			authURL = api.Config.Host + path + "?" + url.Values{"next": {callbackURI}}.Encode()
+			authURL = api.Config.Host + path + "?" + url.Values{"next": {callbackTarget}}.Encode()
 		}
 	}
 	listener, err := d.Listen(parent, "tcp", "127.0.0.1:8765")
@@ -124,14 +130,24 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 			http.NotFound(w, r)
 			return
 		}
-		once.Do(func() {
-			q := r.URL.Query()
-			cb := callback{session: q.Get("session"), csrf: q.Get("csrf_token"), sso: q.Get("sso_required")}
-			if cb.session == "" {
-				if cookie, e := r.Cookie("avrea_session"); e == nil {
-					cb.session = cookie.Value
-				}
+		q := r.URL.Query()
+		if r.Host != "127.0.0.1:8765" || len(q["cli_state"]) != 1 || q.Get("cli_state") != callbackState {
+			http.Error(w, "Invalid login callback", http.StatusBadRequest)
+			return
+		}
+		// Invalid/empty requests must not consume the pending login.
+		if q.Get("session") == "" && q.Get("sso_required") == "" {
+			http.Error(w, "Missing login result", http.StatusBadRequest)
+			return
+		}
+		if q.Get("session") != "" {
+			if _, err := sessionHeaders(callback{session: q.Get("session"), csrf: q.Get("csrf_token")}); err != nil {
+				http.Error(w, "Invalid login result", http.StatusBadRequest)
+				return
 			}
+		}
+		once.Do(func() {
+			cb := callback{session: q.Get("session"), csrf: q.Get("csrf_token"), sso: q.Get("sso_required")}
 			label := "Authentication failed. Return to your terminal."
 			if cb.session != "" {
 				headers, e := sessionHeaders(callback{session: cb.session})
@@ -163,7 +179,7 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 		_ = server.Close()
 		<-serveErr //nolint:errcheck // Serve termination after Close is expected; join only.
 	}()
-	if _, err := fmt.Fprintf(d.Out, "Opening browser to: %s\nWaiting for authentication...\n", authURL); err != nil {
+	if _, err := fmt.Fprintf(d.Out, "Opening browser to: %s\nWaiting for authentication...\n", output.Text(authURL)); err != nil {
 		return "", err
 	}
 	// A browser may stay open long after authentication. Do not wait for it
@@ -180,7 +196,7 @@ waitCallback:
 			browserDone = nil
 			if err != nil {
 				_, _ = fmt.Fprintln(d.Err, "Failed to open browser. Please visit:")
-				if _, err := fmt.Fprintln(d.Out, authURL); err != nil {
+				if _, err := fmt.Fprintln(d.Out, output.Text(authURL)); err != nil {
 					return "", err
 				}
 			}

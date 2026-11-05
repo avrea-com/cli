@@ -147,13 +147,15 @@ func TestLoginExchange(t *testing.T) {
 				if sso {
 					expected = "/sso/acme/login"
 				}
-				if parsed.Path != expected || parsed.Query().Get("next") != callbackURI {
+				if parsed.Path != expected || !strings.HasPrefix(parsed.Query().Get("next"), callbackURI+"?cli_state=") {
 					t.Error(target)
 				}
-				req, err := http.NewRequestWithContext(ctx, "GET", "http://"+listener.Addr().String()+"/callback?session=session-fixture&csrf_token=csrf-fixture", nil)
+				callbackURL, _ := url.Parse(parsed.Query().Get("next"))
+				req, err := http.NewRequestWithContext(ctx, "GET", "http://"+listener.Addr().String()+"/callback?session=session-fixture&csrf_token=csrf-fixture&cli_state="+callbackURL.Query().Get("cli_state"), nil)
 				if err != nil {
 					return err
 				}
+				req.Host = "127.0.0.1:8765"
 				resp, err := http.DefaultClient.Do(req)
 				if err != nil {
 					return err

@@ -257,7 +257,7 @@ func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]
 	err := func() error {
 		if hasJSON {
 			var buffer bytes.Buffer
-			if err := output.JSON(ctx, &buffer, record, fields, expression); err != nil {
+			if err := output.JSON(ctx, &buffer, record, fields, expression, d.IsTerminal()); err != nil {
 				return err
 			}
 			if !strings.Contains(buffer.String(), credential) {
@@ -315,7 +315,7 @@ func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]
 		if hasJSON {
 			// Recovery must work even when Ctrl-C interrupted jq. It is a local,
 			// unfiltered write with no query execution or further network request.
-			if e := output.JSON(ctx, d.Out, record, fields, ""); e != nil {
+			if e := output.JSON(ctx, d.Out, record, fields, "", d.IsTerminal()); e != nil {
 				return e
 			}
 			delivered = " stdout contains its unfiltered JSON; save the credential rather than retrying."

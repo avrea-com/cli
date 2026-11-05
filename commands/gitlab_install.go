@@ -165,7 +165,7 @@ func gitLabCommitted(cmd *cobra.Command, d Dependencies, row map[string]any, fie
 	setup, _ := row["webhook_setup"].(map[string]any)
 	secret := fieldText(setup, "secret")
 	var buffer bytes.Buffer
-	err := output.JSON(cmd.Context(), &buffer, row, fields, expression)
+	err := output.JSON(cmd.Context(), &buffer, row, fields, expression, d.IsTerminal())
 	retained := err != nil || secret == "" || strings.Contains(buffer.String(), secret)
 	if err == nil && !retained {
 		err = errors.New("filter discarded credential")
@@ -186,7 +186,7 @@ func gitLabCommitted(cmd *cobra.Command, d Dependencies, row map[string]any, fie
 	if !retained {
 		message = committed + ", but output failed: " + tokenFilterRetain
 	}
-	recovery := output.JSON(context.Background(), d.Out, row, fields, "")
+	recovery := output.JSON(context.Background(), d.Out, row, fields, "", d.IsTerminal())
 	if recovery == nil {
 		recovery = flushTokenOutput(d.Out)
 	}

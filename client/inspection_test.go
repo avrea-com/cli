@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/avrea-com/cli/config"
@@ -54,6 +55,21 @@ func TestMalformedInspectionResponse(t *testing.T) {
 	} {
 		if _, err := decodePage[Run](body); err == nil {
 			t.Fatalf("accepted malformed data: %#v", body)
+		}
+	}
+}
+
+func TestRecordErrorsIdentifyFieldsWithoutValues(t *testing.T) {
+	for _, tc := range []struct {
+		field string
+		value any
+	}{
+		{"run_attempt", "secret-value"}, {"run_number", 7.5}, {"created_at", "private-invalid-timestamp"},
+	} {
+		body := map[string]any{"data": []any{map[string]any{"run_id": "ok"}, map[string]any{tc.field: tc.value}}}
+		_, err := decodePage[Run](body)
+		if err == nil || !strings.Contains(err.Error(), "row 2") || !strings.Contains(err.Error(), tc.field) || strings.Contains(err.Error(), "secret-value") || strings.Contains(err.Error(), "private-invalid") {
+			t.Fatal(err)
 		}
 	}
 }

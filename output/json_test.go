@@ -78,3 +78,21 @@ func TestJQOrderingContract(t *testing.T) {
 		t.Fatal("unsupported function unexpectedly accepted")
 	}
 }
+
+func TestTerminalJSONEscapesControlsWithoutChangingPipedValues(t *testing.T) {
+	for _, expression := range []string{"", ".", ".text"} {
+		for _, tty := range []bool{false, true} {
+			var buffer bytes.Buffer
+			value := "line\n\u0085\u202evalue\x1b]52;c;payload\a"
+			if err := JSON(context.Background(), &buffer, map[string]any{"text": value}, []string{"text"}, expression, tty); err != nil {
+				t.Fatal(err)
+			}
+			if tty && (strings.Contains(buffer.String(), "\u0085") || strings.Contains(buffer.String(), "\u202e") || strings.Contains(buffer.String(), "\x1b")) {
+				t.Fatal("terminal controls leaked")
+			}
+			if !tty && expression == ".text" && buffer.String() != value+"\n" {
+				t.Fatal("piped value changed")
+			}
+		}
+	}
+}

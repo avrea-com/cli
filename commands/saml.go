@@ -89,6 +89,9 @@ func newSAMLMetadata(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "fetch SAML SP metadata")
 		}
 		text := strings.ToValidUTF8(string(raw), "\ufffd")
+		if d.IsTerminal() {
+			text = output.MultilineText(text)
+		}
 		if !strings.HasSuffix(text, "\n") {
 			text += "\n"
 		}

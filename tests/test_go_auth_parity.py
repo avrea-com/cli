@@ -5,6 +5,7 @@ from scripts.compare_auth import compare
 from scripts.compare_auth import run_captured
 from scripts.compare_auth import windows_literal_json_args
 from typing import Any
+from urllib.parse import urlencode
 import pytest
 import sys
 
@@ -19,6 +20,31 @@ def captured():
         "browser": None,
         "mode": 0o600,
     }
+
+
+def test_login_binding_normalization_keeps_styles_and_original_evidence():
+    from scripts.compare_inspection import compare as inspection_compare
+
+    def result(callback):
+        value = captured()
+        value["browser"] = "http://fixture/oauth/github/login?" + urlencode({"next": callback})
+        value["stdout"] = "Opening browser to: " + value["browser"] + "\n\x1b[32m✓\x1b[0m Logged in\n"
+        return value
+
+    python = result("http://localhost:8765/callback")
+    go = result("http://127.0.0.1:8765/callback?cli_state=" + "A" * 26)
+    original = deepcopy(go)
+    scenario = {"name": "styled auth login", "args": ["auth", "login"], "login": True, "presentation": True}
+    assert not inspection_compare(scenario, python, go)
+    assert go == original
+    go["stdout"] = go["stdout"].replace("\x1b[32m", "").replace("\x1b[0m", "")
+    assert "terminal text/styles" in inspection_compare(scenario, python, go)
+    for callback in (
+        "http://127.0.0.1:8765/callback",
+        "http://localhost:8765/callback?cli_state=" + "A" * 26,
+        "http://127.0.0.1:8765/wrong?cli_state=" + "A" * 26,
+    ):
+        assert "Go callback binding" in inspection_compare(scenario, python, result(callback))
 
 
 @pytest.mark.parametrize(

@@ -195,7 +195,7 @@ func newArtifactRecord(d Dependencies, action string) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, row, selected, o.expression)
+			return output.JSON(cmd.Context(), d.Out, row, selected, o.expression, d.IsTerminal())
 		}
 		return renderOrderedRecord(d.Out, raw)
 	})
@@ -293,14 +293,16 @@ func downloadArtifact(ctx context.Context, api *client.Client, endpoint string, 
 		return "", errors.New("Artifact is unavailable or has invalid integrity metadata") //nolint:staticcheck // Preserve the Python user-facing diagnostic.
 	}
 	name, ok := row["file_name"].(string)
-	if !ok || name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\\x00\r\n") {
+	if !ok || !utf8.ValidString(name) || name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\") || strings.ContainsFunc(name, output.UnsafeControl) {
 		return "", errors.New("Artifact has an invalid filename") //nolint:staticcheck // Preserve the Python user-facing diagnostic.
 	}
 	destination, err = expandArtifactPath(destination)
 	if err != nil {
 		return "", err
 	}
+	directoryTarget := false
 	if info, e := os.Stat(destination); e == nil && info.IsDir() {
+		directoryTarget = true
 		destination = filepath.Join(destination, name)
 	}
 	destination, err = filepath.Abs(destination)
@@ -336,6 +338,17 @@ func downloadArtifact(ctx context.Context, api *client.Client, endpoint string, 
 	}
 	if err = ctx.Err(); err != nil {
 		return "", err
+	}
+	if directoryTarget {
+		// Linking publishes the verified file only if the destination does not exist,
+		// including when another process creates it while the download is running.
+		if err = os.Link(temporary.Name(), destination); err != nil {
+			if errors.Is(err, os.ErrExist) {
+				return "", errors.New("artifact destination already exists; choose an explicit --path FILE to replace it")
+			}
+			return "", err
+		}
+		return destination, nil
 	}
 	if err = os.Rename(temporary.Name(), destination); err != nil {
 		return "", err

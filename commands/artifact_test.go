@@ -78,3 +78,54 @@ func TestArtifactGetPreservesOrderAndExactNumbers(t *testing.T) {
 		t.Fatal(code, out, stderr)
 	}
 }
+
+func TestArtifactDirectoryDoesNotOverwrite(t *testing.T) {
+	content := "replacement"
+	sum := sha256.Sum256([]byte(content))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, content) }))
+	defer server.Close()
+	row := map[string]any{"state": "complete", "size_bytes": json.Number("11"), "digest_sha256": hex.EncodeToString(sum[:]), "file_name": ".envrc"}
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".envrc")
+	if err := os.WriteFile(path, []byte("original"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	api := client.New(config.Config{Host: server.URL}, server.Client(), "test")
+	if _, err := downloadArtifact(t.Context(), api, "/download", row, dir); err == nil {
+		t.Fatal("server-selected filename overwrote existing file")
+	}
+	original, _ := os.ReadFile(path)
+	if string(original) != "original" {
+		t.Fatal("existing file modified")
+	}
+	if _, err := downloadArtifact(t.Context(), api, "/download", row, path); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestArtifactDirectoryRefusesFileCreatedDuringDownload(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "build.zip")
+	content := "payload"
+	sum := sha256.Sum256([]byte(content))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if err := os.WriteFile(path, []byte("concurrent"), 0600); err != nil {
+			t.Error(err)
+		}
+		_, _ = io.WriteString(w, content)
+	}))
+	defer server.Close()
+	row := map[string]any{"state": "complete", "size_bytes": json.Number("7"), "digest_sha256": hex.EncodeToString(sum[:]), "file_name": "build.zip"}
+	api := client.New(config.Config{Host: server.URL}, server.Client(), "test")
+	if _, err := downloadArtifact(t.Context(), api, "/download", row, dir); err == nil {
+		t.Fatal("replaced concurrently created file")
+	}
+	raw, _ := os.ReadFile(path)
+	if string(raw) != "concurrent" {
+		t.Fatal("concurrent destination lost")
+	}
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 1 {
+		t.Fatal("temporary artifact leaked")
+	}
+}

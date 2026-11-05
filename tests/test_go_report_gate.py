@@ -93,3 +93,15 @@ def test_all_scenarios_capture_browser_without_opt_in(tmp_path, monkeypatch):
     assert result["exit"] == 0
     assert result["browser"] == "https://example.test/fixture"
     assert result["files"] == {}
+
+
+def test_fixture_server_does_not_require_reverse_dns(monkeypatch):
+    import socket
+
+    def reject_lookup(*_args):
+        raise AssertionError("fixture attempted reverse DNS")
+
+    monkeypatch.setattr(socket, "getfqdn", reject_lookup)
+    with harness.FixtureServer(("127.0.0.1", 0), harness.Fixture) as server:
+        assert server.server_name == "localhost"
+        assert server.server_port > 0

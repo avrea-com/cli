@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"maps"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/avrea-com/cli/client/wire"
 )
@@ -45,9 +49,63 @@ func decodeRecord[T any](fields map[string]any) (Record[T], error) {
 		return Record[T]{}, errors.New("unexpected API response: invalid record")
 	}
 	if err = json.Unmarshal(data, &value); err != nil {
-		return Record[T]{}, errors.New("unexpected API response: invalid record fields")
+		return Record[T]{}, fmt.Errorf("unexpected API response: invalid record fields: %s", recordFieldError(data, reflect.TypeFor[T]()))
 	}
 	return Record[T]{Value: value, Fields: fields}, nil
+}
+
+// Diagnose using schema-owned field names only: decoder errors can contain
+// response values (notably timestamps), so never print the original error.
+func recordFieldError(data []byte, typ reflect.Type) string {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ.Kind() == reflect.Struct && typ != reflect.TypeFor[time.Time]() {
+		var fields map[string]json.RawMessage
+		if json.Unmarshal(data, &fields) == nil {
+			for i := 0; i < typ.NumField(); i++ {
+				field := typ.Field(i)
+				name := strings.Split(field.Tag.Get("json"), ",")[0]
+				if name == "" || name == "-" {
+					continue
+				}
+				raw, present := fields[name]
+				if !present {
+					continue
+				}
+				if json.Unmarshal(raw, reflect.New(field.Type).Interface()) != nil {
+					return name + ": " + recordFieldError(raw, field.Type)
+				}
+			}
+		}
+	}
+	return "expected " + expectedJSONType(typ)
+}
+
+func expectedJSONType(typ reflect.Type) string {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ == reflect.TypeFor[time.Time]() {
+		return "RFC3339 timestamp"
+	}
+	if typ.Kind() == reflect.Map && strings.HasPrefix(typ.Name(), "Nullable[") {
+		return expectedJSONType(typ.Elem()) + " or null"
+	}
+	switch typ.Kind() {
+	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Uint, reflect.Uint64:
+		return "integer"
+	case reflect.Float64, reflect.Float32:
+		return "number"
+	case reflect.String:
+		return "string"
+	case reflect.Bool:
+		return "boolean"
+	case reflect.Slice, reflect.Array:
+		return "array"
+	default:
+		return "object matching the API schema"
+	}
 }
 
 func decodePage[T any](body map[string]any) (Page[T], error) {
@@ -56,14 +114,14 @@ func decodePage[T any](body map[string]any) (Page[T], error) {
 	if !ok && body["data"] != nil {
 		return page, errors.New("unexpected API response: expected a data array")
 	}
-	for _, item := range raw {
+	for index, item := range raw {
 		fields, ok := item.(map[string]any)
 		if !ok {
 			return page, errors.New("unexpected API response: expected object in data array")
 		}
 		record, err := decodeRecord[T](fields)
 		if err != nil {
-			return page, err
+			return page, fmt.Errorf("row %d: %w", index+1, err)
 		}
 		page.Items = append(page.Items, record)
 	}

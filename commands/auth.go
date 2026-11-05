@@ -76,7 +76,7 @@ func newStatus(d Dependencies) *cobra.Command {
 			if show {
 				result["token"] = cfg.Token
 			}
-			return output.JSON(cmd.Context(), d.Out, result, selected, expression)
+			return output.JSON(cmd.Context(), d.Out, result, selected, expression, d.IsTerminal())
 		}
 		var b strings.Builder
 		width := 12
@@ -144,6 +144,9 @@ func NewLogout(deps Dependencies) *cobra.Command {
 		RunE: run(func(cmd *cobra.Command, _ []string) error {
 			cfg, store, api, err := d.load()
 			if err != nil {
+				return err
+			}
+			if err := store.ValidateMutation(); err != nil {
 				return err
 			}
 			if cfg.Token != "" {

@@ -81,7 +81,7 @@ func newRunView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, fields, selected, options.expression)
+			return output.JSON(cmd.Context(), d.Out, fields, selected, options.expression, d.IsTerminal())
 		}
 		if web {
 			target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(orgSlug(cmd.Context(), cfg, api, id)) + "/runs/" + url.PathEscape(runID)

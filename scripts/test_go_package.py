@@ -15,6 +15,13 @@ import zipfile
 
 
 class PackageTests(unittest.TestCase):
+    def test_security_toolchain_floor(self):
+        for version in ["go1.27.0", "go1.27.2", "go1.26.10", "devel go1.28", "go1.28rc1", ""]:
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                package.require_patched_go(version)
+        for version in ["go1.27.3", "go1.27.4", "go1.28.0"]:
+            package.require_patched_go(version)
+
     def test_binary_settings_must_match_manifest(self):
         manifest = {"target": "linux_amd64", "commit": "current", "dirty": False, "cgo_enabled": False}
         settings = {
@@ -29,10 +36,13 @@ class PackageTests(unittest.TestCase):
         def info(values):
             return {
                 "Path": "github.com/avrea-com/cli/cmd/avr",
+                "GoVersion": "go1.27.3",
                 "Settings": [{"Key": k, "Value": v} for k, v in values.items()],
             }
 
         package.validate_build_info(info(settings), manifest)
+        with self.assertRaisesRegex(ValueError, "Go 1.27.3"):
+            package.validate_build_info(info(settings) | {"GoVersion": "go1.27.2"}, manifest)
         for key, wrong in {
             "GOOS": "darwin",
             "GOARCH": "arm64",

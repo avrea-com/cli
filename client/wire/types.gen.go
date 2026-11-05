@@ -10,6 +10,7 @@ import (
 
 	"github.com/oapi-codegen/nullable"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for AccessTokenGrantAccessLevel.
@@ -212,19 +213,19 @@ func (e BillingInvoiceStatus) Valid() bool {
 
 // Defines values for CIProvider.
 const (
-	AvreaCi       CIProvider = "avrea_ci"
-	GithubActions CIProvider = "github_actions"
-	GitlabCi      CIProvider = "gitlab_ci"
+	CIProviderAvreaCi       CIProvider = "avrea_ci"
+	CIProviderGithubActions CIProvider = "github_actions"
+	CIProviderGitlabCi      CIProvider = "gitlab_ci"
 )
 
 // Valid indicates whether the value is a known member of the CIProvider enum.
 func (e CIProvider) Valid() bool {
 	switch e {
-	case AvreaCi:
+	case CIProviderAvreaCi:
 		return true
-	case GithubActions:
+	case CIProviderGithubActions:
 		return true
-	case GitlabCi:
+	case CIProviderGitlabCi:
 		return true
 	default:
 		return false
@@ -815,37 +816,37 @@ func (e LegacyGitHubPublicMirrorCatalogResourcePlatform) Valid() bool {
 
 // Defines values for LogLevel.
 const (
-	Command    LogLevel = "command"
-	Debug      LogLevel = "debug"
-	Diagnostic LogLevel = "diagnostic"
-	Endgroup   LogLevel = "endgroup"
-	Error      LogLevel = "error"
-	Group      LogLevel = "group"
-	Info       LogLevel = "info"
-	Notice     LogLevel = "notice"
-	Warning    LogLevel = "warning"
+	LogLevelCommand    LogLevel = "command"
+	LogLevelDebug      LogLevel = "debug"
+	LogLevelDiagnostic LogLevel = "diagnostic"
+	LogLevelEndgroup   LogLevel = "endgroup"
+	LogLevelError      LogLevel = "error"
+	LogLevelGroup      LogLevel = "group"
+	LogLevelInfo       LogLevel = "info"
+	LogLevelNotice     LogLevel = "notice"
+	LogLevelWarning    LogLevel = "warning"
 )
 
 // Valid indicates whether the value is a known member of the LogLevel enum.
 func (e LogLevel) Valid() bool {
 	switch e {
-	case Command:
+	case LogLevelCommand:
 		return true
-	case Debug:
+	case LogLevelDebug:
 		return true
-	case Diagnostic:
+	case LogLevelDiagnostic:
 		return true
-	case Endgroup:
+	case LogLevelEndgroup:
 		return true
-	case Error:
+	case LogLevelError:
 		return true
-	case Group:
+	case LogLevelGroup:
 		return true
-	case Info:
+	case LogLevelInfo:
 		return true
-	case Notice:
+	case LogLevelNotice:
 		return true
-	case Warning:
+	case LogLevelWarning:
 		return true
 	default:
 		return false
@@ -987,6 +988,42 @@ func (e MirrorSessionUnavailableReason) Valid() bool {
 	case MirrorOff:
 		return true
 	case NotReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NativeDispatchResponseCiProvider.
+const (
+	NativeDispatchResponseCiProviderAvreaCi NativeDispatchResponseCiProvider = "avrea_ci"
+)
+
+// Valid indicates whether the value is a known member of the NativeDispatchResponseCiProvider enum.
+func (e NativeDispatchResponseCiProvider) Valid() bool {
+	switch e {
+	case NativeDispatchResponseCiProviderAvreaCi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NativeDispatchResponseState.
+const (
+	NativeDispatchResponseStateAdmitted NativeDispatchResponseState = "admitted"
+	NativeDispatchResponseStatePending  NativeDispatchResponseState = "pending"
+	NativeDispatchResponseStateRejected NativeDispatchResponseState = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the NativeDispatchResponseState enum.
+func (e NativeDispatchResponseState) Valid() bool {
+	switch e {
+	case NativeDispatchResponseStateAdmitted:
+		return true
+	case NativeDispatchResponseStatePending:
+		return true
+	case NativeDispatchResponseStateRejected:
 		return true
 	default:
 		return false
@@ -1191,6 +1228,24 @@ func (e RerunWorkflowRunResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for RuleCounterVerdict.
+const (
+	Accept RuleCounterVerdict = "accept"
+	Drop   RuleCounterVerdict = "drop"
+)
+
+// Valid indicates whether the value is a known member of the RuleCounterVerdict enum.
+func (e RuleCounterVerdict) Valid() bool {
+	switch e {
+	case Accept:
+		return true
+	case Drop:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SamlConfigResponseGroupSyncState.
 const (
 	AttrGroupsUnset SamlConfigResponseGroupSyncState = "attr_groups_unset"
@@ -1259,22 +1314,40 @@ func (e SbomRefreshStateStatus) Valid() bool {
 
 // Defines values for SettingSchemaResponseValueType.
 const (
-	Boolean    SettingSchemaResponseValueType = "boolean"
-	Integer    SettingSchemaResponseValueType = "integer"
-	String     SettingSchemaResponseValueType = "string"
-	StringList SettingSchemaResponseValueType = "string_list"
+	SettingSchemaResponseValueTypeBoolean    SettingSchemaResponseValueType = "boolean"
+	SettingSchemaResponseValueTypeInteger    SettingSchemaResponseValueType = "integer"
+	SettingSchemaResponseValueTypeString     SettingSchemaResponseValueType = "string"
+	SettingSchemaResponseValueTypeStringList SettingSchemaResponseValueType = "string_list"
 )
 
 // Valid indicates whether the value is a known member of the SettingSchemaResponseValueType enum.
 func (e SettingSchemaResponseValueType) Valid() bool {
 	switch e {
-	case Boolean:
+	case SettingSchemaResponseValueTypeBoolean:
 		return true
-	case Integer:
+	case SettingSchemaResponseValueTypeInteger:
 		return true
-	case String:
+	case SettingSchemaResponseValueTypeString:
 		return true
-	case StringList:
+	case SettingSchemaResponseValueTypeStringList:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Severity.
+const (
+	SeverityError   Severity = "error"
+	SeverityWarning Severity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the Severity enum.
+func (e Severity) Valid() bool {
+	switch e {
+	case SeverityError:
+		return true
+	case SeverityWarning:
 		return true
 	default:
 		return false
@@ -1374,6 +1447,54 @@ func (e WorkflowArtifactState) Valid() bool {
 	case Lost:
 		return true
 	case Uploading:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowDispatchInputResponseType.
+const (
+	WorkflowDispatchInputResponseTypeBoolean     WorkflowDispatchInputResponseType = "boolean"
+	WorkflowDispatchInputResponseTypeChoice      WorkflowDispatchInputResponseType = "choice"
+	WorkflowDispatchInputResponseTypeEnvironment WorkflowDispatchInputResponseType = "environment"
+	WorkflowDispatchInputResponseTypeNumber      WorkflowDispatchInputResponseType = "number"
+	WorkflowDispatchInputResponseTypeString      WorkflowDispatchInputResponseType = "string"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowDispatchInputResponseType enum.
+func (e WorkflowDispatchInputResponseType) Valid() bool {
+	switch e {
+	case WorkflowDispatchInputResponseTypeBoolean:
+		return true
+	case WorkflowDispatchInputResponseTypeChoice:
+		return true
+	case WorkflowDispatchInputResponseTypeEnvironment:
+		return true
+	case WorkflowDispatchInputResponseTypeNumber:
+		return true
+	case WorkflowDispatchInputResponseTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowInventorySkipReason.
+const (
+	Blocked   WorkflowInventorySkipReason = "blocked"
+	Forbidden WorkflowInventorySkipReason = "forbidden"
+	NotFound  WorkflowInventorySkipReason = "not_found"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowInventorySkipReason enum.
+func (e WorkflowInventorySkipReason) Valid() bool {
+	switch e {
+	case Blocked:
+		return true
+	case Forbidden:
+		return true
+	case NotFound:
 		return true
 	default:
 		return false
@@ -2213,6 +2334,11 @@ type APIResponseJobResponse struct {
 	Data JobResponse `json:"data"`
 }
 
+// APIResponseNativeDispatchResponse defines model for APIResponse_NativeDispatchResponse_.
+type APIResponseNativeDispatchResponse struct {
+	Data NativeDispatchResponse `json:"data"`
+}
+
 // APIResponseOrganizationRepositoryResponse defines model for APIResponse_OrganizationRepositoryResponse_.
 type APIResponseOrganizationRepositoryResponse struct {
 	// Data Organization repository response model.
@@ -2249,6 +2375,17 @@ type APIResponseStripeKeyResponse struct {
 // APIResponseWorkflowArtifact defines model for APIResponse_WorkflowArtifact_.
 type APIResponseWorkflowArtifact struct {
 	Data WorkflowArtifact `json:"data"`
+}
+
+// APIResponseWorkflowDispatchMetadataResponse defines model for APIResponse_WorkflowDispatchMetadataResponse_.
+type APIResponseWorkflowDispatchMetadataResponse struct {
+	// Data Metadata for rendering a workflow_dispatch trigger button.
+	//
+	// ``dispatchable`` is whether the workflow YAML at ``ref`` declares
+	// ``on: workflow_dispatch``. ``can_dispatch`` is whether the requesting
+	// user has write/maintain/admin on the underlying repo. They are
+	// independent — render the button only when both are true.
+	Data WorkflowDispatchMetadataResponse `json:"data"`
 }
 
 // APIResponseWorkflowRunResponse defines model for APIResponse_WorkflowRunResponse_.
@@ -2522,6 +2659,7 @@ type CIWorkflowResponse struct {
 	CiProvider                *CIProvider               `json:"ci_provider,omitempty"`
 	CreatedAt                 time.Time                 `json:"created_at"`
 	Dispatchable              nullable.Nullable[bool]   `json:"dispatchable,omitempty"`
+	ManualDispatchEnabled     *bool                     `json:"manual_dispatch_enabled,omitempty"`
 	Name                      string                    `json:"name"`
 	Path                      string                    `json:"path"`
 	Platform                  Platform                  `json:"platform"`
@@ -3605,6 +3743,9 @@ type JobResponse struct {
 	RepositoryFullName string                          `json:"repository_full_name"`
 	RepositoryId       string                          `json:"repository_id"`
 
+	// ReusedJobId Producing job whose terminal result is retained in this subset rerun
+	ReusedJobId nullable.Nullable[string] `json:"reused_job_id,omitempty"`
+
 	// RunAttempt GitHub's workflow run attempt. Null when no attempt is recorded, which is always the case for a GitLab or Avrea CI job.
 	RunAttempt nullable.Nullable[int] `json:"run_attempt"`
 
@@ -3840,6 +3981,48 @@ type MirrorSession struct {
 // MirrorSessionUnavailableReason defines model for MirrorSession.UnavailableReason.
 type MirrorSessionUnavailableReason string
 
+// NativeDispatchRequest defines model for NativeDispatchRequest.
+type NativeDispatchRequest struct {
+	Inputs     *map[string]NativeDispatchRequest_Inputs_AdditionalProperties `json:"inputs,omitempty"`
+	Ref        string                                                        `json:"ref"`
+	WorkflowId string                                                        `json:"workflow_id"`
+}
+
+// NativeDispatchRequestInputs0 defines model for NativeDispatchRequest.Inputs.0.
+type NativeDispatchRequestInputs0 = string
+
+// NativeDispatchRequestInputs1 defines model for NativeDispatchRequest.Inputs.1.
+type NativeDispatchRequestInputs1 = bool
+
+// NativeDispatchRequestInputs2 defines model for NativeDispatchRequest.Inputs.2.
+type NativeDispatchRequestInputs2 = int
+
+// NativeDispatchRequestInputs3 defines model for NativeDispatchRequest.Inputs.3.
+type NativeDispatchRequestInputs3 = float64
+
+// NativeDispatchRequest_Inputs_AdditionalProperties defines model for NativeDispatchRequest.inputs.AdditionalProperties.
+type NativeDispatchRequest_Inputs_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// NativeDispatchResponse defines model for NativeDispatchResponse.
+type NativeDispatchResponse struct {
+	CiProvider           *NativeDispatchResponseCiProvider `json:"ci_provider,omitempty"`
+	CommitSha            string                            `json:"commit_sha"`
+	DispatchId           string                            `json:"dispatch_id"`
+	Reason               nullable.Nullable[string]         `json:"reason"`
+	Ref                  string                            `json:"ref"`
+	RunIds               []string                          `json:"run_ids"`
+	State                NativeDispatchResponseState       `json:"state"`
+	AdditionalProperties map[string]interface{}            `json:"-"`
+}
+
+// NativeDispatchResponseCiProvider defines model for NativeDispatchResponse.CiProvider.
+type NativeDispatchResponseCiProvider string
+
+// NativeDispatchResponseState defines model for NativeDispatchResponse.State.
+type NativeDispatchResponseState string
+
 // OrgPullRequestAttentionMeta What a scope=attention page covered beyond the rows it returned.
 //
 // The page holds the matches among its candidates, so its rows alone say
@@ -3860,11 +4043,11 @@ type OrgPullRequestAttentionMeta struct {
 // organization; this list is ordered by activity and keyset-paginated on it,
 // which is also the house envelope (docs/REST_API_STYLE_GUIDE.md).
 type OrgPullRequestList struct {
-	Attention nullable.Nullable[OrgPullRequestAttentionMeta] `json:"attention,omitempty"`
+	Attention nullable.Nullable[OrgPullRequestAttentionMeta] `json:"attention"`
 	Data      []OrgPullRequestSummary                        `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination           *PaginationMeta        `json:"pagination,omitempty"`
+	Pagination           PaginationMeta         `json:"pagination"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -3951,11 +4134,21 @@ type OrganizationRepositoryAccessResolution struct {
 type OrganizationRepositoryResponse struct {
 	DefaultBranch        nullable.Nullable[string]               `json:"default_branch,omitempty"`
 	FullName             string                                  `json:"full_name"`
+	IsArchived           *bool                                   `json:"is_archived,omitempty"`
 	Name                 string                                  `json:"name"`
 	Platform             *OrganizationRepositoryResponsePlatform `json:"platform,omitempty"`
 	PlatformRepositoryId nullable.Nullable[int]                  `json:"platform_repository_id"`
-	RepositoryId         string                                  `json:"repository_id"`
-	AdditionalProperties map[string]interface{}                  `json:"-"`
+
+	// PushedAt Last push the platform reported; null until the installation sync has read the repository
+	PushedAt     nullable.Nullable[time.Time] `json:"pushed_at,omitempty"`
+	RepositoryId string                       `json:"repository_id"`
+
+	// WorkflowInventorySkipReason Why GitHub refused: forbidden (403), not_found (404) or blocked (451)
+	WorkflowInventorySkipReason nullable.Nullable[WorkflowInventorySkipReason] `json:"workflow_inventory_skip_reason,omitempty"`
+
+	// WorkflowInventorySkippedAt Set while GitHub refuses the App's workflow listing for this repository; cleared once read
+	WorkflowInventorySkippedAt nullable.Nullable[time.Time] `json:"workflow_inventory_skipped_at,omitempty"`
+	AdditionalProperties       map[string]interface{}       `json:"-"`
 }
 
 // OrganizationRepositoryResponsePlatform defines model for OrganizationRepositoryResponse.Platform.
@@ -3976,7 +4169,7 @@ type PagedResponseAccessTokenResponse struct {
 	Data []AccessTokenResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseCustomerVm defines model for PagedResponse_CustomerVm_.
@@ -3984,7 +4177,7 @@ type PagedResponseCustomerVm struct {
 	Data []CustomerVm `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseEmailDomainResponse defines model for PagedResponse_EmailDomainResponse_.
@@ -3992,7 +4185,7 @@ type PagedResponseEmailDomainResponse struct {
 	Data []EmailDomainResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseGitLabInstallationSummary defines model for PagedResponse_GitLabInstallationSummary_.
@@ -4000,7 +4193,7 @@ type PagedResponseGitLabInstallationSummary struct {
 	Data []GitLabInstallationSummary `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseOrganizationListItem defines model for PagedResponse_OrganizationListItem_.
@@ -4008,7 +4201,7 @@ type PagedResponseOrganizationListItem struct {
 	Data []OrganizationListItem `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseOrganizationMemberResponse defines model for PagedResponse_OrganizationMemberResponse_.
@@ -4016,7 +4209,7 @@ type PagedResponseOrganizationMemberResponse struct {
 	Data []OrganizationMemberResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponsePaymentMethodResponse defines model for PagedResponse_PaymentMethodResponse_.
@@ -4024,7 +4217,7 @@ type PagedResponsePaymentMethodResponse struct {
 	Data []PaymentMethodResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseUserInstallationItem defines model for PagedResponse_UserInstallationItem_.
@@ -4032,7 +4225,7 @@ type PagedResponseUserInstallationItem struct {
 	Data []UserInstallationItem `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PagedResponseWorkflowArtifactView defines model for PagedResponse_WorkflowArtifactView_.
@@ -4040,12 +4233,21 @@ type PagedResponseWorkflowArtifactView struct {
 	Data []WorkflowArtifactView `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination *PaginationMeta `json:"pagination,omitempty"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 // PaginationMeta Pagination metadata. “next_cursor“ is None on the final page.
 type PaginationMeta struct {
 	NextCursor nullable.Nullable[string] `json:"next_cursor,omitempty"`
+}
+
+// ParseError defines model for ParseError.
+type ParseError struct {
+	Code                 *string                `json:"code,omitempty"`
+	Message              string                 `json:"message"`
+	Pos                  nullable.Nullable[Pos] `json:"pos,omitempty"`
+	Severity             *Severity              `json:"severity,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // PaymentMethodResponse defines model for PaymentMethodResponse.
@@ -4061,6 +4263,14 @@ type PaymentMethodResponse struct {
 
 // Platform defines model for Platform.
 type Platform string
+
+// Pos defines model for Pos.
+type Pos struct {
+	Column               *int                   `json:"column,omitempty"`
+	File                 *string                `json:"file,omitempty"`
+	Line                 *int                   `json:"line,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
 
 // PublicMirrorPlatform defines model for PublicMirrorPlatform.
 type PublicMirrorPlatform string
@@ -4215,13 +4425,21 @@ type RepoGitMirrorUpdate struct {
 // RerunWorkflowRunRequest Request body for rerunning a workflow run.
 type RerunWorkflowRunRequest struct {
 	// FailedOnly If true, re-run only the failed jobs
-	FailedOnly           *bool                  `json:"failed_only,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+	FailedOnly *bool `json:"failed_only,omitempty"`
+
+	// InvocationKey Reuse this UUID when retrying an Avrea workflow rerun request
+	InvocationKey nullable.Nullable[openapi_types.UUID] `json:"invocation_key,omitempty"`
+
+	// JobIds Avrea job IDs from this attempt to rerun, together with downstream dependents
+	JobIds               nullable.Nullable[[]string] `json:"job_ids,omitempty"`
+	AdditionalProperties map[string]interface{}      `json:"-"`
 }
 
 // RerunWorkflowRunResponse defines model for RerunWorkflowRunResponse.
 type RerunWorkflowRunResponse struct {
 	FailedOnly           bool                            `json:"failed_only"`
+	OriginalRunId        nullable.Nullable[string]       `json:"original_run_id,omitempty"`
+	RunAttempt           nullable.Nullable[int]          `json:"run_attempt,omitempty"`
 	RunId                string                          `json:"run_id"`
 	Status               *RerunWorkflowRunResponseStatus `json:"status,omitempty"`
 	AdditionalProperties map[string]interface{}          `json:"-"`
@@ -4229,6 +4447,24 @@ type RerunWorkflowRunResponse struct {
 
 // RerunWorkflowRunResponseStatus defines model for RerunWorkflowRunResponse.Status.
 type RerunWorkflowRunResponseStatus string
+
+// RuleCounter Per-rule packet and byte counter read from the firewall, with its verdict.
+//
+// Both ALLOW and DENY rules of a VM's egress policy carry a labelled counter
+// (“vm-rule-{rule_id}-allow“ / “-deny“, “vm-default-allow“ /
+// “vm-default-deny“), so a live view can show what each rule admitted and
+// what it blocked. “drops“ on :class:`VMFlowSummary` keeps the original
+// :class:`DropCounter` shape; “accepts“ carries the ALLOW side.
+type RuleCounter struct {
+	Bytes                int                    `json:"bytes"`
+	Label                string                 `json:"label"`
+	Packets              int                    `json:"packets"`
+	Verdict              RuleCounterVerdict     `json:"verdict"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// RuleCounterVerdict defines model for RuleCounter.Verdict.
+type RuleCounterVerdict string
 
 // SSHForwardingRequest defines model for SSHForwardingRequest.
 type SSHForwardingRequest struct {
@@ -4417,6 +4653,9 @@ type SetupIntentResponse struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// Severity defines model for Severity.
+type Severity string
+
 // StepAggregation defines model for StepAggregation.
 type StepAggregation struct {
 	ActionRequiredAvgDurationSeconds    nullable.Nullable[float64] `json:"action_required_avg_duration_seconds,omitempty"`
@@ -4536,6 +4775,7 @@ type UserInstallationItem struct {
 // “repository_id“ is encoded in the namespace path so it is not stored as a
 // field on the record itself.
 type VMFlowSummary struct {
+	Accepts                  *[]RuleCounter         `json:"accepts,omitempty"`
 	BlockedDnsQueries        *[]BlockedDnsQuery     `json:"blocked_dns_queries,omitempty"`
 	BytesEgress              *int                   `json:"bytes_egress,omitempty"`
 	BytesIngress             *int                   `json:"bytes_ingress,omitempty"`
@@ -4692,6 +4932,39 @@ type WorkflowArtifactView struct {
 	AdditionalProperties map[string]interface{}       `json:"-"`
 }
 
+// WorkflowDispatchInputResponse One declared input of a workflow's “workflow_dispatch:“ trigger.
+type WorkflowDispatchInputResponse struct {
+	Default              nullable.Nullable[string]         `json:"default"`
+	Description          nullable.Nullable[string]         `json:"description"`
+	Name                 string                            `json:"name"`
+	Options              nullable.Nullable[[]string]       `json:"options"`
+	Required             bool                              `json:"required"`
+	Type                 WorkflowDispatchInputResponseType `json:"type"`
+	AdditionalProperties map[string]interface{}            `json:"-"`
+}
+
+// WorkflowDispatchInputResponseType defines model for WorkflowDispatchInputResponse.Type.
+type WorkflowDispatchInputResponseType string
+
+// WorkflowDispatchMetadataResponse Metadata for rendering a workflow_dispatch trigger button.
+//
+// “dispatchable“ is whether the workflow YAML at “ref“ declares
+// “on: workflow_dispatch“. “can_dispatch“ is whether the requesting
+// user has write/maintain/admin on the underlying repo. They are
+// independent — render the button only when both are true.
+type WorkflowDispatchMetadataResponse struct {
+	CanDispatch          bool                            `json:"can_dispatch"`
+	CiProvider           *CIProvider                     `json:"ci_provider,omitempty"`
+	Dispatchable         bool                            `json:"dispatchable"`
+	Inputs               []WorkflowDispatchInputResponse `json:"inputs"`
+	Ref                  string                          `json:"ref"`
+	WorkflowId           string                          `json:"workflow_id"`
+	AdditionalProperties map[string]interface{}          `json:"-"`
+}
+
+// WorkflowInventorySkipReason defines model for WorkflowInventorySkipReason.
+type WorkflowInventorySkipReason string
+
 // WorkflowRun Workflow run sub-object for embedding in job responses (no jobs).
 type WorkflowRun struct {
 	// CiProvider CI engine executing this work, independently of the source repository host or runner location.
@@ -4819,28 +5092,31 @@ type WorkflowRunRepository struct {
 // WorkflowRunResponse defines model for WorkflowRunResponse.
 type WorkflowRunResponse struct {
 	// CiProvider CI engine executing this work, independently of the source repository host or runner location.
-	CiProvider         CIProvider                                       `json:"ci_provider"`
-	Conclusion         nullable.Nullable[WorkflowRunResponseConclusion] `json:"conclusion"`
-	CreatedAt          nullable.Nullable[time.Time]                     `json:"created_at"`
-	DisplayTitle       string                                           `json:"display_title"`
-	DurationSeconds    nullable.Nullable[float64]                       `json:"duration_seconds"`
-	Event              string                                           `json:"event"`
-	HeadBranch         nullable.Nullable[string]                        `json:"head_branch"`
-	HeadCommit         nullable.Nullable[WorkflowRunHeadCommit]         `json:"head_commit"`
-	HeadSha            nullable.Nullable[string]                        `json:"head_sha"`
-	Jobs               nullable.Nullable[[]JobResponse]                 `json:"jobs,omitempty"`
-	PlatformRunId      nullable.Nullable[int]                           `json:"platform_run_id,omitempty"`
-	PlatformWorkflowId nullable.Nullable[int]                           `json:"platform_workflow_id"`
-	PullRequest        nullable.Nullable[WorkflowRunPullRequest]        `json:"pull_request,omitempty"`
-	Repository         WorkflowRunRepository                            `json:"repository"`
-	RepositoryId       string                                           `json:"repository_id"`
-	RunAttempt         nullable.Nullable[int]                           `json:"run_attempt"`
-	RunId              string                                           `json:"run_id"`
-	RunNumber          nullable.Nullable[int]                           `json:"run_number"`
-	StartedAt          nullable.Nullable[time.Time]                     `json:"started_at"`
-	Status             WorkflowRunResponseStatus                        `json:"status"`
-	TriggeringActor    nullable.Nullable[WorkflowRunTriggeringActor]    `json:"triggering_actor,omitempty"`
-	UpdatedAt          nullable.Nullable[time.Time]                     `json:"updated_at"`
+	CiProvider CIProvider                                       `json:"ci_provider"`
+	Conclusion nullable.Nullable[WorkflowRunResponseConclusion] `json:"conclusion"`
+	CreatedAt  nullable.Nullable[time.Time]                     `json:"created_at"`
+
+	// Diagnostics Workflow validation diagnostics, including source locations when available.
+	Diagnostics        *[]ParseError                                 `json:"diagnostics,omitempty"`
+	DisplayTitle       string                                        `json:"display_title"`
+	DurationSeconds    nullable.Nullable[float64]                    `json:"duration_seconds"`
+	Event              string                                        `json:"event"`
+	HeadBranch         nullable.Nullable[string]                     `json:"head_branch"`
+	HeadCommit         nullable.Nullable[WorkflowRunHeadCommit]      `json:"head_commit"`
+	HeadSha            nullable.Nullable[string]                     `json:"head_sha"`
+	Jobs               nullable.Nullable[[]JobResponse]              `json:"jobs,omitempty"`
+	PlatformRunId      nullable.Nullable[int]                        `json:"platform_run_id,omitempty"`
+	PlatformWorkflowId nullable.Nullable[int]                        `json:"platform_workflow_id"`
+	PullRequest        nullable.Nullable[WorkflowRunPullRequest]     `json:"pull_request,omitempty"`
+	Repository         WorkflowRunRepository                         `json:"repository"`
+	RepositoryId       string                                        `json:"repository_id"`
+	RunAttempt         nullable.Nullable[int]                        `json:"run_attempt"`
+	RunId              string                                        `json:"run_id"`
+	RunNumber          nullable.Nullable[int]                        `json:"run_number"`
+	StartedAt          nullable.Nullable[time.Time]                  `json:"started_at"`
+	Status             WorkflowRunResponseStatus                     `json:"status"`
+	TriggeringActor    nullable.Nullable[WorkflowRunTriggeringActor] `json:"triggering_actor,omitempty"`
+	UpdatedAt          nullable.Nullable[time.Time]                  `json:"updated_at"`
 
 	// Workflow Workflow metadata when requested with include=workflow. Null when not requested or no catalog entry is known; use workflow_name and workflow_path.
 	Workflow nullable.Nullable[Workflow] `json:"workflow,omitempty"`
@@ -4884,7 +5160,7 @@ type WorkflowsListResponse struct {
 	Data []CIWorkflowResponse `json:"data"`
 
 	// Pagination Pagination metadata. ``next_cursor`` is None on the final page.
-	Pagination           *PaginationMeta        `json:"pagination,omitempty"`
+	Pagination           PaginationMeta         `json:"pagination"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -5583,10 +5859,28 @@ type DeleteRepoSettingParams struct {
 	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
+// CreateNativeDispatchParams defines parameters for CreateNativeDispatch.
+type CreateNativeDispatchParams struct {
+	IdempotencyKey string  `json:"Idempotency-Key"`
+	AvreaSession   *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetNativeDispatchParams defines parameters for GetNativeDispatch.
+type GetNativeDispatchParams struct {
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
 // ListRepositoryWorkflowsIndexedParams defines parameters for ListRepositoryWorkflowsIndexed.
 type ListRepositoryWorkflowsIndexedParams struct {
 	CiProvider   *CIProvider `form:"ci_provider,omitempty" json:"ci_provider,omitempty"`
 	AvreaSession *string     `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
+}
+
+// GetWorkflowDispatchMetadataEndpointParams defines parameters for GetWorkflowDispatchMetadataEndpoint.
+type GetWorkflowDispatchMetadataEndpointParams struct {
+	// Ref Branch / tag / commit SHA to read the workflow file from. Defaults to the repo's default branch.
+	Ref          *string `form:"ref,omitempty" json:"ref,omitempty"`
+	AvreaSession *string `form:"avrea_session,omitempty" json:"avrea_session,omitempty"`
 }
 
 // DeleteSamlConfigParams defines parameters for DeleteSamlConfig.
@@ -6049,6 +6343,9 @@ type UpdateRepoGitMirrorJSONRequestBody = RepoGitMirrorUpdate
 
 // UpdateRepoSettingJSONRequestBody defines body for UpdateRepoSetting for application/json ContentType.
 type UpdateRepoSettingJSONRequestBody = SettingUpdate
+
+// CreateNativeDispatchJSONRequestBody defines body for CreateNativeDispatch for application/json ContentType.
+type CreateNativeDispatchJSONRequestBody = NativeDispatchRequest
 
 // SetSamlEnforcementJSONRequestBody defines body for SetSamlEnforcement for application/json ContentType.
 type SetSamlEnforcementJSONRequestBody = EnforcementRequest
@@ -8164,6 +8461,14 @@ func (a *CIWorkflowResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "dispatchable")
 	}
 
+	if raw, found := object["manual_dispatch_enabled"]; found {
+		err = json.Unmarshal(raw, &a.ManualDispatchEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'manual_dispatch_enabled': %w", err)
+		}
+		delete(object, "manual_dispatch_enabled")
+	}
+
 	if raw, found := object["name"]; found {
 		err = json.Unmarshal(raw, &a.Name)
 		if err != nil {
@@ -8286,6 +8591,13 @@ func (a CIWorkflowResponse) MarshalJSON() ([]byte, error) {
 		object["dispatchable"], err = json.Marshal(a.Dispatchable)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'dispatchable': %w", err)
+		}
+	}
+
+	if a.ManualDispatchEnabled != nil {
+		object["manual_dispatch_enabled"], err = json.Marshal(a.ManualDispatchEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'manual_dispatch_enabled': %w", err)
 		}
 	}
 
@@ -15846,6 +16158,14 @@ func (a *JobResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "repository_id")
 	}
 
+	if raw, found := object["reused_job_id"]; found {
+		err = json.Unmarshal(raw, &a.ReusedJobId)
+		if err != nil {
+			return fmt.Errorf("error reading 'reused_job_id': %w", err)
+		}
+		delete(object, "reused_job_id")
+	}
+
 	if raw, found := object["run_attempt"]; found {
 		err = json.Unmarshal(raw, &a.RunAttempt)
 		if err != nil {
@@ -16008,6 +16328,13 @@ func (a JobResponse) MarshalJSON() ([]byte, error) {
 	object["repository_id"], err = json.Marshal(a.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	if a.ReusedJobId != nil {
+		object["reused_job_id"], err = json.Marshal(a.ReusedJobId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'reused_job_id': %w", err)
+		}
 	}
 
 	object["run_attempt"], err = json.Marshal(a.RunAttempt)
@@ -18095,6 +18422,154 @@ func (a MirrorSession) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for NativeDispatchResponse. Returns the specified
+// element and whether it was found
+func (a NativeDispatchResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for NativeDispatchResponse
+func (a *NativeDispatchResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for NativeDispatchResponse to handle AdditionalProperties
+func (a *NativeDispatchResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ci_provider"]; found {
+		err = json.Unmarshal(raw, &a.CiProvider)
+		if err != nil {
+			return fmt.Errorf("error reading 'ci_provider': %w", err)
+		}
+		delete(object, "ci_provider")
+	}
+
+	if raw, found := object["commit_sha"]; found {
+		err = json.Unmarshal(raw, &a.CommitSha)
+		if err != nil {
+			return fmt.Errorf("error reading 'commit_sha': %w", err)
+		}
+		delete(object, "commit_sha")
+	}
+
+	if raw, found := object["dispatch_id"]; found {
+		err = json.Unmarshal(raw, &a.DispatchId)
+		if err != nil {
+			return fmt.Errorf("error reading 'dispatch_id': %w", err)
+		}
+		delete(object, "dispatch_id")
+	}
+
+	if raw, found := object["reason"]; found {
+		err = json.Unmarshal(raw, &a.Reason)
+		if err != nil {
+			return fmt.Errorf("error reading 'reason': %w", err)
+		}
+		delete(object, "reason")
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["run_ids"]; found {
+		err = json.Unmarshal(raw, &a.RunIds)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_ids': %w", err)
+		}
+		delete(object, "run_ids")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for NativeDispatchResponse to handle AdditionalProperties
+func (a NativeDispatchResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CiProvider != nil {
+		object["ci_provider"], err = json.Marshal(a.CiProvider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ci_provider': %w", err)
+		}
+	}
+
+	object["commit_sha"], err = json.Marshal(a.CommitSha)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'commit_sha': %w", err)
+	}
+
+	object["dispatch_id"], err = json.Marshal(a.DispatchId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'dispatch_id': %w", err)
+	}
+
+	object["reason"], err = json.Marshal(a.Reason)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'reason': %w", err)
+	}
+
+	object["ref"], err = json.Marshal(a.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+	}
+
+	if a.RunIds != nil {
+		object["run_ids"], err = json.Marshal(a.RunIds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_ids': %w", err)
+		}
+	}
+
+	object["state"], err = json.Marshal(a.State)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'state': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for OrgPullRequestAttentionMeta. Returns the specified
 // element and whether it was found
 func (a OrgPullRequestAttentionMeta) Get(fieldName string) (value interface{}, found bool) {
@@ -18246,11 +18721,9 @@ func (a OrgPullRequestList) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	if a.Attention != nil {
-		object["attention"], err = json.Marshal(a.Attention)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'attention': %w", err)
-		}
+	object["attention"], err = json.Marshal(a.Attention)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attention': %w", err)
 	}
 
 	if a.Data != nil {
@@ -18260,11 +18733,9 @@ func (a OrgPullRequestList) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.Pagination != nil {
-		object["pagination"], err = json.Marshal(a.Pagination)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
-		}
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -19213,6 +19684,14 @@ func (a *OrganizationRepositoryResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "full_name")
 	}
 
+	if raw, found := object["is_archived"]; found {
+		err = json.Unmarshal(raw, &a.IsArchived)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_archived': %w", err)
+		}
+		delete(object, "is_archived")
+	}
+
 	if raw, found := object["name"]; found {
 		err = json.Unmarshal(raw, &a.Name)
 		if err != nil {
@@ -19237,12 +19716,36 @@ func (a *OrganizationRepositoryResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "platform_repository_id")
 	}
 
+	if raw, found := object["pushed_at"]; found {
+		err = json.Unmarshal(raw, &a.PushedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'pushed_at': %w", err)
+		}
+		delete(object, "pushed_at")
+	}
+
 	if raw, found := object["repository_id"]; found {
 		err = json.Unmarshal(raw, &a.RepositoryId)
 		if err != nil {
 			return fmt.Errorf("error reading 'repository_id': %w", err)
 		}
 		delete(object, "repository_id")
+	}
+
+	if raw, found := object["workflow_inventory_skip_reason"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowInventorySkipReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_inventory_skip_reason': %w", err)
+		}
+		delete(object, "workflow_inventory_skip_reason")
+	}
+
+	if raw, found := object["workflow_inventory_skipped_at"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowInventorySkippedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_inventory_skipped_at': %w", err)
+		}
+		delete(object, "workflow_inventory_skipped_at")
 	}
 
 	if len(object) != 0 {
@@ -19276,6 +19779,13 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'full_name': %w", err)
 	}
 
+	if a.IsArchived != nil {
+		object["is_archived"], err = json.Marshal(a.IsArchived)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_archived': %w", err)
+		}
+	}
+
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
@@ -19293,9 +19803,141 @@ func (a OrganizationRepositoryResponse) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'platform_repository_id': %w", err)
 	}
 
+	if a.PushedAt != nil {
+		object["pushed_at"], err = json.Marshal(a.PushedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pushed_at': %w", err)
+		}
+	}
+
 	object["repository_id"], err = json.Marshal(a.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'repository_id': %w", err)
+	}
+
+	if a.WorkflowInventorySkipReason != nil {
+		object["workflow_inventory_skip_reason"], err = json.Marshal(a.WorkflowInventorySkipReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'workflow_inventory_skip_reason': %w", err)
+		}
+	}
+
+	if a.WorkflowInventorySkippedAt != nil {
+		object["workflow_inventory_skipped_at"], err = json.Marshal(a.WorkflowInventorySkippedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'workflow_inventory_skipped_at': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for ParseError. Returns the specified
+// element and whether it was found
+func (a ParseError) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for ParseError
+func (a *ParseError) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for ParseError to handle AdditionalProperties
+func (a *ParseError) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["code"]; found {
+		err = json.Unmarshal(raw, &a.Code)
+		if err != nil {
+			return fmt.Errorf("error reading 'code': %w", err)
+		}
+		delete(object, "code")
+	}
+
+	if raw, found := object["message"]; found {
+		err = json.Unmarshal(raw, &a.Message)
+		if err != nil {
+			return fmt.Errorf("error reading 'message': %w", err)
+		}
+		delete(object, "message")
+	}
+
+	if raw, found := object["pos"]; found {
+		err = json.Unmarshal(raw, &a.Pos)
+		if err != nil {
+			return fmt.Errorf("error reading 'pos': %w", err)
+		}
+		delete(object, "pos")
+	}
+
+	if raw, found := object["severity"]; found {
+		err = json.Unmarshal(raw, &a.Severity)
+		if err != nil {
+			return fmt.Errorf("error reading 'severity': %w", err)
+		}
+		delete(object, "severity")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for ParseError to handle AdditionalProperties
+func (a ParseError) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Code != nil {
+		object["code"], err = json.Marshal(a.Code)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'code': %w", err)
+		}
+	}
+
+	object["message"], err = json.Marshal(a.Message)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'message': %w", err)
+	}
+
+	if a.Pos != nil {
+		object["pos"], err = json.Marshal(a.Pos)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pos': %w", err)
+		}
+	}
+
+	if a.Severity != nil {
+		object["severity"], err = json.Marshal(a.Severity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'severity': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -19437,6 +20079,104 @@ func (a PaymentMethodResponse) MarshalJSON() ([]byte, error) {
 	object["payment_method_id"], err = json.Marshal(a.PaymentMethodId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'payment_method_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Pos. Returns the specified
+// element and whether it was found
+func (a Pos) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Pos
+func (a *Pos) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Pos to handle AdditionalProperties
+func (a *Pos) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["column"]; found {
+		err = json.Unmarshal(raw, &a.Column)
+		if err != nil {
+			return fmt.Errorf("error reading 'column': %w", err)
+		}
+		delete(object, "column")
+	}
+
+	if raw, found := object["file"]; found {
+		err = json.Unmarshal(raw, &a.File)
+		if err != nil {
+			return fmt.Errorf("error reading 'file': %w", err)
+		}
+		delete(object, "file")
+	}
+
+	if raw, found := object["line"]; found {
+		err = json.Unmarshal(raw, &a.Line)
+		if err != nil {
+			return fmt.Errorf("error reading 'line': %w", err)
+		}
+		delete(object, "line")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Pos to handle AdditionalProperties
+func (a Pos) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Column != nil {
+		object["column"], err = json.Marshal(a.Column)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'column': %w", err)
+		}
+	}
+
+	if a.File != nil {
+		object["file"], err = json.Marshal(a.File)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'file': %w", err)
+		}
+	}
+
+	if a.Line != nil {
+		object["line"], err = json.Marshal(a.Line)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'line': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -20449,6 +21189,22 @@ func (a *RerunWorkflowRunRequest) UnmarshalJSON(b []byte) error {
 		delete(object, "failed_only")
 	}
 
+	if raw, found := object["invocation_key"]; found {
+		err = json.Unmarshal(raw, &a.InvocationKey)
+		if err != nil {
+			return fmt.Errorf("error reading 'invocation_key': %w", err)
+		}
+		delete(object, "invocation_key")
+	}
+
+	if raw, found := object["job_ids"]; found {
+		err = json.Unmarshal(raw, &a.JobIds)
+		if err != nil {
+			return fmt.Errorf("error reading 'job_ids': %w", err)
+		}
+		delete(object, "job_ids")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -20472,6 +21228,20 @@ func (a RerunWorkflowRunRequest) MarshalJSON() ([]byte, error) {
 		object["failed_only"], err = json.Marshal(a.FailedOnly)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'failed_only': %w", err)
+		}
+	}
+
+	if a.InvocationKey != nil {
+		object["invocation_key"], err = json.Marshal(a.InvocationKey)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'invocation_key': %w", err)
+		}
+	}
+
+	if a.JobIds != nil {
+		object["job_ids"], err = json.Marshal(a.JobIds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'job_ids': %w", err)
 		}
 	}
 
@@ -20517,6 +21287,22 @@ func (a *RerunWorkflowRunResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "failed_only")
 	}
 
+	if raw, found := object["original_run_id"]; found {
+		err = json.Unmarshal(raw, &a.OriginalRunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'original_run_id': %w", err)
+		}
+		delete(object, "original_run_id")
+	}
+
+	if raw, found := object["run_attempt"]; found {
+		err = json.Unmarshal(raw, &a.RunAttempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_attempt': %w", err)
+		}
+		delete(object, "run_attempt")
+	}
+
 	if raw, found := object["run_id"]; found {
 		err = json.Unmarshal(raw, &a.RunId)
 		if err != nil {
@@ -20557,6 +21343,20 @@ func (a RerunWorkflowRunResponse) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'failed_only': %w", err)
 	}
 
+	if a.OriginalRunId != nil {
+		object["original_run_id"], err = json.Marshal(a.OriginalRunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'original_run_id': %w", err)
+		}
+	}
+
+	if a.RunAttempt != nil {
+		object["run_attempt"], err = json.Marshal(a.RunAttempt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_attempt': %w", err)
+		}
+	}
+
 	object["run_id"], err = json.Marshal(a.RunId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
@@ -20567,6 +21367,111 @@ func (a RerunWorkflowRunResponse) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'status': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RuleCounter. Returns the specified
+// element and whether it was found
+func (a RuleCounter) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RuleCounter
+func (a *RuleCounter) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RuleCounter to handle AdditionalProperties
+func (a *RuleCounter) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["bytes"]; found {
+		err = json.Unmarshal(raw, &a.Bytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'bytes': %w", err)
+		}
+		delete(object, "bytes")
+	}
+
+	if raw, found := object["label"]; found {
+		err = json.Unmarshal(raw, &a.Label)
+		if err != nil {
+			return fmt.Errorf("error reading 'label': %w", err)
+		}
+		delete(object, "label")
+	}
+
+	if raw, found := object["packets"]; found {
+		err = json.Unmarshal(raw, &a.Packets)
+		if err != nil {
+			return fmt.Errorf("error reading 'packets': %w", err)
+		}
+		delete(object, "packets")
+	}
+
+	if raw, found := object["verdict"]; found {
+		err = json.Unmarshal(raw, &a.Verdict)
+		if err != nil {
+			return fmt.Errorf("error reading 'verdict': %w", err)
+		}
+		delete(object, "verdict")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RuleCounter to handle AdditionalProperties
+func (a RuleCounter) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["bytes"], err = json.Marshal(a.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'bytes': %w", err)
+	}
+
+	object["label"], err = json.Marshal(a.Label)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'label': %w", err)
+	}
+
+	object["packets"], err = json.Marshal(a.Packets)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'packets': %w", err)
+	}
+
+	object["verdict"], err = json.Marshal(a.Verdict)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'verdict': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -23431,6 +24336,14 @@ func (a *VMFlowSummary) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["accepts"]; found {
+		err = json.Unmarshal(raw, &a.Accepts)
+		if err != nil {
+			return fmt.Errorf("error reading 'accepts': %w", err)
+		}
+		delete(object, "accepts")
+	}
+
 	if raw, found := object["blocked_dns_queries"]; found {
 		err = json.Unmarshal(raw, &a.BlockedDnsQueries)
 		if err != nil {
@@ -23617,6 +24530,13 @@ func (a *VMFlowSummary) UnmarshalJSON(b []byte) error {
 func (a VMFlowSummary) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Accepts != nil {
+		object["accepts"], err = json.Marshal(a.Accepts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'accepts': %w", err)
+		}
+	}
 
 	if a.BlockedDnsQueries != nil {
 		object["blocked_dns_queries"], err = json.Marshal(a.BlockedDnsQueries)
@@ -24960,6 +25880,272 @@ func (a WorkflowArtifactView) MarshalJSON() ([]byte, error) {
 	object["workflow_run_id"], err = json.Marshal(a.WorkflowRunId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'workflow_run_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowDispatchInputResponse. Returns the specified
+// element and whether it was found
+func (a WorkflowDispatchInputResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowDispatchInputResponse
+func (a *WorkflowDispatchInputResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowDispatchInputResponse to handle AdditionalProperties
+func (a *WorkflowDispatchInputResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["default"]; found {
+		err = json.Unmarshal(raw, &a.Default)
+		if err != nil {
+			return fmt.Errorf("error reading 'default': %w", err)
+		}
+		delete(object, "default")
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["options"]; found {
+		err = json.Unmarshal(raw, &a.Options)
+		if err != nil {
+			return fmt.Errorf("error reading 'options': %w", err)
+		}
+		delete(object, "options")
+	}
+
+	if raw, found := object["required"]; found {
+		err = json.Unmarshal(raw, &a.Required)
+		if err != nil {
+			return fmt.Errorf("error reading 'required': %w", err)
+		}
+		delete(object, "required")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowDispatchInputResponse to handle AdditionalProperties
+func (a WorkflowDispatchInputResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["default"], err = json.Marshal(a.Default)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'default': %w", err)
+	}
+
+	object["description"], err = json.Marshal(a.Description)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'description': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["options"], err = json.Marshal(a.Options)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'options': %w", err)
+	}
+
+	object["required"], err = json.Marshal(a.Required)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'required': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for WorkflowDispatchMetadataResponse. Returns the specified
+// element and whether it was found
+func (a WorkflowDispatchMetadataResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for WorkflowDispatchMetadataResponse
+func (a *WorkflowDispatchMetadataResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for WorkflowDispatchMetadataResponse to handle AdditionalProperties
+func (a *WorkflowDispatchMetadataResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["can_dispatch"]; found {
+		err = json.Unmarshal(raw, &a.CanDispatch)
+		if err != nil {
+			return fmt.Errorf("error reading 'can_dispatch': %w", err)
+		}
+		delete(object, "can_dispatch")
+	}
+
+	if raw, found := object["ci_provider"]; found {
+		err = json.Unmarshal(raw, &a.CiProvider)
+		if err != nil {
+			return fmt.Errorf("error reading 'ci_provider': %w", err)
+		}
+		delete(object, "ci_provider")
+	}
+
+	if raw, found := object["dispatchable"]; found {
+		err = json.Unmarshal(raw, &a.Dispatchable)
+		if err != nil {
+			return fmt.Errorf("error reading 'dispatchable': %w", err)
+		}
+		delete(object, "dispatchable")
+	}
+
+	if raw, found := object["inputs"]; found {
+		err = json.Unmarshal(raw, &a.Inputs)
+		if err != nil {
+			return fmt.Errorf("error reading 'inputs': %w", err)
+		}
+		delete(object, "inputs")
+	}
+
+	if raw, found := object["ref"]; found {
+		err = json.Unmarshal(raw, &a.Ref)
+		if err != nil {
+			return fmt.Errorf("error reading 'ref': %w", err)
+		}
+		delete(object, "ref")
+	}
+
+	if raw, found := object["workflow_id"]; found {
+		err = json.Unmarshal(raw, &a.WorkflowId)
+		if err != nil {
+			return fmt.Errorf("error reading 'workflow_id': %w", err)
+		}
+		delete(object, "workflow_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for WorkflowDispatchMetadataResponse to handle AdditionalProperties
+func (a WorkflowDispatchMetadataResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["can_dispatch"], err = json.Marshal(a.CanDispatch)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'can_dispatch': %w", err)
+	}
+
+	if a.CiProvider != nil {
+		object["ci_provider"], err = json.Marshal(a.CiProvider)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ci_provider': %w", err)
+		}
+	}
+
+	object["dispatchable"], err = json.Marshal(a.Dispatchable)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'dispatchable': %w", err)
+	}
+
+	if a.Inputs != nil {
+		object["inputs"], err = json.Marshal(a.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'inputs': %w", err)
+		}
+	}
+
+	object["ref"], err = json.Marshal(a.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ref': %w", err)
+	}
+
+	object["workflow_id"], err = json.Marshal(a.WorkflowId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'workflow_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -26530,6 +27716,14 @@ func (a *WorkflowRunResponse) UnmarshalJSON(b []byte) error {
 		delete(object, "created_at")
 	}
 
+	if raw, found := object["diagnostics"]; found {
+		err = json.Unmarshal(raw, &a.Diagnostics)
+		if err != nil {
+			return fmt.Errorf("error reading 'diagnostics': %w", err)
+		}
+		delete(object, "diagnostics")
+	}
+
 	if raw, found := object["display_title"]; found {
 		err = json.Unmarshal(raw, &a.DisplayTitle)
 		if err != nil {
@@ -26738,6 +27932,13 @@ func (a WorkflowRunResponse) MarshalJSON() ([]byte, error) {
 	object["created_at"], err = json.Marshal(a.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	if a.Diagnostics != nil {
+		object["diagnostics"], err = json.Marshal(a.Diagnostics)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'diagnostics': %w", err)
+		}
 	}
 
 	object["display_title"], err = json.Marshal(a.DisplayTitle)
@@ -27168,11 +28369,9 @@ func (a WorkflowsListResponse) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.Pagination != nil {
-		object["pagination"], err = json.Marshal(a.Pagination)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
-		}
+	object["pagination"], err = json.Marshal(a.Pagination)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'pagination': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -27182,6 +28381,120 @@ func (a WorkflowsListResponse) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(object)
+}
+
+// AsNativeDispatchRequestInputs0 returns the union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as a NativeDispatchRequestInputs0
+func (t NativeDispatchRequest_Inputs_AdditionalProperties) AsNativeDispatchRequestInputs0() (NativeDispatchRequestInputs0, error) {
+	var body NativeDispatchRequestInputs0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNativeDispatchRequestInputs0 overwrites any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as the provided NativeDispatchRequestInputs0
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) FromNativeDispatchRequestInputs0(v NativeDispatchRequestInputs0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNativeDispatchRequestInputs0 performs a merge with any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties, using the provided NativeDispatchRequestInputs0
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) MergeNativeDispatchRequestInputs0(v NativeDispatchRequestInputs0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNativeDispatchRequestInputs1 returns the union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as a NativeDispatchRequestInputs1
+func (t NativeDispatchRequest_Inputs_AdditionalProperties) AsNativeDispatchRequestInputs1() (NativeDispatchRequestInputs1, error) {
+	var body NativeDispatchRequestInputs1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNativeDispatchRequestInputs1 overwrites any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as the provided NativeDispatchRequestInputs1
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) FromNativeDispatchRequestInputs1(v NativeDispatchRequestInputs1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNativeDispatchRequestInputs1 performs a merge with any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties, using the provided NativeDispatchRequestInputs1
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) MergeNativeDispatchRequestInputs1(v NativeDispatchRequestInputs1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNativeDispatchRequestInputs2 returns the union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as a NativeDispatchRequestInputs2
+func (t NativeDispatchRequest_Inputs_AdditionalProperties) AsNativeDispatchRequestInputs2() (NativeDispatchRequestInputs2, error) {
+	var body NativeDispatchRequestInputs2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNativeDispatchRequestInputs2 overwrites any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as the provided NativeDispatchRequestInputs2
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) FromNativeDispatchRequestInputs2(v NativeDispatchRequestInputs2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNativeDispatchRequestInputs2 performs a merge with any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties, using the provided NativeDispatchRequestInputs2
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) MergeNativeDispatchRequestInputs2(v NativeDispatchRequestInputs2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsNativeDispatchRequestInputs3 returns the union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as a NativeDispatchRequestInputs3
+func (t NativeDispatchRequest_Inputs_AdditionalProperties) AsNativeDispatchRequestInputs3() (NativeDispatchRequestInputs3, error) {
+	var body NativeDispatchRequestInputs3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNativeDispatchRequestInputs3 overwrites any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties as the provided NativeDispatchRequestInputs3
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) FromNativeDispatchRequestInputs3(v NativeDispatchRequestInputs3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNativeDispatchRequestInputs3 performs a merge with any union data inside the NativeDispatchRequest_Inputs_AdditionalProperties, using the provided NativeDispatchRequestInputs3
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) MergeNativeDispatchRequestInputs3(v NativeDispatchRequestInputs3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t NativeDispatchRequest_Inputs_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *NativeDispatchRequest_Inputs_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsSettingResponseValue0 returns the union data inside the SettingResponse_Value as a SettingResponseValue0

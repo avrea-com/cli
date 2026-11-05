@@ -270,6 +270,18 @@ def scenarios():
 
 
 def compare(scenario, python, go):
+    if scenario["name"] == "artifact download replace":
+        differences = []
+        if python["exit"] != 0 or python.get("files") != scenario["expected_files"]:
+            differences.append("Python replacement behavior changed")
+        if go["exit"] != 1 or go["stdout"] or "explicit --path FILE" not in go["stderr"]:
+            differences.append("Go did not refuse implicit overwrite")
+        if go.get("files") != {"downloads/build.zip": file_record(b"old", 0o644)}:
+            differences.append("Go modified existing destination")
+        for key in ("requests", "hosts", "browser"):
+            if python[key] != go[key]:
+                differences.append(key)
+        return differences
     differences = watch.compare(scenario, python, go)
     if "expected_files" in scenario:
         for name, result in [("Python", python), ("Go", go)]:

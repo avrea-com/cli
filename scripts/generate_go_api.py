@@ -7,6 +7,7 @@ No schema is downgraded; private schema artifacts stay under ignored build/.
 
 from pathlib import Path
 from prepare_go_schema import prepare
+from prepare_go_schema import subset
 import argparse
 import hashlib
 import json
@@ -24,6 +25,10 @@ def generate(go: str, source: Path, destination: Path, package: str) -> None:
     config = destination.parent / "generator.json"
     settings = json.loads((ROOT / "api/oapi-codegen.json").read_text())
     settings.update(package=package, output=str(destination))
+    if package == "schemagate":
+        # Full schemas include unrelated inline enums (e.g. setup step
+        # "platform") whose unprefixed constants collide with model names.
+        settings.setdefault("compatibility", {})["always-prefix-enum-values"] = True
     config.write_text(json.dumps(settings, indent=2) + "\n")
     subprocess.run(
         [go, "tool", "-modfile=tools/go.mod", "oapi-codegen", "-config", str(config), str(prepared)],
@@ -56,6 +61,19 @@ def main() -> None:
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--core", type=Path)
     args = parser.parse_args()
+    source_info = json.loads((ROOT / "api/source.json").read_text())
+    source_bytes = (ROOT / "api/source-public.json").read_bytes()
+    if hashlib.sha256(source_bytes).hexdigest() != source_info["sha256"]:
+        raise SystemExit("Pinned public source schema checksum mismatch")
+    selected = subset(json.loads(source_bytes), source_info["operations"])
+    if selected != json.loads((ROOT / "api/public.json").read_text()):
+        raise SystemExit("Public schema does not match selected operations from pinned source")
+    if args.core:
+        committed = subprocess.check_output(
+            ["git", "-C", str(args.core), "show", source_info["commit"] + ":" + source_info["path"]]
+        )
+        if committed != source_bytes:
+            raise SystemExit("Public source schema differs from recorded server commit")
     build = ROOT / "build/go"
     build.mkdir(parents=True, exist_ok=True)
     target = ROOT / "client/wire/types.gen.go"
@@ -70,7 +88,12 @@ def main() -> None:
     if args.core:
         report = {}
         for kind in ("public", "internal"):
-            source = args.core.resolve() / f"control/openapi/{kind}.json"
+            source = build / f"pinned-{kind}.json"
+            source.write_bytes(
+                subprocess.check_output(
+                    ["git", "-C", str(args.core), "show", source_info["commit"] + f":control/openapi/{kind}.json"]
+                )
+            )
             # Separate configurations are mandatory: oapi-codegen's configured
             # output takes precedence over its -o flag.
             destination = build / f"full-schema-gate/{kind}/types.gen.go"

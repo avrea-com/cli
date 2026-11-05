@@ -35,7 +35,7 @@ func newInvoiceDownload(d Dependencies) *cobra.Command {
 		if err != nil {
 			return downloadError(err)
 		}
-		spool, _, err := spoolDownload(stream)
+		spool, _, err := spoolDownload(stream, 256<<20)
 		if err != nil {
 			return downloadError(err)
 		}

@@ -170,6 +170,19 @@
         "title": "APIResponse[JobResponse]",
         "type": "object"
       },
+      "APIResponse_NativeDispatchResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NativeDispatchResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[NativeDispatchResponse]",
+        "type": "object"
+      },
       "APIResponse_OrganizationRepositoryResponse_": {
         "additionalProperties": false,
         "properties": {
@@ -259,6 +272,19 @@
           "data"
         ],
         "title": "APIResponse[WorkflowArtifact]",
+        "type": "object"
+      },
+      "APIResponse_WorkflowDispatchMetadataResponse_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WorkflowDispatchMetadataResponse"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[WorkflowDispatchMetadataResponse]",
         "type": "object"
       },
       "APIResponse_WorkflowRunResponse_": {
@@ -367,7 +393,6 @@
         "type": "object"
       },
       "AccessTokenGrantResponse": {
-        "additionalProperties": true,
         "properties": {
           "access_level": {
             "title": "Access Level",
@@ -398,7 +423,6 @@
         "type": "object"
       },
       "AccessTokenResponse": {
-        "additionalProperties": true,
         "properties": {
           "allow_vm_create": {
             "title": "Allow Vm Create",
@@ -507,7 +531,6 @@
         "type": "object"
       },
       "AggregateJobRef": {
-        "additionalProperties": true,
         "properties": {
           "name": {
             "title": "Name",
@@ -521,7 +544,6 @@
         "type": "object"
       },
       "AggregateStepRef": {
-        "additionalProperties": true,
         "properties": {
           "name": {
             "title": "Name",
@@ -535,7 +557,6 @@
         "type": "object"
       },
       "AggregateWorkflow": {
-        "additionalProperties": true,
         "properties": {
           "ci_provider": {
             "$ref": "#/components/schemas/CIProvider",
@@ -599,7 +620,6 @@
         "type": "string"
       },
       "AnalysisArtifact": {
-        "additionalProperties": true,
         "properties": {
           "filename": {
             "title": "Filename",
@@ -624,7 +644,6 @@
         "type": "object"
       },
       "AnalysisStateResponse": {
-        "additionalProperties": true,
         "description": "Where the repository's latest analysis stands, with no report attached.\n\nAll fields are null when no analysis has ever been created for the repo --\nthe \"never examined\" case, which is deliberately not an error. `status`\nmirrors `ai_tasks.status` (PENDING / RUNNING / COMPLETED / FAILED).\n\n`error_message` is intentionally NOT exposed: it is written for operators\nand would reach anyone with read access to the repository. A failed\nanalysis is reported as failed, not explained.\n\n`error_code` is the bounded exception to that: a value from\n`ANALYSIS_FAILURE_CODES`, never free text, so a failure can be phrased for\nthe customer without leaking an operator diagnostic. Null unless the\nlatest analysis FAILED with a code this build recognises.",
         "properties": {
           "ai_task_id": {
@@ -711,7 +730,6 @@
         "type": "object"
       },
       "AnalysisTaskResponse": {
-        "additionalProperties": true,
         "properties": {
           "artifacts": {
             "description": "Downloadable artifact files for this result.",
@@ -785,7 +803,6 @@
         "type": "string"
       },
       "AttachPaymentMethodRequest": {
-        "additionalProperties": true,
         "properties": {
           "stripe_payment_method_id": {
             "title": "Stripe Payment Method Id",
@@ -826,7 +843,6 @@
         "type": "string"
       },
       "AuditEventResponse": {
-        "additionalProperties": true,
         "properties": {
           "acting_api_key_id": {
             "anyOf": [
@@ -925,7 +941,6 @@
         "type": "object"
       },
       "AuditEventsListPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -943,7 +958,6 @@
         "type": "object"
       },
       "AuditEventsListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -1051,7 +1065,6 @@
         "type": "string"
       },
       "BillingSettingsRequest": {
-        "additionalProperties": true,
         "properties": {
           "billing_address": {
             "anyOf": [
@@ -1129,7 +1142,6 @@
         "type": "object"
       },
       "BillingSettingsResponse": {
-        "additionalProperties": true,
         "properties": {
           "billing_address": {
             "anyOf": [
@@ -1236,7 +1248,6 @@
         "type": "object"
       },
       "BillingSummaryResponse": {
-        "additionalProperties": true,
         "properties": {
           "billing_emails": {
             "anyOf": [
@@ -1296,7 +1307,6 @@
         "type": "object"
       },
       "BlockedDnsQuery": {
-        "additionalProperties": true,
         "description": "A DNS query the per-VM unbound view returned NXDOMAIN for.\n\nCaptured by ``smithy.host_networking.dnstap_observer`` whenever a VM\nasks for an FQDN that has no ALLOW match in its policy. Drained at\nVM stop into the flow summary so the console can show \"this VM tried\nto reach example.com (blocked)\" \u2014 without this, deny-by-default\nfailures are invisible: the VM never gets an IP, so no packet is\nsent, so the IP-layer drop counters never fire and softflowd has\nnothing to capture.\n\nBounded per VM in the observer's ring buffer (most recent N) to\ncap the worst-case Turbopuffer row size from a chatty workload\nthat hammers blocked names.",
         "properties": {
           "count": {
@@ -1331,7 +1341,6 @@
         "type": "string"
       },
       "CIWorkflowResponse": {
-        "additionalProperties": true,
         "description": "Catalog records distinguish repository platform from execution provider.",
         "properties": {
           "attribution_context_group_id": {
@@ -1364,6 +1373,11 @@
               }
             ],
             "title": "Dispatchable"
+          },
+          "manual_dispatch_enabled": {
+            "default": false,
+            "title": "Manual Dispatch Enabled",
+            "type": "boolean"
           },
           "name": {
             "title": "Name",
@@ -1437,7 +1451,6 @@
         "type": "object"
       },
       "CacheDeleteByKeyResponse": {
-        "additionalProperties": true,
         "properties": {
           "deleted_count": {
             "title": "Deleted Count",
@@ -1451,7 +1464,6 @@
         "type": "object"
       },
       "CacheEntriesListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -1499,7 +1511,6 @@
         "type": "object"
       },
       "CacheEntryResponse": {
-        "additionalProperties": true,
         "properties": {
           "cache_type": {
             "title": "Cache Type",
@@ -1578,7 +1589,6 @@
         "type": "object"
       },
       "CacheLruEviction": {
-        "additionalProperties": true,
         "description": "The repository's most recent quota-driven (least-recently-used) eviction.\n\nEntries last used at or before `cutoff_accessed_at` were deleted at\n`evicted_at`, so the gap between the two is how long an unused entry\nstayed cached. Entries never accessed since upload count from upload.",
         "properties": {
           "cutoff_accessed_at": {
@@ -1600,7 +1610,6 @@
         "type": "object"
       },
       "CacheUsageByTypeResponse": {
-        "additionalProperties": true,
         "properties": {
           "cache_type": {
             "title": "Cache Type",
@@ -1637,7 +1646,6 @@
         "type": "object"
       },
       "CacheUsageResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "$ref": "#/components/schemas/CacheUsageSummary"
@@ -1650,7 +1658,6 @@
         "type": "object"
       },
       "CacheUsageSummary": {
-        "additionalProperties": true,
         "properties": {
           "by_type": {
             "items": {
@@ -1702,7 +1709,6 @@
         "type": "object"
       },
       "CancelWorkflowRunResponse": {
-        "additionalProperties": true,
         "properties": {
           "run_id": {
             "title": "Run Id",
@@ -1810,7 +1816,6 @@
         "type": "object"
       },
       "CreateOrganizationRequest": {
-        "additionalProperties": true,
         "properties": {
           "name": {
             "maxLength": 100,
@@ -1827,7 +1832,6 @@
         "type": "object"
       },
       "CreatedAccessTokenResponse": {
-        "additionalProperties": true,
         "properties": {
           "allow_vm_create": {
             "title": "Allow Vm Create",
@@ -1999,7 +2003,6 @@
         "type": "object"
       },
       "CustomerVm": {
-        "additionalProperties": true,
         "properties": {
           "access_level": {
             "description": "The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.",
@@ -2475,7 +2478,6 @@
         "type": "object"
       },
       "CustomerVmDeleteResponse": {
-        "additionalProperties": true,
         "properties": {
           "customer_vm_id": {
             "title": "Customer Vm Id",
@@ -2495,7 +2497,6 @@
         "type": "object"
       },
       "CustomerVmDetail": {
-        "additionalProperties": true,
         "properties": {
           "access_level": {
             "description": "The caller's access to the VM, lowered to a scoped token's grant: read views it, including its HTTPS URLs, which serve anyone who has them; write also renames, changes the TTL, pauses, resumes, rotates the HTTPS label and deletes it; admin also rotates the password, sets SSH keys and HTTPS ports and opens the terminal.",
@@ -2884,7 +2885,6 @@
         "type": "object"
       },
       "CustomerVmUsage": {
-        "additionalProperties": true,
         "properties": {
           "customer_vm_id": {
             "title": "Customer Vm Id",
@@ -2933,7 +2933,6 @@
         "type": "object"
       },
       "CustomerVmUsageReport": {
-        "additionalProperties": true,
         "properties": {
           "period_end": {
             "format": "date-time",
@@ -2977,7 +2976,6 @@
         "type": "object"
       },
       "CustomerVmWithPassword": {
-        "additionalProperties": true,
         "properties": {
           "egress_rules_applied": {
             "anyOf": [
@@ -3036,7 +3034,6 @@
         "type": "object"
       },
       "DeleteSamlConfigResponse": {
-        "additionalProperties": true,
         "properties": {
           "deleted": {
             "title": "Deleted",
@@ -3050,7 +3047,6 @@
         "type": "object"
       },
       "DispatchWorkflowRequest": {
-        "additionalProperties": true,
         "description": "Request body for dispatching a workflow.",
         "properties": {
           "inputs": {
@@ -3089,7 +3085,6 @@
         "type": "object"
       },
       "DispatchWorkflowResponse": {
-        "additionalProperties": true,
         "description": "Response for a workflow dispatch.\n\n`platform_run_id` is the GitHub workflow run ID (always present with\napi-version 2026-03-10; degrades to None if GitHub returns 204).\n`run_id` is the Avrea `run-xxx` ID, which is None at dispatch time\nbecause the run record is created asynchronously from the\nworkflow_run webhook \u2014 clients can poll workflow-runs by\n`platform_run_id` to bridge the gap.",
         "properties": {
           "platform_run_id": {
@@ -3131,7 +3126,6 @@
         "type": "object"
       },
       "DropCounter": {
-        "additionalProperties": true,
         "description": "Per-rule drop counter snapshot read from the firewall at VM stop.",
         "properties": {
           "bytes": {
@@ -3156,7 +3150,6 @@
         "type": "object"
       },
       "EgressFirewallPolicy": {
-        "additionalProperties": true,
         "description": "A resolved, ordered list of egress firewall rules for one runner VM.\n\nProduced by the control plane at dispatch (repo rules prepended to org\nrules, then the effective default rule) and shipped to smithy in the\nexecution payload.",
         "properties": {
           "rules": {
@@ -3171,7 +3164,6 @@
         "type": "object"
       },
       "EgressRule": {
-        "additionalProperties": true,
         "description": "A single ordered egress rule.\n\nExactly one of `cidr` or `fqdn` may be set; both NULL means the catch-all\nrule (matches everything), which must also have `is_default=True`.",
         "properties": {
           "action": {
@@ -3424,7 +3416,6 @@
         "type": "object"
       },
       "EmailDomainClaimRequest": {
-        "additionalProperties": true,
         "description": "Request model for creating a DNS-verifiable domain claim.",
         "properties": {
           "domain": {
@@ -3439,7 +3430,6 @@
         "type": "object"
       },
       "EmailDomainResponse": {
-        "additionalProperties": true,
         "description": "Response model for an email domain.",
         "properties": {
           "created_at": {
@@ -3509,7 +3499,6 @@
         "type": "object"
       },
       "EmailDomainsRequest": {
-        "additionalProperties": true,
         "description": "Request model for setting email domains.",
         "properties": {
           "domains": {
@@ -3527,7 +3516,6 @@
         "type": "object"
       },
       "EnforcementRequest": {
-        "additionalProperties": true,
         "properties": {
           "enforce": {
             "title": "Enforce",
@@ -3541,7 +3529,6 @@
         "type": "object"
       },
       "FeatureFlagResponse": {
-        "additionalProperties": true,
         "properties": {
           "enabled": {
             "title": "Enabled",
@@ -3560,7 +3547,6 @@
         "type": "object"
       },
       "FlowSummarySearchResponse": {
-        "additionalProperties": true,
         "description": "Paginated search response for VM flow summaries.",
         "properties": {
           "has_more": {
@@ -3617,7 +3603,6 @@
         "type": "object"
       },
       "GenerateSbomRequest": {
-        "additionalProperties": true,
         "properties": {
           "ref": {
             "anyOf": [
@@ -3648,7 +3633,6 @@
         "type": "object"
       },
       "GenerateSbomResponse": {
-        "additionalProperties": true,
         "properties": {
           "ai_task_id": {
             "title": "Ai Task Id",
@@ -3679,7 +3663,6 @@
         "type": "object"
       },
       "GitClusterResource": {
-        "additionalProperties": true,
         "properties": {
           "cluster_id": {
             "title": "Cluster Id",
@@ -3703,7 +3686,6 @@
         "type": "object"
       },
       "GitClustersListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -3724,7 +3706,6 @@
         "type": "object"
       },
       "GitClustersPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -4394,7 +4375,6 @@
         "type": "string"
       },
       "GitLabWebhookSetup": {
-        "additionalProperties": true,
         "properties": {
           "enabled_triggers": {
             "default": [
@@ -4466,7 +4446,6 @@
         "type": "object"
       },
       "GitTokenRequest": {
-        "additionalProperties": true,
         "properties": {
           "repos": {
             "anyOf": [
@@ -4487,7 +4466,6 @@
         "type": "object"
       },
       "GitTokenResponse": {
-        "additionalProperties": true,
         "properties": {
           "expires_at": {
             "format": "date-time",
@@ -4514,7 +4492,6 @@
         "type": "string"
       },
       "HTTPValidationError": {
-        "additionalProperties": true,
         "properties": {
           "detail": {
             "items": {
@@ -4528,7 +4505,6 @@
         "type": "object"
       },
       "HealthResponse": {
-        "additionalProperties": true,
         "properties": {
           "status": {
             "$ref": "#/components/schemas/HealthStatus"
@@ -4550,7 +4526,6 @@
         "type": "string"
       },
       "IngressSource": {
-        "additionalProperties": true,
         "description": "Received traffic grouped by remote IP, ranked within the per-VM cap.\n\nThe optional hostname is the latest DNS name observed for that IP. Shared\nCDN addresses can serve multiple names, so it is an annotation, not an\nexact attribution of every received byte to a hostname.",
         "properties": {
           "bytes": {
@@ -4591,7 +4566,6 @@
         "type": "object"
       },
       "InstallationResponse": {
-        "additionalProperties": true,
         "description": "Installation response model.",
         "properties": {
           "created_at": {
@@ -4713,7 +4687,6 @@
         "type": "string"
       },
       "InvoiceResponse": {
-        "additionalProperties": true,
         "properties": {
           "created_at": {
             "format": "date-time",
@@ -4799,7 +4772,6 @@
         "type": "object"
       },
       "InvoicesListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -4820,7 +4792,6 @@
         "type": "object"
       },
       "InvoicesPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -4838,13 +4809,11 @@
         "type": "object"
       },
       "JobAggregateBucket": {
-        "additionalProperties": true,
         "properties": {
           "action_required_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4859,8 +4828,7 @@
           "action_required_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4871,8 +4839,7 @@
           "action_required_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4883,8 +4850,7 @@
           "action_required_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4895,8 +4861,7 @@
           "avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4907,8 +4872,7 @@
           "cancelled_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4923,8 +4887,7 @@
           "cancelled_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4935,8 +4898,7 @@
           "cancelled_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4947,8 +4909,7 @@
           "cancelled_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4979,8 +4940,7 @@
           "failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -4995,8 +4955,7 @@
           "failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5007,8 +4966,7 @@
           "failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5019,8 +4977,7 @@
           "failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5038,8 +4995,7 @@
           "median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5050,8 +5006,7 @@
           "neutral_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5066,8 +5021,7 @@
           "neutral_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5078,8 +5032,7 @@
           "neutral_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5090,8 +5043,7 @@
           "neutral_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5102,8 +5054,7 @@
           "p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5114,8 +5065,7 @@
           "skipped_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5130,8 +5080,7 @@
           "skipped_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5142,8 +5091,7 @@
           "skipped_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5154,8 +5102,7 @@
           "skipped_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5166,8 +5113,7 @@
           "stale_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5182,8 +5128,7 @@
           "stale_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5194,8 +5139,7 @@
           "stale_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5206,8 +5150,7 @@
           "stale_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5230,8 +5173,7 @@
           "startup_failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5246,8 +5188,7 @@
           "startup_failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5258,8 +5199,7 @@
           "startup_failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5270,8 +5210,7 @@
           "startup_failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5289,8 +5228,7 @@
           "success_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5305,8 +5243,7 @@
           "success_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5317,8 +5254,7 @@
           "success_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5329,8 +5265,7 @@
           "success_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5341,8 +5276,7 @@
           "timed_out_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5357,8 +5291,7 @@
           "timed_out_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5369,8 +5302,7 @@
           "timed_out_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5381,8 +5313,7 @@
           "timed_out_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5393,8 +5324,7 @@
           "total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5429,13 +5359,11 @@
         "type": "object"
       },
       "JobAggregation": {
-        "additionalProperties": true,
         "properties": {
           "action_required_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5450,8 +5378,7 @@
           "action_required_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5462,8 +5389,7 @@
           "action_required_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5474,8 +5400,7 @@
           "action_required_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5486,8 +5411,7 @@
           "avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5498,8 +5422,7 @@
           "cancelled_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5514,8 +5437,7 @@
           "cancelled_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5526,8 +5448,7 @@
           "cancelled_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5538,8 +5459,7 @@
           "cancelled_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5558,8 +5478,7 @@
           "failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5574,8 +5493,7 @@
           "failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5586,8 +5504,7 @@
           "failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5598,8 +5515,7 @@
           "failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5617,8 +5533,7 @@
           "median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5629,8 +5544,7 @@
           "neutral_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5645,8 +5559,7 @@
           "neutral_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5657,8 +5570,7 @@
           "neutral_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5669,8 +5581,7 @@
           "neutral_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5681,8 +5592,7 @@
           "p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5693,8 +5603,7 @@
           "skipped_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5709,8 +5618,7 @@
           "skipped_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5721,8 +5629,7 @@
           "skipped_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5733,8 +5640,7 @@
           "skipped_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5745,8 +5651,7 @@
           "stale_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5761,8 +5666,7 @@
           "stale_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5773,8 +5677,7 @@
           "stale_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5785,8 +5688,7 @@
           "stale_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5797,8 +5699,7 @@
           "startup_failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5813,8 +5714,7 @@
           "startup_failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5825,8 +5725,7 @@
           "startup_failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5837,8 +5736,7 @@
           "startup_failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5857,8 +5755,7 @@
           "success_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5873,8 +5770,7 @@
           "success_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5885,8 +5781,7 @@
           "success_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5897,8 +5792,7 @@
           "success_run_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5909,8 +5803,7 @@
           "success_run_median_offset_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5921,8 +5814,7 @@
           "success_run_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5933,8 +5825,7 @@
           "success_run_p95_offset_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5945,8 +5836,7 @@
           "success_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5957,8 +5847,7 @@
           "timed_out_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5973,8 +5862,7 @@
           "timed_out_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5985,8 +5873,7 @@
           "timed_out_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -5997,8 +5884,7 @@
           "timed_out_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -6009,8 +5895,7 @@
           "total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -6042,7 +5927,6 @@
         "type": "object"
       },
       "JobMetricsEntry": {
-        "additionalProperties": true,
         "properties": {
           "error": {
             "anyOf": [
@@ -6083,7 +5967,6 @@
         "type": "object"
       },
       "JobQueueWait": {
-        "additionalProperties": true,
         "properties": {
           "expires_at": {
             "description": "Do not display this observation after this time.",
@@ -6114,7 +5997,6 @@
         "type": "object"
       },
       "JobResponse": {
-        "additionalProperties": true,
         "properties": {
           "ci_provider": {
             "$ref": "#/components/schemas/CIProvider",
@@ -6167,8 +6049,7 @@
           "duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -6247,6 +6128,18 @@
           "repository_id": {
             "title": "Repository Id",
             "type": "string"
+          },
+          "reused_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Producing job whose terminal result is retained in this subset rerun",
+            "title": "Reused Job Id"
           },
           "run_attempt": {
             "anyOf": [
@@ -6356,7 +6249,6 @@
         "type": "object"
       },
       "JobRunnerSpecs": {
-        "additionalProperties": true,
         "description": "Public specs of the VM that executed a job (Avrea runs only).\n\nPopulated only on the single-job detail endpoint, resolved from the latest\nconfirmed execution -> vm -> runner image. ``None`` on list responses and\nwhenever the job has not landed on a VM yet (queued / shadowing).\ncpu/memory/disk are the VM's allocation; architecture/os_type/\nimage_series_name describe the VM's runner image. The host node is an\nimplementation detail and is not exposed.",
         "properties": {
           "architecture": {
@@ -6377,8 +6269,7 @@
           "disk_gb": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -6423,7 +6314,6 @@
         "type": "object"
       },
       "JobStepResponse": {
-        "additionalProperties": true,
         "properties": {
           "completed_at": {
             "anyOf": [
@@ -6503,7 +6393,6 @@
         "type": "object"
       },
       "JobsListPagination": {
-        "additionalProperties": true,
         "description": "Cursor for the next page.",
         "properties": {
           "next_cursor": {
@@ -6522,7 +6411,6 @@
         "type": "object"
       },
       "JobsListResponse": {
-        "additionalProperties": true,
         "description": "Jobs list with pagination.",
         "properties": {
           "data": {
@@ -6544,7 +6432,6 @@
         "type": "object"
       },
       "LegacyGitHubPublicMirrorCatalogResource": {
-        "additionalProperties": true,
         "description": "Compatibility response for the deprecated GitHub-only lookup route.",
         "properties": {
           "approval_state": {
@@ -6795,7 +6682,6 @@
         "type": "string"
       },
       "LogSearchParams": {
-        "additionalProperties": true,
         "description": "Public log search and log reading parameters.",
         "properties": {
           "after_line": {
@@ -6978,7 +6864,6 @@
         "type": "object"
       },
       "LogSearchResponse": {
-        "additionalProperties": true,
         "description": "Paginated search response.",
         "properties": {
           "has_more": {
@@ -7091,7 +6976,6 @@
         "type": "object"
       },
       "LogSearchResult": {
-        "additionalProperties": true,
         "description": "Single search result.",
         "properties": {
           "content": {
@@ -7126,8 +7010,7 @@
           },
           "score": {
             "title": "Score",
-            "type": "number",
-            "x-go-type": "float64"
+            "type": "number"
           },
           "step_name": {
             "anyOf": [
@@ -7202,7 +7085,6 @@
         "type": "string"
       },
       "MetricsQueryResponse": {
-        "additionalProperties": true,
         "properties": {
           "rate_unit": {
             "anyOf": [
@@ -7238,7 +7120,6 @@
         "type": "object"
       },
       "MetricsSeries": {
-        "additionalProperties": true,
         "examples": [
           {
             "labels": {
@@ -7299,8 +7180,7 @@
                       "type": "integer"
                     },
                     {
-                      "type": "number",
-                      "x-go-type": "float64"
+                      "type": "number"
                     }
                   ],
                   "type": "array"
@@ -7324,8 +7204,7 @@
                   "type": "integer"
                 },
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 }
               ],
               "type": "array"
@@ -7342,7 +7221,6 @@
         "type": "object"
       },
       "MirrorPlacementResource": {
-        "additionalProperties": true,
         "properties": {
           "cluster_id": {
             "title": "Cluster Id",
@@ -7401,7 +7279,6 @@
         "type": "object"
       },
       "MirrorSession": {
-        "additionalProperties": true,
         "properties": {
           "browsable": {
             "title": "Browsable",
@@ -7459,8 +7336,110 @@
         "title": "MirrorSession",
         "type": "object"
       },
+      "NativeDispatchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "inputs": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "maxProperties": 25,
+            "title": "Inputs",
+            "type": "object"
+          },
+          "ref": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x20\\x7f]+$",
+            "title": "Ref",
+            "type": "string"
+          },
+          "workflow_id": {
+            "pattern": "^awf-[0-9a-f]{32}$",
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "ref"
+        ],
+        "title": "NativeDispatchRequest",
+        "type": "object"
+      },
+      "NativeDispatchResponse": {
+        "properties": {
+          "ci_provider": {
+            "const": "avrea_ci",
+            "default": "avrea_ci",
+            "title": "Ci Provider",
+            "type": "string"
+          },
+          "commit_sha": {
+            "title": "Commit Sha",
+            "type": "string"
+          },
+          "dispatch_id": {
+            "title": "Dispatch Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Run Ids",
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "admitted",
+              "rejected"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dispatch_id",
+          "state",
+          "reason",
+          "ref",
+          "commit_sha",
+          "run_ids"
+        ],
+        "title": "NativeDispatchResponse",
+        "type": "object"
+      },
       "OrgPullRequestAttentionMeta": {
-        "additionalProperties": true,
         "description": "What a scope=attention page covered beyond the rows it returned.\n\nThe page holds the matches among its candidates, so its rows alone say\nneither how far the page reached nor whether a candidate it left out is\nstill waiting on a merge verdict.",
         "properties": {
           "covered_through": {
@@ -7487,7 +7466,6 @@
         "type": "object"
       },
       "OrgPullRequestList": {
-        "additionalProperties": true,
         "description": "Cursor-paginated, unlike the repo list's `next_before_number`.\n\nPR numbers are per repository and so are not orderable across an\norganization; this list is ordered by activity and keyset-paginated on it,\nwhich is also the house envelope (docs/REST_API_STYLE_GUIDE.md).",
         "properties": {
           "attention": {
@@ -7513,13 +7491,14 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination",
+          "attention"
         ],
         "title": "OrgPullRequestList",
         "type": "object"
       },
       "OrgPullRequestSummary": {
-        "additionalProperties": true,
         "description": "One row of the organization-wide list, which spans repositories.\n\nA PR number identifies a PR only within its repository, so every row has to\nname the repository it belongs to -- both to render it and to build the\nlink into the repo's PR detail.",
         "properties": {
           "attention_reason": {
@@ -7774,7 +7753,6 @@
         "type": "object"
       },
       "OrganizationListItem": {
-        "additionalProperties": true,
         "properties": {
           "name": {
             "title": "Name",
@@ -7815,7 +7793,6 @@
         "type": "object"
       },
       "OrganizationMemberResponse": {
-        "additionalProperties": true,
         "description": "Response model for an organization member.",
         "properties": {
           "avatar_url": {
@@ -7870,7 +7847,6 @@
         "type": "object"
       },
       "OrganizationRepositoriesPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -7888,7 +7864,6 @@
         "type": "object"
       },
       "OrganizationRepositoriesResponse": {
-        "additionalProperties": true,
         "properties": {
           "access_resolution": {
             "anyOf": [
@@ -7919,7 +7894,6 @@
         "type": "object"
       },
       "OrganizationRepositoryAccessResolution": {
-        "additionalProperties": true,
         "properties": {
           "complete": {
             "title": "Complete",
@@ -7944,7 +7918,6 @@
         "type": "object"
       },
       "OrganizationRepositoryResponse": {
-        "additionalProperties": true,
         "description": "Organization repository response model.",
         "properties": {
           "default_branch": {
@@ -7961,6 +7934,11 @@
           "full_name": {
             "title": "Full Name",
             "type": "string"
+          },
+          "is_archived": {
+            "default": false,
+            "title": "Is Archived",
+            "type": "boolean"
           },
           "name": {
             "title": "Name",
@@ -7987,9 +7965,46 @@
             ],
             "title": "Platform Repository Id"
           },
+          "pushed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last push the platform reported; null until the installation sync has read the repository",
+            "title": "Pushed At"
+          },
           "repository_id": {
             "title": "Repository Id",
             "type": "string"
+          },
+          "workflow_inventory_skip_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowInventorySkipReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why GitHub refused: forbidden (403), not_found (404) or blocked (451)"
+          },
+          "workflow_inventory_skipped_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set while GitHub refuses the App's workflow listing for this repository; cleared once read",
+            "title": "Workflow Inventory Skipped At"
           }
         },
         "required": [
@@ -8038,7 +8053,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[AccessTokenResponse]",
         "type": "object"
@@ -8059,7 +8075,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[CustomerVm]",
         "type": "object"
@@ -8080,7 +8097,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[EmailDomainResponse]",
         "type": "object"
@@ -8101,7 +8119,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[GitLabInstallationSummary]",
         "type": "object"
@@ -8122,7 +8141,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[OrganizationListItem]",
         "type": "object"
@@ -8143,7 +8163,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[OrganizationMemberResponse]",
         "type": "object"
@@ -8164,7 +8185,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[PaymentMethodResponse]",
         "type": "object"
@@ -8185,7 +8207,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[UserInstallationItem]",
         "type": "object"
@@ -8206,7 +8229,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "PagedResponse[WorkflowArtifactView]",
         "type": "object"
@@ -8230,8 +8254,39 @@
         "title": "PaginationMeta",
         "type": "object"
       },
+      "ParseError": {
+        "properties": {
+          "code": {
+            "default": "",
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "pos": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity",
+            "default": "error"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ParseError",
+        "type": "object"
+      },
       "PaymentMethodResponse": {
-        "additionalProperties": true,
         "properties": {
           "card_brand": {
             "anyOf": [
@@ -8303,6 +8358,27 @@
         "title": "Platform",
         "type": "string"
       },
+      "Pos": {
+        "properties": {
+          "column": {
+            "default": 0,
+            "title": "Column",
+            "type": "integer"
+          },
+          "file": {
+            "default": "",
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "default": 0,
+            "title": "Line",
+            "type": "integer"
+          }
+        },
+        "title": "Pos",
+        "type": "object"
+      },
       "PublicMirrorPlatform": {
         "enum": [
           "github",
@@ -8340,7 +8416,6 @@
         "type": "object"
       },
       "PublicMirrorRequestResource": {
-        "additionalProperties": true,
         "properties": {
           "approval_state": {
             "anyOf": [
@@ -8485,7 +8560,6 @@
         "type": "object"
       },
       "PullDiffSize": {
-        "additionalProperties": true,
         "description": "How much this PR changes, for the size badge.\n\nTotals cover every changed file; the ``generated_*`` figures are a SUBSET of\nthem, not a remainder. Carrying both lets a reader see \"+2400, of which 2300\ngenerated\" without a second lookup, and lets the console decide on its own\nwhat to exclude when bucketing -- a threshold change then ships without\nrecomputing anything here.\n\nCounted against the same base the merge verdict resolved, so the two always\ndescribe the same pair of commits.",
         "properties": {
           "additions": {
@@ -8530,7 +8604,6 @@
         "type": "object"
       },
       "PullMergeability": {
-        "additionalProperties": true,
         "description": "Whether a PR merges cleanly into the current tip of its base branch.\n\n``status`` is decided in the executor (see git_pr_merge_check) so the\nmergeable/analysis ladder lives in one place. ``pending`` means no verdict\nis cached yet and one has been queued -- ask again shortly. The field is\nabsent entirely for PRs that can never show a badge (merged, closed, draft,\nor a missing base ref or head SHA).\n\n``unavailable`` is the terminal \"no verdict, and none is coming\" answer. It\ncovers both avrea-git declining to decide (unrelated histories, unsupported\nmerge shape) and there being no live mirror to ask in the first place; the\ntwo are indistinguishable to a reader and neither changes on a refetch, so\nthey share a badge rather than a permanent ``pending`` spinner.\n\n``stale`` means the verdict was computed against a base tip the branch has\nsince moved past, or is simply old enough to be worth recomputing. It is\nserved rather than withheld, and a warm is queued: replacing a known answer\nwith a spinner every time someone merges to the default branch would be a\nworse read of the same facts. It lives here and not on PullMergeVerdict\nbecause staleness is a property of when you asked, not of the cached answer.\n\nDerived from the cached verdict rather than restating its fields: this is\nthe wire shape of exactly that object, so a field added to PullMergeVerdict\nmust reach the API. Spelled out as a separate model it would keep compiling\nand silently drop the new field. Only the genuine differences are declared --\nthe extra ``pending`` status, which is never cached because it means\n\"nothing cached\"; the fields a pending badge may not know yet; and ``stale``.",
         "properties": {
           "base_ref": {
@@ -8669,7 +8742,6 @@
         "type": "object"
       },
       "RepoCachePurgeResponse": {
-        "additionalProperties": true,
         "description": "Envelope for the purge state, null when no purge is in flight.",
         "properties": {
           "purge": {
@@ -8687,7 +8759,6 @@
         "type": "object"
       },
       "RepoCachePurgeStatus": {
-        "additionalProperties": true,
         "description": "Live state of this repository's cache purge.\n\nDeliberately not a deleted count: the purge runs in the cache worker, so\nnothing has been deleted when the DELETE returns.\n\nOnly two states are observable, and the absent case carries the most\nweight. `queued` means enqueued but not yet leased by a worker; `running`\nmeans a worker holds the lease. No status at all means the purge\nfinished -- the cache worker only ever marks a task completed, and only on\nsuccess, so nothing else takes a row out of the live window.\n\nA purge that keeps failing is not observable here: it stays leased and is\nre-dispatched every visibility timeout, forever, without ever recording a\nretry count or an error. `requested_at` growing far past the timeout is\nthe only stuck signal that exists.",
         "properties": {
           "requested_at": {
@@ -8712,7 +8783,6 @@
         "type": "object"
       },
       "RepoGitMirrorResource": {
-        "additionalProperties": true,
         "properties": {
           "data_deletion_pending": {
             "default": false,
@@ -8763,7 +8833,6 @@
         "type": "object"
       },
       "RerunWorkflowRunRequest": {
-        "additionalProperties": true,
         "description": "Request body for rerunning a workflow run.",
         "properties": {
           "failed_only": {
@@ -8771,17 +8840,69 @@
             "description": "If true, re-run only the failed jobs",
             "title": "Failed Only",
             "type": "boolean"
+          },
+          "invocation_key": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reuse this UUID when retrying an Avrea workflow rerun request",
+            "title": "Invocation Key"
+          },
+          "job_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "pattern": "^awj-[0-9a-f]{32}$",
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avrea job IDs from this attempt to rerun, together with downstream dependents",
+            "title": "Job Ids"
           }
         },
         "title": "RerunWorkflowRunRequest",
         "type": "object"
       },
       "RerunWorkflowRunResponse": {
-        "additionalProperties": true,
         "properties": {
           "failed_only": {
             "title": "Failed Only",
             "type": "boolean"
+          },
+          "original_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Run Id"
+          },
+          "run_attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Attempt"
           },
           "run_id": {
             "title": "Run Id",
@@ -8801,8 +8922,40 @@
         "title": "RerunWorkflowRunResponse",
         "type": "object"
       },
+      "RuleCounter": {
+        "description": "Per-rule packet and byte counter read from the firewall, with its verdict.\n\nBoth ALLOW and DENY rules of a VM's egress policy carry a labelled counter\n(``vm-rule-{rule_id}-allow`` / ``-deny``, ``vm-default-allow`` /\n``vm-default-deny``), so a live view can show what each rule admitted and\nwhat it blocked. ``drops`` on :class:`VMFlowSummary` keeps the original\n:class:`DropCounter` shape; ``accepts`` carries the ALLOW side.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "packets": {
+            "title": "Packets",
+            "type": "integer"
+          },
+          "verdict": {
+            "enum": [
+              "accept",
+              "drop"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "verdict",
+          "packets",
+          "bytes"
+        ],
+        "title": "RuleCounter",
+        "type": "object"
+      },
       "SSHForwardingRequest": {
-        "additionalProperties": true,
         "properties": {
           "job_id": {
             "title": "Job Id",
@@ -8816,7 +8969,6 @@
         "type": "object"
       },
       "SSHForwardingResponse": {
-        "additionalProperties": true,
         "properties": {
           "host": {
             "title": "Host",
@@ -8872,7 +9024,6 @@
         "type": "object"
       },
       "SamlConfigResponse": {
-        "additionalProperties": true,
         "description": "The org's SAML config, minus secrets. idp_x509_cert is omitted (bulky;\nthe console doesn't need it back).",
         "properties": {
           "allow_idp_initiated": {
@@ -9007,7 +9158,6 @@
         "type": "object"
       },
       "SbomListItem": {
-        "additionalProperties": true,
         "description": "One completed SBOM in the repository's history.\n\nTrimmed on purpose: the full `summary` carries the license and ecosystem\nmaps and the copyleft *names*, which is a large body to repeat per row for a\ntable that shows counts. The per-commit route serves the whole summary.",
         "properties": {
           "artifacts": {
@@ -9097,7 +9247,6 @@
         "type": "object"
       },
       "SbomListPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -9115,7 +9264,6 @@
         "type": "object"
       },
       "SbomListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -9136,7 +9284,6 @@
         "type": "object"
       },
       "SbomRefreshState": {
-        "additionalProperties": true,
         "properties": {
           "branch": {
             "anyOf": [
@@ -9221,7 +9368,6 @@
         "type": "object"
       },
       "SettingResponse": {
-        "additionalProperties": true,
         "properties": {
           "key": {
             "title": "Key",
@@ -9266,7 +9412,6 @@
         "type": "object"
       },
       "SettingSchemaResponse": {
-        "additionalProperties": true,
         "properties": {
           "choices": {
             "items": {
@@ -9402,7 +9547,6 @@
         "type": "object"
       },
       "SetupIntentResponse": {
-        "additionalProperties": true,
         "properties": {
           "client_secret": {
             "title": "Client Secret",
@@ -9415,14 +9559,20 @@
         "title": "SetupIntentResponse",
         "type": "object"
       },
+      "Severity": {
+        "enum": [
+          "error",
+          "warning"
+        ],
+        "title": "Severity",
+        "type": "string"
+      },
       "StepAggregation": {
-        "additionalProperties": true,
         "properties": {
           "action_required_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9437,8 +9587,7 @@
           "action_required_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9449,8 +9598,7 @@
           "action_required_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9461,8 +9609,7 @@
           "action_required_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9473,8 +9620,7 @@
           "avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9485,8 +9631,7 @@
           "cancelled_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9501,8 +9646,7 @@
           "cancelled_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9513,8 +9657,7 @@
           "cancelled_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9525,8 +9668,7 @@
           "cancelled_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9545,8 +9687,7 @@
           "failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9561,8 +9702,7 @@
           "failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9573,8 +9713,7 @@
           "failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9585,8 +9724,7 @@
           "failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9601,8 +9739,7 @@
           "median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9613,8 +9750,7 @@
           "neutral_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9629,8 +9765,7 @@
           "neutral_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9641,8 +9776,7 @@
           "neutral_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9653,8 +9787,7 @@
           "neutral_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9665,8 +9798,7 @@
           "p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9677,8 +9809,7 @@
           "skipped_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9693,8 +9824,7 @@
           "skipped_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9705,8 +9835,7 @@
           "skipped_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9717,8 +9846,7 @@
           "skipped_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9729,8 +9857,7 @@
           "stale_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9745,8 +9872,7 @@
           "stale_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9757,8 +9883,7 @@
           "stale_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9769,8 +9894,7 @@
           "stale_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9781,8 +9905,7 @@
           "startup_failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9797,8 +9920,7 @@
           "startup_failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9809,8 +9931,7 @@
           "startup_failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9821,8 +9942,7 @@
           "startup_failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9836,8 +9956,7 @@
           "success_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9852,8 +9971,7 @@
           "success_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9864,8 +9982,7 @@
           "success_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9876,8 +9993,7 @@
           "success_run_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9888,8 +10004,7 @@
           "success_run_median_offset_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9900,8 +10015,7 @@
           "success_run_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9912,8 +10026,7 @@
           "success_run_p95_offset_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9924,8 +10037,7 @@
           "success_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9936,8 +10048,7 @@
           "timed_out_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9952,8 +10063,7 @@
           "timed_out_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9964,8 +10074,7 @@
           "timed_out_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9976,8 +10085,7 @@
           "timed_out_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9988,8 +10096,7 @@
           "total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -10021,7 +10128,6 @@
         "type": "object"
       },
       "StripeKeyResponse": {
-        "additionalProperties": true,
         "properties": {
           "stripe_key": {
             "title": "Stripe Key",
@@ -10035,7 +10141,6 @@
         "type": "object"
       },
       "TopDestination": {
-        "additionalProperties": true,
         "description": "One row of the per-VM \"top destinations\" breakdown.",
         "properties": {
           "bytes": {
@@ -10071,7 +10176,6 @@
         "type": "object"
       },
       "TopProtoPort": {
-        "additionalProperties": true,
         "description": "One row of the per-VM \"top (protocol, port)\" breakdown.",
         "properties": {
           "bytes": {
@@ -10096,7 +10200,6 @@
         "type": "object"
       },
       "UsageSummaryResponse": {
-        "additionalProperties": true,
         "properties": {
           "breakdown_by_spec": {
             "additionalProperties": {
@@ -10118,8 +10221,7 @@
           },
           "total_compute_seconds": {
             "title": "Total Compute Seconds",
-            "type": "number",
-            "x-go-type": "float64"
+            "type": "number"
           },
           "total_jobs": {
             "title": "Total Jobs",
@@ -10137,7 +10239,6 @@
         "type": "object"
       },
       "UserInstallationItem": {
-        "additionalProperties": true,
         "description": "Installation summary for user's installations list.",
         "properties": {
           "created_at": {
@@ -10247,9 +10348,15 @@
         "type": "object"
       },
       "VMFlowSummary": {
-        "additionalProperties": true,
         "description": "Aggregate netflow record produced once per VM run.\n\nWritten to Turbopuffer namespace ``{prefix}-{repository_id}`` at VM stop.\n``repository_id`` is encoded in the namespace path so it is not stored as a\nfield on the record itself.",
         "properties": {
+          "accepts": {
+            "items": {
+              "$ref": "#/components/schemas/RuleCounter"
+            },
+            "title": "Accepts",
+            "type": "array"
+          },
           "blocked_dns_queries": {
             "items": {
               "$ref": "#/components/schemas/BlockedDnsQuery"
@@ -10376,7 +10483,6 @@
         "type": "object"
       },
       "ValidationError": {
-        "additionalProperties": true,
         "properties": {
           "ctx": {
             "title": "Context",
@@ -10417,7 +10523,6 @@
         "type": "object"
       },
       "VmEndpoint": {
-        "additionalProperties": true,
         "properties": {
           "external_ip": {
             "title": "External Ip",
@@ -10462,7 +10567,6 @@
         "type": "object"
       },
       "VmEndpoints": {
-        "additionalProperties": true,
         "properties": {
           "https": {
             "anyOf": [
@@ -10500,7 +10604,6 @@
         "type": "object"
       },
       "VmHttpsEndpoint": {
-        "additionalProperties": true,
         "properties": {
           "port": {
             "description": "The guest port the URL reaches.",
@@ -10533,7 +10636,6 @@
         "type": "string"
       },
       "VmSnapshotInfo": {
-        "additionalProperties": true,
         "description": "Customer-visible summary of the pause snapshot backing a PAUSED VM.\n\nProjected from the stored snapshot reference; storage-internal details\n(bucket, key, node) stay server-side.",
         "properties": {
           "archive_bytes": {
@@ -10571,7 +10673,6 @@
         "type": "object"
       },
       "Workflow": {
-        "additionalProperties": true,
         "properties": {
           "ci_provider": {
             "$ref": "#/components/schemas/CIProvider",
@@ -10616,7 +10717,6 @@
         "type": "object"
       },
       "WorkflowArtifact": {
-        "additionalProperties": true,
         "properties": {
           "archived": {
             "title": "Archived",
@@ -10759,7 +10859,6 @@
         "type": "string"
       },
       "WorkflowArtifactView": {
-        "additionalProperties": true,
         "properties": {
           "archived": {
             "title": "Archived",
@@ -10886,8 +10985,127 @@
         "title": "WorkflowArtifactView",
         "type": "object"
       },
+      "WorkflowDispatchInputResponse": {
+        "description": "One declared input of a workflow's ``workflow_dispatch:`` trigger.",
+        "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "string",
+              "boolean",
+              "choice",
+              "environment",
+              "number"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "description",
+          "required",
+          "default",
+          "options"
+        ],
+        "title": "WorkflowDispatchInputResponse",
+        "type": "object"
+      },
+      "WorkflowDispatchMetadataResponse": {
+        "description": "Metadata for rendering a workflow_dispatch trigger button.\n\n``dispatchable`` is whether the workflow YAML at ``ref`` declares\n``on: workflow_dispatch``. ``can_dispatch`` is whether the requesting\nuser has write/maintain/admin on the underlying repo. They are\nindependent \u2014 render the button only when both are true.",
+        "properties": {
+          "can_dispatch": {
+            "title": "Can Dispatch",
+            "type": "boolean"
+          },
+          "ci_provider": {
+            "$ref": "#/components/schemas/CIProvider",
+            "default": "github_actions"
+          },
+          "dispatchable": {
+            "title": "Dispatchable",
+            "type": "boolean"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/WorkflowDispatchInputResponse"
+            },
+            "title": "Inputs",
+            "type": "array"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "workflow_id": {
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "ref",
+          "dispatchable",
+          "can_dispatch",
+          "inputs"
+        ],
+        "title": "WorkflowDispatchMetadataResponse",
+        "type": "object"
+      },
+      "WorkflowInventorySkipReason": {
+        "enum": [
+          "forbidden",
+          "not_found",
+          "blocked"
+        ],
+        "title": "WorkflowInventorySkipReason",
+        "type": "string"
+      },
       "WorkflowRun": {
-        "additionalProperties": true,
         "description": "Workflow run sub-object for embedding in job responses (no jobs).",
         "properties": {
           "ci_provider": {
@@ -11024,13 +11242,11 @@
         "type": "object"
       },
       "WorkflowRunAggregateBucket": {
-        "additionalProperties": true,
         "properties": {
           "action_required_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11045,8 +11261,7 @@
           "action_required_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11057,8 +11272,7 @@
           "action_required_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11069,8 +11283,7 @@
           "action_required_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11081,8 +11294,7 @@
           "avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11093,8 +11305,7 @@
           "cancelled_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11109,8 +11320,7 @@
           "cancelled_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11121,8 +11331,7 @@
           "cancelled_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11133,8 +11342,7 @@
           "cancelled_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11165,8 +11373,7 @@
           "failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11181,8 +11388,7 @@
           "failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11193,8 +11399,7 @@
           "failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11205,8 +11410,7 @@
           "failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11228,8 +11432,7 @@
           "median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11240,8 +11443,7 @@
           "neutral_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11256,8 +11458,7 @@
           "neutral_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11268,8 +11469,7 @@
           "neutral_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11280,8 +11480,7 @@
           "neutral_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11292,8 +11491,7 @@
           "p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11304,8 +11502,7 @@
           "skipped_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11320,8 +11517,7 @@
           "skipped_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11332,8 +11528,7 @@
           "skipped_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11344,8 +11539,7 @@
           "skipped_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11356,8 +11550,7 @@
           "stale_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11372,8 +11565,7 @@
           "stale_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11384,8 +11576,7 @@
           "stale_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11396,8 +11587,7 @@
           "stale_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11420,8 +11610,7 @@
           "startup_failure_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11436,8 +11625,7 @@
           "startup_failure_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11448,8 +11636,7 @@
           "startup_failure_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11460,8 +11647,7 @@
           "startup_failure_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11472,8 +11658,7 @@
           "success_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11488,8 +11673,7 @@
           "success_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11500,8 +11684,7 @@
           "success_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11512,8 +11695,7 @@
           "success_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11524,8 +11706,7 @@
           "timed_out_avg_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11540,8 +11721,7 @@
           "timed_out_median_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11552,8 +11732,7 @@
           "timed_out_p95_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11564,8 +11743,7 @@
           "timed_out_total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11576,8 +11754,7 @@
           "total_duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11634,7 +11811,6 @@
         "type": "object"
       },
       "WorkflowRunHeadCommit": {
-        "additionalProperties": true,
         "properties": {
           "author": {
             "$ref": "#/components/schemas/WorkflowRunHeadCommitAuthor"
@@ -11659,7 +11835,6 @@
         "type": "object"
       },
       "WorkflowRunHeadCommitAuthor": {
-        "additionalProperties": true,
         "properties": {
           "email": {
             "anyOf": [
@@ -11692,7 +11867,6 @@
         "type": "object"
       },
       "WorkflowRunMetricsResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "description": "One entry per job in the run that the caller can see; jobs without an execution are flagged via `error`.",
@@ -11710,7 +11884,6 @@
         "type": "object"
       },
       "WorkflowRunPullRequest": {
-        "additionalProperties": true,
         "properties": {
           "base_branch": {
             "anyOf": [
@@ -11757,7 +11930,6 @@
         "type": "object"
       },
       "WorkflowRunRepository": {
-        "additionalProperties": true,
         "properties": {
           "full_name": {
             "title": "Full Name",
@@ -11787,7 +11959,6 @@
         "type": "object"
       },
       "WorkflowRunResponse": {
-        "additionalProperties": true,
         "properties": {
           "ci_provider": {
             "$ref": "#/components/schemas/CIProvider",
@@ -11827,6 +11998,14 @@
             ],
             "title": "Created At"
           },
+          "diagnostics": {
+            "description": "Workflow validation diagnostics, including source locations when available.",
+            "items": {
+              "$ref": "#/components/schemas/ParseError"
+            },
+            "title": "Diagnostics",
+            "type": "array"
+          },
           "display_title": {
             "title": "Display Title",
             "type": "string"
@@ -11834,8 +12013,7 @@
           "duration_seconds": {
             "anyOf": [
               {
-                "type": "number",
-                "x-go-type": "float64"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -12063,7 +12241,6 @@
         "type": "object"
       },
       "WorkflowRunTriggeringActor": {
-        "additionalProperties": true,
         "properties": {
           "platform_id": {
             "title": "Platform Id",
@@ -12082,7 +12259,6 @@
         "type": "object"
       },
       "WorkflowRunsListPagination": {
-        "additionalProperties": true,
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -12100,7 +12276,6 @@
         "type": "object"
       },
       "WorkflowRunsListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -12121,7 +12296,6 @@
         "type": "object"
       },
       "WorkflowsListResponse": {
-        "additionalProperties": true,
         "properties": {
           "data": {
             "items": {
@@ -12136,7 +12310,8 @@
           }
         },
         "required": [
-          "data"
+          "data",
+          "pagination"
         ],
         "title": "WorkflowsListResponse",
         "type": "object"
@@ -12403,7 +12578,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "A grant names an object you cannot reach at that level, you are not an active member, the organization is suspended, or the caller is a scoped token"
+            "description": "A grant names an object you cannot reach at that level, you are not an active member, the organization is suspended, or the caller is a scoped token; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Scoped tokens, or the VMs the token names, are not available for the organization"
@@ -13875,6 +14061,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -13948,6 +14148,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "422": {
             "content": {
@@ -14031,6 +14245,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Email domain not found for the organization"
@@ -14179,6 +14407,15 @@
             },
             "description": "Successful Response"
           },
+          "401": {
+            "description": "Missing, invalid or inactive credentials"
+          },
+          "403": {
+            "description": "Caller is not permitted to read firewall rules"
+          },
+          "404": {
+            "description": "Organization or firewall rules not available to the caller"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -14188,6 +14425,12 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request rate limit exceeded"
+          },
+          "503": {
+            "description": "Authentication is temporarily unavailable; retry after `Retry-After`. Without `Retry-After`, service tokens are not enabled on this deployment and retrying does not help"
           }
         },
         "security": [
@@ -14249,6 +14492,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "422": {
             "content": {
@@ -14327,6 +14584,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "422": {
             "content": {
               "application/json": {
@@ -14391,6 +14662,20 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Firewall rule not found in the organization scope"
@@ -14474,6 +14759,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Firewall rule not found in the organization scope"
@@ -14730,7 +15029,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "GitLab is not available for the organization"
@@ -14905,7 +15215,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "GitLab installation not found, or GitLab is not available for the organization"
@@ -15007,7 +15328,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "GitLab installation not found, or GitLab is not available for the organization"
@@ -15277,7 +15609,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "GitLab installation or runner machine type not found, or GitLab is not available for the organization"
@@ -15750,8 +16093,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -15773,8 +16115,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -15796,8 +16137,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -15819,8 +16159,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -16229,8 +16568,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -16252,8 +16590,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -16275,8 +16612,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -16298,8 +16634,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -18267,6 +18602,9 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "description": "Repository not found or not accessible; workflow artifacts not available for the organization"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -18342,6 +18680,9 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository or artifact not found; workflow artifacts not available for the organization"
           },
           "422": {
             "content": {
@@ -18424,6 +18765,9 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "description": "Repository not found or not accessible; workflow artifacts not available for the organization; Artifact not found or no longer available"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -18502,6 +18846,9 @@
           },
           "307": {
             "description": "Browser navigation without Authorization redirects to a short-lived signed storage URL; other clients stream"
+          },
+          "404": {
+            "description": "Repository not found or not accessible; workflow artifacts not available for the organization; Artifact not found or no longer available"
           },
           "422": {
             "content": {
@@ -19278,6 +19625,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Repository not found or not accessible"
           },
@@ -19367,6 +19728,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Repository not found or not accessible"
           },
@@ -19443,6 +19818,20 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Repository not found or not accessible, or firewall rule not found in the repository scope"
@@ -19535,6 +19924,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "A console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Repository not found or not accessible, or firewall rule not found in the repository scope"
@@ -20218,6 +20621,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "Organization admin access denied or setting is not customer-visible; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Repository not found or not accessible"
           },
@@ -20298,6 +20715,20 @@
           "204": {
             "description": "Successful Response"
           },
+          "403": {
+            "description": "Organization admin access denied or setting is not customer-visible; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Repository not found or not accessible"
           },
@@ -20323,6 +20754,186 @@
         "summary": "Delete Repo Setting",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/workflow-dispatches": {
+      "post": {
+        "description": "Run an Avrea CI workflow with typed inputs at a frozen branch or tag.\n\nThe workflow must declare workflow_dispatch on both the current default\nbranch and the selected revision. Raw SHAs and ambiguous short names are\nrefused. Use refs/heads/name or refs/tags/name to disambiguate. A repeated\nkey within the same repository, workflow and actor, and identical request,\nreturn the original receipt without resolving\nthe ref again. Use a new key for each intentional run. Inputs are not a\nsecret channel. Managed secrets and variables remain unsupported here.",
+        "operationId": "create_native_dispatch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{32}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeDispatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_NativeDispatchResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository or workflow not accessible"
+          },
+          "409": {
+            "description": "Key reused with a different request for this repository, workflow and actor, or dispatch disabled"
+          },
+          "422": {
+            "description": "Invalid branch, tag, workflow or input values"
+          },
+          "503": {
+            "description": "Source or permission verification temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Native Dispatch",
+        "tags": [
+          "workflows"
+        ]
+      }
+    },
+    "/orgs/{org_id}/repos/{repo_id}/workflow-dispatches/{dispatch_id}": {
+      "get": {
+        "description": "Read a native manual receipt, including terminal rejection or run IDs.",
+        "operationId": "get_native_dispatch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "dispatch_id",
+            "required": true,
+            "schema": {
+              "title": "Dispatch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_NativeDispatchResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Dispatch not accessible"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Native Dispatch",
+        "tags": [
+          "workflows"
         ]
       }
     },
@@ -20418,6 +21029,110 @@
         ]
       }
     },
+    "/orgs/{org_id}/repos/{repo_id}/workflows/{workflow_id}/dispatch-metadata": {
+      "get": {
+        "description": "Return whether a workflow accepts workflow_dispatch and its input schema.\n\nRepo-scoped sibling of ``POST /orgs/{org}/repos/{repo}/dispatch-workflow``:\nthe \"Run workflow\" button reads this to decide whether to render, then posts\nto that endpoint. Authorization mirrors the repo-scoped workflow endpoints\n(404 when the repo isn't in the org or the caller lacks GitHub access).\nRead-level access fetches the schema; write+ is reported separately via\n``can_dispatch`` so the frontend can render the button enabled/disabled\nwithout a second request. The dispatch endpoint still re-checks write+ at\nsubmit time.",
+        "operationId": "get_workflow_dispatch_metadata_endpoint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "repo_id",
+            "required": true,
+            "schema": {
+              "title": "Repo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workflow_id",
+            "required": true,
+            "schema": {
+              "title": "Workflow Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Branch / tag / commit SHA to read the workflow file from. Defaults to the repo's default branch.",
+            "in": "query",
+            "name": "ref",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Branch / tag / commit SHA to read the workflow file from. Defaults to the repo's default branch.",
+              "title": "Ref"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "avrea_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Avrea Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_WorkflowDispatchMetadataResponse_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Repository not found or not accessible, or workflow not found in the organization"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Workflow Dispatch Metadata Endpoint",
+        "tags": [
+          "organization-installations"
+        ]
+      }
+    },
     "/orgs/{org_id}/saml": {
       "delete": {
         "description": "Delete the org's SAML config, or 404 if none. Requires manage_sso.\n\n409 while SAML group mappings or IdP-owned groups still reference the\nconfig: they must be dismantled first (Org Model v2 Phase 4, plan 17.3).\nDeletion removes SAML account links. Members can link again only when JIT\nprovisioning is enabled on the new configuration, and each member must\nconfirm their email at their next SAML sign-in.",
@@ -20461,7 +21176,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "SAML configuration not found for the organization"
@@ -20707,7 +21433,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "description": "SAML group state or linked identities prevent identity provider replacement; or management authorization is busy (retry with Retry-After)",
@@ -20798,7 +21535,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller does not hold the capability, or is not an active member of the organization"
+            "description": "The caller does not hold the capability, or is not an active member of the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "description": "Management authorization is busy; retry the request",
@@ -20969,6 +21717,20 @@
             },
             "description": "Successful Response"
           },
+          "403": {
+            "description": "Organization admin access denied or setting is not customer-visible; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
           "409": {
             "description": "A persistent disk is busy"
           },
@@ -21038,7 +21800,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Organization admin access denied or setting is not customer-visible"
+            "description": "Organization admin access denied or setting is not customer-visible; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "description": "A persistent disk is busy"
@@ -21275,7 +22048,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "A scoped token without allow_vm_create, or one that sets egress_rules; egress_rules from a caller who is not an organization admin; a macOS VM where macOS is not available to the organization; a bootstrap where agent sandboxes are not enabled for the organization; or https_ports where sandbox HTTPS URLs are disabled or not enabled for the organization"
+            "description": "A scoped token without allow_vm_create, or one that sets egress_rules; egress_rules from a caller who is not an organization admin; a macOS VM where macOS is not available to the organization; a bootstrap where agent sandboxes are not enabled for the organization; or https_ports where sandbox HTTPS URLs are disabled or not enabled for the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Customer VMs are not available for the organization; repository not found or not accessible; or virtual machine not found"
@@ -21625,7 +22409,18 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "The caller, or its scoped token, holds less access than the change needs (admin to rotate the VM's password, or set SSH keys or https_ports); a scoped token that sets egress_rules, or egress_rules from a caller who is not an organization admin; a scoped token that installs a guest credential or sets https_ports while a boot it did not start runs; or https_ports that add a port where sandbox HTTPS URLs are disabled or not enabled for the organization"
+            "description": "The caller, or its scoped token, holds less access than the change needs (admin to rotate the VM's password, or set SSH keys or https_ports); a scoped token that sets egress_rules, or egress_rules from a caller who is not an organization admin; a scoped token that installs a guest credential or sets https_ports while a boot it did not start runs; or https_ports that add a port where sandbox HTTPS URLs are disabled or not enabled for the organization; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Customer VMs are not available for the organization, or virtual machine not found or no longer available"
@@ -22162,8 +22957,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22185,8 +22979,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22208,8 +23001,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22231,8 +23023,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22642,8 +23433,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22665,8 +23455,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22688,8 +23477,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -22711,8 +23499,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "number",
-                  "x-go-type": "float64"
+                  "type": "number"
                 },
                 {
                   "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -23384,7 +24171,7 @@
     },
     "/orgs/{org_id}/workflow-runs/{run_id}/rerun": {
       "post": {
-        "description": "Re-run a workflow run (all jobs, or only failed jobs with failed_only=true).",
+        "description": "Re-run all jobs, failed jobs, or selected Avrea jobs and their dependents.\n\nAvrea CI returns the new run ID and attempt immediately. Reuse invocation_key\nafter a lost response to recover the same attempt. GitHub returns the original\nrun ID while its new attempt is discovered through webhooks.",
         "operationId": "rerun_workflow_run",
         "parameters": [
           {
@@ -24119,6 +24906,20 @@
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "No access to the job's repository, the VM belongs to no organization, or the organization has turned off SSH to CI job VMs; or a console session signed in more than 15 minutes ago must sign in again",
+            "headers": {
+              "X-Reauthentication-Required": {
+                "description": "Set to `recent-login` when the console session must sign in again",
+                "schema": {
+                  "enum": [
+                    "recent-login"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
           },
           "404": {
             "description": "Job or running virtual machine not found"

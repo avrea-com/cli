@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/avrea-com/cli/client"
+	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/google/uuid"
@@ -36,29 +37,27 @@ func parseNativeReceipt(body map[string]any) (nativeReceipt, error) {
 	if !ok {
 		return nativeReceipt{}, invalid
 	}
-	id, iok := data["dispatch_id"].(string)
-	state, sok := data["state"].(string)
-	ref, rok := data["ref"].(string)
-	commit, cok := data["commit_sha"].(string)
-	runs, aok := data["run_ids"].([]any)
-	if !iok || !nativeReceiptID().MatchString(id) || !sok || (state != "pending" && state != "admitted" && state != "rejected") || !rok || !cok || !aok {
+	var decoded wire.NativeDispatchResponse
+	raw, err := json.Marshal(data)
+	if err != nil || json.Unmarshal(raw, &decoded) != nil {
 		return nativeReceipt{}, invalid
 	}
-	receipt := nativeReceipt{id: id, state: state, ref: ref, commit: commit}
-	if data["reason"] != nil {
-		var ok bool
-		receipt.reason, ok = data["reason"].(string)
-		if !ok {
+	for _, key := range []string{"dispatch_id", "state", "ref", "commit_sha", "run_ids"} {
+		if data[key] == nil {
 			return nativeReceipt{}, invalid
 		}
 	}
-	for _, value := range runs {
-		run, ok := value.(string)
-		if !ok || !nativeRunID().MatchString(run) {
+	state := string(decoded.State)
+	if !nativeReceiptID().MatchString(decoded.DispatchId) || (state != "pending" && state != "admitted" && state != "rejected") {
+		return nativeReceipt{}, invalid
+	}
+	receipt := nativeReceipt{id: decoded.DispatchId, state: state, ref: decoded.Ref, commit: decoded.CommitSha, reason: decoded.Reason.GetOrEmpty(), runs: decoded.RunIds}
+	for _, run := range receipt.runs {
+		if !nativeRunID().MatchString(run) {
 			return nativeReceipt{}, invalid
 		}
-		receipt.runs = append(receipt.runs, run)
 	}
+
 	return receipt, nil
 }
 func (r nativeReceipt) pendingMessage() string {
@@ -282,21 +281,22 @@ func submitNativeWorkflow(ctx context.Context, d Dependencies, cfg config.Config
 			return nativeReceipt{}, apiError(cfg, err, "read native workflow inputs")
 		}
 		data, ok := body["data"].(map[string]any)
-		metadataRef, rok := data["ref"].(string)
-		dispatchable, dok := data["dispatchable"].(bool)
-		allowed, aok := data["can_dispatch"].(bool)
-		inputs, iok := data["inputs"].([]any)
-		if !ok || !rok || !dok || !aok || !iok {
+		var metadata wire.WorkflowDispatchMetadataResponse
+		raw, encodeErr := json.Marshal(data)
+		if !ok || encodeErr != nil || json.Unmarshal(raw, &metadata) != nil {
 			return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
 		}
-		for _, item := range inputs {
-			input, ok := item.(map[string]any)
-			name, nok := input["name"].(string)
-			kind, kok := input["type"].(string)
-			if !ok || !nok || !kok {
+		for _, key := range []string{"ref", "dispatchable", "can_dispatch", "inputs"} {
+			if data[key] == nil {
 				return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
 			}
-			kinds[name] = kind
+		}
+		metadataRef, dispatchable, allowed := metadata.Ref, metadata.Dispatchable, metadata.CanDispatch
+		for _, input := range metadata.Inputs {
+			if input.Name == "" || input.Type == "" {
+				return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
+			}
+			kinds[input.Name] = string(input.Type)
 		}
 		if !dispatchable {
 			return nativeReceipt{}, nativeDispatchError("Manual dispatch is not enabled for this native workflow at the selected ref.")
@@ -328,7 +328,7 @@ func submitNativeWorkflow(ctx context.Context, d Dependencies, cfg config.Config
 		args[i] = shellQuotePython(args[i])
 	}
 	retry := "printf '%s' " + shellQuotePython(inputs) + " | " + strings.Join(args, " ")
-	_, _ = fmt.Fprintln(d.Err, "Invocation key: "+key)
+	_, _ = fmt.Fprintln(d.Err, "Invocation key: "+output.Text(key))
 	var body map[string]any
 	for attempt := 0; attempt < 2; attempt++ {
 		body, err = api.SubmitNativeDispatch(ctx, base+"/workflow-dispatches", content, key)
@@ -343,17 +343,17 @@ func submitNativeWorkflow(ctx context.Context, d Dependencies, cfg config.Config
 		}
 		var transport *client.TransportError
 		if errors.As(err, &transport) {
-			return nativeReceipt{}, nativeDispatchError(fmt.Sprintf("Dispatch response was lost. Retry the exact request:\n%s", retry))
+			return nativeReceipt{}, nativeDispatchError(fmt.Sprintf("Dispatch response was lost. Retry the exact request:\n%s", output.MultilineText(retry)))
 		}
 		var httpErr *client.HTTPError
 		if errors.As(err, &httpErr) && (httpErr.Status >= 500 || httpErr.Status == 429) {
-			_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+retry)
+			_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+output.MultilineText(retry))
 		}
 		return nativeReceipt{}, apiError(cfg, err, "dispatch native workflow")
 	}
 	receipt, err := parseNativeReceipt(body)
 	if err != nil {
-		_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+retry)
+		_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+output.MultilineText(retry))
 		return nativeReceipt{}, err
 	}
 	receipt.retry = retry

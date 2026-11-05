@@ -15,6 +15,7 @@ import (
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
+	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -133,6 +134,9 @@ func (d Dependencies) configuration() (config.Config, *config.Store, error) {
 		cfg, err = d.LoadConfig()
 	} else {
 		cfg, err = config.Load(store, d.Getenv)
+	}
+	if err == nil && cfg.StoreUnavailable {
+		_, _ = fmt.Fprintln(d.Err, "Warning: could not read hosts.json; using environment credentials without stored defaults.")
 	}
 	return cfg, store, err
 }
@@ -345,7 +349,7 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	}
 	if err.Error() != "" {
 		err = requiredOptionError(executed, err)
-		_, _ = fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, output.MultilineText(err.Error()))
 	}
 	return code
 }

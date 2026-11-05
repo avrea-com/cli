@@ -240,7 +240,16 @@ def scenarios():
 
 
 def compare(scenario, python, go):
+    warning = (
+        "Warning: this VM's endpoint has no SSH host key; "
+        "the connection falls back to trust-on-first-use instead of pinning.\n"
+    )
+    missing_warning = scenario["name"] == "vm bootstrap no host key" and warning not in go["stderr"]
+    if scenario["name"] == "vm bootstrap no host key":
+        go = go | {"stderr": go["stderr"].replace(warning, "", 1)}
     differences = watch.compare(scenario, python, go)
+    if missing_warning:
+        differences.append("missing Go first-use warning")
     if python.get("bootstrap") != go.get("bootstrap"):
         differences.append("bootstrap helper calls/stdin/pins differ")
     if "--print" in scenario["args"]:

@@ -42,7 +42,7 @@ func (o jsonOptions) list(cmd *cobra.Command, d Dependencies, records []map[stri
 	if err != nil {
 		return err
 	}
-	return output.JSONList(cmd.Context(), d.Out, records, fields, o.expression)
+	return output.JSONList(cmd.Context(), d.Out, records, fields, o.expression, d.IsTerminal())
 }
 
 func (o jsonOptions) record(cmd *cobra.Command, d Dependencies, record map[string]any, available []string) error {
@@ -50,7 +50,7 @@ func (o jsonOptions) record(cmd *cobra.Command, d Dependencies, record map[strin
 	if err != nil {
 		return err
 	}
-	return output.JSON(cmd.Context(), d.Out, record, fields, o.expression)
+	return output.JSON(cmd.Context(), d.Out, record, fields, o.expression, d.IsTerminal())
 }
 func rawRecords[T any](page client.Page[T]) []map[string]any {
 	rows := make([]map[string]any, 0, len(page.Items))

@@ -1182,7 +1182,9 @@ def compare(scenario, python, go):
             value = re.sub(r"\d{2}:\d{2}:\d{2} UTC", "<clock>", value)
             return re.sub(r"\d+d ago", "<age>", value)
 
-        if presentation(stable(python["stdout"])) != presentation(stable(go["stdout"])):
+        styled_python, styled_go, login_differences = harness.comparable_login(scenario, python, go)
+        event_differences.extend(login_differences)
+        if presentation(stable(styled_python["stdout"])) != presentation(stable(styled_go["stdout"])):
             event_differences.append("terminal text/styles")
         if not scenario["name"].startswith("styled auth") and "watch" not in scenario["name"]:
             a = [line.rstrip() for line in terminal_text(stable(python["stdout"])).splitlines()]

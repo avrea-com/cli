@@ -332,5 +332,5 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 	return c
 }
 func vmMissingSSHEndpoint(row map[string]any, id string) error {
-	return &ExitError{1, "Error: VM " + output.CellText(id) + " has no SSH endpoint yet (state: " + billingText(row, "state", "None") + "). Endpoints appear once the VM is RUNNING; check `avr vm show`."}
+	return &ExitError{1, "Error: VM " + output.CellText(id) + " has no SSH endpoint yet (state: " + output.CellText(billingText(row, "state", "None")) + "). Endpoints appear once the VM is RUNNING; check `avr vm show`."}
 }

@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -36,13 +37,16 @@ func TestLoginConsumesCallbackWhileBrowserRemainsOpen(t *testing.T) {
 	d.LoginTimeout = 500 * time.Millisecond
 	release := make(chan struct{})
 	exited := make(chan struct{})
-	d.OpenBrowser = func(ctx context.Context, _ string) error {
+	d.OpenBrowser = func(ctx context.Context, target string) error {
 		defer close(exited)
 		defer func() { <-release }()
-		req, err := http.NewRequestWithContext(ctx, "GET", "http://"+listener.Addr().String()+"/callback?session=fixture&csrf_token=fixture", nil)
+		opened, _ := url.Parse(target)
+		callbackURL, _ := url.Parse(opened.Query().Get("next"))
+		req, err := http.NewRequestWithContext(ctx, "GET", "http://"+listener.Addr().String()+"/callback?session=fixture&csrf_token=fixture&cli_state="+callbackURL.Query().Get("cli_state"), nil)
 		if err != nil {
 			return err
 		}
+		req.Host = "127.0.0.1:8765"
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err

@@ -103,7 +103,7 @@ func newSBOMGenerate(d Dependencies) *cobra.Command {
 			}
 			fields, e := output.Fields(o.fields, sbomGenerateFields)
 			if e == nil {
-				e = output.JSON(cmd.Context(), d.Out, result, fields, o.expression)
+				e = output.JSON(cmd.Context(), d.Out, result, fields, o.expression, d.IsTerminal())
 			}
 			if e != nil && strings.HasPrefix(e.Error(), "jq error:") {
 				return true, &ExitError{1, "Error: " + e.Error()}

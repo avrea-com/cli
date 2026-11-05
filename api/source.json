@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/avrea-com/avrea-core",
-  "commit": "85e8b2af0d66f55da8989d0718aeb35887e43349",
+  "commit": "0b396fdc8ba3056a9e535ab97fbe2f755458af89",
   "path": "control/openapi/public.json",
-  "sha256": "1786d2d3423480c91275cd34767ed031da2a10ff5dd0b39252ac0ea449bd148f",
+  "sha256": "683f6565763de4b6a011151122e08f3a31521585d0e69cae05edb006f1c0134a",
   "operations": [
     "list_user_organizations",
     "list_organization_repositories",
@@ -119,7 +119,10 @@
     "list_gitlab_runners",
     "clear_gitlab_runner",
     "set_gitlab_runner",
-    "get_organization_installation"
+    "get_organization_installation",
+    "get_workflow_dispatch_metadata_endpoint",
+    "create_native_dispatch",
+    "get_native_dispatch"
   ],
   "generator": {
     "module": "github.com/oapi-codegen/oapi-codegen/v2",
