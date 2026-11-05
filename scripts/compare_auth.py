@@ -26,6 +26,7 @@ import io
 import json
 import os
 import re
+import select
 import signal
 import socketserver
 import subprocess
@@ -356,17 +357,23 @@ def run(executable, scenario, root, host):
                     stderr=slave if scenario.get("merge_terminal") else subprocess.PIPE,
                     text=True,
                 )
-                os.close(slave)
-                slave = None
                 chunks = []
+                child_finished = threading.Event()
+                read_errors = []
 
                 def drain_terminal():
                     interrupted = False
                     marker = scenario.get("interrupt_after_text", "").encode()
                     while True:
                         try:
+                            readable, _, _ = select.select([master], [], [], 0.05)
+                            if not readable:
+                                if child_finished.is_set():
+                                    break
+                                continue
                             chunk = os.read(master, 65536)
-                        except OSError:
+                        except OSError as error:
+                            read_errors.append(error)
                             break
                         if not chunk:
                             break
@@ -380,8 +387,9 @@ def run(executable, scenario, root, host):
                                 # before SIGINT arrives. Drain any remaining output.
                                 continue
 
-                # Drain while the child is alive: PTYs can discard unread
-                # output on close, and a full PTY buffer blocks the child.
+                # Keep our slave open until the reader drains the exited child:
+                # macOS discards pending bytes when the last slave closes.
+                # Drain concurrently too, so a full PTY cannot block the child.
                 reader = threading.Thread(target=drain_terminal, daemon=True)
                 reader.start()
                 try:
@@ -390,9 +398,12 @@ def run(executable, scenario, root, host):
                     if process.poll() is None:
                         process.kill()
                         process.communicate()
+                    child_finished.set()
                     reader.join(timeout=5)
                 if reader.is_alive():
                     raise RuntimeError("terminal reader did not finish")
+                if read_errors:
+                    raise RuntimeError("terminal read failed") from read_errors[0]
                 result = subprocess.CompletedProcess(
                     process.args, process.returncode, b"".join(chunks).decode(), stderr or ""
                 )

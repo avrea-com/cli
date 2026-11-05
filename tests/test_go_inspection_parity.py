@@ -82,6 +82,36 @@ def test_terminal_capture_drains_large_output_before_child_exit(tmp_path):
     assert result["stdout"] == expected
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX PTY")
+def test_terminal_capture_preserves_output_when_child_exits_before_reader_starts(tmp_path, monkeypatch):
+    from scripts import compare_auth as harness
+    import threading
+
+    children = []
+    popen = harness.subprocess.Popen
+    start = threading.Thread.start
+
+    def capture_child(*args, **kwargs):
+        child = popen(*args, **kwargs)
+        if isinstance(kwargs.get("stdout"), int) and kwargs["stdout"] >= 0:
+            children.append(child)
+        return child
+
+    def delayed_reader(thread):
+        # Force the scheduler ordering that loses pending PTY bytes on macOS.
+        if children:
+            children[-1].wait(timeout=5)
+        return start(thread)
+
+    monkeypatch.setattr(harness.subprocess, "Popen", capture_child)
+    monkeypatch.setattr(threading.Thread, "start", delayed_reader)
+    expected = "\x1b[32mcomplete\x1b[0m"
+    scenario = {"args": ["-c", "import os; os.write(1, " + repr(expected.encode()) + ")"], "tty": True}
+    result = harness.run([sys.executable], scenario, tmp_path, "http://127.0.0.1")
+    assert result["exit"] == 0
+    assert result["stdout"] == expected
+
+
 def test_hidden_link_target_cannot_replace_visible_information():
     python = capture({})
     python["stdout"] = "job-id"
