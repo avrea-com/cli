@@ -297,7 +297,12 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 				continue
 			}
 			if param.Nargs == -1 || position < param.Nargs {
-				return completionValues(param, incomplete), nil
+				values := completionValues(param, incomplete)
+				// A runnable group can accept free text or a subcommand, as feedback does.
+				if len(values) > 0 || !state.command.HasSubCommands() || state.positionals > 0 || slices.Contains(args, "--") {
+					return values, nil
+				}
+				break
 			}
 			position -= param.Nargs
 		}

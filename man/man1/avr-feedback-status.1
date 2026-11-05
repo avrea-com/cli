@@ -1,0 +1,23 @@
+.TH AVR\-FEEDBACK\-STATUS 1 "" "avr 0.7.0" "Avrea CLI"
+.SH NAME
+avr-feedback-status \- Read the delivery status of your feedback.
+.SH SYNOPSIS
+.B avr feedback status
+[OPTIONS] FEEDBACK_ID
+.SH DESCRIPTION
+Read the delivery status of your feedback.
+.PP
+.SH ARGUMENTS
+.TP
+\fIFEEDBACK_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter JSON with an embedded jq expression.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output comma-separated fields, * for all, or ? to list fields.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-feedback (1)

@@ -4048,6 +4048,208 @@
           }
         ],
         "subcommands": []
+      },
+      {
+        "name": "feedback",
+        "path": [
+          "avr",
+          "feedback"
+        ],
+        "full": "avr feedback",
+        "is_group": true,
+        "short_help": "Send feedback or report a bug.",
+        "help": "Send MESSAGE to the Avrea team. Sign in with avr auth login first.\n\nUse --bug for a bug report and --org SLUG_OR_ID to attribute it to an\norganization. Without --org, feedback is personal, regardless of your default\norganization. Contact details come from your account.\n\nThe idempotency key is printed before sending. If the response is lost or\nthe server asks you to retry, repeat the same message, kind and organization\nwith --idempotency-key KEY. For a key conflict, use the original content\nor omit --idempotency-key to create a new submission.\nAcceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\nUse -- before a message beginning with a dash or the literal word status.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr feedback [OPTIONS] [MESSAGE] COMMAND [ARGS]...",
+        "params": [
+          {
+            "name": "message",
+            "kind": "argument",
+            "opts": [
+              "message"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": null,
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "bug",
+            "kind": "option",
+            "opts": [
+              "--bug"
+            ],
+            "secondary_opts": [],
+            "type": "boolean",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": true,
+            "envvar": null,
+            "help": "Mark the feedback as a bug report.",
+            "hidden": false,
+            "show_default": false,
+            "default": false
+          },
+          {
+            "name": "idempotency_key",
+            "kind": "option",
+            "opts": [
+              "--idempotency-key"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Reuse a previous submission key (32 lowercase hex characters).",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "jq",
+            "kind": "option",
+            "opts": [
+              "--jq",
+              "-q"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Filter JSON with an embedded jq expression.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "json",
+            "kind": "option",
+            "opts": [
+              "--json"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Output comma-separated fields, * for all, or ? to list fields.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "org",
+            "kind": "option",
+            "opts": [
+              "--org"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Attribute feedback to this organization slug or ID.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "status",
+            "path": [
+              "avr",
+              "feedback",
+              "status"
+            ],
+            "full": "avr feedback status",
+            "is_group": false,
+            "short_help": "Read the delivery status of your feedback.",
+            "help": "Read the delivery status of your feedback.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr feedback status [OPTIONS] FEEDBACK_ID",
+            "params": [
+              {
+                "name": "feedback_id",
+                "kind": "argument",
+                "opts": [
+                  "feedback_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          }
+        ]
       }
     ],
     "Core Commands": [
