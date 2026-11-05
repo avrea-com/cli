@@ -2,6 +2,7 @@
 
 from avrea_cli.main import cli
 from typing import Any
+from typing import ClassVar
 import httpx
 import json
 import os
@@ -499,7 +500,18 @@ class TestVmCreateWait:
             lambda self, path, json=None, timeout=None: RD_CREATE_RESPONSE,
         )
 
-    _ARGS = ["vm", "create", "--name", "dev", "--os", "linux", "--size", "2-vcpu", "--remote-desktop", "--ephemeral"]
+    _ARGS: ClassVar[list[str]] = [
+        "vm",
+        "create",
+        "--name",
+        "dev",
+        "--os",
+        "linux",
+        "--size",
+        "2-vcpu",
+        "--remote-desktop",
+        "--ephemeral",
+    ]
 
     def test_wait_success_bakes_full_paste_ready_command(self, runner, monkeypatch):
         self._post(monkeypatch)

@@ -286,7 +286,7 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
             click.echo()
             _print_token(minted)
         sys.stdout.flush()
-    except (Exception, KeyboardInterrupt) as exc:
+    except (Exception, KeyboardInterrupt) as exc:  # noqa: BLE001 - Rendering errors must not expose the credential.
         # Minting committed. Neither jq diagnostics nor rendering exceptions
         # can be printed safely: either may contain the credential. Only a
         # message that is fixed text names the reason.
@@ -300,7 +300,7 @@ def token_create(ctx, name, repos, vms, allow_vm_create, vm_create_limit, ttl, o
             elif exports_shown:
                 delivered = " The export lines on stdout are complete and valid; only the token summary is missing."
             sys.stdout.flush()
-        except Exception, KeyboardInterrupt:
+        except Exception, KeyboardInterrupt:  # noqa: BLE001 - The fallback must also redact rendering errors.
             delivered = ""
         raise _create_error(message + delivered + _discard_hint(minted, org_id), exc) from None
 

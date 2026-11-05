@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 import json
 import pytest
+import subprocess
 
 _RUN = "awr-019e5a2e474e71c297e452279d4bcdea"
 _JOB = "awj-019e5a2e474e71c297e452279d4bcdea"
@@ -76,11 +77,13 @@ def test_job_ssh_pins_the_returned_host_key(
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_post", post)
     paths: list[Path] = []
 
-    def connect(argv: list[str]) -> SimpleNamespace:
+    def connect(argv: list[str], *, check: bool = False) -> SimpleNamespace:
         assert "StrictHostKeyChecking=yes" in argv
         path = Path(next(arg.split("=", 1)[1] for arg in argv if arg.startswith("UserKnownHostsFile=")))
         assert path.read_text() == "[127.0.0.1]:2222 ssh-ed25519 AAAA\n"
         paths.append(path)
+        if check and exit_code:
+            raise subprocess.CalledProcessError(exit_code, argv)
         return SimpleNamespace(returncode=exit_code)
 
     monkeypatch.setattr("avrea_cli.commands.job.subprocess.run", connect)

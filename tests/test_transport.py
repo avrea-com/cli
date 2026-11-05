@@ -173,6 +173,8 @@ def test_unknown_encoding_raises():
         {"Content-Encoding": "br", "Content-Type": "application/json"},
     )
     transport = CompressingTransport(inner=inner)
-    with httpx.Client(transport=transport) as client:
-        with pytest.raises(ValueError, match="Unsupported Content-Encoding"):
-            client.get("https://example.test/")
+    with (
+        httpx.Client(transport=transport) as client,
+        pytest.raises(ValueError, match="Unsupported Content-Encoding"),
+    ):
+        client.get("https://example.test/")

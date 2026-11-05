@@ -148,11 +148,7 @@ def filter_with_jq(data: Any, expr: str) -> str:
     """
     try:
         result = subprocess.run(
-            ["jq", "-r", expr],
-            input=json.dumps(data),
-            capture_output=True,
-            text=True,
-            timeout=10,
+            ["jq", "-r", expr], input=json.dumps(data), capture_output=True, text=True, timeout=10, check=False
         )
     except FileNotFoundError:
         raise FixedMessageError(
@@ -206,14 +202,14 @@ def emit_committed_record(
     try:
         emit_json_record(record, fields, schema, jq_expr, required_value=required_value)
         sys.stdout.flush()
-    except (Exception, KeyboardInterrupt) as exc:
+    except (Exception, KeyboardInterrupt) as exc:  # noqa: BLE001 - Rendering errors must not expose the credential.
         message = f"{committed}, but output failed"
         message += f": {exc.format_message()}" if isinstance(exc, FixedMessageError) else "."
         try:
             emit_json_record(record, fields, schema, None)
             sys.stdout.flush()
             message += f" stdout contains its unfiltered JSON; save the {save_what} rather than retrying."
-        except Exception, KeyboardInterrupt:
+        except Exception, KeyboardInterrupt:  # noqa: BLE001 - The fallback must also redact rendering errors.
             message += f" Nothing could be written to stdout; the {save_what} is lost."
         raise click.ClickException(message) from None
 

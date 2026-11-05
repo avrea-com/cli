@@ -485,7 +485,6 @@ def test_install_remove_uses_provider_lifecycle(runner, monkeypatch, platform, e
 
     def mock_delete(self, path, params=None):
         paths.append(("DELETE", path))
-        return None
 
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_get", mock_get)
     monkeypatch.setattr("avrea_cli.api_client.ApiClient.public_delete", mock_delete)

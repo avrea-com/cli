@@ -12,6 +12,7 @@ from avrea_cli.helpers import parse_since
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from typing import ClassVar
 from unittest.mock import MagicMock
 import click
 import httpx
@@ -229,7 +230,7 @@ def test_verified_org_slug_expired_token_gets_the_auth_hint_and_exit_4(capsys) -
 
 
 class TestMatchOrg:
-    ORGS = [
+    ORGS: ClassVar[list[dict[str, str]]] = [
         {"organization_id": "org-a", "slug": "alpha"},
         {"organization_id": "org-b", "slug": "beta"},
     ]

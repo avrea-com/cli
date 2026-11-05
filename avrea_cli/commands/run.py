@@ -441,7 +441,7 @@ def _print_run_jobs(
             started = j.get("started_at")
             if started:
                 try:
-                    started_dt = datetime.fromisoformat(started.replace("Z", "+00:00"))
+                    started_dt = datetime.fromisoformat(started)
                     elapsed = (datetime.now(UTC) - started_dt).total_seconds()
                     j_dur = f"running {format_duration(elapsed)}"
                 except ValueError, TypeError:
@@ -466,8 +466,8 @@ def _print_run_jobs(
                 s_dur = ""
                 if step.get("started_at") and step.get("completed_at"):
                     try:
-                        s_started = datetime.fromisoformat(step["started_at"].replace("Z", "+00:00"))
-                        s_completed = datetime.fromisoformat(step["completed_at"].replace("Z", "+00:00"))
+                        s_started = datetime.fromisoformat(step["started_at"])
+                        s_completed = datetime.fromisoformat(step["completed_at"])
                         s_dur = f" ({format_duration((s_completed - s_started).total_seconds())})"
                     except ValueError, TypeError:
                         pass

@@ -710,16 +710,14 @@ def _row_matches_dispatch(row: dict[str, Any], dispatch_time: datetime, platform
     if not isinstance(created_raw, str):
         return False
     try:
-        created = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+        created = datetime.fromisoformat(created_raw)
     except ValueError:
         return False
     # Allow a small skew (server clock vs ours) in case the dispatched row
     # is timestamped a hair before our local "now".
     if created < dispatch_time - timedelta(seconds=5):
         return False
-    if platform_workflow_id is not None and row.get("platform_workflow_id") != platform_workflow_id:
-        return False
-    return True
+    return not (platform_workflow_id is not None and row.get("platform_workflow_id") != platform_workflow_id)
 
 
 @workflow.command("run")

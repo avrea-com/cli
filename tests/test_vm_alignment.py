@@ -67,7 +67,7 @@ def test_create_generated_name_arch_and_ports(runner, api):
         ["--https-port", "3389"],
         ["--https-port", "5900"],
         ["--https-port", "3000"] * 2,
-        sum((["--https-port", str(port)] for port in range(3000, 3011)), []),
+        [arg for port in range(3000, 3011) for arg in ("--https-port", str(port))],
     ],
 )
 def test_invalid_https_ports_do_not_call_api(runner, api, args):

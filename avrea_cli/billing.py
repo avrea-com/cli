@@ -401,8 +401,8 @@ def payment_methods_add(ctx, org_id, number, exp_month, exp_year, cvc):
         try:
             body = exc.response.json()
             detail = body.get("error", {}).get("message", "")
-        except Exception:
-            pass
+        except ValueError, AttributeError:
+            detail = ""
         click.echo(f"Error: Stripe rejected the card details.{f' ({detail})' if detail else ''}", err=True)
         raise click.Abort() from None
     except httpx.RequestError as e:

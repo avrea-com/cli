@@ -301,7 +301,6 @@ class TestRunRerunPoll:
         def fake_poll(*a, **kw):
             nonlocal polled
             polled = True
-            return None
 
         monkeypatch.setattr(
             "avrea_cli.api_client.ApiClient.public_get",

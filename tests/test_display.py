@@ -126,9 +126,8 @@ class TestTerminalTitle:
         buf = StringIO()
         # StringIO doesn't implement isatty by default — fake it.
         buf.isatty = lambda: isatty  # type: ignore[method-assign]
-        with patch("avrea_cli.display.sys.stderr", buf):
-            with terminal_title("avr ▸ run abc", enabled=enabled) as t:
-                t.set("avr ▸ run abc ▸ 2/3 jobs done")
+        with patch("avrea_cli.display.sys.stderr", buf), terminal_title("avr ▸ run abc", enabled=enabled) as t:
+            t.set("avr ▸ run abc ▸ 2/3 jobs done")
         return buf
 
     def test_writes_set_and_clear_when_tty(self):

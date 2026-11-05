@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from typing import Final
+from typing import Self
 from urllib.parse import urlparse
 from urllib.parse import urlunparse
 import click
@@ -306,7 +307,7 @@ class terminal_title:
         sys.stderr.write(self._SET.format(title))
         sys.stderr.flush()
 
-    def __enter__(self) -> terminal_title:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:

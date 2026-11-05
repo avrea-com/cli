@@ -470,6 +470,7 @@ def test_persisted_helper_handles_store_and_erase_without_starting_cli(tmp_path,
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout == ""
@@ -642,9 +643,13 @@ def test_real_clone_and_later_fetch_use_fresh_tokens(
     # Changing the active CLI host must not send credentials to a different API.
     monkeypatch.setenv("AVR_HOST", "https://another-api.example.com")
     for _ in range(2):
-        fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
+        fetched = subprocess.run(
+            ["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15, check=False
+        )
         assert fetched.returncode == 0, fetched.stderr
-    pushed = subprocess.run(["git", "-C", str(destination), "push"], capture_output=True, text=True, timeout=15)
+    pushed = subprocess.run(
+        ["git", "-C", str(destination), "push"], capture_output=True, text=True, timeout=15, check=False
+    )
     assert pushed.returncode != 0
     assert "403" in pushed.stderr
     assert issued == [f"git-jwt-{i}" for i in range(1, 5)]
@@ -938,7 +943,9 @@ def test_native_git_does_not_follow_mirror_redirects(runner, monkeypatch, tmp_pa
     result = runner.invoke(cli, ["repo", "clone", "foo/faa", str(destination)])
     assert result.exit_code == 0, result.output
     controls["redirect"] = sink_url
-    fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
+    fetched = subprocess.run(
+        ["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15, check=False
+    )
     assert fetched.returncode != 0
     assert requests == []
 
@@ -978,7 +985,9 @@ def test_native_git_stops_without_askpass_on_helper_failure(runner, monkeypatch,
     monkeypatch.setenv("GIT_TERMINAL_PROMPT", "1")
     monkeypatch.setenv("GIT_ASKPASS", "must-not-run-askpass")
     monkeypatch.setenv("SSH_ASKPASS", "must-not-run-askpass")
-    fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
+    fetched = subprocess.run(
+        ["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15, check=False
+    )
     assert fetched.returncode != 0
     assert "told us to quit" in fetched.stderr
     assert "must-not-run-askpass" not in fetched.stderr
