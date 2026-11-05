@@ -13,22 +13,16 @@ PASSWORD = "fixtureOneTimePassword"
 RUNNING = vm.ROW | {"state": "RUNNING", "enable_remote_desktop": True, "endpoints": vm.ENDPOINTS}
 FAILED = vm.ROW | {"state": "FAILED", "state_reason": "fixture failure"}
 INITIAL = {
-    "start": {"data": {"vm": vm.ROW | {"enable_remote_desktop": True}, "password": PASSWORD}},
-    "stop": {"data": {"vm": vm.ROW | {"state": "STOPPING"}, "password": None}},
     "pause": {"data": vm.ROW | {"state": "PAUSING", "desired_state": "PAUSED"}},
     "resume": {"data": vm.ROW | {"state": "STARTING"}},
     "delete": {"data": {"customer_vm_id": VM, "state": "DELETING"}},
 }
 READY = {
-    "start": RUNNING,
-    "stop": vm.ROW | {"state": "STOPPED"},
     "pause": vm.ROW | {"state": "PAUSED", "snapshot": {"memory_included": True}},
     "resume": RUNNING,
     "delete": vm.ROW | {"state": "DELETED"},
 }
 MUTATE = {
-    "start": ("PATCH", PATH),
-    "stop": ("PATCH", PATH),
     "pause": ("POST", PATH + "/pause"),
     "resume": ("POST", PATH + "/resume"),
     "delete": ("DELETE", PATH),
@@ -92,8 +86,6 @@ def scenarios():
             )
             pending = vm.ROW | {
                 "state": {
-                    "start": "PENDING",
-                    "stop": "STOPPING",
                     "pause": "PAUSING",
                     "resume": "STARTING",
                     "delete": "DELETING",
@@ -172,34 +164,24 @@ def scenarios():
         json=True,
     )
     case(
-        "start waits for desktop endpoint",
-        "start",
+        "resume waits for desktop endpoint",
+        "resume",
         ["--wait", "--wait-timeout", "0", "--json"],
         responses={
-            MUTATE["start"]: (200, INITIAL["start"]),
+            MUTATE["resume"]: (200, INITIAL["resume"]),
             GET: (200, {"data": RUNNING | {"endpoints": {"ssh": vm.ENDPOINTS["ssh"]}}}),
         },
         exit=1,
         json=True,
     )
     case(
-        "start empty password JSON",
-        "start",
-        ["--wait", "--wait-timeout", "0", "--json"],
-        responses={MUTATE["start"]: (200, {"data": {"vm": vm.ROW, "password": ""}}), GET: (200, {"data": RUNNING})},
-        json=True,
-    )
-    case(
-        "start quoted password",
-        "start",
-        responses={MUTATE["start"]: (200, {"data": {"vm": RUNNING, "password": "a'b c!"}})},
-        presentation=True,
-    )
-    case(
-        "start progress changes",
-        "start",
+        "resume progress changes",
+        "resume",
         ["--wait", "--wait-timeout", "10", "--json"],
-        responses={MUTATE["start"]: (200, INITIAL["start"]), GET: [(200, {"data": vm.ROW}), (200, {"data": RUNNING})]},
+        responses={
+            MUTATE["resume"]: (200, INITIAL["resume"]),
+            GET: [(200, {"data": vm.ROW}), (200, {"data": RUNNING})],
+        },
         json=True,
     )
     case(
@@ -255,10 +237,10 @@ def scenarios():
     cases[-1]["args"][cases[-1]["args"].index("--yes")] = "-y"
     if sys.platform != "win32":
         for name in [
-            "start human",
-            "start wait ready False",
-            "start wait failed False",
-            "stop wait ready False",
+            "resume human",
+            "resume wait ready False",
+            "resume wait failed False",
+            "pause wait ready False",
             "pause memory",
             "resume discard memory",
             "delete confirm",
@@ -269,6 +251,17 @@ def scenarios():
             item["tty"] = item["merge_terminal"] = True
             item["env"] |= {"NO_COLOR": "", "TERM": "xterm-256color"}
             cases.append(item)
+    for removed in ["start", "stop"]:
+        cases.append(
+            {
+                "name": "vm removed " + removed,
+                "args": ["vm", removed, VM],
+                "env": {},
+                "responses": {},
+                "exit": 2,
+                "error_terms": ["No such command", removed],
+            }
+        )
     return cases
 
 

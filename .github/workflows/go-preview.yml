@@ -66,6 +66,8 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
       - run: uv run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr.exe
         if: matrix.shard == 0
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_device_login --go build/go/avr.exe
+        if: matrix.shard == 0
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_inspection --go build/go/avr.exe
         if: matrix.shard == 1
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr.exe
@@ -81,6 +83,8 @@ jobs:
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_job_watch --go build/go/avr.exe
         if: matrix.shard == 2
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_job_metrics --go build/go/avr.exe
+        if: matrix.shard == 3
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_metrics_stream --go build/go/avr.exe
         if: matrix.shard == 3
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_run_diagnose --go build/go/avr.exe
         if: matrix.shard == 0
@@ -144,6 +148,8 @@ jobs:
         if: matrix.shard == 0
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_create --go build/go/avr.exe
         if: matrix.shard == 1
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_release --go build/go/avr.exe
+        if: matrix.shard == 2
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh_config --go build/go/avr.exe
         if: matrix.shard == 2
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh --go build/go/avr.exe

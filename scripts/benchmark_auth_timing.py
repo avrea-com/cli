@@ -23,7 +23,7 @@ def measured_run(binary, instrumented):
     env = dict(os.environ)
     env["AVR_DEBUG"] = "timing" if instrumented else ""
     started = time.perf_counter()
-    result = subprocess.run([str(binary), *ARGS], env=env, capture_output=True, timeout=45)
+    result = subprocess.run([str(binary), *ARGS], check=False, env=env, capture_output=True, timeout=45)
     wall_ms = (time.perf_counter() - started) * 1000
     if result.returncode:
         raise RuntimeError(f"auth status failed with exit {result.returncode}; account output withheld")

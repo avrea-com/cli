@@ -15,6 +15,8 @@ import (
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/google/uuid"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var nativeReceiptID = lazyRegexp(`^wap-[0-9a-f]{32}$`)
@@ -429,4 +431,15 @@ func (v nativeInvocationKey) Set(value string) error {
 	}
 	*v.target = strings.ReplaceAll(id.String(), "-", "")
 	return nil
+}
+
+func invocationKeyFlag(c *cobra.Command, key *string, help string) {
+	c.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		var invalid *pflag.InvalidValueError
+		if errors.As(err, &invalid) && invalid.GetFlag().Name == "idempotency-key" {
+			return usageError(cmd, "Invalid value for '--idempotency-key': "+pythonQuote(output.CellText(invalid.GetValue()))+" is not a valid UUID.")
+		}
+		return err
+	})
+	c.Flags().Var(nativeInvocationKey{key}, "idempotency-key", help)
 }

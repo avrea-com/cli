@@ -170,7 +170,13 @@ def scenarios():
     for case in cases:
         case.setdefault("env", env)
     return (
-        cases + run_scenarios() + watch_scenarios() + view_scenarios() + terminal_scenarios() + presentation_scenarios()
+        cases
+        + job_reference_scenarios()
+        + run_scenarios()
+        + watch_scenarios()
+        + view_scenarios()
+        + terminal_scenarios()
+        + presentation_scenarios()
     )
 
 
@@ -194,6 +200,94 @@ RUN_DATA = {
     "repository": {"id": REPO, "full_name": "acme/web"},
     "triggering_actor": {"platform_id": 42, "platform_login": "fixture"},
 }
+
+
+def job_reference_scenarios():
+    from scripts import compare_jobs as job_cases  # noqa: PLC0415 - mutually shared fixture data
+
+    env = {"AVR_TOKEN": harness.TOKEN, "AVR_ORG": ORG}
+    old = "run-019a0000000070008000000000000009"
+    url = "https://github.com/acme/web/actions/runs/42/job/99"
+    newest = RUN_DATA | {"jobs": [{"job_id": JOB, "job_name": "new", "platform_job_id": 100}]}
+    earlier = RUN_DATA | {"run_id": old, "jobs": [{"job_id": JOB, "job_name": "old", "platform_job_id": "99"}]}
+    attempts = (
+        "GET",
+        f"/orgs/{ORG}/workflow-runs?platform_run_id=42&limit=1000&order=created_at.desc&include=workflow",
+    )
+    newest_route = ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}?include=jobs&include=workflow")
+    old_route = ("GET", f"/orgs/{ORG}/workflow-runs/{old}?include=jobs&include=workflow")
+    routes = {
+        attempts: (200, {"data": [{"run_id": RUN}, {"run_id": old}]}),
+        newest_route: (200, {"data": newest}),
+        old_route: (200, {"data": earlier}),
+    }
+    cases = []
+
+    def add(name, args, responses=routes, **kw):
+        cases.append({"name": "job URL " + name, "args": args, "responses": responses, "env": env, **kw})
+
+    for suffix in ("", "#step:1:2", "/?check_suite_focus=true"):
+        add("older attempt " + suffix, ["run", "view", url + suffix, "--json", "*"], json=True)
+    add(
+        "newest attempt",
+        ["run", "view", url, "--json", "*"],
+        routes | {newest_route: (200, {"data": earlier | {"run_id": RUN}})},
+        json=True,
+    )
+    for label, records in [("no attempts", []), ("missing run IDs", [{"other": True}])]:
+        add(label, ["run", "view", url], routes | {attempts: (200, {"data": records})}, exit=1)
+    add("job absent", ["run", "view", url], routes | {old_route: (200, {"data": newest | {"run_id": old}})}, exit=1)
+    add(
+        "no job data",
+        ["run", "view", url],
+        routes | {newest_route: (200, {"data": RUN_DATA}), old_route: (200, {"data": RUN_DATA | {"run_id": old}})},
+        exit=1,
+    )
+    add(
+        "wrong repository",
+        ["run", "view", url],
+        routes | {old_route: (200, {"data": earlier | {"repository": {"full_name": "other/project"}}})},
+        exit=1,
+    )
+    add("lookup denied", ["run", "view", url], routes | {newest_route: (403, {"detail": "denied"})}, exit=1)
+    for command in ("cancel", "rerun"):
+        add("reject mutation " + command, ["run", command, url, "--yes"], {}, exit=1)
+    for value in (
+        url + "#anything",
+        url + "#step:x:1",
+        url.replace("/job/99", "/job/0"),
+        url.replace("github.com", "github.com.evil.test"),
+        url.replace("/job/99", "/attempts/1") + "#step:1:2",
+    ):
+        add("invalid " + value, ["run", "view", value], {}, exit=1)
+    selected = job_cases.JOB_DATA | {"platform_job_id": 99}
+    sibling = job_cases.JOB_DATA | {"job_id": job_cases.JOB2, "platform_job_id": 100, "job_name": "Unlinked job"}
+    log_routes = routes | {
+        ("GET", attempts[1].removesuffix("&include=workflow")): routes[attempts],
+        ("GET", newest_route[1].removesuffix("&include=workflow")): routes[newest_route],
+        ("GET", old_route[1].removesuffix("&include=workflow")): (
+            200,
+            {"data": earlier | {"jobs": [selected, sibling]}},
+        ),
+        job_cases.LOGS: job_cases.LOG_RESPONSE,
+        job_cases.LOG_JOB: (200, {"data": selected}),
+    }
+    for flags in ([], ["--failed"], ["--follow"], ["--job", "absent"]):
+        chosen_routes = log_routes
+        if "--follow" in flags:
+            end = {"line_number": 4, "step_name": "Cleanup", "content": "Cleaning up orphan processes", "level": "info"}
+            chosen_routes = log_routes | {
+                job_cases.LOGS: (200, {"results": job_cases.LINES + [end], "next_cursor": 4}),
+                ("GET", f"/orgs/{ORG}/jobs/{JOB}"): (200, {"data": selected}),
+            }
+        add("logs restrict linked job " + str(flags), ["run", "logs", url + "#step:1:2", *flags], chosen_routes)
+    add(
+        "watch selected attempt",
+        ["run", "watch", url, "--ndjson"],
+        log_routes,
+        events=["job_completed", "job_completed", "run_completed"],
+    )
+    return cases
 
 
 def run_scenarios():
@@ -615,7 +709,7 @@ def normalized_events(text):
     for line in text.splitlines():
         event = json.loads(line, parse_float=decimal.Decimal)
         timestamp = event.pop("timestamp")
-        parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(timestamp)
         if parsed.tzinfo is None:
             raise ValueError("event timestamp has no timezone")
         events.append(event)

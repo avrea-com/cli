@@ -100,7 +100,7 @@ def scenarios():
             )
     case("global before shorthand", args=["--no-color", "tests", JOB], presentation=True)
     case("shorthand help", args=["tests", JOB, "--help"], env={}, responses={}, presentation=True)
-    case("shorthand invalid ID", args=["tests", "job-bad"], responses={}, exit=2, error_terms=["Avrea job ID"])
+    case("shorthand invalid ID", args=["tests", "job-bad"], responses={}, exit=2, error_terms=["job-", "awj-"])
     case("unknown verb", args=["tests", "history"], responses={}, exit=2, error_terms=["history"])
 
     for status, reporting in [
@@ -231,8 +231,8 @@ def scenarios():
         )
     for limit in ("0", "1001"):
         case("invalid limit " + limit, ["--limit", limit], responses={}, exit=2, error_terms=["--limit"])
-    for job in ("123", "job-" + "A" * 32, "awj-short"):
-        case("invalid ID " + job, args=["tests", "list", job], responses={}, exit=2, error_terms=["Avrea job ID"])
+    for job in ("not-a-reference", "job-" + "A" * 32, "awj-short"):
+        case("invalid ID " + job, args=["tests", "list", job], responses={}, exit=2, error_terms=["job-", "awj-"])
     if sys.platform != "win32":
         for name in ("human", "control characters", "duplicate names", "empty available complete", "row budget"):
             item = deepcopy(next(c for c in cases if c["name"] == "tests " + name))
@@ -240,6 +240,108 @@ def scenarios():
             item["tty"] = item["merge_terminal"] = True
             item["env"] |= {"NO_COLOR": "", "TERM": "xterm-256color"}
             cases.append(item)
+    return cases + release_scenarios()
+
+
+def release_scenarios():
+    run = inspection.RUN
+    jobs = [{"job_id": JOB, "job_name": "Build tests", "platform_job_id": 99}]
+    record = inspection.RUN_DATA | {"jobs": jobs}
+    run_route = ("GET", f"/orgs/{ORG}/workflow-runs/{run}?include=jobs")
+    base = responses() | {run_route: (200, {"data": record})}
+    cases = []
+
+    def add(name, args, routes=base, **kw):
+        cases.append({"name": "tests release " + name, "args": ["tests", *args], "env": ENV, "responses": routes, **kw})
+
+    for prefix in ([], ["list"]):
+        add("single run " + str(prefix), [*prefix, run], presentation=True)
+        add(
+            "platform run " + str(prefix),
+            [*prefix, "42", "--json", "*"],
+            responses()
+            | {("GET", f"/orgs/{ORG}/workflow-runs/by-platform-id/42?include=jobs"): (200, {"data": record})},
+            json=True,
+        )
+    add("job name substring", [run, "--job", "TEST", "--json", "*"], json=True)
+    for name, selected in [
+        ("ambiguous", jobs + [{"job_id": NATIVE, "job_name": "Lint tests"}]),
+        ("empty", []),
+        ("invalid", [None]),
+        ("not array", {}),
+        ("missing ID", [{"job_name": "Build"}]),
+    ]:
+        add(
+            name,
+            [run],
+            responses() | {run_route: (200, {"data": record | {"jobs": selected}})},
+            exit=1,
+            **({"error_terms": ["invalid"]} if name == "not array" else {}),
+        )
+    add("no job match", [run, "--job", "missing"], exit=1)
+    add("blank job name", [run, "--job", " "], {}, exit=2)
+    add("job flag with ID", [JOB, "--job", "Build"], {}, exit=2)
+    for option in ("--test", "--suite", "--class"):
+        add("empty " + option, [JOB, option, ""], {}, exit=2)
+    add("invalid status", [JOB, "--status", "wrong"], {}, exit=2)
+    for filters, flags in [
+        ({"name": "test_payment"}, ["--test", "test_payment"]),
+        (
+            {"name": "literal.*%[x]", "suite": "支付", "class_name": "Class", "outcome": "failed"},
+            ["--test", "literal.*%[x]", "--suite", "支付", "--class", "Class", "--status", "failed"],
+        ),
+    ]:
+        query = urlencode({"limit": 100, **{key: "eq." + value for key, value in filters.items()}})
+        route = ("GET", f"/orgs/{ORG}/repos/{REPO}/jobs/{JOB}/tests?{query}")
+        routes = {metadata(): responses()[metadata()], route: (200, page(filters=filters))}
+        add("filtered JSON " + str(filters), [JOB, *flags, "--json", "*"], routes, json=True)
+        add("filtered human " + str(filters), [JOB, *flags], routes, presentation=True)
+        for label, echo in [("missing", {}), ("null", None), ("array", []), ("different", filters | {"name": "other"})]:
+            add(
+                "filter echo " + label + str(filters),
+                [JOB, *flags],
+                routes | {route: (200, page(filters=echo))},
+                exit=1,
+            )
+        add(
+            "filter cursor mismatch " + str(filters),
+            [JOB, *flags],
+            routes | {route: (400, {"detail": "cursor belongs to different filters"})},
+            exit=1,
+        )
+        add(
+            "filtered empty " + str(filters),
+            [JOB, *flags],
+            routes | {route: (200, page([], filters=filters))},
+            presentation=True,
+        )
+        add(
+            "filtered continuation " + str(filters),
+            [JOB, *flags, "--limit", "1"],
+            {
+                metadata(): responses()[metadata()],
+                ("GET", route[1].replace("limit=100", "limit=1")): (200, page(cursor="next cursor", filters=filters)),
+            },
+            presentation=True,
+        )
+    add(
+        "nullable filter echo",
+        [JOB, "--json", "*"],
+        responses(page(filters={"name": None, "outcome": None})),
+        json=True,
+    )
+    if sys.platform != "win32":
+        for original in [cases[0], next(c for c in cases if "filtered human" in c["name"])]:
+            cases.append(
+                original
+                | {
+                    "name": original["name"] + " terminal",
+                    "tty": True,
+                    "merge_terminal": True,
+                    "presentation": True,
+                    "env": ENV | {"NO_COLOR": "", "TERM": "xterm-256color"},
+                }
+            )
     return cases
 
 

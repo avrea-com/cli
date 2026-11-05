@@ -7,9 +7,38 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
+
+func parseVMHTTPSPorts(values []string) ([]int, error) {
+	ports := make([]int, 0, len(values))
+	for _, value := range values {
+		port, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return nil, &ExitError{2, "Error: Invalid value for '--https-port': " + pythonQuote(value) + " is not a valid integer range."}
+		}
+		if port < 1 || port > 65535 {
+			return nil, &ExitError{2, fmt.Sprintf("Error: Invalid value for '--https-port': %d is not in the range 1<=x<=65535.", port)}
+		}
+		ports = append(ports, port)
+	}
+	if len(ports) > 10 {
+		return nil, &ExitError{2, "Error: At most ten --https-port values are allowed."}
+	}
+	seen := map[int]bool{}
+	for _, port := range ports {
+		if seen[port] {
+			return nil, &ExitError{2, "Error: --https-port values must be unique."}
+		}
+		seen[port] = true
+	}
+	if seen[22] || seen[3389] || seen[5900] {
+		return nil, &ExitError{2, "Error: Ports 22, 3389, and 5900 are reserved for SSH and remote desktop."}
+	}
+	return ports, nil
+}
 
 func parseVMTTL(value string) (int, error) {
 	text := strings.ToLower(strings.TrimSpace(value))

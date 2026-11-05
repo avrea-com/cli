@@ -246,7 +246,7 @@ func NewAuth(deps Dependencies) *cobra.Command {
 	cmd.SetIn(d.In)
 	cmd.SetOut(d.Out)
 	cmd.SetErr(d.Err)
-	cmd.AddCommand(NewLogin(d), NewLogout(d), newStatus(d), newSwitch(d), newGitCredential(d))
+	cmd.AddCommand(NewLogin(d), NewDeviceLogin(d), NewLogout(d), newStatus(d), newSwitch(d), newGitCredential(d))
 	return cmd
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/avrea-com/cli/commands"
 )
 
-var version = "0.5.0-go-preview"
+var version = "0.6.0-go-preview"
 var commit = "dev"
 
 func main() {

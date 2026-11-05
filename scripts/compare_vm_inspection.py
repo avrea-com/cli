@@ -21,7 +21,7 @@ ROW = {
     "disk_gb": 20,
     "enable_remote_desktop": False,
     "ssh_public_keys": ["ssh-ed25519 AAAA fixture@example.test"],
-    "desired_state": "RUNNING",
+    "architecture": "x86_64",
     "state": "PENDING",
     "state_reason": None,
     "endpoints": None,
@@ -52,7 +52,7 @@ USAGE = {
     "total_memory_mb_seconds": 7372800,
     "vms": [USAGE_ROW],
 }
-LIST = ("GET", BASE + "?limit=50")
+LIST = ("GET", BASE + "?limit=50&scope=all")
 SHOW = ("GET", BASE + "/" + VM)
 USAGE_GET = ("GET", BASE + "/usage")
 RESPONSES = {
@@ -114,25 +114,25 @@ def scenarios():
     case(
         "list nullable cells",
         ["list"],
-        responses={LIST: (200, {"data": [ROW | {"display_name": None, "desired_state": None}, {}]})},
+        responses={LIST: (200, {"data": [ROW | {"display_name": None, "architecture": None}, {}]})},
         presentation=True,
     )
     case(
         "list state and cursor",
         ["list", "--state", "running", "--cursor", "opaque /?+", "-L", "1"],
         responses={
-            ("GET", BASE + "?" + urlencode({"limit": 1, "state": "running", "cursor": "opaque /?+"})): (
+            ("GET", BASE + "?" + urlencode({"limit": 1, "scope": "all", "state": "RUNNING", "cursor": "opaque /?+"})): (
                 200,
                 {"data": [ROW]},
             )
         },
         presentation=True,
     )
-    case("list empty state", ["list", "--state", ""], presentation=True)
+    case("list empty state", ["list", "--state", ""], exit=2, error_terms=["--state"])
     case(
         "list maximum",
         ["list", "--limit", "100"],
-        responses={("GET", BASE + "?limit=100"): (200, {"data": [ROW]})},
+        responses={("GET", BASE + "?limit=100&scope=all"): (200, {"data": [ROW]})},
         presentation=True,
     )
     for limit in ["0", "101"]:

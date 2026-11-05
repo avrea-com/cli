@@ -87,24 +87,18 @@ def scenarios():
         case("size " + size, ["--size", size], presentation=True)
     for flag, value in [
         ("--os", "Linux"),
-        ("--os-version", "invalid"),
-        ("--size", "3-vcpu"),
         ("--from-spawn-script", "cursor"),
     ]:
         case("invalid choice " + flag, [flag, value], env={}, responses={}, exit=2, error_terms=[flag])
-    for flag in ["--name", "--os", "--size"]:
+    for flag in ["--os", "--size"]:
         flags = FLAGS.copy()
         i = flags.index(flag)
         del flags[i : i + 2]
         case("missing " + flag, args=["vm", "create", *flags], env={}, responses={}, exit=2, error_terms=[flag])
-    case(
-        "missing ephemeral",
-        args=["vm", "create", *FLAGS[:-1]],
-        env={},
-        responses={},
-        exit=2,
-        error_terms=["--ephemeral"],
-    )
+    case("without ephemeral", args=["vm", "create", *FLAGS[:-1]], presentation=True)
+    case("generated name", args=["vm", "create", "--os", "linux", "--size", "4-vcpu"], presentation=True)
+    case("server validates new version", ["--os-version", "ubuntu-future"], presentation=True)
+    case("server validates new size", ["--size", "64-vcpu"], presentation=True)
     for name, flags, terms in [
         ("ref without repo", ["--ref", "main"], ["--ref requires --repo"]),
         ("depth without repo", ["--fetch-depth", "0"], ["--fetch-depth requires --repo"]),
@@ -196,6 +190,31 @@ def scenarios():
         },
         presentation=True,
     )
+    for name, response in [
+        (
+            "changed",
+            (
+                101,
+                [
+                    {"frame": {"type": "changed", "signal": "metrics"}},
+                    {"frame": {"type": "changed", "signal": "status"}},
+                ],
+            ),
+        ),
+        ("error fallback", (101, [{"frame": {"type": "error", "signal": "status", "message": "unavailable"}}])),
+        ("invalid fallback", (101, [{"raw": "{"}])),
+        ("refused fallback", (403, {"detail": "unavailable"})),
+    ]:
+        case(
+            "status notification " + name,
+            ["--wait", "--wait-timeout", "10"],
+            responses={
+                POST: (200, {"data": DATA}),
+                vm.SHOW: [(200, {"data": vm.ROW}), (200, {"data": lifecycle.RUNNING})],
+                ("GET", vm.SHOW[1] + "/observability/stream?signals=status"): response,
+            },
+            presentation=True,
+        )
     for password in [None, "", "fixture pass'word"]:
         case(
             "password " + repr(password),

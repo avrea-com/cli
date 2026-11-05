@@ -140,9 +140,8 @@ def compare(scenario, python, go):
         "--stdout" in scenario["args"]
         and "--format" in scenario["args"]
         and scenario["args"][scenario["args"].index("--format") + 1] == "markdown"
-    ):
-        if python["stdout"].replace("\r\n", "\n") != go["stdout"].replace("\r\n", "\n"):
-            differences.append("Markdown stdout content")
+    ) and python["stdout"].replace("\r\n", "\n") != go["stdout"].replace("\r\n", "\n"):
+        differences.append("Markdown stdout content")
     return differences
 
 

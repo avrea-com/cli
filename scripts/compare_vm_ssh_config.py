@@ -44,7 +44,9 @@ def scenarios():
     case("identity", ["-i", "FIXTURE_HOME/.ssh/id_ed25519"], presentation=True)
     case("identity spaced", ["--identity", "path with spaces/key"], presentation=True)
     case("alias", ["--host-alias", "dev_box.example-1"], presentation=True)
-    case("empty alias default", ["--host-alias", ""], presentation=True)
+    case(
+        "empty alias rejected", ["--host-alias", ""], responses={}, exit=2, error_terms=["--host-alias", "is not valid"]
+    )
     case("custom pins", ["--known-hosts-file", "custom/nested/known_hosts"], presentation=True)
     case("custom pins home", ["--known-hosts-file", "~/custom/known_hosts"], presentation=True)
     case(

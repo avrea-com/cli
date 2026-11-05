@@ -136,7 +136,9 @@ def scenarios():
                                 row["ci_provider"] = provider
             case["name"] = f"GitLab {provider} {name}"
             cases.append(case)
-    for command, include, feature in [("rerun", "", "Reruns"), ("diagnose", "?include=workflow", "Diagnostics")]:
+    # Reruns became available in 0.6.0; their mutation/recovery matrix lives in
+    # compare_run_control. Diagnostics remain unavailable for native CI.
+    for command, include, feature in [("diagnose", "?include=workflow", "Diagnostics")]:
         rid = native(inspection.RUN)
         cases.append(
             {

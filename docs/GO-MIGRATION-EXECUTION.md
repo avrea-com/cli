@@ -1,10 +1,9 @@
 # Go migration execution record
 
-Status (2026-10-30): the public implementation is rebased onto origin/main,
-updated for newly merged behavior, and passes refreshed local parity validation.
-The full public tree is native Go and reused by the admin preview.
-See the final validation and next-phase sections at the end for evidence and
-the boundaries of this completion. Earlier sections are chronological checkpoints.
+Status (2026-11-05): catch-up to the final Python release, v0.6.0, is in progress.
+The public tree is native Go and reused by the admin preview. See the release
+checkpoints at the end for current evidence and remaining gates. Earlier
+sections describe historical milestones, not completion of the 0.6.0 scope.
 
 The target is the full public Python avr command surface, reused by avr-admin.
 Repo-intel remains excluded. No Python fallback counts as a native implementation.
@@ -1725,3 +1724,144 @@ Final refresh validation: 7,668 public paired fixture cases, 76 native cases
 through the real admin binary, and 116 Python tests passed. Race/lint/schema/
 command/vulnerability checks and Linux/Windows cross-builds passed. Validation
 did not dispatch workflows in staging or production; no release was created.
+
+## Final Python release catch-up — 2026-11-05 (in progress)
+
+Target: Python v0.6.0, `c9e1e4b6a11db522d142ec0dfaeb8119917ec41c`.
+The Go branch was rebased onto that release. The differential oracle is now
+pinned to its exact commit. The previous public baseline was `df6d102`.
+
+Release-delta completion gates (not yet complete):
+
+- Device login: link/code/QR presentation, browser selection, polling, expiry,
+  errors, credential persistence and cancellation.
+- Native reruns: whole workflow, failed/cancelled jobs and selected jobs;
+  capability checks, exact idempotent replay, receipts and rejection details.
+- Run references: GitHub job URLs and step fragments, attempt lookup, logs
+  restricted to the linked job, whole-run mutation guards.
+- Tests: run/job shorthand, unambiguous job selection, literal filters,
+  confirmed filter echoes, pagination/cursor safety and output.
+- VM API alignment: capabilities, fork, HTTPS label rotation, pause/resume,
+  removal of start/stop, updated fields/options and state following.
+- Streaming job and VM metrics, shared stream decoding and display changes.
+- Audit every other changed Python source for observable changes (including
+  dependency-driven formatting), refresh help/completion/command metadata,
+  and validate all existing and added paired fixtures against v0.6.0.
+- Validate the shared admin composition, native three-platform CI/packages,
+  and CodeQL review findings. Update PR description to final scope and mark
+  PR #75 ready only after all gates pass. No release or merge is requested.
+
+Production/staging writes are excluded from validation. Use loopback fixtures
+for mutations. Repo-intel and Linux ARM64 remain outside scope.
+
+### Release 0.6.0 device login checkpoint (2026-11-05, local)
+
+Added `auth device-login --no-qr` to the shared public/admin command tree.
+Discovery and token requests use a separate, unauthenticated HTTP client,
+refuse redirects, validate the configured API origin and console link origins,
+and hide response bodies and transport secrets in errors. Polling observes the
+server interval, persistent `slow_down`, transient backoff, `Retry-After`,
+cancellation, and the original request lifetime. An eligible final poll may
+finish after expiry. A successful credential is saved before optional profile
+and organization lookups. Browser and device login share that completion path
+and the new safe credential-save failure diagnostic.
+
+Terminal QR output uses the latest upstream revision of the small, dependency-free
+MIT encoder [`skip2/go-qrcode`](https://github.com/skip2/go-qrcode),
+`v0.0.0-20200617195104-da1b6568686e`; the revision date is old because upstream
+has no newer version, not because we pinned an older release. Only its bitmap
+encoder is used. The renderer preserves Python's white-on-black compact cells,
+quiet zone, final half-row, and width/color/terminal suppression. Encoder mask
+and error-correction choices may produce different valid symbols. This is an
+intentional presentation difference, not a changed sign-in destination.
+
+`scripts/compare_device_login.py` is included in `make go-parity` and the
+three-platform preview workflow. It verifies every HTTP request, saved
+credential, visible message, terminal style and applicable QR visibility rule.
+Pillow 13.0.0 and ZXing-C++ 3.1.1 are test-only dependencies: the comparator
+independently decodes captured terminal symbols and requires their payload to
+equal the printed link. Neither dependency ships with the Go binary. Regression
+tests reject a different valid QR destination, wrong colors, broken quiet zones,
+and damaged row widths.
+
+Current public validation: 60 paired device cases and 67 existing auth cases
+passed against the pinned v0.6.0 oracle; 20 repeated interruption comparisons
+passed; five QR-comparator regression tests passed; full client/command race
+tests, Go lint, Python fixture lint/type checks, workflow lint, and notice
+generation passed. The admin preview's race tests and build also passed.
+The same 60 device cases passed through `avr-admin` against the public v0.6.0
+Python commands composed with the pinned `AdminCliConfig`; the report records
+both the admin configuration baseline and its content hash.
+Reports are under ignored `build/go/release060-*` and
+`build/go/device-login-parity.json`.
+
+The refreshed 154-node Python command inventory currently identifies the
+remaining VM command/flag gaps: capabilities, fork, metrics, HTTPS label rotation,
+create architecture/idempotency/HTTPS ports, list scope/sandbox, and update
+HTTPS ports. Go's removed Python start/stop commands must also be removed.
+Behavior changes to existing VM commands and job metrics still require their
+own complete implementation and differential validation; inventory coverage
+alone is not completion evidence. This checkpoint does not authorize readying
+the PR before the remaining release gates pass.
+
+### Release 0.6.0 command and streaming checkpoint (2026-11-05, local)
+
+The command catch-up above is now implemented against the final Python release,
+`c9e1e4b6a11db522d142ec0dfaeb8119917ec41c`. The inventory and help metadata
+cover all 154 public command/group nodes. The default development version is
+`0.6.0-go-preview`; no release or installer cutover is included.
+
+- Native reruns support whole, failed and selected jobs, capability checks,
+  stable idempotency keys, transport retry with the same request, and validated
+  receipts/recovery output. Receipt number coercion follows Python while
+  bounding numeric expansion for untrusted responses.
+- Run references accept GitHub job URLs and step fragments, select the matching
+  attempt, restrict logs to that job and reject job URLs for whole-run mutations.
+  Tests accept run/job references, job selection and literal filters, and verify
+  the API's filter echo and pagination snapshot before emitting results.
+- VMs expose capabilities, fork, metrics and HTTPS label rotation, with the new
+  create/list/update flags and fields. Obsolete start/stop commands are removed.
+  Create waits can use status notifications and permanently fall back to bounded
+  polling when the stream is unavailable. Fork waits follow the returned VM ID.
+- Job and VM metrics share a WebSocket transport and snapshot reducer. They
+  handle source selection, window/bundle/error/complete frames, bounded retries,
+  cancellation and NDJSON output. Human job metrics retain one-second log
+  refreshes and drain final logs. JSON metrics make no incidental log requests.
+
+The transport uses `github.com/coder/websocket v1.8.15` (ISC, no transitive
+dependencies). It preserves API host prefixes and credentials, refuses
+redirects, disables cookies/proxies, bounds frames to 16 MiB and closes readers
+on cancellation. Idle display ticks do not cancel the underlying WebSocket read.
+Static VM metrics remain behind a small handwritten client response boundary
+because the pinned OpenAPI subset has no corresponding response type.
+
+The remaining changed Python sources were audited for observable changes.
+Billing's narrowed exception handling is covered by existing billing fixtures;
+token/display/type annotations and subprocess/string/ISO parsing cleanups do
+not add further commands. Inventory coverage alone was not used as completion
+evidence. Follow-up comparisons corrected narrow help summaries, normalized VM
+state completions and explicit empty SSH host aliases.
+
+Local validation:
+
+- Ran all 59 public differential suites. Corrected failures were rerun by suite;
+  final help passed 422 cases and an additional 22-case job-URL matrix passed.
+  Reports retain the earlier failures as well as the passing follow-ups under
+  ignored `build/go/release060-*`; they are not represented as one fresh CI run.
+- Public and admin metrics each passed 118 cases. Eight admin release suites
+  passed 936 cases, in addition to the 60 device-login cases recorded above.
+  Admin comparison composes pinned public Python source with the pinned admin
+  configuration and uses `avr-admin` for Python usage text. Reports record both
+  the configuration commit and its content hash.
+- Full Go race tests, Go lint, vulnerability scan, schema generation, command
+  audit, help metadata and notice generation passed. Python tests passed 2,208
+  cases with 29 skips; native process/docs/shell checks passed 32 with one local
+  Fish-shell skip. Linux CI retains the Fish check. Repository Python lint,
+  formatting and type checks pass with the rebased rule set.
+- Manual local review was used. No source was sent to CodeRabbit. Existing
+  unresolved human PR review threads remain visible and are not claimed resolved
+  by this release catch-up. Fresh three-platform CI and artifact validation are
+  still required on the published head before readying the PR for review.
+
+All mutation comparisons used loopback fixtures. No staging/production writes,
+release, merge, repo-intel changes or Linux ARM64 build were performed.

@@ -4,63 +4,59 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/coder/websocket"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/avrea-com/cli/config"
 )
 
-func TestMetricsWatchCadenceTailAndRawCursor(t *testing.T) {
+func TestMetricsWatchTailAndRawCursor(t *testing.T) {
 	d, out, stderr := testDeps(t)
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	now := time.Unix(100, 0)
-	d.Now = func() time.Time { return now }
-	waits, metricsCalls, logCalls := 0, 0, 0
-	d.Wait = func(ctx context.Context, interval time.Duration) error {
-		if interval != time.Second {
-			t.Error(interval)
-		}
-		now = now.Add(interval)
-		waits++
-		if waits == 7 {
-			cancel()
-		}
-		return ctx.Err()
-	}
+	var streamCalls, logCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var response any
-		switch {
-		case strings.HasSuffix(r.URL.Path, "/metrics/cpu"):
-			metricsCalls++
-			if r.URL.RawQuery != "end=200&start=0" {
-				t.Error(r.URL)
+		if strings.HasSuffix(r.URL.Path, "/observability/stream") {
+			streamCalls.Add(1)
+			conn, err := websocket.Accept(w, r, nil)
+			if err != nil {
+				t.Error(err)
+				return
 			}
-			response = map[string]any{"unit": "1", "series": []any{}}
-		case r.URL.Path == "/logs/search":
-			logCalls++
+			defer func() { _ = conn.CloseNow() }()
+			for _, frame := range []string{`{"type":"window","signal":"metrics","running":true}`, `{"type":"bundle","signal":"metrics","metrics":{"cpu":{"series":[]}}}`, `{"type":"complete","signal":"metrics"}`} {
+				if err := conn.Write(r.Context(), websocket.MessageText, []byte(frame)); err != nil {
+					t.Error(err)
+					return
+				}
+			}
+			_, _, _ = conn.Read(r.Context())
+			return
+		}
+		var response any
+		if r.URL.Path == "/logs/search" {
+			count := logCalls.Add(1)
 			var body map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Error(err)
 			}
-			after := body["after_line"]
 			first, last := 1, 10
-			if logCalls > 1 {
+			if count == 2 {
 				first, last = 11, 18
 			}
-			if logCalls > 2 {
+			if count > 2 {
 				first, last = 19, 18
 			}
-			if logCalls == 2 && after != float64(10) {
-				t.Errorf("second page cursor = %v", after)
+			if count == 2 && body["after_line"] != float64(10) {
+				t.Errorf("page cursor: %v", body)
 			}
-			if logCalls > 2 && after != float64(18) {
-				t.Errorf("poll cursor = %v", after)
+			if count > 2 && body["after_line"] != float64(18) {
+				t.Errorf("final cursor: %v", body)
 			}
 			rows := []map[string]any{}
 			for i := first; i <= last; i++ {
@@ -70,9 +66,12 @@ func TestMetricsWatchCadenceTailAndRawCursor(t *testing.T) {
 				}
 				rows = append(rows, map[string]any{"line_number": i, "content": fmt.Sprintf("line-%02d", i), "level": level})
 			}
-			response = map[string]any{"results": rows, "next_cursor": last, "has_more": logCalls == 1}
-		default:
-			response = map[string]any{"data": map[string]any{"job_name": "Build", "state": "in_progress"}}
+			response = map[string]any{"results": rows, "next_cursor": last, "has_more": count == 1}
+		} else if strings.Contains(r.URL.Path, "/metrics/") {
+			t.Error("watch polled metrics")
+			response = map[string]any{}
+		} else {
+			response = map[string]any{"data": map[string]any{"job_name": "Build", "state": "completed", "conclusion": "success"}}
 		}
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			t.Error(err)
@@ -80,20 +79,19 @@ func TestMetricsWatchCadenceTailAndRawCursor(t *testing.T) {
 	}))
 	defer server.Close()
 	d.LoadConfig = func() (config.Config, error) {
-		return config.Config{Host: server.URL, Token: "avr_fixture", Org: inspectionOrg}, nil
+		return config.Config{Host: server.URL, Token: "fixture", Org: inspectionOrg}, nil
 	}
-	code := Execute(ctx, []string{"job", "metrics", inspectionJob, "-w", "--source", "cpu", "--start", "0", "--end", "200"}, d)
-	if code != 130 || metricsCalls != 2 || logCalls != 8 || waits != 7 || stderr.Len() != 0 {
-		t.Fatal(code, metricsCalls, logCalls, waits, stderr)
+	code := Execute(t.Context(), []string{"job", "metrics", inspectionJob, "-w", "--source", "cpu"}, d)
+	if code != 0 || streamCalls.Load() != 1 || logCalls.Load() != 3 || stderr.Len() != 0 {
+		t.Fatal(code, streamCalls.Load(), logCalls.Load(), stderr)
 	}
 	for i := 1; i <= 18; i++ {
-		count := strings.Count(out.String(), fmt.Sprintf("line-%02d\n", i))
-		expected := 0
+		want := 0
 		if i >= 6 && i <= 17 {
-			expected = 7
+			want = 3
 		}
-		if count != expected {
-			t.Errorf("line %d: count %d, expected %d", i, count, expected)
+		if got := strings.Count(out.String(), fmt.Sprintf("line-%02d\n", i)); got != want {
+			t.Errorf("line %d: %d, want %d", i, got, want)
 		}
 	}
 }
@@ -103,7 +101,7 @@ func TestMetricsWatchCancellationDuringFetch(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/metrics/") {
+		if strings.HasSuffix(r.URL.Path, "/observability/stream") {
 			cancel()
 			<-r.Context().Done()
 			return
@@ -137,10 +135,10 @@ func TestMetricsWatchTransportRetrySanitizesError(t *testing.T) {
 	})}
 	d.Wait = func(context.Context, time.Duration) error { cancel(); return ctx.Err() }
 	code := Execute(ctx, []string{"job", "metrics", inspectionJob, "-w", "--source", "cpu"}, d)
-	if code != 130 || calls != 3 || stderr.Len() != 0 {
+	if code != 130 || calls != 2 || !strings.Contains(stderr.String(), "reconnecting in 1s") {
 		t.Fatal(code, calls, stderr)
 	}
-	if !strings.Contains(out.String(), "metrics fetch failed: ConnectError") || !strings.Contains(out.String(), "log fetch failed: ConnectError") || strings.Contains(out.String(), "sensitive-network-address") {
-		t.Fatal(out.String())
+	if out.Len() != 0 || strings.Contains(stderr.String(), "sensitive-network-address") {
+		t.Fatal(out.String(), stderr.String())
 	}
 }

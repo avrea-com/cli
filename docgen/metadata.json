@@ -1,6 +1,6 @@
 {
   "program": "avr",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "summary": "Avrea on the command line.",
   "global_options": [
     {
@@ -818,7 +818,7 @@
             "full": "avr run diagnose",
             "is_group": false,
             "short_help": "Explain a failed or unexpectedly slow workflow run.",
-            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+            "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. A job URL selects that job's attempt; the report still\ncovers the whole attempt. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1208,7 +1208,7 @@
             "full": "avr run logs",
             "is_group": false,
             "short_help": "Fetch logs for a workflow run's jobs.",
-            "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n",
+            "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. A GitHub job URL shows only that job's logs.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n    avr run logs https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1354,7 +1354,7 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI keeps the original revision. Use --failed for failed/cancelled\njobs or repeat --job for selected jobs. Their downstream dependents also\nrerun; other results are retained. The new attempt can be watched immediately.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -1409,7 +1409,43 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Re-run only the failed jobs.",
+                "help": "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "job_ids",
+                "kind": "option",
+                "opts": [
+                  "--job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Avrea job name or ID to rerun with dependents; repeat for multiple jobs.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "uuid",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Reuse a previous Avrea CI rerun request UUID.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -1446,7 +1482,7 @@
             "full": "avr run view",
             "is_group": false,
             "short_help": "View a workflow run with its jobs.",
-            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+            "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun or job URL, or an Avrea console run URL. A job URL opens the attempt\nthat job belongs to. Without RUN, shows 10 most recent runs.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -2519,7 +2555,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Start time (Unix seconds). Defaults to execution start.",
+                "help": "Start time (Unix seconds). Single-shot only; defaults to execution start.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2537,7 +2573,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "End time (Unix seconds). Defaults to execution end or now.",
+                "help": "End time (Unix seconds). Single-shot only; defaults to execution end or now.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2556,7 +2592,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Refresh every 5 seconds (Ctrl-C to exit).",
+                "help": "Stream live metrics until completion (Ctrl-C to exit).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -2956,11 +2992,11 @@
             "full": "avr vm bootstrap",
             "is_group": false,
             "short_help": "Set up a RUNNING VM with your dev essentials over SSH.",
-            "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent\ncredentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN\nis a year-long, subscription-wide bearer, so it is only carried under the\nexplicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run\nbootstrap after every `avr vm start`. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
+            "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent\ncredentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN\nis a year-long, subscription-wide bearer, so it is only carried under the\nexplicit --forward-agent-creds opt-in. Bootstrap changes survive pause\nand resume on the preserved disk. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm bootstrap [OPTIONS] VM_ID",
+            "usage": "avr vm bootstrap [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -3203,6 +3239,61 @@
             "subcommands": []
           },
           {
+            "name": "capabilities",
+            "path": [
+              "avr",
+              "vm",
+              "capabilities"
+            ],
+            "full": "avr vm capabilities",
+            "is_group": false,
+            "short_help": "List available operating systems, architectures, sizes, and quotas.",
+            "help": "List available operating systems, architectures, sizes, and quotas.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm capabilities [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit capabilities and quotas as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "create",
             "path": [
               "avr",
@@ -3249,7 +3340,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Human-readable VM name. Required unless --from-spawn-script.",
+                "help": "Unique VM name. Generated by the server when omitted.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3278,29 +3369,76 @@
                 ]
               },
               {
+                "name": "architecture",
+                "kind": "option",
+                "opts": [
+                  "--arch"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "CPU architecture (see: avr vm capabilities). Defaults to the selected OS's default.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Retry creates safely with the same organization-scoped key.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "https_ports",
+                "kind": "option",
+                "opts": [
+                  "--https-port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Publish a guest port as public HTTPS. Repeatable; the first is default.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "os_version",
                 "kind": "option",
                 "opts": [
                   "--os-version"
                 ],
                 "secondary_opts": [],
-                "type": "choice",
+                "type": "text",
                 "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os.",
+                "help": "Guest OS version (e.g. ubuntu-26.04; see: avr vm capabilities). Defaults to the latest version for the chosen --os.",
                 "hidden": false,
                 "show_default": false,
-                "default": null,
-                "choices": [
-                  "ubuntu-22.04",
-                  "ubuntu-24.04",
-                  "ubuntu-26.04",
-                  "macos-26",
-                  "windows-2025"
-                ]
+                "default": null
               },
               {
                 "name": "size",
@@ -3309,24 +3447,16 @@
                   "--size"
                 ],
                 "secondary_opts": [],
-                "type": "choice",
+                "type": "text",
                 "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu.",
+                "help": "Hardware tier, e.g. 2-vcpu (see: avr vm capabilities). Availability: linux x86_64 1-32 vCPU, linux arm64 up to 16, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu.",
                 "hidden": false,
                 "show_default": false,
-                "default": null,
-                "choices": [
-                  "1-vcpu",
-                  "2-vcpu",
-                  "4-vcpu",
-                  "8-vcpu",
-                  "16-vcpu",
-                  "32-vcpu"
-                ]
+                "default": null
               },
               {
                 "name": "ssh_keys",
@@ -3379,7 +3509,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
+                "help": "TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3487,8 +3617,8 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Required: acknowledge that the VM's disk is ephemeral (discarded on stop).",
-                "hidden": false,
+                "help": "Ignored compatibility flag.",
+                "hidden": true,
                 "show_default": false,
                 "default": false
               },
@@ -3584,7 +3714,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm delete [OPTIONS] VM_ID",
+            "usage": "avr vm delete [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -3699,6 +3829,151 @@
             "subcommands": []
           },
           {
+            "name": "fork",
+            "path": [
+              "avr",
+              "vm",
+              "fork"
+            ],
+            "full": "avr vm fork",
+            "is_group": false,
+            "short_help": "Boot a copy of a PAUSED VM's disk; the source remains paused.",
+            "help": "Boot a copy of a PAUSED VM's disk; the source remains paused.\n\nCopies the source's machine configuration and disk, including its SSH host\nkeys and password, but discards memory state. A scoped-token password may\nbe replaced without returning its replacement. No password is returned; use\nupdate --rotate-password if needed. Requires admin access to the source.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm fork [OPTIONS] VM_ID_OR_NAME",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "display_name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Fork name. Defaults to a name derived from the source.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "ttl",
+                "kind": "option",
+                "opts": [
+                  "--ttl"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Wait for the fork to become connectable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "wait_timeout",
+                "kind": "option",
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Seconds to wait when --wait is set.",
+                "hidden": false,
+                "show_default": true,
+                "default": 300
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the fork VM as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "list",
             "path": [
               "avr",
@@ -3739,13 +4014,65 @@
                   "--state"
                 ],
                 "secondary_opts": [],
-                "type": "text",
+                "type": "choice",
                 "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).",
+                "help": "Filter by lifecycle state.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "PENDING",
+                  "STARTING",
+                  "RUNNING",
+                  "PAUSING",
+                  "PAUSED",
+                  "STOPPING",
+                  "DELETING",
+                  "FAILED"
+                ]
+              },
+              {
+                "name": "scope",
+                "kind": "option",
+                "opts": [
+                  "--scope"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Visible VMs or only your own.",
+                "hidden": false,
+                "show_default": false,
+                "default": "all",
+                "choices": [
+                  "all",
+                  "mine"
+                ]
+              },
+              {
+                "name": "sandbox",
+                "kind": "option",
+                "opts": [
+                  "--sandbox"
+                ],
+                "secondary_opts": [
+                  "--no-sandbox"
+                ],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Agent sandboxes only, or human-created VMs only.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -3809,6 +4136,161 @@
             "subcommands": []
           },
           {
+            "name": "metrics",
+            "path": [
+              "avr",
+              "vm",
+              "metrics"
+            ],
+            "full": "avr vm metrics",
+            "is_group": false,
+            "short_help": "Show CPU/memory/IO metrics for a VM's current or last run.",
+            "help": "Show CPU/memory/IO metrics for a VM's current or last run.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm metrics [OPTIONS] VM_ID_OR_NAME",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "sources",
+                "kind": "option",
+                "opts": [
+                  "--source"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Metric source. Repeatable; defaults to cpu and memory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "cpu",
+                  "memory",
+                  "filesystem",
+                  "load",
+                  "disk-io",
+                  "disk-ops",
+                  "network"
+                ]
+              },
+              {
+                "name": "start",
+                "kind": "option",
+                "opts": [
+                  "--start"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Start time in Unix seconds (single-shot only).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "end",
+                "kind": "option",
+                "opts": [
+                  "--end"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "End time in Unix seconds (single-shot only).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "watch",
+                "kind": "option",
+                "opts": [
+                  "--watch",
+                  "-w"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Stream live metrics until the run completes; Ctrl-C to exit.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit metrics JSON; watch emits one snapshot per line.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "pause",
             "path": [
               "avr",
@@ -3817,12 +4299,12 @@
             ],
             "full": "avr vm pause",
             "is_group": false,
-            "short_help": "Pause a RUNNING Linux VM while preserving its disk.",
-            "help": "Pause a RUNNING Linux VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
+            "short_help": "Pause a RUNNING Linux x86_64 VM while preserving its disk.",
+            "help": "Pause a RUNNING Linux x86_64 VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm pause [OPTIONS] VM_ID",
+            "usage": "avr vm pause [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -3949,7 +4431,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm port-forward [OPTIONS] VM_ID",
+            "usage": "avr vm port-forward [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4077,7 +4559,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm rdp [OPTIONS] VM_ID",
+            "usage": "avr vm rdp [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4203,11 +4685,11 @@
             "full": "avr vm resume",
             "is_group": false,
             "short_help": "Resume a PAUSED VM from its preserved snapshot.",
-            "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains valid. If a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
+            "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains unless resume withdraws credentials supplied\nto a scoped token. Use update --rotate-password to obtain a fresh one.\nIf a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm resume [OPTIONS] VM_ID",
+            "usage": "avr vm resume [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4321,6 +4803,79 @@
             "subcommands": []
           },
           {
+            "name": "rotate-https-label",
+            "path": [
+              "avr",
+              "vm",
+              "rotate-https-label"
+            ],
+            "full": "avr vm rotate-https-label",
+            "is_group": false,
+            "short_help": "Replace public HTTPS URLs to invalidate leaked URLs.",
+            "help": "Replace public HTTPS URLs to invalidate leaked URLs.\n\nRoutes change once ingress applies the rotation. On a running VM,\nAVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;\na paused VM picks up the new URLs at resume.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm rotate-https-label [OPTIONS] VM_ID_OR_NAME",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the updated VM as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "show",
             "path": [
               "avr",
@@ -4334,7 +4889,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm show [OPTIONS] VM_ID",
+            "usage": "avr vm show [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4407,7 +4962,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm ssh [OPTIONS] VM_ID [SSH_ARGS]...",
+            "usage": "avr vm ssh [OPTIONS] VM_ID_OR_NAME [SSH_ARGS]...",
             "params": [
               {
                 "name": "vm_id",
@@ -4549,11 +5104,11 @@
             "full": "avr vm ssh-config",
             "is_group": false,
             "short_help": "Print (or --append) an ssh_config Host block for a RUNNING VM.",
-            "help": "Print (or --append) an ssh_config Host block for a RUNNING VM.\n\nReach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,\nhost key pinned, without wrapping each tool. Redirect it yourself:\n\n    avr vm ssh-config cvm-abc123 >> ~/.ssh/config\n\nor let --append manage the block for you (idempotent — re-run after a\nrestart to refresh the endpoint in place):\n\n    avr vm ssh-config cvm-abc123 --append\n\nThe block references a dedicated known_hosts file that this command writes\nthe pinned host key into (one entry per VM). If the endpoint publishes no\nhost key, the block falls back to accept-new (trust-on-first-use) and a\nwarning is printed.\n",
+            "help": "Print (or --append) an ssh_config Host block for a RUNNING VM.\n\nReach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,\nhost key pinned, without wrapping each tool. Redirect it yourself:\n\n    avr vm ssh-config cvm-abc123 >> ~/.ssh/config\n\nor let --append manage the block for you (idempotent — re-run after a\nresume to refresh the endpoint in place):\n\n    avr vm ssh-config cvm-abc123 --append\n\nThe block references a dedicated known_hosts file that this command writes\nthe pinned host key into (one entry per VM). If the endpoint publishes no\nhost key, the block falls back to accept-new (trust-on-first-use) and a\nwarning is printed.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm ssh-config [OPTIONS] VM_ID",
+            "usage": "avr vm ssh-config [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4686,224 +5241,6 @@
             "subcommands": []
           },
           {
-            "name": "start",
-            "path": [
-              "avr",
-              "vm",
-              "start"
-            ],
-            "full": "avr vm start",
-            "is_group": false,
-            "short_help": "Start a stopped VM.",
-            "help": "Start a stopped VM. Boots a fresh disk and returns a one-time password.",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr vm start [OPTIONS] VM_ID",
-            "params": [
-              {
-                "name": "vm_id",
-                "kind": "argument",
-                "opts": [
-                  "vm_id"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": true,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": null,
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "wait",
-                "kind": "option",
-                "opts": [
-                  "--wait"
-                ],
-                "secondary_opts": [],
-                "type": "boolean",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": true,
-                "envvar": null,
-                "help": "Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.",
-                "hidden": false,
-                "show_default": false,
-                "default": false
-              },
-              {
-                "name": "wait_timeout",
-                "kind": "option",
-                "opts": [
-                  "--wait-timeout"
-                ],
-                "secondary_opts": [],
-                "type": "integer",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Seconds to wait when --wait is set.",
-                "hidden": false,
-                "show_default": true,
-                "default": 300
-              },
-              {
-                "name": "as_json",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "boolean",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": true,
-                "envvar": null,
-                "help": "Emit the raw API response as JSON.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
-          {
-            "name": "stop",
-            "path": [
-              "avr",
-              "vm",
-              "stop"
-            ],
-            "full": "avr vm stop",
-            "is_group": false,
-            "short_help": "Stop a running VM.",
-            "help": "Stop a running VM. The ephemeral disk is discarded.",
-            "epilog": null,
-            "deprecated": false,
-            "hidden": false,
-            "usage": "avr vm stop [OPTIONS] VM_ID",
-            "params": [
-              {
-                "name": "vm_id",
-                "kind": "argument",
-                "opts": [
-                  "vm_id"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": true,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": null,
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "org_id",
-                "kind": "option",
-                "opts": [
-                  "--org"
-                ],
-                "secondary_opts": [],
-                "type": "text",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
-                "name": "wait",
-                "kind": "option",
-                "opts": [
-                  "--wait"
-                ],
-                "secondary_opts": [],
-                "type": "boolean",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": true,
-                "envvar": null,
-                "help": "Wait until the VM reaches STOPPED before returning.",
-                "hidden": false,
-                "show_default": false,
-                "default": false
-              },
-              {
-                "name": "wait_timeout",
-                "kind": "option",
-                "opts": [
-                  "--wait-timeout"
-                ],
-                "secondary_opts": [],
-                "type": "integer",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "Seconds to wait when --wait is set.",
-                "hidden": false,
-                "show_default": true,
-                "default": 300
-              },
-              {
-                "name": "as_json",
-                "kind": "option",
-                "opts": [
-                  "--json"
-                ],
-                "secondary_opts": [],
-                "type": "boolean",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": true,
-                "envvar": null,
-                "help": "Emit the raw API response as JSON.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              }
-            ],
-            "subcommands": []
-          },
-          {
             "name": "update",
             "path": [
               "avr",
@@ -4913,11 +5250,11 @@
             "full": "avr vm update",
             "is_group": false,
             "short_help": "Update a VM's name, TTL, or SSH keys, or rotate its password.",
-            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nPower state is controlled separately with avr vm start / avr vm stop.\n",
+            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nUse avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm update [OPTIONS] VM_ID",
+            "usage": "avr vm update [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -4986,7 +5323,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.",
+                "help": "Extend the TTL window from now (e.g. 8h, 7d). Max 7d.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5004,7 +5341,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start.",
+                "help": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next resume.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5059,6 +5396,42 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "https_ports",
+                "kind": "option",
+                "opts": [
+                  "--https-port"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "clear_https_ports",
+                "kind": "option",
+                "opts": [
+                  "--clear-https-ports"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -5171,7 +5544,7 @@
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr vm vnc [OPTIONS] VM_ID",
+            "usage": "avr vm vnc [OPTIONS] VM_ID_OR_NAME",
             "params": [
               {
                 "name": "vm_id",
@@ -6275,7 +6648,7 @@
         "full": "avr tests",
         "is_group": true,
         "short_help": "Read a job's tests, timings and recorded failure messages.",
-        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -6291,18 +6664,18 @@
             ],
             "full": "avr tests list",
             "is_group": false,
-            "short_help": "Read the latest confirmed execution of JOB, including repeated tests.",
-            "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "short_help": "Read one job's latest confirmed execution, including repeated tests.",
+            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nFilters match literally and are combined with AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr tests list [OPTIONS] JOB",
+            "usage": "avr tests list [OPTIONS] RUN_OR_JOB",
             "params": [
               {
-                "name": "job",
+                "name": "target",
                 "kind": "argument",
                 "opts": [
-                  "job"
+                  "target"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6312,6 +6685,24 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "job_name",
+                "kind": "option",
+                "opts": [
+                  "--job"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select one run job by case-insensitive name substring.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -6384,10 +6775,88 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Continue from a previous response's next_cursor.",
+                "help": "Continue from a previous response's next_cursor with the same filters.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "test_name",
+                "kind": "option",
+                "opts": [
+                  "--test"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact test name (case-sensitive; no wildcards).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "suite",
+                "kind": "option",
+                "opts": [
+                  "--suite"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact suite name; combined with other filters using AND.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "class_name",
+                "kind": "option",
+                "opts": [
+                  "--class"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Exact nonempty class name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "outcome",
+                "kind": "option",
+                "opts": [
+                  "--status"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Recorded test outcome.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "passed",
+                  "failed",
+                  "skipped",
+                  "errored"
+                ]
               },
               {
                 "name": "json_fields",
@@ -7249,6 +7718,43 @@
         "usage": "avr auth [OPTIONS] COMMAND [ARGS]...",
         "params": [],
         "subcommands": [
+          {
+            "name": "device-login",
+            "path": [
+              "avr",
+              "auth",
+              "device-login"
+            ],
+            "full": "avr auth device-login",
+            "is_group": false,
+            "short_help": "Sign in from a remote machine using a browser on any device.",
+            "help": "Sign in from a remote machine using a browser on any device.\n\nOpen the displayed link or scan the QR code, confirm the code, and approve\naccess. The CLI waits for approval and saves your credentials. No browser\nis opened on this machine. QR codes appear only in compatible terminals\nwide enough to display them. Requires device-login support on the server.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr auth device-login [OPTIONS]",
+            "params": [
+              {
+                "name": "no_qr",
+                "kind": "option",
+                "opts": [
+                  "--no-qr"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Hide the terminal QR code; still display the sign-in link.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
           {
             "name": "login",
             "path": [
@@ -15062,22 +15568,26 @@
         {
           "name": "delete",
           "description": "Delete ART_ID from the selected repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "download",
           "description": "Download ART_ID and verify its size and SHA-256 before replacing the...",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "get",
           "description": "Get metadata for ART_ID in the selected repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List artifacts in REPO, optionally restricted to one run.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -15396,6 +15906,68 @@
         }
       ],
       "no_args_is_help": true,
+      "section_order": []
+    },
+    "avr auth device-login": {
+      "completion_help": "Sign in from a remote machine using a...",
+      "completion_params": [
+        {
+          "name": "no_qr",
+          "kind": "option",
+          "names": [
+            "--no-qr"
+          ],
+          "help": "Hide the terminal QR code; still display the sign-in link.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Sign in from a remote machine using a browser on any device.\n\nOpen the displayed link or scan the QR code, confirm the code, and approve\naccess. The CLI waits for approval and saves your credentials. No browser\nis opened on this machine. QR codes appear only in compatible terminals\nwide enough to display them. Requires device-login support on the server.\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--no-qr"
+          ],
+          "label": "--no-qr",
+          "description": "Hide the terminal QR code; still display the sign-in link."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
       "section_order": []
     },
     "avr auth git-credential": {
@@ -15837,24 +16409,34 @@
       ],
       "commands": [
         {
+          "name": "device-login",
+          "description": "Sign in from a remote machine using a browser on any device.",
+          "section": null,
+          "auto_short": true
+        },
+        {
           "name": "login",
           "description": "Authenticate via browser and store credentials.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "logout",
           "description": "Revoke the current API key and remove stored credentials.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "status",
           "description": "Display the authenticated user and connection state.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "switch",
           "description": "Switch the default host used when AVR_HOST isn't set.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -17886,17 +18468,20 @@
         {
           "name": "delete",
           "description": "Delete cache entries by key name or all entries.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List cache entries for a repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "usage",
           "description": "Show cache usage summary for a repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -18179,22 +18764,26 @@
         {
           "name": "get",
           "description": "Print the value of a configuration key.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "Show the active CLI configuration (host, auth, org, default repo).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "set",
           "description": "Set a CLI configuration value.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "unset",
           "description": "Remove a configuration override.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": false,
@@ -20233,7 +20822,7 @@
           "names": [
             "--start"
           ],
-          "help": "Start time (Unix seconds). Defaults to execution start.",
+          "help": "Start time (Unix seconds). Single-shot only; defaults to execution start.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -20248,7 +20837,7 @@
           "names": [
             "--end"
           ],
-          "help": "End time (Unix seconds). Defaults to execution end or now.",
+          "help": "End time (Unix seconds). Single-shot only; defaults to execution end or now.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -20264,7 +20853,7 @@
             "-w",
             "--watch"
           ],
-          "help": "Refresh every 5 seconds (Ctrl-C to exit).",
+          "help": "Stream live metrics until completion (Ctrl-C to exit).",
           "multiple": false,
           "flag": true,
           "hidden": false,
@@ -20332,14 +20921,14 @@
             "--start"
           ],
           "label": "--start INTEGER",
-          "description": "Start time (Unix seconds). Defaults to execution start."
+          "description": "Start time (Unix seconds). Single-shot only; defaults to execution start."
         },
         {
           "names": [
             "--end"
           ],
           "label": "--end INTEGER",
-          "description": "End time (Unix seconds). Defaults to execution end or now."
+          "description": "End time (Unix seconds). Single-shot only; defaults to execution end or now."
         },
         {
           "names": [
@@ -20347,7 +20936,7 @@
             "--watch"
           ],
           "label": "-w, --watch",
-          "description": "Refresh every 5 seconds (Ctrl-C to exit)."
+          "description": "Stream live metrics until completion (Ctrl-C to exit)."
         },
         {
           "names": [
@@ -20872,32 +21461,38 @@
         {
           "name": "list",
           "description": "List jobs for an organization.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "logs",
           "description": "View logs for a job, grouped by step.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "metrics",
           "description": "Show CPU/memory/IO gauges for a job's VM.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "ssh",
           "description": "SSH into a running job's VM.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "View a single job with its steps.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "watch",
           "description": "Watch active jobs with auto-refresh (Ctrl+C to stop).",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -21198,7 +21793,8 @@
         {
           "name": "search",
           "description": "Search logs for a repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -21935,22 +22531,26 @@
         {
           "name": "claim",
           "description": "Claim a company domain using DNS ownership verification (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List claimed organization email domains (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "set",
           "description": "Set email domains for automatic org membership (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "verify",
           "description": "Check a claimed domain's DNS TXT record (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -23325,22 +23925,26 @@
         {
           "name": "create",
           "description": "Create group runners in GitLab and configure their machine types in Avrea.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "delete",
           "description": "Remove MACHINE_TYPE's runner configuration from Avrea.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List all machine types, runner status, and exact GitLab setup instructions.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "set",
           "description": "Verify and configure MACHINE_TYPE, replacing its previous runner if present.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -23566,32 +24170,38 @@
         {
           "name": "add",
           "description": "Add a GitHub or GitLab installation.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List accessible installations across all your organizations.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "remove",
           "description": "Remove an installation using its provider-specific lifecycle.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "rotate",
           "description": "Rotate a GitLab installation's access token and webhook secret.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "runner",
           "description": "Manage GitLab runners, one per Linux machine type.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "set-selection",
           "description": "Replace a GitLab installation's project selection.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -24597,32 +25207,38 @@
         {
           "name": "configure",
           "description": "Create or replace SAML configuration from IdP metadata (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "enforcement",
           "description": "Enable or disable mandatory SAML sign-in (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "remove",
           "description": "Remove the organization's SAML configuration (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "show",
           "description": "Show the current SAML configuration (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "sp-metadata",
           "description": "Print Avrea's SAML service-provider metadata XML.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "test",
           "description": "Test the SAML connection in a browser (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -24669,32 +25285,38 @@
         {
           "name": "create",
           "description": "Create a new organization.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "email-domain",
           "description": "Claim and verify organization email domains.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "install",
           "description": "Manage GitHub and GitLab installations.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List organizations you belong to.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "members",
           "description": "List organization members (admin only).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "saml",
           "description": "Configure SAML single sign-on for an organization.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -24974,7 +25596,8 @@
         {
           "name": "list",
           "description": "List pull requests across repositories.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -26440,37 +27063,44 @@
         {
           "name": "create",
           "description": "Enable mirroring and place a connected repository at a location.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "disable",
           "description": "Stop mirroring the repository into avrea-git.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "enable",
           "description": "Declare the repository mirrored into avrea-git.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "locations",
           "description": "List available mirror locations and their cluster IDs.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "place",
           "description": "Place the repository's mirror in a git cluster.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "status",
           "description": "Show the repository's git-mirror declaration and placements.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "unplace",
           "description": "Remove the repository's mirror from a git cluster.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -27145,27 +27775,32 @@
         {
           "name": "cancel",
           "description": "Cancel one pending public-mirror request.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "check",
           "description": "Check whether a public GitHub repository mirror is available.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "request",
           "description": "Request a mirror of a public GitHub repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "requests",
           "description": "List your organization's public-mirror requests.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "View one public-mirror request.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -27212,22 +27847,26 @@
         {
           "name": "clone",
           "description": "Clone a repository from its nearest available Avrea mirror.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List repositories you can access in an organization.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "mirror",
           "description": "Manage this repository's avrea-git mirror (feature-flagged).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "public-mirror",
           "description": "Request and browse mirrors of public GitHub repositories.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -27401,7 +28040,7 @@
         }
       ],
       "sections": false,
-      "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n",
+      "help": "Explain a failed or unexpectedly slow workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. A job URL selects that job's attempt; the report still\ncovers the whole attempt. The report combines jobs and failed steps, bounded\nfailed-job log tails, queue/execution timings, runner metrics, and a\nprior-success workflow baseline.\n\n\b\nExamples:\n    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea\n    avr run diagnose 123456789 --json\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789\n    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -27968,7 +28607,7 @@
         }
       ],
       "sections": false,
-      "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n",
+      "help": "Fetch logs for a workflow run's jobs.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. A GitHub job URL shows only that job's logs.\n\nLong-form alternative to `avr run view --log[-failed]`. Use --follow to\ntail logs in real time for an in-progress job; pass --job to scope to a\nspecific job when a run has many.\n\n\b\nExamples:\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test\n    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow\n    avr run logs https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -28070,13 +28709,43 @@
           "names": [
             "--failed"
           ],
-          "help": "Re-run only the failed jobs.",
+          "help": "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.",
           "multiple": false,
           "flag": true,
           "hidden": false,
           "nargs": 1,
           "type": {
             "param_type": "Bool"
+          }
+        },
+        {
+          "name": "job_ids",
+          "kind": "option",
+          "names": [
+            "--job"
+          ],
+          "help": "Avrea job name or ID to rerun with dependents; repeat for multiple jobs.",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "idempotency_key",
+          "kind": "option",
+          "names": [
+            "--idempotency-key"
+          ],
+          "help": "Reuse a previous Avrea CI rerun request UUID.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "UUID"
           }
         },
         {
@@ -28113,7 +28782,7 @@
         }
       ],
       "sections": false,
-      "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n",
+      "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI keeps the original revision. Use --failed for failed/cancelled\njobs or repeat --job for selected jobs. Their downstream dependents also\nrerun; other results are retained. The new attempt can be watched immediately.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -28132,7 +28801,21 @@
             "--failed"
           ],
           "label": "--failed",
-          "description": "Re-run only the failed jobs."
+          "description": "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI."
+        },
+        {
+          "names": [
+            "--job"
+          ],
+          "label": "--job TEXT",
+          "description": "Avrea job name or ID to rerun with dependents; repeat for multiple jobs."
+        },
+        {
+          "names": [
+            "--idempotency-key"
+          ],
+          "label": "--idempotency-key UUID",
+          "description": "Reuse a previous Avrea CI rerun request UUID."
         },
         {
           "names": [
@@ -28327,7 +29010,7 @@
         }
       ],
       "sections": false,
-      "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun URL, or an Avrea console run URL. Without RUN, shows 10 most recent\nruns.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
+      "help": "View a workflow run with its jobs.\n\n\b\nRUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\nrun or job URL, or an Avrea console run URL. A job URL opens the attempt\nthat job belongs to. Without RUN, shows 10 most recent runs.\n\n\b\nExamples:\n    avr run view\n    avr run view run-019e5a2e474e71c297e452279d4bcdea\n    avr run view 123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789\n    avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs\n    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'\n\n\b\nJSON FIELDS\n    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,\n    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,\n    run_id, run_number, status, triggering_actor, updated_at, workflow,\n    workflow_id\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -28618,37 +29301,44 @@
         {
           "name": "cancel",
           "description": "Cancel an in-progress or queued workflow run.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "diagnose",
           "description": "Explain a failed or unexpectedly slow workflow run.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List workflow runs for an organization.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "logs",
           "description": "Fetch logs for a workflow run's jobs.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "rerun",
           "description": "Re-run a completed workflow run.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "View a workflow run with its jobs.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "watch",
           "description": "Watch a workflow run until it completes.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -29445,22 +30135,26 @@
         {
           "name": "download",
           "description": "Download an SBOM artifact (CycloneDX, SPDX, or dependency inventory).",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "generate",
           "description": "Start SBOM generation for a repository.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List the repository's recorded SBOMs, newest first.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "Show an SBOM's summary: dependency counts, licenses, and artifacts.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -30032,22 +30726,26 @@
         {
           "name": "list",
           "description": "List settings with their current values and source.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "reset",
           "description": "Remove a setting override, reverting to the inherited or default value.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "schema",
           "description": "List available setting definitions.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "set",
           "description": "Set a setting value.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -30182,15 +30880,30 @@
       "section_order": []
     },
     "avr tests list": {
-      "completion_help": "Read the latest confirmed execution of...",
+      "completion_help": "Read one job's latest confirmed execution,...",
       "completion_params": [
         {
-          "name": "job",
+          "name": "target",
           "kind": "argument",
           "names": [
-            "job"
+            "target"
           ],
           "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "job_name",
+          "kind": "option",
+          "names": [
+            "--job"
+          ],
+          "help": "Select one run job by case-insensitive name substring.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -30251,13 +30964,80 @@
           "names": [
             "--cursor"
           ],
-          "help": "Continue from a previous response's next_cursor.",
+          "help": "Continue from a previous response's next_cursor with the same filters.",
           "multiple": false,
           "flag": false,
           "hidden": false,
           "nargs": 1,
           "type": {
             "param_type": "String"
+          }
+        },
+        {
+          "name": "test_name",
+          "kind": "option",
+          "names": [
+            "--test"
+          ],
+          "help": "Exact test name (case-sensitive; no wildcards).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "suite",
+          "kind": "option",
+          "names": [
+            "--suite"
+          ],
+          "help": "Exact suite name; combined with other filters using AND.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "class_name",
+          "kind": "option",
+          "names": [
+            "--class"
+          ],
+          "help": "Exact nonempty class name.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "outcome",
+          "kind": "option",
+          "names": [
+            "--status"
+          ],
+          "help": "Recorded test outcome.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "passed",
+              "failed",
+              "skipped",
+              "errored"
+            ],
+            "case_sensitive": true,
+            "param_type": "Choice"
           }
         },
         {
@@ -30309,13 +31089,20 @@
         }
       ],
       "sections": false,
-      "help": "Read the latest confirmed execution of JOB, including repeated tests.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAPI refusal or a changed report fails the command without partial output.\n",
+      "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nFilters match literally and are combined with AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "JOB"
+        "RUN_OR_JOB"
       ],
       "options": [
+        {
+          "names": [
+            "--job"
+          ],
+          "label": "--job TEXT",
+          "description": "Select one run job by case-insensitive name substring."
+        },
         {
           "names": [
             "--org"
@@ -30343,7 +31130,35 @@
             "--cursor"
           ],
           "label": "--cursor TEXT",
-          "description": "Continue from a previous response's next_cursor."
+          "description": "Continue from a previous response's next_cursor with the same filters."
+        },
+        {
+          "names": [
+            "--test"
+          ],
+          "label": "--test TEXT",
+          "description": "Exact test name (case-sensitive; no wildcards)."
+        },
+        {
+          "names": [
+            "--suite"
+          ],
+          "label": "--suite TEXT",
+          "description": "Exact suite name; combined with other filters using AND."
+        },
+        {
+          "names": [
+            "--class"
+          ],
+          "label": "--class TEXT",
+          "description": "Exact nonempty class name."
+        },
+        {
+          "names": [
+            "--status"
+          ],
+          "label": "--status [passed|failed|skipped|errored]",
+          "description": "Recorded test outcome."
         },
         {
           "names": [
@@ -30394,7 +31209,7 @@
         }
       ],
       "sections": true,
-      "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests JOB (or avr tests list JOB). JOB is an Avrea job ID\n(job- or awj-) from avr job list.\n",
+      "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
@@ -30413,8 +31228,9 @@
       "commands": [
         {
           "name": "list",
-          "description": "Read the latest confirmed execution of JOB, including repeated tests.",
-          "section": null
+          "description": "Read one job's latest confirmed execution, including repeated tests.",
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -31059,22 +31875,26 @@
         {
           "name": "create",
           "description": "Create a scoped token and print its credential.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "list",
           "description": "List live tokens, newest first.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "revoke",
           "description": "Revoke a token.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "Show a token's details and grants, including a revoked or expired one.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,
@@ -31299,11 +32119,11 @@
         }
       ],
       "sections": false,
-      "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent\ncredentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN\nis a year-long, subscription-wide bearer, so it is only carried under the\nexplicit --forward-agent-creds opt-in. Disks are ephemeral, so re-run\nbootstrap after every `avr vm start`. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
+      "help": "Set up a RUNNING VM with your dev essentials over SSH.\n\n\b\nEach selected step runs on the VM and streams its output; bootstrap stops at\nthe first failure. Secrets (GitHub token, forwarded env values, agent\ncredentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN\nis a year-long, subscription-wide bearer, so it is only carried under the\nexplicit --forward-agent-creds opt-in. Bootstrap changes survive pause\nand resume on the preserved disk. Example:\n\n\b\n    avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \\\n      --repo https://github.com/me/project --env AWS_REGION=eu-north-1\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -31405,6 +32225,90 @@
       "no_args_is_help": false,
       "section_order": []
     },
+    "avr vm capabilities": {
+      "completion_help": "List available operating systems,...",
+      "completion_params": [
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "as_json",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Emit capabilities and quotas as JSON.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "List available operating systems, architectures, sizes, and quotas.",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json",
+          "description": "Emit capabilities and quotas as JSON."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
     "avr vm create": {
       "completion_help": "Create a long-running VM.",
       "completion_params": [
@@ -31429,7 +32333,7 @@
           "names": [
             "--name"
           ],
-          "help": "Human-readable VM name. Required unless --from-spawn-script.",
+          "help": "Unique VM name. Generated by the server when omitted.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -31460,26 +32364,63 @@
           }
         },
         {
-          "name": "os_version",
+          "name": "architecture",
           "kind": "option",
           "names": [
-            "--os-version"
+            "--arch"
           ],
-          "help": "Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os.",
+          "help": "CPU architecture (see: avr vm capabilities). Defaults to the selected OS's default.",
           "multiple": false,
           "flag": false,
           "hidden": false,
           "nargs": 1,
           "type": {
-            "choices": [
-              "ubuntu-22.04",
-              "ubuntu-24.04",
-              "ubuntu-26.04",
-              "macos-26",
-              "windows-2025"
-            ],
-            "case_sensitive": true,
-            "param_type": "Choice"
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "idempotency_key",
+          "kind": "option",
+          "names": [
+            "--idempotency-key"
+          ],
+          "help": "Retry creates safely with the same organization-scoped key.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "https_ports",
+          "kind": "option",
+          "names": [
+            "--https-port"
+          ],
+          "help": "Publish a guest port as public HTTPS. Repeatable; the first is default.",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "os_version",
+          "kind": "option",
+          "names": [
+            "--os-version"
+          ],
+          "help": "Guest OS version (e.g. ubuntu-26.04; see: avr vm capabilities). Defaults to the latest version for the chosen --os.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
           }
         },
         {
@@ -31488,22 +32429,13 @@
           "names": [
             "--size"
           ],
-          "help": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu.",
+          "help": "Hardware tier, e.g. 2-vcpu (see: avr vm capabilities). Availability: linux x86_64 1-32 vCPU, linux arm64 up to 16, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu.",
           "multiple": false,
           "flag": false,
           "hidden": false,
           "nargs": 1,
           "type": {
-            "choices": [
-              "1-vcpu",
-              "2-vcpu",
-              "4-vcpu",
-              "8-vcpu",
-              "16-vcpu",
-              "32-vcpu"
-            ],
-            "case_sensitive": true,
-            "param_type": "Choice"
+            "param_type": "String"
           }
         },
         {
@@ -31543,7 +32475,7 @@
           "names": [
             "--ttl"
           ],
-          "help": "Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
+          "help": "TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -31633,10 +32565,10 @@
           "names": [
             "--ephemeral"
           ],
-          "help": "Required: acknowledge that the VM's disk is ephemeral (discarded on stop).",
+          "help": "Ignored compatibility flag.",
           "multiple": false,
           "flag": true,
-          "hidden": false,
+          "hidden": true,
           "nargs": 1,
           "type": {
             "param_type": "Bool"
@@ -31742,7 +32674,7 @@
             "--name"
           ],
           "label": "--name TEXT",
-          "description": "Human-readable VM name. Required unless --from-spawn-script."
+          "description": "Unique VM name. Generated by the server when omitted."
         },
         {
           "names": [
@@ -31753,17 +32685,38 @@
         },
         {
           "names": [
+            "--arch"
+          ],
+          "label": "--arch TEXT",
+          "description": "CPU architecture (see: avr vm capabilities). Defaults to the selected OS's default."
+        },
+        {
+          "names": [
+            "--idempotency-key"
+          ],
+          "label": "--idempotency-key TEXT",
+          "description": "Retry creates safely with the same organization-scoped key."
+        },
+        {
+          "names": [
+            "--https-port"
+          ],
+          "label": "--https-port INTEGER RANGE",
+          "description": "Publish a guest port as public HTTPS. Repeatable; the first is default.  [1<=x<=65535]"
+        },
+        {
+          "names": [
             "--os-version"
           ],
-          "label": "--os-version [ubuntu-22.04|ubuntu-24.04|ubuntu-26.04|macos-26|windows-2025]",
-          "description": "Guest OS version (e.g. ubuntu-26.04). Defaults to the latest version for the chosen --os."
+          "label": "--os-version TEXT",
+          "description": "Guest OS version (e.g. ubuntu-26.04; see: avr vm capabilities). Defaults to the latest version for the chosen --os."
         },
         {
           "names": [
             "--size"
           ],
-          "label": "--size [1-vcpu|2-vcpu|4-vcpu|8-vcpu|16-vcpu|32-vcpu]",
-          "description": "Hardware tier. Availability is OS-specific: linux 1-32 vCPU, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu."
+          "label": "--size TEXT",
+          "description": "Hardware tier, e.g. 2-vcpu (see: avr vm capabilities). Availability: linux x86_64 1-32 vCPU, linux arm64 up to 16, macos 8/16, windows 2-16. Required unless --from-spawn-script, which defaults to 4-vcpu."
         },
         {
           "names": [
@@ -31785,7 +32738,7 @@
             "--ttl"
           ],
           "label": "--ttl TEXT",
-          "description": "Auto-stop the VM after this long (e.g. 8h, 7d, 1800s). Default 8h, max 7d."
+          "description": "TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d."
         },
         {
           "names": [
@@ -31821,13 +32774,6 @@
           ],
           "label": "--disable-cache CACHE",
           "description": "Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.<name>.enabled key). Repository-scoped caches require --repo."
-        },
-        {
-          "names": [
-            "--ephemeral"
-          ],
-          "label": "--ephemeral",
-          "description": "Required: acknowledge that the VM's disk is ephemeral (discarded on stop)."
         },
         {
           "names": [
@@ -31986,7 +32932,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -32038,6 +32984,194 @@
       "no_args_is_help": false,
       "section_order": []
     },
+    "avr vm fork": {
+      "completion_help": "Boot a copy of a PAUSED VM's disk; the...",
+      "completion_params": [
+        {
+          "name": "vm_id",
+          "kind": "argument",
+          "names": [
+            "vm_id"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "display_name",
+          "kind": "option",
+          "names": [
+            "--name"
+          ],
+          "help": "Fork name. Defaults to a name derived from the source.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "ttl",
+          "kind": "option",
+          "names": [
+            "--ttl"
+          ],
+          "help": "Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "wait",
+          "kind": "option",
+          "names": [
+            "--wait"
+          ],
+          "help": "Wait for the fork to become connectable.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "wait_timeout",
+          "kind": "option",
+          "names": [
+            "--wait-timeout"
+          ],
+          "help": "Seconds to wait when --wait is set.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "as_json",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Emit the fork VM as JSON.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Boot a copy of a PAUSED VM's disk; the source remains paused.\n\nCopies the source's machine configuration and disk, including its SSH host\nkeys and password, but discards memory state. A scoped-token password may\nbe replaced without returning its replacement. No password is returned; use\nupdate --rotate-password if needed. Requires admin access to the source.\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "VM_ID_OR_NAME"
+      ],
+      "options": [
+        {
+          "names": [
+            "--name"
+          ],
+          "label": "--name TEXT",
+          "description": "Fork name. Defaults to a name derived from the source."
+        },
+        {
+          "names": [
+            "--ttl"
+          ],
+          "label": "--ttl TEXT",
+          "description": "Fork TTL (e.g. 8h, 7d). Default 8h, max 7d."
+        },
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug."
+        },
+        {
+          "names": [
+            "--wait"
+          ],
+          "label": "--wait",
+          "description": "Wait for the fork to become connectable."
+        },
+        {
+          "names": [
+            "--wait-timeout"
+          ],
+          "label": "--wait-timeout INTEGER RANGE",
+          "description": "Seconds to wait when --wait is set.  [default: 300; x>=0]"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json",
+          "description": "Emit the fork VM as JSON."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
     "avr vm list": {
       "completion_help": "List the organization's VMs, newest first...",
       "completion_params": [
@@ -32062,13 +33196,60 @@
           "names": [
             "--state"
           ],
-          "help": "Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING).",
+          "help": "Filter by lifecycle state.",
           "multiple": false,
           "flag": false,
           "hidden": false,
           "nargs": 1,
           "type": {
-            "param_type": "String"
+            "choices": [
+              "PENDING",
+              "STARTING",
+              "RUNNING",
+              "PAUSING",
+              "PAUSED",
+              "STOPPING",
+              "DELETING",
+              "FAILED"
+            ],
+            "case_sensitive": false,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "scope",
+          "kind": "option",
+          "names": [
+            "--scope"
+          ],
+          "help": "Visible VMs or only your own.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "all",
+              "mine"
+            ],
+            "case_sensitive": true,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "sandbox",
+          "kind": "option",
+          "names": [
+            "--sandbox",
+            "--no-sandbox"
+          ],
+          "help": "Agent sandboxes only, or human-created VMs only.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
           }
         },
         {
@@ -32152,8 +33333,23 @@
           "names": [
             "--state"
           ],
-          "label": "--state TEXT",
-          "description": "Filter by lifecycle state (e.g. RUNNING, STOPPED, PENDING)."
+          "label": "--state [pending|starting|running|pausing|paused|stopping|deleting|failed]",
+          "description": "Filter by lifecycle state."
+        },
+        {
+          "names": [
+            "--scope"
+          ],
+          "label": "--scope [all|mine]",
+          "description": "Visible VMs or only your own."
+        },
+        {
+          "names": [
+            "--sandbox",
+            "--no-sandbox"
+          ],
+          "label": "--sandbox / --no-sandbox",
+          "description": "Agent sandboxes only, or human-created VMs only."
         },
         {
           "names": [
@@ -32190,8 +33386,208 @@
       "no_args_is_help": false,
       "section_order": []
     },
+    "avr vm metrics": {
+      "completion_help": "Show CPU/memory/IO metrics for a VM's...",
+      "completion_params": [
+        {
+          "name": "vm_id",
+          "kind": "argument",
+          "names": [
+            "vm_id"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "sources",
+          "kind": "option",
+          "names": [
+            "--source"
+          ],
+          "help": "Metric source. Repeatable; defaults to cpu and memory.",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "choices": [
+              "cpu",
+              "memory",
+              "filesystem",
+              "load",
+              "disk-io",
+              "disk-ops",
+              "network"
+            ],
+            "case_sensitive": true,
+            "param_type": "Choice"
+          }
+        },
+        {
+          "name": "start",
+          "kind": "option",
+          "names": [
+            "--start"
+          ],
+          "help": "Start time in Unix seconds (single-shot only).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Int"
+          }
+        },
+        {
+          "name": "end",
+          "kind": "option",
+          "names": [
+            "--end"
+          ],
+          "help": "End time in Unix seconds (single-shot only).",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Int"
+          }
+        },
+        {
+          "name": "watch",
+          "kind": "option",
+          "names": [
+            "--watch",
+            "-w"
+          ],
+          "help": "Stream live metrics until the run completes; Ctrl-C to exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "as_json",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Emit metrics JSON; watch emits one snapshot per line.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Show CPU/memory/IO metrics for a VM's current or last run.",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "VM_ID_OR_NAME"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug."
+        },
+        {
+          "names": [
+            "--source"
+          ],
+          "label": "--source [cpu|memory|filesystem|load|disk-io|disk-ops|network]",
+          "description": "Metric source. Repeatable; defaults to cpu and memory."
+        },
+        {
+          "names": [
+            "--start"
+          ],
+          "label": "--start INTEGER",
+          "description": "Start time in Unix seconds (single-shot only)."
+        },
+        {
+          "names": [
+            "--end"
+          ],
+          "label": "--end INTEGER",
+          "description": "End time in Unix seconds (single-shot only)."
+        },
+        {
+          "names": [
+            "--watch",
+            "-w"
+          ],
+          "label": "-w, --watch",
+          "description": "Stream live metrics until the run completes; Ctrl-C to exit."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json",
+          "description": "Emit metrics JSON; watch emits one snapshot per line."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
     "avr vm pause": {
-      "completion_help": "Pause a RUNNING Linux VM while preserving...",
+      "completion_help": "Pause a RUNNING Linux x86_64 VM while...",
       "completion_params": [
         {
           "name": "vm_id",
@@ -32301,11 +33697,11 @@
         }
       ],
       "sections": false,
-      "help": "Pause a RUNNING Linux VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
+      "help": "Pause a RUNNING Linux x86_64 VM while preserving its disk.\n\nBy default the snapshot is disk-only: the filesystem survives, but resume\nperforms a fresh boot and running processes do not. Pass --memory to also\npreserve guest memory and continue processes from where they stopped.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -32473,7 +33869,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -32643,7 +34039,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -32807,11 +34203,11 @@
         }
       ],
       "sections": false,
-      "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains valid. If a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
+      "help": "Resume a PAUSED VM from its preserved snapshot.\n\nThe existing password remains unless resume withdraws credentials supplied\nto a scoped token. Use update --rotate-password to obtain a fresh one.\nIf a memory restore cannot complete,\nretry with --discard-memory to boot the preserved disk without restoring\nrunning processes.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -32848,6 +34244,106 @@
           ],
           "label": "--json",
           "description": "Emit the raw API response as JSON."
+        },
+        {
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "label": "-h, --help",
+          "description": "Show this message and exit."
+        }
+      ],
+      "commands": [],
+      "no_args_is_help": false,
+      "section_order": []
+    },
+    "avr vm rotate-https-label": {
+      "completion_help": "Replace public HTTPS URLs to invalidate...",
+      "completion_params": [
+        {
+          "name": "vm_id",
+          "kind": "argument",
+          "names": [
+            "vm_id"
+          ],
+          "help": "",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "org_id",
+          "kind": "option",
+          "names": [
+            "--org"
+          ],
+          "help": "Organization ID or slug.",
+          "multiple": false,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "String"
+          }
+        },
+        {
+          "name": "as_json",
+          "kind": "option",
+          "names": [
+            "--json"
+          ],
+          "help": "Emit the updated VM as JSON.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
+          "name": "_click_default_help",
+          "kind": "option",
+          "names": [
+            "-h",
+            "--help"
+          ],
+          "help": "Show this message and exit.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        }
+      ],
+      "sections": false,
+      "help": "Replace public HTTPS URLs to invalidate leaked URLs.\n\nRoutes change once ingress applies the rotation. On a running VM,\nAVREA_SANDBOX_URL (in new login shells) and /vm/info follow within seconds;\na paused VM picks up the new URLs at resume.\n",
+      "epilog": "",
+      "usage": [
+        "[OPTIONS]",
+        "VM_ID_OR_NAME"
+      ],
+      "options": [
+        {
+          "names": [
+            "--org"
+          ],
+          "label": "--org TEXT",
+          "description": "Organization ID or slug."
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "label": "--json",
+          "description": "Emit the updated VM as JSON."
         },
         {
           "names": [
@@ -32932,7 +34428,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -33094,7 +34590,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID",
+        "VM_ID_OR_NAME",
         "[SSH_ARGS]..."
       ],
       "options": [
@@ -33277,11 +34773,11 @@
         }
       ],
       "sections": false,
-      "help": "Print (or --append) an ssh_config Host block for a RUNNING VM.\n\nReach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,\nhost key pinned, without wrapping each tool. Redirect it yourself:\n\n    avr vm ssh-config cvm-abc123 >> ~/.ssh/config\n\nor let --append manage the block for you (idempotent — re-run after a\nrestart to refresh the endpoint in place):\n\n    avr vm ssh-config cvm-abc123 --append\n\nThe block references a dedicated known_hosts file that this command writes\nthe pinned host key into (one entry per VM). If the endpoint publishes no\nhost key, the block falls back to accept-new (trust-on-first-use) and a\nwarning is printed.\n",
+      "help": "Print (or --append) an ssh_config Host block for a RUNNING VM.\n\nReach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,\nhost key pinned, without wrapping each tool. Redirect it yourself:\n\n    avr vm ssh-config cvm-abc123 >> ~/.ssh/config\n\nor let --append manage the block for you (idempotent — re-run after a\nresume to refresh the endpoint in place):\n\n    avr vm ssh-config cvm-abc123 --append\n\nThe block references a dedicated known_hosts file that this command writes\nthe pinned host key into (one entry per VM). If the endpoint publishes no\nhost key, the block falls back to accept-new (trust-on-first-use) and a\nwarning is printed.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -33326,294 +34822,6 @@
           ],
           "label": "--config-file PATH",
           "description": "SSH config file for --append (default: ~/.ssh/config)."
-        },
-        {
-          "names": [
-            "-h",
-            "--help"
-          ],
-          "label": "-h, --help",
-          "description": "Show this message and exit."
-        }
-      ],
-      "commands": [],
-      "no_args_is_help": false,
-      "section_order": []
-    },
-    "avr vm start": {
-      "completion_help": "Start a stopped VM.",
-      "completion_params": [
-        {
-          "name": "vm_id",
-          "kind": "argument",
-          "names": [
-            "vm_id"
-          ],
-          "help": "",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "String"
-          }
-        },
-        {
-          "name": "org_id",
-          "kind": "option",
-          "names": [
-            "--org"
-          ],
-          "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "String"
-          }
-        },
-        {
-          "name": "wait",
-          "kind": "option",
-          "names": [
-            "--wait"
-          ],
-          "help": "Wait until RUNNING, then print a ready-to-paste connect command with the fresh password.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        },
-        {
-          "name": "wait_timeout",
-          "kind": "option",
-          "names": [
-            "--wait-timeout"
-          ],
-          "help": "Seconds to wait when --wait is set.",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Int"
-          }
-        },
-        {
-          "name": "as_json",
-          "kind": "option",
-          "names": [
-            "--json"
-          ],
-          "help": "Emit the raw API response as JSON.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        },
-        {
-          "name": "_click_default_help",
-          "kind": "option",
-          "names": [
-            "-h",
-            "--help"
-          ],
-          "help": "Show this message and exit.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        }
-      ],
-      "sections": false,
-      "help": "Start a stopped VM. Boots a fresh disk and returns a one-time password.",
-      "epilog": "",
-      "usage": [
-        "[OPTIONS]",
-        "VM_ID"
-      ],
-      "options": [
-        {
-          "names": [
-            "--org"
-          ],
-          "label": "--org TEXT",
-          "description": "Organization ID. Uses default org if not specified (see: avr config set org)."
-        },
-        {
-          "names": [
-            "--wait"
-          ],
-          "label": "--wait",
-          "description": "Wait until RUNNING, then print a ready-to-paste connect command with the fresh password."
-        },
-        {
-          "names": [
-            "--wait-timeout"
-          ],
-          "label": "--wait-timeout INTEGER",
-          "description": "Seconds to wait when --wait is set.  [default: 300]"
-        },
-        {
-          "names": [
-            "--json"
-          ],
-          "label": "--json",
-          "description": "Emit the raw API response as JSON."
-        },
-        {
-          "names": [
-            "-h",
-            "--help"
-          ],
-          "label": "-h, --help",
-          "description": "Show this message and exit."
-        }
-      ],
-      "commands": [],
-      "no_args_is_help": false,
-      "section_order": []
-    },
-    "avr vm stop": {
-      "completion_help": "Stop a running VM.",
-      "completion_params": [
-        {
-          "name": "vm_id",
-          "kind": "argument",
-          "names": [
-            "vm_id"
-          ],
-          "help": "",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "String"
-          }
-        },
-        {
-          "name": "org_id",
-          "kind": "option",
-          "names": [
-            "--org"
-          ],
-          "help": "Organization ID. Uses default org if not specified (see: avr config set org).",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "String"
-          }
-        },
-        {
-          "name": "wait",
-          "kind": "option",
-          "names": [
-            "--wait"
-          ],
-          "help": "Wait until the VM reaches STOPPED before returning.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        },
-        {
-          "name": "wait_timeout",
-          "kind": "option",
-          "names": [
-            "--wait-timeout"
-          ],
-          "help": "Seconds to wait when --wait is set.",
-          "multiple": false,
-          "flag": false,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Int"
-          }
-        },
-        {
-          "name": "as_json",
-          "kind": "option",
-          "names": [
-            "--json"
-          ],
-          "help": "Emit the raw API response as JSON.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        },
-        {
-          "name": "_click_default_help",
-          "kind": "option",
-          "names": [
-            "-h",
-            "--help"
-          ],
-          "help": "Show this message and exit.",
-          "multiple": false,
-          "flag": true,
-          "hidden": false,
-          "nargs": 1,
-          "type": {
-            "param_type": "Bool"
-          }
-        }
-      ],
-      "sections": false,
-      "help": "Stop a running VM. The ephemeral disk is discarded.",
-      "epilog": "",
-      "usage": [
-        "[OPTIONS]",
-        "VM_ID"
-      ],
-      "options": [
-        {
-          "names": [
-            "--org"
-          ],
-          "label": "--org TEXT",
-          "description": "Organization ID. Uses default org if not specified (see: avr config set org)."
-        },
-        {
-          "names": [
-            "--wait"
-          ],
-          "label": "--wait",
-          "description": "Wait until the VM reaches STOPPED before returning."
-        },
-        {
-          "names": [
-            "--wait-timeout"
-          ],
-          "label": "--wait-timeout INTEGER",
-          "description": "Seconds to wait when --wait is set.  [default: 300]"
-        },
-        {
-          "names": [
-            "--json"
-          ],
-          "label": "--json",
-          "description": "Emit the raw API response as JSON."
         },
         {
           "names": [
@@ -33682,7 +34890,7 @@
           "names": [
             "--ttl"
           ],
-          "help": "Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d.",
+          "help": "Extend the TTL window from now (e.g. 8h, 7d). Max 7d.",
           "multiple": false,
           "flag": false,
           "hidden": false,
@@ -33697,7 +34905,7 @@
           "names": [
             "--ssh-key"
           ],
-          "help": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start.",
+          "help": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next resume.",
           "multiple": true,
           "flag": false,
           "hidden": false,
@@ -33752,6 +34960,36 @@
           }
         },
         {
+          "name": "https_ports",
+          "kind": "option",
+          "names": [
+            "--https-port"
+          ],
+          "help": "Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.",
+          "multiple": true,
+          "flag": false,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "IntRange"
+          }
+        },
+        {
+          "name": "clear_https_ports",
+          "kind": "option",
+          "names": [
+            "--clear-https-ports"
+          ],
+          "help": "Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume.",
+          "multiple": false,
+          "flag": true,
+          "hidden": false,
+          "nargs": 1,
+          "type": {
+            "param_type": "Bool"
+          }
+        },
+        {
           "name": "_click_default_help",
           "kind": "option",
           "names": [
@@ -33769,11 +35007,11 @@
         }
       ],
       "sections": false,
-      "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nPower state is controlled separately with avr vm start / avr vm stop.\n",
+      "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nUse avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n",
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -33795,14 +35033,14 @@
             "--ttl"
           ],
           "label": "--ttl TEXT",
-          "description": "Extend the auto-stop window from now (e.g. 8h, 7d). Max 7d."
+          "description": "Extend the TTL window from now (e.g. 8h, 7d). Max 7d."
         },
         {
           "names": [
             "--ssh-key"
           ],
           "label": "--ssh-key TEXT",
-          "description": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next start."
+          "description": "Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next resume."
         },
         {
           "names": [
@@ -33824,6 +35062,20 @@
           ],
           "label": "--json",
           "description": "Emit the raw API response as JSON."
+        },
+        {
+          "names": [
+            "--https-port"
+          ],
+          "label": "--https-port INTEGER RANGE",
+          "description": "Replace public HTTPS ports. Repeatable; applies live on a RUNNING VM, otherwise at next start or resume.  [1<=x<=65535]"
+        },
+        {
+          "names": [
+            "--clear-https-ports"
+          ],
+          "label": "--clear-https-ports",
+          "description": "Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or resume."
         },
         {
           "names": [
@@ -34084,7 +35336,7 @@
       "epilog": "",
       "usage": [
         "[OPTIONS]",
-        "VM_ID"
+        "VM_ID_OR_NAME"
       ],
       "options": [
         {
@@ -34181,6 +35433,11 @@
           "section": null
         },
         {
+          "name": "capabilities",
+          "description": "List available operating systems, architectures,...",
+          "section": null
+        },
+        {
           "name": "create",
           "description": "Create a long-running VM.",
           "section": null
@@ -34191,23 +35448,33 @@
           "section": null
         },
         {
+          "name": "fork",
+          "description": "Boot a copy of a PAUSED VM's disk; the source...",
+          "section": null
+        },
+        {
           "name": "list",
-          "description": "List the organization's VMs, newest first (deleted ones...",
+          "description": "List the organization's VMs, newest first (deleted...",
+          "section": null
+        },
+        {
+          "name": "metrics",
+          "description": "Show CPU/memory/IO metrics for a VM's current or...",
           "section": null
         },
         {
           "name": "pause",
-          "description": "Pause a RUNNING Linux VM while preserving its disk.",
+          "description": "Pause a RUNNING Linux x86_64 VM while preserving...",
           "section": null
         },
         {
           "name": "port-forward",
-          "description": "Forward one or more local ports to TCP ports on the VM...",
+          "description": "Forward one or more local ports to TCP ports on the...",
           "section": null
         },
         {
           "name": "rdp",
-          "description": "Open an RDP desktop on a Windows or Linux VM over an SSH...",
+          "description": "Open an RDP desktop on a Windows or Linux VM over...",
           "section": null
         },
         {
@@ -34216,28 +35483,23 @@
           "section": null
         },
         {
+          "name": "rotate-https-label",
+          "description": "Replace public HTTPS URLs to invalidate leaked URLs.",
+          "section": null
+        },
+        {
           "name": "show",
-          "description": "Show a VM's details, including connection endpoints and...",
+          "description": "Show a VM's details, including connection endpoints...",
           "section": null
         },
         {
           "name": "ssh",
-          "description": "Open an SSH session to a RUNNING VM, or run a command on it.",
+          "description": "Open an SSH session to a RUNNING VM, or run a...",
           "section": null
         },
         {
           "name": "ssh-config",
           "description": "Print (or --append) an ssh_config Host block for a...",
-          "section": null
-        },
-        {
-          "name": "start",
-          "description": "Start a stopped VM.",
-          "section": null
-        },
-        {
-          "name": "stop",
-          "description": "Stop a running VM.",
           "section": null
         },
         {
@@ -34247,12 +35509,12 @@
         },
         {
           "name": "usage",
-          "description": "Show usage metering (runtime / vCPU / memory seconds) per...",
+          "description": "Show usage metering (runtime / vCPU / memory...",
           "section": null
         },
         {
           "name": "vnc",
-          "description": "Open a VNC desktop on a macOS VM (Screen Sharing) over an...",
+          "description": "Open a VNC desktop on a macOS VM (Screen Sharing)...",
           "section": null
         }
       ],
@@ -34930,17 +36192,20 @@
         {
           "name": "list",
           "description": "List workflows with aggregate run stats.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "run",
           "description": "Trigger a workflow_dispatch event.",
-          "section": null
+          "section": null,
+          "auto_short": true
         },
         {
           "name": "view",
           "description": "View a workflow with aggregate stats and per-job breakdown.",
-          "section": null
+          "section": null,
+          "auto_short": true
         }
       ],
       "no_args_is_help": true,

@@ -75,13 +75,16 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 	if rerun {
 		name, summary = "rerun", "Re-run a completed workflow run."
 	}
-	var org string
+	var org, invocationKey string
+	var jobs []string
 	var yes, failed bool
 	cmd := &cobra.Command{Use: name + " RUN", Short: summary, Args: cobra.ExactArgs(1)}
 	cmd.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	if rerun {
-		cmd.Flags().BoolVar(&failed, "failed", false, "Re-run only the failed jobs.")
+		cmd.Flags().BoolVar(&failed, "failed", false, "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.")
+		cmd.Flags().StringArrayVar(&jobs, "job", nil, "Avrea job name or ID to rerun with dependents; repeat for multiple jobs.")
+		invocationKeyFlag(cmd, &invocationKey, "Reuse a previous Avrea CI rerun request UUID.")
 	}
 	cmd.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, _, api, err := d.load()
@@ -91,27 +94,47 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 		if err := authenticated(cfg); err != nil {
 			return err
 		}
-		ref, orgID, err := referenceAndOrg(cmd.Context(), d, cfg, api, args[0], org)
+		if failed && len(jobs) > 0 {
+			return usageError(cmd, "Choose --failed or --job, not both.")
+		}
+		ref, orgID, err := referenceAndOrg(cmd.Context(), d, cfg, api, args[0], org, name)
 		if err != nil {
 			return err
 		}
 		id := ref.id
 		var existing map[string]any
 		if rerun || id == "" {
-			record, err := resolveRun(cmd.Context(), cfg, api, orgID, ref, nil, "look up workflow run before "+name)
+			var include []string
+			if len(jobs) > 0 {
+				include = []string{"jobs"}
+			}
+			record, err := resolveRun(cmd.Context(), cfg, api, orgID, ref, include, "look up workflow run before "+name)
 			if err != nil {
 				return err
 			}
 			existing, id = record.Fields, fieldText(record.Fields, "run_id")
 		}
+		native := rerun && (fieldText(existing, "ci_provider") == "avrea_ci" || strings.HasPrefix(id, "awr-"))
 		if rerun {
-			if err := requireExternalCI(existing, "Reruns"); err != nil {
-				return err
+			if !native && len(jobs) > 0 {
+				return usageError(cmd, "--job applies to Avrea CI reruns.")
+			}
+			if !native && invocationKey != "" {
+				return usageError(cmd, "--idempotency-key applies to Avrea CI reruns.")
+			}
+			if native && (failed || len(jobs) > 0) {
+				jobs, err = resolveNativeRerunJobs(cmd, cfg, api, orgID, id, existing, jobs, invocationKey)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		scope := "all jobs"
 		if failed {
-			scope = "failed jobs only"
+			scope = "failed jobs and dependents"
+		}
+		if len(jobs) > 0 {
+			scope = "selected jobs and dependents"
 		}
 		if !yes {
 			prompt := "Cancel " + id + "?"
@@ -123,7 +146,13 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			}
 		}
 		var cancelFields map[string]any
-		if rerun {
+		var receipt *nativeRerunReceipt
+		if native {
+			receipt, err = submitNativeRerun(cmd.Context(), d, cfg, api, orgID, id, invocationKey, failed, jobs)
+			if err != nil {
+				return err
+			}
+		} else if rerun {
 			err = api.Rerun(cmd.Context(), orgID, id, failed)
 		} else {
 			record, requestErr := api.CancelRun(cmd.Context(), orgID, id)
@@ -137,10 +166,18 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			if failed {
 				scope = "failed jobs"
 			}
+			if len(jobs) > 0 {
+				scope = "selected jobs"
+			}
 			if _, err := fmt.Fprintf(d.Out, "%s Re-run requested for %s (%s).\n", d.paint("✓", "32"), d.paint(output.CellText(id), "36"), scope); err != nil {
 				return err
 			}
-			if existing["platform_run_id"] != nil {
+			if receipt != nil {
+				id = receipt.runID
+				if _, err := fmt.Fprintf(d.Out, "  Run: %s  (attempt %s)\n", d.paint(id, "36"), receipt.attempt); err != nil {
+					return err
+				}
+			} else if existing["platform_run_id"] != nil {
 				_, _ = fmt.Fprintln(d.Err, d.errorPaint("Waiting for the new attempt to appear...", "2"))
 				attempt := fieldText(existing, "run_attempt")
 				if attempt == "" {

@@ -25,7 +25,7 @@ Building and validating do not install or replace a command.
 Revalidate an existing archive together with its checksum sidecar:
 
 ```sh
-python3 scripts/go_package.py --verify build/go/packages/avr-go_0.5.0-go-preview_darwin_arm64.tar.gz
+python3 scripts/go_package.py --verify build/go/packages/avr-go_0.6.0-go-preview_darwin_arm64.tar.gz
 python3 -m unittest scripts.test_go_package -v
 ```
 

@@ -88,6 +88,22 @@ def scenarios():
         )
 
     case("complete report")
+    job_url = "https://github.com/acme/web/actions/runs/42/job/99#step:1:2"
+    case(
+        "GitHub job URL",
+        args=["run", "diagnose", job_url, "--json"],
+        responses=responses()
+        | {
+            (
+                "GET",
+                f"/orgs/{ORG}/workflow-runs?platform_run_id=42&limit=1000&order=created_at.desc&include=workflow",
+            ): (200, {"data": [{"run_id": RUN}]}),
+            ("GET", f"/orgs/{ORG}/workflow-runs/{RUN}?include=workflow&include=jobs"): (
+                200,
+                {"data": RUN_DATA | {"jobs": [JOB_DATA | {"platform_job_id": 99}]}},
+            ),
+        },
+    )
     case("human report", args=["run", "diagnose", RUN], json=False, presentation=True, diagnostic_report=False)
     case("org slug", args=["run", "diagnose", RUN, "--org", "acme", "--json"], responses=jobs.ORGS | responses())
     platform_path = ("GET", f"/orgs/{ORG}/workflow-runs/by-platform-id/9007199254740993?include=workflow")
@@ -238,7 +254,7 @@ def compare(scenario, python, go):
         result["requests"] = sorted(result["requests"], key=lambda r: json.dumps(r, sort_keys=True))
         if scenario.get("diagnostic_report") and result["exit"] == 0:
             report = json.loads(result["stdout"])
-            generated = datetime.fromisoformat(report["generated_at"].replace("Z", "+00:00"))
+            generated = datetime.fromisoformat(report["generated_at"])
             generated_times.append(generated)
             report["generated_at"] = "<generated>"
             pairs = [(report["timing"], report["run"])]
@@ -248,7 +264,7 @@ def compare(scenario, python, go):
             for timing, entity in pairs:
                 if timing["execution_end_source"] != "generated_at":
                     continue
-                started = datetime.fromisoformat(entity["started_at"].replace("Z", "+00:00"))
+                started = datetime.fromisoformat(entity["started_at"])
                 expected = (generated - started).total_seconds()
                 if abs(timing["execution_seconds"] - expected) > 0.00001:
                     differences.append("incorrect elapsed time")

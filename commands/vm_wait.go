@@ -37,7 +37,7 @@ func vmRetryDelay(header string) time.Duration {
 	}
 	return time.Duration(value) * time.Second
 }
-func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, path string, timeout int, ready func(map[string]any) bool, goneReady bool, failed func(map[string]any) bool) (map[string]any, string, error) {
+func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, path string, timeout int, ready func(map[string]any) bool, goneReady bool, failed func(map[string]any) bool, notifications ...func(context.Context, time.Duration) error) (map[string]any, string, error) {
 	deadline := d.Now().Add(time.Duration(timeout) * time.Second)
 	var row map[string]any
 	last := ""
@@ -98,7 +98,11 @@ func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 		if remaining <= 0 {
 			return row, "timeout", nil
 		}
-		if err = d.Wait(ctx, min(3*time.Second, remaining)); err != nil {
+		wait := d.Wait
+		if len(notifications) > 0 {
+			wait = notifications[0]
+		}
+		if err = wait(ctx, min(3*time.Second, remaining)); err != nil {
 			return row, "", err
 		}
 	}

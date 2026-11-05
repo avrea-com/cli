@@ -6,307 +6,313 @@ package docgen
 func helpTemplateJSON(path string) []byte {
 	switch path {
 	case "avr artifact delete":
-		return metadata[521354:525598]
+		return metadata[540424:544668]
 	case "avr artifact download":
-		return metadata[525629:529997]
+		return metadata[544699:549067]
 	case "avr artifact get":
-		return metadata[530023:533750]
+		return metadata[549093:552820]
 	case "avr artifact list":
-		return metadata[533777:538493]
+		return metadata[552847:557563]
 	case "avr artifact":
-		return metadata[538515:540085]
+		return metadata[557585:559275]
 	case "avr audit-events list":
-		return metadata[540116:547225]
+		return metadata[559306:566415]
 	case "avr audit-events":
-		return metadata[547251:548360]
+		return metadata[566441:567550]
+	case "avr auth device-login":
+		return metadata[567581:569406]
 	case "avr auth git-credential":
-		return metadata[548393:550965]
+		return metadata[569439:572011]
 	case "avr auth login":
-		return metadata[550989:553306]
+		return metadata[572035:574352]
 	case "avr auth logout":
-		return metadata[553331:554278]
+		return metadata[574377:575324]
 	case "avr auth status":
-		return metadata[554303:557052]
+		return metadata[575349:578098]
 	case "avr auth switch":
-		return metadata[557077:558503]
+		return metadata[578123:579549]
 	case "avr auth":
-		return metadata[558521:560100]
+		return metadata[579567:581466]
 	case "avr billing invoices download":
-		return metadata[560139:562577]
+		return metadata[581505:583943]
 	case "avr billing invoices list":
-		return metadata[562612:566667]
+		return metadata[583978:588033]
 	case "avr billing invoices show":
-		return metadata[566702:570024]
+		return metadata[588068:591390]
 	case "avr billing invoices":
-		return metadata[570054:571352]
+		return metadata[591420:592718]
 	case "avr billing payment-methods add":
-		return metadata[571393:575348]
+		return metadata[592759:596714]
 	case "avr billing payment-methods list":
-		return metadata[575390:578287]
+		return metadata[596756:599653]
 	case "avr billing payment-methods remove":
-		return metadata[578331:580703]
+		return metadata[599697:602069]
 	case "avr billing payment-methods set-default":
-		return metadata[580752:582644]
+		return metadata[602118:604010]
 	case "avr billing payment-methods":
-		return metadata[582681:584146]
+		return metadata[604047:605512]
 	case "avr billing settings":
-		return metadata[584176:587073]
+		return metadata[605542:608439]
 	case "avr billing summary":
-		return metadata[587102:590003]
+		return metadata[608468:611369]
 	case "avr billing update-settings":
-		return metadata[590040:594238]
+		return metadata[611406:615604]
 	case "avr billing":
-		return metadata[594259:595899]
+		return metadata[615625:617265]
 	case "avr cache delete":
-		return metadata[595925:601143]
+		return metadata[617291:622509]
 	case "avr cache list":
-		return metadata[601167:608849]
+		return metadata[622533:630215]
 	case "avr cache usage":
-		return metadata[608874:612493]
+		return metadata[630240:633859]
 	case "avr cache":
-		return metadata[612512:613912]
+		return metadata[633878:635368]
 	case "avr config get":
-		return metadata[613936:615354]
+		return metadata[635392:636810]
 	case "avr config list":
-		return metadata[615379:616338]
+		return metadata[636835:637794]
 	case "avr config set":
-		return metadata[616362:618194]
+		return metadata[637818:639650]
 	case "avr config unset":
-		return metadata[618220:619701]
+		return metadata[639676:641157]
 	case "avr config":
-		return metadata[619721:621249]
+		return metadata[641177:642825]
 	case "avr firewall add":
-		return metadata[621275:627303]
+		return metadata[642851:648879]
 	case "avr firewall delete":
-		return metadata[627332:629717]
+		return metadata[648908:651293]
 	case "avr firewall flow-summaries":
-		return metadata[629754:636342]
+		return metadata[651330:657918]
 	case "avr firewall list":
-		return metadata[636369:638992]
+		return metadata[657945:660568]
 	case "avr firewall move":
-		return metadata[639019:641997]
+		return metadata[660595:663573]
 	case "avr firewall set-default":
-		return metadata[642031:644742]
+		return metadata[663607:666318]
 	case "avr firewall show":
-		return metadata[644769:647358]
+		return metadata[666345:668934]
 	case "avr firewall":
-		return metadata[647380:649397]
+		return metadata[668956:670973]
 	case "avr health":
-		return metadata[649417:651688]
+		return metadata[670993:673264]
 	case "avr internal docs":
-		return metadata[651715:655629]
+		return metadata[673291:677205]
 	case "avr internal":
-		return metadata[655651:656750]
+		return metadata[677227:678326]
 	case "avr job list":
-		return metadata[656772:666902]
+		return metadata[678348:688478]
 	case "avr job logs":
-		return metadata[666924:672456]
+		return metadata[688500:694032]
 	case "avr job metrics":
-		return metadata[672481:677546]
+		return metadata[694057:699220]
 	case "avr job ssh":
-		return metadata[677567:679969]
+		return metadata[699241:701643]
 	case "avr job view":
-		return metadata[679991:685702]
+		return metadata[701665:707376]
 	case "avr job watch":
-		return metadata[685725:689677]
+		return metadata[707399:711351]
 	case "avr job":
-		return metadata[689694:691500]
+		return metadata[711368:713354]
 	case "avr log search":
-		return metadata[691524:698424]
+		return metadata[713378:720278]
 	case "avr log":
-		return metadata[698441:699529]
+		return metadata[720295:721413]
 	case "avr login":
-		return metadata[699548:701865]
+		return metadata[721432:723749]
 	case "avr logout":
-		return metadata[701885:702832]
+		return metadata[723769:724716]
 	case "avr org create":
-		return metadata[702856:705416]
+		return metadata[724740:727300]
 	case "avr org email-domain claim":
-		return metadata[705452:709049]
+		return metadata[727336:730933]
 	case "avr org email-domain list":
-		return metadata[709084:712056]
+		return metadata[730968:733940]
 	case "avr org email-domain set":
-		return metadata[712090:714878]
+		return metadata[733974:736762]
 	case "avr org email-domain verify":
-		return metadata[714915:718462]
+		return metadata[736799:740346]
 	case "avr org email-domain":
-		return metadata[718492:720108]
+		return metadata[740376:742112]
 	case "avr org install add":
-		return metadata[720137:728910]
+		return metadata[742141:750914]
 	case "avr org install list":
-		return metadata[728940:731406]
+		return metadata[750944:753410]
 	case "avr org install remove":
-		return metadata[731438:735713]
+		return metadata[753442:757717]
 	case "avr org install rotate":
-		return metadata[735745:740571]
+		return metadata[757749:762575]
 	case "avr org install runner create":
-		return metadata[740610:746199]
+		return metadata[762614:768203]
 	case "avr org install runner delete":
-		return metadata[746238:750721]
+		return metadata[768242:772725]
 	case "avr org install runner list":
-		return metadata[750758:754251]
+		return metadata[772762:776255]
 	case "avr org install runner set":
-		return metadata[754287:758991]
+		return metadata[776291:780995]
 	case "avr org install runner":
-		return metadata[759023:760685]
+		return metadata[781027:782809]
 	case "avr org install set-selection":
-		return metadata[760724:766053]
+		return metadata[782848:788177]
 	case "avr org install":
-		return metadata[766078:767985]
+		return metadata[788202:790289]
 	case "avr org list":
-		return metadata[768007:770380]
+		return metadata[790311:792684]
 	case "avr org members":
-		return metadata[770405:773393]
+		return metadata[792709:795697]
 	case "avr org saml configure":
-		return metadata[773425:782107]
+		return metadata[795729:804411]
 	case "avr org saml enforcement":
-		return metadata[782141:785628]
+		return metadata[804445:807932]
 	case "avr org saml remove":
-		return metadata[785657:787873]
+		return metadata[807961:810177]
 	case "avr org saml show":
-		return metadata[787900:791026]
+		return metadata[810204:813330]
 	case "avr org saml sp-metadata":
-		return metadata[791060:792800]
+		return metadata[813364:815104]
 	case "avr org saml test":
-		return metadata[792827:795165]
+		return metadata[815131:817469]
 	case "avr org saml":
-		return metadata[795187:797121]
+		return metadata[817491:819605]
 	case "avr org":
-		return metadata[797138:798958]
+		return metadata[819622:821622]
 	case "avr pr list":
-		return metadata[798979:805800]
+		return metadata[821643:828464]
 	case "avr pr":
-		return metadata[805816:806878]
+		return metadata[828480:829572]
 	case "avr repo clone":
-		return metadata[806902:811161]
+		return metadata[829596:833855]
 	case "avr repo list":
-		return metadata[811184:814833]
+		return metadata[833878:837527]
 	case "avr repo mirror create":
-		return metadata[814865:820214]
+		return metadata[837559:842908]
 	case "avr repo mirror disable":
-		return metadata[820247:825311]
+		return metadata[842941:848005]
 	case "avr repo mirror enable":
-		return metadata[825343:829949]
+		return metadata[848037:852643]
 	case "avr repo mirror locations":
-		return metadata[829984:833005]
+		return metadata[852678:855699]
 	case "avr repo mirror place":
-		return metadata[833036:838019]
+		return metadata[855730:860713]
 	case "avr repo mirror status":
-		return metadata[838051:842510]
+		return metadata[860745:865204]
 	case "avr repo mirror unplace":
-		return metadata[842543:847992]
+		return metadata[865237:870686]
 	case "avr repo mirror":
-		return metadata[848017:850103]
+		return metadata[870711:873007]
 	case "avr repo public-mirror cancel":
-		return metadata[850142:854385]
+		return metadata[873046:877289]
 	case "avr repo public-mirror check":
-		return metadata[854423:857959]
+		return metadata[877327:880863]
 	case "avr repo public-mirror request":
-		return metadata[857999:862387]
+		return metadata[880903:885291]
 	case "avr repo public-mirror requests":
-		return metadata[862428:865722]
+		return metadata[885332:888626]
 	case "avr repo public-mirror view":
-		return metadata[865759:869365]
+		return metadata[888663:892269]
 	case "avr repo public-mirror":
-		return metadata[869397:871124]
+		return metadata[892301:894178]
 	case "avr repo":
-		return metadata[871142:872766]
+		return metadata[894196:895940]
 	case "avr run cancel":
-		return metadata[872790:875341]
+		return metadata[895964:898515]
 	case "avr run diagnose":
-		return metadata[875367:878116]
+		return metadata[898541:901463]
 	case "avr run list":
-		return metadata[878138:889670]
+		return metadata[901485:913017]
 	case "avr run logs":
-		return metadata[889692:894913]
+		return metadata[913039:918392]
 	case "avr run rerun":
-		return metadata[894936:898040]
+		return metadata[918415:923110]
 	case "avr run view":
-		return metadata[898062:905431]
+		return metadata[923132:930644]
 	case "avr run watch":
-		return metadata[905454:910251]
+		return metadata[930667:935464]
 	case "avr run":
-		return metadata[910268:912217]
+		return metadata[935481:937640]
 	case "avr sbom download":
-		return metadata[912244:917073]
+		return metadata[937667:942496]
 	case "avr sbom generate":
-		return metadata[917100:923998]
+		return metadata[942523:949421]
 	case "avr sbom list":
-		return metadata[924021:928982]
+		return metadata[949444:954405]
 	case "avr sbom view":
-		return metadata[929005:934832]
+		return metadata[954428:960255]
 	case "avr sbom":
-		return metadata[934850:936463]
+		return metadata[960273:962006]
 	case "avr settings list":
-		return metadata[936490:941431]
+		return metadata[962033:966974]
 	case "avr settings reset":
-		return metadata[941459:944325]
+		return metadata[967002:969868]
 	case "avr settings schema":
-		return metadata[944354:947982]
+		return metadata[969897:973525]
 	case "avr settings set":
-		return metadata[948008:951365]
+		return metadata[973551:976908]
 	case "avr settings":
-		return metadata[951387:952941]
+		return metadata[976930:978604]
 	case "avr status":
-		return metadata[952961:956092]
+		return metadata[978624:981755]
 	case "avr tests list":
-		return metadata[956116:961632]
+		return metadata[981779:990730]
 	case "avr tests":
-		return metadata[961651:962912]
+		return metadata[990749:992189]
 	case "avr token create":
-		return metadata[962938:970119]
+		return metadata[992215:999396]
 	case "avr token list":
-		return metadata[970143:973973]
+		return metadata[999420:1003250]
 	case "avr token revoke":
-		return metadata[973999:976603]
+		return metadata[1003276:1005880]
 	case "avr token view":
-		return metadata[976627:980182]
+		return metadata[1005904:1009459]
 	case "avr token":
-		return metadata[980201:982009]
+		return metadata[1009478:1011406]
 	case "avr vm bootstrap":
-		return metadata[982035:991605]
+		return metadata[1011432:1021007]
+	case "avr vm capabilities":
+		return metadata[1021036:1023025]
 	case "avr vm create":
-		return metadata[991628:1006854]
+		return metadata[1023048:1039568]
 	case "avr vm delete":
-		return metadata[1006877:1010982]
+		return metadata[1039591:1043704]
+	case "avr vm fork":
+		return metadata[1043725:1048589]
 	case "avr vm list":
-		return metadata[1011003:1014794]
+		return metadata[1048610:1053951]
+	case "avr vm metrics":
+		return metadata[1053975:1058927]
 	case "avr vm pause":
-		return metadata[1014816:1019209]
+		return metadata[1058949:1063353]
 	case "avr vm port-forward":
-		return metadata[1019238:1024080]
+		return metadata[1063382:1068232]
 	case "avr vm rdp":
-		return metadata[1024100:1028770]
+		return metadata[1068252:1072930]
 	case "avr vm resume":
-		return metadata[1028793:1033188]
+		return metadata[1072953:1077467]
+	case "avr vm rotate-https-label":
+		return metadata[1077502:1080007]
 	case "avr vm show":
-		return metadata[1033209:1035685]
+		return metadata[1080028:1082512]
 	case "avr vm ssh":
-		return metadata[1035705:1042135]
+		return metadata[1082532:1088970]
 	case "avr vm ssh-config":
-		return metadata[1042162:1047907]
-	case "avr vm start":
-		return metadata[1047929:1051552]
-	case "avr vm stop":
-		return metadata[1051573:1055101]
+		return metadata[1088997:1094749]
 	case "avr vm update":
-		return metadata[1055124:1060678]
+		return metadata[1094772:1101725]
 	case "avr vm usage":
-		return metadata[1060700:1064062]
+		return metadata[1101747:1105109]
 	case "avr vm vnc":
-		return metadata[1064082:1068808]
+		return metadata[1105129:1109863]
 	case "avr vm":
-		return metadata[1068824:1072188]
+		return metadata[1109879:1113584]
 	case "avr workflow list":
-		return metadata[1072215:1077173]
+		return metadata[1113611:1118569]
 	case "avr workflow run":
-		return metadata[1077199:1084875]
+		return metadata[1118595:1126271]
 	case "avr workflow view":
-		return metadata[1084902:1090497]
+		return metadata[1126298:1131893]
 	case "avr workflow":
-		return metadata[1090519:1091910]
+		return metadata[1131915:1133396]
 	case "avr":
-		return metadata[1091923:1098657]
+		return metadata[1133409:1140143]
 	}
 	return nil
 }

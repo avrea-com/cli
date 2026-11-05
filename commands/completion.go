@@ -265,7 +265,7 @@ func completionValues(param docgen.CompletionParam, prefix string) []completionI
 				value, start = strings.ToLower(value), strings.ToLower(start)
 			}
 			if strings.HasPrefix(value, start) {
-				out = append(out, completionItem{kind: "plain", value: choice})
+				out = append(out, completionItem{kind: "plain", value: value})
 			}
 		}
 		return out

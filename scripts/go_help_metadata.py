@@ -70,6 +70,14 @@ def terminal_tree():
                             "name": name,
                             "description": descriptions[name],
                             "section": getattr(child, "help_section", None),
+                            **(
+                                {"auto_short": True}
+                                if path != "avr"
+                                and isinstance(command, GhHelpMixin)
+                                and not child.short_help
+                                and name not in getattr(command, "_lazy_specs", {})
+                                else {}
+                            ),
                         }
                     )
                 walk(child, path + " " + name, context)

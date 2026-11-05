@@ -129,13 +129,13 @@ func newVMPortForward(d Dependencies) *cobra.Command {
 	var specs []string
 	var local int
 	var printOnly bool
-	c := &cobra.Command{Use: "port-forward VM_ID", Short: "Forward local TCP ports to a VM over SSH.", Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: "port-forward VM_ID_OR_NAME", Short: "Forward local TCP ports to a VM over SSH.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	f := c.Flags()
 	f.StringArrayVar(&specs, "port", nil, "Guest port or LOCAL:GUEST; repeatable.")
 	_ = c.MarkFlagRequired("port")
 	c.Args = func(cmd *cobra.Command, args []string) error {
-		if err := positionalArguments("VM_ID")(cmd, args); err != nil {
+		if err := positionalArguments("VM_ID_OR_NAME")(cmd, args); err != nil {
 			return err
 		}
 		if len(specs) == 0 {
@@ -223,7 +223,7 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 	var org, identity string
 	var local int
 	var launch, printOnly bool
-	c := &cobra.Command{Use: protocol + " VM_ID", Short: "Open a " + strings.ToUpper(protocol) + " desktop over an SSH tunnel.", Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: protocol + " VM_ID_OR_NAME", Short: "Open a " + strings.ToUpper(protocol) + " desktop over an SSH tunnel.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	f := c.Flags()
 	f.IntVar(&local, "local-port", 0, "Local port to bind; defaults to an unused port.")

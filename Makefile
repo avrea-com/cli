@@ -103,6 +103,7 @@ go-lint:
 go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_device_login --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_inspection --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_run_control --go build/go/avr
@@ -111,6 +112,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_workflow_run --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_watch --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_metrics --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_metrics_stream --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_run_diagnose --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_pr --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_status --go build/go/avr
@@ -142,6 +144,7 @@ go-parity: go-build
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_lifecycle --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_update --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_create --go build/go/avr
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_release --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh_config --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh --go build/go/avr
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_tunnel --go build/go/avr

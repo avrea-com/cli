@@ -65,7 +65,7 @@ func TestVMWaitBoundsBackoffAndStopsPermanentErrors(t *testing.T) {
 	}
 }
 func TestVMLifecycleMutationIsNotRetried(t *testing.T) {
-	for _, operation := range []string{"start", "stop", "pause", "resume", "delete"} {
+	for _, operation := range []string{"pause", "resume", "delete", "fork"} {
 		t.Run(operation, func(t *testing.T) {
 			d, _, _ := testDeps(t)
 			d.LoadConfig = func() (config.Config, error) {
@@ -83,7 +83,7 @@ func TestVMLifecycleMutationIsNotRetried(t *testing.T) {
 		})
 	}
 }
-func TestVMStartWaitCancellationPreservesPassword(t *testing.T) {
+func TestVMCreateWaitCancellationPreservesPassword(t *testing.T) {
 	d, out, stderr := testDeps(t)
 	cfg := config.Config{Host: "https://api.example.test", Token: "fixture", Org: "org-019a0000000070008000000000000001"}
 	d.LoadConfig = func() (config.Config, error) { return cfg, nil }
@@ -94,13 +94,13 @@ func TestVMStartWaitCancellationPreservesPassword(t *testing.T) {
 	d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 		calls = append(calls, r.Method)
 		body := `{"data":{"state":"PENDING"}}`
-		if r.Method == http.MethodPatch {
+		if r.Method == http.MethodPost {
 			body = `{"data":{"vm":{"state":"PENDING"},"password":"fixture-one-time"}}`
 		}
 		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
 	})}
-	code := Execute(ctx, []string{"vm", "start", "cvm-019a0000000070008000000000000001", "--wait"}, d)
-	if code != 130 || !strings.Contains(out.String(), "One-time password: fixture-one-time") || !strings.Contains(stderr.String(), "Interrupted.") || strings.Join(calls, ",") != "PATCH,GET" {
+	code := Execute(ctx, []string{"vm", "create", "--os", "linux", "--size", "2-vcpu", "--wait"}, d)
+	if code != 130 || !strings.Contains(out.String(), "One-time password: fixture-one-time") || !strings.Contains(stderr.String(), "Interrupted.") || strings.Join(calls, ",") != "POST,GET,GET" {
 		t.Fatal(code, calls, out, stderr)
 	}
 }

@@ -39,6 +39,9 @@ func newRunLogs(d Dependencies) *cobra.Command {
 		}
 		jobs := []map[string]any{}
 		for _, j := range objectList(rec.Fields["jobs"]) {
+			if ref.platformJobID != "" && fieldText(j, "platform_job_id") != ref.platformJobID {
+				continue
+			}
 			if filter == "" || strings.Contains(strings.ToLower(fieldText(j, "job_name")), strings.ToLower(filter)) {
 				jobs = append(jobs, j)
 			}

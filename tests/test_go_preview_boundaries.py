@@ -14,7 +14,7 @@ def test_release_does_not_call_go_preview_jobs():
     ci = (workflows / "ci.yml").read_text(encoding="utf-8")
     preview = (workflows / "go-preview.yml").read_text(encoding="utf-8")
     assert "uses: ./.github/workflows/ci.yml" in release
-    jobs = re.findall(r"^  ([a-z][a-z-]*):$", ci.split("jobs:\n", 1)[1], re.M)
+    jobs = re.findall(r"^  ([a-z][a-z-]*):$", ci.split("jobs:\n", 1)[1], re.MULTILINE)
     assert jobs and not any(name.startswith("go-") for name in jobs)
     assert "go-preview.yml" not in ci and "go-package.yml" not in ci
     triggers = preview.split("on:\n", 1)[1].split("permissions:", 1)[0]

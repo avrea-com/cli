@@ -18,8 +18,8 @@ import (
 func NewVM(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "vm", Aliases: []string{"vms"}, Short: "Manage long-running customer VMs."}
-	c.AddCommand(newVMList(d), newVMShow(d), newVMUsage(d), newVMUpdate(d), newVMCreate(d), newVMSSHConfig(d), newVMSSH(d), newVMPortForward(d), newVMDesktop(d, "rdp"), newVMDesktop(d, "vnc"), newVMBootstrap(d))
-	for _, operation := range []string{"start", "stop", "pause", "resume", "delete"} {
+	c.AddCommand(newVMMetrics(d), newVMCapabilities(d), newVMFork(d), newVMRotateHTTPSLabel(d), newVMList(d), newVMShow(d), newVMUsage(d), newVMUpdate(d), newVMCreate(d), newVMSSHConfig(d), newVMSSH(d), newVMPortForward(d), newVMDesktop(d, "rdp"), newVMDesktop(d, "vnc"), newVMBootstrap(d))
+	for _, operation := range []string{"pause", "resume", "delete"} {
 		c.AddCommand(newVMLifecycle(d, operation))
 	}
 	return c
@@ -53,16 +53,30 @@ func vmGrid(d Dependencies, rows []map[string]any, keys, labels []string) error 
 	return output.Grid(d.Out, labels, cells)
 }
 func newVMList(d Dependencies) *cobra.Command {
-	var org, state, cursor string
+	var org, state, cursor, scope string
+	var sandbox bool
 	var limit int
 	var asJSON bool
 	c := &cobra.Command{Use: "list", Short: "List the organization's VMs, newest first (deleted ones excluded).", Args: cobra.NoArgs}
 	orgFlag(c, &org)
 	c.Flags().StringVar(&state, "state", "", "Filter by lifecycle state.")
+	c.Flags().StringVar(&scope, "scope", "all", "Visible VMs or only your own.")
+	c.Flags().BoolVar(&sandbox, "sandbox", false, "Agent sandboxes only.")
+	c.Flags().Var(inverseBool{&sandbox}, "no-sandbox", "Human-created VMs only.")
+	c.Flags().Lookup("no-sandbox").NoOptDefVal = "true"
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Max VMs to return (1–100).")
 	c.Flags().StringVar(&cursor, "cursor", "", "Pagination cursor from a previous response.")
 	c.Flags().BoolVar(&asJSON, "json", false, "Emit the VM list as JSON.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
+		if cmd.Flags().Changed("state") {
+			state = strings.ToUpper(state)
+			if err := validateFirewallChoice("state", state, []string{"PENDING", "STARTING", "RUNNING", "PAUSING", "PAUSED", "STOPPING", "DELETING", "FAILED"}); err != nil {
+				return err
+			}
+		}
+		if err := validateFirewallChoice("scope", scope, []string{"all", "mine"}); err != nil {
+			return err
+		}
 		if limit < 1 || limit > 100 {
 			return &ExitError{2, "Error: --limit must be between 1 and 100."}
 		}
@@ -73,7 +87,10 @@ func newVMList(d Dependencies) *cobra.Command {
 		if cmd.Flags().Changed("cursor") && (cursor == "" || strings.TrimSpace(cursor) != cursor || utf8.RuneCountInString(cursor) > 512) {
 			return &ExitError{2, "Error: --cursor must be 1..512 chars and not surrounded by whitespace"}
 		}
-		query := url.Values{"limit": {strconv.Itoa(limit)}}
+		query := url.Values{"limit": {strconv.Itoa(limit)}, "scope": {scope}}
+		if cmd.Flags().Changed("sandbox") || cmd.Flags().Changed("no-sandbox") {
+			query.Set("sandbox", strconv.FormatBool(sandbox))
+		}
 		if state != "" {
 			query.Set("state", state)
 		}
@@ -88,7 +105,7 @@ func newVMList(d Dependencies) *cobra.Command {
 		if asJSON {
 			err = rawJSON(d, rows)
 		} else {
-			err = vmGrid(d, rows, []string{"customer_vm_id", "display_name", "os_type", "state", "desired_state", "cpu_count", "memory_mb", "created_at"}, []string{"VM ID", "Name", "OS", "State", "Desired", "vCPU", "Mem (MB)", "Created"})
+			err = vmGrid(d, rows, []string{"customer_vm_id", "display_name", "os_type", "state", "architecture", "cpu_count", "memory_mb", "created_at"}, []string{"VM ID", "Name", "OS", "State", "Arch", "vCPU", "Mem (MB)", "Created"})
 		}
 		if err != nil {
 			return err
@@ -107,7 +124,7 @@ func newVMList(d Dependencies) *cobra.Command {
 func newVMShow(d Dependencies) *cobra.Command {
 	var org string
 	var asJSON bool
-	c := &cobra.Command{Use: "show VM_ID", Short: "Show a VM's details, including connection endpoints and egress rules.", Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: "show VM_ID_OR_NAME", Short: "Show a VM's details, including connection endpoints and egress rules.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	c.Flags().BoolVar(&asJSON, "json", false, "Emit the full VM record (with egress rules) as JSON.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {

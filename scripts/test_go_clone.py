@@ -34,7 +34,7 @@ def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noq
     global_config = (tmp_path / "global-config").read_text()
     destination = tmp_path / "checkout with spaces"
     result = subprocess.run(
-        [binary, "repo", "clone", "foo/faa", str(destination)], capture_output=True, text=True, timeout=20
+        [binary, "repo", "clone", "foo/faa", str(destination)], check=False, capture_output=True, text=True, timeout=20
     )
     assert result.returncode == 0, result.stderr
     assert (destination / "README").read_text() == "mirror content\n"
@@ -51,12 +51,16 @@ def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noq
     assert Path(shlex.split(helper_command)[1]).resolve() == Path(binary)
     monkeypatch.setenv("AVR_HOST", "https://never-contact.example.test")
     for _ in range(2):
-        fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
+        fetched = subprocess.run(
+            ["git", "-C", str(destination), "fetch"], check=False, capture_output=True, text=True, timeout=15
+        )
         assert fetched.returncode == 0, fetched.stderr
     assert issued == ["git-jwt-1", "git-jwt-2", "git-jwt-3"]
     assert set(authenticated) == set(issued)
     controls["token_status"] = 503
-    fetched = subprocess.run(["git", "-C", str(destination), "fetch"], capture_output=True, text=True, timeout=15)
+    fetched = subprocess.run(
+        ["git", "-C", str(destination), "fetch"], check=False, capture_output=True, text=True, timeout=15
+    )
     assert fetched.returncode != 0
     assert "Avrea is having trouble" in fetched.stderr
     assert credentials.read_text() == seeded

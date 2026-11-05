@@ -135,14 +135,13 @@ def compare(scenario, python, go):
         message = inspection.terminal_text(result["stderr"])
         if not message.strip():
             differences.append(label + " missing parser diagnostic")
-        if scenario["parser_flags"]:
-            if not any(
-                flag in message
-                or scenario["parser_kind"] == "missing_option"
-                and re.search(r"\b" + re.escape(flag.lstrip("-")) + r"\b", message)
-                for flag in scenario["parser_flags"]
-            ):
-                differences.append(label + " diagnostic omitted the rejected option")
+        if scenario["parser_flags"] and not any(
+            flag in message
+            or scenario["parser_kind"] == "missing_option"
+            and re.search(r"\b" + re.escape(flag.lstrip("-")) + r"\b", message)
+            for flag in scenario["parser_flags"]
+        ):
+            differences.append(label + " diagnostic omitted the rejected option")
         if not re.search(DIAGNOSTICS[scenario["parser_kind"]], message, re.IGNORECASE):
             differences.append(label + " diagnostic reported the wrong parser problem")
     return differences

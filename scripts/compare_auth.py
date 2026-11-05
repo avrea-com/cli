@@ -35,7 +35,7 @@ import threading
 import time
 import urllib.request
 
-BASELINE = "df6d102dce45014c55d0929307b29603c6806e94"
+BASELINE = "c9e1e4b6a11db522d142ec0dfaeb8119917ec41c"
 TOKEN = "avr_fixture_key_never_a_real_secret"
 USER = {
     "id": "usr-fixture",
@@ -112,11 +112,21 @@ class Fixture(http.server.BaseHTTPRequestHandler):
         if isinstance(response, list):
             response = response.pop(0) if len(response) > 1 else response[0]
         status, payload, *extra = response
+        if status == 101:
+            from scripts.websocket_fixture import respond  # noqa: PLC0415 - optional streaming fixture
+
+            respond(self, payload)
+            return
         if status == 0:
             self.close_connection = True
             return
         if getattr(self.server, "expand_host", False) and not isinstance(payload, bytes):
             payload = json.loads(json.dumps(payload).replace("FIXTURE_HOST", self.server.fixture_host))
+        websocket_handshake = self.headers.get("Upgrade", "").lower() == "websocket"
+        if websocket_handshake:
+            # RFC 6455 requires HTTP/1.1 even when the handshake is refused.
+            self.protocol_version = "HTTP/1.1"
+            self.close_connection = True
         self.send_response(status)
         if not extra or not any(k.lower() == "content-type" for k in extra[0]):
             self.send_header(
@@ -128,6 +138,9 @@ class Fixture(http.server.BaseHTTPRequestHandler):
         if self.server.encoding:
             self.send_header("Content-Encoding", self.server.encoding)
             data = gzip.compress(data) if self.server.encoding == "gzip" else zstd.compress(data)
+        if websocket_handshake:
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(data)
 
@@ -148,7 +161,7 @@ def windows_literal_json_args(args):
 
 def run_captured(args, *, stdin, **kwargs):
     """Send identical UTF-8 input bytes on every OS; decode terminal output."""
-    result = subprocess.run(args, input=stdin.encode("utf-8"), capture_output=True, **kwargs)
+    result = subprocess.run(args, check=False, input=stdin.encode("utf-8"), capture_output=True, **kwargs)
     # Match subprocess text-mode output normalization without its Windows
     # input conversion, which would change LF Git protocol fixtures to CRLF.
     result.stdout = result.stdout.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
@@ -298,7 +311,7 @@ def run(executable, scenario, root, host):
                     )
                     with urllib.request.urlopen(request, timeout=10) as response:
                         response.read()
-                except Exception as exc:
+                except (OSError, ValueError) as exc:
                     callback_errors.append(str(exc))
 
             callback_worker = threading.Thread(target=callback, daemon=True)

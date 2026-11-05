@@ -30,7 +30,7 @@ CASES = [
 
 def run(binary, args, env, home):
     started = time.perf_counter_ns()
-    process = subprocess.run([str(binary), *args], env=env, cwd=home, capture_output=True, timeout=20)
+    process = subprocess.run([str(binary), *args], check=False, env=env, cwd=home, capture_output=True, timeout=20)
     elapsed = (time.perf_counter_ns() - started) / 1e6
     if process.returncode:
         raise RuntimeError(f"{binary.name} {args!r}: exit {process.returncode}")

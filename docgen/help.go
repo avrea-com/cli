@@ -11,6 +11,7 @@ type HelpCommand struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	Section     *string `json:"section"`
+	AutoShort   bool    `json:"auto_short,omitempty"`
 }
 type CompletionType struct {
 	Kind          string   `json:"param_type"`

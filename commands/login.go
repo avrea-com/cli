@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/avrea-com/cli/client"
+	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
@@ -39,46 +40,50 @@ func NewLogin(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err := store.Set(cfg.Host, "token", key); err != nil {
-			return fmt.Errorf("save credentials: %w", err)
-		}
-		api.Config.Token = key
-		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-		user, _ := api.Do(ctx, http.MethodGet, "/users/me", nil)
-		cancel()
-		signedIn, _ := user["email"].(string)
-		var b strings.Builder
-		if signedIn != "" {
-			fmt.Fprintf(&b, "%s Logged in as %s\n", d.paint("✓", "32"), d.paint(output.Text(signedIn), "1"))
-		} else {
-			b.WriteString(d.paint("✓", "32") + " Authentication complete.\n")
-		}
-		fmt.Fprintf(&b, "  Credentials saved to %s\n", store.Path)
-		if store.Read().Value(cfg.Host, "default_org") == "" {
-			ctx, cancel = context.WithTimeout(cmd.Context(), 5*time.Second)
-			orgs, _ := api.Do(ctx, http.MethodGet, "/users/me/organizations", nil)
-			cancel()
-			data, _ := orgs["data"].([]any)
-			if len(data) == 1 {
-				org, _ := data[0].(map[string]any)
-				id, _ := org["organization_id"].(string)
-				slug, _ := org["slug"].(string)
-				if slug == "" {
-					slug = id
-				}
-				if id != "" {
-					if err := store.Set(cfg.Host, "default_org", id); err != nil {
-						return fmt.Errorf("save default organization: %w", err)
-					}
-					fmt.Fprintf(&b, "  Default organization: %s (%s)\n", d.paint(output.Text(slug), "1"), output.Text(id))
-				}
-			}
-		}
-		b.WriteString("\nTry: avr status\n")
-		_, err = fmt.Fprint(d.Out, b.String())
-		return err
+		return completeLogin(cmd.Context(), d, cfg, store, api, key)
 	})
 	return cmd
+}
+
+func completeLogin(parent context.Context, d Dependencies, cfg config.Config, store *config.Store, api *client.Client, key string) error {
+	if err := store.Set(cfg.Host, "token", key); err != nil {
+		return fmt.Errorf("Could not save credentials to %s. Fix the file permissions or available disk space, then run avr auth device-login or avr auth login again.", store.Path) //nolint:staticcheck // Match the Python CLI diagnostic.
+	}
+	api.Config.Token = key
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	user, _ := api.Do(ctx, http.MethodGet, "/users/me", nil)
+	cancel()
+	signedIn, _ := user["email"].(string)
+	var b strings.Builder
+	if signedIn != "" {
+		fmt.Fprintf(&b, "%s Logged in as %s\n", d.paint("✓", "32"), d.paint(output.Text(signedIn), "1"))
+	} else {
+		b.WriteString(d.paint("✓", "32") + " Authentication complete.\n")
+	}
+	fmt.Fprintf(&b, "  Credentials saved to %s\n", store.Path)
+	if store.Read().Value(cfg.Host, "default_org") == "" {
+		ctx, cancel = context.WithTimeout(parent, 5*time.Second)
+		orgs, _ := api.Do(ctx, http.MethodGet, "/users/me/organizations", nil)
+		cancel()
+		data, _ := orgs["data"].([]any)
+		if len(data) == 1 {
+			org, _ := data[0].(map[string]any)
+			id, _ := org["organization_id"].(string)
+			slug, _ := org["slug"].(string)
+			if slug == "" {
+				slug = id
+			}
+			if id != "" {
+				if err := store.Set(cfg.Host, "default_org", id); err != nil {
+					return fmt.Errorf("save default organization: %w", err)
+				}
+				fmt.Fprintf(&b, "  Default organization: %s (%s)\n", d.paint(output.Text(slug), "1"), output.Text(id))
+			}
+		}
+	}
+	b.WriteString("\nTry: avr status\n")
+	_, err := fmt.Fprint(d.Out, b.String())
+	return err
 }
 
 func login(parent context.Context, d Dependencies, api *client.Client, provider, email string) (string, error) {

@@ -109,10 +109,36 @@ func renderVM(d Dependencies, vm map[string]any, password string) error {
 	pairs := [][2]string{
 		{"VM ID", value("customer_vm_id")}, {"Name", value("display_name")}, {"OS", value("os_type")},
 		{"Resources", value("cpu_count") + " vCPU / " + value("memory_mb") + " MB / " + value("disk_gb") + " GB disk"},
-		{"State", value("state")}, {"Desired state", value("desired_state")}, {"Reason", pythonValue(fallback(vm["state_reason"], "-"))},
+		{"State", value("state")}, {"Reason", pythonValue(fallback(vm["state_reason"], "-"))},
 		{"Remote desktop", desktop}, {"Endpoints", vmEndpoints(vm["endpoints"])},
 	}
-	if ref := fieldText(vm, "precheckout_ref"); ref != "" {
+	for _, field := range [][2]string{{"Architecture", "architecture"}, {"Repository", "repository_full_name"}, {"Access", "access_level"}, {"Started", "started_at"}, {"Stopped", "stopped_at"}} {
+		if vm[field[1]] != nil {
+			pairs = append(pairs, [2]string{field[0], value(field[1])})
+		}
+	}
+	if ports, ok := vm["https_ports"].([]any); ok && len(ports) > 0 {
+		values := make([]string, len(ports))
+		for i, port := range ports {
+			values[i] = pythonValue(port)
+		}
+		pairs = append(pairs, [2]string{"HTTPS ports", strings.Join(values, ", ")})
+	}
+	endpoints, _ := vm["endpoints"].(map[string]any)
+	urls := []string{}
+	for _, entry := range objectList(endpoints["https"]) {
+		if target := fieldText(entry, "url"); target != "" {
+			urls = append(urls, pythonValue(entry["port"])+": "+target)
+		}
+	}
+	if len(urls) > 0 {
+		pairs = append(pairs, [2]string{"HTTPS URLs", strings.Join(urls, "; ")})
+	}
+	ref := fieldText(vm, "repository_ref")
+	if ref == "" {
+		ref = fieldText(vm, "precheckout_ref")
+	}
+	if ref != "" {
 		pairs = append(pairs, [2]string{"Preload", ref + " (" + pythonValue(fallback(vm["preload_status"], "-")) + ")"})
 	}
 	if depth := vm["fetch_depth"]; depth != nil {
@@ -132,7 +158,7 @@ func renderVM(d Dependencies, vm map[string]any, password string) error {
 			pairs = append(pairs, [2]string{"Paused at", at})
 		}
 	}
-	pairs = append(pairs, [2]string{"Auto-stop at", value("stop_at")}, [2]string{"Created", value("created_at")})
+	pairs = append(pairs, [2]string{"TTL expires", value("stop_at")}, [2]string{"Created", value("created_at")})
 	width := 0
 	for _, pair := range pairs {
 		width = max(width, utf8.RuneCountInString(pair[0]))

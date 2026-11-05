@@ -1,4 +1,4 @@
-"""Job resource gauges and live log-tail parity against the pinned Python CLI."""
+"""Static job gauges. Live snapshots/logs are covered by compare_metrics_stream."""
 
 from copy import deepcopy
 from scripts import compare_auth as harness
@@ -13,7 +13,7 @@ SOURCES = ("cpu", "memory", "filesystem", "load", "disk-io", "disk-ops", "networ
 ACTIVE = jobs.JOB_DATA | {"state": "in_progress", "conclusion": None, "completed_at": None}
 FINISHED = jobs.JOB_DATA | {"completed_at": "2026-01-01T00:00:12Z"}
 FORBIDDEN = (403, {"detail": "fixture denied"})
-FOOTER = "(logs every 1s, metrics every 5s — Ctrl-C to exit)"
+FOOTER = "(metrics streamed; logs every second; Ctrl-C to exit)"
 
 
 def series(values, labels=None, rates=None):
@@ -139,8 +139,6 @@ def scenarios():
         responses=responses(metrics={"disk-ops": METRICS["disk-ops"] | {"rate_unit": "events/sec"}}),
         presentation=True,
     )
-    case("finished watch fallback", ["-w"], presentation=True)
-    case("finished JSON watch fallback", ["--watch", "--json"], json=True)
     case("missing auth", env={}, responses={}, exit=4)
     case("missing ID", args=["job", "metrics"], responses={}, exit=2, error_terms=["JOB_ID"])
     case("invalid source", ["--source", "CPU"], responses={}, exit=2, error_terms=["--source", "CPU"])
@@ -149,72 +147,12 @@ def scenarios():
         failed = responses()
         failed[("GET", VIEW[1] + "/metrics/cpu")] = (code, {"detail": "fixture denied"})
         case(f"source HTTP {code}", responses=failed, exit=4 if code == 401 else 1)
-    live = responses(ACTIVE) | {jobs.LOGS: [jobs.LOG_RESPONSE, FORBIDDEN]}
-    case("watch logs", ["-w", *all_sources], responses=live, exit=1, presentation=True)
-    case(
-        "watch empty logs",
-        ["--watch"],
-        responses=responses(ACTIVE) | {jobs.LOGS: [(200, {"results": [], "has_more": False}), FORBIDDEN]},
-        exit=1,
-        presentation=True,
-    )
-    case("watch JSON", ["-w", "--json"], responses=live, exit=1, json_frames=True)
-    for code in [429, 503]:
-        case(
-            f"watch logs retry {code}",
-            ["-w"],
-            responses=responses(ACTIVE) | {jobs.LOGS: [(code, {"detail": "retry"}), jobs.LOG_RESPONSE, FORBIDDEN]},
-            exit=1,
-            presentation=True,
-        )
-        failed = deepcopy(live)
-        failed[("GET", VIEW[1] + "/metrics/cpu")] = [(code, {"detail": "retry"}), (200, METRICS["cpu"])]
-        case(f"watch metrics retry {code}", ["-w"], responses=failed, exit=1, presentation=True)
-    case(
-        "watch metrics auth loss",
-        ["-w"],
-        responses=responses(ACTIVE) | {("GET", VIEW[1] + "/metrics/cpu"): FORBIDDEN},
-        exit=1,
-    )
-    case(
-        "watch logs missing job",
-        ["-w"],
-        responses=responses(ACTIVE) | {jobs.LOGS: (404, {"detail": "fixture missing"})},
-        exit=1,
-    )
-    many = [{"line_number": i, "content": f"line {i}", "level": "info"} for i in range(1, 18)]
-    case(
-        "watch paginated tail",
-        ["-w"],
-        responses=responses(ACTIVE)
-        | {
-            jobs.LOGS: [
-                (200, {"results": many[:10], "has_more": True, "next_cursor": 10}),
-                (
-                    200,
-                    {
-                        "results": many[10:] + [{"line_number": 18, "content": "hidden", "level": "diagnostic"}],
-                        "has_more": False,
-                        "next_cursor": 18,
-                    },
-                ),
-                FORBIDDEN,
-            ]
-        },
-        exit=1,
-        presentation=True,
-    )
     if sys.platform != "win32":
         for name in [
             "all sources",
             "saturation 0",
             "saturation 1",
             "runner []",
-            "finished watch fallback",
-            "watch logs",
-            "watch empty logs",
-            "watch metrics retry 503",
-            "watch logs retry 503",
         ]:
             original = next(c for c in cases if c["name"] == "job metrics " + name)
             item = deepcopy(original)
@@ -224,14 +162,6 @@ def scenarios():
             cases.append(item)
             if name == "all sources":
                 cases.append(item | {"name": item["name"] + " no color", "args": ["--no-color", *item["args"]]})
-        case(
-            "watch interrupt",
-            ["-w"],
-            responses=responses(ACTIVE) | {jobs.LOGS: jobs.LOG_RESPONSE},
-            interrupt_after_text=FOOTER,
-            exit=130,
-            presentation=True,
-        )
     for item in cases:
         item.setdefault("env", {"AVR_TOKEN": harness.TOKEN, "AVR_ORG": ORG})
     return cases

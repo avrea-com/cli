@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/avrea-com/cli/docgen"
 	"github.com/spf13/cobra"
@@ -73,7 +74,7 @@ func helpOptions(c *cobra.Command, spec docgen.HelpSpec) []helpRow {
 	})
 	return rows
 }
-func helpCommands(c *cobra.Command, spec docgen.HelpSpec) ([]string, map[string][]helpRow) {
+func helpCommands(c *cobra.Command, spec docgen.HelpSpec, width int) ([]string, map[string][]helpRow) {
 	descriptions := map[string]docgen.HelpCommand{}
 	for _, child := range spec.Commands {
 		descriptions[child.Name] = child
@@ -93,6 +94,13 @@ func helpCommands(c *cobra.Command, spec docgen.HelpSpec) ([]string, map[string]
 		section := order[0]
 		if known {
 			description = entry.Description
+			if entry.AutoShort && utf8.RuneCountInString(description) > width {
+				words := strings.Fields(description)
+				for len(words) > 0 && utf8.RuneCountInString(strings.Join(words, " "))+3 > width {
+					words = words[:len(words)-1]
+				}
+				description = strings.Join(words, " ") + "..."
+			}
 			if entry.Section != nil {
 				section = *entry.Section
 			}
@@ -130,7 +138,7 @@ func renderHelp(c *cobra.Command, d Dependencies, spec docgen.HelpSpec, stderr b
 		}
 	}
 	options := helpOptions(c, spec)
-	order, children := helpCommands(c, spec)
+	order, children := helpCommands(c, spec, width)
 	var out strings.Builder
 	if spec.Sections {
 		if body != "" {

@@ -215,7 +215,7 @@ def normalized(value, download):
 
 
 def timestamp(value):
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         raise ValueError("timestamp lacks timezone")
     return parsed
@@ -292,14 +292,11 @@ def compare(case, a, b):
             try:
                 left, right = json.loads(x), json.loads(y)
                 diagnose = case["path"] == "run diagnose"
-                if diagnose:
-                    if (
-                        abs(
-                            (timestamp(left.pop("generated_at")) - timestamp(right.pop("generated_at"))).total_seconds()
-                        )
-                        > 120
-                    ):
-                        diffs.append("diagnostic generation timestamp")
+                if diagnose and (
+                    abs((timestamp(left.pop("generated_at")) - timestamp(right.pop("generated_at"))).total_seconds())
+                    > 120
+                ):
+                    diffs.append("diagnostic generation timestamp")
                 if not json_equal(left, right, floating=diagnose):
                     diffs.append("JSON values")
             except ValueError, KeyError, TypeError:

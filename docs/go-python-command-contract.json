@@ -9,7 +9,7 @@
     "vms": "vm",
     "workflows": "workflow"
   },
-  "baseline": "df6d102dce45014c55d0929307b29603c6806e94",
+  "baseline": "c9e1e4b6a11db522d142ec0dfaeb8119917ec41c",
   "root": {
     "commands": [
       {
@@ -893,6 +893,52 @@
       },
       {
         "commands": [
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "no_qr",
+                "nargs": 1,
+                "opts": [
+                  "--no-qr"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
+            "path": "avr auth device-login"
+          },
           {
             "hidden": true,
             "parameters": [
@@ -11168,6 +11214,46 @@
                 "default": "Sentinel.UNSET",
                 "envvar": null,
                 "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": true,
+                "name": "job_ids",
+                "nargs": 1,
+                "opts": [
+                  "--job"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "idempotency_key",
+                "nargs": 1,
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "uuid",
+                  "param_type": "UUID"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
                 "is_flag": true,
                 "kind": "option",
                 "multiple": false,
@@ -12869,12 +12955,32 @@
                 "envvar": null,
                 "kind": "argument",
                 "multiple": false,
-                "name": "job",
+                "name": "target",
                 "nargs": 1,
                 "opts": [
-                  "job"
+                  "target"
                 ],
                 "required": true,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "job_name",
+                "nargs": 1,
+                "opts": [
+                  "--job"
+                ],
+                "required": false,
                 "secondary_opts": [],
                 "type": {
                   "name": "text",
@@ -12965,6 +13071,93 @@
                 "type": {
                   "name": "text",
                   "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "test_name",
+                "nargs": 1,
+                "opts": [
+                  "--test"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "suite",
+                "nargs": 1,
+                "opts": [
+                  "--suite"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "class_name",
+                "nargs": 1,
+                "opts": [
+                  "--class"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "outcome",
+                "nargs": 1,
+                "opts": [
+                  "--status"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "case_sensitive": true,
+                  "choices": [
+                    "passed",
+                    "failed",
+                    "skipped",
+                    "errored"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
                 }
               },
               {
@@ -13919,6 +14112,72 @@
               },
               {
                 "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "as_json",
+                "nargs": 1,
+                "opts": [
+                  "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
+            "path": "avr vm capabilities"
+          },
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "org_id",
+                "nargs": 1,
+                "opts": [
+                  "--org"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
                 "default": null,
                 "envvar": null,
                 "hidden": false,
@@ -13965,6 +14224,71 @@
               },
               {
                 "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "architecture",
+                "nargs": 1,
+                "opts": [
+                  "--arch"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": null,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "idempotency_key",
+                "nargs": 1,
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": true,
+                "name": "https_ports",
+                "nargs": 1,
+                "opts": [
+                  "--https-port"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "clamp": false,
+                  "max": 65535,
+                  "max_open": false,
+                  "min": 1,
+                  "min_open": false,
+                  "name": "integer range",
+                  "param_type": "IntRange"
+                }
+              },
+              {
+                "count": false,
                 "default": null,
                 "envvar": null,
                 "hidden": false,
@@ -13979,16 +14303,8 @@
                 "required": false,
                 "secondary_opts": [],
                 "type": {
-                  "case_sensitive": true,
-                  "choices": [
-                    "ubuntu-22.04",
-                    "ubuntu-24.04",
-                    "ubuntu-26.04",
-                    "macos-26",
-                    "windows-2025"
-                  ],
-                  "name": "choice",
-                  "param_type": "Choice"
+                  "name": "text",
+                  "param_type": "String"
                 }
               },
               {
@@ -14007,17 +14323,8 @@
                 "required": false,
                 "secondary_opts": [],
                 "type": {
-                  "case_sensitive": true,
-                  "choices": [
-                    "1-vcpu",
-                    "2-vcpu",
-                    "4-vcpu",
-                    "8-vcpu",
-                    "16-vcpu",
-                    "32-vcpu"
-                  ],
-                  "name": "choice",
-                  "param_type": "Choice"
+                  "name": "text",
+                  "param_type": "String"
                 }
               },
               {
@@ -14191,7 +14498,7 @@
                 "count": false,
                 "default": false,
                 "envvar": null,
-                "hidden": false,
+                "hidden": true,
                 "is_flag": true,
                 "kind": "option",
                 "multiple": false,
@@ -14462,6 +14769,63 @@
             "hidden": false,
             "parameters": [
               {
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "kind": "argument",
+                "multiple": false,
+                "name": "vm_id",
+                "nargs": 1,
+                "opts": [
+                  "vm_id"
+                ],
+                "required": true,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "display_name",
+                "nargs": 1,
+                "opts": [
+                  "--name"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "ttl",
+                "nargs": 1,
+                "opts": [
+                  "--ttl"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
                 "count": false,
                 "default": "Sentinel.UNSET",
                 "envvar": null,
@@ -14483,7 +14847,118 @@
               },
               {
                 "count": false,
-                "default": null,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "wait",
+                "nargs": 1,
+                "opts": [
+                  "--wait"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": 300,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "wait_timeout",
+                "nargs": 1,
+                "opts": [
+                  "--wait-timeout"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "clamp": false,
+                  "max": null,
+                  "max_open": false,
+                  "min": 0,
+                  "min_open": false,
+                  "name": "integer range",
+                  "param_type": "IntRange"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "as_json",
+                "nargs": 1,
+                "opts": [
+                  "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
+            "path": "avr vm fork"
+          },
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "org_id",
+                "nargs": 1,
+                "opts": [
+                  "--org"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
                 "envvar": null,
                 "hidden": false,
                 "is_flag": false,
@@ -14497,8 +14972,66 @@
                 "required": false,
                 "secondary_opts": [],
                 "type": {
-                  "name": "text",
-                  "param_type": "String"
+                  "case_sensitive": false,
+                  "choices": [
+                    "PENDING",
+                    "STARTING",
+                    "RUNNING",
+                    "PAUSING",
+                    "PAUSED",
+                    "STOPPING",
+                    "DELETING",
+                    "FAILED"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
+                }
+              },
+              {
+                "count": false,
+                "default": "all",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "scope",
+                "nargs": 1,
+                "opts": [
+                  "--scope"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "case_sensitive": true,
+                  "choices": [
+                    "all",
+                    "mine"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
+                }
+              },
+              {
+                "count": false,
+                "default": null,
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "sandbox",
+                "nargs": 1,
+                "opts": [
+                  "--sandbox"
+                ],
+                "required": false,
+                "secondary_opts": [
+                  "--no-sandbox"
+                ],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
                 }
               },
               {
@@ -14589,6 +15122,180 @@
               }
             ],
             "path": "avr vm list"
+          },
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "kind": "argument",
+                "multiple": false,
+                "name": "vm_id",
+                "nargs": 1,
+                "opts": [
+                  "vm_id"
+                ],
+                "required": true,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "org_id",
+                "nargs": 1,
+                "opts": [
+                  "--org"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": true,
+                "name": "sources",
+                "nargs": 1,
+                "opts": [
+                  "--source"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "case_sensitive": true,
+                  "choices": [
+                    "cpu",
+                    "memory",
+                    "filesystem",
+                    "load",
+                    "disk-io",
+                    "disk-ops",
+                    "network"
+                  ],
+                  "name": "choice",
+                  "param_type": "Choice"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "start",
+                "nargs": 1,
+                "opts": [
+                  "--start"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "integer",
+                  "param_type": "Int"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "end",
+                "nargs": 1,
+                "opts": [
+                  "--end"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "integer",
+                  "param_type": "Int"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "watch",
+                "nargs": 1,
+                "opts": [
+                  "--watch",
+                  "-w"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "as_json",
+                "nargs": 1,
+                "opts": [
+                  "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
+            "path": "avr vm metrics"
           },
           {
             "hidden": false,
@@ -15269,6 +15976,89 @@
                 }
               }
             ],
+            "path": "avr vm rotate-https-label"
+          },
+          {
+            "hidden": false,
+            "parameters": [
+              {
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "kind": "argument",
+                "multiple": false,
+                "name": "vm_id",
+                "nargs": 1,
+                "opts": [
+                  "vm_id"
+                ],
+                "required": true,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": false,
+                "name": "org_id",
+                "nargs": 1,
+                "opts": [
+                  "--org"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "text",
+                  "param_type": "String"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "as_json",
+                "nargs": 1,
+                "opts": [
+                  "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "_click_default_help",
+                "nargs": 1,
+                "opts": [
+                  "--help"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              }
+            ],
             "path": "avr vm show"
           },
           {
@@ -15662,252 +16452,6 @@
               },
               {
                 "count": false,
-                "default": false,
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "wait",
-                "nargs": 1,
-                "opts": [
-                  "--wait"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              },
-              {
-                "count": false,
-                "default": 300,
-                "envvar": null,
-                "hidden": false,
-                "is_flag": false,
-                "kind": "option",
-                "multiple": false,
-                "name": "wait_timeout",
-                "nargs": 1,
-                "opts": [
-                  "--wait-timeout"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "integer",
-                  "param_type": "Int"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "as_json",
-                "nargs": 1,
-                "opts": [
-                  "--json"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "_click_default_help",
-                "nargs": 1,
-                "opts": [
-                  "--help"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              }
-            ],
-            "path": "avr vm start"
-          },
-          {
-            "hidden": false,
-            "parameters": [
-              {
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "kind": "argument",
-                "multiple": false,
-                "name": "vm_id",
-                "nargs": 1,
-                "opts": [
-                  "vm_id"
-                ],
-                "required": true,
-                "secondary_opts": [],
-                "type": {
-                  "name": "text",
-                  "param_type": "String"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": false,
-                "kind": "option",
-                "multiple": false,
-                "name": "org_id",
-                "nargs": 1,
-                "opts": [
-                  "--org"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "text",
-                  "param_type": "String"
-                }
-              },
-              {
-                "count": false,
-                "default": false,
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "wait",
-                "nargs": 1,
-                "opts": [
-                  "--wait"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              },
-              {
-                "count": false,
-                "default": 300,
-                "envvar": null,
-                "hidden": false,
-                "is_flag": false,
-                "kind": "option",
-                "multiple": false,
-                "name": "wait_timeout",
-                "nargs": 1,
-                "opts": [
-                  "--wait-timeout"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "integer",
-                  "param_type": "Int"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "as_json",
-                "nargs": 1,
-                "opts": [
-                  "--json"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": true,
-                "kind": "option",
-                "multiple": false,
-                "name": "_click_default_help",
-                "nargs": 1,
-                "opts": [
-                  "--help"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "boolean",
-                  "param_type": "Bool"
-                }
-              }
-            ],
-            "path": "avr vm stop"
-          },
-          {
-            "hidden": false,
-            "parameters": [
-              {
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "kind": "argument",
-                "multiple": false,
-                "name": "vm_id",
-                "nargs": 1,
-                "opts": [
-                  "vm_id"
-                ],
-                "required": true,
-                "secondary_opts": [],
-                "type": {
-                  "name": "text",
-                  "param_type": "String"
-                }
-              },
-              {
-                "count": false,
-                "default": "Sentinel.UNSET",
-                "envvar": null,
-                "hidden": false,
-                "is_flag": false,
-                "kind": "option",
-                "multiple": false,
-                "name": "org_id",
-                "nargs": 1,
-                "opts": [
-                  "--org"
-                ],
-                "required": false,
-                "secondary_opts": [],
-                "type": {
-                  "name": "text",
-                  "param_type": "String"
-                }
-              },
-              {
-                "count": false,
                 "default": null,
                 "envvar": null,
                 "hidden": false,
@@ -16018,6 +16562,51 @@
                 "nargs": 1,
                 "opts": [
                   "--json"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "name": "boolean",
+                  "param_type": "Bool"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": false,
+                "kind": "option",
+                "multiple": true,
+                "name": "https_ports",
+                "nargs": 1,
+                "opts": [
+                  "--https-port"
+                ],
+                "required": false,
+                "secondary_opts": [],
+                "type": {
+                  "clamp": false,
+                  "max": 65535,
+                  "max_open": false,
+                  "min": 1,
+                  "min_open": false,
+                  "name": "integer range",
+                  "param_type": "IntRange"
+                }
+              },
+              {
+                "count": false,
+                "default": "Sentinel.UNSET",
+                "envvar": null,
+                "hidden": false,
+                "is_flag": true,
+                "kind": "option",
+                "multiple": false,
+                "name": "clear_https_ports",
+                "nargs": 1,
+                "opts": [
+                  "--clear-https-ports"
                 ],
                 "required": false,
                 "secondary_opts": [],

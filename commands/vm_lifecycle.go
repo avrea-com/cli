@@ -2,14 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"net/url"
-	"slices"
-	"strings"
-
-	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
+	"net/url"
+	"slices"
+	"strings"
 )
 
 func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
@@ -17,13 +15,11 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 	var wait, asJSON, memory, discard, yes bool
 	var timeout int
 	summaries := map[string]string{
-		"start":  "Start a stopped VM. Boots a fresh disk and returns a one-time password.",
-		"stop":   "Stop a running VM. The ephemeral disk is discarded.",
-		"pause":  "Pause a RUNNING Linux VM while preserving its disk.",
+		"pause":  "Pause a RUNNING Linux x86_64 VM while preserving its disk.",
 		"resume": "Resume a PAUSED VM from its preserved snapshot.",
 		"delete": "Delete a VM. Asynchronous while live: shows DELETING until the node confirms the stop.",
 	}
-	c := &cobra.Command{Use: operation + " VM_ID", Short: summaries[operation], Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: operation + " VM_ID_OR_NAME", Short: summaries[operation], Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	c.Flags().BoolVar(&wait, "wait", false, "Wait for the requested VM state.")
 	c.Flags().IntVar(&timeout, "wait-timeout", 300, "Seconds to wait when --wait is set.")
@@ -47,12 +43,6 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 		target := "RUNNING"
 		var response map[string]any
 		switch operation {
-		case "start", "stop":
-			if operation == "stop" {
-				target = "STOPPED"
-			}
-			record, e := api.ChangeVM(cmd.Context(), path, client.VMLegacyPowerRequest{DesiredState: target})
-			response, err = record.Fields, e
 		case "pause":
 			target = "PAUSED"
 			record, e := api.TransitionVM(cmd.Context(), path+"/pause", wire.CustomerVmPauseRequest{Memory: &memory})
@@ -74,50 +64,29 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 			return vmError(cfg, err, operation+" VM")
 		}
 		data, _ := response["data"].(map[string]any)
-		password := data["password"]
-		passwordText := fieldText(data, "password")
 		if !wait {
 			if asJSON {
 				return rawJSON(d, response)
 			}
-			switch operation {
-			case "delete":
+			if operation == "delete" {
 				_, err = fmt.Fprintf(d.Out, "VM %s is now %s.\n", output.CellText(id), output.CellText(billingText(data, "state", "DELETING")))
 				return err
-			case "pause", "resume":
-				if len(data) > 0 {
-					return renderVM(d, data, "")
-				}
-				return nil
-			default:
-				if vm, ok := data["vm"].(map[string]any); ok && len(vm) > 0 {
-					if err = renderVM(d, vm, passwordText); err != nil {
-						return err
-					}
-				}
-				return vmPrintPassword(d, passwordText)
 			}
+			if len(data) > 0 {
+				return renderVM(d, data, "")
+			}
+			return nil
 		}
 		ready := func(row map[string]any) bool { return strings.ToUpper(fieldText(row, "state")) == target }
-		if operation == "start" || operation == "resume" {
-			ready = vmConnectable
-		}
 		var failed func(map[string]any) bool
-		if operation == "pause" || operation == "resume" {
+		if operation != "delete" {
 			allowed := []string{"PAUSING", "PAUSED"}
 			if operation == "resume" {
 				allowed = []string{"PENDING", "STARTING", "RUNNING"}
+				ready = vmConnectable
 			}
 			failed = func(row map[string]any) bool {
 				return !slices.Contains(allowed, strings.ToUpper(fieldText(row, "state")))
-			}
-		}
-		if !asJSON && (operation == "start" || operation == "stop") {
-			if err = vmPrintPassword(d, passwordText); err != nil {
-				return err
-			}
-			if _, err = fmt.Fprintln(d.Out); err != nil {
-				return err
 			}
 		}
 		label := "become " + target
@@ -136,44 +105,17 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 		}
 		shown := state
 		if len(shown) == 0 {
-			if operation == "start" || operation == "stop" {
-				shown, _ = data["vm"].(map[string]any)
-			} else {
-				shown = data
-			}
+			shown = data
 		}
 		if asJSON {
-			if operation == "pause" || operation == "resume" {
-				password = nil
-			}
-			return vmWaitJSON(d, shown, password, disposition)
+			return vmWaitJSON(d, shown, nil, disposition)
 		}
-		switch operation {
-		case "start", "stop":
+		if len(shown) > 0 {
 			if _, err = fmt.Fprintln(d.Out); err != nil {
 				return err
 			}
-			if operation == "start" {
-				if len(shown) > 0 {
-					if err = renderVM(d, shown, passwordText); err != nil {
-						return err
-					}
-				}
-				target = "connectable"
-			} else if disposition == "ready" {
-				final := pythonValue(fallback(state["state"], target))
-				if _, err = fmt.Fprintf(d.Out, "VM %s is now %s.\n", output.CellText(id), output.CellText(final)); err != nil {
-					return err
-				}
-			}
-		default:
-			if len(shown) > 0 {
-				if _, err = fmt.Fprintln(d.Out); err != nil {
-					return err
-				}
-				if err = renderVM(d, shown, ""); err != nil {
-					return err
-				}
+			if err = renderVM(d, shown, ""); err != nil {
+				return err
 			}
 		}
 		return vmWaitExit(d, state, disposition, target, timeout, id)

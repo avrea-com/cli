@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -61,10 +60,9 @@ func newJobMetrics(d Dependencies) *cobra.Command {
 	f.BoolVarP(&live, "watch", "w", false, "Refresh metrics and recent logs until interrupted.")
 	f.BoolVar(&jsonOutput, "json", false, "Output raw metrics responses as JSON.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
-		for _, source := range sources {
-			if !slices.Contains(metricSources, source) {
-				return &ExitError{2, "Error: invalid --source: " + output.CellText(source)}
-			}
+		selected, err := selectMetricSources(cmd, sources, live)
+		if err != nil {
+			return err
 		}
 		cfg, _, api, err := d.load()
 		if err != nil {
@@ -76,10 +74,6 @@ func newJobMetrics(d Dependencies) *cobra.Command {
 		orgID, err := resolveOrg(cmd.Context(), d, cfg, api, org)
 		if err != nil {
 			return err
-		}
-		selected := sources
-		if len(selected) == 0 {
-			selected = []string{"cpu", "memory"}
 		}
 		query := url.Values{}
 		if f.Changed("start") {
@@ -93,12 +87,8 @@ func newJobMetrics(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "get job")
 		}
 		job := record.Fields
-		if live && (fieldText(job, "state") == "completed" || fieldText(job, "conclusion") != "") {
-			_, _ = fmt.Fprintln(d.Err, d.hint("Job already finished — showing static metrics."))
-			live = false
-		}
 		if live {
-			return watchJobMetrics(cmd.Context(), d, cfg, api, orgID, args[0], selected, query, job, jsonOutput)
+			return watchJobMetrics(cmd.Context(), d, cfg, api, args[0], selected, job, jsonOutput)
 		}
 		fetched, err := fetchMetrics(cmd.Context(), api, orgID, args[0], selected, query)
 		if err != nil {
@@ -230,39 +220,12 @@ func metricFetchError(err error, kind string) (message string, retry bool) {
 	return "", false
 }
 
-func watchJobMetrics(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, id string, sources []string, query url.Values, job map[string]any, jsonOutput bool) (err error) {
-	defer func() {
-		if errors.Is(err, context.Canceled) {
-			err = &ExitError{Code: 130}
-		}
-	}()
+func watchJobMetrics(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, id string, sources []string, job map[string]any, jsonOutput bool) error {
 	logs := []map[string]any{}
 	var cursor any
-	var fetched map[string]map[string]any
-	var lastMetrics time.Time
-	metricsError := ""
-	for {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if fetched == nil || d.Now().Sub(lastMetrics) >= 5*time.Second {
-			next, err := fetchMetrics(ctx, api, org, id, sources, query)
-			if err != nil {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				var retry bool
-				metricsError, retry = metricFetchError(err, "metrics")
-				if !retry {
-					return apiError(cfg, err, "fetch metrics")
-				}
-			} else {
-				fetched = next
-				metricsError = ""
-			}
-			lastMetrics = d.Now()
-		}
-		var logError string
+	var lastLogs time.Time
+	logError := ""
+	refresh := func() error {
 		entries, next, err := fetchMetricLogs(ctx, api, id, cursor)
 		if err != nil {
 			if ctx.Err() != nil {
@@ -283,34 +246,40 @@ func watchJobMetrics(ctx context.Context, d Dependencies, cfg config.Config, api
 				}
 			}
 		}
-		data := fetched
-		if data == nil {
-			data = map[string]map[string]any{}
-			for _, source := range sources {
-				data[source] = map[string]any{"series": []any{}}
+		return nil
+	}
+	return watchMetrics(ctx, d, api, "/vms/"+url.PathEscape(id)+"/observability/stream", sources, jsonOutput, func(u metricUpdate) error {
+		refreshLogs := lastLogs.IsZero() || d.Now().Sub(lastLogs) >= time.Second
+		if u.complete || refreshLogs {
+			lastLogs = d.Now()
+			if err := refresh(); err != nil {
+				return err
 			}
+		} else if !u.changed {
+			return nil
 		}
-		frame, err := metricFrame(d, id, job, sources, data, logs, true, jsonOutput)
+		frame, err := metricFrame(d, id, job, sources, u.metrics, logs, true, false)
 		if err != nil {
 			return err
 		}
-		frame += "\n\n"
-		for _, message := range []string{metricsError, logError} {
-			if message != "" {
-				frame += d.paint(message, "31") + "\n"
-			}
+		if logError != "" {
+			frame += "\n\n" + logError
 		}
-		frame += d.paint("(logs every 1s, metrics every 5s — Ctrl-C to exit)", gray)
-		if d.IsTerminal() {
-			if _, err := fmt.Fprint(d.Out, "\x1b[2J\x1b[H"); err != nil {
-				return err
+		if !u.complete {
+			if u.message != "" {
+				frame += "\n\n" + u.message
 			}
+			frame += "\n\n(metrics streamed; logs every second; Ctrl-C to exit)"
+		}
+		if err := clearMetricFrame(d); err != nil {
+			return err
 		}
 		if _, err := fmt.Fprintln(d.Out, frame); err != nil {
 			return err
 		}
-		if err := d.Wait(ctx, time.Second); err != nil {
-			return err
+		if u.complete && !u.sawBundle {
+			_, err = fmt.Fprintln(d.Out, "No metrics available for this job.")
 		}
-	}
+		return err
+	})
 }

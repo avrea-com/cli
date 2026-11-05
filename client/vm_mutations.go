@@ -9,20 +9,6 @@ import (
 	"github.com/avrea-com/cli/client/wire"
 )
 
-// VMLegacyPowerRequest preserves Python's start/stop wire contract. desired_state
-// is absent from the pinned current schema; do not silently map stop to pause
-// or delete, which have different persistence and password semantics.
-type VMLegacyPowerRequest struct {
-	DesiredState string `json:"desired_state"`
-}
-
-func (c *Client) ChangeVM(ctx context.Context, path string, body any) (Record[wire.APIResponseCustomerVmWithPassword], error) {
-	response, err := c.Do(ctx, http.MethodPatch, path, body)
-	if err != nil {
-		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
-	}
-	return decodeRecord[wire.APIResponseCustomerVmWithPassword](response)
-}
 func (c *Client) TransitionVM(ctx context.Context, path string, body any) (Record[wire.APIResponseCustomerVm], error) {
 	response, err := c.Do(ctx, http.MethodPost, path, body)
 	if err != nil {

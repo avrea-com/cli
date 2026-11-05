@@ -144,7 +144,7 @@ func vmSSHPassthrough(c *cobra.Command, args []string) ([]string, error) {
 func newVMSSH(d Dependencies) *cobra.Command {
 	var org, identity, session string
 	var login, printOnly bool
-	c := &cobra.Command{Use: "ssh VM_ID [SSH_ARGS...]", Short: "Open an SSH session or run a command on a VM.", DisableFlagParsing: true}
+	c := &cobra.Command{Use: "ssh VM_ID_OR_NAME [SSH_ARGS...]", Short: "Open an SSH session or run a command on a VM.", DisableFlagParsing: true}
 	orgFlag(c, &org)
 	f := c.Flags()
 	f.StringVarP(&identity, "identity", "i", "", "SSH private key file.")
@@ -165,7 +165,7 @@ func newVMSSH(d Dependencies) *cobra.Command {
 			return cmd.Help()
 		}
 		if len(args) == 0 {
-			return &ExitError{2, "Error: Missing argument 'VM_ID'."}
+			return &ExitError{2, "Error: Missing argument 'VM_ID_OR_NAME'."}
 		}
 		cfg, api, orgID, err := organizationContext(cmd.Context(), d, org)
 		if err != nil {

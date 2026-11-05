@@ -50,6 +50,7 @@ def source(tmp_path, package, shell):
     variable = "_" + program.upper().replace("-", "_") + "_COMPLETE"
     result = subprocess.run(
         [program],
+        check=False,
         env=env | {variable: shell + "_source"},
         cwd=tmp_path,
         capture_output=True,
@@ -88,7 +89,12 @@ def test_bash_generated_setup_completes_words_and_paths(tmp_path, package):
             'printf "%s\\0" "${COMPREPLY[@]}"\n'
         )
         result = subprocess.run(
-            [shell, "--noprofile", "--norc", "-c", script], env=env, cwd=tmp_path, capture_output=True, timeout=10
+            [shell, "--noprofile", "--norc", "-c", script],
+            check=False,
+            env=env,
+            cwd=tmp_path,
+            capture_output=True,
+            timeout=10,
         )
         assert result.returncode == 0 and not result.stderr, result
         assert result.stdout.decode().split("\0")[:-1] == [expected[-1]]
@@ -167,7 +173,13 @@ def test_fish_generated_setup_completes_words_and_paths(tmp_path, package):
     for args, expected in CASES:
         command = "source " + shlex.quote(str(setup)) + "\ncomplete -C " + shlex.quote(shlex.join([program, *args]))
         result = subprocess.run(
-            [shell, "--no-config", "-c", command], env=env, cwd=tmp_path, capture_output=True, text=True, timeout=10
+            [shell, "--no-config", "-c", command],
+            check=False,
+            env=env,
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         assert result.returncode == 0 and not result.stderr, result
         values = [line.split("\t", 1)[0] for line in result.stdout.splitlines()]

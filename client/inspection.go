@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/avrea-com/cli/client/wire"
 )
@@ -125,7 +127,7 @@ func (c *Client) RunByReference(ctx context.Context, org, id string, platform bo
 	if id, ok := fields["run_id"].(string); !ok || id == "" {
 		return Record[Run]{}, errors.New("avrea returned an invalid workflow-run response")
 	}
-	return decodeRecord[Run](fields)
+	return decodeRunRecord(fields)
 }
 
 // SearchLogs retains raw values for display while validating the wire record.
@@ -278,4 +280,36 @@ func (c *Client) CacheEntries(ctx context.Context, org, repo string, query url.V
 		return Page[wire.CacheEntryResponse]{}, err
 	}
 	return decodePage[wire.CacheEntryResponse](body)
+}
+
+// Some API deployments encode GitHub job IDs as decimal strings. Validate the
+// generated integer model using a copy, retaining the original JSON for output.
+func decodeRunRecord(fields map[string]any) (Record[Run], error) {
+	validation := maps.Clone(fields)
+	if jobs, ok := fields["jobs"].([]any); ok {
+		copied := append([]any(nil), jobs...)
+		for i, value := range jobs {
+			job, ok := value.(map[string]any)
+			if !ok {
+				continue
+			}
+			text, ok := job["platform_job_id"].(string)
+			if !ok {
+				continue
+			}
+			id, err := strconv.ParseInt(text, 10, 64)
+			if err != nil {
+				return Record[Run]{}, errors.New("unexpected API response: invalid platform job ID")
+			}
+			copy := maps.Clone(job)
+			copy["platform_job_id"] = id
+			copied[i] = copy
+		}
+		validation["jobs"] = copied
+	}
+	record, err := decodeRecord[Run](validation)
+	if err == nil {
+		record.Fields = fields
+	}
+	return record, err
 }

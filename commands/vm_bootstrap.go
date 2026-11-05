@@ -11,7 +11,7 @@ import (
 
 func newVMBootstrap(d Dependencies) *cobra.Command {
 	o := bootstrapOptions{}
-	c := &cobra.Command{Use: "bootstrap VM_ID", Short: "Set up a running VM with development tools over SSH.", Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: "bootstrap VM_ID_OR_NAME", Short: "Set up a running VM with development tools over SSH.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &o.org)
 	f := c.Flags()
 	f.StringVarP(&o.identity, "identity", "i", "", "SSH private key file.")

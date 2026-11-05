@@ -243,7 +243,7 @@ func vmPinningOverrides(path string) ([]string, error) {
 func newVMSSHConfig(d Dependencies) *cobra.Command {
 	var org, identity, alias, known, configPath string
 	var appendBlock bool
-	c := &cobra.Command{Use: "ssh-config VM_ID", Short: "Print or append an SSH config block for a running VM.", Args: positionalArguments("VM_ID")}
+	c := &cobra.Command{Use: "ssh-config VM_ID_OR_NAME", Short: "Print or append an SSH config block for a running VM.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	f := c.Flags()
 	f.StringVarP(&identity, "identity", "i", "", "IdentityFile to write into the block.")
@@ -255,7 +255,7 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 		if configPath != "" && !appendBlock {
 			return &ExitError{2, "Error: --config-file requires --append."}
 		}
-		if alias == "" {
+		if !f.Changed("host-alias") {
 			alias = "avr-" + args[0]
 		}
 		if !sshUser().MatchString(alias) {
