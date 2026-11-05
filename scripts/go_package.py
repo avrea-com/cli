@@ -159,12 +159,13 @@ def verify(archive):
             extra={"AVR_ORG": "org-package-check"},
         )
         for shell, filename in [("bash", "avr.bash"), ("zsh", "_avr"), ("fish", "avr.fish")]:
-            check(
+            source = check(
                 f"{shell} completion source",
                 [],
                 extra={"_AVR_COMPLETE": f"{shell}_source"},
-                exact=(package / "completions" / filename).read_text(encoding="utf-8"),
             )
+            if (package / "completions" / filename).read_bytes() != source.encode("utf-8"):
+                raise ValueError(f"{shell} completion source: packaged bytes differ from LF source")
         check("bundled README lookup", ["internal", "docs", "--format", "starlight", "--out", str(home / "docs")])
         if "This package contains the native public AVR CLI." not in (home / "docs" / "index.md").read_text(
             encoding="utf-8"
@@ -277,7 +278,9 @@ def build(args):
         completions.mkdir()
         for shell, filename in [("bash", "avr.bash"), ("zsh", "_avr"), ("fish", "avr.fish")]:
             (completions / filename).write_text(
-                run([str(binary)], cwd=home, env=clean | {"_AVR_COMPLETE": f"{shell}_source"}), encoding="utf-8"
+                run([str(binary)], cwd=home, env=clean | {"_AVR_COMPLETE": f"{shell}_source"}),
+                encoding="utf-8",
+                newline="\n",
             )
         for fmt, path in [("markdown", "docs/REFERENCE.md"), ("json", "docs/reference.json"), ("man", "man")]:
             run([str(binary), "internal", "docs", "--format", fmt, "--out", str(package / path)], cwd=home, env=clean)

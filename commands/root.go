@@ -182,9 +182,6 @@ func run(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string)
 		if errors.Is(err, errPagerInterrupted) {
 			return err
 		}
-		if isBrokenPipe(err) || errors.Is(err, io.ErrClosedPipe) {
-			return &ExitError{Code: 0}
-		}
 		var exit *ExitError
 		if errors.As(err, &exit) {
 			return err
@@ -192,8 +189,40 @@ func run(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string)
 		if errors.Is(err, context.Canceled) {
 			return &ExitError{130, "Interrupted."}
 		}
+		if isBrokenPipe(err) || errors.Is(err, io.ErrClosedPipe) {
+			if closedPipeDisplay(c) {
+				return &ExitError{Code: 0}
+			}
+			return &ExitError{1, "Error: Output closed before the command result was delivered."}
+		}
 		return &ExitError{1, "Error: " + err.Error()}
 	}
+}
+
+// Only known display commands may finish successfully when their consumer
+// stops reading. Mutations and commands used as CI gates must preserve failure.
+func closedPipeDisplay(c *cobra.Command) bool {
+	if gate, _ := c.Flags().GetBool("exit-status"); gate {
+		return false
+	}
+	if web, _ := c.Flags().GetBool("web"); web {
+		return false
+	}
+	switch canonicalHelpPath(c) {
+	case "avr auth status", "avr config", "avr config list", "avr config get",
+		"avr status", "avr health", "avr org list", "avr repo list",
+		"avr run list", "avr run view", "avr run logs", "avr run watch", "avr run diagnose",
+		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
+		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
+		"avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics",
+		"avr token list", "avr token view", "avr settings list", "avr cache list",
+		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
+		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
+		"avr audit events list", "avr org install list", "avr org saml show",
+		"avr org domain list", "avr billing invoice list", "avr billing invoice show":
+		return true
+	}
+	return false
 }
 
 func NewRoot(deps Dependencies) *cobra.Command {

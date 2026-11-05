@@ -70,7 +70,7 @@ func newRunWatch(d Dependencies) *cobra.Command {
 				return err
 			}
 			_, _ = fmt.Fprintln(d.Err, "Looking for an in-progress run…")
-			ids, e := resolveRepositories(cmd.Context(), d, cfg, api, orgID, repos, true)
+			ids, e := resolveRepositories(cmd.Context(), d, cfg, api, orgID, repos, false)
 			if e != nil {
 				return e
 			}

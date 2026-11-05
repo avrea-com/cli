@@ -45,6 +45,7 @@ def scenarios():
 
     case("status", [], presentation=True)
     case("list", ["list"], presentation=True)
+    case("get org without home", ["get", "org"], env=ENV | {"HOME": None, "USERPROFILE": None}, responses={})
     case("no credentials", [], env={}, responses={}, presentation=True)
     case("no organization", [], env={"AVR_TOKEN": harness.TOKEN}, presentation=True)
     case("unauthenticated organization", [], env={"AVR_ORG": ORG}, responses={}, presentation=True)

@@ -2,8 +2,11 @@
 
 from pathlib import Path
 from scripts import go_package as package
+from unittest import mock
+import hashlib
 import io
 import json
+import os
 import stat
 import tarfile
 import tempfile
@@ -12,6 +15,37 @@ import zipfile
 
 
 class PackageTests(unittest.TestCase):
+    def test_crlf_completion_rejected_despite_matching_manifest(self):
+        content = dict.fromkeys(
+            [
+                "avr.exe" if os.name == "nt" else "avr",
+                "LICENSE",
+                "README.md",
+                "THIRD-PARTY-NOTICES.txt",
+                "completions/avr.bash",
+                "completions/_avr",
+                "completions/avr.fish",
+                "docs/REFERENCE.md",
+                "docs/reference.json",
+                "man/avr.1",
+            ],
+            b"fixture\n",
+        )
+        content["completions/avr.bash"] = b"fixture\r\n"
+        manifest = {
+            "version": "test",
+            "revision": "abc",
+            "files": {n: hashlib.sha256(b).hexdigest() for n, b in content.items()},
+        }
+        content["manifest.json"] = json.dumps(manifest).encode()
+        archive = self.checksum(self.tar([("package/" + n, b, tarfile.REGTYPE) for n, b in content.items()]))
+        responses = ["avr version test+abc\n", *["USAGE\n"] * 5, "org-package-check\n", "fixture\n"]
+        with (
+            mock.patch.object(package, "run", side_effect=responses),
+            self.assertRaisesRegex(ValueError, "packaged bytes"),
+        ):
+            package.verify(archive)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

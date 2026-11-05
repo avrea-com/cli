@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -53,9 +54,17 @@ func ConfigDir(getenv func(string) string, home, platform string) string {
 }
 
 func DefaultStore() (*Store, error) {
+	override := os.Getenv("AVR_CONFIG_DIR")
+	if override != "" && override != "~" && !strings.HasPrefix(override, "~/") && !strings.HasPrefix(override, "~\\") {
+		return &Store{Path: filepath.Join(override, "hosts.json")}, nil
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		account, lookupErr := user.Current()
+		if lookupErr != nil || account.HomeDir == "" {
+			return nil, err
+		}
+		home = account.HomeDir
 	}
 	return &Store{Path: filepath.Join(ConfigDir(os.Getenv, home, runtime.GOOS), "hosts.json")}, nil
 }

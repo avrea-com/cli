@@ -21,6 +21,62 @@ import (
 const nativeTestWorkflow = "awf-019a0000000070008000000000000004"
 const nativeTestDispatch = "wap-019a0000000070008000000000000005"
 
+func TestNativeDispatchAndReceiptRecoverHTTP2BodyReset(t *testing.T) {
+	d, _, _ := testDeps(t)
+	d = d.defaults()
+	d.Wait = func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
+	var mu sync.Mutex
+	posts, gets := 0, 0
+	var bodies, keys []string
+	runID := "awr-019a0000000070008000000000000006"
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		if r.ProtoMajor != 2 {
+			t.Error("test must exercise HTTP/2")
+		}
+		if r.Method == http.MethodPost {
+			posts++
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Error(err)
+			}
+			bodies = append(bodies, string(body))
+			keys = append(keys, r.Header.Get("Idempotency-Key"))
+			if posts == 1 {
+				_, _ = io.WriteString(w, `{"data":`)
+				_ = http.NewResponseController(w).Flush()
+				panic(http.ErrAbortHandler)
+			}
+			_, _ = fmt.Fprintf(w, `{"data":{"dispatch_id":%q,"state":"pending","run_ids":[],"ref":"main","commit_sha":"abc"}}`, nativeTestDispatch)
+			return
+		}
+		gets++
+		if gets == 1 {
+			_, _ = io.WriteString(w, `{"data":`)
+			_ = http.NewResponseController(w).Flush()
+			panic(http.ErrAbortHandler)
+		}
+		_, _ = fmt.Fprintf(w, `{"data":{"dispatch_id":%q,"state":"admitted","run_ids":[%q],"ref":"main","commit_sha":"abc"}}`, nativeTestDispatch, runID)
+	}))
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	defer server.Close()
+	cfg := config.Config{Host: server.URL, Token: "fixture"}
+	api := client.New(cfg, server.Client(), "test")
+	key := "cccccccccccccccccccccccccccccccc"
+	receipt, err := submitNativeWorkflow(t.Context(), d, cfg, api, "org", "repo", nativeTestWorkflow, "main", true, nil, []byte(`{"count":1.25}`), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := followNativeDispatch(t.Context(), d, cfg, api, "/orgs/org/repos/repo", receipt)
+	mu.Lock()
+	defer mu.Unlock()
+	if err != nil || id != runID || posts != 2 || gets != 2 || bodies[0] != bodies[1] || keys[0] != key || keys[1] != key {
+		t.Fatal(id, err, posts, gets, bodies, keys)
+	}
+}
+
 func TestNativeDecimalPreservesPrecisionWithoutExpandingExponents(t *testing.T) {
 	for input, want := range map[string]string{"1.00000000000000001": "1.00000000000000001", "+001.20": "1.20", ".5": "0.5", "1e1000000": "1E+1000000", "1e-1000000": "1E-1000000", "-0.00": "-0.00", "1.2300e3": "1230.0"} {
 		got, err := nativeNumber(input)

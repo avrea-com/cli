@@ -50,10 +50,35 @@ func transportFailure(err error, message string, reading bool) error {
 		case errors.As(err, &network):
 			reason = "ReadError"
 		default:
-			return errors.New(message)
+			reason = "ReadError"
 		}
 	}
 	return &TransportError{Message: message, Reason: reason}
+}
+
+// Track transport reads separately from decompression. HTTP/2 stream resets and
+// malformed chunks are retryable losses; corrupt compressed content is not.
+type responseReader struct {
+	io.Reader
+	err error
+}
+
+func (r *responseReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	if err != nil && err != io.EOF {
+		r.err = err
+	}
+	return n, err
+}
+
+func responseReadFailure(ctx context.Context, body *responseReader, message string) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if body.err != nil {
+		return transportFailure(body.err, "could not read API response", true)
+	}
+	return errors.New(message)
 }
 
 type HTTPError struct {
@@ -167,19 +192,20 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		return nil, transportFailure(err, fmt.Sprintf("could not reach %s (connection failed or timed out)", c.Config.Host), false)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	var source io.Reader = resp.Body
+	bodyReader := &responseReader{Reader: resp.Body}
+	var source io.Reader = bodyReader
 	switch strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Encoding"))) {
 	case "zstd":
-		decoder, e := zstd.NewReader(resp.Body, zstd.WithDecoderMaxMemory(64<<20))
+		decoder, e := zstd.NewReader(bodyReader, zstd.WithDecoderMaxMemory(64<<20))
 		if e != nil {
-			return nil, errors.New("invalid compressed API response")
+			return nil, responseReadFailure(ctx, bodyReader, "invalid compressed API response")
 		}
 		defer decoder.Close()
 		source = decoder
 	case "gzip":
-		decoder, e := gzip.NewReader(resp.Body)
+		decoder, e := gzip.NewReader(bodyReader)
 		if e != nil {
-			return nil, errors.New("invalid compressed API response")
+			return nil, responseReadFailure(ctx, bodyReader, "invalid compressed API response")
 		}
 		defer func() { _ = decoder.Close() }()
 		source = decoder
@@ -194,10 +220,7 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		timing.mark("body_read")
 	}
 	if err != nil {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		return nil, transportFailure(err, "could not read API response", true)
+		return nil, responseReadFailure(ctx, bodyReader, "could not read API response")
 	}
 	if len(data) > limit {
 		return nil, errors.New("API response is too large")

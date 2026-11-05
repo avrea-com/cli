@@ -191,10 +191,18 @@ func gitLabKeyValues(d Dependencies, title string, pairs [][2]string) error {
 	}
 	return output.KeyValues(d.Out, pairs)
 }
-func gitLabWriteResult(cmd *cobra.Command, d Dependencies, row map[string]any, fields []string, o jsonOptions, title, committed string) error {
+func gitLabWriteResult(cmd *cobra.Command, d Dependencies, row map[string]any, fields []string, o jsonOptions, title, committed string) (err error) {
 	if fields != nil {
 		return gitLabCommitted(cmd, d, row, fields, o.expression, committed)
 	}
+	defer func() {
+		if err == nil {
+			err = flushTokenOutput(d.Out)
+		}
+		if err != nil {
+			err = &ExitError{1, "Error: " + committed + ", but output failed; the one-time webhook secret may be lost. Do not repeat registration; rotate the webhook secret to recover."}
+		}
+	}()
 	pairs := [][2]string{}
 	for _, p := range [][2]string{{"Installation ID", "installation_id"}, {"GitLab group", "gitlab_namespace_full_path"}, {"Token expires", "access_token_expires_on"}, {"Project selection", "project_selection_mode"}, {"Selected project count", "selected_project_count"}} {
 		pairs = append(pairs, [2]string{p[0], pythonValue(row[p[1]])})

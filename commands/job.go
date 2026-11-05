@@ -104,7 +104,7 @@ func newJobList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		ids, err := resolveRepositories(cmd.Context(), d, cfg, api, id, repos, true)
+		ids, err := resolveRepositories(cmd.Context(), d, cfg, api, id, repos, false)
 		if err != nil {
 			return err
 		}

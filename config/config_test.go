@@ -2,12 +2,36 @@ package config
 
 import (
 	"os"
+	"os/user"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestDefaultStoreWithoutHome(t *testing.T) {
+	directory := t.TempDir()
+	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", "")
+	t.Setenv("AVR_CONFIG_DIR", directory)
+	store, err := DefaultStore()
+	if err != nil || store.Path != filepath.Join(directory, "hosts.json") {
+		t.Fatal(store, err)
+	}
+	if runtime.GOOS == "windows" {
+		return
+	}
+	account, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AVR_CONFIG_DIR", "~/cli-test")
+	store, err = DefaultStore()
+	if err != nil || store.Path != filepath.Join(account.HomeDir, "cli-test", "hosts.json") {
+		t.Fatal(store, err)
+	}
+}
 
 func TestStoreInteroperability(t *testing.T) {
 	s := &Store{Path: filepath.Join(t.TempDir(), "config", "hosts.json")}

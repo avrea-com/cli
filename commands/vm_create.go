@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"sort"
 	"strings"
@@ -87,7 +89,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 	f.IntVar(&o.timeout, "wait-timeout", 300, "Seconds to wait with --wait.")
 	f.BoolVar(&o.json, "json", false, "Emit the VM and one-time password as JSON.")
 	f.StringVar(&o.spawn, "from-spawn-script", "", "Vendor spawn script mode: claude-code.")
-	c.RunE = run(func(cmd *cobra.Command, args []string) error {
+	c.RunE = run(func(cmd *cobra.Command, args []string) (resultErr error) {
 		for _, item := range []struct {
 			flag, value string
 			choices     []string
@@ -154,6 +156,14 @@ func newVMCreate(d Dependencies) *cobra.Command {
 		}
 		password := fieldText(data, "password")
 		vmID := billingText(vm, "customer_vm_id", "None")
+		defer func() {
+			if resultErr == nil {
+				resultErr = flushTokenOutput(d.Out)
+			}
+			if password != "" && (isBrokenPipe(resultErr) || errors.Is(resultErr, io.ErrClosedPipe)) {
+				resultErr = &ExitError{1, "Error: VM " + output.CellText(vmID) + " was created, but output closed; its one-time password may be lost. Do not create it again. Use 'avr vm show " + output.CellText(vmID) + "' to inspect it, or delete it if it is no longer needed."}
+			}
+		}()
 		notes := []string{}
 		if note := fieldText(data, "precheckout_note"); note != "" {
 			notes = append(notes, "Note: "+note)

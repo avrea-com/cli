@@ -691,6 +691,18 @@ def watch_scenarios():
             "events": ["job_started"],
         }
     )
+    result.append(
+        {
+            "name": "watch refuses missing detected repository",
+            "args": ["run", "watch", "--exit-status"],
+            "git_remote": "git@github.com:me/untracked.git",
+            "responses": {
+                ("GET", f"/orgs/{ORG}/repos/resolve?name=me%2Funtracked&platform=github"): (404, {"detail": {}})
+            },
+            "exit": 1,
+            "error_terms": ["not in org", "Aborted!"],
+        }
+    )
     for case in result:
         case.setdefault("env", env)
     return result

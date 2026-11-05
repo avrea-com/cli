@@ -72,6 +72,16 @@ def scenarios():
     view = ORGS | {VIEW: (200, {"data": JOB_DATA}), LOG_JOB: (200, {"data": JOB_DATA}), LOGS: LOG_RESPONSE}
     run = ORGS | {RUN_VIEW: (200, {"data": inspection.RUN_DATA | {"jobs": [JOB_DATA]}}), LOGS: LOG_RESPONSE}
     cases = [
+        {
+            "name": "job list refuses missing detected repository",
+            "args": ["job", "list"],
+            "git_remote": "git@github.com:me/untracked.git",
+            "responses": {
+                ("GET", f"/orgs/{ORG}/repos/resolve?name=me%2Funtracked&platform=github"): (404, {"detail": {}})
+            },
+            "exit": 1,
+            "error_terms": ["not in org", "Aborted!"],
+        },
         {"name": "job list JSON", "args": ["job", "list", "--json", "*"], "responses": listing, "json": True},
         {
             "name": "job list jq aliases",

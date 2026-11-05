@@ -1865,3 +1865,40 @@ Local validation:
 
 All mutation comparisons used loopback fixtures. No staging/production writes,
 release, merge, repo-intel changes or Linux ARM64 build were performed.
+
+### Agreed pre-review fixes (2026-11-05)
+
+The operator requested the older draft-blocking fixes before marking the PR
+ready. Closed stdout now returns success only for explicitly known display
+commands without `--exit-status`. Existing error/cancellation outcomes retain
+their exit codes; mutations and CI gates fail if their result cannot be
+delivered. VM creation and human GitLab registration/rotation give sanitized
+one-time-secret recovery warnings without another mutation request. This does
+not resolve the separate review of JSON VM passwords on non-output wait errors.
+
+The HTTP client records errors from the response body separately from decoder
+errors. HTTP/2 stream resets and malformed chunk reads are retryable transport
+losses; corrupt gzip/zstd content remains a permanent content error. A real TLS
+HTTP/2 regression resets both dispatch and receipt responses after headers,
+verifying an identical request/key retry and successful receipt recovery. It
+passed five repeated race-enabled runs.
+
+`run watch` and `job list` now refuse a missing git-detected repository, while
+`run list` retains its intentional org-wide fallback. Explicit config-directory
+overrides work without HOME/USERPROFILE; home expansion falls back to the OS
+account record. Both behaviors have pinned Python comparisons and Go tests.
+
+Packaged Bash/Zsh/Fish sources are written with LF endings on every platform.
+The validator compares packaged bytes against LF source, and a regression
+rejects CRLF content even with a matching inventory/hash manifest. The preview
+boundary test description now states the actual isolation policy: preview jobs
+are separate, while shared harness tests and lint still gate Python CI.
+
+These fixes address only the agreed pre-review items. Other older review
+threads remain open; readiness for review is not approval to merge or release.
+
+Validation for this follow-up: full Go race tests and lint passed; affected
+public suites passed 930 paired case executions, and admin suites passed 811,
+including each GitLab suite's native and injected-transport phases. Python
+passed 2,209 tests with 29 skips. The local native archive passed the strengthened
+completion check. Reports are under ignored `build/go/review-fixes*`.

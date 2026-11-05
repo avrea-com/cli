@@ -1,4 +1,4 @@
-"""Go preview checks must not freeze or gate the existing Python release."""
+"""Preview jobs are separate; shared harness unit tests and lint gate Python CI."""
 
 from pathlib import Path
 from scripts import generate_go_doc_metadata as metadata
