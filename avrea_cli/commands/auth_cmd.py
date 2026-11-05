@@ -1,7 +1,6 @@
 """Authentication CLI commands (avr auth login/logout/status)."""
 
 from avrea_cli import auth
-from avrea_cli import device_auth
 from avrea_cli.api_client import ApiClient
 from avrea_cli.click_ext import GhGroup
 from avrea_cli.config import CliConfig
@@ -92,7 +91,14 @@ def _do_login(ctx, provider, email=None):
 
 
 def _complete_login(config: CliConfig, api_key: str) -> None:
-    auth.store_token(api_key, host=config.public_api_url)
+    try:
+        auth.store_token(api_key, host=config.public_api_url)
+    except OSError:
+        raise click.ClickException(
+            f"Could not save credentials to {auth.HOSTS_FILE}. "
+            "Fix the file permissions or available disk space, then run "
+            "avr auth device-login or avr auth login again."
+        ) from None
 
     check = click.style("✓", fg="green")
     email = _fetch_email(config.public_api_url, api_key)
@@ -217,7 +223,7 @@ def auth_login(ctx, provider: str, email: str | None):
 
 
 @auth_group.command("device-login")
-@click.option("--no-qr", is_flag=True, help="Hide the terminal QR code; still display the sign-in link and code.")
+@click.option("--no-qr", is_flag=True, help="Hide the terminal QR code; still display the sign-in link.")
 @click.pass_context
 def auth_device_login(ctx: click.Context, no_qr: bool) -> None:
     """Sign in from a remote machine using a browser on any device.
@@ -227,6 +233,8 @@ def auth_device_login(ctx: click.Context, no_qr: bool) -> None:
     is opened on this machine. QR codes appear only in compatible terminals
     wide enough to display them. Requires device-login support on the server.
     """
+    from avrea_cli import device_auth  # noqa: PLC0415
+
     config: CliConfig = ctx.obj["config"]
     try:
         api_key = device_auth.login(config.public_api_url, show_qr=not no_qr)

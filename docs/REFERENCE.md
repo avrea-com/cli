@@ -1663,7 +1663,7 @@ wide enough to display them. Requires device-login support on the server.
 
 **Options**
 
-- `--no-qr` — Hide the terminal QR code; still display the sign-in link and code.
+- `--no-qr` — Hide the terminal QR code; still display the sign-in link.
 
 #### `avr auth login`
 

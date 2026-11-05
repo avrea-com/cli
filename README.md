@@ -65,7 +65,7 @@ avr auth device-login
 Open the displayed link on your laptop or phone, or scan the terminal QR code.
 Confirm the code and approve the request. The CLI waits for approval and saves
 the credential on the machine where you ran the command. Use `--no-qr` to hide
-the QR code; links and codes are always displayed. QR output is omitted when
+the QR code; the sign-in link is always displayed. QR output is omitted when
 piped or when the terminal cannot display it. Device login requires support
 on your Avrea server; `avr auth login` keeps its existing browser flow.
 

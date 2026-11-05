@@ -7747,7 +7747,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Hide the terminal QR code; still display the sign-in link and code.",
+                "help": "Hide the terminal QR code; still display the sign-in link.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
