@@ -1,7 +1,7 @@
 # Go migration plan for avr and avr-admin
 
-Status: rebased onto Python release v0.6.0; release catch-up implementation and validation in progress. Keep PR #75 draft until the complete release delta and validation gates pass.
-Updated: 2026-11-05.
+Status: PR #75 is ready for review; review follow-ups are being validated before stable 0.7.0. Publication requires separate authorization.
+Updated: 2026-11-06.
 Worktree branch: `cli/go-migration`.
 Initial public CLI baseline: `99e74d1`, fetched from `origin/main`.
 Current public/Python baseline: `c9e1e4b6a11db522d142ec0dfaeb8119917ec41c`, release `v0.6.0` (the final Python CLI release).

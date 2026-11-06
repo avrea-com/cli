@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -34,15 +35,15 @@ func TestCredentialWritesPreserveSymlink(t *testing.T) {
 }
 
 func TestMalformedCredentialMutationsPreserveFile(t *testing.T) {
-	for _, raw := range []string{`broken`, `{"hosts":`, `null`, `{"hosts":[]}`} {
+	for _, raw := range []string{"", `broken`, `{"hosts":`, `null`, `{"hosts":[]}`} {
 		s := &Store{Path: filepath.Join(t.TempDir(), "hosts.json")}
 		if err := os.WriteFile(s.Path, []byte(raw), 0600); err != nil {
 			t.Fatal(err)
 		}
 		actions := []func() error{func() error { return s.Set("https://api.test", "token", "fixture") }, func() error { return s.Switch("https://api.test") }, func() error { _, e := s.Clear("https://api.test"); return e }, func() error { _, e := s.ClearDefaultOrg("https://api.test"); return e }}
 		for _, action := range actions {
-			if action() == nil {
-				t.Fatal("accepted malformed credential store")
+			if err := action(); err == nil || !strings.Contains(err.Error(), "saved logins and defaults will no longer be available") {
+				t.Fatal("missing refusal/recovery guidance", err)
 			}
 			after, _ := os.ReadFile(s.Path)
 			if string(after) != raw {

@@ -90,8 +90,17 @@ func TestCancelledCheckDoesNotDelayCaller(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	notices := c.Start(ctx)
 	<-started
+	// The process may disappear now: the cache must already suppress a retry.
+	data, err := os.ReadFile(c.cachePath)
+	var saved cache
+	if err != nil || json.Unmarshal(data, &saved) != nil || saved.Checked.IsZero() {
+		t.Fatal("attempt was not saved before the request", err, string(data))
+	}
 	cancel()
 	if notice, ok := <-notices; ok {
+		t.Fatal(notice)
+	}
+	if notice := c.check(t.Context()); notice != "" {
 		t.Fatal(notice)
 	}
 }

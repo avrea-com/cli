@@ -342,7 +342,7 @@ func downloadArtifact(ctx context.Context, api *client.Client, endpoint string, 
 	if directoryTarget {
 		// Linking publishes the verified file only if the destination does not exist,
 		// including when another process creates it while the download is running.
-		if err = os.Link(temporary.Name(), destination); err != nil {
+		if err = publishArtifact(ctx, temporary.Name(), destination, os.Link); err != nil {
 			if errors.Is(err, os.ErrExist) {
 				return "", errors.New("artifact destination already exists; choose an explicit --path FILE to replace it")
 			}
@@ -354,4 +354,51 @@ func downloadArtifact(ctx context.Context, api *client.Client, endpoint string, 
 		return "", err
 	}
 	return destination, nil
+}
+
+// Prefer a single-step publication, with exclusive creation for filesystems
+// without hard links. Only a file created by this call is removed on failure.
+func publishArtifact(ctx context.Context, source, destination string, link func(string, string) error) error {
+	if err := link(source, destination); err == nil || errors.Is(err, os.ErrExist) {
+		return err
+	}
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	out, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	complete := false
+	defer func() {
+		_ = out.Close()
+		if !complete {
+			_ = os.Remove(destination)
+		}
+	}()
+	buffer := make([]byte, 64<<10)
+	for {
+		if err = ctx.Err(); err != nil {
+			return err
+		}
+		n, readErr := in.Read(buffer)
+		if n > 0 {
+			if _, err = out.Write(buffer[:n]); err != nil {
+				return err
+			}
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			return readErr
+		}
+	}
+	if err = out.Close(); err != nil {
+		return err
+	}
+	complete = true
+	return nil
 }

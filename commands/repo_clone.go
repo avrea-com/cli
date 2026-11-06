@@ -167,11 +167,41 @@ func mirrorProbeFailure(endpoints []string, failures map[string]string) error {
 	return &ExitError{1, "Error: No mirror could serve this repository (" + strings.Join(details, "; ") + "). " + strings.Join(hints, " ")}
 }
 func cloneCredentialConfig(executable, apiHost, target, repo string) []string {
-	// Persist the running native executable: an avr found on PATH may still be
-	// the Python CLI, and Git invokes this helper from a different directory.
+	// Prefer a stable launcher only after verifying it resolves to this binary.
+	// An unrelated avr on PATH may still be the Python CLI.
 	command := "AVR_HOST=" + shellquote.Join(apiHost) + " " + shellquote.Join(executable, "auth", "git-credential", "--url", target, "--repo", repo)
 	helper := "!f() { case \"$1\" in store|erase) return 0;; esac; " + command + " \"$@\" || { printf \"quit=1\\n\\n\"; exit 1; }; }; f"
 	return []string{"credential." + target + ".helper=", "credential." + target + ".helper=" + helper, "credential." + target + ".useHttpPath=true", "http." + target + ".followRedirects=false"}
+}
+
+func cloneHelperExecutable(executable, invoked string) string {
+	actual, err := os.Stat(executable)
+	if err != nil {
+		return executable
+	}
+	candidates := []string{invoked, "avr"}
+	fallback := executable
+	for _, candidate := range candidates {
+		path, err := exec.LookPath(candidate)
+		if err != nil {
+			continue
+		}
+		path, err = filepath.Abs(path)
+		if err != nil {
+			continue
+		}
+		if info, err := os.Stat(path); err == nil && os.SameFile(actual, info) {
+			if launcher, err := os.Lstat(path); err == nil && launcher.Mode()&os.ModeSymlink != 0 {
+				return path // Homebrew/uv/pipx's persistent symlink.
+			}
+			if candidate == "avr" {
+				// mise puts a versioned directory on PATH. Resolve its current
+				// selection when Git runs, rather than saving that old directory.
+				fallback = "avr"
+			}
+		}
+	}
+	return fallback
 }
 func cloneEnvironment() []string {
 	var env []string
@@ -389,6 +419,7 @@ func newRepoClone(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		executable = cloneHelperExecutable(executable, os.Args[0])
 		target := cloneURL(endpoint, fullName)
 		argv := []string{"-c", "http." + target + ".extraHeader=", "--config-env=http." + target + ".extraHeader=AVR_GIT_CLONE_AUTHORIZATION", "-c", "credential." + target + ".helper=", "-c", "http." + target + ".followRedirects=false", "clone"}
 		for _, setting := range cloneCredentialConfig(executable, cfg.Host, target, fullName) {

@@ -105,3 +105,34 @@ def test_fixture_server_does_not_require_reverse_dns(monkeypatch):
     with harness.FixtureServer(("127.0.0.1", 0), harness.Fixture) as server:
         assert server.server_name == "localhost"
         assert server.server_port > 0
+
+
+def test_runner_enforces_disclosure_before_specialized_comparator(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w"):
+        pass
+    binary = tmp_path / "fixture-cli"
+    binary.write_bytes(b"fixture")
+    report = tmp_path / "report.json"
+    monkeypatch.setattr(sys, "argv", ["compare", "--go", str(binary), "--report", str(report)])
+
+    def check_output(args, **kwargs):
+        if args[0] == "git":
+            return archive.getvalue()
+        return "jq-1.7.1" if args[0] == "jq" else "avr fixture"
+
+    monkeypatch.setattr(harness.subprocess, "check_output", check_output)
+    captures = iter(
+        [
+            {"stdout": "", "stderr": "", "hosts": {}},
+            {"stdout": "", "stderr": "fixture-secret-value", "hosts": {}},
+        ]
+    )
+    monkeypatch.setattr(harness, "run", lambda *a, **k: next(captures))
+    case = {"name": "disclosure", "responses": {("GET", "/unused"): (200, {"secret": "fixture-secret-value"})}}
+    # A permissive family comparator must not bypass the global secret gate.
+    assert harness.main(case_factory=lambda: [case], compare_results=lambda *a: []) == 1
+    assert json.loads(report.read_text())["scenarios"][0]["differences"] == ["new fixture credential disclosure"]

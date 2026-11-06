@@ -5,6 +5,7 @@ from scripts import compare_auth as harness
 from scripts import compare_inspection as inspection
 from scripts import compare_job_watch as watch
 from scripts import compare_vm_inspection as vm
+from urllib.parse import quote
 import sys
 
 KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureHost fixture"
@@ -34,6 +35,20 @@ def scenarios():
 
     case("print", presentation=True)
     case("append", ["--append"], presentation=True)
+    for name in ["devbox", "Dev Box", "dev #1?"]:
+        for flags in [[], ["--append"]]:
+            case(
+                "by name " + name + repr(flags),
+                args=["vm", "ssh-config", name, *flags],
+                responses={
+                    ("GET", vm.SHOW[1].rsplit("/", 1)[0] + "/" + quote(name, safe="")): (
+                        200,
+                        {"data": vm.ROW | {"endpoints": {"ssh": EP}}},
+                    )
+                },
+                fixture_files={".ssh/config": (BEGIN + "\nHost old\n" + END + "\n").encode()},
+                presentation=True,
+            )
     case("no key", endpoint=vm.ENDPOINTS["ssh"], presentation=True)
     case("no key append", ["--append"], endpoint=vm.ENDPOINTS["ssh"], presentation=True)
     case("null key", endpoint=EP | {"host_key": None}, presentation=True)

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	buildversion "github.com/avrea-com/cli/internal/version"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -288,6 +290,7 @@ func Build(root *cobra.Command) (*Tree, error) {
 	if err := json.Unmarshal(metadata, &tree); err != nil {
 		return nil, err
 	}
+	tree.Version = buildversion.Current()
 	templates := map[string]*Node{}
 	sections := map[string]string{}
 	for section, nodes := range tree.Sections {

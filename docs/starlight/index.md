@@ -322,6 +322,7 @@ avr workflow list --json name,runs -q '.[] | "\(.runs)\t\(.name)"'
 ```
 
 `-q/--jq` is built in (no need to pipe to `jq` yourself), but the schema-projected output is also `jq`-friendly.
+The Go CLI uses embedded gojq, like GitHub CLI: object keys are sorted. For ordered columns use explicit fields, for example `[.status,.conclusion,.run_id]`. See [installation notes](docs/INSTALL.md#json-and-jq).
 
 **Detect "auth required" in scripts**
 

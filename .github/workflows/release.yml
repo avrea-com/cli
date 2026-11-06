@@ -69,16 +69,16 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: release/*
+      - name: Prepare resumable GitHub draft and verify existing PyPI artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m scripts.go_publish prepare --tag "$GITHUB_REF_NAME"
       - name: Publish native wheels to PyPI
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-      - name: Create GitHub Release
+        with:
+          skip-existing: true
+      - name: Publish prepared GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          flags=()
-          case "$GITHUB_REF_NAME" in
-            *-rc.*) flags+=(--prerelease --latest=false) ;;
-            *) flags+=(--latest) ;;
-          esac
-          gh release create "$GITHUB_REF_NAME" --verify-tag \
-            --title "$GITHUB_REF_NAME" --generate-notes "${flags[@]}" release/*
+          python -m scripts.go_publish finalize --tag "$GITHUB_REF_NAME"

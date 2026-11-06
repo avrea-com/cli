@@ -4,6 +4,7 @@ from copy import deepcopy
 from scripts import compare_auth as harness
 from scripts import compare_inspection as inspection
 from scripts import compare_jobs as jobs
+import decimal
 import json
 import re
 import sys
@@ -145,16 +146,22 @@ def compare(scenario, python, go):
                 result[stream],
             )
     if scenario.get("snapshots"):
+        streams = []
         for result in (python, go):
             if "\x1b" in result["stdout"]:
                 differences.append("terminal escapes in snapshot stream")
             lines = []
+            snapshots = []
             for line in result["stdout"].splitlines():
                 if line.startswith("{"):
-                    lines.append(json.dumps(json.loads(line), sort_keys=True))
+                    snapshots.append(json.loads(line, parse_float=decimal.Decimal))
+                    lines.append("<snapshot>")
                 else:
                     lines.append(line)
             result["stdout"] = "\n".join(lines)
+            streams.append(snapshots)
+        if inspection.typed_event(streams[0]) != inspection.typed_event(streams[1]):
+            differences.append("snapshot values")
     return differences + inspection.compare(scenario, python, go)
 
 

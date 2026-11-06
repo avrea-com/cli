@@ -10,7 +10,7 @@ import (
 )
 
 func TestNotifierOnlyUsesReadyNoticesForSuccessfulInteractiveCommands(t *testing.T) {
-	for _, mode := range []string{"ready", "not-ready", "closed", "disabled", "pipe", "stderr-pipe", "ci", "automation", "opt-out", "json", "help", "root-help", "version", "completion", "failure", "hidden"} {
+	for _, mode := range []string{"ready", "not-ready", "closed", "disabled", "pipe", "stderr-pipe", "ci", "automation", "opt-out", "json", "ndjson", "help", "root-help", "version", "completion", "failure", "hidden"} {
 		t.Run(mode, func(t *testing.T) {
 			d, out, stderr := testDeps(t)
 			notices := make(chan string, 1)
@@ -42,11 +42,12 @@ func TestNotifierOnlyUsesReadyNoticesForSuccessfulInteractiveCommands(t *testing
 				return nil
 			}}
 			cmd.Flags().Bool("json", false, "")
+			cmd.Flags().Bool("ndjson", false, "")
 			root.AddCommand(cmd)
 			args := []string{"probe"}
 			switch mode {
-			case "json":
-				args = append(args, "--json")
+			case "json", "ndjson":
+				args = append(args, "--"+mode)
 			case "help":
 				args = append(args, "--help")
 			case "root-help":
@@ -70,7 +71,7 @@ func TestNotifierOnlyUsesReadyNoticesForSuccessfulInteractiveCommands(t *testing
 }
 
 func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
-	for _, mode := range []string{"interactive", "help", "version", "json", "pipe", "ci", "opt-out"} {
+	for _, mode := range []string{"interactive", "help", "version", "json", "ndjson", "pipe", "ci", "opt-out"} {
 		t.Run(mode, func(t *testing.T) {
 			d, _, stderr := testDeps(t)
 			started := false
@@ -91,6 +92,7 @@ func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
 			root := NewRoot(d)
 			cmd := &cobra.Command{Use: "probe", RunE: func(*cobra.Command, []string) error { return nil }}
 			cmd.Flags().Bool("json", false, "")
+			cmd.Flags().Bool("ndjson", false, "")
 			root.AddCommand(cmd)
 			args := []string{"probe"}
 			if mode == "help" {
@@ -99,8 +101,8 @@ func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
 			if mode == "version" {
 				args = []string{"--version"}
 			}
-			if mode == "json" {
-				args = append(args, "--json")
+			if mode == "json" || mode == "ndjson" {
+				args = append(args, "--"+mode)
 			}
 			if code := ExecuteRoot(t.Context(), root, args, stderr, d); code != 0 {
 				t.Fatal(code, stderr)

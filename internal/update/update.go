@@ -74,6 +74,7 @@ func (c Checker) check(ctx context.Context) string {
 	if saved.Checked.IsZero() || age < 0 || age >= maxAge {
 		// Remember failed attempts too, so an outage is not retried every command.
 		saved.Checked = now
+		c.save(saved)
 		if latest := c.latest(ctx); latest != "" {
 			saved.Latest = latest
 		}

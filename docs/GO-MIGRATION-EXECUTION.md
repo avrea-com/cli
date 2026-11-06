@@ -1,18 +1,20 @@
 # Go migration execution record
 
-Status (2026-11-05): catch-up to the final Python release, v0.6.0, is in progress.
+Status (2026-11-06): public Python 0.6.0 catch-up is complete; agreed review
+follow-ups are validated locally for native 0.7.0. Publication is still gated.
 The public tree is native Go and reused by the admin preview. See the release
 checkpoints at the end for current evidence and remaining gates. Earlier
 sections describe historical milestones, not completion of the 0.6.0 scope.
 
 The target is the full public Python avr command surface, reused by avr-admin.
 Repo-intel remains excluded. No Python fallback counts as a native implementation.
-Commits are unsigned as requested. No release, push, or deployment is implied.
+Early checkpoints were unsigned; subsequent publication follows the signed-commit policy.
+No release, push, or deployment is implied by this record.
 
 ## Authoritative scope
 
 `go-python-command-contract.json` records the pinned Python command tree:
-149 nodes, including 121 executable leaf commands, nested groups, hidden
+154 nodes, including executable leaf commands, nested groups, hidden
 commands, aliases, options, defaults, choices, and positional arguments.
 Regenerate with `python -m scripts.inventory_python_commands`.
 The snapshot is a denominator, not proof of behavior parity.
@@ -2061,3 +2063,62 @@ metadata, an invalid Windows rollback assertion, and empty archive-only SBOM
 scanning. No source was uploaded to CodeRabbit. Native Windows/Linux execution
 and real published-release Homebrew/mise upgrade checks remain CI/release
 validation, respectively. See INSTALL.md and GO-RELEASE.md.
+
+## Agreed review follow-ups — 2026-11-06
+
+Source: review follow-up to public commit `6a1f660`.
+Target stable version: **0.7.0**. Validate CI artifacts before release; a published
+RC is optional, not a prerequisite. The publication gate remains unset.
+
+- Bound `auth_error` callbacks finish login without an API-key exchange; invalid
+  state still cannot consume the callback. VM SSH aliases use the canonical API
+  ID, with paired named-VM/append cases including spaces and punctuation.
+- Release preparation verifies existing GitHub/PyPI bytes, resumes missing
+  uploads, repairs only empty GitHub `starter` placeholders, and publishes the
+  draft only after PyPI succeeds. Tests use simulated services; nothing was
+  published. This follows GitHub's documented incomplete-upload behavior:
+  https://docs.github.com/en/rest/releases/assets#upload-a-release-asset.
+- Update attempts are cached before network access; `--ndjson` suppresses the
+  worker. Existing colors, underlines, links and trusted formatting remain.
+- Installers stage a pending digest before swapping the executable, then
+  atomically finish the marker. Recovery covers first installs, upgrades and
+  older stale-marker states. Unknown/changed installations remain protected.
+- Artifact directory downloads fall back to exclusive-create copying on
+  filesystems without hard links, cleaning up failed copies without replacing
+  existing destinations. Credential writes remain direct; empty/malformed
+  stores still refuse mutations with explicit recovery guidance.
+- Normal dispatch retry commands retain their values. Unsafe argument displays
+  are escaped and labeled; workflow JSON inputs already have lossless escaping.
+- Health failures and swallowed cancellation retain failing exits. GitLab detail
+  fields and metrics units are sanitized before trusted presentation. Git
+  helpers retain verified symlink launchers or resolve verified `avr` PATH
+  selections at use time, covering versioned mise directories after upgrades.
+- Python application files match `origin/main` exactly. The command inventory
+  check runs again and is included in CI. Native docs identify 0.7.0; parity
+  builds explicitly disable CGO like packages. Snapshot comparisons preserve
+  whitespace, decimal precision and scalar types; disclosure is tested through
+  the runner even when a family comparator ignores output.
+
+Validation: full Python suite **2,243 passed, 29 skipped**, with 27 subtests;
+public Go race suite and composed admin Go race suite passed. Eleven selected
+Python/Go suites passed **774 paired cases with zero differences**: auth,
+VM SSH config, job watch, native dispatch, GitLab, job metrics, generated docs,
+config, clone, audit/health and globals. Suites affected by the final comparator
+and clone corrections were rerun. These include terminal presentation cases.
+The 154-node inventory and Go documentation generation checks passed.
+
+All 15 local package/distribution tests passed; the macOS 0.7.0 archive was
+built and validated. A disposable production Windows VM ran the distribution
+suite separately under Windows PowerShell 5.1 and PowerShell 7, including
+install, upgrade, rollback, interruption recovery and checksum rejection.
+Both shells installed a real Go 0.7.0 executable and ran version/help with an
+empty PATH. The successful VM and both earlier setup attempts were deleted.
+The Windows test used a cross-built executable; this was installer validation,
+not a repeat of the native Windows compiler/package CI job. Local evidence:
+`build/go/windows-review-result.log`, `build/go/*-parity.json`, and
+`build/go/review-*.log`.
+
+Local/manual review and an independent source review checked the changed
+contracts, including partial publication, callback binding and shared root
+behavior. Review stayed local; no CodeRabbit upload. Public release, Homebrew
+and live GitHub-backed mise installation remain separately authorized steps.

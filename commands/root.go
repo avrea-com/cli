@@ -215,7 +215,7 @@ func closedPipeDisplay(c *cobra.Command) bool {
 	}
 	switch canonicalHelpPath(c) {
 	case "avr auth status", "avr config", "avr config list", "avr config get",
-		"avr status", "avr health", "avr org list", "avr repo list",
+		"avr status", "avr org list", "avr repo list",
 		"avr run list", "avr run view", "avr run logs", "avr run watch", "avr run diagnose",
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
@@ -343,6 +343,9 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	}
 	defer func() { root.PersistentPreRunE = previousPreRun }()
 	executed, err := root.ExecuteContextC(ctx)
+	if err == nil && ctx.Err() != nil {
+		err = &ExitError{130, "Interrupted."}
+	}
 	if err == nil {
 		printUpdateNotice(executed, d)
 		return 0

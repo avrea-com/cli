@@ -22,7 +22,7 @@ func updateNoticeAllowed(cmd *cobra.Command, d Dependencies) bool {
 	if cmd.Parent() == nil {
 		return false
 	}
-	for _, name := range []string{"help", "version", "json", "jq", "format"} {
+	for _, name := range []string{"help", "version", "json", "jq", "format", "ndjson"} {
 		if f := cmd.Flags().Lookup(name); f != nil && f.Changed {
 			return false
 		}

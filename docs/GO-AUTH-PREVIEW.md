@@ -720,9 +720,11 @@ It does not claim complete compatibility with every external jq expression.
   evaluation; early pager exit and pager interruption complete successfully,
   while interrupting a watch exits 130.
 
-## Pinned libraries and tools
+## Initial auth checkpoint libraries and tools
 
-All direct/runtime pins below were checked against Go proxy version metadata on
+This is the historical initial-auth inventory, not the current dependency list.
+Current versions are recorded in `go.mod` and `tools/go.mod`; later updates are
+described in the subsequent checkpoints. The pins below were checked against Go proxy version metadata on
 2026-10-29 and satisfy the three-day minimum age. go.sum and tools/go.sum lock
 the resolved graphs. These dates are manual dependency-review evidence, not a
 new age-gate service.

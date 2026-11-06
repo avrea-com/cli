@@ -50,11 +50,15 @@ jobs:
         if: matrix.shard == 0
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
         if: matrix.shard == 0
+      - run: uv run --python 3.14 --frozen --extra dev python -m scripts.inventory_python_commands --check
+        if: matrix.shard == 0
       - run: uv run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool go
         if: matrix.shard == 0
       - run: go test -race ./...
         if: matrix.shard == 0
       - run: go build -trimpath -o build/go/avr.exe ./cmd/avr
+        env:
+          CGO_ENABLED: "0"
       # Report trends without flaky wall-clock thresholds on shared runners.
       - name: Measure fresh-process startup
         if: matrix.shard == 0

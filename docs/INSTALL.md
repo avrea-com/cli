@@ -1,6 +1,6 @@
 # Install and update AVR
 
-The native Go transition targets **0.7.0**, starting with **0.7.0-rc.1**.
+The native Go transition targets **0.7.0**, validated through CI artifacts before release.
 These instructions describe the prepared release paths. Until that release
 is published, normal package-manager installs still obtain Python 0.6.0.
 PR artifacts can be downloaded and tested without changing your current `avr`.
@@ -26,17 +26,6 @@ Python is needed by the package manager, but is not launched when running
 AVR. The wheels have no Python runtime dependencies and require Python 3.9+
 for installation. `uvx avr-cli` remains available.
 
-To opt into the release candidate explicitly:
-
-```sh
-uv tool install 'avr-cli==0.7.0rc1'
-# Or, in a pip environment:
-python -m pip install 'avr-cli==0.7.0rc1'
-```
-
-A release candidate does not become the stable update channel. `0.7.0rc1`
-is the PyPI spelling of GitHub/native version `0.7.0-rc.1`.
-
 For mise, the release includes `mise.toml` with an exact version, platform
 asset names and checksums. Its built-in GitHub backend is sufficient; no AVR
 plugin is required. Merge the `[tools]` entry into your existing configuration.
@@ -61,8 +50,10 @@ sh install.sh --version 0.7.0 --bin-dir "$HOME/.local/bin"
 Windows PowerShell:
 
 ```powershell
-.\install.ps1 -Version 0.7.0 -BinDir "$env:LOCALAPPDATA\Avrea\bin"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.7.0 -BinDir "$env:LOCALAPPDATA\Avrea\bin"
 ```
+
+The execution-policy override applies only to this process; organization policy still takes precedence. Inspect the downloaded script before running it. Both Windows PowerShell 5.1 and PowerShell 7 are tested.
 
 Omitting the version selects the latest stable release, once a native stable
 release exists. Re-running the installer upgrades its own installation;
@@ -92,13 +83,20 @@ public AVR in separate environments. Existing admin installations need to
 consume the updated dependency metadata; an older unbounded requirement is
 not changed retroactively. Native wheels intentionally omit `avrea_cli`.
 
+## JSON and jq
+
+AVR uses embedded gojq, like GitHub CLI. Object keys are sorted,
+`keys_unsorted` is unavailable, and there is no system-jq fallback. When column
+order matters, name fields explicitly: `.[] | [.status,.conclusion,.run_id] | @tsv`.
+
 ## Update notices
 
 Successful interactive commands may print an update notice on stderr. Checks
 use the public GitHub stable-release feed and a local 24-hour cache. They are
 best effort, have a two-second network deadline, and never delay command
 completion. No Avrea credentials are sent and no update is installed.
-Short commands may exit before the asynchronous check finishes.
+The attempt timestamp is saved before the request. Short commands may exit
+before it finishes; that attempt still suppresses another check for 24 hours.
 
 Notices and checks are disabled for help, version, completion, hidden commands,
 structured output, redirected stdout/stderr, CI and automation. Set

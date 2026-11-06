@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/avrea-com/cli/output"
 )
 
 var metricSources = []string{"cpu", "memory", "filesystem", "load", "disk-io", "disk-ops", "network"}
@@ -92,7 +94,7 @@ func metricRate(value float64, unit string) string {
 		}
 		return fmt.Sprintf("%.1fk ops/s", value/1000)
 	default:
-		return fmt.Sprintf("%.2f %s", value, unit)
+		return fmt.Sprintf("%.2f %s", value, output.CellText(unit))
 	}
 }
 func metricColor(ratio float64) string {

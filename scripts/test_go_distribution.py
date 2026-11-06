@@ -143,8 +143,10 @@ class DistributionTests(unittest.TestCase):
         }
         if os.name == "nt":
             command = [
-                "pwsh",
+                os.environ.get("AVR_TEST_POWERSHELL", "pwsh"),
                 "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
                 "-File",
                 str(package.ROOT / "packaging/install.ps1"),
                 "-BinDir",
@@ -174,6 +176,21 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(binary.read_bytes(), b"second-native-binary")
         install("0.7.0-rc.1")
         self.assertEqual(binary.read_bytes(), b"first-native-binary")
+        marker = destination / "avr-install-method"
+        pending = destination / "avr-install-method.pending"
+        binary.write_bytes(b"second-native-binary")
+        marker.write_text("")
+        pending.write_text("native " + package.digest(binary) + "\n")
+        install("0.7.0")
+        self.assertFalse(pending.exists())
+        self.assertEqual(marker.read_text().strip(), "native " + package.digest(binary))
+        marker.unlink()
+        pending.write_text("native " + package.digest(binary) + "\n")
+        install("0.7.0")
+        self.assertFalse(pending.exists())
+        marker.write_text("native stale\n")
+        install("0.7.0")
+        install("0.7.0-rc.1")
         second.write_bytes(second.read_bytes() + b"corrupt")
         install("0.7.0", success=False)
         self.assertEqual(binary.read_bytes(), b"first-native-binary")

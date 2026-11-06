@@ -181,6 +181,7 @@ go-schema-gate:
 
 .PHONY: go-command-check go-docs
 go-command-check: ## Check the complete command registry and migrated documentation input
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.inventory_python_commands --check
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool "$(GO)"
 

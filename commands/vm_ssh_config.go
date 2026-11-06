@@ -20,16 +20,21 @@ import (
 )
 
 func vmSSHEndpoint(ctx context.Context, cfg config.Config, api *client.Client, org, id string) (map[string]any, error) {
+	endpoint, _, err := vmSSHDetails(ctx, cfg, api, org, id)
+	return endpoint, err
+}
+
+func vmSSHDetails(ctx context.Context, cfg config.Config, api *client.Client, org, id string) (map[string]any, string, error) {
 	record, err := api.VM(ctx, vmBase(org)+"/"+url.PathEscape(id))
 	if err != nil {
-		return nil, vmError(cfg, err, "fetch VM")
+		return nil, "", vmError(cfg, err, "fetch VM")
 	}
 	endpoints, _ := record.Fields["endpoints"].(map[string]any)
 	endpoint, _ := endpoints["ssh"].(map[string]any)
 	if len(endpoint) == 0 {
-		return nil, vmMissingSSHEndpoint(record.Fields, id)
+		return nil, "", vmMissingSSHEndpoint(record.Fields, id)
 	}
-	return endpoint, nil
+	return endpoint, fieldText(record.Fields, "customer_vm_id"), nil
 }
 func vmSSHAddress(ep map[string]any) (string, string, int, error) {
 	host := strings.TrimSpace(fieldText(ep, "external_ip"))
@@ -255,19 +260,22 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 		if configPath != "" && !appendBlock {
 			return &ExitError{2, "Error: --config-file requires --append."}
 		}
-		if !f.Changed("host-alias") {
-			alias = "avr-" + args[0]
-		}
-		if !sshUser().MatchString(alias) {
+		if f.Changed("host-alias") && !sshUser().MatchString(alias) {
 			return &ExitError{2, "Error: --host-alias '" + output.CellText(alias) + "' is not valid; use letters, digits, '.', '_' or '-' (no whitespace)."}
 		}
 		cfg, api, orgID, err := organizationContext(cmd.Context(), d, org)
 		if err != nil {
 			return err
 		}
-		ep, err := vmSSHEndpoint(cmd.Context(), cfg, api, orgID, args[0])
+		ep, vmID, err := vmSSHDetails(cmd.Context(), cfg, api, orgID, args[0])
 		if err != nil {
 			return err
+		}
+		if !f.Changed("host-alias") {
+			if vmID == "" || !sshUser().MatchString(vmID) {
+				return errors.New("VM response contains an invalid ID for the SSH alias")
+			}
+			alias = "avr-" + vmID
 		}
 		host, user, port, err := vmSSHAddress(ep)
 		if err != nil {

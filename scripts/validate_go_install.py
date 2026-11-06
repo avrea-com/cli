@@ -87,8 +87,10 @@ def validate(archive, wheel, uv):
             install_env = os.environ | {"AVR_RELEASE_BASE_URL": f"http://127.0.0.1:{server.server_port}"}
             command = (
                 [
-                    "pwsh",
+                    os.environ.get("AVR_TEST_POWERSHELL", "pwsh"),
                     "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
                     "-File",
                     str(ROOT / "packaging/install.ps1"),
                     "-Version",

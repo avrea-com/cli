@@ -1,6 +1,6 @@
 # Native release preparation
 
-The Go version is `internal/version/VERSION`, currently `0.7.0-rc.1`.
+The Go version is `internal/version/VERSION`, currently `0.7.0`.
 Python's `pyproject.toml` remains at 0.6.0 for the oracle and admin transition.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
 
@@ -23,7 +23,7 @@ Run the portable tests and native build locally:
 python -m unittest scripts.test_go_package scripts.test_go_distribution -v
 python scripts/go_package.py --out build/go/install-check
 python -m scripts.go_distribution \
-  --archive build/go/install-check/avr_0.7.0-rc.1_darwin_arm64.tar.gz \
+  --archive build/go/install-check/avr_0.7.0_darwin_arm64.tar.gz \
   --out build/go/install-check
 python -m scripts.validate_go_install --directory build/go/install-check
 ```
@@ -38,9 +38,11 @@ Before publishing:
    metadata. Keep its Python environment separate from the public Go CLI.
 2. Require green full parity/race/lint checks and all native package/install
    validations for the exact release commit. Review generated notices/SBOMs.
-3. Run the release candidate first. Confirm GitHub-backed mise installation,
-   PyPI upgrade commands, credentials, completion and rollback on clean machines.
-4. For stable 0.7.0, update the Go version and rebuild. Apply the generated
+3. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
+   required. Exercise installers, package upgrades, credentials, completion and
+   rollback on clean machines. Confirm GitHub-backed mise installation once
+   the separately authorized release assets exist.
+4. Apply the generated
    stable `avr.rb` in avrea-com/homebrew-tap after the matching assets exist;
    test `brew install`, `brew upgrade avr`, and the formula test there.
 5. With separate release authorization, set repository variable
@@ -59,3 +61,8 @@ install those executables directly, with no Python launcher. See the
 [wheel specification](https://packaging.python.org/en/latest/specifications/binary-distribution-format/).
 The public command and the `avr-cli` alias are both included. Unsupported
 platforms have no 0.7 wheel; the release has no fallback sdist.
+
+Publication is resumable: stage GitHub assets in a draft, verify existing asset
+and PyPI wheel digests, upload missing wheels, then publish the GitHub release.
+A mismatch stops recovery; reruns never replace existing release bytes.
+`--verify-tag` checks tag existence, not its cryptographic signature.

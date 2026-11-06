@@ -20,7 +20,7 @@ import (
 
 const callbackURI = "http://127.0.0.1:8765/callback"
 
-type callback struct{ session, csrf, sso string }
+type callback struct{ session, csrf, sso, authError string }
 
 func NewLogin(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
@@ -136,7 +136,7 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 			return
 		}
 		// Invalid/empty requests must not consume the pending login.
-		if q.Get("session") == "" && q.Get("sso_required") == "" {
+		if q.Get("session") == "" && q.Get("sso_required") == "" && q.Get("auth_error") == "" {
 			http.Error(w, "Missing login result", http.StatusBadRequest)
 			return
 		}
@@ -147,7 +147,7 @@ func login(parent context.Context, d Dependencies, api *client.Client, provider,
 			}
 		}
 		once.Do(func() {
-			cb := callback{session: q.Get("session"), csrf: q.Get("csrf_token"), sso: q.Get("sso_required")}
+			cb := callback{session: q.Get("session"), csrf: q.Get("csrf_token"), sso: q.Get("sso_required"), authError: q.Get("auth_error")}
 			label := "Authentication failed. Return to your terminal."
 			if cb.session != "" {
 				headers, e := sessionHeaders(callback{session: cb.session})
@@ -212,6 +212,9 @@ waitCallback:
 				return "", errors.New("authentication timed out waiting for browser callback")
 			}
 		}
+	}
+	if cb.authError != "" {
+		return "", fmt.Errorf("authentication failed: %s", output.CellText(cb.authError))
 	}
 	if cb.session == "" {
 		if cb.sso != "" {

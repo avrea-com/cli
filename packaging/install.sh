@@ -37,7 +37,8 @@ esac
 fetch() { curl --fail --silent --show-error --location --connect-timeout 10 --max-time 120 --proto "$protocols" --proto-redir "$protocols" "$1" -o "$2"; }
 tmp=$(mktemp -d)
 staged=
-cleanup() { rm -f "${staged:-$tmp/unused}"; rm -rf "$tmp"; }
+marker_staged=
+cleanup() { rm -f "${staged:-$tmp/unused}" "${marker_staged:-$tmp/unused}"; rm -rf "$tmp"; }
 trap cleanup EXIT HUP INT TERM
 if [ -z "$version" ]; then
   fetch "$base/latest/download/avr-version.txt" "$tmp/version"
@@ -55,19 +56,38 @@ actual=$(checksum "$tmp/$archive")
 tar -xzOf "$tmp/$archive" "$name/avr" > "$tmp/avr"
 [ -s "$tmp/avr" ] || fail 'Empty executable'
 mkdir -p "$bin_dir"
+marker=$bin_dir/avr-install-method
+pending=$bin_dir/avr-install-method.pending
 [ ! -L "$bin_dir/avr" ] || fail 'Existing avr is a symlink; update it with its package manager or choose another directory'
+for path in "$marker" "$pending"; do
+  [ ! -L "$path" ] || fail 'Installation marker must not be a symlink'
+  [ ! -e "$path" ] || [ -f "$path" ] || fail 'Installation marker must be a file'
+done
 if [ -e "$bin_dir/avr" ]; then
-  [ -f "$bin_dir/avr" ] && [ -f "$bin_dir/avr-install-method" ] || fail 'Destination contains an unmanaged avr; choose another directory'
-  [ "$(cat "$bin_dir/avr-install-method")" = "native $(checksum "$bin_dir/avr")" ] || fail 'Existing avr belongs to another installation or was changed; choose another directory'
+  [ -f "$bin_dir/avr" ] || fail 'Destination contains an unmanaged avr; choose another directory'
+  current="native $(checksum "$bin_dir/avr")"
+  owned=false
+  for path in "$marker" "$pending"; do
+    if [ -f "$path" ] && [ "$(cat "$path")" = "$current" ]; then owned=true; fi
+  done
+  # Repair an older interrupted installer only when its binary is exactly the
+  # verified version requested, and an installation marker already exists.
+  if [ -f "$marker" ] && [ "$current" = "native $(checksum "$tmp/avr")" ]; then owned=true; fi
+  [ "$owned" = true ] || fail 'Existing avr belongs to another installation or was changed; choose another directory'
 fi
-[ ! -L "$bin_dir/avr-install-method" ] || fail 'Installation marker must not be a symlink'
 staged=$(mktemp "$bin_dir/.avr-XXXXXXXX")
 cat "$tmp/avr" > "$staged"
 chmod 755 "$staged"
 new_digest=$(checksum "$staged")
+marker_staged=$(mktemp "$bin_dir/.avr-marker-XXXXXXXX")
+printf 'native %s\n' "$new_digest" > "$marker_staged"
+# Keep a recoverable digest before replacing the executable, including on a
+# first installation. Every rename stays on the destination filesystem.
+mv -f "$marker_staged" "$pending"
+marker_staged=
 mv -f "$staged" "$bin_dir/avr"
 staged=
-printf 'native %s\n' "$new_digest" > "$bin_dir/avr-install-method"
+mv -f "$pending" "$marker"
 printf 'Installed avr %s to %s/avr\n' "$version" "$bin_dir"
 case ":$PATH:" in *":$bin_dir:"*) ;; *) printf 'Add this directory to PATH: %s\n' "$bin_dir" ;; esac
 existing=$(command -v avr || true)

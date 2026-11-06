@@ -195,8 +195,6 @@ def clone_mirror(
     branch: str | None,
     depth: int | None,
 ) -> int:
-    if directory is None and full_name.rsplit("/", 1)[-1].rstrip(". ").casefold() == ".git":
-        raise click.ClickException("The API returned a reserved Git metadata directory as the repository name.")
     url = clone_url(endpoint, full_name)
     env = os.environ.copy()
     # Disable tracing enabled through the inherited environment.

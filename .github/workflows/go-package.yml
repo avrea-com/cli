@@ -33,6 +33,11 @@ jobs:
           python-version: "3.14"
       - name: Test package integrity checks
         run: python -m unittest scripts.test_go_package scripts.test_go_distribution -v
+      - name: Test stock Windows PowerShell installer
+        if: runner.os == 'Windows'
+        env:
+          AVR_TEST_POWERSHELL: powershell.exe
+        run: python -m unittest scripts.test_go_distribution -v
       - name: Build archive and validate extracted executable
         run: python scripts/go_package.py --target ${{ matrix.target }}
       - name: Build native PyPI wheel from validated archive

@@ -5,6 +5,8 @@ param(
     [string]$BinDir = (Join-Path $env:LOCALAPPDATA 'Avrea\bin')
 )
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 Set-StrictMode -Version Latest
 if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'X64' -or $env:OS -ne 'Windows_NT') {
     throw 'This installer supports Windows AMD64 only.'
@@ -15,16 +17,21 @@ if ($base -notmatch '^https://' -and $base -notmatch '^http://127\.0\.0\.1:\d+(/
 $temp = Join-Path ([IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
 [IO.Directory]::CreateDirectory($temp) | Out-Null
 $staged = $null
+$markerStaged = $null
+function Move-InstallFile([string]$Source, [string]$Destination) {
+    if (Test-Path -LiteralPath $Destination) { [IO.File]::Replace($Source, $Destination, [NullString]::Value) }
+    else { [IO.File]::Move($Source, $Destination) }
+}
 try {
     if (-not $Version) {
-        Invoke-WebRequest "$base/latest/download/avr-version.txt" -OutFile "$temp\version" -TimeoutSec 120
+        Invoke-WebRequest "$base/latest/download/avr-version.txt" -UseBasicParsing -OutFile "$temp\version" -TimeoutSec 120
         $Version = [IO.File]::ReadAllText("$temp\version").Trim()
     }
     if ($Version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?$') { throw 'Invalid version.' }
     $name = "avr_${Version}_windows_amd64"
     $archive = "$name.zip"
-    Invoke-WebRequest "$base/download/v$Version/$archive" -OutFile "$temp\$archive" -TimeoutSec 120
-    Invoke-WebRequest "$base/download/v$Version/$archive.sha256" -OutFile "$temp\checksum" -TimeoutSec 120
+    Invoke-WebRequest "$base/download/v$Version/$archive" -UseBasicParsing -OutFile "$temp\$archive" -TimeoutSec 120
+    Invoke-WebRequest "$base/download/v$Version/$archive.sha256" -UseBasicParsing -OutFile "$temp\checksum" -TimeoutSec 120
     $digest = (Get-FileHash "$temp\$archive" -Algorithm SHA256).Hash.ToLowerInvariant()
     if ([IO.File]::ReadAllText("$temp\checksum").Trim() -cne "$digest  $archive") { throw 'Checksum mismatch.' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -38,28 +45,40 @@ try {
     [IO.Directory]::CreateDirectory($BinDir) | Out-Null
     $dest = Join-Path $BinDir 'avr.exe'
     $marker = Join-Path $BinDir 'avr-install-method'
-    foreach ($path in @($dest, $marker)) {
+    $pending = "$marker.pending"
+    foreach ($path in @($dest, $marker, $pending)) {
         if ((Test-Path -LiteralPath $path) -and ((Get-Item -Force -LiteralPath $path).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
             throw 'Destination is a link. Use its package manager or choose another directory.'
         }
+        if ((Test-Path -LiteralPath $path) -and -not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Destination must be a file.' }
     }
     if (Test-Path -LiteralPath $dest) {
         $oldDigest = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash.ToLowerInvariant()
-        if (-not (Test-Path -LiteralPath $marker) -or [IO.File]::ReadAllText($marker).Trim() -cne "native $oldDigest") {
+        $owned = $false
+        foreach ($path in @($marker, $pending)) {
+            if ((Test-Path -LiteralPath $path) -and [IO.File]::ReadAllText($path).Trim() -ceq "native $oldDigest") { $owned = $true }
+        }
+        $requestedDigest = (Get-FileHash -LiteralPath "$temp\avr.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ((Test-Path -LiteralPath $marker) -and $oldDigest -ceq $requestedDigest) { $owned = $true }
+        if (-not $owned) {
             throw 'Destination contains an unmanaged or changed avr. Choose another directory.'
         }
     }
     $staged = Join-Path $BinDir ('.avr-' + [Guid]::NewGuid().ToString())
     Copy-Item -LiteralPath "$temp\avr.exe" -Destination $staged
     $newDigest = (Get-FileHash -LiteralPath $staged -Algorithm SHA256).Hash.ToLowerInvariant()
+    $markerStaged = Join-Path $BinDir ('.avr-marker-' + [Guid]::NewGuid().ToString())
+    [IO.File]::WriteAllText($markerStaged, "native $newDigest`n")
+    Move-InstallFile $markerStaged $pending
     # PowerShell coerces $null to an empty string for this .NET string parameter.
-    if (Test-Path -LiteralPath $dest) { [IO.File]::Replace($staged, $dest, [NullString]::Value) } else { [IO.File]::Move($staged, $dest) }
-    [IO.File]::WriteAllText($marker, "native $newDigest`n")
+    Move-InstallFile $staged $dest
+    Move-InstallFile $pending $marker
     Write-Output "Installed avr $Version to $dest"
     Write-Output "Add this directory to your user PATH if needed: $BinDir"
     $existing = Get-Command avr -ErrorAction SilentlyContinue
     if ($existing -and $existing.Source -ne $dest) { Write-Output "Another avr currently wins on PATH: $($existing.Source)" }
 } finally {
     if ($staged -and (Test-Path -LiteralPath $staged)) { Remove-Item -LiteralPath $staged }
+    if ($markerStaged -and (Test-Path -LiteralPath $markerStaged)) { Remove-Item -LiteralPath $markerStaged }
     Remove-Item -LiteralPath $temp -Recurse
 }

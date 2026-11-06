@@ -37,7 +37,20 @@ def test_snapshot_integer_and_escape_changes_fail():
     python = result()
     go = deepcopy(python)
     go["stdout"] = go["stdout"].replace("9007199254740993", "9007199254740992")
-    assert "stdout" in compare(CASE, python, go)
+    assert "snapshot values" in compare(CASE, python, go)
     go = deepcopy(python)
     go["stdout"] += "\x1b[2J"
     assert "terminal escapes in snapshot stream" in compare(CASE, python, go)
+
+
+def test_snapshot_string_whitespace_and_precise_decimals_are_significant():
+    for left, right in [
+        ('"two  spaces"', '"two spaces"'),
+        ("0.123456789012345678901", "0.123456789012345678902"),
+        ("true", "1"),
+        ("false", "0"),
+    ]:
+        python, go = result(), result()
+        python["stdout"] = '{"value":' + left + "}\n"
+        go["stdout"] = '{"value":' + right + "}\n"
+        assert "snapshot values" in compare(CASE, python, go)

@@ -58,7 +58,7 @@ func (s *Store) readForMutation() (Hosts, error) {
 	var root map[string]json.RawMessage
 	var hosts map[string]json.RawMessage
 	if json.Unmarshal(data, &root) != nil || root == nil || json.Unmarshal(root["hosts"], &hosts) != nil || hosts == nil {
-		return emptyHosts(), fmt.Errorf("credentials file %s is malformed; repair it or move it aside before changing credentials", s.Path)
+		return emptyHosts(), fmt.Errorf("credentials file %s is malformed; repair it or move it aside before changing credentials. Moving it aside lets you log in again, but its saved logins and defaults will no longer be available", s.Path)
 	}
 	return decodeHosts(data), nil
 }

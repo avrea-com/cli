@@ -229,7 +229,7 @@ func renderGitLabRunners(d Dependencies, collection map[string]any) error {
 		return e
 	}
 	for _, row := range rows {
-		if _, e := fmt.Fprintf(d.Out, "  %s: description=%s; run_untagged=%s; paused=%s\n", output.CellText(pythonValue(row["machine_type"])), output.CellText(pythonValue(row["description"])), pythonValue(row["run_untagged"]), pythonValue(row["paused"])); e != nil {
+		if _, e := fmt.Fprintf(d.Out, "  %s: description=%s; run_untagged=%s; paused=%s\n", output.CellText(pythonValue(row["machine_type"])), output.CellText(pythonValue(row["description"])), output.CellText(pythonValue(row["run_untagged"])), output.CellText(pythonValue(row["paused"]))); e != nil {
 			return e
 		}
 	}

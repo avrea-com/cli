@@ -7,8 +7,17 @@ import (
 
 	"github.com/avrea-com/cli/commands"
 	"github.com/avrea-com/cli/docgen"
+	buildversion "github.com/avrea-com/cli/internal/version"
 	"github.com/spf13/cobra"
 )
+
+func TestDocumentationUsesNativePublicVersion(t *testing.T) {
+	root := commands.NewRoot(commands.Dependencies{Version: "admin-preview+fixture"})
+	tree, err := docgen.Build(root)
+	if err != nil || tree.Version != buildversion.Current() {
+		t.Fatal(tree, err)
+	}
+}
 
 func findNode(tree *docgen.Tree, name string) *docgen.Node {
 	for _, nodes := range tree.Sections {

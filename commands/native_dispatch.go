@@ -63,9 +63,19 @@ func parseNativeReceipt(body map[string]any) (nativeReceipt, error) {
 func (r nativeReceipt) pendingMessage() string {
 	message := "Dispatch " + r.id + " was accepted and is awaiting admission."
 	if r.retry != "" {
-		message += "\nResume following this dispatch:\n" + r.retry
+		message += "\n" + dispatchRetryMessage("Resume following this dispatch:", r.retry)
 	}
 	return message
+}
+
+// Keep normal replay commands exact, and label the rare display-only escaping.
+// Never print terminal controls, even when a diagnostic is redirected to a log.
+func dispatchRetryMessage(label, retry string) string {
+	safe := output.MultilineText(retry)
+	if safe != retry {
+		label = "Retry command contains escaped control characters; reconstruct those arguments before running:"
+	}
+	return label + "\n" + safe
 }
 
 // Decimal spelling follows Python Decimal without a binary float round trip.
@@ -343,17 +353,17 @@ func submitNativeWorkflow(ctx context.Context, d Dependencies, cfg config.Config
 		}
 		var transport *client.TransportError
 		if errors.As(err, &transport) {
-			return nativeReceipt{}, nativeDispatchError(fmt.Sprintf("Dispatch response was lost. Retry the exact request:\n%s", output.MultilineText(retry)))
+			return nativeReceipt{}, nativeDispatchError("Dispatch response was lost. " + dispatchRetryMessage("Retry the exact request:", retry))
 		}
 		var httpErr *client.HTTPError
 		if errors.As(err, &httpErr) && (httpErr.Status >= 500 || httpErr.Status == 429) {
-			_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+output.MultilineText(retry))
+			_, _ = fmt.Fprintln(d.Err, dispatchRetryMessage("Retry the exact request:", retry))
 		}
 		return nativeReceipt{}, apiError(cfg, err, "dispatch native workflow")
 	}
 	receipt, err := parseNativeReceipt(body)
 	if err != nil {
-		_, _ = fmt.Fprintln(d.Err, "Retry the exact request:\n"+output.MultilineText(retry))
+		_, _ = fmt.Fprintln(d.Err, dispatchRetryMessage("Retry the exact request:", retry))
 		return nativeReceipt{}, err
 	}
 	receipt.retry = retry

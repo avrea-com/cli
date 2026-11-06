@@ -1,6 +1,7 @@
 """Compare every internal docs format and generated file against pinned Python."""
 
 from copy import deepcopy
+from pathlib import Path
 from scripts import compare_auth as harness
 from scripts import compare_job_watch as watch
 import json
@@ -114,7 +115,30 @@ def comparable_text(name, value):
     return value
 
 
+def normalize_version(value, version):
+    if value.lstrip().startswith("{"):
+        try:
+            tree = json.loads(value)
+            if tree.get("version") == version:
+                tree["version"] = "<public-version>"
+            return json.dumps(tree, sort_keys=True)
+        except ValueError, AttributeError:
+            pass
+    for old, new in [
+        (f"Reference for `avr` v{version}.", "Reference for `avr` v<public-version>."),
+        (f"client (v{version}).", "client (v<public-version>)."),
+        (f'"avr {version}" "Avrea CLI"', '"avr <public-version>" "Avrea CLI"'),
+    ]:
+        value = value.replace(old, new)
+    return value
+
+
 def compare(scenario, python, go):
+    python, go = deepcopy(python), deepcopy(go)
+    for result, version in [(python, "0.6.0"), (go, Path("internal/version/VERSION").read_text().strip())]:
+        result["stdout"] = normalize_version(result["stdout"], version)
+        for entry in result["files"].values():
+            entry["text"] = normalize_version(entry["text"], version)
     differences = watch.compare(scenario, python, go)
     a, b = python["files"], go["files"]
     if a.keys() != b.keys():
