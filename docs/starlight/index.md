@@ -13,6 +13,10 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Install
 
+The upcoming native Go 0.7.0 release keeps the `avr` command and existing
+package-manager upgrade paths. See [native installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+for release-candidate testing, supported platforms, and migration details.
+
 ### Homebrew
 
 ```sh
