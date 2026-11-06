@@ -153,11 +153,13 @@ def verify(archive, go="go"):
             binary_name,
             "LICENSE",
             "README.md",
+            "SECURITY.md",
             "THIRD-PARTY-NOTICES.txt",
             "completions/avr.bash",
             "completions/_avr",
             "completions/avr.fish",
             "docs/REFERENCE.md",
+            "docs/INSTALL.md",
             "docs/reference.json",
         }
         if not required <= files.keys() or not any(p.startswith("man/") for p in files):
@@ -198,8 +200,10 @@ def verify(archive, go="go"):
                 raise ValueError(f"{shell} completion source: packaged bytes differ from LF source")
         build_settings = validate_build_info(json.loads(run([go, "version", "-m", "-json", str(binary)])), manifest)
         check("bundled README lookup", ["internal", "docs", "--format", "starlight", "--out", str(home / "docs")])
-        if "This package contains the native public AVR CLI." not in (home / "docs" / "index.md").read_text(
-            encoding="utf-8"
+        if (
+            not (home / "docs" / "index.md")
+            .read_text(encoding="utf-8")
+            .endswith((package / "README.md").read_text(encoding="utf-8"))
         ):
             raise ValueError("Bundled README was not used")
 
@@ -287,8 +291,10 @@ def build(args):
             env=env,
             check=True,
         )
-        shutil.copyfile(ROOT / "LICENSE", package / "LICENSE")
-        shutil.copyfile(ROOT / "docs" / "GO-PACKAGE-README.md", package / "README.md")
+        for doc_name in ["LICENSE", "README.md", "SECURITY.md", "docs/INSTALL.md"]:
+            destination = package / doc_name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / doc_name, destination)
         subprocess.run(
             [
                 sys.executable,

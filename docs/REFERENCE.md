@@ -702,7 +702,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - `--setup-github / --no-setup-github` — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
 - `--install <TEXT>` — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
 - `--forward-agent-creds` — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
-- `--install-avr` — Install the avr CLI in the VM (pipx, else pip).
+- `--install-avr` — Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).
 - `--repo <TEXT>` — Clone this git repo into the VM's home directory.
 - `--ref <TEXT>` — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
 - `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.

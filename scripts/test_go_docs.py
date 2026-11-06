@@ -72,3 +72,58 @@ def test_docs_default_bundled_readme(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "This overview ships with the package." in (tmp_path / "out/index.md").read_text()
+
+
+def test_pre_commit_accepts_staged_docs_and_rejects_stale_output(tmp_path):
+    make = shutil.which("make")
+    bash = shutil.which("bash")
+    if os.name == "nt" or make is None or bash is None:
+        pytest.skip("requires POSIX make and bash")
+    assert make is not None and bash is not None
+    root = Path(__file__).resolve().parents[1]
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    # Exercise the real hook and check recipes with a deterministic generator.
+    # No Go build is needed to test index-versus-HEAD semantics.
+    (tmp_path / "Makefile").write_text(
+        (root / "Makefile").read_text() + "\ngo-build:\n\t@:\ngo-docs:\n\t@cp source.txt README.md\n"
+    )
+    source = tmp_path / "source.txt"
+    readme = tmp_path / "README.md"
+    source.write_text("current docs\n")
+    readme.write_text(source.read_text())
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+
+    def hook():
+        return subprocess.run(
+            [bash, str(root / ".githooks/pre-commit")],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    result = hook()
+    assert result.returncode == 0, result.stderr
+    # CI must still reject changes relative to HEAD, including staged docs.
+    assert (
+        subprocess.run(
+            [make, "docs-check"],
+            cwd=tmp_path,
+            capture_output=True,
+            check=False,
+        ).returncode
+        != 0
+    )
+    source.write_text("regenerated docs\n")
+    assert hook().returncode != 0
+    assert readme.read_text() == source.read_text()
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    assert hook().returncode == 0
+    page = tmp_path / "docs/starlight/new.md"
+    page.parent.mkdir(parents=True)
+    page.write_text("new page\n")
+    assert hook().returncode != 0
+    subprocess.run(["git", "add", str(page)], cwd=tmp_path, check=True)
+    assert hook().returncode == 0
+    page.unlink()
+    assert hook().returncode != 0

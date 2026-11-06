@@ -69,6 +69,13 @@ install only the executable. Generate completion source with
 `_AVR_COMPLETE=bash_source avr`, `zsh_source`, or `fish_source`, and install it
 using your shell's completion-directory conventions.
 
+`avr vm bootstrap VM --install-avr` uses the same native shell installer to
+install the release matching the local CLI's source version into the VM's
+`~/.local/bin`. It needs curl, tar and SHA-256 tooling, but no Python. That
+version must already have published release assets. The installer prints PATH
+instructions and refuses to overwrite a package-managed installation; move or
+remove that installation using its original package manager first.
+
 ## Credentials, rollback and admin
 
 The command stays `avr`, using the existing configuration and credentials.

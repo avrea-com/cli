@@ -20,7 +20,7 @@ func newVMBootstrap(d Dependencies) *cobra.Command {
 	f.Lookup("no-setup-github").NoOptDefVal = "true"
 	f.StringArrayVar(&o.installs, "install", nil, "Agent CLIs: claude, codex; repeatable or comma-separated.")
 	f.BoolVar(&o.forward, "forward-agent-creds", false, "Forward agent credentials from the local environment.")
-	f.BoolVar(&o.installAVR, "install-avr", false, "Install the avr CLI in the VM.")
+	f.BoolVar(&o.installAVR, "install-avr", false, "Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).")
 	f.StringVar(&o.repo, "repo", "", "Repository URL to clone into the VM's home directory.")
 	f.StringVar(&o.ref, "ref", "", "Branch to check out; requires --repo.")
 	f.StringVar(&o.dotfiles, "dotfiles", "", "Dotfiles repository to clone and install.")

@@ -13,9 +13,9 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Install
 
-The upcoming native Go 0.7.0 release keeps the `avr` command and existing
-package-manager upgrade paths. See [native installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
-for artifact testing, supported platforms, and migration details.
+AVR 0.7.0 uses a native Go executable, keeping the `avr` command and existing
+package-manager upgrade paths. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+for supported platforms, installation methods, and upgrade details.
 
 ### Homebrew
 
@@ -29,9 +29,10 @@ brew install avrea-com/tap/avr
 uv tool install avr-cli
 ```
 
-Until 0.7.0 is published, this installs Python 0.6.0 and requires Python
-3.14+. Native 0.7.0 wheels require Python 3.9+ for installation; the installed
-`avr` executable runs without Python. You can also install with pip:
+These commands install the latest published version. Native wheels (0.7.0+)
+require Python 3.9+ for installation; the installed `avr` executable runs
+without Python. The older 0.6.0 package requires Python 3.14+ at runtime.
+You can also install with pip:
 
 ```sh
 pip install avr-cli
@@ -56,7 +57,7 @@ Release artefacts (the native archives and PyPI wheels) carry keyless
 downloaded artefact against this repository with the GitHub CLI:
 
 ```sh
-gh attestation verify avr_0.1.5_linux_amd64.tar.gz --repo avrea-com/cli
+gh attestation verify avr_0.7.0_linux_amd64.tar.gz --repo avrea-com/cli
 ```
 
 A successful check confirms the artefact was built by this repository's release
