@@ -42,7 +42,7 @@ func newSBOMDownload(d Dependencies) *cobra.Command {
 			if e != nil {
 				return sbomError(cfg, e, "get SBOM", true)
 			}
-			sha = fieldText(record.Fields, "commit_sha")
+			sha = fieldText(record, "commit_sha")
 		} else {
 			sha, err = resolveSBOMCommit(cmd.Context(), cfg, api, base, sha)
 			if err != nil {

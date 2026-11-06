@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
@@ -111,7 +110,7 @@ func newFirewallList(d Dependencies, resolved bool) *cobra.Command {
 			if err != nil {
 				return apiError(cfg, err, "show resolved firewall rules")
 			}
-			return firewallRulesOutput(d, objectList(record.Fields["rules"]), asJSON)
+			return firewallRulesOutput(d, objectList(record["rules"]), asJSON)
 		}
 		page, err := api.FirewallRules(cmd.Context(), base+"/rules")
 		if err != nil {
@@ -229,30 +228,30 @@ func newFirewallAdd(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		proto := wire.EgressRuleProtocol(protocol)
-		body := wire.EgressRuleCreate{Action: wire.EgressRuleAction(action), IsDefault: &anyMatcher, Protocol: &proto}
-		body.Cidr.SetNull()
-		body.Fqdn.SetNull()
-		body.PortStart.SetNull()
-		body.PortEnd.SetNull()
+		proto := protocol
+		body := map[string]any{"action": action, "is_default": anyMatcher, "protocol": proto}
+		body["cidr"] = nil
+		body["fqdn"] = nil
+		body["port_start"] = nil
+		body["port_end"] = nil
 		if cmd.Flags().Changed("cidr") {
-			body.Cidr.Set(cidr)
+			body["cidr"] = cidr
 		}
 		if cmd.Flags().Changed("fqdn") {
-			body.Fqdn.Set(fqdn)
+			body["fqdn"] = fqdn
 		}
 		if start != nil {
-			body.PortStart.Set(*start)
-			body.PortEnd.Set(*end)
+			body["port_start"] = *start
+			body["port_end"] = *end
 		}
 		if cmd.Flags().Changed("position") {
-			body.Position.Set(position)
+			body["position"] = position
 		}
 		rule, err := api.CreateFirewallRule(cmd.Context(), firewallBase(id, repo)+"/rules", body)
 		if err != nil {
 			return apiError(cfg, err, "add egress firewall rule")
 		}
-		_, err = fmt.Fprintf(d.Out, "Added rule %s at position %s\n", output.CellText(pythonValue(rule.Fields["rule_id"])), output.CellText(pythonValue(rule.Fields["position"])))
+		_, err = fmt.Fprintf(d.Out, "Added rule %s at position %s\n", output.CellText(pythonValue(rule["rule_id"])), output.CellText(pythonValue(rule["position"])))
 		return err
 	})
 	return c
@@ -338,24 +337,24 @@ func newFirewallDefault(d Dependencies) *cobra.Command {
 				if fieldText(row, "rule_id") == "" {
 					return errors.New("unexpected API response: missing firewall rule ID")
 				}
-				body := wire.EgressRuleUpdate{}
-				body.Action.Set(wire.EgressRuleAction(action))
+				body := map[string]any{}
+				body["action"] = action
 				rule, e := api.UpdateFirewallRule(cmd.Context(), path+"/"+url.PathEscape(fieldText(row, "rule_id")), body)
 				if e != nil {
 					return apiError(cfg, e, "update default rule")
 				}
-				rid = fieldText(rule.Fields, "rule_id")
+				rid = fieldText(rule, "rule_id")
 				break
 			}
 		}
 		if !found {
 			def := true
-			proto := wire.EgressRuleProtocol("any")
-			rule, e := api.CreateFirewallRule(cmd.Context(), path, wire.EgressRuleCreate{Action: wire.EgressRuleAction(action), IsDefault: &def, Protocol: &proto})
+			proto := "any"
+			rule, e := api.CreateFirewallRule(cmd.Context(), path, map[string]any{"action": action, "is_default": def, "protocol": proto})
 			if e != nil {
 				return apiError(cfg, e, "create default rule")
 			}
-			rid = fieldText(rule.Fields, "rule_id")
+			rid = fieldText(rule, "rule_id")
 		}
 		if rid == "" {
 			return errors.New("unexpected API response: missing firewall rule ID")
@@ -407,9 +406,9 @@ func newFirewallFlows(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "list flow summaries")
 		}
 		if asJSON {
-			return rawJSON(d, record.Fields)
+			return rawJSON(d, record)
 		}
-		rows := objectList(record.Fields["results"])
+		rows := objectList(record["results"])
 		if len(rows) == 0 {
 			_, err = fmt.Fprintln(d.Out, "No flow summaries yet. They are captured at VM stop, so wait until a run finishes.")
 			return err
@@ -440,7 +439,7 @@ func newFirewallFlows(d Dependencies) *cobra.Command {
 		if err = output.Grid(d.Out, []string{"VM", "Ended", "Run", "Egress", "Ingress", "Flows", "Top destinations", "Blocked"}, cells); err != nil {
 			return err
 		}
-		if record.Fields["has_more"] == true {
+		if record["has_more"] == true {
 			_, err = fmt.Fprintf(d.Err, "\nMore results available. Re-run with --offset %d\n", offset+len(rows))
 		}
 		return err

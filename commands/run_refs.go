@@ -145,8 +145,8 @@ func resolveRunOrg(ctx context.Context, d Dependencies, cfg config.Config, api *
 		}
 		slug := ""
 		for _, record := range page.Items {
-			if record.Value.OrganizationId == id {
-				slug = record.Value.Slug
+			if fieldText(record, "organization_id") == id {
+				slug = fieldText(record, "slug")
 				break
 			}
 		}
@@ -157,12 +157,12 @@ func resolveRunOrg(ctx context.Context, d Dependencies, cfg config.Config, api *
 	return ref, id, nil
 }
 
-func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org string, ref runReference, include []string, action string) (client.Record[client.Run], error) {
+func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org string, ref runReference, include []string, action string) (map[string]any, error) {
 	query := url.Values{}
 	if len(include) > 0 {
 		query["include"] = include
 	}
-	var record client.Record[client.Run]
+	var record map[string]any
 	var err error
 	if ref.attempt != 0 || ref.platformJobID != "" {
 		if ref.platformJobID != "" {
@@ -171,18 +171,18 @@ func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org 
 		query.Set("platform_run_id", ref.platformID)
 		query.Set("limit", "1000")
 		query.Set("order", "created_at.desc")
-		var page client.Page[client.Run]
+		var page client.Page
 		page, err = api.Runs(ctx, org, query)
 		if err == nil && ref.platformJobID != "" {
 			record, err = attemptContainingJob(ctx, api, org, ref, page.Items, include)
 		} else if err == nil {
 			for _, candidate := range page.Items {
-				if fieldText(candidate.Fields, "run_attempt") == strconv.FormatInt(ref.attempt, 10) {
+				if fieldText(candidate, "run_attempt") == strconv.FormatInt(ref.attempt, 10) {
 					record = candidate
 					break
 				}
 			}
-			if record.Fields == nil {
+			if record == nil {
 				return record, fmt.Errorf("GitHub run %s has no visible attempt %d in this organization", ref.platformID, ref.attempt)
 			}
 		}
@@ -196,11 +196,11 @@ func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org 
 	if err != nil {
 		return record, apiError(cfg, err, action)
 	}
-	if fieldText(record.Fields, "run_id") == "" {
+	if fieldText(record, "run_id") == "" {
 		return record, fmt.Errorf("avrea returned a workflow run without a run_id")
 	}
 	if ref.repository != "" {
-		repo, _ := record.Fields["repository"].(map[string]any)
+		repo, _ := record["repository"].(map[string]any)
 		actual := fieldText(repo, "full_name")
 		if !strings.EqualFold(actual, ref.repository) {
 			return record, &ExitError{1, fmt.Sprintf("Error: GitHub run URL repository %s does not match the Avrea run repository %s.", pythonQuote(ref.repository), pythonQuote(actual))}
@@ -210,8 +210,8 @@ func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org 
 }
 
 // A job URL identifies an attempt by its jobs, never by the latest-run fallback.
-func attemptContainingJob(ctx context.Context, api *client.Client, org string, ref runReference, attempts []client.Record[client.Run], include []string) (client.Record[client.Run], error) {
-	var empty client.Record[client.Run]
+func attemptContainingJob(ctx context.Context, api *client.Client, org string, ref runReference, attempts []map[string]any, include []string) (map[string]any, error) {
+	var empty map[string]any
 	if len(attempts) == 0 {
 		return empty, &ExitError{1, fmt.Sprintf("Error: GitHub run %s has no visible attempts in this organization.", ref.platformID)}
 	}
@@ -221,7 +221,7 @@ func attemptContainingJob(ctx context.Context, api *client.Client, org string, r
 	}
 	sawJobs := false
 	for _, attempt := range attempts {
-		id, ok := attempt.Fields["run_id"].(string)
+		id, ok := attempt["run_id"].(string)
 		if !ok {
 			continue
 		}
@@ -229,7 +229,7 @@ func attemptContainingJob(ctx context.Context, api *client.Client, org string, r
 		if err != nil {
 			return empty, err
 		}
-		jobs := objectList(record.Fields["jobs"])
+		jobs := objectList(record["jobs"])
 		sawJobs = sawJobs || len(jobs) > 0
 		for _, job := range jobs {
 			if fieldText(job, "platform_job_id") == ref.platformJobID {

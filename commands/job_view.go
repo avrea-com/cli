@@ -44,7 +44,7 @@ func newJobView(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "get job")
 		}
-		j := rec.Fields
+		j := rec
 		if f.Changed("json") {
 			selected, e := output.Fields(o.fields, jobViewFields)
 			if e != nil {

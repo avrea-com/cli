@@ -137,12 +137,12 @@ func newVMShow(d Dependencies) *cobra.Command {
 			return vmError(cfg, err, "fetch VM")
 		}
 		if asJSON {
-			return rawJSON(d, record.Fields)
+			return rawJSON(d, record)
 		}
-		if err = renderVM(d, record.Fields, ""); err != nil {
+		if err = renderVM(d, record, ""); err != nil {
 			return err
 		}
-		rules := objectList(record.Fields["egress_rules"])
+		rules := objectList(record["egress_rules"])
 		if len(rules) == 0 {
 			return nil
 		}
@@ -206,7 +206,7 @@ func newVMUsage(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "fetch VM usage")
 		}
-		data := record.Fields
+		data := record
 		if asJSON {
 			return rawJSON(d, data)
 		}

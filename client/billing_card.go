@@ -11,18 +11,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
-func (c *Client) StripeKey(ctx context.Context, path string) (Record[wire.StripeKeyResponse], error) {
-	return billingRecord[wire.StripeKeyResponse](ctx, c, http.MethodGet, path, nil)
+func (c *Client) StripeKey(ctx context.Context, path string) (map[string]any, error) {
+	return billingRecord(ctx, c, http.MethodGet, path, nil)
 }
-func (c *Client) SetupIntent(ctx context.Context, path string) (Record[wire.SetupIntentResponse], error) {
-	return billingRecord[wire.SetupIntentResponse](ctx, c, http.MethodPost, path, nil)
+func (c *Client) SetupIntent(ctx context.Context, path string) (map[string]any, error) {
+	return billingRecord(ctx, c, http.MethodPost, path, nil)
 }
-func (c *Client) AttachPaymentMethod(ctx context.Context, path, id string) (Record[wire.PaymentMethodResponse], error) {
-	return billingRecord[wire.PaymentMethodResponse](ctx, c, http.MethodPost, path, wire.AttachPaymentMethodRequest{StripePaymentMethodId: id})
+func (c *Client) AttachPaymentMethod(ctx context.Context, path, id string) (map[string]any, error) {
+	return billingRecord(ctx, c, http.MethodPost, path, map[string]any{"stripe_payment_method_id": id})
 }
 
 var stripeIntentID = regexp.MustCompile("^seti_[A-Za-z0-9]+$")

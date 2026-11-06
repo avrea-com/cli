@@ -107,22 +107,10 @@ go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...
 
 go-check: go-test go-lint go-integration go-scan
-	@if test -f build/go/openapi.json; then $(MAKE) go-generation-check; \
-	else echo "Schema drift check skipped: no fetched schema (see api/README.md)."; fi
 
-.PHONY: go-fetch-schema go-generate go-generation-check go-schema-gate
-go-fetch-schema: ## Fetch current OpenAPI from AVREA_CORE or OPENAPI_URL
+.PHONY: go-fetch-schema
+go-fetch-schema: ## Fetch current OpenAPI for API inspection
 	@$(UV) run --python 3.14 --frozen python scripts/fetch_go_schema.py $(if $(AVREA_CORE),--core "$(AVREA_CORE)",$(if $(OPENAPI_URL),--url "$(OPENAPI_URL)",))
-
-go-generate:
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)"
-
-go-generation-check:
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check
-
-go-schema-gate: go-fetch-schema
-	@test -n "$(AVREA_CORE)" || { echo "Set AVREA_CORE to the avrea-core checkout" >&2; exit 1; }
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check --core "$(AVREA_CORE)"
 
 .PHONY: go-docs
 go-docs: go-build ## Generate the public reference with the native CLI

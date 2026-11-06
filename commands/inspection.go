@@ -52,13 +52,7 @@ func (o jsonOptions) record(cmd *cobra.Command, d Dependencies, record map[strin
 	}
 	return output.JSON(cmd.Context(), d.Out, record, fields, o.expression, d.IsTerminal())
 }
-func rawRecords[T any](page client.Page[T]) []map[string]any {
-	rows := make([]map[string]any, 0, len(page.Items))
-	for _, record := range page.Items {
-		rows = append(rows, record.Fields)
-	}
-	return rows
-}
+func rawRecords(page client.Page) []map[string]any { return page.Items }
 
 func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, option string) (string, error) {
 	value := option
@@ -76,24 +70,24 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 		return "", apiError(cfg, err, "resolve the organization")
 	}
 	for _, r := range page.Items {
-		rememberOrganizationSlug(ctx, cfg, r.Value.OrganizationId, r.Value.Slug)
+		rememberOrganizationSlug(ctx, cfg, fieldText(r, "organization_id"), fieldText(r, "slug"))
 	}
 	if value != "" {
 		// Exact match first, then case-insensitive slugs, matching Python.
 		for _, r := range page.Items {
-			if r.Value.OrganizationId == value || r.Value.Slug == value {
-				return r.Value.OrganizationId, nil
+			if fieldText(r, "organization_id") == value || fieldText(r, "slug") == value {
+				return fieldText(r, "organization_id"), nil
 			}
 		}
 		for _, r := range page.Items {
-			if strings.EqualFold(r.Value.Slug, value) {
-				return r.Value.OrganizationId, nil
+			if strings.EqualFold(fieldText(r, "slug"), value) {
+				return fieldText(r, "organization_id"), nil
 			}
 		}
 	} else if len(page.Items) == 1 {
-		r := page.Items[0].Value
-		_, _ = fmt.Fprintf(d.Err, "(using org: %s)\n", output.Text(r.Slug))
-		return r.OrganizationId, nil
+		r := page.Items[0]
+		_, _ = fmt.Fprintf(d.Err, "(using org: %s)\n", output.Text(fieldText(r, "slug")))
+		return fieldText(r, "organization_id"), nil
 	}
 	var message strings.Builder
 	switch {
@@ -105,7 +99,7 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 		message.WriteString("Error: No organization specified. Available orgs:")
 	}
 	for _, r := range page.Items {
-		fmt.Fprintf(&message, "\n  - %s (%s)", output.Text(r.Value.Slug), output.Text(r.Value.OrganizationId))
+		fmt.Fprintf(&message, "\n  - %s (%s)", output.Text(fieldText(r, "slug")), output.Text(fieldText(r, "organization_id")))
 	}
 	if value == "" && len(page.Items) > 0 {
 		message.WriteString("\n\nUse --org <slug|id> or set a default with: avr config set org <slug|id>")
@@ -125,9 +119,9 @@ func orgSlug(ctx context.Context, cfg config.Config, api *client.Client, org str
 		return org
 	}
 	for _, r := range page.Items {
-		if r.Value.OrganizationId == org && r.Value.Slug != "" {
-			rememberOrganizationSlug(ctx, cfg, org, r.Value.Slug)
-			return r.Value.Slug
+		if fieldText(r, "organization_id") == org && fieldText(r, "slug") != "" {
+			rememberOrganizationSlug(ctx, cfg, org, fieldText(r, "slug"))
+			return fieldText(r, "slug")
 		}
 	}
 	return org
@@ -191,12 +185,12 @@ func NewOrg(deps Dependencies) *cobra.Command {
 		}
 		rows := make([][]string, 0, len(page.Items))
 		for _, record := range page.Items {
-			r := record.Value
+			r := record
 			def := ""
-			if r.OrganizationId == cfg.Org {
+			if fieldText(r, "organization_id") == cfg.Org {
 				def = "yes"
 			}
-			rows = append(rows, []string{r.OrganizationId, r.Name, r.Slug, string(r.Role), def})
+			rows = append(rows, []string{fieldText(r, "organization_id"), fieldText(r, "name"), fieldText(r, "slug"), fieldText(r, "role"), def})
 		}
 		return output.Grid(d.Out, []string{"ID", "Name", "Slug", "Role", "Default"}, rows)
 	})
@@ -246,7 +240,7 @@ func NewRepo(deps Dependencies) *cobra.Command {
 		}
 		rows := make([][]string, 0, len(page.Items))
 		for _, record := range page.Items {
-			fields := record.Fields
+			fields := record
 			rows = append(rows, []string{fieldText(fields, "full_name"), fieldText(fields, "repository_id"), fieldText(fields, "platform"), fieldText(fields, "platform_repository_id")})
 		}
 		if !d.IsTerminal() {

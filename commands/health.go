@@ -73,9 +73,9 @@ func NewHealth(deps Dependencies) *cobra.Command {
 			return &ExitError{1, "Aborted!"}
 		}
 		if isJSON {
-			return o.record(cmd, d, record.Fields, healthFields)
+			return o.record(cmd, d, record, healthFields)
 		}
-		status, present := record.Fields["status"]
+		status, present := record["status"]
 		if !present {
 			status = "unknown"
 		}

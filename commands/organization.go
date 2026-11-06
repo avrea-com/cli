@@ -52,11 +52,11 @@ func newOrgCreate(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "create organization")
 		}
 		if cmd.Flags().Changed("json") {
-			return o.record(cmd, d, record.Fields, orgFields)
+			return o.record(cmd, d, record, orgFields)
 		}
 		return output.KeyValues(d.Out, [][2]string{
-			{"Organization ID", pythonValue(record.Fields["organization_id"])},
-			{"Name", pythonValue(record.Fields["name"])}, {"Slug", pythonValue(record.Fields["slug"])}, {"Role", pythonValue(record.Fields["role"])},
+			{"Organization ID", pythonValue(record["organization_id"])},
+			{"Name", pythonValue(record["name"])}, {"Slug", pythonValue(record["slug"])}, {"Role", pythonValue(record["role"])},
 		})
 	})
 	return c
@@ -182,7 +182,7 @@ func newEmailDomainMutation(d Dependencies, verify bool) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, verb+" email domain")
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, row, emailDomainFields)
 		}
@@ -237,7 +237,7 @@ func newEmailDomainSet(d Dependencies) *cobra.Command {
 			return err
 		}
 		for _, row := range page.Items {
-			if _, err = fmt.Fprintln(d.Out, "  "+output.CellText(fieldText(row.Fields, "domain"))); err != nil {
+			if _, err = fmt.Fprintln(d.Out, "  "+output.CellText(fieldText(row, "domain"))); err != nil {
 				return err
 			}
 		}

@@ -182,7 +182,7 @@ func resolveSBOMCommit(ctx context.Context, cfg config.Config, api *client.Clien
 			return "", sbomError(cfg, err, "list SBOMs", false)
 		}
 		for _, row := range page.Items {
-			sha := fieldText(row.Fields, "commit_sha")
+			sha := fieldText(row, "commit_sha")
 			if strings.HasPrefix(sha, commit) && !slices.Contains(matches, sha) {
 				matches = append(matches, sha)
 			}
@@ -251,9 +251,9 @@ func newSBOMView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, record.Fields, fields, o.expression, d.IsTerminal())
+			return output.JSON(cmd.Context(), d.Out, record, fields, o.expression, d.IsTerminal())
 		}
-		return renderSBOMView(d, record.Fields, id, rid, full)
+		return renderSBOMView(d, record, id, rid, full)
 	})
 	return c
 }

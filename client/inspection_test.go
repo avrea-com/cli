@@ -36,13 +36,16 @@ func TestRunsPreserveWireDataAndQuery(t *testing.T) {
 		t.Fatalf("page %#v", page)
 	}
 	record := page.Items[0]
-	if record.Value.Status != "in_progress" || !record.Value.Conclusion.IsNull() || len(record.Value.Jobs.GetOrEmpty()) != 0 {
-		t.Fatalf("typed value %#v", record.Value)
+	conclusion, present := record["conclusion"]
+	jobs, ok := record["jobs"].([]any)
+	if record["status"] != "in_progress" || !present || conclusion != nil || !ok || len(jobs) != 0 {
+		t.Fatalf("record changed: %#v", record)
 	}
-	if record.Fields["future_id"] != json.Number("9007199254740993") {
-		t.Fatalf("raw number changed: %#v", record.Fields)
+
+	if record["future_id"] != json.Number("9007199254740993") {
+		t.Fatalf("raw number changed: %#v", record)
 	}
-	if record.Fields["duration_seconds"] != json.Number("0.123456789012345") {
+	if record["duration_seconds"] != json.Number("0.123456789012345") {
 		t.Fatal("fraction changed")
 	}
 }
@@ -53,7 +56,7 @@ func TestMalformedInspectionResponse(t *testing.T) {
 		{"data": []any{"not-an-object"}},
 		{"data": []any{map[string]any{"run_id": true}}},
 	} {
-		if _, err := decodePage[Run](body); err == nil {
+		if _, err := decodePage(body); err == nil {
 			t.Fatalf("accepted malformed data: %#v", body)
 		}
 	}
@@ -67,7 +70,7 @@ func TestRecordErrorsIdentifyFieldsWithoutValues(t *testing.T) {
 		{"run_attempt", "secret-value"}, {"run_number", 7.5}, {"created_at", "private-invalid-timestamp"},
 	} {
 		body := map[string]any{"data": []any{map[string]any{"run_id": "ok"}, map[string]any{tc.field: tc.value}}}
-		_, err := decodePage[Run](body)
+		_, err := decodePage(body)
 		if err == nil || !strings.Contains(err.Error(), "row 2") || !strings.Contains(err.Error(), tc.field) || strings.Contains(err.Error(), "secret-value") || strings.Contains(err.Error(), "private-invalid") {
 			t.Fatal(err)
 		}

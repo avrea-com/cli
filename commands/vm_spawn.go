@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/avrea-com/cli/client"
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
@@ -108,8 +107,8 @@ func createVMFromSpawn(cmd *cobra.Command, d Dependencies, o vmCreateOptions) er
 	if err != nil {
 		return err
 	}
-	body.IdempotencyKey.Set(order)
-	bootstrap := &wire.ClaudeCodeBootstrap{Provider: wire.ClaudeCodeBootstrapProvider("claude_code"), Credential: &credential}
+	body["idempotency_key"] = order
+	bootstrap := map[string]any{"provider": "claude_code", "credential": credential}
 	if err = authenticated(cfg); err != nil {
 		return err
 	}
@@ -136,7 +135,7 @@ func createVMFromSpawn(cmd *cobra.Command, d Dependencies, o vmCreateOptions) er
 		}
 		return &ExitError{1, "Error: unexpected API response while creating agent sandbox"}
 	}
-	vm, ok := record.Fields["vm"].(map[string]any)
+	vm, ok := record["vm"].(map[string]any)
 	id, valid := vm["customer_vm_id"].(string)
 	if !ok || !valid || id == "" {
 		return &ExitError{1, "Error: unexpected API response: expected a VM ID"}

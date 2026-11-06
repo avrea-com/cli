@@ -3,65 +3,55 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"maps"
 	"net/http"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
-func (c *Client) TransitionVM(ctx context.Context, path string, body any) (Record[wire.APIResponseCustomerVm], error) {
+func (c *Client) TransitionVM(ctx context.Context, path string, body any) (map[string]any, error) {
 	response, err := c.Do(ctx, http.MethodPost, path, body)
 	if err != nil {
-		return Record[wire.APIResponseCustomerVm]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.APIResponseCustomerVm](response)
+	return vmEnvelope(response)
 }
-func (c *Client) DeleteVM(ctx context.Context, path string) (Record[wire.APIResponseCustomerVmDeleteResponse], error) {
+func (c *Client) DeleteVM(ctx context.Context, path string) (map[string]any, error) {
 	raw, err := c.Raw(ctx, http.MethodDelete, path, nil)
 	if err != nil {
-		return Record[wire.APIResponseCustomerVmDeleteResponse]{}, err
+		return nil, err
 	}
 	if len(bytes.TrimSpace(raw)) == 0 {
-		return Record[wire.APIResponseCustomerVmDeleteResponse]{}, nil
+		return nil, nil
 	}
 	body, err := decodeObject(raw)
 	if err != nil {
-		return Record[wire.APIResponseCustomerVmDeleteResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.APIResponseCustomerVmDeleteResponse](body)
+	return vmEnvelope(body)
 }
 
-// vmRequestWithRules retains unknown rule properties and forwards rule-shape
-// validation to the server, matching Python. Other fields use generated models.
-func vmRequestWithRules(model any, rules *[]any) (map[string]any, error) {
-	raw, err := json.Marshal(model)
-	if err != nil {
-		return nil, err
-	}
-	body, err := decodeObject(raw)
-	if err != nil {
-		return nil, err
+// vmRequestWithRules preserves explicit empty rule lists and unknown properties.
+func vmRequestWithRules(body map[string]any, rules *[]any) map[string]any {
+	body = maps.Clone(body)
+	if body == nil {
+		body = map[string]any{}
 	}
 	if rules != nil {
 		body["egress_rules"] = *rules
 	}
-	return body, nil
+	return body
 }
-func (c *Client) UpdateVM(ctx context.Context, path string, request wire.CustomerVmUpdateRequest, rules *[]any) (Record[wire.APIResponseCustomerVmWithPassword], error) {
-	body, err := vmRequestWithRules(request, rules)
-	if err != nil {
-		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
-	}
+func (c *Client) UpdateVM(ctx context.Context, path string, request map[string]any, rules *[]any) (map[string]any, error) {
+	body := vmRequestWithRules(request, rules)
 	raw, err := c.Raw(ctx, http.MethodPatch, path, body)
 	if err != nil {
-		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
+		return nil, err
 	}
 	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		return Record[wire.APIResponseCustomerVmWithPassword]{}, nil
+		return nil, nil
 	}
 	response, err := decodeObject(raw)
 	if err != nil {
-		return Record[wire.APIResponseCustomerVmWithPassword]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.APIResponseCustomerVmWithPassword](response)
+	return vmEnvelope(response)
 }

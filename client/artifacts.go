@@ -6,8 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
 // ArtifactRecord retains the server's field order for human-readable metadata.
@@ -16,12 +14,12 @@ type ArtifactRecord struct {
 	RawJSON json.RawMessage
 }
 
-func (c *Client) Artifacts(ctx context.Context, path string, query url.Values) (Page[wire.WorkflowArtifactView], error) {
+func (c *Client) Artifacts(ctx context.Context, path string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, path, query)
 	if err != nil {
-		return Page[wire.WorkflowArtifactView]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.WorkflowArtifactView](body)
+	return decodePage(body)
 }
 
 func (c *Client) Artifact(ctx context.Context, path string) (ArtifactRecord, error) {

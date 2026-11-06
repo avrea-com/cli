@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 	"net/url"
@@ -45,11 +44,11 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 		switch operation {
 		case "pause":
 			target = "PAUSED"
-			record, e := api.TransitionVM(cmd.Context(), path+"/pause", wire.CustomerVmPauseRequest{Memory: &memory})
-			response, err = record.Fields, e
+			record, e := api.TransitionVM(cmd.Context(), path+"/pause", map[string]any{"memory": memory})
+			response, err = record, e
 		case "resume":
-			record, e := api.TransitionVM(cmd.Context(), path+"/resume", wire.CustomerVmResumeRequest{DiscardMemory: &discard})
-			response, err = record.Fields, e
+			record, e := api.TransitionVM(cmd.Context(), path+"/resume", map[string]any{"discard_memory": discard})
+			response, err = record, e
 		case "delete":
 			target = "DELETED"
 			if !yes {
@@ -58,7 +57,7 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 				}
 			}
 			record, e := api.DeleteVM(cmd.Context(), path)
-			response, err = record.Fields, e
+			response, err = record, e
 		}
 		if err != nil {
 			return vmError(cfg, err, operation+" VM")

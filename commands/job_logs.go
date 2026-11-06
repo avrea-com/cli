@@ -32,15 +32,15 @@ func fetchLogBatch(ctx context.Context, api *client.Client, id string, cursor an
 	if err != nil {
 		return nil, cursor, false, err
 	}
-	raw := objectList(rec.Fields["results"])
+	raw := objectList(rec["results"])
 	next := cursor
 	if len(raw) > 0 {
-		next = rec.Fields["next_cursor"]
+		next = rec["next_cursor"]
 		if next == nil || fmt.Sprint(next) == "0" {
 			next = raw[len(raw)-1]["line_number"]
 		}
 	}
-	more, _ := rec.Fields["has_more"].(bool)
+	more, _ := rec["has_more"].(bool)
 	return raw, next, more, nil
 }
 func filterLogEntries(raw []map[string]any, o logOptions) []map[string]any {
@@ -211,7 +211,7 @@ func newJobLogs(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "get job")
 		}
 		for _, pair := range [][2]string{{"Started:   ", "started_at"}, {"Completed: ", "completed_at"}} {
-			if v := fieldText(rec.Fields, pair[1]); v != "" {
+			if v := fieldText(rec, pair[1]); v != "" {
 				if _, err = fmt.Fprintln(d.Out, d.paint(pair[0]+output.CellText(v), gray)); err != nil {
 					return err
 				}
@@ -222,15 +222,15 @@ func newJobLogs(d Dependencies) *cobra.Command {
 			target = jobTarget(cfg.Host, orgSlug(cmd.Context(), cfg, api, orgID), args[0])
 		}
 		if o.follow {
-			return followJobLogs(cmd.Context(), d, cfg, api, orgID, args[0], fieldText(rec.Fields, "job_name"), o.all, target)
+			return followJobLogs(cmd.Context(), d, cfg, api, orgID, args[0], fieldText(rec, "job_name"), o.all, target)
 		}
-		content, err := jobLogContent(cmd.Context(), d, api, args[0], objectList(rec.Fields["steps"]), o, target)
+		content, err := jobLogContent(cmd.Context(), d, api, args[0], objectList(rec["steps"]), o, target)
 		if err != nil {
 			return apiError(cfg, err, "fetch logs")
 		}
 		if content == "" && !o.failed {
 			message := "No log entries found."
-			state := fieldText(rec.Fields, "state")
+			state := fieldText(rec, "state")
 			if state == "queued" || state == "in_progress" {
 				message = "No log entries found (job is " + state + "). Use --follow to wait for logs."
 			}
@@ -329,8 +329,8 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 		if finished {
 			job, lookupErr := api.Job(ctx, org, id, nil)
 			final := "completed"
-			if lookupErr == nil && fieldText(job.Fields, "conclusion") != "" {
-				final = fieldText(job.Fields, "conclusion")
+			if lookupErr == nil && fieldText(job, "conclusion") != "" {
+				final = fieldText(job, "conclusion")
 			}
 			if ctx.Err() != nil {
 				return ctx.Err()
@@ -340,10 +340,10 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 		if idle > 0 && idle%2 == 0 {
 			job, e := api.Job(ctx, org, id, url.Values{"include": {"steps"}})
 			if e == nil {
-				for _, s := range objectList(job.Fields["steps"]) {
+				for _, s := range objectList(job["steps"]) {
 					conclusions[fieldText(s, "name")] = fieldText(s, "conclusion")
 				}
-				if fieldText(job.Fields, "state") == "completed" {
+				if fieldText(job, "state") == "completed" {
 					if err = d.Wait(ctx, 8*time.Second); err != nil {
 						return err
 					}
@@ -369,7 +369,7 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 							break
 						}
 					}
-					conclusion := fieldText(job.Fields, "conclusion")
+					conclusion := fieldText(job, "conclusion")
 					if conclusion == "" {
 						conclusion = "unknown"
 					}

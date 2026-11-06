@@ -8,23 +8,21 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
-func (c *Client) AccessTokens(ctx context.Context, path string, query url.Values) (Page[wire.AccessTokenResponse], error) {
+func (c *Client) AccessTokens(ctx context.Context, path string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, path, query)
 	if err != nil {
-		return Page[wire.AccessTokenResponse]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.AccessTokenResponse](body)
+	return decodePage(body)
 }
-func (c *Client) AccessToken(ctx context.Context, path string) (Record[wire.AccessTokenResponse], error) {
+func (c *Client) AccessToken(ctx context.Context, path string) (map[string]any, error) {
 	body, err := c.Get(ctx, path, nil)
 	if err != nil {
-		return Record[wire.AccessTokenResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.AccessTokenResponse](body)
+	return decodeRecord(body)
 }
 
 // MintAccessToken keeps the successful raw JSON until the one-time credential

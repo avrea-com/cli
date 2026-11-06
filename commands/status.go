@@ -86,7 +86,7 @@ func NewStatus(deps Dependencies) *cobra.Command {
 					return err
 				}
 			} else {
-				cache = record.Fields
+				cache = record
 			}
 			metadata, err := api.Repository(cmd.Context(), id, repoID)
 			if err != nil {
@@ -94,7 +94,7 @@ func NewStatus(deps Dependencies) *cobra.Command {
 					return err
 				}
 			} else {
-				repoInfo = metadata.Fields
+				repoInfo = metadata
 			}
 		}
 		if err := cmd.Context().Err(); err != nil {

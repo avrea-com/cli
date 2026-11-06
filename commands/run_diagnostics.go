@@ -373,11 +373,11 @@ func buildRunDiagnostics(ctx context.Context, d Dependencies, api *client.Client
 	_, platformErr := strconv.ParseInt(string(platform), 10, 64)
 	jobsFuture := diagnosticAsync(func() (map[string]any, error) {
 		r, e := api.RunJobs(ctx, org, id, url.Values{"limit": {"100"}, "order": {"created_at.asc"}, "include": {"steps"}})
-		return r.Fields, e
+		return r, e
 	})
 	metricsFuture := diagnosticAsync(func() (map[string]any, error) {
 		r, e := api.RunMetrics(ctx, org, id, url.Values{"source": diagnosticSources})
-		return r.Fields, e
+		return r, e
 	})
 	var baselineFuture <-chan diagnosticResult
 	if repo != "" && platformOK && platformErr == nil {
@@ -426,7 +426,7 @@ func buildRunDiagnostics(ctx context.Context, d Dependencies, api *client.Client
 		jobID := fieldText(job, "job_id")
 		logFutures[jobID] = diagnosticAsync(func() (map[string]any, error) {
 			r, e := api.SearchLogs(ctx, map[string]any{"job_id": jobID, "limit": 101, "order": "line_number.desc"})
-			return r.Fields, e
+			return r, e
 		})
 	}
 	metricsResult := <-metricsFuture

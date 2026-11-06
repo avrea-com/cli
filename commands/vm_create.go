@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
@@ -31,8 +30,8 @@ func vmCacheName(key string) string {
 	}
 	return key
 }
-func vmDisabledCaches(values []string) (map[string]wire.CustomerVmCreateRequestCacheSettingOverrides, error) {
-	result := map[string]wire.CustomerVmCreateRequestCacheSettingOverrides{}
+func vmDisabledCaches(values []string) (map[string]bool, error) {
+	result := map[string]bool{}
 	for _, value := range values {
 		for _, token := range strings.Split(value, ",") {
 			token = strings.ToLower(strings.TrimSpace(token))
@@ -149,7 +148,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "create VM")
 		}
-		data := record.Fields
+		data := record
 		vm, ok := data["vm"].(map[string]any)
 		if !ok {
 			return &ExitError{1, "Error: unexpected API response: expected a VM record"}
@@ -168,9 +167,9 @@ func newVMCreate(d Dependencies) *cobra.Command {
 		if note := fieldText(data, "precheckout_note"); note != "" {
 			notes = append(notes, "Note: "+note)
 		}
-		if body.CacheSettingOverrides != nil {
+		if caches, ok := body["cache_setting_overrides"].(map[string]bool); ok {
 			aliases := []string{}
-			for key := range *body.CacheSettingOverrides {
+			for key := range caches {
 				aliases = append(aliases, vmCacheName(key))
 			}
 			sort.Strings(aliases)
@@ -243,20 +242,20 @@ func newVMCreate(d Dependencies) *cobra.Command {
 	})
 	return c
 }
-func (o vmCreateOptions) body(cmd *cobra.Command) (wire.CustomerVmCreateRequest, *[]any, error) {
-	body := wire.CustomerVmCreateRequest{OsType: wire.OsType(o.os), Size: wire.VmSize(o.size), EnableRemoteDesktop: &o.desktop}
+func (o vmCreateOptions) body(cmd *cobra.Command) (map[string]any, *[]any, error) {
+	body := map[string]any{"os_type": o.os, "size": o.size, "enable_remote_desktop": o.desktop}
 	if cmd.Flags().Changed("arch") {
-		body.Architecture.Set(wire.Architecture(o.architecture))
+		body["architecture"] = o.architecture
 	}
 	if cmd.Flags().Changed("idempotency-key") {
-		body.IdempotencyKey.Set(o.idempotency)
+		body["idempotency_key"] = o.idempotency
 	}
 	ports, err := parseVMHTTPSPorts(o.ports)
 	if err != nil {
 		return body, nil, err
 	}
 	if len(ports) > 0 {
-		body.HttpsPorts = &ports
+		body["https_ports"] = ports
 	}
 	ttl := 28800
 	if cmd.Flags().Changed("ttl") {
@@ -265,12 +264,12 @@ func (o vmCreateOptions) body(cmd *cobra.Command) (wire.CustomerVmCreateRequest,
 			return body, nil, err
 		}
 	}
-	body.TtlSeconds = &ttl
+	body["ttl_seconds"] = ttl
 	keys, err := resolveVMSSHKeys(o.keys)
 	if err != nil {
 		return body, nil, err
 	}
-	body.SshPublicKeys = &keys
+	body["ssh_public_keys"] = keys
 	var rules *[]any
 	if cmd.Flags().Changed("egress-rules") {
 		value, err := parseVMEgress(o.egress)
@@ -284,22 +283,22 @@ func (o vmCreateOptions) body(cmd *cobra.Command) (wire.CustomerVmCreateRequest,
 		return body, nil, err
 	}
 	if len(caches) > 0 {
-		body.CacheSettingOverrides = &caches
+		body["cache_setting_overrides"] = caches
 	}
 	if cmd.Flags().Changed("name") {
-		body.DisplayName.Set(o.name)
+		body["display_name"] = o.name
 	}
 	if cmd.Flags().Changed("os-version") {
-		body.OsVersion.Set(wire.OsVersion(o.version))
+		body["os_version"] = o.version
 	}
 	if cmd.Flags().Changed("repo") {
-		body.Repo.Set(o.repo)
+		body["repo"] = o.repo
 	}
 	if cmd.Flags().Changed("ref") {
-		body.Ref.Set(o.ref)
+		body["ref"] = o.ref
 	}
 	if cmd.Flags().Changed("fetch-depth") {
-		body.FetchDepth.Set(o.depth)
+		body["fetch_depth"] = o.depth
 	}
 	return body, rules, nil
 }

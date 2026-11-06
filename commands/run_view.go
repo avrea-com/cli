@@ -57,8 +57,8 @@ func newRunView(d Dependencies) *cobra.Command {
 			// Preserve Python's no-argument recent-runs view even when --json was
 			// supplied; JSON projection applies to an individual RUN.
 			for _, r := range page.Items {
-				repo, _ := r.Fields["repository"].(map[string]any)
-				_, e = fmt.Fprintf(d.Out, "  %s  %s %s -- %s -- %s -- %s\n     %s\n", d.indicator(r.Fields, "status"), output.CellText(fieldText(repo, "full_name")), output.CellText(fieldText(r.Fields, "display_title")), output.CellText(fieldText(r.Fields, "head_branch")), formatDuration(r.Fields["duration_seconds"]), relativeAge(fieldText(r.Fields, "created_at"), d.Now()), d.paint(output.CellText(fieldText(r.Fields, "run_id")), gray))
+				repo, _ := r["repository"].(map[string]any)
+				_, e = fmt.Fprintf(d.Out, "  %s  %s %s -- %s -- %s -- %s\n     %s\n", d.indicator(r, "status"), output.CellText(fieldText(repo, "full_name")), output.CellText(fieldText(r, "display_title")), output.CellText(fieldText(r, "head_branch")), formatDuration(r["duration_seconds"]), relativeAge(fieldText(r, "created_at"), d.Now()), d.paint(output.CellText(fieldText(r, "run_id")), gray))
 				if e != nil {
 					return e
 				}
@@ -74,7 +74,7 @@ func newRunView(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		fields := record.Fields
+		fields := record
 		runID := fieldText(fields, "run_id")
 		if f.Changed("json") {
 			selected, e := output.Fields(options.fields, runViewFields)
@@ -240,10 +240,10 @@ func renderRunMetadata(d Dependencies, fields map[string]any, host, slug string)
 	return nil
 }
 
-func renderOtherAttempts(d Dependencies, page client.Page[client.Run], runID string) error {
+func renderOtherAttempts(d Dependencies, page client.Page, runID string) error {
 	printed := false
 	for _, record := range page.Items {
-		r := record.Fields
+		r := record
 		if fieldText(r, "run_id") == runID {
 			continue
 		}

@@ -94,7 +94,7 @@ func newPaymentMethodAdd(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "create setup intent")
 		}
-		pm, err := api.ConfirmCard(cmd.Context(), fieldText(key.Fields, "stripe_key"), fieldText(intent.Fields, "client_secret"), client.StripeCard{Number: number, CVC: cvc, Month: month, Year: year})
+		pm, err := api.ConfirmCard(cmd.Context(), fieldText(key, "stripe_key"), fieldText(intent, "client_secret"), client.StripeCard{Number: number, CVC: cvc, Month: month, Year: year})
 		if err != nil {
 			var stripe *client.StripeError
 			if errors.As(err, &stripe) {
@@ -106,7 +106,7 @@ func newPaymentMethodAdd(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "attach payment method")
 		}
-		_, err = fmt.Fprintf(d.Out, "Card added: %s (expires %s)\n", output.CellText(billingCard(record.Fields)), output.CellText(billingExpiry(record.Fields)))
+		_, err = fmt.Fprintf(d.Out, "Card added: %s (expires %s)\n", output.CellText(billingCard(record)), output.CellText(billingExpiry(record)))
 		return err
 	})
 	return c

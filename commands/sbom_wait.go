@@ -58,10 +58,10 @@ func (p *sbomPoller) get(ctx context.Context, path, action string, missingOK boo
 	var err error
 	if missingOK {
 		record, e := p.api.SBOM(pollCtx, path)
-		fields, err = record.Fields, e
+		fields, err = record, e
 	} else {
 		record, e := p.api.SBOMTaskState(pollCtx, path)
-		fields, err = record.Fields, e
+		fields, err = record, e
 	}
 	if err == nil {
 		p.lastError = ""

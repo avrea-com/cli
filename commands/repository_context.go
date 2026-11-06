@@ -84,13 +84,13 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 				return "", apiError(cfg, err, "resolve the repository")
 			}
 			for _, record := range page.Items {
-				r := record.Value
-				if platform != "" && (r.Platform == nil || string(*r.Platform) != platform) {
+				r := record
+				if platform != "" && fieldText(r, "platform") != platform {
 					continue
 				}
-				if strings.EqualFold(r.FullName, repo) && r.RepositoryId != "" {
-					warnCase(r.FullName)
-					return r.RepositoryId, nil
+				if strings.EqualFold(fieldText(r, "full_name"), repo) && fieldText(r, "repository_id") != "" {
+					warnCase(fieldText(r, "full_name"))
+					return fieldText(r, "repository_id"), nil
 				}
 			}
 			if page.NextCursor == "" {
@@ -109,11 +109,11 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 	}
 	record, err := api.ResolveRepository(ctx, org, query)
 	if err == nil {
-		if record.Value.RepositoryId == "" {
+		if fieldText(record, "repository_id") == "" {
 			return "", errors.New("unexpected API response: repository_id is missing")
 		}
-		warnCase(record.Value.FullName)
-		return record.Value.RepositoryId, nil
+		warnCase(fieldText(record, "full_name"))
+		return fieldText(record, "repository_id"), nil
 	}
 	var he *client.HTTPError
 	if !errors.As(err, &he) || he.Status != 404 {

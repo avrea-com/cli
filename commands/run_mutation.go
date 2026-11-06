@@ -112,7 +112,7 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			existing, id = record.Fields, fieldText(record.Fields, "run_id")
+			existing, id = record, fieldText(record, "run_id")
 		}
 		native := rerun && (fieldText(existing, "ci_provider") == "avrea_ci" || strings.HasPrefix(id, "awr-"))
 		if rerun {
@@ -156,7 +156,7 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			err = api.Rerun(cmd.Context(), orgID, id, failed)
 		} else {
 			record, requestErr := api.CancelRun(cmd.Context(), orgID, id)
-			err, cancelFields = requestErr, record.Fields
+			err, cancelFields = requestErr, record
 		}
 		if err != nil {
 			return apiError(cfg, err, name+" workflow run")
@@ -236,9 +236,9 @@ func pollRerun(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 		page, err := api.Runs(ctx, org, url.Values{"platform_run_id": {platform}, "limit": {"10"}, "order": {"created_at.desc"}})
 		if err == nil {
 			for _, row := range page.Items {
-				next, _ := strconv.ParseInt(fieldText(row.Fields, "run_attempt"), 10, 64)
+				next, _ := strconv.ParseInt(fieldText(row, "run_attempt"), 10, 64)
 				if next > current {
-					return row.Fields, nil
+					return row, nil
 				}
 			}
 		} else {

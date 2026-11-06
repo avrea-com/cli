@@ -138,9 +138,9 @@ func newTokenView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			return output.JSON(cmd.Context(), d.Out, record.Fields, fields, o.expression, d.IsTerminal())
+			return output.JSON(cmd.Context(), d.Out, record, fields, o.expression, d.IsTerminal())
 		}
-		return renderToken(d, record.Fields)
+		return renderToken(d, record)
 	})
 	return c
 }

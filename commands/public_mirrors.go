@@ -63,7 +63,7 @@ func newPublicMirrorCheck(d Dependencies) *cobra.Command {
 		if missing {
 			record["repository_full_name"] = args[0]
 		} else {
-			maps.Copy(record, mirror.Fields)
+			maps.Copy(record, mirror)
 		}
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, record, publicMirrorFields)
@@ -108,7 +108,7 @@ func newPublicMirrorRequest(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "request a public mirror")
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, row, publicMirrorRequestFields)
 		}
@@ -195,7 +195,7 @@ func newPublicMirrorView(d Dependencies, cancel bool) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, action)
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, row, publicMirrorRequestFields)
 		}

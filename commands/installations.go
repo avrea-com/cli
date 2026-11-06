@@ -235,8 +235,8 @@ func newInstallationAdd(d Dependencies) *cobra.Command {
 		}
 		seen := map[string]bool{}
 		for _, row := range before.Items {
-			if githubInstallation(row.Fields) {
-				seen[pythonValue(row.Fields["platform_installation_id"])] = true
+			if githubInstallation(row) {
+				seen[pythonValue(row["platform_installation_id"])] = true
 			}
 		}
 		started := d.Now()
@@ -255,8 +255,8 @@ func newInstallationAdd(d Dependencies) *cobra.Command {
 			}
 			added := map[string]bool{}
 			for _, row := range current.Items {
-				value := pythonValue(row.Fields["platform_installation_id"])
-				if githubInstallation(row.Fields) && !seen[value] {
+				value := pythonValue(row["platform_installation_id"])
+				if githubInstallation(row) && !seen[value] {
 					added[value] = true
 				}
 			}
@@ -269,8 +269,8 @@ func newInstallationAdd(d Dependencies) *cobra.Command {
 				if hasJSON {
 					rows := []map[string]any{}
 					for _, row := range current.Items {
-						if added[pythonValue(row.Fields["platform_installation_id"])] {
-							rows = append(rows, row.Fields)
+						if added[pythonValue(row["platform_installation_id"])] {
+							rows = append(rows, row)
 						}
 					}
 					return o.list(cmd, d, rows, installationFields)

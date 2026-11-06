@@ -1,5 +1,10 @@
 # Go CLI preview
 
+> API model update (2026-11-06): responses and requests now use JSON maps with
+> focused validation. Generated wire models and generation gates were removed;
+> references to them below describe earlier migration stages.
+> See [API handling](../api/README.md).
+
 > Validation update (2026-11-06): the migration-only Python comparison harness
 > has been retired. Its last implementation is in Git at `f5688c1`; comparison
 > commands and reports below are historical. Current checks are native Go

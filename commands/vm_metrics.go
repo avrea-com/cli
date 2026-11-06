@@ -36,7 +36,7 @@ func newVMMetrics(d Dependencies) *cobra.Command {
 		if err != nil {
 			return vmError(cfg, err, "get VM")
 		}
-		vm := record.Fields
+		vm := record
 		ram := metricNumber(vm["memory_mb"]) * (1 << 20)
 		render := func(metrics map[string]map[string]any, live bool, note, message string) error {
 			if watch {
@@ -79,7 +79,7 @@ func newVMMetrics(d Dependencies) *cobra.Command {
 			if err != nil {
 				return apiError(cfg, err, "get VM metrics")
 			}
-			metrics, err := filterMetricSnapshot(record.Fields["metrics"], selected)
+			metrics, err := filterMetricSnapshot(record["metrics"], selected)
 			if err != nil {
 				return err
 			}

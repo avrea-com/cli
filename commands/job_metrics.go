@@ -86,7 +86,7 @@ func newJobMetrics(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "get job")
 		}
-		job := record.Fields
+		job := record
 		if live {
 			return watchJobMetrics(cmd.Context(), d, cfg, api, args[0], selected, job, jsonOutput)
 		}
@@ -121,7 +121,7 @@ func fetchMetrics(ctx context.Context, api *client.Client, org, id string, sourc
 			}
 			return nil, err
 		}
-		result[source] = record.Fields
+		result[source] = record
 	}
 	return result, nil
 }

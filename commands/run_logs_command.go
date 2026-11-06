@@ -38,7 +38,7 @@ func newRunLogs(d Dependencies) *cobra.Command {
 			return err
 		}
 		jobs := []map[string]any{}
-		for _, j := range objectList(rec.Fields["jobs"]) {
+		for _, j := range objectList(rec["jobs"]) {
 			if ref.platformJobID != "" && fieldText(j, "platform_job_id") != ref.platformJobID {
 				continue
 			}

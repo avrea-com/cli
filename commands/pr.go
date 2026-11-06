@@ -80,7 +80,7 @@ func newPRList(d Dependencies) *cobra.Command {
 			}
 			return prRequestError(cfg, err, "check pull request listing availability")
 		}
-		if feature.Fields["enabled"] != true {
+		if feature["enabled"] != true {
 			return &ExitError{1, "Error: Sorry, pull request listing is not yet supported for this organization. Coming soon."}
 		}
 		ids, err := resolveRepositories(cmd.Context(), d, cfg, api, id, repos, true)

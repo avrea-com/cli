@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/spf13/cobra"
 )
 
@@ -31,26 +30,26 @@ func newVMUpdate(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		body := wire.CustomerVmUpdateRequest{RotatePassword: &rotate}
+		body := map[string]any{"rotate_password": rotate}
 		if len(ports) > 0 || clearPorts {
-			body.HttpsPorts.Set(parsedPorts)
+			body["https_ports"] = parsedPorts
 		}
 		if cmd.Flags().Changed("name") {
-			body.DisplayName.Set(name)
+			body["display_name"] = name
 		}
 		if cmd.Flags().Changed("ttl") {
 			seconds, err := parseVMTTL(ttl)
 			if err != nil {
 				return err
 			}
-			body.TtlSeconds.Set(seconds)
+			body["ttl_seconds"] = seconds
 		}
 		if len(keys) > 0 {
 			resolved, err := resolveVMSSHKeys(keys)
 			if err != nil {
 				return err
 			}
-			body.SshPublicKeys.Set(resolved)
+			body["ssh_public_keys"] = resolved
 		}
 		var rules *[]any
 		if cmd.Flags().Changed("egress-rules") {
@@ -72,9 +71,9 @@ func newVMUpdate(d Dependencies) *cobra.Command {
 			return vmError(cfg, err, "update VM")
 		}
 		if asJSON {
-			return rawJSON(d, record.Fields)
+			return rawJSON(d, record)
 		}
-		data, _ := record.Fields["data"].(map[string]any)
+		data, _ := record["data"].(map[string]any)
 		password := fieldText(data, "password")
 		if vm, ok := data["vm"].(map[string]any); ok && len(vm) > 0 {
 			if err = renderVM(d, vm, password); err != nil {

@@ -8,25 +8,23 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
 // Settings endpoints return bare arrays, unlike the paginated inspection APIs.
-func decodeArray[T any](data []byte) (Page[T], error) {
+func decodeArray(data []byte) (Page, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	var rows []map[string]any
 	if err := decoder.Decode(&rows); err != nil {
-		return Page[T]{}, errors.New("unexpected API response: expected a record array")
+		return Page{}, errors.New("unexpected API response: expected a record array")
 	}
 	var extra any
 	if decoder.Decode(&extra) != io.EOF {
-		return Page[T]{}, errors.New("unexpected API response: trailing JSON")
+		return Page{}, errors.New("unexpected API response: trailing JSON")
 	}
-	page := Page[T]{Items: []Record[T]{}}
+	page := Page{Items: []map[string]any{}}
 	for _, row := range rows {
-		record, err := decodeRecord[T](row)
+		record, err := decodeRecord(row)
 		if err != nil {
 			return page, err
 		}
@@ -34,31 +32,31 @@ func decodeArray[T any](data []byte) (Page[T], error) {
 	}
 	return page, nil
 }
-func (c *Client) Settings(ctx context.Context, path string, query url.Values) (Page[wire.SettingResponse], error) {
+func (c *Client) Settings(ctx context.Context, path string, query url.Values) (Page, error) {
 	if len(query) > 0 {
 		path += "?" + query.Encode()
 	}
 	raw, err := c.Raw(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return Page[wire.SettingResponse]{}, err
+		return Page{}, err
 	}
-	return decodeArray[wire.SettingResponse](raw)
+	return decodeArray(raw)
 }
-func (c *Client) SettingsSchema(ctx context.Context, query url.Values) (Page[wire.SettingSchemaResponse], error) {
+func (c *Client) SettingsSchema(ctx context.Context, query url.Values) (Page, error) {
 	path := "/settings/schema"
 	if len(query) > 0 {
 		path += "?" + query.Encode()
 	}
 	raw, err := c.Raw(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		return Page[wire.SettingSchemaResponse]{}, err
+		return Page{}, err
 	}
-	return decodeArray[wire.SettingSchemaResponse](raw)
+	return decodeArray(raw)
 }
-func (c *Client) SetSetting(ctx context.Context, path, key string, value any) (Record[wire.SettingResponse], error) {
+func (c *Client) SetSetting(ctx context.Context, path, key string, value any) (map[string]any, error) {
 	body, err := c.Do(ctx, http.MethodPut, path, map[string]any{"key": key, "value": value})
 	if err != nil {
-		return Record[wire.SettingResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.SettingResponse](body)
+	return decodeRecord(body)
 }

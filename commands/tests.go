@@ -386,8 +386,8 @@ func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api 
 	if err != nil {
 		return "", "", err
 	}
-	values, ok := record.Fields["jobs"].([]any)
-	jobs := objectList(record.Fields["jobs"])
+	values, ok := record["jobs"].([]any)
+	jobs := objectList(record["jobs"])
 	if !ok || len(values) != len(jobs) {
 		return "", "", &ExitError{1, "Error: The API returned invalid run jobs."}
 	}

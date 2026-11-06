@@ -244,7 +244,7 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 		if err != nil {
 			return vmError(cfg, err, "fetch VM")
 		}
-		row := record.Fields
+		row := record
 		if row["enable_remote_desktop"] != true {
 			return &ExitError{1, "Error: VM " + output.CellText(args[0]) + " has no remote desktop. Recreate it with `--remote-desktop`."}
 		}

@@ -62,7 +62,7 @@ func newRunWatch(d Dependencies) *cobra.Command {
 				if e != nil {
 					return e
 				}
-				runID = fieldText(record.Fields, "run_id")
+				runID = fieldText(record, "run_id")
 			}
 		} else {
 			orgID, err = resolveOrg(cmd.Context(), d, cfg, api, org)
@@ -90,11 +90,11 @@ func newRunWatch(d Dependencies) *cobra.Command {
 				_, e = fmt.Fprintln(d.Out, "No in-progress workflow runs found"+suffix+".")
 				return e
 			}
-			runID = fieldText(page.Items[0].Fields, "run_id")
+			runID = fieldText(page.Items[0], "run_id")
 			if runID == "" {
 				return fmt.Errorf("avrea returned a workflow run without a run_id")
 			}
-			_, _ = fmt.Fprintf(d.Err, "Auto-selected: %s (%s)\n", output.CellText(runID), output.CellText(fieldText(page.Items[0].Fields, "display_title")))
+			_, _ = fmt.Fprintf(d.Err, "Auto-selected: %s (%s)\n", output.CellText(runID), output.CellText(fieldText(page.Items[0], "display_title")))
 		}
 		streaming := ndjson || !d.IsTerminal()
 		slug := ""
@@ -103,13 +103,13 @@ func newRunWatch(d Dependencies) *cobra.Command {
 			if e != nil {
 				return apiError(cfg, e, "look up workflow run before watch")
 			}
-			if fieldText(record.Fields, "status") == "completed" {
-				conclusion := fieldText(record.Fields, "conclusion")
+			if fieldText(record, "status") == "completed" {
+				conclusion := fieldText(record, "conclusion")
 				if conclusion == "" {
 					conclusion = "completed"
 				}
 				_, _ = fmt.Fprintln(d.Err, d.errorPaint(fmt.Sprintf("Run %s already finished (%s). Nothing to watch — see `avr run view %s`.", output.CellText(runID), output.CellText(conclusion), output.CellText(runID)), "33"))
-				return watchExit(record.Fields, exitStatus)
+				return watchExit(record, exitStatus)
 			}
 			if linksEnabled(cmd, d) {
 				slug = orgSlug(cmd.Context(), cfg, api, orgID)
@@ -220,7 +220,7 @@ func watchRun(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 			}
 		} else {
 			failures = 0
-			fields := record.Fields
+			fields := record
 			for _, job := range objectList(fields["jobs"]) {
 				id := fieldText(job, "job_id")
 				state := fieldText(job, "state")

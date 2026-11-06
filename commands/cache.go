@@ -203,7 +203,7 @@ func newCacheUsage(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "get cache usage")
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			fields, e := output.Fields(o.fields, cacheUsageFields)
 			if e != nil {

@@ -72,7 +72,7 @@ func newSBOMGenerate(d Dependencies) *cobra.Command {
 					return sbomError(cfg, e, "get SBOM", false)
 				}
 			} else {
-				baseline = record.Fields
+				baseline = record
 			}
 		}
 		deadline := d.Now().Add(time.Duration(timeout) * time.Second)
@@ -87,13 +87,13 @@ func newSBOMGenerate(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "generate SBOM")
 		}
-		taskID := fieldText(response.Fields, "ai_task_id")
+		taskID := fieldText(response, "ai_task_id")
 		if taskID == "" {
 			return errors.New("SBOM generation response did not include an analysis task ID")
 		}
-		result := map[string]any{"ai_task_id": taskID, "status": response.Fields["status"], "task_status": nil, "error_code": nil, "commit_sha": nil, "recorded_at": nil}
+		result := map[string]any{"ai_task_id": taskID, "status": response["status"], "task_status": nil, "error_code": nil, "commit_sha": nil, "recorded_at": nil}
 		expanded := false
-		if value, ok := response.Fields["commit_sha"].(string); sha == "" && ok && fullSBOMCommit(value) {
+		if value, ok := response["commit_sha"].(string); sha == "" && ok && fullSBOMCommit(value) {
 			sha = value
 			expanded = true
 		}

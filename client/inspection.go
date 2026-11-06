@@ -2,36 +2,17 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 	"net/url"
-	"reflect"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
-// Keep generated wire models behind the API client. Raw fields are retained for
-// JSON projection: re-marshaling typed models would alter timestamps, omitted
-// values, and unknown numeric fields.
-type Organization = wire.OrganizationListItem
-type Repository = wire.OrganizationRepositoryResponse
-type Run = wire.WorkflowRunResponse
-type Job = wire.JobResponse
-
-type Record[T any] struct {
-	Value  T
-	Fields map[string]any
-}
-
-type Page[T any] struct {
+// Page retains the response envelope, record maps and pagination cursor.
+// JSON output and terminal rendering share the same decoded response values.
+type Page struct {
 	Fields     map[string]any
-	Items      []Record[T]
+	Items      []map[string]any
 	NextCursor string
 }
 
@@ -42,74 +23,8 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values) (map[st
 	return c.Do(ctx, http.MethodGet, path, nil)
 }
 
-func decodeRecord[T any](fields map[string]any) (Record[T], error) {
-	var value T
-	data, err := json.Marshal(fields)
-	if err != nil {
-		return Record[T]{}, errors.New("unexpected API response: invalid record")
-	}
-	if err = json.Unmarshal(data, &value); err != nil {
-		return Record[T]{}, fmt.Errorf("unexpected API response: invalid record fields: %s", recordFieldError(data, reflect.TypeFor[T]()))
-	}
-	return Record[T]{Value: value, Fields: fields}, nil
-}
-
-// Diagnose using schema-owned field names only: decoder errors can contain
-// response values (notably timestamps), so never print the original error.
-func recordFieldError(data []byte, typ reflect.Type) string {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	if typ.Kind() == reflect.Struct && typ != reflect.TypeFor[time.Time]() {
-		var fields map[string]json.RawMessage
-		if json.Unmarshal(data, &fields) == nil {
-			for i := 0; i < typ.NumField(); i++ {
-				field := typ.Field(i)
-				name := strings.Split(field.Tag.Get("json"), ",")[0]
-				if name == "" || name == "-" {
-					continue
-				}
-				raw, present := fields[name]
-				if !present {
-					continue
-				}
-				if json.Unmarshal(raw, reflect.New(field.Type).Interface()) != nil {
-					return name + ": " + recordFieldError(raw, field.Type)
-				}
-			}
-		}
-	}
-	return "expected " + expectedJSONType(typ)
-}
-
-func expectedJSONType(typ reflect.Type) string {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	if typ == reflect.TypeFor[time.Time]() {
-		return "RFC3339 timestamp"
-	}
-	if typ.Kind() == reflect.Map && strings.HasPrefix(typ.Name(), "Nullable[") {
-		return expectedJSONType(typ.Elem()) + " or null"
-	}
-	switch typ.Kind() {
-	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Uint, reflect.Uint64:
-		return "integer"
-	case reflect.Float64, reflect.Float32:
-		return "number"
-	case reflect.String:
-		return "string"
-	case reflect.Bool:
-		return "boolean"
-	case reflect.Slice, reflect.Array:
-		return "array"
-	default:
-		return "object matching the API schema"
-	}
-}
-
-func decodePage[T any](body map[string]any) (Page[T], error) {
-	page := Page[T]{Fields: body, Items: []Record[T]{}}
+func decodePage(body map[string]any) (Page, error) {
+	page := Page{Fields: body, Items: []map[string]any{}}
 	raw, ok := body["data"].([]any)
 	if !ok && body["data"] != nil {
 		return page, errors.New("unexpected API response: expected a data array")
@@ -119,255 +34,233 @@ func decodePage[T any](body map[string]any) (Page[T], error) {
 		if !ok {
 			return page, errors.New("unexpected API response: expected object in data array")
 		}
-		record, err := decodeRecord[T](fields)
+		record, err := decodeRecord(fields)
 		if err != nil {
 			return page, fmt.Errorf("row %d: %w", index+1, err)
 		}
 		page.Items = append(page.Items, record)
 	}
-	if pagination, ok := body["pagination"].(map[string]any); ok {
-		page.NextCursor, _ = pagination["next_cursor"].(string)
+	if value := body["pagination"]; value != nil {
+		pagination, ok := value.(map[string]any)
+		if !ok {
+			return page, errors.New("unexpected API response: expected pagination object")
+		}
+		if value := pagination["next_cursor"]; value != nil {
+			cursor, ok := value.(string)
+			if !ok {
+				return page, errors.New("unexpected API response: expected string pagination cursor")
+			}
+			page.NextCursor = cursor
+		}
 	}
 	return page, nil
 }
 
-func (c *Client) Organizations(ctx context.Context) (Page[Organization], error) {
+func (c *Client) Organizations(ctx context.Context) (Page, error) {
 	body, err := c.Get(ctx, "/users/me/organizations", nil)
 	if err != nil {
-		return Page[Organization]{}, err
+		return Page{}, err
 	}
-	return decodePage[Organization](body)
+	return decodePage(body)
 }
 
-func (c *Client) Repositories(ctx context.Context, org string, query url.Values) (Page[Repository], error) {
+func (c *Client) Repositories(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos", query)
 	if err != nil {
-		return Page[Repository]{}, err
+		return Page{}, err
 	}
-	return decodePage[Repository](body)
+	return decodePage(body)
 }
 
-func (c *Client) ResolveRepository(ctx context.Context, org string, query url.Values) (Record[Repository], error) {
+func (c *Client) ResolveRepository(ctx context.Context, org string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/resolve", query)
 	if err != nil {
-		return Record[Repository]{}, err
+		return nil, err
 	}
 	fields, ok := body["data"].(map[string]any)
 	if !ok {
-		return Record[Repository]{}, errors.New("unexpected API response: expected repository data")
+		return nil, errors.New("unexpected API response: expected repository data")
 	}
-	return decodeRecord[Repository](fields)
+	return decodeRecord(fields)
 }
 
-func (c *Client) Runs(ctx context.Context, org string, query url.Values) (Page[Run], error) {
+func (c *Client) Runs(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs", query)
 	if err != nil {
-		return Page[Run]{}, err
+		return Page{}, err
 	}
-	return decodePage[Run](body)
+	return decodePage(body)
 }
 
 // RunByReference accepts an already parsed Avrea ID or decimal platform ID.
 // It never follows the URL supplied by a user or sends credentials to it.
-func (c *Client) RunByReference(ctx context.Context, org, id string, platform bool, query url.Values) (Record[Run], error) {
+func (c *Client) RunByReference(ctx context.Context, org, id string, platform bool, query url.Values) (map[string]any, error) {
 	path := "/orgs/" + url.PathEscape(org) + "/workflow-runs/"
 	if platform {
 		path += "by-platform-id/"
 	}
 	body, err := c.Get(ctx, path+url.PathEscape(id), query)
 	if err != nil {
-		return Record[Run]{}, err
+		return nil, err
 	}
 	fields := body
 	if wrapped, ok := body["data"].(map[string]any); ok {
 		fields = wrapped
 	}
 	if id, ok := fields["run_id"].(string); !ok || id == "" {
-		return Record[Run]{}, errors.New("avrea returned an invalid workflow-run response")
+		return nil, errors.New("avrea returned an invalid workflow-run response")
 	}
-	return decodeRunRecord(fields)
+	return decodeRecord(fields)
 }
 
 // SearchLogs retains raw values for display while validating the wire record.
-func (c *Client) SearchLogs(ctx context.Context, payload map[string]any) (Record[wire.LogSearchResponse], error) {
+func (c *Client) SearchLogs(ctx context.Context, payload map[string]any) (map[string]any, error) {
 	body, err := c.Do(ctx, http.MethodPost, "/logs/search", payload)
 	if err != nil {
-		return Record[wire.LogSearchResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.LogSearchResponse](body)
+	return decodeRecord(body)
 }
 
-func (c *Client) Jobs(ctx context.Context, org string, query url.Values) (Page[Job], error) {
+func (c *Client) Jobs(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs", query)
 	if err != nil {
-		return Page[Job]{}, err
+		return Page{}, err
 	}
-	return decodePage[Job](body)
+	return decodePage(body)
 }
-func (c *Client) Job(ctx context.Context, org, id string, query url.Values) (Record[Job], error) {
+func (c *Client) Job(ctx context.Context, org, id string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs/"+url.PathEscape(id), query)
 	if err != nil {
-		return Record[Job]{}, err
+		return nil, err
 	}
 	if wrapped, ok := body["data"].(map[string]any); ok {
 		body = wrapped
 	}
-	return decodeRecord[Job](body)
+	return decodeRecord(body)
 }
 
-func (c *Client) SSHForwarding(ctx context.Context, id string) (Record[wire.SSHForwardingResponse], error) {
+func (c *Client) SSHForwarding(ctx context.Context, id string) (map[string]any, error) {
 	body, err := c.Do(ctx, http.MethodPost, "/vms/ssh-forwarding", map[string]any{"job_id": id})
 	if err != nil {
-		return Record[wire.SSHForwardingResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.SSHForwardingResponse](body)
+	return decodeRecord(body)
 }
 
-func (c *Client) CancelRun(ctx context.Context, org, id string) (Record[wire.CancelWorkflowRunResponse], error) {
+func (c *Client) CancelRun(ctx context.Context, org, id string) (map[string]any, error) {
 	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/cancel", nil)
 	if err != nil {
-		return Record[wire.CancelWorkflowRunResponse]{}, err
+		return nil, err
 	}
 	fields, _ := body["data"].(map[string]any)
-	return decodeRecord[wire.CancelWorkflowRunResponse](fields)
+	return decodeRecord(fields)
 }
 
 func (c *Client) Rerun(ctx context.Context, org, id string, failed bool) error {
-	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/rerun", wire.RerunWorkflowRunRequest{FailedOnly: &failed})
+	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/rerun", map[string]any{"failed_only": failed})
 	if err != nil {
 		return err
 	}
 	fields, _ := body["data"].(map[string]any)
-	_, err = decodeRecord[wire.RerunWorkflowRunResponse](fields)
+	_, err = decodeRecord(fields)
 	return err
 }
 
-func (c *Client) WorkflowAggregates(ctx context.Context, org string, query url.Values) (Page[wire.WorkflowRunAggregateBucket], error) {
+func (c *Client) WorkflowAggregates(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/aggregate", query)
 	if err != nil {
-		return Page[wire.WorkflowRunAggregateBucket]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.WorkflowRunAggregateBucket](body)
+	return decodePage(body)
 }
-func (c *Client) RepositoryWorkflows(ctx context.Context, org, repo string, query url.Values) (Page[wire.CIWorkflowResponse], error) {
+func (c *Client) RepositoryWorkflows(ctx context.Context, org, repo string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/workflows", query)
 	if err != nil {
-		return Page[wire.CIWorkflowResponse]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.CIWorkflowResponse](body)
+	return decodePage(body)
 }
 
-func (c *Client) Repository(ctx context.Context, org, id string) (Record[Repository], error) {
+func (c *Client) Repository(ctx context.Context, org, id string) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(id), nil)
 	if err != nil {
-		return Record[Repository]{}, err
+		return nil, err
 	}
 	fields, _ := body["data"].(map[string]any)
-	return decodeRecord[Repository](fields)
+	return decodeRecord(fields)
 }
-func (c *Client) DispatchWorkflow(ctx context.Context, org, repo, file, ref string, inputs map[string]string) (Record[wire.DispatchWorkflowResponse], error) {
-	request := wire.DispatchWorkflowRequest{Workflow: file, Ref: ref}
+func (c *Client) DispatchWorkflow(ctx context.Context, org, repo, file, ref string, inputs map[string]string) (map[string]any, error) {
+	request := map[string]any{"workflow": file, "ref": ref}
 	if len(inputs) > 0 {
-		request.Inputs.Set(inputs)
+		request["inputs"] = inputs
 	}
 	body, err := c.Do(ctx, http.MethodPost, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/dispatch-workflow", request)
 	if err != nil {
-		return Record[wire.DispatchWorkflowResponse]{}, err
+		return nil, err
 	}
 	fields, _ := body["data"].(map[string]any)
-	return decodeRecord[wire.DispatchWorkflowResponse](fields)
+	return decodeRecord(fields)
 }
 
-func (c *Client) JobMetrics(ctx context.Context, org, id, source string, query url.Values) (Record[wire.MetricsQueryResponse], error) {
+func (c *Client) JobMetrics(ctx context.Context, org, id, source string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs/"+url.PathEscape(id)+"/metrics/"+url.PathEscape(source), query)
 	if err != nil {
-		return Record[wire.MetricsQueryResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.MetricsQueryResponse](body)
+	return decodeRecord(body)
 }
 
-func (c *Client) RunJobs(ctx context.Context, org, id string, query url.Values) (Record[wire.JobsListResponse], error) {
+func (c *Client) RunJobs(ctx context.Context, org, id string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/jobs", query)
 	if err != nil {
-		return Record[wire.JobsListResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.JobsListResponse](body)
+	return decodeRecord(body)
 }
-func (c *Client) RunMetrics(ctx context.Context, org, id string, query url.Values) (Record[wire.WorkflowRunMetricsResponse], error) {
+func (c *Client) RunMetrics(ctx context.Context, org, id string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/workflow-runs/"+url.PathEscape(id)+"/metrics", query)
 	if err != nil {
-		return Record[wire.WorkflowRunMetricsResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.WorkflowRunMetricsResponse](body)
+	return decodeRecord(body)
 }
 
-func (c *Client) FeatureFlag(ctx context.Context, org, key string) (Record[wire.FeatureFlagResponse], error) {
+func (c *Client) FeatureFlag(ctx context.Context, org, key string) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/feature-flags/"+url.PathEscape(key), nil)
 	if err != nil {
-		return Record[wire.FeatureFlagResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.FeatureFlagResponse](body)
+	return decodeRecord(body)
 }
-func (c *Client) PullRequests(ctx context.Context, org string, query url.Values) (Page[wire.OrgPullRequestSummary], error) {
+func (c *Client) PullRequests(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/pull-requests", query)
 	if err != nil {
-		return Page[wire.OrgPullRequestSummary]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.OrgPullRequestSummary](body)
+	return decodePage(body)
 }
 
-func (c *Client) JobAggregates(ctx context.Context, org string, query url.Values) (Page[wire.JobAggregateBucket], error) {
+func (c *Client) JobAggregates(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/jobs/aggregate", query)
 	if err != nil {
-		return Page[wire.JobAggregateBucket]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.JobAggregateBucket](body)
+	return decodePage(body)
 }
-func (c *Client) CacheUsage(ctx context.Context, org, repo string) (Record[wire.CacheUsageSummary], error) {
+func (c *Client) CacheUsage(ctx context.Context, org, repo string) (map[string]any, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/cache", nil)
 	if err != nil {
-		return Record[wire.CacheUsageSummary]{}, err
+		return nil, err
 	}
 	fields, _ := body["data"].(map[string]any)
-	return decodeRecord[wire.CacheUsageSummary](fields)
+	return decodeRecord(fields)
 }
 
-func (c *Client) CacheEntries(ctx context.Context, org, repo string, query url.Values) (Page[wire.CacheEntryResponse], error) {
+func (c *Client) CacheEntries(ctx context.Context, org, repo string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/repos/"+url.PathEscape(repo)+"/cache/entries", query)
 	if err != nil {
-		return Page[wire.CacheEntryResponse]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.CacheEntryResponse](body)
-}
-
-// Some API deployments encode GitHub job IDs as decimal strings. Validate the
-// generated integer model using a copy, retaining the original JSON for output.
-func decodeRunRecord(fields map[string]any) (Record[Run], error) {
-	validation := maps.Clone(fields)
-	if jobs, ok := fields["jobs"].([]any); ok {
-		copied := append([]any(nil), jobs...)
-		for i, value := range jobs {
-			job, ok := value.(map[string]any)
-			if !ok {
-				continue
-			}
-			text, ok := job["platform_job_id"].(string)
-			if !ok {
-				continue
-			}
-			id, err := strconv.ParseInt(text, 10, 64)
-			if err != nil {
-				return Record[Run]{}, errors.New("unexpected API response: invalid platform job ID")
-			}
-			copy := maps.Clone(job)
-			copy["platform_job_id"] = id
-			copied[i] = copy
-		}
-		validation["jobs"] = copied
-	}
-	record, err := decodeRecord[Run](validation)
-	if err == nil {
-		record.Fields = fields
-	}
-	return record, err
+	return decodePage(body)
 }

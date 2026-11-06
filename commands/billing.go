@@ -105,7 +105,7 @@ func newBillingSummary(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "fetch billing summary")
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, row, billingSummaryFields)
 		}
@@ -143,9 +143,9 @@ func newBillingSettings(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "fetch billing settings")
 		}
 		if cmd.Flags().Changed("json") {
-			return o.record(cmd, d, record.Fields, billingSettingsFields)
+			return o.record(cmd, d, record, billingSettingsFields)
 		}
-		return renderBillingSettings(d, record.Fields)
+		return renderBillingSettings(d, record)
 	})
 	return c
 }
@@ -270,7 +270,7 @@ func newInvoiceShow(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "fetch invoice")
 		}
-		row := record.Fields
+		row := record
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, row, invoiceViewFields)
 		}

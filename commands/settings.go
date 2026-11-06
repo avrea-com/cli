@@ -278,7 +278,7 @@ func newSettingsWrite(d Dependencies, reset bool) *cobra.Command {
 			if e != nil {
 				return settingsWriteError(cfg, e, "update setting", args[0], rid != "", cmd.Flags().Changed("repo"))
 			}
-			_, err = fmt.Fprintf(d.Out, "Set %s = %s (%s)\n", output.CellText(fieldText(record.Fields, "key")), output.CellText(pythonValue(record.Fields["value"])), scope)
+			_, err = fmt.Fprintf(d.Out, "Set %s = %s (%s)\n", output.CellText(fieldText(record, "key")), output.CellText(pythonValue(record["value"])), scope)
 		}
 		return err
 	})

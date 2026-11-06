@@ -112,7 +112,7 @@ func gitMirrorRead(ctx context.Context, cfg config.Config, api *client.Client, o
 	if err != nil {
 		return nil, mirrorError(cfg, err, "get git-mirror status", source, "", "Could not reach Avrea to get git-mirror status.")
 	}
-	return record.Fields, nil
+	return record, nil
 }
 func gitMirrorEnabled(ctx context.Context, cfg config.Config, api *client.Client, org, repo, source string, enabled bool) (map[string]any, error) {
 	if err := ctx.Err(); err != nil {
@@ -126,7 +126,7 @@ func gitMirrorEnabled(ctx context.Context, cfg config.Config, api *client.Client
 	if err != nil {
 		return nil, mirrorError(cfg, err, action, source, "", "Could not reach Avrea to "+action+"; the update may have been applied. Check \x60avr repo mirror status\x60 or repeat the command safely.")
 	}
-	return record.Fields, nil
+	return record, nil
 }
 func gitMirrorPlace(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo, cluster, source string, afterEnable bool) (map[string]any, error) {
 	if err := ctx.Err(); err != nil {
@@ -148,7 +148,7 @@ func gitMirrorPlace(ctx context.Context, d Dependencies, cfg config.Config, api 
 		}
 		return nil, mirrorError(cfg, err, "place the git mirror", source, "run \x60avr repo mirror locations\x60 to list valid cluster ids", prefix+" placement response was lost. Repeat the command to retry safely.")
 	}
-	return record.Fields, nil
+	return record, nil
 }
 func gitClusters(ctx context.Context, cfg config.Config, api *client.Client, org string) ([]map[string]any, error) {
 	rows := []map[string]any{}
@@ -377,7 +377,7 @@ func newGitMirrorAction(d Dependencies, verb string) *cobra.Command {
 				return err
 			}
 			record, removeErr := api.GitMirror(cmd.Context(), http.MethodDelete, mirrorBase(id, rid)+"/placements/"+url.PathEscape(args[0]), nil)
-			row = record.Fields
+			row = record
 			if removeErr != nil {
 				err = mirrorError(cfg, removeErr, "remove the git-mirror placement", source, "run \x60avr repo mirror status\x60 to see current placements", "Could not reach Avrea to remove the placement; check \x60avr repo mirror status\x60 before retrying.")
 			}

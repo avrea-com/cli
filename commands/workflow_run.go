@@ -153,10 +153,10 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			if err != nil {
 				return apiError(cfg, err, "get repository")
 			}
-			if record.Fields["default_branch"] == nil {
+			if record["default_branch"] == nil {
 				return &ExitError{1, "Error: Could not determine the repository's default branch (not synced yet). Pass --ref <branch> explicitly."}
 			}
-			ref = fieldText(record.Fields, "default_branch")
+			ref = fieldText(record, "default_branch")
 			_, _ = fmt.Fprintln(d.Err, d.errorPaint("(using default branch: "+output.CellText(ref)+")", "2"))
 		}
 		dispatched := d.Now()
@@ -184,15 +184,15 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		links := linksEnabled(cmd, d)
-		if response.Fields["platform_run_id"] != nil {
-			runID := fieldText(response.Fields, "platform_run_id")
+		if response["platform_run_id"] != nil {
+			runID := fieldText(response, "platform_run_id")
 			label := d.paint(output.CellText(runID), "96;1")
 			if links {
 				fullName := ""
 				if strings.Contains(repo, "/") {
 					fullName = repo
 				} else if record, err := api.Repository(cmd.Context(), orgID, repoID); err == nil {
-					fullName = fieldText(record.Fields, "full_name")
+					fullName = fieldText(record, "full_name")
 				}
 				if fullName != "" {
 					label = linkCell(label, "https://github.com/"+fullName+"/actions/runs/"+runID)
@@ -257,9 +257,9 @@ func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, a
 		page, err := api.Runs(ctx, org, url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}})
 		if err == nil {
 			for _, row := range page.Items {
-				if dispatchMatches(row.Fields, dispatched, platform) {
+				if dispatchMatches(row, dispatched, platform) {
 					finish()
-					return row.Fields, nil
+					return row, nil
 				}
 			}
 		} else {

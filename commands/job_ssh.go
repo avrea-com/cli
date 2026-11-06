@@ -40,13 +40,14 @@ func newJobSSH(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "connect to VM")
 		}
-		host, user, port := rec.Value.Host, rec.Value.Username, rec.Value.Port
-		if host == "" || !sshHost().MatchString(host) || strings.HasPrefix(host, "-") || !sshUser().MatchString(user) || strings.HasPrefix(user, "-") || port < 1 || port > 65535 {
+		host, user := fieldText(rec, "host"), fieldText(rec, "username")
+		port, portErr := strconv.Atoi(fieldText(rec, "port"))
+		if portErr != nil || host == "" || !sshHost().MatchString(host) || strings.HasPrefix(host, "-") || !sshUser().MatchString(user) || strings.HasPrefix(user, "-") || port < 1 || port > 65535 {
 			return fmt.Errorf("avrea returned an invalid SSH endpoint")
 		}
 		argv := []string{"ssh", "-o", "StrictHostKeyChecking=accept-new", "-p", strconv.Itoa(port), user + "@" + host}
-		password := fieldText(rec.Fields, "password")
-		keys, _ := rec.Fields["ssh_keys_installed"].(bool)
+		password := fieldText(rec, "password")
+		keys, _ := rec["ssh_keys_installed"].(bool)
 		if printCommand {
 			command := shellquote.Join(argv...)
 			if password != "" && !keys && showPassword {
@@ -70,7 +71,7 @@ func newJobSSH(d Dependencies) *cobra.Command {
 		if printCommand {
 			return nil
 		}
-		known, err := vmTempKnownHosts(rec.Fields, host, port)
+		known, err := vmTempKnownHosts(rec, host, port)
 		if err != nil {
 			return err
 		}

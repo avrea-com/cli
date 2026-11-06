@@ -24,7 +24,7 @@ func newVMCapabilities(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "get VM capabilities")
 		}
-		data := record.Fields
+		data := record
 		if asJSON {
 			return rawJSON(d, data)
 		}

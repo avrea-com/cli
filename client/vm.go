@@ -4,65 +4,59 @@ import (
 	"context"
 	"errors"
 	"net/url"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
-func vmData[T any](body map[string]any) (Record[T], error) {
+func vmData(body map[string]any) (map[string]any, error) {
 	fields, ok := body["data"].(map[string]any)
 	if !ok {
-		return Record[T]{}, errors.New("unexpected API response: expected VM data")
+		return nil, errors.New("unexpected API response: expected VM data")
 	}
-	return decodeRecord[T](fields)
+	return decodeRecord(fields)
 }
-func (c *Client) VMs(ctx context.Context, path string, query url.Values) (Page[wire.CustomerVm], error) {
+func (c *Client) VMs(ctx context.Context, path string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, path, query)
 	if err != nil {
-		return Page[wire.CustomerVm]{}, err
+		return Page{}, err
 	}
-	return decodePage[wire.CustomerVm](body)
+	return decodePage(body)
 }
-func (c *Client) VM(ctx context.Context, path string) (Record[wire.CustomerVmDetail], error) {
+func (c *Client) VM(ctx context.Context, path string) (map[string]any, error) {
 	body, err := c.Get(ctx, path, nil)
 	if err != nil {
-		return Record[wire.CustomerVmDetail]{}, err
+		return nil, err
 	}
-	return vmData[wire.CustomerVmDetail](body)
+	return vmData(body)
 }
-func (c *Client) VMUsage(ctx context.Context, path string, query url.Values) (Record[wire.CustomerVmUsageReport], error) {
+func (c *Client) VMUsage(ctx context.Context, path string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, path, query)
 	if err != nil {
-		return Record[wire.CustomerVmUsageReport]{}, err
+		return nil, err
 	}
-	return vmData[wire.CustomerVmUsageReport](body)
+	return vmData(body)
 }
 
-// VMCapabilities covers the capabilities endpoint added before its response was
-// included in the pinned OpenAPI schema. Unknown fields remain in Record.Fields.
-type VMCapabilities struct {
-	MaxActiveVCPUs   *int             `json:"max_active_vcpus"`
-	ActiveVCPUs      *int             `json:"active_vcpus"`
-	MaxActivePerUser *int             `json:"max_active_per_user"`
-	ActiveCount      *int             `json:"active_count"`
-	OSTypes          []map[string]any `json:"os_types"`
-}
-
-func (c *Client) VMCapabilities(ctx context.Context, path string) (Record[VMCapabilities], error) {
+func (c *Client) VMCapabilities(ctx context.Context, path string) (map[string]any, error) {
 	body, err := c.Get(ctx, path, nil)
 	if err != nil {
-		return Record[VMCapabilities]{}, err
+		return nil, err
 	}
-	return vmData[VMCapabilities](body)
+	return vmData(body)
 }
 
-type VMMetrics struct {
-	Metrics map[string]map[string]any `json:"metrics"`
-}
-
-func (c *Client) VMMetrics(ctx context.Context, path string, query url.Values) (Record[VMMetrics], error) {
+func (c *Client) VMMetrics(ctx context.Context, path string, query url.Values) (map[string]any, error) {
 	body, err := c.Get(ctx, path, query)
 	if err != nil {
-		return Record[VMMetrics]{}, err
+		return nil, err
 	}
-	return vmData[VMMetrics](body)
+	return vmData(body)
+}
+
+// vmEnvelope validates mutation data while preserving the original envelope.
+func vmEnvelope(body map[string]any) (map[string]any, error) {
+	if body["data"] != nil {
+		if _, err := vmData(body); err != nil {
+			return nil, err
+		}
+	}
+	return body, nil
 }

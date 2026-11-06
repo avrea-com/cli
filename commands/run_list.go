@@ -207,7 +207,7 @@ func newRunList(d Dependencies) *cobra.Command {
 		}
 		rows := [][]string{}
 		for _, record := range page.Items {
-			r := record.Fields
+			r := record
 			state := fieldText(r, "conclusion")
 			if state == "" {
 				state = fieldText(r, "status")
@@ -219,17 +219,17 @@ func newRunList(d Dependencies) *cobra.Command {
 		}
 		for i, row := range rows {
 
-			row[6] = formatDuration(page.Items[i].Fields["duration_seconds"])
-			row[7] = relativeAge(fieldText(page.Items[i].Fields, "created_at"), d.Now())
+			row[6] = formatDuration(page.Items[i]["duration_seconds"])
+			row[7] = relativeAge(fieldText(page.Items[i], "created_at"), d.Now())
 		}
 		var links [][]string
 		if linksEnabled(cmd, d) {
 			slug := orgSlug(cmd.Context(), cfg, api, id)
 			for i, row := range rows {
 				target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(slug) + "/runs/" + url.PathEscape(row[5])
-				repo, _ := page.Items[i].Fields["repository"].(map[string]any)
+				repo, _ := page.Items[i]["repository"].(map[string]any)
 				branchTarget := ""
-				if name, branch := fieldText(repo, "full_name"), fieldText(page.Items[i].Fields, "head_branch"); strings.Contains(name, "/") && branch != "" && page.Items[i].Fields["ci_provider"] != "avrea_ci" {
+				if name, branch := fieldText(repo, "full_name"), fieldText(page.Items[i], "head_branch"); strings.Contains(name, "/") && branch != "" && page.Items[i]["ci_provider"] != "avrea_ci" {
 					branchTarget = "https://github.com/" + name + "/tree/" + url.PathEscape(branch)
 				}
 				links = append(links, []string{"", target, target, branchTarget, "", target, "", ""})

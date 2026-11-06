@@ -62,8 +62,8 @@ func issueGitToken(ctx context.Context, d Dependencies, cfg config.Config, api *
 			return "", time.Time{}, &ExitError{1, "Error: Avrea returned an invalid or expired Git token."}
 		}
 	}
-	token := fieldText(record.Fields, "token")
-	expires, err := time.Parse(time.RFC3339Nano, fieldText(record.Fields, "expires_at"))
+	token := fieldText(record, "token")
+	expires, err := time.Parse(time.RFC3339Nano, fieldText(record, "expires_at"))
 	if err != nil || !expires.After(d.Now()) || !repoPart().MatchString(token) {
 		return "", time.Time{}, &ExitError{1, "Error: Avrea returned an invalid or expired Git token."}
 	}
@@ -325,7 +325,7 @@ func newRepoClone(d Dependencies) *cobra.Command {
 				return &ExitError{1, "Error: Avrea returned an invalid Git mirror session."}
 			}
 		}
-		row := session.Fields
+		row := session
 		browsable, ok := row["browsable"].(bool)
 		if !ok {
 			return &ExitError{1, "Error: Avrea returned an invalid Git mirror session."}

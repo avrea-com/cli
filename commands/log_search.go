@@ -65,7 +65,7 @@ func NewLog(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "search logs")
 		}
-		rows := objectList(result.Fields["results"])
+		rows := objectList(result["results"])
 		if f.Changed("json") {
 			return o.list(cmd, d, rows, logSearchFields)
 		}
@@ -74,11 +74,11 @@ func NewLog(deps Dependencies) *cobra.Command {
 			return err
 		}
 		total := strconv.Itoa(len(rows))
-		if value, ok := result.Fields["total_estimated"]; ok {
+		if value, ok := result["total_estimated"]; ok {
 			total = pythonValue(value)
 		}
 		suffix := ""
-		if result.Fields["has_more"] == true {
+		if result["has_more"] == true {
 			suffix = " (more available)"
 		}
 		if _, err = fmt.Fprintf(d.Out, "Found %s log entries%s\n\n", total, suffix); err != nil {

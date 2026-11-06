@@ -29,12 +29,12 @@ func vmSSHDetails(ctx context.Context, cfg config.Config, api *client.Client, or
 	if err != nil {
 		return nil, "", vmError(cfg, err, "fetch VM")
 	}
-	endpoints, _ := record.Fields["endpoints"].(map[string]any)
+	endpoints, _ := record["endpoints"].(map[string]any)
 	endpoint, _ := endpoints["ssh"].(map[string]any)
 	if len(endpoint) == 0 {
-		return nil, "", vmMissingSSHEndpoint(record.Fields, id)
+		return nil, "", vmMissingSSHEndpoint(record, id)
 	}
-	return endpoint, fieldText(record.Fields, "customer_vm_id"), nil
+	return endpoint, fieldText(record, "customer_vm_id"), nil
 }
 func vmSSHAddress(ep map[string]any) (string, string, int, error) {
 	host := strings.TrimSpace(fieldText(ep, "external_ip"))

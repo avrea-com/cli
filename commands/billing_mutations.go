@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +28,7 @@ func newBillingUpdate(d Dependencies) *cobra.Command {
 		if !cmd.Flags().Changed("email") && !cmd.Flags().Changed("tax-id") {
 			return &ExitError{1, "Error: Provide at least one of --email or --tax-id\nAborted!"}
 		}
-		body := wire.BillingSettingsRequest{}
+		body := map[string]any{}
 		if cmd.Flags().Changed("email") {
 			emails := []string{}
 			for _, part := range strings.Split(email, ",") {
@@ -37,19 +36,19 @@ func newBillingUpdate(d Dependencies) *cobra.Command {
 					emails = append(emails, text)
 				}
 			}
-			body.BillingEmails.Set(emails)
+			body["billing_emails"] = emails
 		}
 		if cmd.Flags().Changed("tax-id") {
-			body.TaxId.Set(taxID)
+			body["tax_id"] = taxID
 		}
 		record, err := api.UpdateBillingSettings(cmd.Context(), billingBase(id)+"/settings", body)
 		if err != nil {
 			return apiError(cfg, err, "update billing settings")
 		}
 		if cmd.Flags().Changed("json") {
-			return o.record(cmd, d, record.Fields, billingSettingsFields)
+			return o.record(cmd, d, record, billingSettingsFields)
 		}
-		return renderBillingSettings(d, record.Fields)
+		return renderBillingSettings(d, record)
 	})
 	return c
 }
@@ -66,7 +65,7 @@ func newPaymentMethodDefault(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "set default payment method")
 		}
-		_, err = fmt.Fprintln(d.Out, "Default payment method set to "+output.CellText(billingCard(record.Fields)))
+		_, err = fmt.Fprintln(d.Out, "Default payment method set to "+output.CellText(billingCard(record)))
 		return err
 	})
 	return c

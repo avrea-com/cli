@@ -65,9 +65,9 @@ func newSAMLShow(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "fetch SAML configuration")
 		}
 		if cmd.Flags().Changed("json") {
-			return o.record(cmd, d, record.Fields, samlFields)
+			return o.record(cmd, d, record, samlFields)
 		}
-		return renderSAML(d, record.Fields)
+		return renderSAML(d, record)
 	})
 	return c
 }
@@ -249,9 +249,9 @@ func newSAMLConfigure(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "configure SAML")
 		}
 		if f.Changed("json") {
-			return o.record(cmd, d, record.Fields, samlFields)
+			return o.record(cmd, d, record, samlFields)
 		}
-		return renderSAML(d, record.Fields)
+		return renderSAML(d, record)
 	})
 	return c
 }
@@ -281,10 +281,10 @@ func newSAMLEnforcement(d Dependencies) *cobra.Command {
 			return apiError(cfg, err, "change SAML enforcement")
 		}
 		if cmd.Flags().Changed("json") {
-			return o.record(cmd, d, record.Fields, samlFields)
+			return o.record(cmd, d, record, samlFields)
 		}
 		label := "disabled"
-		if record.Fields["is_enforced"] == true {
+		if record["is_enforced"] == true {
 			label = "enabled"
 		}
 		_, err = fmt.Fprintf(d.Out, "SAML enforcement is now %s for %s.\n", label, output.CellText(id))

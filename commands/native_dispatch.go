@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/avrea-com/cli/client"
-	"github.com/avrea-com/cli/client/wire"
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/google/uuid"
@@ -37,25 +36,34 @@ func parseNativeReceipt(body map[string]any) (nativeReceipt, error) {
 	if !ok {
 		return nativeReceipt{}, invalid
 	}
-	var decoded wire.NativeDispatchResponse
-	raw, err := json.Marshal(data)
-	if err != nil || json.Unmarshal(raw, &decoded) != nil {
-		return nativeReceipt{}, invalid
-	}
-	for _, key := range []string{"dispatch_id", "state", "ref", "commit_sha", "run_ids"} {
-		if data[key] == nil {
+	for _, key := range []string{"dispatch_id", "state", "ref", "commit_sha"} {
+		if _, ok := data[key].(string); !ok {
 			return nativeReceipt{}, invalid
 		}
 	}
-	state := string(decoded.State)
-	if !nativeReceiptID().MatchString(decoded.DispatchId) || (state != "pending" && state != "admitted" && state != "rejected") {
+	for _, key := range []string{"reason", "ci_provider"} {
+		if value := data[key]; value != nil {
+			if _, ok := value.(string); !ok {
+				return nativeReceipt{}, invalid
+			}
+		}
+	}
+	state := data["state"].(string)
+	id := data["dispatch_id"].(string)
+	if !nativeReceiptID().MatchString(id) || (state != "pending" && state != "admitted" && state != "rejected") {
 		return nativeReceipt{}, invalid
 	}
-	receipt := nativeReceipt{id: decoded.DispatchId, state: state, ref: decoded.Ref, commit: decoded.CommitSha, reason: decoded.Reason.GetOrEmpty(), runs: decoded.RunIds}
-	for _, run := range receipt.runs {
-		if !nativeRunID().MatchString(run) {
+	runs, ok := data["run_ids"].([]any)
+	if !ok {
+		return nativeReceipt{}, invalid
+	}
+	receipt := nativeReceipt{id: id, state: state, ref: data["ref"].(string), commit: data["commit_sha"].(string), reason: fieldText(data, "reason")}
+	for _, value := range runs {
+		run, ok := value.(string)
+		if !ok || !nativeRunID().MatchString(run) {
 			return nativeReceipt{}, invalid
 		}
+		receipt.runs = append(receipt.runs, run)
 	}
 
 	return receipt, nil
@@ -291,23 +299,24 @@ func submitNativeWorkflow(ctx context.Context, d Dependencies, cfg config.Config
 			return nativeReceipt{}, apiError(cfg, err, "read native workflow inputs")
 		}
 		data, ok := body["data"].(map[string]any)
-		var metadata wire.WorkflowDispatchMetadataResponse
-		raw, encodeErr := json.Marshal(data)
-		if !ok || encodeErr != nil || json.Unmarshal(raw, &metadata) != nil {
-			return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
+		invalid := nativeDispatchError("The API returned invalid native workflow metadata.")
+		metadataRef, refOK := data["ref"].(string)
+		dispatchable, dispatchableOK := data["dispatchable"].(bool)
+		allowed, allowedOK := data["can_dispatch"].(bool)
+		inputs, inputsOK := data["inputs"].([]any)
+		if !ok || !refOK || !dispatchableOK || !allowedOK || !inputsOK {
+			return nativeReceipt{}, invalid
 		}
-		for _, key := range []string{"ref", "dispatchable", "can_dispatch", "inputs"} {
-			if data[key] == nil {
-				return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
+		for _, value := range inputs {
+			input, ok := value.(map[string]any)
+			name, nameOK := input["name"].(string)
+			kind, kindOK := input["type"].(string)
+			if !ok || !nameOK || !kindOK || name == "" || kind == "" {
+				return nativeReceipt{}, invalid
 			}
+			kinds[name] = kind
 		}
-		metadataRef, dispatchable, allowed := metadata.Ref, metadata.Dispatchable, metadata.CanDispatch
-		for _, input := range metadata.Inputs {
-			if input.Name == "" || input.Type == "" {
-				return nativeReceipt{}, nativeDispatchError("The API returned invalid native workflow metadata.")
-			}
-			kinds[input.Name] = string(input.Type)
-		}
+
 		if !dispatchable {
 			return nativeReceipt{}, nativeDispatchError("Manual dispatch is not enabled for this native workflow at the selected ref.")
 		}

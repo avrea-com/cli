@@ -89,7 +89,9 @@ func newWorkflowList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "fetch workflow aggregate")
 		}
-		sort.SliceStable(page.Items, func(i, j int) bool { return page.Items[i].Value.Count > page.Items[j].Value.Count })
+		sort.SliceStable(page.Items, func(i, j int) bool {
+			return aggregateNumber(page.Items[i], "count") > aggregateNumber(page.Items[j], "count")
+		})
 		total := len(page.Items)
 		if total > limit {
 			page.Items = page.Items[:limit]
@@ -263,7 +265,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 		}
 		bucket := map[string]any{}
 		if len(page.Items) > 0 {
-			bucket = page.Items[0].Fields
+			bucket = page.Items[0]
 		}
 		if f.Changed("json") {
 			fields, err := output.Fields(o.fields, workflowViewFields)

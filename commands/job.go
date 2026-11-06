@@ -148,7 +148,7 @@ func newJobList(d Dependencies) *cobra.Command {
 		if f.Changed("json") {
 			records := []map[string]any{}
 			for _, r := range page.Items {
-				records = append(records, projectJob(r.Fields))
+				records = append(records, projectJob(r))
 			}
 			return o.list(cmd, d, records, jobFields)
 		}

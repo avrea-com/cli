@@ -42,7 +42,7 @@ func newVMFork(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "fork VM")
 		}
-		data, ok := record.Fields["data"].(map[string]any)
+		data, ok := record["data"].(map[string]any)
 		if !ok {
 			return &ExitError{1, "Error: unexpected API response: expected VM data"}
 		}
@@ -93,7 +93,7 @@ func newVMRotateHTTPSLabel(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "rotate VM HTTPS label")
 		}
-		data, ok := record.Fields["data"].(map[string]any)
+		data, ok := record["data"].(map[string]any)
 		if !ok {
 			return &ExitError{1, "Error: unexpected API response: expected VM data"}
 		}

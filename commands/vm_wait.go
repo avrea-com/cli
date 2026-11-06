@@ -75,7 +75,7 @@ func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 			}
 			continue
 		}
-		row = record.Fields
+		row = record
 		state := strings.ToUpper(fieldText(row, "state"))
 		if !seen || state != last {
 			shown := state

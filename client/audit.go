@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-
-	"github.com/avrea-com/cli/client/wire"
 )
 
 type AuditPage struct {
-	Page[wire.AuditEventResponse]
+	Page
 	EventData []json.RawMessage
 }
 
@@ -23,7 +21,7 @@ func (c *Client) AuditEvents(ctx context.Context, org string, query url.Values) 
 	if err != nil {
 		return AuditPage{}, err
 	}
-	page, err := decodePage[wire.AuditEventResponse](fields)
+	page, err := decodePage(fields)
 	if err != nil {
 		return AuditPage{}, err
 	}
@@ -41,10 +39,10 @@ func (c *Client) AuditEvents(ctx context.Context, org string, query url.Values) 
 	}
 	return result, nil
 }
-func (c *Client) Health(ctx context.Context) (Record[wire.HealthResponse], error) {
+func (c *Client) Health(ctx context.Context) (map[string]any, error) {
 	fields, err := c.Get(ctx, "/health", nil)
 	if err != nil {
-		return Record[wire.HealthResponse]{}, err
+		return nil, err
 	}
-	return decodeRecord[wire.HealthResponse](fields)
+	return decodeRecord(fields)
 }
