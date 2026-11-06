@@ -191,12 +191,23 @@ def test_fish_generated_setup_completes_words_and_paths(tmp_path, package):
         assert values == [expected[-1]]
 
 
-@pytest.mark.parametrize("shell", list(dict.fromkeys(filter(None, [shutil.which("bash"), "/bin/bash"]))))
+@pytest.mark.parametrize(
+    "shell",
+    list(
+        dict.fromkeys(
+            str(Path(shell).resolve())
+            for shell in [shutil.which("bash"), "/bin/bash"]
+            if shell and Path(shell).exists()
+        )
+    ),
+)
 def test_bash_readline_distinguishes_commands_and_paths(tmp_path, package, shell):
     program, env = package
     setup = source(tmp_path, package, "bash")
     (tmp_path / "tests").mkdir()
     capture = tmp_path / "completed-args"
+    ready = tmp_path / "ready"
+    completed = tmp_path / "completed"
     master, slave = pty.openpty()
     process = subprocess.Popen(
         [shell, "--noprofile", "--norc", "-i"],
@@ -219,17 +230,30 @@ def test_bash_readline_distinguishes_commands_and_paths(tmp_path, package, shell
     try:
         os.write(
             master,
-            ("source " + shlex.quote(str(setup)) + "; bind 'set editing-mode emacs'; echo READY_DONE\n").encode(),
+            (
+                "source "
+                + shlex.quote(str(setup))
+                + "; bind 'set editing-mode emacs'; : > "
+                + shlex.quote(str(ready))
+                + "\n"
+            ).encode(),
         )
-        until(lambda: b"\r\nREADY_DONE\r\n" in chunks)
+        until(ready.exists)
         for args, expected in [(["tes"], ["tests"]), *CASES]:
             capture.unlink(missing_ok=True)
+            completed.unlink(missing_ok=True)
             # Complete with real Readline, then turn the resulting line into a
             # printf invocation. No AVR command or filesystem mutation runs.
-            line = shlex.join([program, *args]) + "\t\x01printf '%s\\n' \x05 > " + shlex.quote(str(capture)) + "\n"
+            line = (
+                shlex.join([program, *args])
+                + "\t\x01printf '%s\\n' \x05 > "
+                + shlex.quote(str(capture))
+                + "; : > "
+                + shlex.quote(str(completed))
+                + "\n"
+            )
             os.write(master, line.encode())
-            until(capture.exists)
-            until(lambda: bool(capture.read_text()))
+            until(completed.exists)
             assert capture.read_text().splitlines() == [program, *expected], bytes(chunks)
     finally:
         if process.poll() is None:
