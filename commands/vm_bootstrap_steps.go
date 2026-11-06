@@ -10,6 +10,8 @@ import (
 	"text/template"
 	"unicode"
 
+	"github.com/avrea-com/cli/internal/version"
+	"github.com/avrea-com/cli/packaging"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -189,9 +191,11 @@ func bootstrapSteps(o bootstrapOptions, env bootstrapEnvironment, agents []strin
 		}
 	}
 	if o.installAVR {
-		if err := add("install-avr", "Install the avr CLI", "install_avr", nil, "", false); err != nil {
-			return nil, err
-		}
+		steps = append(steps, bootstrapStep{
+			name: "install-avr", description: "Install the avr CLI",
+			script: fmt.Sprintf("sh -s -- --version %s <<'AVR_NATIVE_INSTALLER'\n%s\nAVR_NATIVE_INSTALLER\n",
+				shellQuotePython(version.Current()), packaging.ShellInstaller),
+		})
 	}
 	if runScript != nil {
 		steps = append(steps, bootstrapStep{name: "run", description: "Run custom script", script: *runScript})

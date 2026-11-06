@@ -7078,7 +7078,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Install the avr CLI in the VM (pipx, else pip).",
+                "help": "Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).",
                 "hidden": false,
                 "show_default": false,
                 "default": false

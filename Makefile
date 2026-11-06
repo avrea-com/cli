@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help deps test lint tooling-test tooling-lint fix scan update all clean docs docs-check
+.PHONY: help deps test lint tooling-test tooling-lint fix scan update all clean docs docs-check docs-staged-check
 
 UV ?= uv
 LINT_UV := $(UV) run --extra dev
@@ -56,10 +56,20 @@ scan: go-scan ## Scan native dependencies for vulnerabilities
 docs: go-docs ## Regenerate reference docs from the native command tree
 
 docs-check: go-docs ## Fail if committed docs differ from native generation
-	@changes=$$(git status --porcelain --untracked-files=all -- README.md docs/REFERENCE.md docs/reference.json docs/starlight/ man/) || exit $$?; \
+	@changes=$$(git status --porcelain --untracked-files=all -- $(DOC_PATHS)) || exit $$?; \
 	if [ -n "$$changes" ]; then \
 		echo "avr docs are stale: run make docs and commit the result." >&2; \
 		printf '%s\n' "$$changes" >&2; \
+		exit 1; \
+	fi
+
+DOC_PATHS := README.md docs/REFERENCE.md docs/reference.json docs/starlight/ man/
+
+docs-staged-check: go-docs ## Require generated docs to match the index (pre-commit)
+	@git diff --exit-code -- $(DOC_PATHS)
+	@untracked=$$(git ls-files --others --exclude-standard -- $(DOC_PATHS)) || exit $$?; \
+	if [ -n "$$untracked" ]; then \
+		printf 'Generated docs are not staged:\n%s\n' "$$untracked" >&2; \
 		exit 1; \
 	fi
 

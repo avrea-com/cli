@@ -46,7 +46,7 @@ Install an agent CLI (repeatable or comma-separated): claude, codex. (repeatable
 Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
 .TP
 \fB\-\-install\-avr\fR
-Install the avr CLI in the VM (pipx, else pip).
+Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).
 .TP
 \fB\-\-repo\fR \fITEXT\fR
 Clone this git repo into the VM's home directory.

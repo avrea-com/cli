@@ -1,16 +1,106 @@
 package commands
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/avrea-com/cli/internal/version"
 )
+
+func TestBootstrapInstallsNativeReleaseWithoutPython(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("VM bootstrap uses POSIX shells")
+	}
+	// Limit PATH to the installer's system tools: no Python, pip or pipx.
+	tools := t.TempDir()
+	for _, name := range []string{"sh", "uname", "curl", "tar", "gzip", "cut", "mktemp", "rm", "cat", "grep", "mkdir", "chmod", "mv", "sha256sum", "shasum"} {
+		path, err := exec.LookPath(name)
+		if err != nil && (name == "sha256sum" || name == "shasum") {
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(path, filepath.Join(tools, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	home := filepath.Join(t.TempDir(), "home with spaces")
+	stem := fmt.Sprintf("avr_%s_%s_%s", version.Current(), runtime.GOOS, runtime.GOARCH)
+	payload := []byte("#!/bin/sh\necho native-fixture\n")
+	var archive bytes.Buffer
+	gz := gzip.NewWriter(&archive)
+	tw := tar.NewWriter(gz)
+	if err := tw.WriteHeader(&tar.Header{Name: stem + "/avr", Mode: 0755, Size: int64(len(payload))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	var corrupt atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/download/v" + version.Current() + "/" + stem + ".tar.gz":
+			_, _ = w.Write(archive.Bytes())
+		case "/download/v" + version.Current() + "/" + stem + ".tar.gz.sha256":
+			digest := sha256.Sum256(archive.Bytes())
+			if corrupt.Load() {
+				digest[0] ^= 1
+			}
+			_, _ = fmt.Fprintf(w, "%x  %s.tar.gz\n", digest, stem)
+		default:
+			t.Errorf("unexpected release request: %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	steps, err := bootstrapSteps(bootstrapOptions{installAVR: true}, nil, nil, "", nil)
+	if err != nil || len(steps) != 1 {
+		t.Fatal(steps, err)
+	}
+	install := func() ([]byte, error) {
+		command := exec.CommandContext(t.Context(), "/bin/sh", "-c", steps[0].script)
+		command.Env = append(os.Environ(), "HOME="+home, "PATH="+tools, "AVR_RELEASE_BASE_URL="+server.URL)
+		return command.CombinedOutput()
+	}
+	for range 2 {
+		if out, err := install(); err != nil || !bytes.Contains(out, []byte("Add this directory to PATH:")) {
+			t.Fatalf("install/reinstall: %s: %v", out, err)
+		}
+	}
+	binary := filepath.Join(home, ".local", "bin", "avr")
+	if out, err := exec.CommandContext(t.Context(), binary).CombinedOutput(); err != nil || string(out) != "native-fixture\n" {
+		t.Fatalf("native executable: %s: %v", out, err)
+	}
+	corrupt.Store(true)
+	if out, err := install(); err == nil || !bytes.Contains(out, []byte("Checksum mismatch")) {
+		t.Fatalf("corrupt archive accepted: %s: %v", out, err)
+	}
+	if got, err := os.ReadFile(binary); err != nil || !bytes.Equal(got, payload) {
+		t.Fatal("failed install changed existing binary", err)
+	}
+}
 
 func TestBootstrapEnvScriptPrivateIdempotentLoginHook(t *testing.T) {
 	if runtime.GOOS == "windows" {

@@ -1,4 +1,4 @@
-"""Collect the pinned runtime modules' license/notice files alongside preview builds."""
+"""Collect the pinned runtime modules' license/notice files alongside native builds."""
 
 from pathlib import Path
 import argparse
@@ -15,7 +15,7 @@ def main():
     required = {entry["Path"] for entry in manifest["Require"]}
     data = subprocess.check_output([args.go, "list", "-m", "-json", "all"], text=True)
     decoder = json.JSONDecoder()
-    notices = ["# Go preview third-party notices\n"]
+    notices = ["# AVR third-party notices\n"]
     while data.strip():
         module, end = decoder.raw_decode(data.lstrip())
         data = data.lstrip()[end:]
