@@ -4,7 +4,6 @@
 > has been retired. Its last implementation is in Git at `f5688c1`; comparison
 > commands and reports below are historical. Current checks are native Go
 > regression tests, `make go-integration` and package/install validation.
-> See [GO-MIGRATION-EXECUTION.md](GO-MIGRATION-EXECUTION.md#retiring-the-migration-comparison-harness).
 
 Status: PR #75 is ready for review; review follow-ups are being validated before stable 0.7.0. Publication requires separate authorization.
 Updated: 2026-11-06.
@@ -30,9 +29,8 @@ commands and overrides still require the existing Python admin executable.
 Legacy dispatch and native release packaging are later phases.
 
 Implementation was subsequently authorized. Publishing and deployment remain
-separate steps. Current implementation decisions and evidence are maintained in
-[GO-MIGRATION-EXECUTION.md](GO-MIGRATION-EXECUTION.md); the dated checkpoints
-below describe earlier stages.
+separate steps. Current release requirements are in [GO-RELEASE.md](GO-RELEASE.md);
+the dated checkpoints below describe earlier stages.
 
 ## Motivation and success criteria
 
