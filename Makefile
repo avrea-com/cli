@@ -166,23 +166,27 @@ go-parity: go-build
 go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...
 
-go-check: go-test go-lint go-parity go-generation-check go-command-check go-scan
+go-check: go-test go-lint go-parity go-command-check go-scan
+	@if test -f build/go/openapi.json; then $(MAKE) go-generation-check; \
+	else echo "Schema drift check skipped: no fetched schema (see api/README.md)."; fi
 
-.PHONY: go-generate go-generation-check go-schema-gate
+.PHONY: go-fetch-schema go-generate go-generation-check go-schema-gate
+go-fetch-schema: ## Fetch current OpenAPI from AVREA_CORE or OPENAPI_URL
+	@$(UV) run --python 3.14 --frozen python scripts/fetch_go_schema.py $(if $(AVREA_CORE),--core "$(AVREA_CORE)",$(if $(OPENAPI_URL),--url "$(OPENAPI_URL)",))
+
 go-generate:
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)"
 
 go-generation-check:
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check
 
-go-schema-gate:
+go-schema-gate: go-fetch-schema
 	@test -n "$(AVREA_CORE)" || { echo "Set AVREA_CORE to the avrea-core checkout" >&2; exit 1; }
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check --core "$(AVREA_CORE)"
 
 .PHONY: go-command-check go-docs
-go-command-check: ## Check the complete command registry and migrated documentation input
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.inventory_python_commands --check
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.generate_go_doc_metadata --check
+go-command-check: ## Generate the temporary Python inventory and compare the complete Go registry
+	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.inventory_python_commands
 	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool "$(GO)"
 
 go-docs: go-build ## Generate the public reference with the native CLI

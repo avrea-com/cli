@@ -1,8 +1,4 @@
 {
-  "repository": "https://github.com/avrea-com/avrea-core",
-  "commit": "0b396fdc8ba3056a9e535ab97fbe2f755458af89",
-  "path": "control/openapi/public.json",
-  "sha256": "683f6565763de4b6a011151122e08f3a31521585d0e69cae05edb006f1c0134a",
   "operations": [
     "list_user_organizations",
     "list_organization_repositories",

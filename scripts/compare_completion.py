@@ -1,14 +1,13 @@
 """Compare native completion records with the pinned Python CLI, without API calls."""
 
-from pathlib import Path
 from scripts import compare_auth as harness
-import json
+from scripts.inventory_python_commands import contract as python_contract
 import shlex
 import sys
 
 
 def nodes():
-    contract = json.loads(Path("docs/go-python-command-contract.json").read_text())
+    contract = python_contract()
 
     def walk(node):
         yield node

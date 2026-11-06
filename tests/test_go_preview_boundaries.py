@@ -1,7 +1,7 @@
 """The Python oracle and Go parity inventory remain independently maintained."""
 
 from pathlib import Path
-from scripts import generate_go_doc_metadata as metadata
+from scripts import python_help_oracle as metadata
 from scripts.validate_parity_reports import inventory
 import json
 import re
@@ -32,10 +32,14 @@ def test_metadata_reads_pinned_tree_despite_working_python_changes(tmp_path, mon
         "-qm",
         "fixture",
     )
+    metadata.generate.cache_clear()
     monkeypatch.setattr(metadata, "BASELINE", git("rev-parse", "HEAD"))
-    monkeypatch.setattr(metadata, "__file__", str(scripts / "generate_go_doc_metadata.py"))
+    monkeypatch.setattr(metadata, "__file__", str(scripts / "python_help_oracle.py"))
     (package / "docs_gen.py").write_text("raise RuntimeError('working tree must not be imported')")
-    assert json.loads(metadata.generate()) == {"source": "pinned", "terminal": {}}
+    try:
+        assert json.loads(metadata.generate()) == {"source": "pinned", "terminal": {}}
+    finally:
+        metadata.generate.cache_clear()
 
 
 def test_every_parity_script_has_one_ci_shard():

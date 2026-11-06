@@ -1,16 +1,17 @@
 """Compare command help, group defaults, and bare CLI behavior against Python."""
 
 from copy import deepcopy
-from pathlib import Path
 from scripts import compare_auth as harness
 from scripts import compare_inspection as inspection
 from scripts import compare_job_watch as watch
+from scripts.inventory_python_commands import contract as python_contract
+from scripts.python_help_oracle import generate as python_metadata
 import json
 import sys
 
 
 def scenarios():
-    metadata = json.loads(Path("docgen/metadata.json").read_text())["terminal"]
+    metadata = json.loads(python_metadata())["terminal"]
     cases = []
     for path, spec in metadata.items():
         args = path.split()[1:]
@@ -46,7 +47,7 @@ def scenarios():
         )
     for name, env in [("welcome", {}), ("authenticated", {"AVR_TOKEN": harness.TOKEN})]:
         cases.append({"name": "bare CLI " + name, "args": [], "env": env, "responses": {}, "presentation": True})
-    for alias in json.loads(Path("docs/go-python-command-contract.json").read_text())["aliases"]:
+    for alias in python_contract()["aliases"]:
         cases.append(
             {"name": "alias help " + alias, "args": [alias, "--help"], "env": {}, "responses": {}, "presentation": True}
         )

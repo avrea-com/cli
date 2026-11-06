@@ -197,7 +197,7 @@ func renderHelp(c *cobra.Command, d Dependencies, spec docgen.HelpSpec, stderr b
 func configureHelp(root *cobra.Command, d Dependencies) {
 	root.CompletionOptions.DisableDefaultCmd = true
 	get := func(c *cobra.Command) (docgen.HelpSpec, error) {
-		spec, _, err := docgen.HelpTemplate(canonicalHelpPath(c))
+		spec, _, err := commandHelp(c)
 		return spec, err
 	}
 	previous := root.HelpFunc()

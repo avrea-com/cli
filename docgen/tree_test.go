@@ -13,7 +13,7 @@ import (
 
 func TestDocumentationUsesNativePublicVersion(t *testing.T) {
 	root := commands.NewRoot(commands.Dependencies{Version: "admin-preview+fixture"})
-	tree, err := docgen.Build(root)
+	tree, err := commands.Documentation(root)
 	if err != nil || tree.Version != buildversion.Current() {
 		t.Fatal(tree, err)
 	}
@@ -48,7 +48,7 @@ func TestDocumentationTracksLiveCommandsFlagsDefaultsAndAliases(t *testing.T) {
 	vm.Flags().Lookup("state").DefValue = "RUNNING"
 	vm.Flags().StringArray("tag", []string{"a,b", "quoted word"}, "Default tags.")
 	vm.Flags().IntSlice("project-id", []int{11, 22}, "Project IDs.")
-	tree, err := docgen.Build(root)
+	tree, err := commands.Documentation(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestDocumentationDropsRemovedFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 	vm.ResetFlags()
-	tree, err := docgen.Build(root)
+	tree, err := commands.Documentation(root)
 	if err != nil {
 		t.Fatal(err)
 	}

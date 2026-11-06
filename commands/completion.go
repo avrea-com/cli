@@ -174,7 +174,7 @@ func resolveCompletion(root *cobra.Command, args []string) (completionContext, e
 	args = expandTestsShorthand(root, args)
 	state := completionContext{}
 	selectCommand := func(c *cobra.Command) error {
-		spec, _, err := docgen.HelpTemplate(canonicalHelpPath(c))
+		spec, _, err := commandHelp(c)
 		if err != nil {
 			return err
 		}
@@ -308,7 +308,7 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 			continue
 		}
 		description := child.Short
-		spec, known, err := docgen.HelpTemplate(canonicalHelpPath(child))
+		spec, known, err := commandHelp(child)
 		if err != nil {
 			return nil, err
 		}

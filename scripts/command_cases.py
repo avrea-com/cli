@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from scripts.audit_go_commands import flatten
+from scripts.inventory_python_commands import contract as python_contract
 from typing import TypedDict
 import importlib
-import json
 
 
 class OptionCoverage(TypedDict):
@@ -50,7 +50,7 @@ class Invocation:
 
 @lru_cache
 def contract():
-    return json.loads(Path("docs/go-python-command-contract.json").read_text())
+    return python_contract()
 
 
 def option_map(node):

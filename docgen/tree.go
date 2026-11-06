@@ -2,7 +2,6 @@
 package docgen
 
 import (
-	_ "embed"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -14,12 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
-
-// metadata contains migrated prose and Click-specific documentation fields.
-// Runtime command/flag membership always comes from the live Cobra registry.
-//
-//go:embed metadata.json
-var metadata []byte
 
 type Param struct {
 	Name        string   `json:"name"`
@@ -243,20 +236,21 @@ func params(c *cobra.Command, original []Param) []Param {
 	})
 	return out
 }
-func buildNode(c *cobra.Command, path []string, old *Node) *Node {
+func buildNode(c *cobra.Command, path []string, describe Describer) *Node {
+	d := describe(c)
 	node := &Node{Name: c.Name(), Path: path, Full: strings.Join(path, " "), IsGroup: c.HasSubCommands(), ShortHelp: c.Short, Help: str(c.Long), Deprecated: false, Hidden: c.Hidden, Params: []Param{}, Subcommands: []*Node{}}
-	previous := map[string]*Node{}
-	if old != nil {
-		node.ShortHelp = old.ShortHelp
-		node.Help = old.Help
-		node.Epilog = old.Epilog
-		node.Usage = old.Usage
-		for _, sub := range old.Subcommands {
-			previous[sub.Name] = sub
-		}
-		node.Params = params(c, old.Params)
-	} else {
-		node.Params = params(c, nil)
+	if d.Short != "" {
+		node.ShortHelp = d.Short
+	}
+	if d.Help != "" {
+		node.Help = str(d.Help)
+	}
+	if d.Epilog != "" {
+		node.Epilog = str(d.Epilog)
+	}
+	node.Params = params(c, d.params())
+	if len(d.Usage) > 0 {
+		node.Usage = node.Full + " " + strings.Join(d.Usage, " ")
 	}
 	if node.Help == nil || text(node.Help) == "" {
 		node.Help = str(c.Short)
@@ -277,64 +271,41 @@ func buildNode(c *cobra.Command, path []string, old *Node) *Node {
 		if sub.Hidden {
 			continue
 		}
-		node.Subcommands = append(node.Subcommands, buildNode(sub, append(append([]string{}, path...), sub.Name()), previous[sub.Name()]))
+		node.Subcommands = append(node.Subcommands, buildNode(sub, append(append([]string{}, path...), sub.Name()), describe))
 	}
 	return node
 }
 
-// Build merges migrated documentation with the live public command registry.
-// The reference version identifies the public package, independently of an
-// embedding admin executable's own build/version string.
-func Build(root *cobra.Command) (*Tree, error) {
-	var tree Tree
-	if err := json.Unmarshal(metadata, &tree); err != nil {
-		return nil, err
-	}
-	tree.Version = buildversion.Current()
-	templates := map[string]*Node{}
-	sections := map[string]string{}
-	for section, nodes := range tree.Sections {
-		for _, node := range nodes {
-			templates[node.Name] = node
-			sections[node.Name] = section
-		}
-	}
-	tree.GlobalOptions = params(root, tree.GlobalOptions)
-	tree.Aliases = map[string]string{}
-	tree.Sections = map[string][]*Node{}
+// Build derives reference output from the live Go command tree and descriptions.
+func Build(root *cobra.Command, describe Describer, sections []Section) (*Tree, error) {
+	d := describe(root)
+	tree := Tree{Program: "avr", Version: buildversion.Current(), Summary: strings.TrimSpace(d.Help),
+		GlobalOptions: params(root, d.params()), Aliases: map[string]string{}, Sections: map[string][]*Node{}}
 	live := map[string]*cobra.Command{}
-	for _, command := range root.Commands() {
-		if command.Hidden {
+	for _, c := range root.Commands() {
+		if c.Hidden {
 			continue
 		}
-		live[command.Name()] = command
-		for _, alias := range command.Aliases {
-			tree.Aliases[alias] = command.Name()
+		live[c.Name()] = c
+		for _, alias := range c.Aliases {
+			tree.Aliases[alias] = c.Name()
 		}
 	}
-	// Keep the public help section and command order, then append new commands
-	// in Cobra's stable order instead of silently omitting undocumented nodes.
-	var original Tree
-	if err := json.Unmarshal(metadata, &original); err != nil {
-		return nil, err
-	}
-	for _, section := range tree.SectionOrder {
-		for _, node := range original.Sections[section] {
-			if command := live[node.Name]; command != nil {
-				tree.Sections[section] = append(tree.Sections[section], buildNode(command, []string{tree.Program, node.Name}, node))
-				delete(live, node.Name)
+	for _, section := range sections {
+		tree.SectionOrder = append(tree.SectionOrder, section.Name)
+		for _, name := range section.Commands {
+			if c := live[name]; c != nil {
+				tree.Sections[section.Name] = append(tree.Sections[section.Name], buildNode(c, []string{tree.Program, c.Name()}, describe))
+				delete(live, name)
 			}
 		}
 	}
-	for _, command := range root.Commands() {
-		if live[command.Name()] == nil {
+	for _, c := range root.Commands() {
+		if live[c.Name()] == nil {
 			continue
 		}
-		section := sections[command.Name()]
-		if section == "" {
-			section = "Additional Commands"
-		}
-		tree.Sections[section] = append(tree.Sections[section], buildNode(command, []string{tree.Program, command.Name()}, templates[command.Name()]))
+		section := "Additional Commands"
+		tree.Sections[section] = append(tree.Sections[section], buildNode(c, []string{tree.Program, c.Name()}, describe))
 	}
 	return &tree, nil
 }

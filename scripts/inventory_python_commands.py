@@ -6,6 +6,7 @@ Run from the repository root with the project's Python environment.
 
 from avrea_cli.main import ALIASES
 from avrea_cli.main import cli
+from functools import lru_cache
 from pathlib import Path
 from scripts.compare_auth import BASELINE
 import argparse
@@ -47,26 +48,31 @@ def stable_value(value):
     return str(value)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true")
-    args = parser.parse_args()
+@lru_cache
+def contract():
+    """Build the oracle from unchanged Python; never read a committed snapshot."""
     subprocess.run(
         ["git", "diff", "--exit-code", BASELINE, "--", "avrea_cli"],
         check=True,
         stdout=subprocess.DEVNULL,
     )
+    return json.loads(
+        json.dumps(
+            {"baseline": BASELINE, "aliases": ALIASES, "root": inventory()},
+            default=stable_value,
+        )
+    )
 
-    payload = {"baseline": BASELINE, "aliases": ALIASES, "root": inventory()}
-    target = Path("docs/go-python-command-contract.json")
-    rendered = json.dumps(payload, indent=2, sort_keys=True, default=stable_value) + "\n"
-    if args.check:
-        if target.read_text() != rendered:
-            raise SystemExit("Python command contract is stale; regenerate it.")
-    else:
-        target.write_text(rendered)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=Path("build/go/python-command-contract.json"))
+    args = parser.parse_args()
+    payload = contract()
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     def count(node):
         return 1 + sum(count(child) for child in node.get("commands", []))
 
-    print(f"Recorded {count(payload['root'])} command/group nodes in {target}")
+    print(f"Recorded {count(payload['root'])} command/group nodes in {args.out}")

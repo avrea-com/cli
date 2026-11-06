@@ -1,46 +1,62 @@
-package docgen
+package docgen_test
 
 import (
+	"github.com/avrea-com/cli/commands"
+	"github.com/avrea-com/cli/docgen"
+	"github.com/spf13/cobra"
 	"reflect"
+	"strings"
 	"testing"
 )
 
-func TestIndexedHelpMatchesCompleteMetadata(t *testing.T) {
-	all, err := HelpTemplates()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for path, want := range all {
-		got, known, err := HelpTemplate(path)
-		if err != nil || !known || !reflect.DeepEqual(got, want) {
-			t.Fatalf("%s indexed help differs from full metadata: known=%v err=%v", path, known, err)
+func TestDescriptionsDoNotShareMutableState(t *testing.T) {
+	root := commands.NewRoot(commands.Dependencies{})
+	want := docgen.Help(root, commands.Description)
+	changed := docgen.Help(root, commands.Description)
+	changed.Options[0].Names[0] = "changed"
+	changed.CompletionParams[0].Names[0] = "changed"
+	for _, c := range changed.Commands {
+		if c.Section != nil {
+			*c.Section = "changed"
 		}
 	}
-	got, known, err := HelpTemplate("avr custom-extension")
-	if err != nil || known || !reflect.DeepEqual(got, HelpSpec{}) {
-		t.Fatal("unknown composed command must use its live help", got, known, err)
+	if got := docgen.Help(root, commands.Description); !reflect.DeepEqual(got, want) {
+		t.Fatal("description state leaked")
 	}
 }
 
-func TestIndexedHelpDoesNotShareMutableState(t *testing.T) {
-	want, _, err := HelpTemplate("avr")
-	if err != nil {
-		t.Fatal(err)
-	}
-	changed, _, err := HelpTemplate("avr")
-	if err != nil {
-		t.Fatal(err)
-	}
-	changed.Usage[0] = "changed"
-	changed.Options[0].Names[0] = "--changed"
-	changed.CompletionParams[0].Names[0] = "--changed"
-	for _, command := range changed.Commands {
-		if command.Section != nil {
-			*command.Section = "changed"
+func TestOneDescriptionFeedsHelpCompletionAndReference(t *testing.T) {
+	root := &cobra.Command{Use: "avr"}
+	child := &cobra.Command{Use: "choose", Short: "Choose."}
+	child.Flags().String("mode", "one", "fallback")
+	root.AddCommand(child)
+	describe := func(c *cobra.Command) docgen.Description {
+		if c != child {
+			return docgen.Description{Help: "Example CLI"}
 		}
+		return docgen.Description{Help: "Choose a mode.", Short: "Choose.", Parameters: []docgen.Parameter{{
+			Param: docgen.Param{Name: "mode", Kind: "option", Opts: []string{"--mode"}, Type: "choice", Nargs: 1,
+				Help: func() *string { s := "Shared description"; return &s }(), Choices: []string{"one", "two"}, ShowDefault: true, Default: "one"},
+			CompletionKind: "Choice", CaseSensitive: true, Suffix: "  [default: one]",
+		}}}
 	}
-	got, _, err := HelpTemplate("avr")
-	if err != nil || !reflect.DeepEqual(got, want) {
-		t.Fatal("help mutations leaked between callers", err)
+	child.Flags().Lookup("mode").DefValue = "two"
+	help := docgen.Help(child, describe)
+	if help.Options[0].Label != "--mode [one|two]" || help.Options[0].Description != "Shared description  [default: two]" {
+		t.Fatal(help.Options)
+	}
+	if !reflect.DeepEqual(help.CompletionParams[0].Type.Choices, []string{"one", "two"}) || help.CompletionParams[0].Help != "Shared description" {
+		t.Fatal(help.CompletionParams)
+	}
+	tree, err := docgen.Build(root, describe, []docgen.Section{{Name: "Core", Commands: []string{"choose"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := tree.Sections["Core"][0].Params[0]
+	if p.Default != "two" || *p.Help != "Shared description" || !reflect.DeepEqual(p.Choices, []string{"one", "two"}) {
+		t.Fatal(p)
+	}
+	if !strings.Contains(docgen.Markdown(tree), "Shared description") {
+		t.Fatal("reference lost description")
 	}
 }

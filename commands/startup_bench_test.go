@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 	"testing"
-
-	"github.com/avrea-com/cli/docgen"
 )
 
 func startupDependencies() Dependencies {
@@ -25,10 +23,11 @@ func BenchmarkStartup(b *testing.B) {
 			_ = NewRoot(d)
 		}
 	})
-	b.Run("HelpMetadata", func(b *testing.B) {
+	b.Run("HelpDescription", func(b *testing.B) {
+		root := NewRoot(startupDependencies())
 		b.ReportAllocs()
 		for b.Loop() {
-			if _, err := docgen.HelpTemplates(); err != nil {
+			if _, _, err := commandHelp(root); err != nil {
 				b.Fatal(err)
 			}
 		}

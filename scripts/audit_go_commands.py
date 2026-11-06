@@ -5,6 +5,7 @@ usage are emitted for explicit review, and executable suites remain necessary.
 """
 
 from pathlib import Path
+from scripts.inventory_python_commands import contract as python_contract
 import argparse
 import json
 import subprocess
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     else:
         inventory = Path(args.inventory).read_text()
     report = audit(
-        json.loads(Path("docs/go-python-command-contract.json").read_text()),
+        python_contract(),
         json.loads(inventory),
     )
     target = Path(args.report)

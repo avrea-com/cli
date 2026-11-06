@@ -51,7 +51,7 @@ func NewInternal(deps Dependencies) *cobra.Command {
 		reference := d
 		reference.Getenv = func(string) string { return "" }
 		reference.LookupEnv = func(string) (string, bool) { return "", false }
-		tree, err := docgen.Build(NewRoot(reference))
+		tree, err := Documentation(NewRoot(reference))
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package commands
 import (
 	"strings"
 
-	"github.com/avrea-com/cli/docgen"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -11,7 +10,7 @@ import (
 // usageError mirrors Click's concise parser diagnostic without rendering full help.
 // Shared execution also uses it for required flags, including composed admin trees.
 func usageError(c *cobra.Command, message string) error {
-	spec, _, _ := docgen.HelpTemplate(canonicalHelpPath(c))
+	spec, _, _ := commandHelp(c)
 	pieces := spec.Usage
 	if len(pieces) == 0 {
 		pieces = append([]string{"[OPTIONS]"}, strings.Fields(c.Use)[1:]...)
@@ -41,7 +40,7 @@ func requiredOptionError(c *cobra.Command, err error) error {
 		return f != nil && !f.Changed && len(f.Annotations[cobra.BashCompOneRequiredFlag]) > 0
 	}
 	// Click reports the first missing parameter in declaration order, not alphabetically.
-	spec, _, _ := docgen.HelpTemplate(canonicalHelpPath(c))
+	spec, _, _ := commandHelp(c)
 	for _, param := range spec.CompletionParams {
 		for _, name := range param.Names {
 			if flag := helpFlag(c, name); missing(flag) {
