@@ -140,8 +140,10 @@ def channels(directory, version, commit=None):
   on_macos do
     depends_on arch: :arm64
     depends_on macos: :ventura
-    url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_darwin_arm64.tar.gz"
-    sha256 "{reports["darwin_arm64"]}"
+    on_arm do
+      url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_darwin_arm64.tar.gz"
+      sha256 "{reports["darwin_arm64"]}"
+    end
   end
 
   on_linux do
