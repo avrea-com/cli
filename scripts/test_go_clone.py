@@ -1,14 +1,11 @@
 """Exercise the Go clone and saved helper against the existing local smart-HTTP fixture."""
 
 from pathlib import Path
-from scripts import compare_clone
 from tests.test_repo_clone import git_server  # noqa: F401 -- shared smart-HTTP fixture
-import json
 import os
 import pytest
 import shlex
 import subprocess
-import sys
 
 
 def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noqa: F811 -- pytest fixture injection
@@ -66,59 +63,3 @@ def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noq
     assert credentials.read_text() == seeded
     assert (tmp_path / "global-config").read_text() == global_config
     assert "git-jwt-" not in fetched.stderr
-
-
-@pytest.mark.parametrize("change", [None, "executable", "repository", "trace"])
-def test_clone_comparator_keeps_helper_scope_and_environment(monkeypatch, tmp_path, change):
-    native = str(tmp_path / "native avr")
-    python = str(tmp_path / "python avr")
-    monkeypatch.setattr(sys, "argv", ["compare", "--go", native])
-
-    def result(executable):
-        command = shlex.join(
-            [
-                "AVR_HOST=https://api.example.test",
-                executable,
-                "auth",
-                "git-credential",
-                "--url",
-                "https://git.example.test/acme/web.git",
-                "--repo",
-                "acme/web",
-            ]
-        )
-        helper = (
-            'credential.https://git.example.test/acme/web.git.helper=!f() { case "$1" in store|erase) return 0;; esac; '
-            + command
-            + ' "$@" || { exit 1; }; }; f'
-        )
-        capture = {
-            "args": ["clone", "--config", helper, "--", "https://git.example.test/acme/web.git", "web"],
-            "env": {"GIT_TERMINAL_PROMPT": "0", "GIT_ASKPASS": "", "SSH_ASKPASS": ""},
-        }
-        return capture
-
-    expected = result(python)
-    actual = result(str(tmp_path / "different avr") if change == "executable" else native)
-    if change == "repository":
-        actual["args"][2] = actual["args"][2].replace("--repo acme/web", "--repo acme/other")
-    if change == "trace":
-        actual["env"]["GIT_TRACE"] = "1"
-
-    def output(capture):
-        return {
-            "exit": 0,
-            "hosts": None,
-            "requests": [],
-            "browser": None,
-            "mode": None,
-            "stdout": "GIT CAPTURE: " + json.dumps(capture) + "\n",
-            "stderr": "",
-        }
-
-    differences = compare_clone.compare(
-        {"name": "clone comparator", "args": ["repo", "clone", "acme/web"], "git_stub": 0},
-        output(expected),
-        output(actual),
-    )
-    assert bool(differences) == (change is not None)

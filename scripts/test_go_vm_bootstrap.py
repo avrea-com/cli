@@ -1,24 +1,20 @@
-"""Paired bootstrap token prompts, local helper invocation, and echo restoration."""
+"""Native bootstrap token prompts, local helper invocation, and echo restoration."""
 
 from pathlib import Path
 from scripts import bootstrap_fixture as fixture
-from scripts import compare_auth as harness
 import errno
-import io
 import os
 import pytest
 import select
 import signal
 import subprocess
-import sys
-import tarfile
 import time
 
 pty = pytest.importorskip("pty")
 termios = pytest.importorskip("termios")
 
 
-def terminal_run(executable, oracle, home, answer, token, options, interrupt=False):
+def terminal_run(executable, home, answer, token, options, interrupt=False):
     assert pty is not None and termios is not None
     stub_path = fixture.make_stubs(home, options)
     env = {key: value for key, value in os.environ.items() if not key.startswith("AVR_") and key not in fixture.CREDS}
@@ -27,7 +23,6 @@ def terminal_run(executable, oracle, home, answer, token, options, interrupt=Fal
         USERPROFILE=str(home),
         AVR_CONFIG_DIR=str(home / "config"),
         AVR_HOST="http://127.0.0.1:1",
-        PYTHONPATH=str(oracle),
         NO_COLOR="1",
         TERM="xterm-256color",
         PATH=stub_path,
@@ -131,26 +126,14 @@ def binary():
         ("invalid", "sk-ant-fixture-hidden-secret", {}),
     ],
 )
-def test_bootstrap_prompt_matches_python(binary, tmp_path, answer, token, options):
-    oracle = tmp_path / "oracle"
-    oracle.mkdir()
-    archive = subprocess.check_output(
-        ["git", "archive", harness.BASELINE, "avrea_cli"], cwd=Path(__file__).resolve().parents[1]
-    )
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(oracle, filter="data")
-    results = []
-    for name, executable in [("python", [sys.executable, "-m", "avrea_cli.main"]), ("native", [binary])]:
-        home = tmp_path / name
-        home.mkdir()
-        results.append(terminal_run(executable, oracle, home, answer, token, options))
-    assert results[0][0] == results[1][0] == 4
-    assert results[0] == results[1]
+def test_bootstrap_prompt(binary, tmp_path, answer, token, options):
+    code, _, records = terminal_run([binary], tmp_path, answer, token, options)
+    assert code == 4
     expected_calls = 1 if answer in {"y", "yes"} and not options.get("missing") else 0
-    assert len(results[0][2]) == expected_calls
+    assert len(records) == expected_calls
 
 
 def test_bootstrap_prompt_interrupt_restores_echo(binary, tmp_path):
-    code, transcript, records = terminal_run([binary], tmp_path, tmp_path, "n", "", {}, interrupt=True)
+    code, transcript, records = terminal_run([binary], tmp_path, "n", "", {}, interrupt=True)
     assert code == 130 and "Interrupted." in transcript
     assert not records

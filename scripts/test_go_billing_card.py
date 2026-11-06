@@ -1,16 +1,12 @@
 """Real-terminal checks for card-input echo suppression and interruption."""
 
 from pathlib import Path
-from scripts import compare_auth as harness
 import errno
-import io
 import os
 import pytest
 import select
 import signal
 import subprocess
-import sys
-import tarfile
 import time
 
 pty = pytest.importorskip("pty")
@@ -20,7 +16,7 @@ NUMBER = "4242424242424242"
 CVC = "987"
 
 
-def terminal_run(executable, root, directory, interrupt=False):
+def terminal_run(executable, directory, interrupt=False):
     assert pty is not None and termios is not None
     master, slave = pty.openpty()
     before = termios.tcgetattr(slave)
@@ -28,7 +24,6 @@ def terminal_run(executable, root, directory, interrupt=False):
     env.update(
         AVR_CONFIG_DIR=str(directory / "config"),
         AVR_HOST="http://127.0.0.1:1",
-        PYTHONPATH=str(root),
         NO_COLOR="1",
         TERM="xterm-256color",
     )
@@ -109,24 +104,12 @@ def binary():
     return Path(path).resolve()
 
 
-def test_hidden_card_prompts_match_python(binary, tmp_path):
-    root = Path(__file__).resolve().parents[1]
-    oracle = tmp_path / "oracle"
-    oracle.mkdir()
-    archive = subprocess.check_output(["git", "archive", harness.BASELINE, "avrea_cli"], cwd=root)
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(oracle, filter="data")
-    python_dir = tmp_path / "python"
-    native_dir = tmp_path / "native"
-    python_dir.mkdir()
-    native_dir.mkdir()
-    python = terminal_run([str(Path(sys.executable)), "-m", "avrea_cli.main"], oracle, python_dir)
-    native = terminal_run([str(binary)], oracle, native_dir)
-    assert python[0] == native[0] == 4
-    assert python[1] == native[1]
+def test_hidden_card_prompts(binary, tmp_path):
+    code, _ = terminal_run([str(binary)], tmp_path)
+    assert code == 4
 
 
 def test_card_prompt_interrupt_restores_echo(binary, tmp_path):
-    code, output = terminal_run([str(binary)], tmp_path, tmp_path, interrupt=True)
+    code, output = terminal_run([str(binary)], tmp_path, interrupt=True)
     assert code == 130
     assert "Interrupted." in output

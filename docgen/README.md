@@ -17,13 +17,11 @@ links and section ordering. Bash/Zsh/Fish completion keeps the existing
 `_AVR_COMPLETE` protocol; composed admin trees also accept `_AVR_ADMIN_COMPLETE`.
 Help/completion do not load credentials or call the API.
 
-`make go-command-check` generates its Python inventory under ignored `build/`
-and checks the live Go registry. Differential help/completion/documentation
-suites obtain expected output and metadata independently from Python, rather
-than using Go descriptions as their expected values. Python application source
-is unchanged. The suites check every command, help flags, aliases, bare groups,
-terminal styles, representative widths, completion suggestions and all generated
-reference formats.
+Native Go regression tests cover command help, styles, sanitization, completion
+and reference generation. `make go-integration` additionally exercises installed
+shell completion and bundled README discovery. Migration-only Python comparison
+tools were retired after validating the transition; their code and results remain
+in Git history at `f5688c1`. New behavior is tested against the native contract.
 
 `make go-docs` renders Markdown, JSON, Starlight and man pages with the native
 binary and passes the README explicitly. A packaged binary looks for its optional

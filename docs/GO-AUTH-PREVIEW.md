@@ -1,5 +1,11 @@
 # Go CLI preview
 
+> Validation update (2026-11-06): the migration-only Python comparison harness
+> has been retired. Its last implementation is in Git at `f5688c1`; comparison
+> commands and reports below are historical. Current checks are native Go
+> regression tests, `make go-integration` and package/install validation.
+> See [GO-MIGRATION-EXECUTION.md](GO-MIGRATION-EXECUTION.md#retiring-the-migration-comparison-harness).
+
 This preview implements public authentication, CI-run/job inspection, logs,
 job SSH/watch/metrics, retained job test results, run rerun/cancel/diagnose, workflow list/view/run, PR listing, the status dashboard, artifacts, cache management, log search, SBOM management, CLI configuration, scoped tokens, settings, organization setup, mirrors, billing, firewall, and VM creation/inspection/lifecycle/update and SSH sessions/configuration/tunnels/bootstrap and native reference generation in Go,
 with the shared commands composed into a minimal Go `avr-admin`. It does not

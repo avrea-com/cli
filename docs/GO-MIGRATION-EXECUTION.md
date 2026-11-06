@@ -2157,3 +2157,20 @@ pass. Public/admin Go race tests, Go lint, Python lint/type checks, 2,227 Python
 unit tests, actual shell/doc integration tests and native macOS package
 validation pass. The independent local review approved the delta. No release,
 tag, schema endpoint deployment or Python application change is included.
+
+## Retiring the migration comparison harness
+
+The Python/Go differential suites, pinned Python oracle, temporary command
+inventory, comparator self-tests and parity report gates have served their
+migration purpose. Their last complete implementation is preserved at commit
+`f5688c1`, together with the earlier validation record in this document.
+The commands and pass counts recorded above are historical, not current targets.
+
+Ongoing validation is native: `make go-test`, `make go-integration`,
+`make go-lint` and package/install checks. Go regression tests remain, including
+output styles, colors, underlines, links, help and completion. Native process tests
+retain hidden-input echo restoration, SSH interrupt ownership and pin cleanup,
+tunnel lifetime/client launch, real Git clone/fetch, bundled docs and shell
+completion. They no longer execute Python as an expected-output oracle.
+CI runs one native test job per OS instead of four parity shards per OS.
+The Python application and its existing tests remain unchanged.

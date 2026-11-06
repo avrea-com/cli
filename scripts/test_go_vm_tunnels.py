@@ -1,14 +1,11 @@
-"""Paired local tunnel lifecycle checks; no real SSH or desktop clients run."""
+"""Native local tunnel lifecycle checks; no real SSH or desktop clients run."""
 
 from pathlib import Path
-from scripts import compare_auth as harness
-from scripts import compare_vm_inspection as vm
-from scripts import compare_vm_ssh_config as ssh_config
+from scripts import native_vm_fixture as vm
 from typing import Any
 from typing import cast
 import errno
 import http.server
-import io
 import json
 import os
 import pytest
@@ -17,7 +14,6 @@ import signal
 import socket
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 
@@ -30,20 +26,13 @@ def tunnel_environment(tmp_path):
     if not binary:
         pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
     assert binary is not None
-    root = Path(__file__).resolve().parents[1]
-    oracle = tmp_path / "oracle"
-    oracle.mkdir()
-    archive = subprocess.check_output(["git", "archive", harness.BASELINE, "avrea_cli"], cwd=root)
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(oracle, filter="data")
-    server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), harness.Fixture))
+    server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), vm.Fixture))
     server.requests = []
     server.responses = {}
-    server.encoding = None
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
     try:
-        yield str(Path(binary).resolve()), oracle, server, f"http://127.0.0.1:{server.server_port}"
+        yield str(Path(binary).resolve()), server, f"http://127.0.0.1:{server.server_port}"
     finally:
         server.shutdown()
         server.server_close()
@@ -56,7 +45,7 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def run_local_tunnel(executable, oracle, directory, host, command, ending, launch, missing_client=False):
+def run_local_tunnel(executable, directory, host, command, ending, launch, missing_client=False):
     assert pty is not None
     stub = directory / "bin"
     stub.mkdir()
@@ -118,9 +107,8 @@ def run_local_tunnel(executable, oracle, directory, host, command, ending, launc
         USERPROFILE=str(directory),
         AVR_CONFIG_DIR=str(directory / "config"),
         AVR_HOST=host,
-        AVR_TOKEN=harness.TOKEN,
+        AVR_TOKEN=vm.TOKEN,
         AVR_ORG=vm.ORG,
-        PYTHONPATH=str(oracle),
         FIXTURE_LAUNCH="1" if launch else "0",
         NO_COLOR="1",
         TERM="xterm-256color",
@@ -190,7 +178,7 @@ def run_local_tunnel(executable, oracle, directory, host, command, ending, launc
         assert process.returncode == expected, bytes(chunks)
         pin = Path((directory / "pin-path").read_text())
         assert not pin.exists()
-        assert (directory / "pin-copy").read_text() == "[192.0.2.1]:30022 " + ssh_config.KEY + "\n"
+        assert (directory / "pin-copy").read_text() == "[192.0.2.1]:30022 " + vm.KEY + "\n"
         child_pid = int((directory / "ssh-child.pid").read_text())
         with pytest.raises(ProcessLookupError):
             os.kill(child_pid, 0)
@@ -209,50 +197,41 @@ def run_local_tunnel(executable, oracle, directory, host, command, ending, launc
 
 @pytest.mark.parametrize("command", ["port-forward", "rdp", "vnc"])
 @pytest.mark.parametrize("ending", ["interrupt", "drop", "done"])
-def test_local_tunnel_lifetime_matches_python(tunnel_environment, tmp_path, command, ending):
-    binary, oracle, server, host = tunnel_environment
+def test_local_tunnel_lifetime(tunnel_environment, tmp_path, command, ending):
+    binary, server, host = tunnel_environment
     row = vm.ROW | {
         "state": "RUNNING",
         "enable_remote_desktop": True,
         "os_type": "macos" if command == "vnc" else "linux",
-        "endpoints": {"ssh": ssh_config.EP},
+        "endpoints": {"ssh": vm.EP},
     }
     server.responses = {vm.SHOW: (200, {"data": row})}
-    codes = []
-    for name, executable in [("python", [sys.executable, "-m", "avrea_cli.main"]), ("native", [binary])]:
-        directory = tmp_path / name
-        directory.mkdir()
-        codes.append(run_local_tunnel(executable, oracle, directory, host, command, ending, False))
-    assert codes[0] == codes[1]
-    assert [r["path"] for r in server.requests] == [vm.SHOW[1], vm.SHOW[1]]
+    directory = tmp_path / "native"
+    directory.mkdir()
+    run_local_tunnel([binary], directory, host, command, ending, False)
+    assert [r["path"] for r in server.requests] == [vm.SHOW[1]]
 
 
 @pytest.mark.parametrize("command", ["rdp", "vnc"])
-def test_desktop_launch_matches_python(tunnel_environment, tmp_path, command):
-    binary, oracle, server, host = tunnel_environment
+def test_desktop_launch(tunnel_environment, tmp_path, command):
+    binary, server, host = tunnel_environment
     row = vm.ROW | {
         "state": "RUNNING",
         "enable_remote_desktop": True,
         "os_type": "macos" if command == "vnc" else "linux",
-        "endpoints": {"ssh": ssh_config.EP},
+        "endpoints": {"ssh": vm.EP},
     }
     server.responses = {vm.SHOW: (200, {"data": row})}
     ending = "done" if sys.platform != "darwin" and command == "rdp" else "interrupt"
-    codes = []
-    for name, executable in [("python", [sys.executable, "-m", "avrea_cli.main"]), ("native", [binary])]:
-        directory = tmp_path / name
-        directory.mkdir()
-        codes.append(run_local_tunnel(executable, oracle, directory, host, command, ending, True))
-    assert codes[0] == codes[1]
+    directory = tmp_path / "native"
+    directory.mkdir()
+    run_local_tunnel([binary], directory, host, command, ending, True)
 
 
 def test_missing_desktop_client_keeps_tunnel_usable(tunnel_environment, tmp_path):
-    binary, oracle, server, host = tunnel_environment
-    row = vm.ROW | {"state": "RUNNING", "enable_remote_desktop": True, "endpoints": {"ssh": ssh_config.EP}}
+    binary, server, host = tunnel_environment
+    row = vm.ROW | {"state": "RUNNING", "enable_remote_desktop": True, "endpoints": {"ssh": vm.EP}}
     server.responses = {vm.SHOW: (200, {"data": row})}
-    for name, executable in [("python", [sys.executable, "-m", "avrea_cli.main"]), ("native", [binary])]:
-        directory = tmp_path / name
-        directory.mkdir()
-        assert (
-            run_local_tunnel(executable, oracle, directory, host, "rdp", "interrupt", True, missing_client=True) == 130
-        )
+    directory = tmp_path / "native"
+    directory.mkdir()
+    assert run_local_tunnel([binary], directory, host, "rdp", "interrupt", True, missing_client=True) == 130

@@ -1,7 +1,7 @@
 # Native release preparation
 
 The Go version is `internal/version/VERSION`, currently `0.7.0`.
-Python's `pyproject.toml` remains at 0.6.0 for the oracle and admin transition.
+Python's `pyproject.toml` remains at 0.6.0 for the admin transition.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
 
 `go-package.yml` prepares these artifacts on all three native runners:
@@ -36,7 +36,7 @@ Before publishing:
 
 1. Land the avrea-core admin dependency pin and update admin installation
    metadata. Keep its Python environment separate from the public Go CLI.
-2. Require green full parity/race/lint checks and all native package/install
+2. Require green native regression/race/lint checks and all native package/install
    validations for the exact release commit. Review generated notices/SBOMs.
 3. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
    required. Exercise installers, package upgrades, credentials, completion and
@@ -49,7 +49,7 @@ Before publishing:
    `AVR_NATIVE_RELEASE_ENABLED=true` and push the signed version tag. The gate
    is unset by default. A manual Release workflow run never publishes, even
    when the gate is enabled. Tag version must match `internal/version/VERSION`;
-   both Python CI and the complete Go/parity/package workflow must pass.
+   both Python CI and the complete Go/package workflow must pass.
    Publication uses the exact tested wheels and archives, without rebuilding.
    RC tags create prereleases and do not replace GitHub's latest stable release.
    Keep the `pypi` environment and Trusted Publisher configured for release.yml.

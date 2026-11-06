@@ -1,5 +1,11 @@
 # Go migration plan for avr and avr-admin
 
+> Validation update (2026-11-06): the migration-only Python comparison harness
+> has been retired. Its last implementation is in Git at `f5688c1`; comparison
+> commands and reports below are historical. Current checks are native Go
+> regression tests, `make go-integration` and package/install validation.
+> See [GO-MIGRATION-EXECUTION.md](GO-MIGRATION-EXECUTION.md#retiring-the-migration-comparison-harness).
+
 Status: PR #75 is ready for review; review follow-ups are being validated before stable 0.7.0. Publication requires separate authorization.
 Updated: 2026-11-06.
 Worktree branch: `cli/go-migration`.

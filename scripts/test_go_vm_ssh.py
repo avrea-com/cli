@@ -1,28 +1,24 @@
-"""Paired terminal checks for VM SSH interrupt ownership and temporary pin cleanup."""
+"""Native terminal checks for VM SSH interrupt ownership and temporary pin cleanup."""
 
 from pathlib import Path
-from scripts import compare_auth as harness
-from scripts import compare_vm_inspection as vm
-from scripts import compare_vm_ssh_config as ssh_config
+from scripts import native_vm_fixture as vm
 from typing import Any
 from typing import cast
 import errno
 import http.server
-import io
 import os
 import pytest
 import select
 import signal
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 
 pty = pytest.importorskip("pty")
 
 
-def terminal_ssh(executable, oracle, directory, host):
+def terminal_ssh(executable, directory, host):
     assert pty is not None
     stub = directory / "bin"
     stub.mkdir()
@@ -49,9 +45,8 @@ def terminal_ssh(executable, oracle, directory, host):
         USERPROFILE=str(directory),
         AVR_CONFIG_DIR=str(directory / "config"),
         AVR_HOST=host,
-        AVR_TOKEN=harness.TOKEN,
+        AVR_TOKEN=vm.TOKEN,
         AVR_ORG=vm.ORG,
-        PYTHONPATH=str(oracle),
         NO_COLOR="1",
         TERM="xterm-256color",
         PATH=str(stub) + os.pathsep + env["PATH"],
@@ -102,31 +97,23 @@ def terminal_ssh(executable, oracle, directory, host):
         os.close(slave)
 
 
-def test_vm_ssh_terminal_interrupt_matches_python(tmp_path):
+def test_vm_ssh_terminal_interrupt_and_pin_cleanup(tmp_path):
     binary = os.environ.get("AVR_GO_BINARY")
     if not binary:
         pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
     assert binary is not None
     binary = str(Path(binary).resolve())
-    root = Path(__file__).resolve().parents[1]
-    oracle = tmp_path / "oracle"
-    oracle.mkdir()
-    archive = subprocess.check_output(["git", "archive", harness.BASELINE, "avrea_cli"], cwd=root)
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(oracle, filter="data")
-    server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), harness.Fixture))
+    server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), vm.Fixture))
     server.requests = []
-    server.responses = {vm.SHOW: (200, {"data": vm.ROW | {"state": "RUNNING", "endpoints": {"ssh": ssh_config.EP}}})}
-    server.encoding = None
+    server.responses = {vm.SHOW: (200, {"data": vm.ROW | {"state": "RUNNING", "endpoints": {"ssh": vm.EP}}})}
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
     try:
         host = f"http://127.0.0.1:{server.server_port}"
-        for name, executable in [("python", [sys.executable, "-m", "avrea_cli.main"]), ("native", [binary])]:
-            directory = tmp_path / name
-            directory.mkdir()
-            terminal_ssh(executable, oracle, directory, host)
-        assert [r["path"] for r in server.requests] == [vm.SHOW[1], vm.SHOW[1]]
+        directory = tmp_path / "native"
+        directory.mkdir()
+        terminal_ssh([binary], directory, host)
+        assert [r["path"] for r in server.requests] == [vm.SHOW[1]]
     finally:
         server.shutdown()
         server.server_close()

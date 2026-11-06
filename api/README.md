@@ -38,7 +38,7 @@ with the committed models. `make go-check` includes this comparison when the
 local schema exists and explicitly reports it skipped otherwise.
 CI can fetch and perform this drift check when repository variable
 `AVR_OPENAPI_URL` is configured. Until then that specific step is skipped; CI
-still builds the committed models, runs their contract tests and the full parity
+still builds the committed models, runs their contract tests and the native integration
 matrix. No private core checkout or credentials are needed in public CI.
 
 `make go-schema-gate AVREA_CORE=/path/to/avrea-core` additionally compiles both

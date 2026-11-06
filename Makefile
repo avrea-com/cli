@@ -15,7 +15,7 @@ clean:
 help: ## Show available targets
 	@echo "avr - Available targets:"
 	@echo "  help             - Show this help message"
-	@echo "  go-check         - Test, lint, compare and scan the Go preview"
+	@echo "  go-check         - Test, lint and scan the Go preview"
 	@echo "  go-build         - Build the Go preview in build/go/avr"
 	@echo "  go-package       - Build and validate a native Go preview archive"
 	@echo "  test             - Run unit tests (fast, no Docker)"
@@ -87,7 +87,7 @@ update: ## Update dependencies
 # Go preview. The existing Python build and distribution remain active.
 GO ?= go
 
-.PHONY: go-build go-test go-lint go-parity go-scan go-check
+.PHONY: go-build go-test go-lint go-integration go-scan go-check
 
 go-build: ## Build the native Go preview and bundled license notices
 	@$(GO) build -trimpath -ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" -o build/go/avr ./cmd/avr
@@ -100,73 +100,13 @@ go-lint:
 	@$(GO) vet ./...
 	@$(GO) tool -modfile=tools/go.mod golangci-lint run ./...
 
-go-parity: go-build
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/setup_parity_jq.py
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/compare_auth.py --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_device_login --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_inspection --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_jobs --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_run_control --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_workflow --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_native_dispatch --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_workflow_run --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_watch --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_job_metrics --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_metrics_stream --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_run_diagnose --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_pr --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_status --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_artifact --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_cache --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_log_search --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_tests --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom_download --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_sbom_generate --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_config --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_token --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_token_create --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_settings --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_organization --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_saml --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_installations --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_native_ci --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_gitlab --go build/go/avr --go-tool "$(GO)"
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_public_mirrors --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_git_mirrors --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_clone --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_audit_health --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_writes --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_invoice_download --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_firewall --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_inspection --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_lifecycle --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_update --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_create --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_release --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh_config --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_ssh --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_tunnel --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_vm_bootstrap --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_aliases --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_internal_docs --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_help --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_completion --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_option_gaps --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_option_values --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_option_aliases --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_global --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_usage_errors --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_argument_contract --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_defaults --go build/go/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.compare_billing_card --go build/go/avr --go-tool "$(GO)"
+go-integration: go-build
 	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py scripts/test_go_completion.py -q
 
 go-scan:
 	@$(GO) tool -modfile=tools/go.mod govulncheck ./...
 
-go-check: go-test go-lint go-parity go-command-check go-scan
+go-check: go-test go-lint go-integration go-scan
 	@if test -f build/go/openapi.json; then $(MAKE) go-generation-check; \
 	else echo "Schema drift check skipped: no fetched schema (see api/README.md)."; fi
 
@@ -184,11 +124,7 @@ go-schema-gate: go-fetch-schema
 	@test -n "$(AVREA_CORE)" || { echo "Set AVREA_CORE to the avrea-core checkout" >&2; exit 1; }
 	@$(UV) run --python 3.14 --frozen --extra dev python scripts/generate_go_api.py --go "$(GO)" --check --core "$(AVREA_CORE)"
 
-.PHONY: go-command-check go-docs
-go-command-check: ## Generate the temporary Python inventory and compare the complete Go registry
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.inventory_python_commands
-	@$(UV) run --python 3.14 --frozen --extra dev python -m scripts.audit_go_commands --go-tool "$(GO)"
-
+.PHONY: go-docs
 go-docs: go-build ## Generate the public reference with the native CLI
 	@./build/go/avr internal docs --format all --out . --readme README.md
 

@@ -34,8 +34,8 @@ def validate(archive, wheel, uv):
         scripts = virtual / ("Scripts" if os.name == "nt" else "bin")
         python = scripts / ("python.exe" if os.name == "nt" else "python")
         # Build the unchanged Python 0.6.0 package, then replace its entry points.
-        # --no-deps avoids real service/dependency downloads; Python behavior is
-        # covered separately by the existing parity suites.
+        # --no-deps avoids dependency downloads; this tests entry-point replacement,
+        # while the existing Python suite covers the legacy implementation.
         old = base / "old"
         run([uv, "build", "--wheel", "--out-dir", str(old)], cwd=ROOT)
         baseline = next(old.glob("*.whl"))
