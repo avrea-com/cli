@@ -52,7 +52,8 @@ try {
     $staged = Join-Path $BinDir ('.avr-' + [Guid]::NewGuid().ToString())
     Copy-Item -LiteralPath "$temp\avr.exe" -Destination $staged
     $newDigest = (Get-FileHash -LiteralPath $staged -Algorithm SHA256).Hash.ToLowerInvariant()
-    if (Test-Path -LiteralPath $dest) { [IO.File]::Replace($staged, $dest, $null) } else { [IO.File]::Move($staged, $dest) }
+    # PowerShell coerces $null to an empty string for this .NET string parameter.
+    if (Test-Path -LiteralPath $dest) { [IO.File]::Replace($staged, $dest, [NullString]::Value) } else { [IO.File]::Move($staged, $dest) }
     [IO.File]::WriteAllText($marker, "native $newDigest`n")
     Write-Output "Installed avr $Version to $dest"
     Write-Output "Add this directory to your user PATH if needed: $BinDir"
