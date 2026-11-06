@@ -7,6 +7,46 @@ import shutil
 import subprocess
 
 
+def test_docs_check_includes_untracked_pages(tmp_path):
+    if shutil.which("make") is None:
+        pytest.skip("make is not installed")
+    makefile = Path(__file__).resolve().parents[1] / "Makefile"
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    command = ["make", "-f", str(makefile), "-o", "go-docs", "docs-check"]
+
+    def check(expected):
+        result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, check=False)
+        assert (result.returncode == 0) == expected, result.stdout + result.stderr
+
+    (tmp_path / "unrelated.txt").write_text("unrelated")
+    check(True)
+    page = tmp_path / "docs/starlight/new.md"
+    page.parent.mkdir(parents=True)
+    page.write_text("new generated page")
+    check(False)
+    subprocess.run(["git", "add", "docs"], cwd=tmp_path, check=True)
+    check(False)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.test",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-qm",
+            "fixture",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    check(True)
+    page.write_text("changed generated page")
+    check(False)
+
+
 def test_docs_default_bundled_readme(tmp_path):
     value = os.environ.get("AVR_GO_BINARY")
     if not value:

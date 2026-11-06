@@ -102,7 +102,7 @@ def test_bash_generated_setup_completes_words_and_paths(tmp_path, package):
         # quoting to Readline through compopt. The PTY test covers insertion.
         if args[0:2] == ["repo", "clone"]:
             values = [value.replace("\\ ", " ") for value in values]
-        assert values == [expected[-1]]
+        assert [value.rstrip(" ") for value in values] == [expected[-1]]
 
 
 @pytest.mark.parametrize("autoload", [False, True])
@@ -205,6 +205,7 @@ def test_bash_readline_distinguishes_commands_and_paths(tmp_path, package, shell
     program, env = package
     setup = source(tmp_path, package, "bash")
     (tmp_path / "tests").mkdir()
+    (tmp_path / "private key").write_text("fixture")
     capture = tmp_path / "completed-args"
     ready = tmp_path / "ready"
     completed = tmp_path / "completed"
@@ -239,14 +240,22 @@ def test_bash_readline_distinguishes_commands_and_paths(tmp_path, package, shell
             ).encode(),
         )
         until(ready.exists)
-        for args, expected in [(["tes"], ["tests"]), *CASES]:
+        cases = [(args, "", expected) for args, expected in [(["tes"], ["tests"]), *CASES]]
+        cases += [
+            (["tes"], "next", ["tests", "next"]),
+            (["vm", "ssh", "--identity", "private"], "next", ["vm", "ssh", "--identity", "private key", "next"]),
+            (["repo", "clone", "org/repo", "target"], "child", ["repo", "clone", "org/repo", "target directory/child"]),
+        ]
+        for args, suffix, expected in cases:
             capture.unlink(missing_ok=True)
             completed.unlink(missing_ok=True)
             # Complete with real Readline, then turn the resulting line into a
             # printf invocation. No AVR command or filesystem mutation runs.
             line = (
                 shlex.join([program, *args])
-                + "\t\x01printf '%s\\n' \x05 > "
+                + "\t"
+                + suffix
+                + "\x01printf '%s\\n' \x05 > "
                 + shlex.quote(str(capture))
                 + "; : > "
                 + shlex.quote(str(completed))

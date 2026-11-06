@@ -56,9 +56,10 @@ scan: go-scan ## Scan native dependencies for vulnerabilities
 docs: go-docs ## Regenerate reference docs from the native command tree
 
 docs-check: go-docs ## Fail if committed docs differ from native generation
-	@if ! git diff --quiet -- README.md docs/REFERENCE.md docs/reference.json docs/starlight/ man/; then \
+	@changes=$$(git status --porcelain --untracked-files=all -- README.md docs/REFERENCE.md docs/reference.json docs/starlight/ man/) || exit $$?; \
+	if [ -n "$$changes" ]; then \
 		echo "avr docs are stale: run make docs and commit the result." >&2; \
-		git --no-pager diff --stat -- README.md docs/REFERENCE.md docs/reference.json docs/starlight/ man/ >&2; \
+		printf '%s\n' "$$changes" >&2; \
 		exit 1; \
 	fi
 
@@ -95,6 +96,10 @@ go-check: go-test go-lint go-integration go-scan
 .PHONY: go-fetch-schema
 go-fetch-schema: ## Fetch current OpenAPI for API inspection
 	@$(UV) run --python 3.14 --frozen python scripts/fetch_go_schema.py $(if $(AVREA_CORE),--core "$(AVREA_CORE)",$(if $(OPENAPI_URL),--url "$(OPENAPI_URL)",))
+
+.PHONY: go-api-check
+go-api-check: go-fetch-schema ## Check representative command requests against current OpenAPI
+	@AVR_TEST_OPENAPI="$(CURDIR)/build/go/openapi.json" $(GO) test ./commands -run '^TestAPIContract' -count=1 -v
 
 .PHONY: go-docs
 go-docs: go-build ## Generate the public reference with the native CLI

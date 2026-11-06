@@ -56,9 +56,7 @@ before claiming performance improvements.
 The first implementation checkpoint is the standalone Go auth preview:
 login, status, switch, logout, their existing aliases, and the hidden Git
 credential helper. It includes shared exported packages, direct gojq, a pinned
-Python-versus-Go auth runner, and build/test/lint/parity CI. See
-[GO-AUTH-PREVIEW.md](GO-AUTH-PREVIEW.md) for usage, validation, dependencies, and
-explicit differences.
+Python-versus-Go auth runner, and build/test/lint/parity CI.
 
 This was the basic-auth checkpoint, not completion of Phase 1. The inspection
 checkpoint below adds the schema gate and actual admin composition. Release
@@ -116,7 +114,7 @@ and pager early exit and graceful interruption. Pager interruption exits 0;
 watch interruption exits 130. Local source review and final executable validation
 are complete. Public Go checks (race tests, lint, generation, differential checks,
 and vulnerability scan), core cli-go-check, Python lint, and all 1,560 Python
-tests pass. See GO-AUTH-PREVIEW.md for the handoff and intentional differences.
+tests pass.
 
 Native three-OS CI remains a release gate and has not run remotely. CodeRabbit
 is installed but signed out, so no external CodeRabbit review has run. No

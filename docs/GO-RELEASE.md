@@ -41,6 +41,8 @@ Before publishing:
    metadata. Keep its Python environment separate from the public Go CLI.
 2. Require green native regression/race/lint checks and all native package/install
    validations for the exact release commit. Review generated notices/SBOMs.
+   Run `make go-api-check AVREA_CORE=/path/to/avrea-core` against current core
+   OpenAPI; see [the API check's coverage and limits](../api/README.md#request-compatibility-check).
 3. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
    required. Exercise installers, package upgrades, credentials, completion and
    rollback on clean machines. Confirm GitHub-backed mise installation once

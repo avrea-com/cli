@@ -65,7 +65,7 @@ jobs:
           version-file: pyproject.toml
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: "1.27.3"
+          go-version-file: go.mod
       - run: make docs-check
 
   # Software-composition analysis: fail the build (and therefore any release,

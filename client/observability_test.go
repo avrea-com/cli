@@ -170,9 +170,12 @@ func TestObservabilityHonorsProxyAndBypass(t *testing.T) {
 		// Use httpproxy's environment parser without net/http's global environment
 		// cache, so both HTTPS_PROXY and NO_PROXY can be tested in one process.
 		t.Setenv("HTTPS_PROXY", proxy.URL)
+		t.Setenv("https_proxy", proxy.URL)
 		t.Setenv("NO_PROXY", "")
+		t.Setenv("no_proxy", "")
 		if bypass {
 			t.Setenv("NO_PROXY", "stream.example")
+			t.Setenv("no_proxy", "stream.example")
 		}
 		proxyForURL := httpproxy.FromEnvironment().ProxyFunc()
 		transport.Proxy = func(r *http.Request) (*url.URL, error) { return proxyForURL(r.URL) }

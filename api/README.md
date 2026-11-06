@@ -33,5 +33,30 @@ make go-fetch-schema OPENAPI_URL=https://<public-api-host>/<schema-path>
 
 The fetcher also accepts `AVR_OPENAPI_URL`. It validates the document and saves it
 to ignored `build/go/openapi.json`, preserving the previous file on failure.
-The schema is best-effort inspection input. Builds, tests and packaging do not
-need it, and it does not generate runtime code.
+The schema is best-effort inspection input and does not generate runtime code.
+
+## Request compatibility check
+
+```sh
+make go-api-check AVREA_CORE=/path/to/avrea-core
+# Once the public schema endpoint exists:
+make go-api-check OPENAPI_URL=https://<public-api-host>/<schema-path>
+```
+
+This fetches the current schema and checks real command-generated requests in
+`commands/api_contract_test.go`. A mock transport supplies the PR feature flag
+and rejects target requests, including writes; it never contacts an Avrea
+environment. Cases assert that the intended endpoint is reached, then compare
+the route, method, query names,
+required queries, primitive types/bounds and enum values against OpenAPI.
+
+Coverage is representative, not exhaustive: auth, organizations, repositories,
+pull-request scopes, runs, jobs, cache usage/purge and VMs. Add cases as request
+shapes change. Bodies, responses, path-value formats, streaming and full JSON
+Schema validation remain outside this check; native tests cover behavior.
+Some server routes parse queries outside OpenAPI, so these need separate tests.
+
+Run this check before release and after API-facing changes. Ordinary CI runs
+the checker's drift-detection tests but skips the external-schema cases until
+given `AVR_TEST_OPENAPI`. It does not require access to private core, a versioned
+API, or a committed schema. Normal builds, tests and packaging do not need it.
