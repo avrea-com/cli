@@ -5,11 +5,13 @@ These instructions describe the prepared release paths. Until that release
 is published, normal package-manager installs still obtain Python 0.6.0.
 PR artifacts can be downloaded and tested without changing your current `avr`.
 
-Supported native targets: macOS 13+ on Apple Silicon, Linux AMD64, and
-Windows AMD64. Linux ARM64 and Intel macOS builds are not included. PyPI
-wheels support macOS 13+, glibc Linux AMD64 and Windows AMD64. There is no
-source distribution or automatic Python fallback for an unsupported platform;
-pin `avr-cli==0.6.0` there until a native build is available.
+Supported native targets: macOS 13+ on Apple Silicon, Linux AMD64/ARM64, and
+Windows AMD64. Intel macOS builds are not included. PyPI
+wheels support macOS 13+, glibc Linux AMD64/ARM64 and Windows AMD64. Alpine uses the standalone Linux binary and shell installer; install `curl` and
+`ca-certificates` first. Alpine PyPI wheels and Intel macOS builds are not shipped.
+On platforms without a compatible wheel, an unpinned PyPI upgrade may retain
+Python 0.6.0. An exact request such as `uv tool install 'avr-cli==0.7.0'`
+fails clearly if no compatible wheel exists. There is no fallback source distribution.
 
 ## Keep your existing installation method
 

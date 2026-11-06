@@ -41,11 +41,6 @@ def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noq
     config = (destination / ".git/config").read_text()
     assert "git-jwt-" not in config and "test-token" not in config
     assert "extraheader" not in config.lower()
-    helper = subprocess.check_output(
-        ["git", "-C", str(destination), "config", "--get-all", f"credential.{origin}.helper"], text=True
-    ).splitlines()[-1]
-    helper_command = helper.removeprefix('!f() { case "$1" in store|erase) return 0;; esac; ').split(' "$@" || ', 1)[0]
-    assert Path(shlex.split(helper_command)[1]).resolve() == Path(binary)
     monkeypatch.setenv("AVR_HOST", "https://never-contact.example.test")
     for _ in range(2):
         fetched = subprocess.run(

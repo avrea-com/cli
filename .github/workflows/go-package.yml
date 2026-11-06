@@ -17,6 +17,8 @@ jobs:
             target: darwin_arm64
           - os: ubuntu-22.04
             target: linux_amd64
+          - os: ubuntu-24.04-arm
+            target: linux_arm64
           - os: windows-latest
             target: windows_amd64
     runs-on: ${{ matrix.os }}
@@ -60,6 +62,8 @@ jobs:
             target: darwin_arm64
           - os: ubuntu-22.04
             target: linux_amd64
+          - os: ubuntu-24.04-arm
+            target: linux_arm64
           - os: windows-latest
             target: windows_amd64
     runs-on: ${{ matrix.os }}
@@ -97,6 +101,14 @@ jobs:
           assert report['manifest']['dirty'] is False, report['manifest']"
       - name: Validate installers and Python package-manager upgrade paths
         run: python -m scripts.validate_go_install --directory build/go/downloaded
+      - name: Validate the Linux binary and installer on Alpine
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y podman
+          podman run --rm -v "$PWD:/src:ro" -w /src docker.io/library/alpine:3.24 \
+            sh scripts/validate_go_alpine.sh build/go/downloaded
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avr-go-download-validation-${{ matrix.target }}

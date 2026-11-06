@@ -20,7 +20,7 @@ import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGETS = {"darwin_arm64", "linux_amd64", "windows_amd64"}
+TARGETS = {"darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64"}
 
 
 def run(args, **kwargs):

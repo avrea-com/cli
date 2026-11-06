@@ -19,6 +19,7 @@ import tempfile
 import threading
 import tomllib
 import unittest
+import venv
 import zipfile
 
 
@@ -54,6 +55,54 @@ class DistributionTests(unittest.TestCase):
                     metadata = email.message_from_bytes(bundle.read("avr_cli-0.7.0rc1.dist-info/METADATA"))
                     for name in metadata.get_all("License-File", []):
                         self.assertTrue(bundle.read("avr_cli-0.7.0rc1.dist-info/licenses/" + name))
+
+    def test_pip_resolves_native_platform_wheels(self):
+        for target in distribution.PLATFORMS:
+            source = self.root / target
+            source.mkdir()
+            (source / "manifest.json").write_text(json.dumps({"target": target, "version": "0.7.0"}))
+            (source / ("avr.exe" if target.startswith("windows") else "avr")).write_bytes(b"fixture")
+            (source / "LICENSE").write_text("license")
+            (source / "THIRD-PARTY-NOTICES.txt").write_text("notices")
+            distribution.wheel(source, self.root)
+        environment = self.root / "pip"
+        venv.EnvBuilder(with_pip=True).create(environment)
+        python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        for tag, supported in [
+            *((tag, True) for tag in distribution.PLATFORMS.values()),
+            ("macosx_13_0_x86_64", False),
+            ("musllinux_1_2_aarch64", False),
+            ("musllinux_1_2_x86_64", False),
+        ]:
+            with self.subTest(platform=tag):
+                result = subprocess.run(
+                    [
+                        str(python),
+                        "-m",
+                        "pip",
+                        "--isolated",
+                        "download",
+                        "--no-index",
+                        "--no-deps",
+                        "--only-binary=:all:",
+                        "--find-links",
+                        str(self.root),
+                        "--dest",
+                        str(self.root / tag),
+                        "--platform",
+                        tag,
+                        "--python-version",
+                        "3.14",
+                        "avr-cli==0.7.0",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                )
+                self.assertEqual(result.returncode == 0, supported, result.stdout + result.stderr)
+                if supported:
+                    self.assertEqual(len(list((self.root / tag).glob("*.whl"))), 1)
 
     def test_version_rejects_unpublishable_inputs(self):
         for value in ["dev", "0.7.0;bad", "../0.7.0", "0.7.0-rc.0", "01.7.0"]:
@@ -102,7 +151,13 @@ class DistributionTests(unittest.TestCase):
 
     def fixture_archive(self, version, content):
         target = (
-            "windows_amd64" if os.name == "nt" else ("darwin_arm64" if platform.system() == "Darwin" else "linux_amd64")
+            "windows_amd64"
+            if os.name == "nt"
+            else (
+                "darwin_arm64"
+                if platform.system() == "Darwin"
+                else ("linux_arm64" if platform.machine() in {"aarch64", "arm64"} else "linux_amd64")
+            )
         )
         stem = f"avr_{version}_{target}"
         folder = self.root / "download" / ("v" + version)

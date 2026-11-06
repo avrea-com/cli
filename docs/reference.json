@@ -5836,14 +5836,16 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "List every readable PR, PRs you authored, or PRs you are involved in.",
+                "help": "List all, authored, involved, rest, or attention PRs. Attention requires open state.",
                 "hidden": false,
                 "show_default": true,
                 "default": "all",
                 "choices": [
                   "all",
                   "authored",
-                  "involved"
+                  "involved",
+                  "rest",
+                  "attention"
                 ]
               },
               {
@@ -10140,7 +10142,7 @@
             "full": "avr cache delete",
             "is_group": false,
             "short_help": "Delete cache entries by key name or all entries.",
-            "help": "Delete cache entries by key name or all entries.\n\nExactly one of --key or --all must be provided.\nWhen using --key, --type is required to scope the deletion.\n\n\b\nExamples:\n    avr cache delete --repo rep-abc123 --type gha --key \"node_modules\" --ref refs/heads/main --yes\n    avr cache delete --repo rep-abc123 --all --yes\n",
+            "help": "Delete cache entries by key name or all entries.\n\nExactly one of --key or --all must be provided.\nWhen using --key, --type is required to scope the deletion.\nWith --all, the purge runs asynchronously; the command reports its status.\n\n\b\nExamples:\n    avr cache delete --repo rep-abc123 --type gha --key \"node_modules\" --ref refs/heads/main --yes\n    avr cache delete --repo rep-abc123 --all --yes\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -10286,7 +10288,7 @@
             "full": "avr cache list",
             "is_group": false,
             "short_help": "List cache entries for a repository.",
-            "help": "List cache entries for a repository.\n\n\b\nExamples:\n    avr cache list --repo rep-abc123\n    avr cache list --repo rep-abc123 --type gha --limit 50\n    avr cache list --repo rep-abc123 --key \"node_modules\" --ref refs/heads/main\n    avr cache list --repo rep-abc123 --json key,size_bytes,created_at\n\n\b\nJSON FIELDS\n    cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version\n",
+            "help": "List cache entries for a repository.\nLarge caches use cursor pagination; follow the next-page hint on stderr.\nSort order and offsets apply only to smaller, sorted result sets.\n\n\b\nExamples:\n    avr cache list --repo rep-abc123\n    avr cache list --repo rep-abc123 --type gha --limit 50\n    avr cache list --repo rep-abc123 --key \"node_modules\" --ref refs/heads/main\n    avr cache list --repo rep-abc123 --json key,size_bytes,created_at\n\n\b\nJSON FIELDS\n    cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -10414,10 +10416,28 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Number of entries to skip.",
+                "help": "Number of entries to skip in sorted results.",
                 "hidden": false,
                 "show_default": true,
                 "default": 0
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Pagination cursor for large caches. Cannot combine with --offset.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               },
               {
                 "name": "order",

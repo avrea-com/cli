@@ -43,7 +43,7 @@ func newPRList(d Dependencies) *cobra.Command {
 	f := c.Flags()
 	f.StringVar(&org, "org", "", "Organization ID or slug.")
 	f.StringArrayVar(&repos, "repo", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
-	f.StringVar(&scope, "scope", "all", "List all, authored, or involved pull requests.")
+	f.StringVar(&scope, "scope", "all", "List all, authored, involved, rest, or attention pull requests.")
 	f.StringVar(&state, "state", "open", "Filter by state: open, closed, merged, or all.")
 	f.IntVarP(&limit, "limit", "L", 20, "Maximum pull requests (1–200).")
 	f.StringVar(&cursor, "cursor", "", "Pagination cursor.")
@@ -52,11 +52,14 @@ func newPRList(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --limit must be between 1 and 200."}
 		}
 		scope, state = strings.ToLower(scope), strings.ToLower(state)
-		if !slices.Contains([]string{"all", "authored", "involved"}, scope) {
+		if !slices.Contains([]string{"all", "authored", "involved", "rest", "attention"}, scope) {
 			return &ExitError{2, "Error: invalid --scope: " + output.CellText(scope)}
 		}
 		if !slices.Contains([]string{"open", "closed", "merged", "all"}, state) {
 			return &ExitError{2, "Error: invalid --state: " + output.CellText(state)}
+		}
+		if scope == "attention" && state != "open" {
+			return &ExitError{2, "Error: --scope attention requires --state open."}
 		}
 		if done, err := o.prepare(cmd, d, prFields); done || err != nil {
 			return err
@@ -87,7 +90,10 @@ func newPRList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		query := url.Values{"scope": {scope}, "limit": {strconv.Itoa(limit)}}
+		query := url.Values{"limit": {strconv.Itoa(limit)}}
+		if scope != "all" {
+			query.Set("scope", scope)
+		}
 		if state != "all" {
 			query.Set("state", state)
 		}
@@ -106,13 +112,14 @@ func newPRList(d Dependencies) *cobra.Command {
 		}
 		rows := rawRecords(page)
 		if f.Changed("json") {
-			return o.list(cmd, d, rows, prFields)
-		}
-		if len(rows) == 0 {
-			_, err = fmt.Fprintln(d.Out, "No pull requests found.")
-			return err
-		}
-		if !d.IsTerminal() {
+			err = o.list(cmd, d, rows, prFields)
+		} else if len(rows) == 0 {
+			message := "No pull requests found."
+			if page.NextCursor != "" {
+				message = "No pull requests found on this page."
+			}
+			_, err = fmt.Fprintln(d.Out, message)
+		} else if !d.IsTerminal() {
 			err = renderPRPipe(d, rows)
 		} else {
 			slug := ""

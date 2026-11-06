@@ -16,6 +16,7 @@ func main() {
 	if version == "" {
 		version = buildversion.Current()
 	}
+	enableVirtualTerminal(os.Stdout, os.Stderr)
 	commands.IgnoreBrokenPipe()
 	ctx, stop := commands.InterruptContext(context.Background())
 	checker := update.New(version)

@@ -7,6 +7,8 @@ avr-cache-list \- List cache entries for a repository.
 .SH DESCRIPTION
 List cache entries for a repository.
 .PP
+List cache entries for a repository. Large caches use cursor pagination; follow the next-page hint on stderr. Sort order and offsets apply only to smaller, sorted result sets.
+.PP
 .RS 4
 .nf
 Examples:
@@ -44,7 +46,10 @@ Filter by exact ref match.
 Max entries to return. (default: 100)
 .TP
 \fB\-\-offset\fR \fIINTEGER RANGE\fR
-Number of entries to skip. (default: 0)
+Number of entries to skip in sorted results. (default: 0)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor for large caches. Cannot combine with --offset.
 .TP
 \fB\-\-order\fR \fICHOICE\fR
 Sort order. (choices: created_at.desc, created_at.asc; default: created_at.desc)

@@ -137,7 +137,7 @@ func vmSSHConfigPath(value, label string) (string, error) {
 	if strings.Contains(value, "\"") {
 		return "", &ExitError{1, "Error: SSH config " + label + " contains a double quote, which ssh_config cannot escape; refusing to write it."}
 	}
-	if strings.IndexFunc(value, unicode.IsSpace) >= 0 {
+	if strings.Contains(value, "'") || strings.IndexFunc(value, unicode.IsSpace) >= 0 {
 		return "\"" + value + "\"", nil
 	}
 	return value, nil

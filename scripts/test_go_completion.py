@@ -97,7 +97,12 @@ def test_bash_generated_setup_completes_words_and_paths(tmp_path, package):
             timeout=10,
         )
         assert result.returncode == 0 and not result.stderr, result
-        assert result.stdout.decode().split("\0")[:-1] == [expected[-1]]
+        values = result.stdout.decode().split("\0")[:-1]
+        # Bash 3.2 returns shell-quoted path candidates; newer Bash delegates
+        # quoting to Readline through compopt. The PTY test covers insertion.
+        if args[0:2] == ["repo", "clone"]:
+            values = [value.replace("\\ ", " ") for value in values]
+        assert values == [expected[-1]]
 
 
 @pytest.mark.parametrize("autoload", [False, True])
@@ -184,3 +189,51 @@ def test_fish_generated_setup_completes_words_and_paths(tmp_path, package):
         assert result.returncode == 0 and not result.stderr, result
         values = [line.split("\t", 1)[0] for line in result.stdout.splitlines()]
         assert values == [expected[-1]]
+
+
+@pytest.mark.parametrize("shell", list(dict.fromkeys(filter(None, [shutil.which("bash"), "/bin/bash"]))))
+def test_bash_readline_distinguishes_commands_and_paths(tmp_path, package, shell):
+    program, env = package
+    setup = source(tmp_path, package, "bash")
+    (tmp_path / "tests").mkdir()
+    capture = tmp_path / "completed-args"
+    master, slave = pty.openpty()
+    process = subprocess.Popen(
+        [shell, "--noprofile", "--norc", "-i"],
+        env=env,
+        cwd=tmp_path,
+        stdin=slave,
+        stdout=slave,
+        stderr=slave,
+        start_new_session=True,
+    )
+    chunks = bytearray()
+
+    def until(predicate):
+        deadline = time.monotonic() + 10
+        while not predicate():
+            assert time.monotonic() < deadline and process.poll() is None, bytes(chunks)
+            if select.select([master], [], [], 0.05)[0]:
+                chunks.extend(os.read(master, 65536))
+
+    try:
+        os.write(
+            master,
+            ("source " + shlex.quote(str(setup)) + "; bind 'set editing-mode emacs'; echo READY_DONE\n").encode(),
+        )
+        until(lambda: b"\r\nREADY_DONE\r\n" in chunks)
+        for args, expected in [(["tes"], ["tests"]), *CASES]:
+            capture.unlink(missing_ok=True)
+            # Complete with real Readline, then turn the resulting line into a
+            # printf invocation. No AVR command or filesystem mutation runs.
+            line = shlex.join([program, *args]) + "\t\x01printf '%s\\n' \x05 > " + shlex.quote(str(capture)) + "\n"
+            os.write(master, line.encode())
+            until(capture.exists)
+            until(lambda: bool(capture.read_text()))
+            assert capture.read_text().splitlines() == [program, *expected], bytes(chunks)
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait(timeout=5)
+        os.close(master)
+        os.close(slave)

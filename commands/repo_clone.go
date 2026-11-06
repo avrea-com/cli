@@ -169,7 +169,10 @@ func mirrorProbeFailure(endpoints []string, failures map[string]string) error {
 func cloneCredentialConfig(executable, apiHost, target, repo string) []string {
 	// Prefer a stable launcher only after verifying it resolves to this binary.
 	// An unrelated avr on PATH may still be the Python CLI.
-	command := "AVR_HOST=" + shellquote.Join(apiHost) + " " + shellquote.Join(executable, "auth", "git-credential", "--url", target, "--repo", repo)
+	// Only a removed installation permits PATH fallback. Authentication failures
+	// from an existing executable must not invoke another CLI.
+	selectExecutable := "avr_helper=" + shellquote.Join(executable) + "; if [ ! -e \"$avr_helper\" ]; then avr_helper=avr; fi; "
+	command := selectExecutable + "AVR_HOST=" + shellquote.Join(apiHost) + " \"$avr_helper\" " + shellquote.Join("auth", "git-credential", "--url", target, "--repo", repo)
 	helper := "!f() { case \"$1\" in store|erase) return 0;; esac; " + command + " \"$@\" || { printf \"quit=1\\n\\n\"; exit 1; }; }; f"
 	return []string{"credential." + target + ".helper=", "credential." + target + ".helper=" + helper, "credential." + target + ".useHttpPath=true", "http." + target + ".followRedirects=false"}
 }
@@ -180,7 +183,6 @@ func cloneHelperExecutable(executable, invoked string) string {
 		return executable
 	}
 	candidates := []string{invoked, "avr"}
-	fallback := executable
 	for _, candidate := range candidates {
 		path, err := exec.LookPath(candidate)
 		if err != nil {
@@ -194,14 +196,9 @@ func cloneHelperExecutable(executable, invoked string) string {
 			if launcher, err := os.Lstat(path); err == nil && launcher.Mode()&os.ModeSymlink != 0 {
 				return path // Homebrew/uv/pipx's persistent symlink.
 			}
-			if candidate == "avr" {
-				// mise puts a versioned directory on PATH. Resolve its current
-				// selection when Git runs, rather than saving that old directory.
-				fallback = "avr"
-			}
 		}
 	}
-	return fallback
+	return executable
 }
 func cloneEnvironment() []string {
 	var env []string

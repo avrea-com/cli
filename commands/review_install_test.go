@@ -200,9 +200,9 @@ func TestCloneHelperRetainsStableLauncherAcrossUpgrade(t *testing.T) {
 	}
 }
 
-func TestCloneHelperFollowsVersionedPATHSelection(t *testing.T) {
+func TestCloneHelperAbsolutePathAndMissingOnlyFallback(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX executable fixture")
+		t.Skip("POSIX shell fixture")
 	}
 	dir := t.TempDir()
 	old, newer := filepath.Join(dir, "old", "avr"), filepath.Join(dir, "new", "avr")
@@ -210,21 +210,46 @@ func TestCloneHelperFollowsVersionedPATHSelection(t *testing.T) {
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, []byte("#!/bin/sh\necho upgraded\n"), 0755); err != nil {
+		if err := os.WriteFile(path, []byte("#!/bin/sh\necho "+filepath.Base(filepath.Dir(path))+"\n"), 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	t.Setenv("PATH", filepath.Dir(old))
 	helper := cloneHelperExecutable(old, old)
-	if helper != "avr" {
-		t.Fatal(helper)
+	if helper != old {
+		t.Fatalf("saved helper %q, want absolute %q", helper, old)
 	}
-	t.Setenv("PATH", filepath.Dir(newer))
-	if err := os.Remove(old); err != nil {
-		t.Fatal(err)
-	}
-	result, err := exec.CommandContext(t.Context(), helper).Output()
-	if err != nil || string(result) != "upgraded\n" {
-		t.Fatal(string(result), err)
+	config := cloneCredentialConfig(helper, "https://api.test", "https://mirror.test/repo", "org/repo")
+	_, command, _ := strings.Cut(config[1], ".helper=!")
+	for _, tc := range []struct {
+		name, path, want string
+		fail             bool
+	}{
+		{"different PATH", dir, "old\n", false},
+		{"failure must not fall back", filepath.Dir(newer), "", true},
+		{"removed executable", filepath.Dir(newer), "new\n", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.fail {
+				if err := os.WriteFile(old, []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if tc.name == "removed executable" {
+				if err := os.Remove(old); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("PATH", tc.path)
+			cmd := exec.CommandContext(t.Context(), "/bin/sh", "-c", command+" get")
+			result, err := cmd.Output()
+			if tc.fail {
+				if err == nil || string(result) != "quit=1\n\n" {
+					t.Fatal(err, string(result))
+				}
+			} else if err != nil || string(result) != tc.want {
+				t.Fatal(err, string(result))
+			}
+		})
 	}
 }

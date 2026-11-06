@@ -21,6 +21,7 @@ import zipfile
 PLATFORMS = {
     "darwin_arm64": "macosx_13_0_arm64",
     "linux_amd64": "manylinux_2_17_x86_64",
+    "linux_arm64": "manylinux_2_17_aarch64",
     "windows_amd64": "win_amd64",
 }
 
@@ -144,9 +145,14 @@ def channels(directory, version, commit=None):
   end
 
   on_linux do
-    depends_on arch: :x86_64
-    url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_linux_amd64.tar.gz"
-    sha256 "{reports["linux_amd64"]}"
+    on_intel do
+      url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_linux_amd64.tar.gz"
+      sha256 "{reports["linux_amd64"]}"
+    end
+    on_arm do
+      url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_linux_arm64.tar.gz"
+      sha256 "{reports["linux_arm64"]}"
+    end
   end
 
   def install
@@ -174,6 +180,7 @@ end
     for platform, target in [
         ("macos-arm64", "darwin_arm64"),
         ("linux-x64", "linux_amd64"),
+        ("linux-arm64", "linux_arm64"),
         ("windows-x64", "windows_amd64"),
     ]:
         suffix = "zip" if target == "windows_amd64" else "tar.gz"

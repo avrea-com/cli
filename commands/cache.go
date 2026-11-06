@@ -68,7 +68,7 @@ func cacheScopeFlags(c *cobra.Command, org, repo *string) {
 }
 
 func newCacheList(d Dependencies) *cobra.Command {
-	var org, repo, kind, key, ref, order string
+	var org, repo, kind, key, ref, order, cursor string
 	var limit, offset int
 	var web bool
 	var o jsonOptions
@@ -80,7 +80,8 @@ func newCacheList(d Dependencies) *cobra.Command {
 	f.StringVar(&key, "key", "", "Filter by key prefix.")
 	f.StringVar(&ref, "ref", "", "Filter by exact ref match.")
 	f.IntVarP(&limit, "limit", "L", 100, "Maximum entries (1–1000).")
-	f.IntVar(&offset, "offset", 0, "Number of entries to skip.")
+	f.IntVar(&offset, "offset", 0, "Number of entries to skip in sorted results.")
+	f.StringVar(&cursor, "cursor", "", "Pagination cursor for large repository caches (cannot combine with --offset).")
 	f.StringVar(&order, "order", "created_at.desc", "Sort order: created_at.desc or created_at.asc.")
 	f.BoolVar(&web, "web", false, "Open in browser.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
@@ -89,6 +90,9 @@ func newCacheList(d Dependencies) *cobra.Command {
 		}
 		if offset < 0 {
 			return &ExitError{2, "Error: --offset must be at least 0."}
+		}
+		if f.Changed("cursor") && (cursor == "" || f.Changed("offset")) {
+			return &ExitError{2, "Error: --cursor must be nonempty and cannot be combined with --offset."}
 		}
 		if order != "created_at.desc" && order != "created_at.asc" {
 			return &ExitError{2, "Error: invalid --order: " + output.CellText(order)}
@@ -130,15 +134,17 @@ func newCacheList(d Dependencies) *cobra.Command {
 		if offset != 0 {
 			query.Set("offset", strconv.Itoa(offset))
 		}
+		if cursor != "" {
+			query.Set("after", cursor)
+		}
 		page, err := api.CacheEntries(cmd.Context(), id, rid, query)
 		if err != nil {
 			return apiError(cfg, err, "list cache entries")
 		}
 		rows := rawRecords(page)
 		if f.Changed("json") {
-			return o.list(cmd, d, rows, cacheFields)
-		}
-		if !d.IsTerminal() {
+			err = o.list(cmd, d, rows, cacheFields)
+		} else if !d.IsTerminal() {
 			headers := []string{"cache_type", "key", "ref", "size_bytes", "created_at"}
 			var cells [][]string
 			for _, row := range rows {
@@ -151,9 +157,8 @@ func newCacheList(d Dependencies) *cobra.Command {
 				}
 				cells = append(cells, values)
 			}
-			return output.Table(d.Out, headers, cells, true)
-		}
-		if len(rows) == 0 {
+			err = output.Table(d.Out, headers, cells, true)
+		} else if len(rows) == 0 {
 			_, err = fmt.Fprintln(d.Out, "No data found.")
 		} else {
 			var cells [][]string
@@ -170,6 +175,12 @@ func newCacheList(d Dependencies) *cobra.Command {
 			err = output.Grid(d.Out, []string{"Type", "Key", "Ref", "Size", "Created"}, cells)
 		}
 		if err != nil {
+			return err
+		}
+		if page.Fields["streaming"] == true {
+			if next := fieldText(page.Fields, "next_cursor"); next != "" {
+				_, err = fmt.Fprintf(d.Err, "\nMore results available. Next page: --cursor %s\n", shellQuotePython(output.CellText(next)))
+			}
 			return err
 		}
 		total := float64(len(rows))
@@ -304,6 +315,19 @@ func newCacheDelete(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, action)
 		}
+		if all {
+			status := "requested"
+			if purge, ok := response["purge"].(map[string]any); ok {
+				switch purge["state"] {
+				case "queued":
+					status = "queued"
+				case "running":
+					status = "running"
+				}
+			}
+			_, err = fmt.Fprintf(d.Out, "Cache purge %s for %s.\n", status, output.CellText(label))
+			return err
+		}
 		count := "0"
 		if value, ok := response["deleted_count"]; ok {
 			count = pythonValue(value)
@@ -312,11 +336,7 @@ func newCacheDelete(d Dependencies) *cobra.Command {
 		if metricNumber(response["deleted_count"]) == 1 {
 			noun = "entry"
 		}
-		if key != "" {
-			_, err = fmt.Fprintf(d.Out, "Deleted %s cache %s.\n", count, noun)
-		} else {
-			_, err = fmt.Fprintf(d.Out, "Purged %s cache %s from %s.\n", count, noun, output.CellText(label))
-		}
+		_, err = fmt.Fprintf(d.Out, "Deleted %s cache %s.\n", count, noun)
 		return err
 	})
 	return c

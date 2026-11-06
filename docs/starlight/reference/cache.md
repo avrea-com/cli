@@ -21,6 +21,7 @@ avr cache delete [OPTIONS]
 
 Exactly one of --key or --all must be provided.
 When using --key, --type is required to scope the deletion.
+With --all, the purge runs asynchronously; the command reports its status.
 
 ```sh
 Examples:
@@ -46,6 +47,10 @@ List cache entries for a repository.
 avr cache list [OPTIONS]
 ```
 
+List cache entries for a repository.
+Large caches use cursor pagination; follow the next-page hint on stderr.
+Sort order and offsets apply only to smaller, sorted result sets.
+
 ```sh
 Examples:
     avr cache list --repo rep-abc123
@@ -67,7 +72,8 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;key</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by key prefix.
 - <code class="cli-flag">&#x2D;&#x2D;ref</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by exact ref match.
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max entries to return. _(default: `100`)_
-- <code class="cli-flag">&#x2D;&#x2D;offset</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Number of entries to skip. _(default: `0`)_
+- <code class="cli-flag">&#x2D;&#x2D;offset</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Number of entries to skip in sorted results. _(default: `0`)_
+- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Pagination cursor for large caches. Cannot combine with --offset.
 - <code class="cli-flag">&#x2D;&#x2D;order</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Sort order. _(choices: `created_at.desc`, `created_at.asc` · default: `created_at.desc`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.

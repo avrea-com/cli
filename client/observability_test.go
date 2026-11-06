@@ -3,10 +3,14 @@ package client
 import (
 	"context"
 	"errors"
+	"golang.org/x/net/http/httpproxy"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -37,7 +41,7 @@ func TestObservabilityIdleKeepsConnectionAndCancellationClosesIt(t *testing.T) {
 	}))
 	defer server.Close()
 	h := server.Client()
-	h.Transport.(*http.Transport).Proxy = func(*http.Request) (*url.URL, error) { t.Error("stream used a proxy"); return nil, nil }
+	h.Transport.(*http.Transport).Proxy = func(*http.Request) (*url.URL, error) { return nil, nil }
 	c := New(config.Config{Host: server.URL + "/prefix", Token: "fixture"}, h, "avr/test")
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -117,5 +121,87 @@ func TestObservabilityBoundsFrameSize(t *testing.T) {
 	data, err := stream.Next(t.Context(), 5*time.Second)
 	if data != nil || err == nil {
 		t.Fatal("oversized frame was not rejected", len(data), err)
+	}
+}
+
+func TestObservabilityHonorsProxyAndBypass(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer func() { _ = conn.CloseNow() }()
+		_ = conn.Write(r.Context(), websocket.MessageText, []byte("proxied"))
+		_, _, _ = conn.Read(r.Context())
+	}))
+	defer server.Close()
+	var connections atomic.Int32
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		connections.Add(1)
+		if r.Method != "CONNECT" || r.Host != "stream.example:443" {
+			t.Error("proxy request", r.Method, r.Host)
+			http.Error(w, "bad tunnel", 400)
+			return
+		}
+		upstream, err := (&net.Dialer{Timeout: 5 * time.Second}).DialContext(r.Context(), "tcp", server.Listener.Addr().String())
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer func() { _ = upstream.Close() }()
+		downstream, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer func() { _ = downstream.Close() }()
+		_, _ = io.WriteString(downstream, "HTTP/1.1 200 Connection Established\r\n\r\n")
+		done := make(chan struct{})
+		go func() { _, _ = io.Copy(upstream, downstream); close(done) }()
+		_, _ = io.Copy(downstream, upstream)
+		_ = downstream.Close()
+		<-done
+	}))
+	defer proxy.Close()
+	for _, bypass := range []bool{false, true} {
+		h := server.Client()
+		transport := h.Transport.(*http.Transport).Clone()
+		// Use httpproxy's environment parser without net/http's global environment
+		// cache, so both HTTPS_PROXY and NO_PROXY can be tested in one process.
+		t.Setenv("HTTPS_PROXY", proxy.URL)
+		t.Setenv("NO_PROXY", "")
+		if bypass {
+			t.Setenv("NO_PROXY", "stream.example")
+		}
+		proxyForURL := httpproxy.FromEnvironment().ProxyFunc()
+		transport.Proxy = func(r *http.Request) (*url.URL, error) { return proxyForURL(r.URL) }
+		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
+		transport.TLSClientConfig.ServerName = "example.com"
+		transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+			if address == "stream.example:443" {
+				address = server.Listener.Addr().String()
+			}
+			return (&net.Dialer{}).DialContext(ctx, network, address)
+		}
+		h.Transport = transport
+		before := connections.Load()
+		c := New(config.Config{Host: "https://stream.example", Token: "fixture"}, h, "test")
+		stream, err := c.OpenObservability(t.Context(), "/stream", "metrics", 5*time.Second)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := stream.Next(t.Context(), 5*time.Second)
+		stream.Close()
+		if err != nil || string(data) != "proxied" {
+			t.Fatal(err, string(data))
+		}
+		expected := int32(1)
+		if bypass {
+			expected = 0
+		}
+		if got := connections.Load() - before; got != expected {
+			t.Fatalf("bypass=%v: proxy connections %d, want %d", bypass, got, expected)
+		}
 	}
 }

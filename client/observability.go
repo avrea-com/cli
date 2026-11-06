@@ -53,15 +53,13 @@ func (c *Client) OpenObservability(ctx context.Context, path, signal string, tim
 	h.Timeout = 0
 	h.Jar = nil
 	h.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	// Match the REST client's direct connection policy without mutating a shared transport.
+	// Preserve REST proxy settings while keeping stream connection ownership separate.
 	transport := h.Transport
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
 	if t, ok := transport.(*http.Transport); ok {
-		direct := t.Clone()
-		direct.Proxy = nil
-		h.Transport = direct
+		h.Transport = t.Clone()
 	}
 	defer h.CloseIdleConnections()
 	headers := http.Header{"User-Agent": {c.UserAgent}}

@@ -5,7 +5,7 @@ The Go version is `internal/version/VERSION`, currently `0.7.0`.
 available as the published 0.6.0 package.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
 
-`go-package.yml` prepares these artifacts on all three native runners:
+`go-package.yml` prepares these artifacts on all four native runners:
 
 - Versioned archives, checksums, native wheels, and validation reports.
 - A replacement `avr.rb` with actual archive checksums and Go completion paths.
@@ -17,6 +17,8 @@ native installer against a loopback release fixture. The pip test upgrades
 from the published, checksum-pinned Python 0.6.0 wheel and rolls back. Neither path contacts
 Avrea services or uses real credentials. Installer regression fixtures cover
 upgrade, rollback, checksum failure, unmanaged destinations and paths with spaces.
+Linux AMD64 and ARM64 additionally run the installer tests and binary smoke
+checks in Alpine. Alpine uses standalone binaries, not PyPI wheels.
 
 Run the portable tests and native build locally:
 
@@ -35,7 +37,7 @@ Go and Python executable overrides are supported by the underlying scripts.
 
 Before publishing:
 
-1. Land the avrea-core admin dependency pin and update admin installation
+1. Land the avrea-core admin and control dependency pins and update admin installation
    metadata. Keep its Python environment separate from the public Go CLI.
 2. Require green native regression/race/lint checks and all native package/install
    validations for the exact release commit. Review generated notices/SBOMs.

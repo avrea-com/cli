@@ -16,7 +16,8 @@ case "$bin_dir" in /*) ;; *) fail '--bin-dir must be absolute' ;; esac
 case "$(uname -s)/$(uname -m)" in
   Darwin/arm64) target=darwin_arm64 ;;
   Linux/x86_64) target=linux_amd64 ;;
-  *) fail 'Supported platforms: macOS ARM64 and Linux AMD64. Use PowerShell on Windows AMD64.' ;;
+  Linux/aarch64|Linux/arm64) target=linux_arm64 ;;
+  *) fail 'Supported platforms: macOS ARM64 and Linux AMD64/ARM64. Use PowerShell on Windows AMD64.' ;;
 esac
 command -v curl >/dev/null || fail 'curl is required'
 command -v tar >/dev/null || fail 'tar is required'

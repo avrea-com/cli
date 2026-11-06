@@ -11,6 +11,7 @@ func cacheDescription(path string) docgen.Description {
 				"\n" +
 				"Exactly one of --key or --all must be provided.\n" +
 				"When using --key, --type is required to scope the deletion.\n" +
+				"With --all, the purge runs asynchronously; the command reports its status.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -31,6 +32,8 @@ func cacheDescription(path string) docgen.Description {
 	case "avr cache list":
 		return docgen.Description{
 			Help: "List cache entries for a repository.\n" +
+				"Large caches use cursor pagination; follow the next-page hint on stderr.\n" +
+				"Sort order and offsets apply only to smaller, sorted result sets.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -50,7 +53,8 @@ func cacheDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "key", Kind: "option", Opts: []string{"--key"}, Type: "text", Nargs: 1, Help: descriptionText("Filter by key prefix.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "ref", Kind: "option", Opts: []string{"--ref"}, Type: "text", Nargs: 1, Help: descriptionText("Filter by exact ref match.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "limit", Kind: "option", Opts: []string{"-L", "--limit"}, Type: "integer range", Nargs: 1, Help: descriptionText("Max entries to return."), ShowDefault: true, Default: 100}, Suffix: "  [default: 100; 1<=x<=1000]", CompletionKind: "IntRange"},
-				{Param: docgen.Param{Name: "offset", Kind: "option", Opts: []string{"--offset"}, Type: "integer range", Nargs: 1, Help: descriptionText("Number of entries to skip."), ShowDefault: true, Default: 0}, Suffix: "  [default: 0; x>=0]", CompletionKind: "IntRange"},
+				{Param: docgen.Param{Name: "offset", Kind: "option", Opts: []string{"--offset"}, Type: "integer range", Nargs: 1, Help: descriptionText("Number of entries to skip in sorted results."), ShowDefault: true, Default: 0}, Suffix: "  [default: 0; x>=0]", CompletionKind: "IntRange"},
+				{Param: docgen.Param{Name: "cursor", Kind: "option", Opts: []string{"--cursor"}, Type: "text", Nargs: 1, Help: descriptionText("Pagination cursor for large caches. Cannot combine with --offset.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "order", Kind: "option", Opts: []string{"--order"}, Type: "choice", Nargs: 1, Help: descriptionText("Sort order."), ShowDefault: true, Default: "created_at.desc", Choices: []string{"created_at.desc", "created_at.asc"}}, Suffix: "  [default: created_at.desc]", CompletionKind: "Choice", CaseSensitive: true},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "jq_expr", Kind: "option", Opts: []string{"-q", "--jq"}, Type: "text", Nargs: 1, Help: descriptionText("Filter --json output through a jq expression.")}, CompletionKind: "String"},
