@@ -165,7 +165,11 @@ func TestGitLabRunnerDetailsEscapeUntrustedValues(t *testing.T) {
 
 func TestCloneHelperRetainsStableLauncherAcrossUpgrade(t *testing.T) {
 	dir := t.TempDir()
-	old, newer, launcher := filepath.Join(dir, "version-one"), filepath.Join(dir, "version-two"), filepath.Join(dir, "avr")
+	suffix := ""
+	if runtime.GOOS == "windows" {
+		suffix = ".exe"
+	}
+	old, newer, launcher := filepath.Join(dir, "version-one"+suffix), filepath.Join(dir, "version-two"+suffix), filepath.Join(dir, "avr"+suffix)
 	for _, path := range []string{old, newer} {
 		if err := os.WriteFile(path, []byte(path), 0755); err != nil {
 			t.Fatal(err)

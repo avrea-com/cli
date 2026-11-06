@@ -18,6 +18,16 @@ $temp = Join-Path ([IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
 [IO.Directory]::CreateDirectory($temp) | Out-Null
 $staged = $null
 $markerStaged = $null
+# Use .NET directly: a PowerShell 5.1 child of PowerShell 7 can inherit a module
+# search path where Get-FileHash is unavailable.
+function Get-InstallDigest([string]$Path) {
+    $hash = [Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try { return [BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
+        finally { $stream.Dispose() }
+    } finally { $hash.Dispose() }
+}
 function Move-InstallFile([string]$Source, [string]$Destination) {
     if (Test-Path -LiteralPath $Destination) { [IO.File]::Replace($Source, $Destination, [NullString]::Value) }
     else { [IO.File]::Move($Source, $Destination) }
@@ -32,7 +42,7 @@ try {
     $archive = "$name.zip"
     Invoke-WebRequest "$base/download/v$Version/$archive" -UseBasicParsing -OutFile "$temp\$archive" -TimeoutSec 120
     Invoke-WebRequest "$base/download/v$Version/$archive.sha256" -UseBasicParsing -OutFile "$temp\checksum" -TimeoutSec 120
-    $digest = (Get-FileHash "$temp\$archive" -Algorithm SHA256).Hash.ToLowerInvariant()
+    $digest = Get-InstallDigest "$temp\$archive"
     if ([IO.File]::ReadAllText("$temp\checksum").Trim() -cne "$digest  $archive") { throw 'Checksum mismatch.' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [IO.Compression.ZipFile]::OpenRead("$temp\$archive")
@@ -53,12 +63,12 @@ try {
         if ((Test-Path -LiteralPath $path) -and -not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Destination must be a file.' }
     }
     if (Test-Path -LiteralPath $dest) {
-        $oldDigest = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash.ToLowerInvariant()
+        $oldDigest = Get-InstallDigest $dest
         $owned = $false
         foreach ($path in @($marker, $pending)) {
             if ((Test-Path -LiteralPath $path) -and [IO.File]::ReadAllText($path).Trim() -ceq "native $oldDigest") { $owned = $true }
         }
-        $requestedDigest = (Get-FileHash -LiteralPath "$temp\avr.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+        $requestedDigest = Get-InstallDigest "$temp\avr.exe"
         if ((Test-Path -LiteralPath $marker) -and $oldDigest -ceq $requestedDigest) { $owned = $true }
         if (-not $owned) {
             throw 'Destination contains an unmanaged or changed avr. Choose another directory.'
@@ -66,7 +76,7 @@ try {
     }
     $staged = Join-Path $BinDir ('.avr-' + [Guid]::NewGuid().ToString())
     Copy-Item -LiteralPath "$temp\avr.exe" -Destination $staged
-    $newDigest = (Get-FileHash -LiteralPath $staged -Algorithm SHA256).Hash.ToLowerInvariant()
+    $newDigest = Get-InstallDigest $staged
     $markerStaged = Join-Path $BinDir ('.avr-marker-' + [Guid]::NewGuid().ToString())
     [IO.File]::WriteAllText($markerStaged, "native $newDigest`n")
     Move-InstallFile $markerStaged $pending
