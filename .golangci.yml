@@ -1,0 +1,16 @@
+version: "2"
+
+run:
+  allow-serial-runners: true
+
+# Public-module subset of avrea-core's Go checks, including tests.
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - errorlint
+    - noctx
+    - nilerr
+    - wastedassign

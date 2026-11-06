@@ -1,6 +1,6 @@
 # avr(1) — Avrea command-line client
 
-Reference for `avr` v0.6.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
+Reference for `avr` v0.7.0. Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.
 
 ## Name
 
@@ -477,7 +477,7 @@ JSON FIELDS
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
-- `--scope <CHOICE>` — List every readable PR, PRs you authored, or PRs you are involved in. _(choices: `all`, `authored`, `involved` · default: `all`)_
+- `--scope <CHOICE>` — List all, authored, involved, rest, or attention PRs. Attention requires open state. _(choices: `all`, `authored`, `involved`, `rest`, `attention` · default: `all`)_
 - `--state <CHOICE>` — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
 - `-L, --limit <INTEGER RANGE>` — Max PRs to return. _(default: `20`)_
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
@@ -1293,6 +1293,7 @@ avr cache delete [OPTIONS]
 
 Exactly one of --key or --all must be provided.
 When using --key, --type is required to scope the deletion.
+With --all, the purge runs asynchronously; the command reports its status.
 
 ```sh
 Examples:
@@ -1318,6 +1319,10 @@ List cache entries for a repository.
 avr cache list [OPTIONS]
 ```
 
+List cache entries for a repository.
+Large caches use cursor pagination; follow the next-page hint on stderr.
+Sort order and offsets apply only to smaller, sorted result sets.
+
 ```sh
 Examples:
     avr cache list --repo rep-abc123
@@ -1339,7 +1344,8 @@ JSON FIELDS
 - `--key <TEXT>` — Filter by key prefix.
 - `--ref <TEXT>` — Filter by exact ref match.
 - `-L, --limit <INTEGER RANGE>` — Max entries to return. _(default: `100`)_
-- `--offset <INTEGER RANGE>` — Number of entries to skip. _(default: `0`)_
+- `--offset <INTEGER RANGE>` — Number of entries to skip in sorted results. _(default: `0`)_
+- `--cursor <TEXT>` — Pagination cursor for large caches. Cannot combine with --offset.
 - `--order <CHOICE>` — Sort order. _(choices: `created_at.desc`, `created_at.asc` · default: `created_at.desc`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.

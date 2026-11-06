@@ -13,6 +13,10 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Install
 
+The upcoming native Go 0.7.0 release keeps the `avr` command and existing
+package-manager upgrade paths. See [native installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+for artifact testing, supported platforms, and migration details.
+
 ### Homebrew
 
 ```sh
@@ -25,9 +29,9 @@ brew install avrea-com/tap/avr
 uv tool install avr-cli
 ```
 
-`uv tool install` puts `avr` on your `PATH` in an isolated environment
-and fetches Python 3.14 automatically if you don't have it. Or, with an
-existing Python 3.14:
+Until 0.7.0 is published, this installs Python 0.6.0 and requires Python
+3.14+. Native 0.7.0 wheels require Python 3.9+ for installation; the installed
+`avr` executable runs without Python. You can also install with pip:
 
 ```sh
 pip install avr-cli
@@ -36,13 +40,18 @@ pip install avr-cli
 ### From source
 
 ```sh
-git clone https://github.com/avrea-com/cli && cd cli && uv sync
-uv run avr --version
+git clone git@github.com:avrea-com/cli.git
+cd cli
+make go-build
+./build/go/avr --version
 ```
+
+Source builds require Go 1.27.3+ and uv (for packaging tools). Run
+`make test` for native and tooling tests, and `make lint` for both languages.
 
 ### Verifying a release
 
-Release artefacts (the binary tarballs and the PyPI wheel/sdist) carry keyless
+Release artefacts (the native archives and PyPI wheels) carry keyless
 [SLSA build provenance](https://slsa.dev/) signed via Sigstore. Verify a
 downloaded artefact against this repository with the GitHub CLI:
 
@@ -318,6 +327,7 @@ avr workflow list --json name,runs -q '.[] | "\(.runs)\t\(.name)"'
 ```
 
 `-q/--jq` is built in (no need to pipe to `jq` yourself), but the schema-projected output is also `jq`-friendly.
+The Go CLI uses embedded gojq, like GitHub CLI: object keys are sorted. For ordered columns use explicit fields, for example `[.status,.conclusion,.run_id]`. See [installation notes](docs/INSTALL.md#json-and-jq).
 
 **Detect "auth required" in scripts**
 

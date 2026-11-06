@@ -1,0 +1,8 @@
+set -euo pipefail
+if ! command -v gh >/dev/null 2>&1; then
+  echo "gh CLI not found on the VM; cannot set up GitHub auth" >&2
+  exit 1
+fi
+gh auth login --with-token
+gh auth setup-git
+echo "GitHub: authenticated as $(gh api user -q .login 2>/dev/null || echo unknown)"

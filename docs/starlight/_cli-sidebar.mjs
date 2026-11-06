@@ -1,4 +1,4 @@
-// Auto-generated from the avr Click tree by `avr internal docs`.
+// Auto-generated from the avr command tree by `avr internal docs`.
 // Do not edit by hand — regenerate via `make -C avr-cli docs`.
 
 export default {

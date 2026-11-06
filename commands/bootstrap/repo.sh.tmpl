@@ -1,0 +1,13 @@
+set -euo pipefail
+url={{.URL}}
+ref={{.Ref}}
+name="$(basename "$url" .git)"
+dest="$HOME/$name"
+if [ -d "$dest/.git" ]; then
+  echo "repo $name already present; fetching"
+  git -C "$dest" fetch --all --tags --prune
+else
+  git clone "$url" "$dest"
+fi
+if [ -n "$ref" ]; then git -C "$dest" checkout "$ref"; fi
+echo "repo ready at $dest"

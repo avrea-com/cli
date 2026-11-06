@@ -1,4 +1,4 @@
-.TH AVR\-CACHE\-DELETE 1 "" "avr 0.6.0" "Avrea CLI"
+.TH AVR\-CACHE\-DELETE 1 "" "avr 0.7.0" "Avrea CLI"
 .SH NAME
 avr-cache-delete \- Delete cache entries by key name or all entries.
 .SH SYNOPSIS
@@ -7,7 +7,7 @@ avr-cache-delete \- Delete cache entries by key name or all entries.
 .SH DESCRIPTION
 Delete cache entries by key name or all entries.
 .PP
-Exactly one of --key or --all must be provided. When using --key, --type is required to scope the deletion.
+Exactly one of --key or --all must be provided. When using --key, --type is required to scope the deletion. With --all, the purge runs asynchronously; the command reports its status.
 .PP
 .RS 4
 .nf

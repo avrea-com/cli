@@ -10,7 +10,7 @@ updates:
         update-types: ["minor", "patch"]
     open-pull-requests-limit: 5
     cooldown:
-      default-days: 7
+      default-days: 3
 
   - package-ecosystem: "uv"
     directory: "/"
@@ -26,4 +26,18 @@ updates:
       # bump deliberately in its own PR when 0.1.x stabilizes.
       - dependency-name: "ty"
     cooldown:
-      default-days: 7
+      default-days: 3
+
+  # Runtime and development-tool modules are kept current; compatibility and
+  # startup reports validate updates. Exceptions need a documented reason.
+  - package-ecosystem: "gomod"
+    directories: ["/", "/tools"]
+    schedule:
+      interval: "weekly"
+    groups:
+      go-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 3

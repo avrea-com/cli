@@ -1,4 +1,4 @@
-.TH AVR\-PR\-LIST 1 "" "avr 0.6.0" "Avrea CLI"
+.TH AVR\-PR\-LIST 1 "" "avr 0.7.0" "Avrea CLI"
 .SH NAME
 avr-pr-list \- List pull requests across repositories.
 .SH SYNOPSIS
@@ -36,7 +36,7 @@ Organization ID or slug. Uses default org if not specified (see: avr config set 
 Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. (repeatable)
 .TP
 \fB\-\-scope\fR \fICHOICE\fR
-List every readable PR, PRs you authored, or PRs you are involved in. (choices: all, authored, involved; default: all)
+List all, authored, involved, rest, or attention PRs. Attention requires open state. (choices: all, authored, involved, rest, attention; default: all)
 .TP
 \fB\-\-state\fR \fICHOICE\fR
 Filter by pull request state. 'all' removes the state filter. (choices: open, closed, merged, all; default: open)

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Refuse the commit when docs/ or man/ are stale relative to the source.
 # Only triggers when staged changes touch files that can invalidate the
-# generated reference (Click tree, version string, asset list).
+# generated reference (native command tree, version string, README).
 set -euo pipefail
 
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
-if ! grep -qE '^(avrea_cli/|pyproject\.toml$)' <<<"$staged"; then
+if ! grep -qE '^(commands/|docgen/|internal/version/|README\.md$)' <<<"$staged"; then
   exit 0
 fi
 
