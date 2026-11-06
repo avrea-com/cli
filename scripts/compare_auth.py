@@ -959,6 +959,26 @@ def scenarios():
     return cases
 
 
+def extend_presentation_oracle(root: Path) -> None:
+    """Extend only the disposable oracle with metadata for the Go-only feedback command."""
+    fixture = Path(__file__).with_name("feedback_presentation.py")
+    (root / "avrea_cli/_feedback_presentation.py").write_text(fixture.read_text())
+    entry = root / "avrea_cli/main.py"
+    source = entry.read_text()
+    marker = 'if __name__ == "__main__":'
+    assert source.count(marker) == 1
+    entry.write_text(
+        source.replace(
+            marker,
+            "from avrea_cli._feedback_presentation import feedback\n"
+            'LAZY_COMMANDS += (("feedback", "avrea_cli._feedback_presentation", "feedback", '
+            '"Send feedback or report a bug.", "Additional Commands"),)\n'
+            'with cli.section("Additional Commands"):\n'
+            "    cli.add_command(feedback)\n\n" + marker,
+        )
+    )
+
+
 def main(
     case_factory=scenarios, compare_results=compare, default_report="build/go/auth-parity.json", prepare_oracle=None
 ):
@@ -980,6 +1000,7 @@ def main(
     archive = subprocess.check_output(["git", "archive", BASELINE, "avrea_cli"], cwd=root)
     report = {
         "python_baseline": BASELINE,
+        "presentation_extensions": ["feedback (metadata only; behavior tested in Go)"],
         "python_version": sys.version,
         "go_binary_sha256": hashlib.sha256(Path(args.go).read_bytes()).hexdigest(),
         "go_version": subprocess.check_output([str(Path(args.go).resolve()), "--version"], text=True).strip(),
@@ -989,6 +1010,8 @@ def main(
     with tempfile.TemporaryDirectory(prefix="avr-oracle-") as oracle:
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(oracle, filter="data")
+        # New Go-only command metadata extends presentation, not the behavioral oracle.
+        extend_presentation_oracle(Path(oracle))
         if prepare_oracle is not None:
             prepare_oracle(Path(oracle))
         server = cast(Any, FixtureServer(("127.0.0.1", 0), Fixture))

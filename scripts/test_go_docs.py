@@ -27,6 +27,7 @@ def test_docs_default_bundled_readme_matches_python(tmp_path):
     archive = subprocess.check_output(["git", "archive", harness.BASELINE, "avrea_cli"], cwd=root)
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         tar.extractall(oracle, filter="data")
+    harness.extend_presentation_oracle(oracle)
     readme = "# Bundled CLI\n\nThis overview ships with the package.\n"
     (package / "README.md").write_text(readme)
     (oracle / "README.md").write_text(readme)
