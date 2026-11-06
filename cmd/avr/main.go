@@ -5,15 +5,24 @@ import (
 	"os"
 
 	"github.com/avrea-com/cli/commands"
+	"github.com/avrea-com/cli/internal/update"
+	buildversion "github.com/avrea-com/cli/internal/version"
 )
 
-var version = "0.6.0-go-preview"
+var version string
 var commit = "dev"
 
 func main() {
+	if version == "" {
+		version = buildversion.Current()
+	}
 	commands.IgnoreBrokenPipe()
 	ctx, stop := commands.InterruptContext(context.Background())
-	code := commands.Execute(ctx, os.Args[1:], commands.Dependencies{Version: version + "+" + commit})
+	checker := update.New(version)
+	code := commands.Execute(ctx, os.Args[1:], commands.Dependencies{
+		Version:          version + "+" + commit,
+		StartUpdateCheck: checker.Start,
+	})
 	stop()
 	os.Exit(code)
 }

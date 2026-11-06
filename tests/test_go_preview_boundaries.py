@@ -1,4 +1,4 @@
-"""Preview jobs are separate; shared harness unit tests and lint gate Python CI."""
+"""The Python oracle and Go parity inventory remain independently maintained."""
 
 from pathlib import Path
 from scripts import generate_go_doc_metadata as metadata
@@ -6,22 +6,6 @@ from scripts.validate_parity_reports import inventory
 import json
 import re
 import subprocess
-
-
-def test_release_does_not_call_go_preview_jobs():
-    root = Path(__file__).resolve().parents[1]
-    workflows = root / ".github/workflows"
-    release = (workflows / "release.yml").read_text(encoding="utf-8")
-    ci = (workflows / "ci.yml").read_text(encoding="utf-8")
-    preview = (workflows / "go-preview.yml").read_text(encoding="utf-8")
-    assert "uses: ./.github/workflows/ci.yml" in release
-    jobs = re.findall(r"^  ([a-z][a-z-]*):$", ci.split("jobs:\n", 1)[1], re.MULTILINE)
-    assert jobs and not any(name.startswith("go-") for name in jobs)
-    assert "go-preview.yml" not in ci and "go-package.yml" not in ci
-    triggers = preview.split("on:\n", 1)[1].split("permissions:", 1)[0]
-    assert all(name + ":" in triggers for name in ["pull_request", "push", "workflow_dispatch"])
-    assert "workflow_call:" not in triggers
-    assert all("  " + name + ":" in preview for name in ["go-preview", "go-checks", "go-packages"])
 
 
 def test_metadata_reads_pinned_tree_despite_working_python_changes(tmp_path, monkeypatch):

@@ -17,7 +17,6 @@ import tarfile
 import tempfile
 import threading
 import time
-import tomllib
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -257,10 +256,7 @@ def build(args):
     target = goenv["GOHOSTOS"] + "_" + goenv["GOHOSTARCH"]
     if target not in TARGETS or (args.target and args.target != target):
         raise ValueError(f"Native build/validation required: host={target}, requested={args.target}")
-    version = (
-        args.version
-        or tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"] + "-go-preview"
-    )
+    version = args.version or (ROOT / "internal" / "version" / "VERSION").read_text(encoding="utf-8").strip()
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", version):
         raise ValueError("Version must be a safe filename/ldflags identifier")
     commit = run(["git", "rev-parse", "HEAD"], cwd=ROOT).strip()
@@ -269,7 +265,7 @@ def build(args):
     epoch = int(run(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=ROOT).strip())
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    name = f"avr-go_{version}_{target}"
+    name = f"avr_{version}_{target}"
     with tempfile.TemporaryDirectory(prefix="avr-package-") as temporary:
         base = Path(temporary)
         package = base / name
@@ -362,7 +358,7 @@ def build(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", default="go")
-    parser.add_argument("--version", help="Default: project version + -go-preview")
+    parser.add_argument("--version", help="Default: internal/version/VERSION")
     parser.add_argument("--target", choices=sorted(TARGETS), help="Assert native runner target")
     parser.add_argument("--out", default=str(ROOT / "build" / "go" / "packages"))
     parser.add_argument("--verify", type=Path, help="Verify an existing archive and its SHA-256 sidecar")

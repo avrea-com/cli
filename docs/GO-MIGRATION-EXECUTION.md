@@ -2027,3 +2027,37 @@ comparator regression passed its focused suite. Native subprocess/shell checks
 passed 32 tests with one platform skip, and the native macOS package passed
 validation including its embedded Go version. Reports are under ignored
 `build/go/policy*`. Review remained local/manual.
+
+## Native installation preparation — 2026-11-05
+
+Added Go version `0.7.0-rc.1`, native PyPI wheels (including `avr-cli` alias),
+checksum-verifying shell and PowerShell installers, generated Homebrew/mise
+channel metadata, and a cached asynchronous stable-release notifier. Python
+application code and its 0.6.0 project version remain unchanged. The admin
+0.6.0 dependency pin is prepared separately in avrea-core.
+
+The reusable package workflow now builds wheels and validates native, pip,
+uv and pipx installations on macOS ARM64, Linux AMD64 and Windows AMD64.
+Its final artifact includes extracted-binary SBOMs, validated wheel/archive
+checksums, installers and channel files. These jobs do not publish releases.
+The native publication workflow requires the explicit repository gate
+`AVR_NATIVE_RELEASE_ENABLED=true`, an exact version tag and green Python/Go CI.
+Manual runs never publish. The gate remains unset; no tag, release or tap
+update occurred.
+
+Local validation: public and admin Go race suites, Go lint/vet and Python
+lint/type checks passed. The full Python suite passed 2,224 tests, including the native release gate.
+The former test forbidding Go release jobs was removed now that the native
+release workflow is explicitly authorized.
+All 15 package/distribution tests passed. Public auth and global Python/Go
+comparisons passed with no differences. Native macOS package validation and
+pip upgrade/rollback, uv and pipx wheel installation, plus a real shell
+installer run against loopback assets passed. SBOM inventory checks passed
+against the extracted executable. A 101-sample fresh-process measurement
+reported root help median 4.32 ms; this is not a cold-machine benchmark.
+
+Local/manual review plus an independent review found and fixed wheel license
+metadata, an invalid Windows rollback assertion, and empty archive-only SBOM
+scanning. No source was uploaded to CodeRabbit. Native Windows/Linux execution
+and real published-release Homebrew/mise upgrade checks remain CI/release
+validation, respectively. See INSTALL.md and GO-RELEASE.md.

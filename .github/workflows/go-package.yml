@@ -32,9 +32,13 @@ jobs:
         with:
           python-version: "3.14"
       - name: Test package integrity checks
-        run: python -m unittest scripts.test_go_package -v
+        run: python -m unittest scripts.test_go_package scripts.test_go_distribution -v
       - name: Build archive and validate extracted executable
         run: python scripts/go_package.py --target ${{ matrix.target }}
+      - name: Build native PyPI wheel from validated archive
+        shell: bash
+        run: |
+          python -c "from pathlib import Path; from scripts.go_distribution import build; archives=[p for p in Path('build/go/packages').iterdir() if p.name.endswith(('.tar.gz', '.zip'))]; assert len(archives)==1; build(archives[0], Path('build/go/packages'))"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avr-go-package-${{ matrix.target }}
@@ -69,6 +73,12 @@ jobs:
         with:
           name: avr-go-package-${{ matrix.target }}
           path: build/go/downloaded
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version-file: pyproject.toml
+          enable-cache: false
+      - name: Install pipx validation tool
+        run: python -m pip install pipx==1.18.11
       - name: Validate downloaded archive on a fresh native runner
         env:
           EXPECTED_TARGET: ${{ matrix.target }}
@@ -80,8 +90,63 @@ jobs:
           assert report['manifest']['target']==os.environ['EXPECTED_TARGET'], report['manifest'];
           assert report['manifest']['commit']==os.environ['GITHUB_SHA'], report['manifest'];
           assert report['manifest']['dirty'] is False, report['manifest']"
+      - name: Validate installers and Python package-manager upgrade paths
+        run: python -m scripts.validate_go_install --directory build/go/downloaded
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avr-go-download-validation-${{ matrix.target }}
           path: build/go/downloaded/*.validation.json
+          if-no-files-found: error
+
+  channels:
+    env:
+      SYFT_SOURCE_NAME: avr-cli
+    needs: validate-download
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: avr-go-package-*
+          path: build/go/distribution
+          merge-multiple: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: avr-go-download-validation-*
+          path: build/go/distribution
+          merge-multiple: true
+      - name: Prepare verified release channel files
+        run: |
+          python -m scripts.go_distribution --channels --commit "$GITHUB_SHA" --sbom-source build/go/sbom-source
+          echo "SYFT_SOURCE_VERSION=$(cat internal/version/VERSION)" >> "$GITHUB_ENV"
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: build/go/sbom-source
+          format: cyclonedx-json
+          output-file: build/go/bom.cyclonedx.json
+          syft-version: v1.56.0
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: build/go/sbom-source
+          format: spdx-json
+          output-file: build/go/bom.spdx.json
+          syft-version: v1.56.0
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Include release SBOMs
+        run: |
+          python -m scripts.go_distribution --check-sbom build/go/bom.cyclonedx.json
+          cp build/go/bom.*.json build/go/distribution/
+          python -m scripts.go_distribution --channels --commit "$GITHUB_SHA"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: avr-release-candidate
+          path: build/go/distribution/*
           if-no-files-found: error

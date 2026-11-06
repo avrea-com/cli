@@ -14,9 +14,9 @@ The script writes an archive, a SHA-256 sidecar, and a validation JSON report
 under `build/go/packages/`. It builds the current worktree, labels uncommitted
 sources with `.dirty`, and records the full base commit and Go toolchain.
 Use `--out DIRECTORY` to choose another destination or `--version VERSION`
-to override the default project-version-plus-`-go-preview` label.
+to override the default native release-candidate label.
 
-Archives are `avr-go_VERSION_TARGET.tar.gz` on Unix and `.zip` on Windows.
+Archives are `avr_VERSION_TARGET.tar.gz` on Unix and `.zip` on Windows.
 Each has one enclosing directory with an executable named `avr` or `avr.exe`.
 Extract the archive into a separate directory and invoke that executable
 directly. The bundled README explains optional PATH and completion setup.
@@ -25,7 +25,7 @@ Building and validating do not install or replace a command.
 Revalidate an existing archive together with its checksum sidecar:
 
 ```sh
-python3 scripts/go_package.py --verify build/go/packages/avr-go_0.6.0-go-preview_darwin_arm64.tar.gz
+python3 scripts/go_package.py --verify build/go/packages/avr_0.7.0-rc.1_darwin_arm64.tar.gz
 python3 -m unittest scripts.test_go_package -v
 ```
 
@@ -49,9 +49,9 @@ separate parity check fails. It builds and validates natively on macOS ARM64, Li
 artifacts containing the archive, checksum and report. A manual invocation
 runs package checks; it does not run the full CI suite. No release is published.
 
-This first slice does not implement a system installer, automatic upgrades,
-signing/notarization, provenance, or release SBOM generation. Existing Python
-release behavior is unchanged.
+Native installation, PyPI wheels, update notices and channel preparation are
+covered in [installation](INSTALL.md) and [release preparation](GO-RELEASE.md).
+The historical trial results below describe the earlier preview packaging.
 
 ## Production VM trial — 2026-10-30
 
@@ -186,9 +186,10 @@ tests. Go does not emulate Click's Windows filesystem glob expansion.
 
 Go checks now run in `go-preview.yml` on pull requests, main pushes, and
 manual dispatches. It invokes the reusable `go-package.yml` artifact matrix.
-Python `release.yml` continues to invoke only `ci.yml`; it does not depend on
-the experimental Go build, parity, or packaging jobs. No release was published
-as part of these changes.
+The native `release.yml` now gates publication on both Python CI and the full
+Go build, parity and installation checks. Publication is disabled until the
+repository gate is explicitly enabled; manual runs only validate artifacts.
+No release was published as part of these changes.
 
 Documentation metadata generation extracts the public Python package from
 the pinned commit in `scripts.compare_auth.BASELINE` into a temporary directory

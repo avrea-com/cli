@@ -211,6 +211,7 @@ def run(executable, scenario, root, host):
             LOCALAPPDATA=directory,
             AVR_CONFIG_DIR=str(cfg),
             AVR_HOST=host,
+            AVR_NO_UPDATE_NOTIFIER="1",  # Release notices have separate isolated tests.
             NO_COLOR="1",
             TERM="dumb",
             PYTHONPATH=str(root),

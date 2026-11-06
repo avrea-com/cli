@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
-# Block pushing a release tag (v*) when the committed SBOM is stale.
-#
-# The committed .oss-report/bom.cyclonedx.json must be regenerated for each
-# release: bump `version` in oss-report.yaml, then `make sbom`. release.yml
-# enforces the same version check server-side; this hook is the fast local gate.
+# Native tags must match the version in the tagged source; their SBOMs are
+# generated from tested artifacts in release CI. Legacy Python tags retain
+# the committed-SBOM checks below.
 set -euo pipefail
 
 # pre-push feeds refs on stdin: "<local ref> <local sha> <remote ref> <remote sha>".
 tag=""
-while read -r _ _ remote_ref _; do
+while read -r _ local_sha remote_ref _; do
   case "$remote_ref" in
-    refs/tags/v[0-9]*) tag="${remote_ref#refs/tags/}" ;;
+    refs/tags/v[0-9]*)
+      # Ref deletion does not publish a release.
+      [ "$local_sha" != 0000000000000000000000000000000000000000 ] || continue
+      candidate="${remote_ref#refs/tags/}"
+      if version=$(git show "$local_sha:internal/version/VERSION" 2>/dev/null); then
+        if [ "$candidate" != "v$version" ]; then
+          echo "pre-push: $candidate does not match native version $version" >&2
+          exit 1
+        fi
+      else
+        tag="$candidate"
+      fi
+      ;;
   esac
 done
 [ -n "$tag" ] || exit 0

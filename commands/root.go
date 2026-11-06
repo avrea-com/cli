@@ -22,9 +22,10 @@ import (
 
 // Dependencies are explicit so admin can reuse commands without package globals.
 type Dependencies struct {
-	// UpdateNotices is reserved for a future notifier. Nil disables it. ExecuteRoot
-	// only consumes an already-ready message; it never starts or waits for work.
-	// Producers must use the invocation context and a buffered channel.
+	// UpdateNotices supports injected notices. StartUpdateCheck is opt-in for the
+	// public executable; composed admin commands do not inherit a release feed.
+	StartUpdateCheck func(context.Context) <-chan string
+
 	UpdateNotices   <-chan string
 	Verbose         func() bool
 	ColorEnabled    func() bool
@@ -328,6 +329,19 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	}
 	ctx = context.WithValue(ctx, organizationSlugsKey{}, &organizationSlugs{})
 	root.SetArgs(expandTestsShorthand(root, args))
+	previousPreRun := root.PersistentPreRunE
+	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error { //nolint:contextcheck // Cobra installs ctx on the executed command.
+		if previousPreRun != nil {
+			if err := previousPreRun(cmd, args); err != nil {
+				return err
+			}
+		}
+		if d.StartUpdateCheck != nil && !cmd.DisableFlagParsing && updateNoticeAllowed(cmd, d) {
+			d.UpdateNotices = d.StartUpdateCheck(cmd.Context())
+		}
+		return nil
+	}
+	defer func() { root.PersistentPreRunE = previousPreRun }()
 	executed, err := root.ExecuteContextC(ctx)
 	if err == nil {
 		printUpdateNotice(executed, d)

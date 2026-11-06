@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -63,6 +64,49 @@ func TestNotifierOnlyUsesReadyNoticesForSuccessfulInteractiveCommands(t *testing
 			}
 			if strings.Contains(stderr.String(), "Update available") != (mode == "ready") || strings.Contains(out.String(), "Update available") {
 				t.Fatal(out, stderr)
+			}
+		})
+	}
+}
+
+func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
+	for _, mode := range []string{"interactive", "help", "version", "json", "pipe", "ci", "opt-out"} {
+		t.Run(mode, func(t *testing.T) {
+			d, _, stderr := testDeps(t)
+			started := false
+			d.StartUpdateCheck = func(context.Context) <-chan string {
+				started = true
+				notices := make(chan string, 1)
+				notices <- "New release"
+				return notices
+			}
+			d.IsTerminal = func() bool { return mode != "pipe" }
+			d.IsErrorTerminal = func() bool { return true }
+			d.Getenv = func(key string) string {
+				if mode == "ci" && key == "CI" || mode == "opt-out" && key == "AVR_NO_UPDATE_NOTIFIER" {
+					return "1"
+				}
+				return ""
+			}
+			root := NewRoot(d)
+			cmd := &cobra.Command{Use: "probe", RunE: func(*cobra.Command, []string) error { return nil }}
+			cmd.Flags().Bool("json", false, "")
+			root.AddCommand(cmd)
+			args := []string{"probe"}
+			if mode == "help" {
+				args = append(args, "--help")
+			}
+			if mode == "version" {
+				args = []string{"--version"}
+			}
+			if mode == "json" {
+				args = append(args, "--json")
+			}
+			if code := ExecuteRoot(t.Context(), root, args, stderr, d); code != 0 {
+				t.Fatal(code, stderr)
+			}
+			if started != (mode == "interactive") {
+				t.Fatal(mode, started)
 			}
 		})
 	}
