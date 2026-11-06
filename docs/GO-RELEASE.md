@@ -1,7 +1,8 @@
 # Native release preparation
 
 The Go version is `internal/version/VERSION`, currently `0.7.0`.
-Python's `pyproject.toml` remains at 0.6.0 for the admin transition.
+`pyproject.toml` configures development tools only; the retired Python CLI is
+available as the published 0.6.0 package.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
 
 `go-package.yml` prepares these artifacts on all three native runners:
@@ -13,7 +14,7 @@ Native builds use Go 1.27.3 or newer and run with CGO disabled.
 
 Fresh-runner validation installs wheels through pip, uv and pipx and runs the
 native installer against a loopback release fixture. The pip test upgrades
-from the unchanged Python 0.6.0 wheel and rolls back. Neither path contacts
+from the published, checksum-pinned Python 0.6.0 wheel and rolls back. Neither path contacts
 Avrea services or uses real credentials. Installer regression fixtures cover
 upgrade, rollback, checksum failure, unmanaged destinations and paths with spaces.
 
@@ -49,7 +50,7 @@ Before publishing:
    `AVR_NATIVE_RELEASE_ENABLED=true` and push the signed version tag. The gate
    is unset by default. A manual Release workflow run never publishes, even
    when the gate is enabled. Tag version must match `internal/version/VERSION`;
-   both Python CI and the complete Go/package workflow must pass.
+   both tooling CI and the complete Go/package workflow must pass.
    Publication uses the exact tested wheels and archives, without rebuilding.
    RC tags create prereleases and do not replace GitHub's latest stable release.
    Keep the `pypi` environment and Trusted Publisher configured for release.yml.

@@ -1,7 +1,7 @@
-"""Exercise the Go clone and saved helper against the existing local smart-HTTP fixture."""
+"""Exercise the Go clone and saved helper against the local smart-HTTP fixture."""
 
 from pathlib import Path
-from tests.test_repo_clone import git_server  # noqa: F401 -- shared smart-HTTP fixture
+from scripts.git_fixture import git_server  # noqa: F401 -- shared smart-HTTP fixture
 import os
 import pytest
 import shlex

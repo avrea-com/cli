@@ -145,6 +145,13 @@ jobs:
           syft-version: v1.56.0
           upload-artifact: false
           upload-release-assets: false
+      - name: Scan native distribution SBOM
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          sbom: build/go/bom.cyclonedx.json
+          severity-cutoff: medium
+          fail-build: true
+          output-format: table
       - name: Include release SBOMs
         run: |
           python -m scripts.go_distribution --check-sbom build/go/bom.cyclonedx.json

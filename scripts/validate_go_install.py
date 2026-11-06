@@ -33,11 +33,27 @@ def validate(archive, wheel, uv):
         venv.EnvBuilder(with_pip=True).create(virtual)
         scripts = virtual / ("Scripts" if os.name == "nt" else "bin")
         python = scripts / ("python.exe" if os.name == "nt" else "python")
-        # Build the unchanged Python 0.6.0 package, then replace its entry points.
-        # --no-deps avoids dependency downloads; this tests entry-point replacement,
-        # while the existing Python suite covers the legacy implementation.
+        # Exercise upgrades from the actual published Python package, not
+        # a source build that changes with this branch. No legacy runtime
+        # dependencies are needed to verify entry-point replacement.
         old = base / "old"
-        run([uv, "build", "--wheel", "--out-dir", str(old)], cwd=ROOT)
+        run(
+            [
+                str(python),
+                "-m",
+                "pip",
+                "download",
+                "--index-url",
+                "https://pypi.org/simple",
+                "--no-deps",
+                "--only-binary=:all:",
+                "--require-hashes",
+                "--dest",
+                str(old),
+                "-r",
+                str(ROOT / "scripts/legacy-avr-requirements.txt"),
+            ]
+        )
         baseline = next(old.glob("*.whl"))
         run([str(python), "-m", "pip", "install", "--no-index", "--no-deps", str(baseline)])
         run([str(python), "-m", "pip", "install", "--no-index", "--no-deps", "--upgrade", str(wheel)])

@@ -6,6 +6,7 @@ between CLI invocations. Reports contain numeric events, not URLs or credentials
 """
 
 from pathlib import Path
+from typing import Any
 import argparse
 import hashlib
 import json
@@ -102,7 +103,7 @@ def main():
     if args.runs < 2 or args.warmups < 0:
         parser.error("--runs must be >= 2 and --warmups >= 0")
     binary = args.go.resolve()
-    report = {
+    report: dict[str, Any] = {
         "platform": platform.platform(),
         "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
         "command": ARGS,

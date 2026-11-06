@@ -1,0 +1,2 @@
+# Published baseline used only for native installation upgrade/rollback tests.
+avr-cli==0.6.0 --hash=sha256:3e62fdaec00a4cff64c9b00625de88807ea5757ba8471a9a1835a05e4d30e01b

@@ -29,14 +29,13 @@ jobs:
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version-file: pyproject.toml
-      - run: make lint
+      - run: make tooling-lint
 
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.14", "3.15"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,13 +43,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version-file: pyproject.toml
       # Invoke uv directly instead of `make test` — Windows runners don't have
-      # make. Keep this command in sync with the `test` target in the Makefile.
-      - run: uv run --extra dev python -m pytest tests -v
+      # make. Native unit/integration tests run in go-preview.yml.
+      - run: uv run --frozen --extra dev python -m pytest scripts/test_go_package.py scripts/test_go_distribution.py scripts/test_go_publish.py scripts/test_go_release.py scripts/test_go_schema_fetch.py -q
 
   docs-check:
     runs-on: ubuntu-latest
@@ -64,6 +63,9 @@ jobs:
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version-file: pyproject.toml
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.27.3"
       - run: make docs-check
 
   # Software-composition analysis: fail the build (and therefore any release,
@@ -78,34 +80,18 @@ jobs:
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version-file: pyproject.toml
-      # Export the hash-pinned production dependency set from uv.lock into a
-      # dedicated directory holding only requirements.txt. Scanning that dir
-      # (rather than the repo root) keeps grype from re-cataloguing uv.lock /
-      # pyproject.toml — which carry the dev set — so the --no-dev scoping
-      # actually holds and a dev-only CVE can't block a release. The non-empty
-      # guard makes the gate fail loudly instead of passing on an empty export.
-      - name: Export pinned production dependencies
+      # Python is tooling-only. Native dependencies are scanned by go-scan
+      # and the artifact SBOM gate in go-package.yml.
+      - name: Export pinned tooling dependencies
         run: |
           mkdir -p sca-scope
-          uv export --frozen --no-emit-project --no-dev --format requirements-txt --output-file sca-scope/requirements.txt
+          uv export --frozen --extra dev --no-emit-project --format requirements-txt --output-file sca-scope/requirements.txt
       - name: Fail if no dependencies were resolved
         run: test "$(grep -c '==' sca-scope/requirements.txt)" -gt 0
-      # Primary gate: scan only the exported production set, so a newly disclosed
-      # CVE blocks the build even when the committed SBOM hasn't been regenerated.
-      - name: Scan dependency tree
+      - name: Scan tooling dependency tree
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           path: "sca-scope"
-          severity-cutoff: medium
-          fail-build: true
-          output-format: table
-      # Independently verify the published SBOM artefact (production scope) is
-      # itself free of known vulnerabilities — this is the file we attach to the
-      # release and retain for our records.
-      - name: Scan published SBOM (.oss-report)
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
-        with:
-          sbom: ".oss-report/bom.cyclonedx.json"
           severity-cutoff: medium
           fail-build: true
           output-format: table

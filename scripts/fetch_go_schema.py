@@ -1,7 +1,7 @@
-"""Fetch the current public OpenAPI schema for native model generation.
+"""Fetch the current public OpenAPI schema for API inspection.
 
 Until the public endpoint exists, use --core /path/to/avrea-core. The downloaded
-schema is disposable build input, not an API version pin or a runtime dependency.
+schema is disposable inspection input, not an API version pin or a runtime dependency.
 """
 
 from pathlib import Path
@@ -35,7 +35,8 @@ def fetch(
     if core is not None:
         raw = subprocess.check_output(["git", "-C", str(core), "show", core_ref + ":control/openapi/public.json"])
     else:
-        parsed = urllib.parse.urlsplit(url or "")
+        assert url is not None  # The exclusive-source check above guarantees this.
+        parsed = urllib.parse.urlsplit(url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
             raise ValueError("Schema URL must be HTTPS without embedded credentials")
         with urllib.request.urlopen(url, timeout=60) as response:
