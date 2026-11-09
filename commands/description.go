@@ -30,6 +30,8 @@ func Description(c *cobra.Command) docgen.Description {
 		return cacheDescription(path)
 	case "config":
 		return configDescription(path)
+	case "feedback":
+		return feedbackDescription(path)
 	case "firewall":
 		return firewallDescription(path)
 	case "health":

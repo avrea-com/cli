@@ -4058,11 +4058,11 @@
         "full": "avr feedback",
         "is_group": true,
         "short_help": "Send feedback or report a bug.",
-        "help": "Send MESSAGE to the Avrea team. Sign in with avr auth login first.\n\nUse --bug for a bug report and --org SLUG_OR_ID to attribute it to an\norganization. Without --org, feedback is personal, regardless of your default\norganization. Contact details come from your account.\n\nThe idempotency key is printed before sending. If the response is lost or\nthe server asks you to retry, repeat the same message, kind and organization\nwith --idempotency-key KEY. For a key conflict, use the original content\nor omit --idempotency-key to create a new submission.\nAcceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\nUse -- before a message beginning with a dash or the literal word status.",
+        "help": "Send MESSAGE to the Avrea team. Sign in with avr auth login first.\n\nUse --bug for a bug report and --org SLUG_OR_ID to attribute it to an\norganization. Without --org, feedback is personal, regardless of your default\norganization. Contact details come from your account.\n\nThe idempotency key is printed before sending. If the response is lost or\nthe server asks you to retry, repeat the same message, --bug setting and organization\nwith --idempotency-key KEY. For a key conflict, use the original content\nor omit --idempotency-key to create a new submission.\nAcceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\nUse -- before a message beginning with a dash, help, or a word resembling status.\n\nExamples:\n    avr feedback \"Please support Lambda Cloud\"\n    avr feedback --bug \"Run logs are missing\"\n    avr feedback status FEEDBACK_ID",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
-        "usage": "avr feedback [OPTIONS] [MESSAGE] COMMAND [ARGS]...",
+        "usage": "avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID",
         "params": [
           {
             "name": "message",
@@ -4113,7 +4113,7 @@
             "nargs": 1,
             "is_flag": false,
             "envvar": null,
-            "help": "Reuse a previous submission key (32 lowercase hex characters).",
+            "help": "Reuse a previous submission UUID (normalized to 32 lowercase hex characters).",
             "hidden": false,
             "show_default": false,
             "default": ""

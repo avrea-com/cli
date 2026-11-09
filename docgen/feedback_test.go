@@ -13,7 +13,7 @@ func TestFeedbackDocumentationUsesLiveCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	node := findNode(tree, "feedback")
-	if node == nil || !strings.Contains(node.Usage, "[MESSAGE]") || len(node.Subcommands) != 1 || node.Subcommands[0].Name != "status" {
+	if node == nil || !strings.Contains(node.Usage, "[OPTIONS] MESSAGE | status FEEDBACK_ID") || len(node.Subcommands) != 1 || node.Subcommands[0].Name != "status" {
 		t.Fatal(node)
 	}
 	wanted := map[string]bool{"bug": false, "org": false, "idempotency_key": false, "json": false, "jq": false}

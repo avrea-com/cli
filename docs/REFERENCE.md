@@ -3707,7 +3707,7 @@ Examples:
 Send feedback or report a bug.
 
 ```sh
-avr feedback [OPTIONS] [MESSAGE] COMMAND [ARGS]...
+avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID
 ```
 
 Send MESSAGE to the Avrea team. Sign in with avr auth login first.
@@ -3717,11 +3717,16 @@ organization. Without --org, feedback is personal, regardless of your default
 organization. Contact details come from your account.
 
 The idempotency key is printed before sending. If the response is lost or
-the server asks you to retry, repeat the same message, kind and organization
+the server asks you to retry, repeat the same message, --bug setting and organization
 with --idempotency-key KEY. For a key conflict, use the original content
 or omit --idempotency-key to create a new submission.
 Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.
-Use -- before a message beginning with a dash or the literal word status.
+Use -- before a message beginning with a dash, help, or a word resembling status.
+
+Examples:
+    avr feedback "Please support Lambda Cloud"
+    avr feedback --bug "Run logs are missing"
+    avr feedback status FEEDBACK_ID
 
 **Arguments**
 
@@ -3730,7 +3735,7 @@ Use -- before a message beginning with a dash or the literal word status.
 **Options**
 
 - `--bug` — Mark the feedback as a bug report.
-- `--idempotency-key <TEXT>` — Reuse a previous submission key (32 lowercase hex characters).
+- `--idempotency-key <TEXT>` — Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
 - `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
 - `--org <TEXT>` — Attribute feedback to this organization slug or ID.

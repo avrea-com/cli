@@ -12,12 +12,16 @@ avr feedback status fdb-019a4770720070008000000000000001
 
 Messages may contain up to 10,000 Unicode characters after trimming surrounding
 whitespace. Quote the message as one argument. Use `--` before a message beginning
-with a dash or the literal word `status`.
+with a dash, `help`, or a word resembling `status`.
 
 Organization attribution is optional. `--org` accepts a slug or organization ID;
 omitting it sends personal feedback even if you have a default organization.
 Your account supplies contact details, and the CLI supplies its version and
-platform in its user agent. Scoped tokens cannot use these endpoints.
+platform in its user agent. Scoped tokens cannot use these endpoints. If
+`AVR_TOKEN` contains a scoped token, unset it and run `avr auth login`.
+
+The `--idempotency-key` option accepts a UUID with or without hyphens and
+normalizes it to 32 lowercase hex characters.
 
 The command prints an idempotency key to stderr before sending. If its response is
 lost, unreadable, or the server asks you to retry, repeat the same message, bug

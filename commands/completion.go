@@ -167,6 +167,7 @@ type completionContext struct {
 	params      []docgen.CompletionParam
 	used        map[string]bool
 	positionals int
+	stopped     bool
 	pending     *docgen.CompletionParam
 }
 
@@ -225,7 +226,7 @@ func resolveCompletion(root *cobra.Command, args []string) (completionContext, e
 			}
 			continue
 		}
-		if state.command.HasSubCommands() {
+		if !stopped && state.positionals == 0 && state.command.HasSubCommands() {
 			var target *cobra.Command
 			for _, child := range state.command.Commands() {
 				if child.Name() == arg || slices.Contains(child.Aliases, arg) {
@@ -233,17 +234,19 @@ func resolveCompletion(root *cobra.Command, args []string) (completionContext, e
 					break
 				}
 			}
-			if target == nil {
+			if target != nil {
+				if err := selectCommand(target); err != nil {
+					return state, err
+				}
+				continue
+			}
+			if !state.command.Runnable() || !slices.ContainsFunc(state.params, func(param docgen.CompletionParam) bool { return param.Kind == "argument" }) {
 				break
 			}
-			if err := selectCommand(target); err != nil {
-				return state, err
-			}
-			stopped = false
-		} else {
-			state.positionals++
 		}
+		state.positionals++
 	}
+	state.stopped = stopped
 	return state, nil
 }
 
@@ -309,7 +312,7 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 	}
 	out := []completionItem{}
 	for _, child := range state.command.Commands() {
-		if child.Hidden || child.Name() == "help" && child.Short == "Help about any command" || !strings.HasPrefix(child.Name(), incomplete) {
+		if state.positionals > 0 || state.stopped || !completionFlagsSupported(state, child) || child.Hidden || child.Name() == "help" && child.Short == "Help about any command" || !strings.HasPrefix(child.Name(), incomplete) {
 			continue
 		}
 		description := child.Short
@@ -322,7 +325,7 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 		}
 		out = append(out, completionItem{"plain", child.Name(), description})
 	}
-	if len(incomplete) > 0 && !unicode.IsLetter([]rune(incomplete)[0]) && !unicode.IsDigit([]rune(incomplete)[0]) {
+	if !state.stopped && len(incomplete) > 0 && !unicode.IsLetter([]rune(incomplete)[0]) && !unicode.IsDigit([]rune(incomplete)[0]) {
 		for _, param := range state.params {
 			if param.Kind != "option" || param.Hidden || !param.Multiple && state.used[param.Name] {
 				continue
@@ -335,6 +338,26 @@ func completeCommand(root *cobra.Command, args []string, incomplete string) ([]c
 		}
 	}
 	return out, nil
+}
+
+// A local flag can precede a subcommand only when that child also accepts it.
+func completionFlagsSupported(state completionContext, child *cobra.Command) bool {
+	for _, param := range state.params {
+		if param.Kind != "option" || !state.used[param.Name] {
+			continue
+		}
+		supported := false
+		for _, name := range param.Names {
+			if helpFlag(child, name) != nil {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			return false
+		}
+	}
+	return true
 }
 
 func formatCompletion(shell string, item completionItem) string {

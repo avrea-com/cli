@@ -6,7 +6,7 @@ description: "Send feedback or report a bug."
 Send feedback or report a bug.
 
 ```sh
-avr feedback [OPTIONS] [MESSAGE] COMMAND [ARGS]...
+avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID
 ```
 
 Send MESSAGE to the Avrea team. Sign in with avr auth login first.
@@ -16,11 +16,16 @@ organization. Without --org, feedback is personal, regardless of your default
 organization. Contact details come from your account.
 
 The idempotency key is printed before sending. If the response is lost or
-the server asks you to retry, repeat the same message, kind and organization
+the server asks you to retry, repeat the same message, --bug setting and organization
 with --idempotency-key KEY. For a key conflict, use the original content
 or omit --idempotency-key to create a new submission.
 Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.
-Use -- before a message beginning with a dash or the literal word status.
+Use -- before a message beginning with a dash, help, or a word resembling status.
+
+Examples:
+    avr feedback "Please support Lambda Cloud"
+    avr feedback --bug "Run logs are missing"
+    avr feedback status FEEDBACK_ID
 
 **Arguments**
 
@@ -29,7 +34,7 @@ Use -- before a message beginning with a dash or the literal word status.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;bug</code> — Mark the feedback as a bug report.
-- <code class="cli-flag">&#x2D;&#x2D;idempotency-key</code> <code class="cli-value">&lt;TEXT&gt;</code> — Reuse a previous submission key (32 lowercase hex characters).
+- <code class="cli-flag">&#x2D;&#x2D;idempotency-key</code> <code class="cli-value">&lt;TEXT&gt;</code> — Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
 - <code class="cli-flag">&#x2D;&#x2D;jq, -q</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter JSON with an embedded jq expression.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output comma-separated fields, * for all, or ? to list fields.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Attribute feedback to this organization slug or ID.

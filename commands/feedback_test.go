@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/avrea-com/cli/config"
+	"github.com/google/uuid"
 )
 
 const feedbackTestID = "fdb-019a4770720070008000000000000001"
@@ -26,6 +27,12 @@ func TestFeedbackSubmission(t *testing.T) {
 		{"bug", "A bug", "bug", feedbackTestOrg, []string{"--bug", "--org", feedbackTestOrg, "--idempotency-key", feedbackTestKey}},
 		{"slug", "Hello", "feedback", "Acme", []string{"--org", "Acme"}},
 		{"status message", "status", "feedback", "", []string{"--"}},
+		{"help message", "help", "feedback", "", []string{"--"}},
+		{"typo message", "stauts", "feedback", "", []string{"--"}},
+		{"ordinary single word", "thanks", "feedback", "", nil},
+		{"sentence about status", "status is confusing", "feedback", "", nil},
+		{"hyphenated key", "Hello", "feedback", "", []string{"--idempotency-key", "019a4770-7200-7000-8000-000000000003"}},
+		{"uppercase key", "Hello", "feedback", "", []string{"--idempotency-key", "019A4770720070008000000000000003"}},
 		{"dash message", "--broken", "feedback", "", []string{"--"}},
 		{"unicode boundary", strings.Repeat("🙂", 10000), "feedback", "", nil},
 	} {
@@ -47,7 +54,8 @@ func TestFeedbackSubmission(t *testing.T) {
 					t.Error(r.Method, r.URL.Path)
 				}
 				key = r.Header.Get("Idempotency-Key")
-				if !feedbackKeyPattern().MatchString(key) || !strings.Contains(stderr.String(), key) {
+				parsedKey, keyErr := uuid.Parse(key)
+				if keyErr != nil || key != strings.ReplaceAll(parsedKey.String(), "-", "") || !strings.Contains(stderr.String(), key) {
 					t.Error("key must be visible before sending", key, stderr)
 				}
 				var body map[string]any
@@ -83,7 +91,7 @@ func TestFeedbackSubmission(t *testing.T) {
 			if result["id"] != feedbackTestID || result["status"] != "queued" || result["idempotency_key"] != key || sends != 1 {
 				t.Fatal(result, sends)
 			}
-			if tc.name == "bug" && key != feedbackTestKey || tc.name == "slug" && lookups != 1 || tc.name != "slug" && lookups != 0 {
+			if (tc.name == "bug" || tc.name == "hyphenated key" || tc.name == "uppercase key") && key != feedbackTestKey || tc.name == "slug" && lookups != 1 || tc.name != "slug" && lookups != 0 {
 				t.Fatal(key, lookups)
 			}
 			if strings.Contains(out.String()+stderr.String(), "private-token") {
@@ -99,8 +107,6 @@ func TestFeedbackRejectsInvalidInputWithoutRequests(t *testing.T) {
 		{"feedback", strings.Repeat("🙂", 10001)}, {"feedback", "ok", "--org", ""},
 		{"feedback", "ok", "--org", "org-short"},
 		{"feedback", "ok", "--idempotency-key", ""},
-		{"feedback", "ok", "--idempotency-key", strings.Repeat("A", 32)},
-		{"feedback", "ok", "--idempotency-key", "019a4770-7200-7000-8000-000000000003"},
 		{"feedback", "status", "bad"}, {"feedback", "status"},
 		{"feedback", "ok", "--json", "unknown"}, {"feedback", "ok", "--jq", ".id"},
 	} {
@@ -306,5 +312,70 @@ func TestFeedbackStatusNamesMissingArgument(t *testing.T) {
 	}
 	if code := Execute(t.Context(), []string{"feedback", "status"}, d); code != 2 || !strings.Contains(stderr.String(), "Missing argument 'FEEDBACK_ID'") {
 		t.Fatal(code, stderr)
+	}
+}
+
+func TestFeedbackGuardsCommandLikeMessages(t *testing.T) {
+	for _, message := range []string{"help", "HELP", "stauts", "Status", "stats"} {
+		t.Run(message, func(t *testing.T) {
+			d, _, stderr := testDeps(t)
+			d.LoadConfig = func() (config.Config, error) {
+				t.Fatal("command-like message reached config")
+				return config.Config{}, nil
+			}
+			if code := Execute(t.Context(), []string{"feedback", message}, d); code != 2 || !strings.Contains(stderr.String(), "--help") || !strings.Contains(stderr.String(), "-- MESSAGE") {
+				t.Fatal(code, stderr)
+			}
+		})
+	}
+}
+
+func TestFeedbackRejectsScopedTokensBeforeRequests(t *testing.T) {
+	for _, args := range [][]string{{"feedback", "hello"}, {"feedback", "hello", "--org", "acme"}, {"feedback", "status", feedbackTestID}} {
+		d, out, stderr := testDeps(t)
+		d.LoadConfig = func() (config.Config, error) {
+			return config.Config{Host: "https://api.example.test", Token: "avs_test"}, nil
+		}
+		d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+			t.Error("scoped token reached API")
+			return nil, errors.New("unexpected request")
+		})}
+		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "AVR_TOKEN") || !strings.Contains(stderr.String(), "avr auth login") {
+			t.Fatal(code, out, stderr)
+		}
+	}
+}
+
+func TestFeedbackCompletionExcludesInvalidContinuations(t *testing.T) {
+	for _, tc := range []struct{ words, word, forbidden, wanted string }{
+		{`avr feedback "slow cache" `, "3", "plain,status", ""},
+		{"avr feedback --bug ", "3", "plain,status", ""},
+		{"avr feedback --org acme ", "4", "plain,status", ""},
+		{"avr feedback --idempotency-key " + feedbackTestKey + " ", "4", "plain,status", ""},
+		{"avr feedback hello --bug --b", "4", "plain,--bug", ""},
+		{"avr feedback hello --bug --j", "4", "plain,--bug", "plain,--json"},
+		{"avr feedback -- status ", "4", "plain,status", ""},
+		{"avr feedback -- --b", "3", "plain,--bug", ""},
+		{"avr feedback --json '*' ", "4", "plain,--bug", "plain,status"},
+	} {
+		t.Run(tc.words, func(t *testing.T) {
+			d, out, stderr := testDeps(t)
+			env := map[string]string{"_AVR_COMPLETE": "bash_complete", "COMP_WORDS": tc.words, "COMP_CWORD": tc.word}
+			d.Getenv = func(key string) string { return env[key] }
+			d.LoadConfig = func() (config.Config, error) { t.Fatal("completion loaded config"); return config.Config{}, nil }
+			if code := Execute(t.Context(), nil, d); code != 0 || strings.Contains(out.String(), tc.forbidden) || (tc.wanted != "" && !strings.Contains(out.String(), tc.wanted)) {
+				t.Fatal(code, out, stderr)
+			}
+		})
+	}
+}
+
+func TestFeedbackHelpShowsAlternativeInvocations(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	if code := Execute(t.Context(), []string{"feedback", "--help"}, d); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	if !strings.Contains(out.String(), "[OPTIONS] MESSAGE | status FEEDBACK_ID") || strings.Contains(out.String(), "COMMAND [ARGS]") {
+		t.Fatal(out)
 	}
 }
