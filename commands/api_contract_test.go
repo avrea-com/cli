@@ -170,7 +170,8 @@ func (d contractDocument) checkRequest(r *http.Request) (string, error) {
 	return operation, nil
 }
 
-func TestAPIContract(t *testing.T) {
+func loadContractDocument(t *testing.T) contractDocument {
+	t.Helper()
 	path := os.Getenv("AVR_TEST_OPENAPI")
 	if path == "" {
 		t.Skip("make go-api-check AVREA_CORE=/path/to/avrea-core fetches the current schema")
@@ -186,6 +187,11 @@ func TestAPIContract(t *testing.T) {
 	if len(document.Paths) == 0 {
 		t.Fatal("OpenAPI has no paths")
 	}
+	return document
+}
+
+func TestAPIContract(t *testing.T) {
+	document := loadContractDocument(t)
 	const org = "/orgs/{org_id}"
 	const repo = "rep-019a0000000070008000000000000002"
 	// Each command must reach its intended operation. The transport supplies the
@@ -208,6 +214,12 @@ func TestAPIContract(t *testing.T) {
 		{"cache usage --repo " + repo, "GET " + org + "/repos/{repo_id}/cache"},
 		{"cache delete --repo " + repo + " --all --yes", "DELETE " + org + "/repos/{repo_id}/cache"},
 		{"vm list", "GET " + org + "/vms"},
+		{"firewall export", "GET " + org + "/firewall/rules/export"},
+		{"firewall export --repo " + repo, "GET " + org + "/repos/{repo_id}/firewall/rules/export"},
+		{"firewall edit efr-019a0000000070008000000000000001 --action deny", "PATCH " + org + "/firewall/rules/{rule_id}"},
+		{"firewall edit efr-019a0000000070008000000000000001 --proto icmp --repo " + repo, "PATCH " + org + "/repos/{repo_id}/firewall/rules/{rule_id}"},
+		{"firewall set-default --action deny", "POST " + org + "/firewall/rules"},
+		{"firewall set-default --inherit --repo " + repo, "GET " + org + "/firewall/rules"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.args, func(t *testing.T) {
@@ -260,5 +272,59 @@ func TestAPIContractDetectsDrift(t *testing.T) {
 		if (err == nil) != tc.valid {
 			t.Errorf("%s %s: %v", tc.method, tc.path, err)
 		}
+	}
+}
+
+func TestAPIContractFirewallRequestChains(t *testing.T) {
+	document := loadContractDocument(t)
+	const org = "/orgs/{org_id}"
+	for _, repo := range []string{"", firewallTestRepo} {
+		base := org
+		if repo != "" {
+			base += "/repos/{repo_id}"
+		}
+		base += "/firewall"
+		args := []string{"firewall", "import", "--file", "-"}
+		if repo != "" {
+			args = append(args, "--repo", repo)
+		}
+		operations := []string{"POST " + base + "/rule-imports/preview"}
+		responses := []string{firewallPreviewJSON(false)}
+		if repo != "" {
+			operations = append(operations, "GET "+org+"/firewall/rules")
+			responses = append(responses, "[]")
+		}
+		operations = append(operations, "POST "+base+"/rule-imports")
+		responses = append(responses, "[]")
+		t.Run("import"+repo, func(t *testing.T) { checkFirewallContractChain(t, document, args, operations, responses) })
+	}
+	t.Run("inherit", func(t *testing.T) {
+		checkFirewallContractChain(t, document, []string{"firewall", "set-default", "--inherit", "--repo", firewallTestRepo},
+			[]string{"GET " + org + "/firewall/rules", "GET " + org + "/repos/{repo_id}/firewall/rules", "DELETE " + org + "/repos/{repo_id}/firewall/rules/{rule_id}"},
+			[]string{"[]", `[{"rule_id":"` + firewallTestRule + `","is_default":true}]`, ""})
+	})
+}
+
+func checkFirewallContractChain(t *testing.T, document contractDocument, args, operations, responses []string) {
+	t.Helper()
+	calls := 0
+	d, _ := firewallTestDeps(t, func(r *http.Request) (int, string) {
+		operation, err := document.checkRequest(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if calls >= len(operations) || operation != operations[calls] {
+			t.Fatalf("unexpected operation %s at request %d", operation, calls)
+		}
+		response := responses[calls]
+		calls++
+		if r.Method == "DELETE" {
+			return 204, response
+		}
+		return 200, response
+	})
+	d.In = strings.NewReader(`{"version":1,"rules":[{"action":"deny","fqdn":"example.com"}]}`)
+	if code := Execute(t.Context(), args, d); code != 0 || calls != len(operations) {
+		t.Fatalf("code=%d requests=%d", code, calls)
 	}
 }

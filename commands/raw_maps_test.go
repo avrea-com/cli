@@ -97,7 +97,7 @@ func TestEmptyMutationResponsesRemainNull(t *testing.T) {
 	}
 }
 
-func TestMalformedDefaultFlagCannotCreateFirewallRule(t *testing.T) {
+func TestMalformedDefaultResponseDoesNotRetryMutation(t *testing.T) {
 	d, _, stderr := testDeps(t)
 	d.LoadConfig = func() (config.Config, error) {
 		return config.Config{Host: "https://api.test", Token: "fixture", Org: inspectionOrg}, nil
@@ -105,12 +105,12 @@ func TestMalformedDefaultFlagCannotCreateFirewallRule(t *testing.T) {
 	calls := 0
 	d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 		calls++
-		if r.Method != http.MethodGet {
-			t.Errorf("malformed read led to %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected atomic upsert, got %s", r.Method)
 		}
 		return &http.Response{StatusCode: 200, Header: http.Header{}, Request: r, Body: io.NopCloser(strings.NewReader(`[{"rule_id":"efr-fixture","is_default":"true"}]`))}, nil
 	})}
-	if code := Execute(t.Context(), []string{"firewall", "set-default", "--action", "allow"}, d); code == 0 || calls != 1 || !strings.Contains(stderr.String(), "is_default") {
+	if code := Execute(t.Context(), []string{"firewall", "set-default", "--action", "allow"}, d); code == 0 || calls != 1 || !strings.Contains(stderr.String(), "expected a JSON object") {
 		t.Fatal(code, calls, stderr.String())
 	}
 }

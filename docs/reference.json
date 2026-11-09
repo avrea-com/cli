@@ -13022,7 +13022,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID. If provided, adds at repo scope.",
+                "help": "Repository ID or owner/repo. If provided, adds at repo scope.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13098,7 +13098,7 @@
                 "nargs": 1,
                 "is_flag": true,
                 "envvar": null,
-                "help": "Catch-all (default) rule.",
+                "help": "Set the catch-all default, preserving its ID if it already exists.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13140,7 +13140,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Port or port range (e.g. 443 or 30000-39999).",
+                "help": "Port or port range (0-65535), or all.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13231,10 +13231,256 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID. If provided, deletes a repo-level rule.",
+                "help": "Repository ID or owner/repo. If provided, deletes a repo-level rule.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "edit",
+            "path": [
+              "avr",
+              "firewall",
+              "edit"
+            ],
+            "full": "avr firewall edit",
+            "is_group": false,
+            "short_help": "Edit specified fields of an existing firewall rule.",
+            "help": "Edit only the supplied fields, preserving rule identity and order.\nSwitching hostname/CIDR clears the other matcher. Any or ICMP clears ports.\nUse --ports all to remove a port restriction; numeric ports require a TCP/UDP rule.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr firewall edit [OPTIONS] RULE_ID",
+            "params": [
+              {
+                "name": "action",
+                "kind": "option",
+                "opts": [
+                  "--action"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "allow",
+                  "deny"
+                ]
+              },
+              {
+                "name": "proto",
+                "kind": "option",
+                "opts": [
+                  "--proto"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "tcp",
+                  "udp",
+                  "icmp",
+                  "any"
+                ]
+              },
+              {
+                "name": "rule_id",
+                "kind": "argument",
+                "opts": [
+                  "rule_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "cidr",
+                "kind": "option",
+                "opts": [
+                  "--cidr"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Destination IPv4 address or CIDR; replaces the hostname.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "fqdn",
+                "kind": "option",
+                "opts": [
+                  "--fqdn"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Destination hostname; replaces the CIDR.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "ports",
+                "kind": "option",
+                "opts": [
+                  "--ports"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Port, range, or all to clear the port restriction.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository ID or owner/repo. If provided, uses repository scope.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "export",
+            "path": [
+              "avr",
+              "firewall",
+              "export"
+            ],
+            "full": "avr firewall export",
+            "is_group": false,
+            "short_help": "Export this scope's rules as portable JSON.",
+            "help": "Export the selected scope in the same versioned JSON format as the console.\nInherited rules and storage IDs are excluded. Use --file PATH, or redirect stdout.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr firewall export [OPTIONS]",
+            "params": [
+              {
+                "name": "file",
+                "kind": "option",
+                "opts": [
+                  "--file"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output file, or - for stdout. Existing files are not overwritten.",
+                "hidden": false,
+                "show_default": false,
+                "default": "-"
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository ID or owner/repo. If provided, uses repository scope.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
               }
             ],
             "subcommands": []
@@ -13286,7 +13532,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID.",
+                "help": "Repository ID or owner/repo.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13425,6 +13671,138 @@
             "subcommands": []
           },
           {
+            "name": "import",
+            "path": [
+              "avr",
+              "firewall",
+              "import"
+            ],
+            "full": "avr firewall import",
+            "is_group": false,
+            "short_help": "Append or replace this scope's rules from a portable JSON file.",
+            "help": "Import a console-compatible JSON policy into one organization or repository.\nAppend skips duplicates and supplied defaults. Replace uses the file's default;\nwithout one, repository defaults inherit and organization defaults are retained.\nEvery import is validated before applying. Use --dry-run to review changes.\nReplace prompts for confirmation; --yes is required with stdin or automation.\nIf the policy changes after preview, the import fails without overwriting it.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr firewall import [OPTIONS]",
+            "params": [
+              {
+                "name": "mode",
+                "kind": "option",
+                "opts": [
+                  "--mode"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": true,
+                "default": "append",
+                "choices": [
+                  "append",
+                  "replace"
+                ]
+              },
+              {
+                "name": "dry_run",
+                "kind": "option",
+                "opts": [
+                  "--dry-run"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Validate and summarize changes without applying them.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "file",
+                "kind": "option",
+                "opts": [
+                  "--file"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Policy file, or - to read stdin.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository ID or owner/repo. If provided, uses repository scope.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip replacement confirmation.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "list",
             "path": [
               "avr",
@@ -13471,7 +13849,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID. If provided, shows the repo-level list.",
+                "help": "Repository ID or owner/repo. If provided, shows the repo-level list.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13580,7 +13958,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID. If provided, moves a repo-level rule.",
+                "help": "Repository ID or owner/repo. If provided, moves a repo-level rule.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13597,8 +13975,8 @@
             ],
             "full": "avr firewall set-default",
             "is_group": false,
-            "short_help": "Set (or replace) the catch-all (default) rule for the scope.",
-            "help": "Set (or replace) the catch-all (default) rule for the scope.",
+            "short_help": "Set the default action, or use --inherit with --repo to restore organization inheritance.",
+            "help": "Set the default action, or use --inherit with --repo to restore organization inheritance.",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13635,7 +14013,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID. If provided, sets the repo-level default.",
+                "help": "Repository ID or owner/repo. If provided, sets the repo-level default.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13648,7 +14026,7 @@
                 ],
                 "secondary_opts": [],
                 "type": "choice",
-                "required": true,
+                "required": false,
                 "multiple": false,
                 "nargs": 1,
                 "is_flag": false,
@@ -13661,6 +14039,24 @@
                   "allow",
                   "deny"
                 ]
+              },
+              {
+                "name": "inherit",
+                "kind": "option",
+                "opts": [
+                  "--inherit"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove the repository default override.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
               }
             ],
             "subcommands": []
@@ -13674,8 +14070,8 @@
             ],
             "full": "avr firewall show",
             "is_group": false,
-            "short_help": "Show the resolved (merged) firewall rule list for a repository.",
-            "help": "Show the resolved (merged) firewall rule list for a repository.",
+            "short_help": "Show rules in evaluation order and their source.",
+            "help": "Show rules in evaluation order with repository/organization ownership. Built-in service exceptions are not listed. Running jobs retain their dispatched policy.",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13712,7 +14108,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Repository ID.",
+                "help": "Repository ID or owner/repo.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

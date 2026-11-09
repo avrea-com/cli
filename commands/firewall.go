@@ -2,7 +2,6 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -19,12 +18,12 @@ import (
 func NewFirewall(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "firewall", Short: "Manage the egress firewall rule list for orgs and repositories."}
-	c.AddCommand(newFirewallList(d, false), newFirewallList(d, true), newFirewallAdd(d), newFirewallDelete(d), newFirewallMove(d), newFirewallDefault(d), newFirewallFlows(d))
+	c.AddCommand(newFirewallList(d, false), newFirewallList(d, true), newFirewallAdd(d), newFirewallDelete(d), newFirewallMove(d), newFirewallDefault(d), newFirewallFlows(d), newFirewallEdit(d), newFirewallExport(d), newFirewallImport(d))
 	return c
 }
 func firewallScopeFlags(c *cobra.Command, org, repo *string, required bool) {
 	orgFlag(c, org)
-	c.Flags().StringVar(repo, "repo", "", "Repository ID. If provided, uses repository scope.")
+	c.Flags().StringVar(repo, "repo", "", "Repository ID or owner/repo. If provided, uses repository scope.")
 	if required {
 		_ = c.MarkFlagRequired("repo")
 	}
@@ -54,6 +53,7 @@ func firewallRulesOutput(d Dependencies, rows []map[string]any, asJSON bool) err
 		return err
 	}
 	cells := [][]string{}
+	showSource := fieldText(rows[0], "source") != ""
 	for _, row := range rows {
 		matcher := fieldText(row, "cidr")
 		if matcher == "" {
@@ -82,9 +82,17 @@ func firewallRulesOutput(d Dependencies, rows []map[string]any, asJSON bool) err
 		if protocol == "" {
 			protocol = "any"
 		}
-		cells = append(cells, []string{organizationCell(row, "position"), organizationCell(row, "rule_id"), organizationCell(row, "action"), matcher, protocol, ports, def})
+		cell := []string{organizationCell(row, "position"), organizationCell(row, "rule_id"), organizationCell(row, "action"), matcher, protocol, ports, def}
+		if showSource {
+			cell = append(cell, fieldText(row, "source"))
+		}
+		cells = append(cells, cell)
 	}
-	return output.Grid(d.Out, []string{"#", "ID", "Action", "Match", "Proto", "Ports", "Default"}, cells)
+	headers := []string{"#", "ID", "Action", "Match", "Proto", "Ports", "Default"}
+	if showSource {
+		headers = append(headers, "Source")
+	}
+	return output.Grid(d.Out, headers, cells)
 }
 func newFirewallList(d Dependencies, resolved bool) *cobra.Command {
 	var org, repo string
@@ -102,15 +110,46 @@ func newFirewallList(d Dependencies, resolved bool) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
+		if err != nil {
+			return err
+		}
 		base := firewallBase(id, repo)
 		if resolved {
-			// Unlike list, an explicitly empty required --repo still occupies its URL slot.
-			base = "/orgs/" + url.PathEscape(id) + "/repos/" + url.PathEscape(repo) + "/firewall"
 			record, err := api.ResolvedFirewall(cmd.Context(), base+"/resolved")
 			if err != nil {
 				return apiError(cfg, err, "show resolved firewall rules")
 			}
-			return firewallRulesOutput(d, objectList(record["rules"]), asJSON)
+			rows := objectList(record["rules"])
+			if !asJSON {
+				owned, err := api.FirewallRules(cmd.Context(), base+"/rules")
+				if err != nil {
+					return apiError(cfg, err, "identify repository rules")
+				}
+				ids := map[string]bool{}
+				for _, row := range rawRecords(owned) {
+					ids[fieldText(row, "rule_id")] = true
+				}
+				hasDefault := false
+				for _, row := range rows {
+					hasDefault = hasDefault || row["is_default"] == true
+				}
+				if !hasDefault {
+					rows = append(rows, map[string]any{"action": "allow", "is_default": true})
+				}
+				for index, row := range rows {
+					row["position"] = index
+					source := "organization"
+					if ids[fieldText(row, "rule_id")] {
+						source = "repository"
+					}
+					if fieldText(row, "rule_id") == "" {
+						source = "platform default"
+					}
+					row["source"] = source
+				}
+			}
+			return firewallRulesOutput(d, rows, asJSON)
 		}
 		page, err := api.FirewallRules(cmd.Context(), base+"/rules")
 		if err != nil {
@@ -121,11 +160,11 @@ func newFirewallList(d Dependencies, resolved bool) *cobra.Command {
 	return c
 }
 func validFirewallCIDR(value string) bool {
-	if _, err := netip.ParsePrefix(value); err == nil {
-		return true
+	if prefix, err := netip.ParsePrefix(value); err == nil {
+		return prefix.Addr().Is4()
 	}
-	if _, err := netip.ParseAddr(value); err == nil {
-		return true
+	if address, err := netip.ParseAddr(value); err == nil {
+		return address.Is4()
 	}
 	address, mask, ok := strings.Cut(value, "/")
 	if !ok {
@@ -151,7 +190,7 @@ func validFirewallCIDR(value string) bool {
 	return bits == 32
 }
 func firewallPorts(value string, specified bool) (*int, *int, error) {
-	if !specified {
+	if !specified || value == "all" {
 		return nil, nil, nil
 	}
 	first, last, span := strings.Cut(value, "-")
@@ -165,8 +204,8 @@ func firewallPorts(value string, specified bool) (*int, *int, error) {
 			return nil, nil, &ExitError{2, "Error: Invalid --ports " + pythonQuote(value) + ": must be 'N' or 'N-M'"}
 		}
 		port, err := strconv.Atoi(strings.ReplaceAll(trimmed, "_", ""))
-		if err != nil || port < 1 || port > 65535 {
-			return nil, nil, &ExitError{2, "Error: Invalid --ports " + pythonQuote(value) + ": ports must be in 1..65535"}
+		if err != nil || port < 0 || port > 65535 {
+			return nil, nil, &ExitError{2, "Error: Invalid --ports " + pythonQuote(value) + ": ports must be in 0..65535"}
 		}
 		values = append(values, port)
 	}
@@ -215,7 +254,7 @@ func newFirewallAdd(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: Exactly one of --cidr, --fqdn, or --any must be provided"}
 		}
 		if cidr != "" && !validFirewallCIDR(cidr) {
-			return &ExitError{2, "Error: Invalid --cidr: " + pythonQuote(output.CellText(cidr)) + " does not appear to be an IPv4 or IPv6 network"}
+			return &ExitError{2, "Error: Invalid --cidr: " + pythonQuote(output.CellText(cidr)) + " does not appear to be an IPv4 network"}
 		}
 		start, end, err := firewallPorts(ports, cmd.Flags().Changed("ports"))
 		if err != nil {
@@ -225,6 +264,10 @@ func newFirewallAdd(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --ports requires --proto tcp or --proto udp"}
 		}
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
+		if err != nil {
+			return err
+		}
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
 		if err != nil {
 			return err
 		}
@@ -251,6 +294,10 @@ func newFirewallAdd(d Dependencies) *cobra.Command {
 		if err != nil {
 			return apiError(cfg, err, "add egress firewall rule")
 		}
+		if anyMatcher {
+			_, err = fmt.Fprintf(d.Out, "Default is %s (rule_id=%s)\n", action, output.CellText(fieldText(rule, "rule_id")))
+			return err
+		}
 		_, err = fmt.Fprintf(d.Out, "Added rule %s at position %s\n", output.CellText(pythonValue(rule["rule_id"])), output.CellText(pythonValue(rule["position"])))
 		return err
 	})
@@ -262,6 +309,10 @@ func newFirewallDelete(d Dependencies) *cobra.Command {
 	firewallScopeFlags(c, &org, &repo, false)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
+		if err != nil {
+			return err
+		}
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
 		if err != nil {
 			return err
 		}
@@ -282,6 +333,10 @@ func newFirewallMove(d Dependencies) *cobra.Command {
 	_ = c.MarkFlagRequired("to")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
+		if err != nil {
+			return err
+		}
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
 		if err != nil {
 			return err
 		}
@@ -313,53 +368,65 @@ func newFirewallMove(d Dependencies) *cobra.Command {
 }
 func newFirewallDefault(d Dependencies) *cobra.Command {
 	var org, repo, action string
-	c := &cobra.Command{Use: "set-default", Short: "Set (or replace) the catch-all (default) rule for the scope.", Args: cobra.NoArgs}
+	var inherit bool
+	c := &cobra.Command{Use: "set-default", Short: "Set the default action, or inherit the organization default.", Args: cobra.NoArgs}
 	firewallScopeFlags(c, &org, &repo, false)
-	firewallAction(c, &action)
+	c.Flags().StringVar(&action, "action", "", "Default action: allow or deny.")
+	c.Flags().BoolVar(&inherit, "inherit", false, "Remove the repository default override.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
-			return err
+		if inherit == cmd.Flags().Changed("action") {
+			return &ExitError{2, "Error: Specify exactly one of --action or --inherit."}
+		}
+		if inherit && repo == "" {
+			return &ExitError{2, "Error: --inherit requires --repo."}
+		}
+		if !inherit {
+			if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
+				return err
+			}
 		}
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
 		if err != nil {
 			return err
 		}
-		path := firewallBase(id, repo) + "/rules"
-		page, err := api.FirewallRules(cmd.Context(), path)
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
 		if err != nil {
-			return apiError(cfg, err, "fetch rules before setting default")
+			return err
 		}
-		rid := ""
-		found := false
-		for _, row := range rawRecords(page) {
-			if row["is_default"] == true {
-				found = true
-				if fieldText(row, "rule_id") == "" {
-					return errors.New("unexpected API response: missing firewall rule ID")
-				}
-				body := map[string]any{}
-				body["action"] = action
-				rule, e := api.UpdateFirewallRule(cmd.Context(), path+"/"+url.PathEscape(fieldText(row, "rule_id")), body)
-				if e != nil {
-					return apiError(cfg, e, "update default rule")
-				}
-				rid = fieldText(rule, "rule_id")
-				break
+		path := firewallBase(id, repo) + "/rules"
+		if inherit {
+			inherited, readErr := organizationFirewallDefault(cmd.Context(), api, id)
+			if readErr != nil {
+				return apiError(cfg, readErr, "fetch organization firewall default")
 			}
-		}
-		if !found {
-			def := true
-			proto := "any"
-			rule, e := api.CreateFirewallRule(cmd.Context(), path, map[string]any{"action": action, "is_default": def, "protocol": proto})
-			if e != nil {
-				return apiError(cfg, e, "create default rule")
+			page, err := api.FirewallRules(cmd.Context(), path)
+			if err != nil {
+				return apiError(cfg, err, "fetch repository default")
 			}
-			rid = fieldText(rule, "rule_id")
+			for _, row := range rawRecords(page) {
+				if row["is_default"] != true {
+					continue
+				}
+				rid := fieldText(row, "rule_id")
+				if rid == "" {
+					return fmt.Errorf("unexpected API response: missing firewall rule ID")
+				}
+				if err := api.DeleteFirewallRule(cmd.Context(), path+"/"+url.PathEscape(rid)); err != nil {
+					return apiError(cfg, err, "restore organization default inheritance")
+				}
+			}
+			_, err = fmt.Fprintf(d.Out, "Repository default inherits from the organization (%s).\n", output.CellText(inherited))
+			return err
 		}
+		rule, err := api.CreateFirewallRule(cmd.Context(), path, map[string]any{"action": action, "is_default": true, "protocol": "any"})
+		if err != nil {
+			return apiError(cfg, err, "set default rule")
+		}
+		rid := fieldText(rule, "rule_id")
 		if rid == "" {
-			return errors.New("unexpected API response: missing firewall rule ID")
+			return fmt.Errorf("unexpected API response: missing firewall rule ID")
 		}
-		_, err = fmt.Fprintf(d.Out, "Set default rule: %s (rule_id=%s)\n", action, output.CellText(rid))
+		_, err = fmt.Fprintf(d.Out, "Default is %s (rule_id=%s)\n", action, output.CellText(rid))
 		return err
 	})
 	return c
@@ -388,6 +455,10 @@ func newFirewallFlows(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --offset must be at least 0."}
 		}
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
+		if err != nil {
+			return err
+		}
+		repo, err := resolveFirewallRepository(cmd, d, cfg, api, id, repo)
 		if err != nil {
 			return err
 		}

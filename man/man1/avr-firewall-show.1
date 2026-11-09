@@ -1,19 +1,20 @@
 .TH AVR\-FIREWALL\-SHOW 1 "" "avr 0.7.0" "Avrea CLI"
 .SH NAME
-avr-firewall-show \- Show the resolved (merged) firewall rule list for a repository.
+avr-firewall-show \- Show rules in evaluation order and their source.
 .SH SYNOPSIS
 .B avr firewall show
 [OPTIONS]
 .SH DESCRIPTION
-Show the resolved (merged) firewall rule list for a repository.
+Show rules in evaluation order and their source.
 .PP
+Show rules in evaluation order with repository/organization ownership. Built-in service exceptions are not listed. Running jobs retain their dispatched policy.
 .SH OPTIONS
 .TP
 \fB\-\-org\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified.
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Repository ID. (required)
+Repository ID or owner/repo. (required)
 .TP
 \fB\-\-json\fR
 Output resolved rules as JSON instead of a table.
@@ -22,7 +23,10 @@ Output resolved rules as JSON instead of a table.
 .BR avr-firewall (1),
 .BR avr-firewall-add (1),
 .BR avr-firewall-delete (1),
+.BR avr-firewall-edit (1),
+.BR avr-firewall-export (1),
 .BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-import (1),
 .BR avr-firewall-list (1),
 .BR avr-firewall-move (1),
 .BR avr-firewall-set-default (1)

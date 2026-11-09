@@ -9,7 +9,7 @@ import (
 	"github.com/avrea-com/cli/config"
 )
 
-func TestFirewallDefaultNeverCreatesAfterUpdatingExistingRule(t *testing.T) {
+func TestFirewallDefaultUsesOneAtomicUpsert(t *testing.T) {
 	for _, status := range []int{200, 500} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			d, out, stderr := testDeps(t)
@@ -19,7 +19,7 @@ func TestFirewallDefaultNeverCreatesAfterUpdatingExistingRule(t *testing.T) {
 			methods := []string{}
 			d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 				methods = append(methods, r.Method)
-				body := "{}"
+				body := `{"rule_id":"efr-019a0000000070008000000000000001"}`
 				code := status
 				if r.Method == http.MethodGet {
 					code = 200
@@ -28,7 +28,11 @@ func TestFirewallDefaultNeverCreatesAfterUpdatingExistingRule(t *testing.T) {
 				return &http.Response{StatusCode: code, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
 			})}
 			code := Execute(t.Context(), []string{"firewall", "set-default", "--action", "allow"}, d)
-			if code != 1 || strings.Join(methods, ",") != "GET,PATCH" {
+			wantCode := 0
+			if status != 200 {
+				wantCode = 1
+			}
+			if code != wantCode || strings.Join(methods, ",") != "POST" {
 				t.Fatal(code, methods, out, stderr)
 			}
 		})

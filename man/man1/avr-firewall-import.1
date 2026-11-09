@@ -1,0 +1,41 @@
+.TH AVR\-FIREWALL\-IMPORT 1 "" "avr 0.7.0" "Avrea CLI"
+.SH NAME
+avr-firewall-import \- Append or replace this scope's rules from a portable JSON file.
+.SH SYNOPSIS
+.B avr firewall import
+[OPTIONS]
+.SH DESCRIPTION
+Append or replace this scope's rules from a portable JSON file.
+.PP
+Import a console-compatible JSON policy into one organization or repository. Append skips duplicates and supplied defaults. Replace uses the file's default; without one, repository defaults inherit and organization defaults are retained. Every import is validated before applying. Use --dry-run to review changes. Replace prompts for confirmation; --yes is required with stdin or automation. If the policy changes after preview, the import fails without overwriting it.
+.SH OPTIONS
+.TP
+\fB\-\-mode\fR \fICHOICE\fR
+(choices: append, replace; default: append)
+.TP
+\fB\-\-dry\-run\fR
+Validate and summarize changes without applying them.
+.TP
+\fB\-\-file\fR \fITEXT\fR
+Policy file, or - to read stdin. (required)
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug; defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID or owner/repo. If provided, uses repository scope.
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip replacement confirmation.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-edit (1),
+.BR avr-firewall-export (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

@@ -2100,13 +2100,13 @@ Add a rule. Exactly one of --cidr, --fqdn, --any must be specified.
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. If provided, adds at repo scope.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, adds at repo scope.
 - `--action <CHOICE>` _(choices: `allow`, `deny` · required)_
 - `--cidr <TEXT>` — Destination CIDR (e.g. 10.0.0.0/8 or 1.2.3.4/32).
 - `--fqdn <TEXT>` — Destination hostname (e.g. api.example.com).
-- `--any` — Catch-all (default) rule.
+- `--any` — Set the catch-all default, preserving its ID if it already exists.
 - `--proto <CHOICE>` _(choices: `tcp`, `udp`, `icmp`, `any` · default: `any`)_
-- `--ports <TEXT>` — Port or port range (e.g. 443 or 30000-39999).
+- `--ports <TEXT>` — Port or port range (0-65535), or all.
 - `--position <INTEGER>` — Insert at a specific 0-indexed position.
 
 #### `avr firewall delete`
@@ -2124,7 +2124,50 @@ avr firewall delete [OPTIONS] RULE_ID
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. If provided, deletes a repo-level rule.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, deletes a repo-level rule.
+
+#### `avr firewall edit`
+
+Edit specified fields of an existing firewall rule.
+
+```sh
+avr firewall edit [OPTIONS] RULE_ID
+```
+
+Edit only the supplied fields, preserving rule identity and order.
+Switching hostname/CIDR clears the other matcher. Any or ICMP clears ports.
+Use --ports all to remove a port restriction; numeric ports require a TCP/UDP rule.
+
+**Arguments**
+
+- `RULE_ID`
+
+**Options**
+
+- `--action <CHOICE>` _(choices: `allow`, `deny`)_
+- `--proto <CHOICE>` _(choices: `tcp`, `udp`, `icmp`, `any`)_
+- `--cidr <TEXT>` — Destination IPv4 address or CIDR; replaces the hostname.
+- `--fqdn <TEXT>` — Destination hostname; replaces the CIDR.
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--ports <TEXT>` — Port, range, or all to clear the port restriction.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
+
+#### `avr firewall export`
+
+Export this scope's rules as portable JSON.
+
+```sh
+avr firewall export [OPTIONS]
+```
+
+Export the selected scope in the same versioned JSON format as the console.
+Inherited rules and storage IDs are excluded. Use --file PATH, or redirect stdout.
+
+**Options**
+
+- `--file <TEXT>` — Output file, or - for stdout. Existing files are not overwritten. _(default: `-`)_
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
 
 #### `avr firewall flow-summaries`
 
@@ -2143,7 +2186,7 @@ attempt for a job.
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. _(required)_
+- `--repo <TEXT>` — Repository ID or owner/repo. _(required)_
 - `--job, --job-id <TEXT>` — Filter to every VM execution attempt for a job ID.
 - `--with-drops` — Show only summaries where the firewall blocked at least one flow.
 - `-L, --limit <INTEGER RANGE>` — Max summaries to return. _(default: `20`)_
@@ -2151,6 +2194,30 @@ attempt for a job.
 - `--from, --start-after <TEXT>` — Only include summaries that started at or after this ISO-8601 timestamp.
 - `--to, --end-before <TEXT>` — Only include summaries that ended at or before this ISO-8601 timestamp.
 - `--json` — Emit raw JSON instead of a table.
+
+#### `avr firewall import`
+
+Append or replace this scope's rules from a portable JSON file.
+
+```sh
+avr firewall import [OPTIONS]
+```
+
+Import a console-compatible JSON policy into one organization or repository.
+Append skips duplicates and supplied defaults. Replace uses the file's default;
+without one, repository defaults inherit and organization defaults are retained.
+Every import is validated before applying. Use --dry-run to review changes.
+Replace prompts for confirmation; --yes is required with stdin or automation.
+If the policy changes after preview, the import fails without overwriting it.
+
+**Options**
+
+- `--mode <CHOICE>` _(choices: `append`, `replace` · default: `append`)_
+- `--dry-run` — Validate and summarize changes without applying them.
+- `--file <TEXT>` — Policy file, or - to read stdin. _(required)_
+- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
+- `--yes, -y` — Skip replacement confirmation.
 
 #### `avr firewall list`
 
@@ -2163,7 +2230,7 @@ avr firewall list [OPTIONS]
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. If provided, shows the repo-level list.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, shows the repo-level list.
 - `--json` — Output rules as JSON instead of a table.
 
 #### `avr firewall move`
@@ -2182,11 +2249,11 @@ avr firewall move [OPTIONS] RULE_ID
 
 - `--to <INTEGER>` — Target 0-indexed position. _(required)_
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. If provided, moves a repo-level rule.
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, moves a repo-level rule.
 
 #### `avr firewall set-default`
 
-Set (or replace) the catch-all (default) rule for the scope.
+Set the default action, or use --inherit with --repo to restore organization inheritance.
 
 ```sh
 avr firewall set-default [OPTIONS]
@@ -2195,21 +2262,24 @@ avr firewall set-default [OPTIONS]
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. If provided, sets the repo-level default.
-- `--action <CHOICE>` _(choices: `allow`, `deny` · required)_
+- `--repo <TEXT>` — Repository ID or owner/repo. If provided, sets the repo-level default.
+- `--action <CHOICE>` _(choices: `allow`, `deny`)_
+- `--inherit` — Remove the repository default override.
 
 #### `avr firewall show`
 
-Show the resolved (merged) firewall rule list for a repository.
+Show rules in evaluation order and their source.
 
 ```sh
 avr firewall show [OPTIONS]
 ```
 
+Show rules in evaluation order with repository/organization ownership. Built-in service exceptions are not listed. Running jobs retain their dispatched policy.
+
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID. _(required)_
+- `--repo <TEXT>` — Repository ID or owner/repo. _(required)_
 - `--json` — Output resolved rules as JSON instead of a table.
 
 ### `avr billing`
