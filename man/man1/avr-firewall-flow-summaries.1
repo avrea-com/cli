@@ -14,7 +14,7 @@ Each row is the totals + top-N destinations for one VM run. The Blocked column c
 Organization ID or slug. Uses default org if not specified.
 .TP
 \fB\-\-repo\fR \fITEXT\fR
-Repository ID. (required)
+Repository ID or owner/repo. (required)
 .TP
 \fB\-\-job\fR, \fB\-\-job\-id\fR \fITEXT\fR
 Filter to every VM execution attempt for a job ID.
@@ -41,6 +41,9 @@ Emit raw JSON instead of a table.
 .BR avr-firewall (1),
 .BR avr-firewall-add (1),
 .BR avr-firewall-delete (1),
+.BR avr-firewall-edit (1),
+.BR avr-firewall-export (1),
+.BR avr-firewall-import (1),
 .BR avr-firewall-list (1),
 .BR avr-firewall-move (1),
 .BR avr-firewall-set-default (1),

@@ -1,0 +1,48 @@
+.TH AVR\-FIREWALL\-EDIT 1 "" "avr 0.7.0" "Avrea CLI"
+.SH NAME
+avr-firewall-edit \- Edit specified fields of an existing firewall rule.
+.SH SYNOPSIS
+.B avr firewall edit
+[OPTIONS] RULE_ID
+.SH DESCRIPTION
+Edit specified fields of an existing firewall rule.
+.PP
+Edit only the supplied fields, preserving rule identity and order. Switching hostname/CIDR clears the other matcher. Any or ICMP clears ports. Use --ports all to remove a port restriction; numeric ports require a TCP/UDP rule.
+.SH ARGUMENTS
+.TP
+\fIRULE_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-action\fR \fICHOICE\fR
+(choices: allow, deny)
+.TP
+\fB\-\-proto\fR \fICHOICE\fR
+(choices: tcp, udp, icmp, any)
+.TP
+\fB\-\-cidr\fR \fITEXT\fR
+Destination IPv4 address or CIDR; replaces the hostname.
+.TP
+\fB\-\-fqdn\fR \fITEXT\fR
+Destination hostname; replaces the CIDR.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug; defaults to the configured organization.
+.TP
+\fB\-\-ports\fR \fITEXT\fR
+Port, range, or all to clear the port restriction.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID or owner/repo. If provided, uses repository scope.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-export (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-import (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

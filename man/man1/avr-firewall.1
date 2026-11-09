@@ -15,8 +15,17 @@ Add a rule.
 delete
 Delete a rule by ID.
 .TP
+edit
+Edit specified fields of an existing firewall rule.
+.TP
+export
+Export this scope's rules as portable JSON.
+.TP
 flow-summaries
 Show per-VM network activity summaries captured at VM stop.
+.TP
+import
+Append or replace this scope's rules from a portable JSON file.
 .TP
 list
 List egress firewall rules for the given scope.
@@ -25,10 +34,10 @@ move
 Move a rule to a new position (rewrites the full ordering atomically).
 .TP
 set-default
-Set (or replace) the catch-all (default) rule for the scope.
+Set the default action, or use --inherit with --repo to restore organization inheritance.
 .TP
 show
-Show the resolved (merged) firewall rule list for a repository.
+Show rules in evaluation order and their source.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-artifact (1),
@@ -53,7 +62,10 @@ Show the resolved (merged) firewall rule list for a repository.
 .BR avr-health (1),
 .BR avr-firewall-add (1),
 .BR avr-firewall-delete (1),
+.BR avr-firewall-edit (1),
+.BR avr-firewall-export (1),
 .BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-import (1),
 .BR avr-firewall-list (1),
 .BR avr-firewall-move (1),
 .BR avr-firewall-set-default (1),

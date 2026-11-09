@@ -1,0 +1,32 @@
+.TH AVR\-FIREWALL\-EXPORT 1 "" "avr 0.7.0" "Avrea CLI"
+.SH NAME
+avr-firewall-export \- Export this scope's rules as portable JSON.
+.SH SYNOPSIS
+.B avr firewall export
+[OPTIONS]
+.SH DESCRIPTION
+Export this scope's rules as portable JSON.
+.PP
+Export the selected scope in the same versioned JSON format as the console. Inherited rules and storage IDs are excluded. Use --file PATH, or redirect stdout.
+.SH OPTIONS
+.TP
+\fB\-\-file\fR \fITEXT\fR
+Output file, or - for stdout. Existing files are not overwritten. (default: -)
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug; defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository ID or owner/repo. If provided, uses repository scope.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-firewall (1),
+.BR avr-firewall-add (1),
+.BR avr-firewall-delete (1),
+.BR avr-firewall-edit (1),
+.BR avr-firewall-flow-summaries (1),
+.BR avr-firewall-import (1),
+.BR avr-firewall-list (1),
+.BR avr-firewall-move (1),
+.BR avr-firewall-set-default (1),
+.BR avr-firewall-show (1)

@@ -208,6 +208,12 @@ func TestAPIContract(t *testing.T) {
 		{"cache usage --repo " + repo, "GET " + org + "/repos/{repo_id}/cache"},
 		{"cache delete --repo " + repo + " --all --yes", "DELETE " + org + "/repos/{repo_id}/cache"},
 		{"vm list", "GET " + org + "/vms"},
+		{"firewall export", "GET " + org + "/firewall/rules/export"},
+		{"firewall export --repo " + repo, "GET " + org + "/repos/{repo_id}/firewall/rules/export"},
+		{"firewall edit efr-019a0000000070008000000000000001 --action deny", "PATCH " + org + "/firewall/rules/{rule_id}"},
+		{"firewall edit efr-019a0000000070008000000000000001 --proto icmp --repo " + repo, "PATCH " + org + "/repos/{repo_id}/firewall/rules/{rule_id}"},
+		{"firewall set-default --action deny", "POST " + org + "/firewall/rules"},
+		{"firewall set-default --inherit --repo " + repo, "GET " + org + "/repos/{repo_id}/firewall/rules"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.args, func(t *testing.T) {
