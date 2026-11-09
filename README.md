@@ -8,11 +8,9 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Install
 
-AVR 0.7.0 uses a native Go executable, keeping the `avr` command and existing
-package-manager upgrade paths. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
-for installation methods and upgrade details. Native builds support macOS 13+
-on Apple Silicon, Linux AMD64/ARM64, and Windows AMD64. Choose one installation
-method to avoid multiple `avr` executables competing on PATH.
+AVR is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64,
+and Windows AMD64. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+for platform requirements and upgrade details.
 
 ### Homebrew
 
@@ -31,28 +29,14 @@ shows the version currently available through Homebrew.
 
 ### mise
 
-Install [mise](https://mise.jdx.dev/getting-started.html), then install AVR
-through its built-in GitHub backend (no plugin or Python required):
+Use mise's built-in GitHub backend:
 
 ```sh
-mise use -g github:avrea-com/cli@0.7.0
-mise exec github:avrea-com/cli@0.7.0 -- avr --version
+mise use -g github:avrea-com/cli@latest
+mise exec github:avrea-com/cli@latest -- avr --version
 ```
 
-To run `avr` directly, activate mise in your shell. For zsh, add this line
-once to `${ZDOTDIR:-$HOME}/.zshrc`, after other PATH setup, and run it in your
-current terminal too:
-
-```sh
-eval "$(mise activate zsh)"
-```
-
-Then run `avr --version` at the next prompt. Merely opening a new terminal
-does not activate mise until that startup line is saved. For other shells,
-follow [mise shell setup](https://mise.jdx.dev/shell-setup.html).
-
-Omit `-g` to pin AVR in the current project's `mise.toml` instead. See
-[updates and PATH troubleshooting](docs/INSTALL.md#mise) for details.
+Omit `-g` to configure AVR in the current project's `mise.toml` instead.
 
 ### PyPI (uv, pipx or pip)
 
@@ -60,9 +44,8 @@ Omit `-g` to pin AVR in the current project's `mise.toml` instead. See
 uv tool install avr-cli
 ```
 
-These commands install the latest published version. Native wheels (0.7.0+)
-require Python 3.9+ for installation; the installed `avr` executable runs
-without Python. The older 0.6.0 package requires Python 3.14+ at runtime.
+The package manager uses Python for installation; the installed `avr`
+executable runs without Python.
 You can also use `pipx install avr-cli`, or install with
 `python -m pip install avr-cli` inside a virtual environment.
 
@@ -81,12 +64,11 @@ Use the same method you installed with:
 brew upgrade avr             # Homebrew
 uv tool upgrade avr-cli      # uv
 pipx upgrade avr-cli         # pipx
+mise upgrade github:avrea-com/cli  # mise (tracking latest)
 ```
 
-For mise, select the desired version with `mise use -g github:avrea-com/cli@VERSION`;
-a `0.7.0` pin stays on that version. Run `avr --version` to verify which
-executable your shell is using. AVR may notify you about updates, but does
-not install them automatically.
+Run `avr --version` to verify which executable your shell is using. AVR may
+notify you about updates, but does not install them automatically.
 
 ### From source
 
@@ -97,7 +79,8 @@ make go-build
 ./build/go/avr --version
 ```
 
-Source builds require Go 1.27.3+ and uv (for packaging tools). Run
+Source builds require the Go toolchain specified in [go.mod](go.mod) and uv
+(for packaging tools). Run
 `make test` for native and tooling tests, and `make lint` for both languages.
 
 ### Verifying a release
@@ -107,7 +90,7 @@ Release artefacts (the native archives and PyPI wheels) carry keyless
 downloaded artefact against this repository with the GitHub CLI:
 
 ```sh
-gh attestation verify avr_0.7.0_linux_amd64.tar.gz --repo avrea-com/cli
+gh attestation verify ./path/to/downloaded-archive --repo avrea-com/cli
 ```
 
 A successful check confirms the artefact was built by this repository's release

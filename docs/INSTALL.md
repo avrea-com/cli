@@ -20,7 +20,7 @@ fails clearly if no compatible wheel exists. There is no fallback source distrib
 | uv | `uv tool install avr-cli` | `uv tool upgrade avr-cli` |
 | pipx | `pipx install avr-cli` | `pipx upgrade avr-cli` |
 | pip, in an environment | `python -m pip install avr-cli` | `python -m pip install --upgrade avr-cli` |
-| mise | `mise use -g github:avrea-com/cli@0.7.0` | Update your exact pin, or use `mise upgrade github:avrea-com/cli` with a floating version |
+| mise | `mise use -g github:avrea-com/cli@latest` | `mise upgrade github:avrea-com/cli` (change exact pins explicitly) |
 
 The PyPI package contains native executables named `avr` and `avr-cli`.
 Python is needed by the package manager, but is not launched when running
@@ -29,59 +29,25 @@ for installation. `uvx avr-cli` remains available.
 
 ## mise
 
-Install [mise](https://mise.jdx.dev/getting-started.html) first (on macOS,
-`brew install mise`). AVR uses its built-in
-[GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html); no custom
-plugin or Python is needed.
-
-Install a specific version globally, then verify it without shell activation:
-
-```sh
-mise use -g github:avrea-com/cli@0.7.0
-mise exec github:avrea-com/cli@0.7.0 -- avr --version
-```
-
-To make `avr` available directly in zsh, add the following line once to
-`${ZDOTDIR:-$HOME}/.zshrc`, after other PATH setup. Also run it in the current
-terminal, then run `avr --version` at the next prompt:
-
-```sh
-eval "$(mise activate zsh)"
-```
-
-`mise` itself must be on PATH when this line runs. If needed, use the absolute
-path reported by `command -v mise` in the activation line. Opening a new
-terminal only helps after activation is saved in the startup file. See
-[mise shell setup](https://mise.jdx.dev/shell-setup.html) for Bash, Fish and
-PowerShell.
-
-For a project pin, run `mise use github:avrea-com/cli@0.7.0` inside that
-project, without `-g`. Project configuration can override the global version.
-Change an exact pin by repeating `mise use` with the desired version. To track
-stable releases instead:
+Use mise's built-in
+[GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html):
 
 ```sh
 mise use -g github:avrea-com/cli@latest
-mise upgrade github:avrea-com/cli
+mise exec github:avrea-com/cli@latest -- avr --version
 ```
+
+Omit `-g` to configure AVR in the current project's `mise.toml`. Project
+configuration can override the global version. Update with
+`mise upgrade github:avrea-com/cli`. For a reproducible installation, replace
+`latest` with the desired release version; change that pin explicitly when
+upgrading.
 
 Version discovery may exclude very recent releases according to mise's
-[minimum-release-age setting](https://mise.jdx.dev/configuration/settings.html#minimum_release_age). Use the explicit `0.7.0` pin when installing
-this release immediately.
+[minimum-release-age setting](https://mise.jdx.dev/configuration/settings.html#minimum_release_age).
 
-If installation succeeds but `avr` is not found, or an older version runs:
-
-```sh
-mise exec github:avrea-com/cli@0.7.0 -- avr --version
-mise which avr
-command -v mise
-type -a avr
-```
-
-If the explicit `mise exec` works, check shell activation and PATH ordering.
-`mise which avr` reports the executable selected by the current mise
-configuration; `type -a avr` shows what zsh can actually find. Ensure later
-startup commands do not replace mise's PATH entries.
+If an installed `avr` is not found, compare `mise which avr` with `type -a avr`
+and check your [mise shell setup](https://mise.jdx.dev/shell-setup.html).
 
 Each release also includes `mise.toml` with an exact version, platform asset
 names and checksums. Merge its `[tools]` entry into an existing project
