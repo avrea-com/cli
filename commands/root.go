@@ -178,8 +178,30 @@ func authenticated(cfg config.Config) error {
 	return nil
 }
 
+// An omitted repository can select a default scope. An explicitly empty value
+// must never silently broaden that scope or fall back to Git detection.
+func validateExplicitRepository(c *cobra.Command) error {
+	flag := c.Flags().Lookup("repo")
+	if c.DisableFlagParsing || flag == nil || !flag.Changed {
+		return nil
+	}
+	values := []string{flag.Value.String()}
+	if list, ok := flag.Value.(interface{ GetSlice() []string }); ok {
+		values = list.GetSlice()
+	}
+	for _, value := range values {
+		if strings.TrimSpace(value) == "" {
+			return &ExitError{2, "Error: --repo cannot be empty."}
+		}
+	}
+	return nil
+}
+
 func run(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
 	return func(c *cobra.Command, args []string) error {
+		if err := validateExplicitRepository(c); err != nil {
+			return err
+		}
 		err := fn(c, args)
 		if err == nil {
 			return nil

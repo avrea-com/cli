@@ -87,6 +87,9 @@ func TestFirewallInheritOnlyDeletesRepoDefault(t *testing.T) {
 	for _, exists := range []bool{false, true} {
 		deletes := 0
 		_, run := firewallTestDeps(t, func(r *http.Request) (int, string) {
+			if r.Method == "GET" && r.URL.Path == "/orgs/"+firewallTestOrg+"/firewall/rules" {
+				return 200, `[{"is_default":true,"action":"deny"}]`
+			}
 			if !strings.Contains(r.URL.Path, "/repos/"+firewallTestRepo+"/") {
 				t.Fatal(r.URL)
 			}
@@ -103,7 +106,7 @@ func TestFirewallInheritOnlyDeletesRepoDefault(t *testing.T) {
 			return 204, ""
 		})
 		code, out, err := run([]string{"set-default", "--inherit", "--repo", firewallTestRepo})
-		if code != 0 || exists != (deletes == 1) {
+		if code != 0 || exists != (deletes == 1) || !strings.Contains(out, "organization (deny)") {
 			t.Fatal(code, out, err, deletes)
 		}
 	}
@@ -132,6 +135,9 @@ func TestFirewallImportPreviewAndApply(t *testing.T) {
 					applied := 0
 					previews := 0
 					_, run := firewallTestDeps(t, func(r *http.Request) (int, string) {
+						if r.Method == "GET" && r.URL.Path == "/orgs/"+firewallTestOrg+"/firewall/rules" {
+							return 200, "[]"
+						}
 						expected := "/orgs/" + firewallTestOrg
 						if repo != "" {
 							expected += "/repos/" + repo
@@ -165,6 +171,9 @@ func TestFirewallImportPreviewAndApply(t *testing.T) {
 						args = append(args, "--dry-run")
 					}
 					code, out, err := run(args)
+					if repo != "" && !strings.Contains(out, "inherit organization default (allow (platform default))") {
+						t.Fatal(out)
+					}
 					if code != 0 || previews != 1 || applied != boolCount(!dry) || !strings.Contains(out, "1 added") {
 						t.Fatal(code, out, err, previews, applied)
 					}
@@ -358,5 +367,48 @@ func TestFirewallValidationDetailsArePreserved(t *testing.T) {
 	code, _, err := run([]string{"edit", firewallTestRule, "--fqdn", "*.com"})
 	if code == 0 || !strings.Contains(err, "fqdn: Wildcard apex is a shared public suffix") {
 		t.Fatal(code, err)
+	}
+}
+
+func TestExplicitEmptyRepositoryRejectedAcrossCommands(t *testing.T) {
+	cases := [][]string{
+		{"firewall", "add", "--action", "deny", "--fqdn", "example.com"},
+		{"firewall", "delete", firewallTestRule}, {"firewall", "move", firewallTestRule, "--to", "0"},
+		{"firewall", "edit", firewallTestRule, "--action", "deny"},
+		{"firewall", "import", "--file", "-"}, {"firewall", "set-default", "--action", "deny"},
+		{"firewall", "show"}, {"firewall", "flow-summaries"}, {"cache", "usage"},
+		{"status"}, {"run", "list"}, {"job", "list"}, {"pr", "list"},
+		{"workflow", "list"},
+		{"run", "list", "--repo", firewallTestRepo},
+	}
+	for _, args := range cases {
+		for _, value := range []string{"", "  "} {
+			t.Run(strings.Join(args, " ")+value, func(t *testing.T) {
+				d, _, stderr := testDeps(t)
+				d.LoadConfig = func() (config.Config, error) { t.Fatal("loaded config before validation"); return config.Config{}, nil }
+				d.In = strings.NewReader(`{"version":1,"rules":[]}`)
+				code := Execute(t.Context(), append(append([]string{}, args...), "--repo", value), d)
+				if code != 2 || !strings.Contains(stderr.String(), "Error: --repo cannot be empty.") {
+					t.Fatalf("code=%d stderr=%s", code, stderr)
+				}
+			})
+		}
+	}
+}
+
+func TestFirewallNoopReportsSkippedDefault(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	fixture, _ := firewallTestDeps(t, func(r *http.Request) (int, string) {
+		if !strings.HasSuffix(r.URL.Path, "/preview") {
+			t.Fatalf("unexpected request %s", r.URL)
+		}
+		policy := `{"version":1,"rules":[{"is_default":true,"action":"allow"}]}`
+		return 200, `{"policy":{"version":1,"rules":[{"is_default":true,"action":"deny"}]},"before":` + policy + `,"after":` + policy + `,"revision":"` + strings.Repeat("a", 64) + `","skipped":1}`
+	})
+	d.LoadConfig, d.HTTP = fixture.LoadConfig, fixture.HTTP
+	d.In = strings.NewReader(`{"version":1,"rules":[{"is_default":true,"action":"deny"}]}`)
+	code := Execute(t.Context(), []string{"firewall", "import", "--file", "-"}, d)
+	if code != 0 || !strings.Contains(out.String(), "1 rule skipped") || !strings.Contains(out.String(), "deny") {
+		t.Fatal(code, out, stderr)
 	}
 }

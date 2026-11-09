@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,6 +93,41 @@ func firewallDefaultLabel(policy client.FirewallPolicy, repo string) string {
 	return "allow (platform default)"
 }
 
+func organizationFirewallDefault(ctx context.Context, api *client.Client, org string) (string, error) {
+	page, err := api.FirewallRules(ctx, firewallBase(org, "")+"/rules")
+	if err != nil {
+		return "", err
+	}
+	for _, rule := range rawRecords(page) {
+		if rule["is_default"] == true {
+			return fieldText(rule, "action"), nil
+		}
+	}
+	return "allow (platform default)", nil
+}
+
+func reportSkippedFirewallRules(w io.Writer, preview client.FirewallImportPreview, mode string) error {
+	if preview.Skipped == 0 {
+		return nil
+	}
+	noun := "rules"
+	if preview.Skipped == 1 {
+		noun = "rule"
+	}
+	if _, err := fmt.Fprintf(w, "%d %s skipped.\n", preview.Skipped, noun); err != nil {
+		return err
+	}
+	if mode == "append" {
+		for _, rule := range preview.Policy.Rules {
+			if rule["is_default"] == true {
+				_, err := fmt.Fprintf(w, "Append preserves the current default; the file's %s default was skipped.\n", output.CellText(fieldText(rule, "action")))
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func newFirewallImport(d Dependencies) *cobra.Command {
 	var org, repo, file, mode string
 	var dryRun, yes bool
@@ -136,14 +172,33 @@ func newFirewallImport(d Dependencies) *cobra.Command {
 			return errors.New("unexpected API response: incomplete firewall import preview")
 		}
 		if reflect.DeepEqual(preview.Before, preview.After) {
-			_, err = fmt.Fprintln(d.Out, "No changes.")
-			return err
+			if _, err = fmt.Fprintln(d.Out, "No changes."); err != nil {
+				return err
+			}
+			return reportSkippedFirewallRules(d.Out, preview, mode)
+		}
+		beforeDefault := firewallDefaultLabel(preview.Before, repo)
+		afterDefault := firewallDefaultLabel(preview.After, repo)
+		if repo != "" && (beforeDefault == "inherit organization default" || afterDefault == "inherit organization default") {
+			inherited, readErr := organizationFirewallDefault(cmd.Context(), api, id)
+			if readErr != nil {
+				return apiError(cfg, readErr, "fetch organization firewall default")
+			}
+			if beforeDefault == "inherit organization default" {
+				beforeDefault += " (" + inherited + ")"
+			}
+			if afterDefault == "inherit organization default" {
+				afterDefault += " (" + inherited + ")"
+			}
 		}
 		scope := id
 		if repo != "" {
 			scope += " / " + repo
 		}
-		if _, err = fmt.Fprintf(d.Out, "%s: %s\n%d added, %d removed, %d skipped.\nDefault: %s -> %s\n", mode, output.CellText(scope), preview.Added, preview.Removed, preview.Skipped, output.CellText(firewallDefaultLabel(preview.Before, repo)), output.CellText(firewallDefaultLabel(preview.After, repo))); err != nil {
+		if _, err = fmt.Fprintf(d.Out, "%s: %s\n%d added, %d removed.\nDefault: %s -> %s\n", mode, output.CellText(scope), preview.Added, preview.Removed, output.CellText(beforeDefault), output.CellText(afterDefault)); err != nil {
+			return err
+		}
+		if err = reportSkippedFirewallRules(d.Out, preview, mode); err != nil {
 			return err
 		}
 		if preview.Added == 0 && preview.Removed == 0 {
@@ -156,7 +211,7 @@ func newFirewallImport(d Dependencies) *cobra.Command {
 		}
 		if mode == "replace" && !yes {
 			if file == "-" || !d.IsInputTerminal() {
-				return &ExitError{2, "Replacement requires --yes when input is non-interactive. Use --dry-run to review changes."}
+				return &ExitError{2, "Error: Replacement requires --yes when input is non-interactive. Use --dry-run to review changes."}
 			}
 			if err := confirmMutation(cmd.Context(), d, "replacing firewall rules", "Replace rules in "+output.CellText(scope)+"?"); err != nil {
 				return err

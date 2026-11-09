@@ -375,10 +375,10 @@ func newFirewallDefault(d Dependencies) *cobra.Command {
 	c.Flags().BoolVar(&inherit, "inherit", false, "Remove the repository default override.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		if inherit == cmd.Flags().Changed("action") {
-			return &ExitError{2, "Specify exactly one of --action or --inherit."}
+			return &ExitError{2, "Error: Specify exactly one of --action or --inherit."}
 		}
 		if inherit && repo == "" {
-			return &ExitError{2, "--inherit requires --repo."}
+			return &ExitError{2, "Error: --inherit requires --repo."}
 		}
 		if !inherit {
 			if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
@@ -395,6 +395,10 @@ func newFirewallDefault(d Dependencies) *cobra.Command {
 		}
 		path := firewallBase(id, repo) + "/rules"
 		if inherit {
+			inherited, readErr := organizationFirewallDefault(cmd.Context(), api, id)
+			if readErr != nil {
+				return apiError(cfg, readErr, "fetch organization firewall default")
+			}
 			page, err := api.FirewallRules(cmd.Context(), path)
 			if err != nil {
 				return apiError(cfg, err, "fetch repository default")
@@ -411,7 +415,7 @@ func newFirewallDefault(d Dependencies) *cobra.Command {
 					return apiError(cfg, err, "restore organization default inheritance")
 				}
 			}
-			_, err = fmt.Fprintln(d.Out, "Repository default inherits from the organization.")
+			_, err = fmt.Fprintf(d.Out, "Repository default inherits from the organization (%s).\n", output.CellText(inherited))
 			return err
 		}
 		rule, err := api.CreateFirewallRule(cmd.Context(), path, map[string]any{"action": action, "is_default": true, "protocol": "any"})

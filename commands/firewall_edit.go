@@ -13,9 +13,6 @@ import (
 
 func resolveFirewallRepository(cmd *cobra.Command, d Dependencies, cfg config.Config, api *client.Client, org, repo string) (string, error) {
 	if strings.TrimSpace(repo) == "" {
-		if cmd.Flags().Changed("repo") {
-			return "", &ExitError{2, "--repo cannot be empty; omit it for organization scope."}
-		}
 		return "", nil
 	}
 	return resolveRepository(cmd.Context(), d, cfg, api, org, repo, "")
@@ -40,18 +37,18 @@ func newFirewallEdit(d Dependencies) *cobra.Command {
 			body["action"] = action
 		}
 		if changed("cidr") && changed("fqdn") {
-			return &ExitError{2, "Specify either --cidr or --fqdn, not both."}
+			return &ExitError{2, "Error: Specify either --cidr or --fqdn, not both."}
 		}
 		if changed("cidr") {
 			if !validFirewallCIDR(cidr) {
-				return &ExitError{2, "--cidr must be an IPv4 address or network."}
+				return &ExitError{2, "Error: --cidr must be an IPv4 address or network."}
 			}
 			body["cidr"] = cidr
 			body["fqdn"] = nil
 		}
 		if changed("fqdn") {
 			if strings.TrimSpace(fqdn) == "" {
-				return &ExitError{2, "--fqdn cannot be empty."}
+				return &ExitError{2, "Error: --fqdn cannot be empty."}
 			}
 			body["fqdn"] = fqdn
 			body["cidr"] = nil
@@ -72,13 +69,13 @@ func newFirewallEdit(d Dependencies) *cobra.Command {
 				return err
 			}
 			if start != nil && changed("proto") && protocol != "tcp" && protocol != "udp" {
-				return &ExitError{2, "--ports requires a TCP or UDP rule."}
+				return &ExitError{2, "Error: --ports requires a TCP or UDP rule."}
 			}
 			body["port_start"] = start
 			body["port_end"] = end
 		}
 		if len(body) == 0 {
-			return &ExitError{2, "Specify at least one field to edit."}
+			return &ExitError{2, "Error: Specify at least one field to edit."}
 		}
 		cfg, api, id, err := organizationContext(cmd.Context(), d, org)
 		if err != nil {
