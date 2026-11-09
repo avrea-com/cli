@@ -138,7 +138,7 @@ func vmWaitExit(d Dependencies, row map[string]any, disposition, target string, 
 	if _, err := fmt.Fprintln(d.Out); err != nil {
 		return err
 	}
-	message := fmt.Sprintf("Not %s yet after %ds. Re-run once ready: avr vm show %s", target, timeout, id)
+	message := fmt.Sprintf("Not %s yet after %ds. Re-run once ready: %s", target, timeout, vmShowCommand(id))
 	if disposition == "failed" {
 		message = vmFailureText(row, id)
 	}

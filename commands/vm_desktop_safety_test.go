@@ -19,3 +19,13 @@ func TestDesktopInstructionsRejectUntrustedShellSyntax(t *testing.T) {
 		t.Fatal(uri)
 	}
 }
+
+func TestMacDesktopHintPassesOneURIArgument(t *testing.T) {
+	for _, endpoint := range [][2]string{{"127.0.0.1:3389", "runner"}, {"[::1]:3389", "runner"}} {
+		lines := vmRDPConnect(endpoint[0], endpoint[1], "", "darwin", false, "")
+		if len(lines) == 0 || !strings.HasPrefix(lines[0], "open 'rdp://") {
+			t.Fatal(lines)
+		}
+		assertHintShellArguments(t, "open", lines[0], vmRDPURI(endpoint[0], endpoint[1])+"\x00")
+	}
+}
