@@ -8,7 +8,7 @@ import (
 )
 
 func TestRequiredOptionDiagnosticsInPublicAndComposedTrees(t *testing.T) {
-	for _, name := range []string{"avr", "avr-admin"} {
+	for _, name := range []string{"avr", "custom-cli"} {
 		for _, tc := range []struct {
 			args   []string
 			option string

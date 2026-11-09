@@ -1,4 +1,4 @@
-// Package commands exposes fresh Cobra command constructors for avr and avr-admin.
+// Package commands exposes reusable Cobra command constructors for avr.
 package commands
 
 import (
@@ -20,10 +20,10 @@ import (
 	"golang.org/x/term"
 )
 
-// Dependencies are explicit so admin can reuse commands without package globals.
+// Dependencies are explicit so callers can reuse commands without package globals.
 type Dependencies struct {
 	// UpdateNotices supports injected notices. StartUpdateCheck is opt-in for the
-	// public executable; composed admin commands do not inherit a release feed.
+	// public executable; composed commands do not inherit a release feed.
 	StartUpdateCheck func(context.Context) <-chan string
 
 	UpdateNotices   <-chan string

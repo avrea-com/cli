@@ -10,7 +10,7 @@ import (
 )
 
 func TestCompletionDoesNotRunHandlersOrReadCredentials(t *testing.T) {
-	for _, program := range []string{"avr", "avr-admin"} {
+	for _, program := range []string{"avr", "custom-cli"} {
 		t.Run(program, func(t *testing.T) {
 			d, out, stderr := testDeps(t)
 			variable := "_" + strings.ToUpper(strings.ReplaceAll(program, "-", "_")) + "_COMPLETE"

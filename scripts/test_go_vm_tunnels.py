@@ -24,7 +24,7 @@ pty = pytest.importorskip("pty")
 def tunnel_environment(tmp_path):
     binary = os.environ.get("AVR_GO_BINARY")
     if not binary:
-        pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
+        pytest.skip("Set AVR_GO_BINARY to the native avr executable")
     assert binary is not None
     server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), vm.Fixture))
     server.requests = []

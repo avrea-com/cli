@@ -113,7 +113,7 @@ version must already have published release assets. The installer prints PATH
 instructions and refuses to overwrite a package-managed installation; move or
 remove that installation using its original package manager first.
 
-## Credentials, rollback and admin
+## Credentials and rollback
 
 The command stays `avr`, using the existing configuration and credentials.
 Installation does not log in, log out, or rewrite `hosts.json`.
@@ -122,12 +122,6 @@ Use your original package manager for rollback, for example
 `uv tool install --force 'avr-cli==0.6.0'` or
 `python -m pip install 'avr-cli==0.6.0'`. Python 0.6.0 requires Python 3.14+.
 A native installer cannot install Python 0.6.0; use its former package manager.
-
-`avr-admin` still imports Python `avrea_cli` and remains pinned to
-`avr-cli==0.6.0` in avrea-core. Install admin and
-public AVR in separate environments. Existing admin installations need to
-consume the updated dependency metadata; an older unbounded requirement is
-not changed retroactively. Native wheels intentionally omit `avrea_cli`.
 
 ## JSON and jq
 

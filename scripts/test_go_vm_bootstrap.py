@@ -109,7 +109,7 @@ def terminal_run(executable, home, answer, token, options, interrupt=False):
 def binary():
     value = os.environ.get("AVR_GO_BINARY")
     if not value:
-        pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
+        pytest.skip("Set AVR_GO_BINARY to the native avr executable")
     assert value is not None
     return str(Path(value).resolve())
 

@@ -247,13 +247,13 @@ func TestLoginTimeoutCancellationAndBindFailure(t *testing.T) {
 func TestComposableCommandsAreIndependent(t *testing.T) {
 	d1, out1, _ := testDeps(t)
 	d2, out2, _ := testDeps(t)
-	admin := &cobra.Command{Use: "avr-admin", SilenceErrors: true, SilenceUsage: true}
-	admin.AddCommand(NewAuth(d1))
-	admin.SetArgs([]string{"auth", "status", "--json", "?"})
-	if err := admin.Execute(); err != nil {
+	composed := &cobra.Command{Use: "custom-cli", SilenceErrors: true, SilenceUsage: true}
+	composed.AddCommand(NewAuth(d1))
+	composed.SetArgs([]string{"auth", "status", "--json", "?"})
+	if err := composed.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	// Creating and mutating one tree must not mutate the next admin/public tree.
+	// Creating and mutating one tree must not mutate another command tree.
 	public := NewRoot(d2)
 	public.SetArgs([]string{"auth", "status", "--json", "?"})
 	if err := public.Execute(); err != nil {

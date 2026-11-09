@@ -30,7 +30,7 @@ var artifactDeleteFields = []string{"id", "deleted"}
 var artifactIDPattern = lazyRegexp("^art-[0-9a-f]{32}$")
 var artifactDigestPattern = lazyRegexp("^[0-9a-f]{64}$")
 
-// NewArtifact shares artifact inspection and verified file transfers with admin.
+// NewArtifact constructs artifact inspection and verified file transfer commands.
 func NewArtifact(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	group := &cobra.Command{Use: "artifact", Short: "Manage workflow artifacts."}

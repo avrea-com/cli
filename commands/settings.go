@@ -19,7 +19,7 @@ var settingsFields = []string{"key", "value", "source"}
 var settingsSchemaFields = []string{"key", "value_type", "default", "scopes", "inherits", "description", "choices", "min_value", "max_value"}
 var settingInteger = lazyRegexp("^[+-]?[0-9]+(_[0-9]+)*$")
 
-// NewSettings shares public settings scope selection and output with avr-admin.
+// NewSettings constructs settings commands with shared scope selection and output.
 func NewSettings(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "settings", Short: "View and toggle cache and runner settings."}

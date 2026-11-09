@@ -12,7 +12,7 @@ import (
 )
 
 func TestDocumentationUsesNativePublicVersion(t *testing.T) {
-	root := commands.NewRoot(commands.Dependencies{Version: "admin-preview+fixture"})
+	root := commands.NewRoot(commands.Dependencies{Version: "custom-preview+fixture"})
 	tree, err := commands.Documentation(root)
 	if err != nil || tree.Version != buildversion.Current() {
 		t.Fatal(tree, err)

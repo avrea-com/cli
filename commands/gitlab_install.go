@@ -137,7 +137,7 @@ func gitLabAPIError(cfg config.Config, err error, action, hint string) error {
 }
 
 // GitLab validation can use the server's full 60-second deadline. Copy the
-// client so this allowance cannot change other requests or admin embedding.
+// client so this allowance cannot change other requests or embedded commands.
 func gitLabWrite(ctx context.Context, api *client.Client, method, path string, body any) (map[string]any, error) {
 	copyClient := *api
 	transport := *api.HTTP
