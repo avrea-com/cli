@@ -91,7 +91,7 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string { return fmt.Sprintf("HTTP %d", e.Status) }
 
-// New copies the HTTP client so composing an admin command cannot change another
+// New copies the HTTP client so composing a command cannot change another
 // client's redirect policy or timeout. Credentials are sent only to Config.Host.
 func New(cfg config.Config, transport *http.Client, userAgent string) *Client {
 	h := http.Client{Timeout: 30 * time.Second}

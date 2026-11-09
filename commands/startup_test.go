@@ -34,7 +34,7 @@ func TestLocalIntrospectionDoesNotLoadContext(t *testing.T) {
 }
 
 // Keep providers lazy without a process-global cache: subsequent invocations
-// must see changed credentials/configuration, including embedded admin usage.
+// must see changed credentials/configuration, including embedded command usage.
 func TestInvocationLoadsConfigOnceAndRefreshes(t *testing.T) {
 	d, out, stderr := testDeps(t)
 	loads, requests := 0, 0

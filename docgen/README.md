@@ -14,7 +14,7 @@ command implementations together when adding or changing a command.
 
 The existing native formatters retain Python's help layout, wrapping, colors,
 links and section ordering. Bash/Zsh/Fish completion keeps the existing
-`_AVR_COMPLETE` protocol; composed admin trees also accept `_AVR_ADMIN_COMPLETE`.
+`_AVR_COMPLETE` protocol.
 Help/completion do not load credentials or call the API.
 
 Native Go regression tests cover command help, styles, sanitization, completion
@@ -25,5 +25,4 @@ in Git history at `f5688c1`. New behavior is tested against the native contract.
 
 `make go-docs` renders Markdown, JSON, Starlight and man pages with the native
 binary and passes the README explicitly. A packaged binary looks for its optional
-README beside the executable. Both public and composed admin documentation
-commands generate the public reference.
+README beside the executable. Documentation commands generate the public reference.

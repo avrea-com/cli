@@ -13,6 +13,11 @@ import (
 	"github.com/avrea-com/cli/output"
 )
 
+// vmShowCommand formats a terminal-safe command hint, quoting the ID as one shell argument.
+func vmShowCommand(id string) string {
+	return "avr vm show " + shellQuotePython(output.CellText(id))
+}
+
 func vmEndpoints(value any) string {
 	endpoints, _ := value.(map[string]any)
 	if len(endpoints) == 0 {
@@ -65,7 +70,7 @@ func vmRDPConnect(address, user, password, platform string, rfx bool, cert strin
 	}
 	switch platform {
 	case "darwin":
-		lines := []string{"open \"" + vmRDPURI(address, user) + "\""}
+		lines := []string{"open " + shellQuotePython(vmRDPURI(address, user))}
 		if password != "" {
 			lines = append(lines, "(no password in the URI; use the one-time password shown below)")
 		}
@@ -118,7 +123,7 @@ func vmConnect(vm map[string]any, password string) []string {
 	}
 	lines := vmRDPConnect(address, user, password, runtime.GOOS, vm["os_type"] == "linux", "")
 	if pending {
-		lines = append(lines, "(IP:PORT appears in `avr vm show "+pythonValue(vm["customer_vm_id"])+"` once the VM is RUNNING)")
+		lines = append(lines, "(IP:PORT appears in `"+vmShowCommand(pythonValue(vm["customer_vm_id"]))+"` once the VM is RUNNING)")
 	}
 	return append(lines, "(first connect shows a self-signed certificate warning; accept to continue)")
 }

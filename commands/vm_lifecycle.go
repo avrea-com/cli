@@ -140,7 +140,7 @@ func vmDeleteOutcome(d Dependencies, id string, state map[string]any, dispositio
 		case disposition == "failed":
 			message = vmFailureText(state, id)
 		default:
-			message = fmt.Sprintf("Still deleting after %ds. Check with: avr vm show %s", timeout, id)
+			message = fmt.Sprintf("Still deleting after %ds. Check with: %s", timeout, vmShowCommand(id))
 		}
 		if _, err := fmt.Fprintln(d.Out, output.CellText(message)); err != nil {
 			return err

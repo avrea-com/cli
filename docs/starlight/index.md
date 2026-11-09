@@ -13,9 +13,9 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Install
 
-AVR 0.7.0 uses a native Go executable, keeping the `avr` command and existing
-package-manager upgrade paths. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
-for supported platforms, installation methods, and upgrade details.
+AVR is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64,
+and Windows AMD64. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+for platform requirements and upgrade details.
 
 ### Homebrew
 
@@ -23,20 +23,57 @@ for supported platforms, installation methods, and upgrade details.
 brew install avrea-com/tap/avr
 ```
 
-### PyPI
+If Homebrew reports an untrusted existing tap, trust the AVR formula and retry:
+
+```sh
+brew trust --formula avrea-com/tap/avr
+```
+
+The tap is updated separately from GitHub and PyPI; `brew info avrea-com/tap/avr`
+shows the version currently available through Homebrew.
+
+### mise
+
+Use mise's built-in GitHub backend:
+
+```sh
+mise use -g github:avrea-com/cli@latest
+mise exec github:avrea-com/cli@latest -- avr --version
+```
+
+Omit `-g` to configure AVR in the current project's `mise.toml` instead.
+
+### PyPI (uv, pipx or pip)
 
 ```sh
 uv tool install avr-cli
 ```
 
-These commands install the latest published version. Native wheels (0.7.0+)
-require Python 3.9+ for installation; the installed `avr` executable runs
-without Python. The older 0.6.0 package requires Python 3.14+ at runtime.
-You can also install with pip:
+The package manager uses Python for installation; the installed `avr`
+executable runs without Python.
+You can also use `pipx install avr-cli`, or install with
+`python -m pip install avr-cli` inside a virtual environment.
+
+### Native installers and downloads
+
+Download the shell installer (Linux/macOS), PowerShell installer (Windows),
+or an archive from [GitHub Releases](https://github.com/avrea-com/cli/releases/latest).
+See [native installation](docs/INSTALL.md#native-installation-without-python)
+for version pins, checksum verification and PATH setup.
+
+### Update
+
+Use the same method you installed with:
 
 ```sh
-pip install avr-cli
+brew upgrade avr             # Homebrew
+uv tool upgrade avr-cli      # uv
+pipx upgrade avr-cli         # pipx
+mise upgrade github:avrea-com/cli  # mise (tracking latest)
 ```
+
+Run `avr --version` to verify which executable your shell is using. AVR may
+notify you about updates, but does not install them automatically.
 
 ### From source
 
@@ -47,7 +84,8 @@ make go-build
 ./build/go/avr --version
 ```
 
-Source builds require Go 1.27.3+ and uv (for packaging tools). Run
+Source builds require the Go toolchain specified in [go.mod](go.mod) and uv
+(for packaging tools). Run
 `make test` for native and tooling tests, and `make lint` for both languages.
 
 ### Verifying a release
@@ -57,7 +95,7 @@ Release artefacts (the native archives and PyPI wheels) carry keyless
 downloaded artefact against this repository with the GitHub CLI:
 
 ```sh
-gh attestation verify avr_0.7.0_linux_amd64.tar.gz --repo avrea-com/cli
+gh attestation verify ./path/to/downloaded-archive --repo avrea-com/cli
 ```
 
 A successful check confirms the artefact was built by this repository's release
@@ -183,7 +221,11 @@ avr run watch <run-id> --exit-status   # propagate the run's success/failure int
 avr run view <run-id> --log-failed     # only the steps that failed, grouped by job
 avr run logs <run-id>                  # full log dump, paginated
 avr job logs <job-id> --follow         # tail one job in real time
+avr run diagnose <run-id>             # timings, baseline, metrics and failed logs
 ```
+
+`run diagnose` currently supports external CI runs; native Avrea CI runs
+are not supported by that command.
 
 **Read recorded tests from a run or job**
 
@@ -292,7 +334,7 @@ avr run rerun <run-id> --failed        # only failed jobs
 ```sh
 avr workflow list                      # aggregate stats per workflow over the last 30d
 avr workflow view <wfl-id>             # per-job p95/median/failure breakdown + recent runs
-avr status                             # org-wide health: recent runs, slowest workflows, cache usage
+avr status                             # current repo: recent runs, performance and cache health
 ```
 
 **Cache**
@@ -305,7 +347,9 @@ avr cache delete --key <key> --type <type> --repo <repo>
 
 ## Scripting & automation
 
-Every list/view command supports `--json` for structured output.
+Use `--json` for structured output on list/view commands. Check each command's
+`--help` for available fields; commands such as `status` and `run diagnose`
+accept a plain `--json` switch instead of a field list.
 
 **Discover available fields**
 
@@ -334,10 +378,11 @@ The Go CLI uses embedded gojq, like GitHub CLI: object keys are sorted. For orde
 
 ```sh
 avr run list >/dev/null
-case $? in
+result=$?
+case "$result" in
   0) ;;
   4) echo "logged out, re-auth needed"; exit 4 ;;
-  *) echo "transient failure" ;;
+  *) echo "command failed (exit $result)" >&2; exit "$result" ;;
 esac
 ```
 
@@ -381,7 +426,8 @@ When stdout isn't a TTY, list commands switch to tab-separated rows (no color, n
 | `AVR_BROWSER`    | Browser to launch for `--web` and OAuth login. Falls back to `BROWSER`, then system default.      |
 | `AVR_PAGER`      | Pager for long output. Overrides `PAGER`. Set to empty string to disable paging.                  |
 | `AVR_LINKS`      | Set to `0` to disable OSC 8 hyperlinks. Same as `--no-links`.                                     |
-| `AVR_DEBUG`      | Comma-separated debug categories. Set to `1`/`true` for general debug logging.                    |
+| `AVR_DEBUG`      | Set to `api` for request diagnostics or `timing` for timing measurements; `1`/`true` enables request diagnostics. |
+| `AVR_NO_UPDATE_NOTIFIER` | Set to `1` to disable update checks and notices. |
 | `AVR_PROMPT_DISABLED` | Refuse interactive prompts (scripts fail fast instead of hanging on stdin).                  |
 | `AVR_CONFIG_DIR` | Override the config directory. Defaults to `$XDG_CONFIG_HOME/avrea` or `~/.config/avrea`.         |
 | `AVR_MACOS_NATIVE_PATHS` | Set to `1` on macOS to use `~/Library/...` instead of the default `~/.config/avrea`.       |
@@ -425,7 +471,8 @@ IDs in tables are wrapped in OSC 8 hyperlinks. Clicking one opens the matching c
 ```sh
 # bash
 eval "$(_AVR_COMPLETE=bash_source avr)"
-# zsh
+# zsh (initialize completion first if your shell has not already done so)
+autoload -Uz compinit && compinit
 eval "$(_AVR_COMPLETE=zsh_source avr)"
 # fish
 _AVR_COMPLETE=fish_source avr | source
@@ -447,7 +494,7 @@ avr <group> <command> --help      # full flag list with examples
 
 ## Documentation
 
-- Full command reference: [`docs/REFERENCE.md`](./docs/REFERENCE.md) (also available as `man avr`)
+- Full command reference: [`docs/REFERENCE.md`](./docs/REFERENCE.md). The native Homebrew formula also installs `man avr`; native archives include man pages for manual installation.
 - Online docs: [docs.avrea.com/cli](https://docs.avrea.com/cli)
 - Print the same reference inline: `avr --help` and `avr <command> --help`
 

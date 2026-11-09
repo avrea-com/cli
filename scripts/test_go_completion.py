@@ -18,10 +18,10 @@ pty = pytest.importorskip("pty")
 def package(tmp_path):
     value = os.environ.get("AVR_GO_BINARY")
     if not value:
-        pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
+        pytest.skip("Set AVR_GO_BINARY to the native avr executable")
     assert value is not None
     binary = Path(value).resolve()
-    program = "avr-admin" if binary.name.startswith("avr-admin") else "avr"
+    program = "avr"
     bindir = tmp_path / "bin"
     bindir.mkdir()
     (bindir / program).symlink_to(binary)

@@ -11,7 +11,7 @@ import subprocess
 def test_native_clone_and_later_fetch(monkeypatch, tmp_path, git_server):  # noqa: F811 -- pytest fixture injection
     binary = os.environ.get("AVR_GO_BINARY", "")
     if not binary:
-        pytest.skip("Set AVR_GO_BINARY to the native avr or avr-admin executable")
+        pytest.skip("Set AVR_GO_BINARY to the native avr executable")
     binary = str(Path(binary).resolve())
     base_url, issued, authenticated, controls = git_server
     monkeypatch.setenv("AVR_TOKEN", "test-token")

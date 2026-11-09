@@ -94,15 +94,16 @@ var gridWidth = &runewidth.Condition{EastAsianWidth: false, StrictEmojiNeutral: 
 
 func Grid(w io.Writer, headers []string, rows [][]string) error {
 	widths := make([]int, len(headers))
-	all := make([][]string, 0, len(rows)+1)
-	all = append(all, headers)
-	all = append(all, rows...)
-	for _, row := range all {
+	measure := func(row []string) {
 		for i, text := range row {
 			if n := gridWidth.StringWidth(CellText(text)); n > widths[i] {
 				widths[i] = n
 			}
 		}
+	}
+	measure(headers)
+	for _, row := range rows {
+		measure(row)
 	}
 	var b strings.Builder
 	border := func() {
@@ -113,17 +114,19 @@ func Grid(w io.Writer, headers []string, rows [][]string) error {
 		}
 		b.WriteByte('\n')
 	}
-	border()
-	for index, row := range all {
+	emit := func(row []string) {
 		b.WriteByte('|')
 		for i, text := range row {
 			text = CellText(text)
 			b.WriteString(" " + text + strings.Repeat(" ", widths[i]-gridWidth.StringWidth(text)) + " |")
 		}
 		b.WriteByte('\n')
-		if index == 0 {
-			border()
-		}
+	}
+	border()
+	emit(headers)
+	border()
+	for _, row := range rows {
+		emit(row)
 	}
 	border()
 	_, err := io.WriteString(w, b.String())

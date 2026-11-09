@@ -100,7 +100,7 @@ def terminal_ssh(executable, directory, host):
 def test_vm_ssh_terminal_interrupt_and_pin_cleanup(tmp_path):
     binary = os.environ.get("AVR_GO_BINARY")
     if not binary:
-        pytest.skip("Set AVR_GO_BINARY to the public or admin executable")
+        pytest.skip("Set AVR_GO_BINARY to the native avr executable")
     assert binary is not None
     binary = str(Path(binary).resolve())
     server = cast(Any, http.server.ThreadingHTTPServer(("127.0.0.1", 0), vm.Fixture))

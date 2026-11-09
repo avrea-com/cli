@@ -160,7 +160,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 				resultErr = flushTokenOutput(d.Out)
 			}
 			if password != "" && (isBrokenPipe(resultErr) || errors.Is(resultErr, io.ErrClosedPipe)) {
-				resultErr = &ExitError{1, "Error: VM " + output.CellText(vmID) + " was created, but output closed; its one-time password may be lost. Do not create it again. Use 'avr vm show " + output.CellText(vmID) + "' to inspect it, or delete it if it is no longer needed."}
+				resultErr = &ExitError{1, "Error: VM " + output.CellText(vmID) + " was created, but output closed; its one-time password may be lost. Do not create it again. Use `" + vmShowCommand(vmID) + "` to inspect it, or delete it if it is no longer needed."}
 			}
 		}()
 		notes := []string{}
@@ -198,7 +198,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 			final, disposition, err := waitForVM(cmd.Context(), d, cfg, api, path, o.timeout, vmConnectable, false, nil, notifications.Wait)
 			if err != nil {
 				if o.json && password != "" {
-					_, _ = fmt.Fprintf(d.Err, "VM %s was created, but waiting failed before its one-time password was delivered. Do not create it again. Use 'avr vm show %s' to inspect it, or delete it if it is no longer needed.\n", output.CellText(vmID), output.CellText(vmID))
+					_, _ = fmt.Fprintf(d.Err, "VM %s was created, but waiting failed before its one-time password was delivered. Do not create it again. Use `%s` to inspect it, or delete it if it is no longer needed.\n", output.CellText(vmID), vmShowCommand(vmID))
 				}
 				return err
 			}
@@ -237,7 +237,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 				return err
 			}
 		}
-		_, err = fmt.Fprintln(d.Out, "Provisioning started. Poll status with: avr vm show "+output.CellText(vmID))
+		_, err = fmt.Fprintln(d.Out, "Provisioning started. Poll status with: "+vmShowCommand(vmID))
 		return err
 	})
 	return c

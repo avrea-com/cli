@@ -73,20 +73,18 @@ Go and Python executable overrides are supported by the underlying scripts.
 
 Before publishing:
 
-1. Land the avrea-core admin and control dependency pins and update admin installation
-   metadata. Keep its Python environment separate from the public Go CLI.
-2. Require green native regression/race/lint checks and all native package/install
+1. Require green native regression/race/lint checks and all native package/install
    validations for the exact release commit. Review generated notices/SBOMs.
    Run `make go-api-check AVREA_CORE=/path/to/avrea-core` against current core
    OpenAPI; see [the API check's coverage and limits](../api/README.md#request-compatibility-check).
-3. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
+2. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
    required. Exercise installers, package upgrades, credentials, completion and
    rollback on clean machines. Confirm GitHub-backed mise installation once
    the separately authorized release assets exist.
-4. Apply the generated
+3. Apply the generated
    stable `avr.rb` in avrea-com/homebrew-tap after the matching assets exist;
    test `brew install`, `brew upgrade avr`, and the formula test there.
-5. With separate release authorization, set repository variable
+4. With separate release authorization, set repository variable
    `AVR_NATIVE_RELEASE_ENABLED=true` and push the signed version tag. The gate
    is unset by default. A manual Release workflow run never publishes, even
    when the gate is enabled. Tag version must match `internal/version/VERSION`;
@@ -94,7 +92,7 @@ Before publishing:
    Publication uses the exact tested wheels and archives, without rebuilding.
    RC tags create prereleases and do not replace GitHub's latest stable release.
    Keep the `pypi` environment and Trusted Publisher configured for release.yml.
-6. Publish only with separate release authorization. No release/tag is created
+5. Publish only with separate release authorization. No release/tag is created
    by PR validation, and the tap is never edited automatically.
 
 The PyPI wheel format places native binaries in `.data/scripts`; pip and uv
@@ -107,17 +105,3 @@ Publication is resumable: stage GitHub assets in a draft, verify existing asset
 and PyPI wheel digests, upload missing wheels, then publish the GitHub release.
 A mismatch stops recovery; reruns never replace existing release bytes.
 `--verify-tag` checks tag existence, not its cryptographic signature.
-
-## Deferred admin migration
-
-The public CLI migration does not migrate `avr-admin`. While admin still
-imports `avrea_cli`, retain its exact `avr-cli==0.6.0` dependency in avrea-core
-and install it separately from the public CLI.
-
-A future Go admin executable can compose the public command tree and port
-admin commands incrementally. Any temporary Python delegation must use explicit
-command paths, preserve environment resolution, terminal streams, exit status
-and cancellation, and reject unknown commands instead of falling through.
-Help and completion must describe the commands actually available. Validate
-admin routing and output before changing its entry point. `repo-intel` remains
-Python-backed and outside this migration's scope.

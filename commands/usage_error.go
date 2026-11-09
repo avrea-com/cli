@@ -8,7 +8,7 @@ import (
 )
 
 // usageError mirrors Click's concise parser diagnostic without rendering full help.
-// Shared execution also uses it for required flags, including composed admin trees.
+// Shared execution also uses it for required flags, including composed command trees.
 func usageError(c *cobra.Command, message string) error {
 	spec, _, _ := commandHelp(c)
 	pieces := spec.Usage

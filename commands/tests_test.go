@@ -14,7 +14,7 @@ import (
 const resultTestJob = "job-019a0000000070008000000000000003"
 
 func TestTestsShorthandOnComposedRoots(t *testing.T) {
-	for _, name := range []string{"avr", "avr-admin"} {
+	for _, name := range []string{"avr", "custom-cli"} {
 		for _, args := range [][]string{
 			{"tests", resultTestJob, "--json", "?"},
 			{"--no-color", "tests", resultTestJob, "--json", "?"},
