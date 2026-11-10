@@ -43,6 +43,7 @@ export default {
         { label: "avr repo", slug: "cli/reference/repo" },
         { label: "avr org", slug: "cli/reference/org" },
         { label: "avr health", slug: "cli/reference/health" },
+        { label: "avr feedback", slug: "cli/reference/feedback" },
       ],
     },
   ],

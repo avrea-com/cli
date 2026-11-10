@@ -61,6 +61,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr repo`](#avr-repo) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
+- [`avr feedback`](#avr-feedback) — Send feedback or report a bug.
 
 ## Reference
 
@@ -3700,3 +3701,58 @@ Examples:
 
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr feedback`
+
+Send feedback or report a bug.
+
+```sh
+avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID
+```
+
+Send MESSAGE to the Avrea team. Sign in with avr auth login first.
+
+Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an
+organization. Without --org, feedback is personal, regardless of your default
+organization. Contact details come from your account.
+
+The idempotency key is printed before sending. If the response is lost or
+the server asks you to retry, repeat the same message, --bug setting and organization
+with --idempotency-key KEY. For a key conflict, use the original content
+or omit --idempotency-key to create a new submission.
+Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.
+Use -- before a message beginning with a dash, help, or a word resembling status.
+
+Examples:
+    avr feedback "Please support Lambda Cloud"
+    avr feedback --bug "Run logs are missing"
+    avr feedback status FEEDBACK_ID
+
+**Arguments**
+
+- `[MESSAGE]`
+
+**Options**
+
+- `--bug` — Mark the feedback as a bug report.
+- `--idempotency-key <TEXT>` — Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org <TEXT>` — Attribute feedback to this organization slug or ID.
+
+#### `avr feedback status`
+
+Read the delivery status of your feedback.
+
+```sh
+avr feedback status [OPTIONS] FEEDBACK_ID
+```
+
+**Arguments**
+
+- `FEEDBACK_ID`
+
+**Options**
+
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.

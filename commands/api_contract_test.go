@@ -199,6 +199,8 @@ func TestAPIContract(t *testing.T) {
 	// browser, SSH or subprocess is needed.
 	// Add cases when adding request shapes; this is representative, not exhaustive.
 	cases := []struct{ args, operation string }{
+		{"feedback hello --idempotency-key " + feedbackTestKey, "POST /feedback"},
+		{"feedback status " + feedbackTestID, "GET /feedback/{feedback_id}"},
 		{"auth status", "GET /users/me"},
 		{"org list", "GET /users/me/organizations"},
 		{"repo list", "GET " + org + "/repos"},

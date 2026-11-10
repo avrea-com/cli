@@ -1,0 +1,64 @@
+.TH AVR\-FEEDBACK 1 "" "avr 0.7.0" "Avrea CLI"
+.SH NAME
+avr-feedback \- Send feedback or report a bug.
+.SH SYNOPSIS
+.B avr feedback
+[OPTIONS] MESSAGE | status FEEDBACK_ID
+.SH DESCRIPTION
+Send feedback or report a bug.
+.PP
+Send MESSAGE to the Avrea team. Sign in with avr auth login first.
+.PP
+Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an organization. Without --org, feedback is personal, regardless of your default organization. Contact details come from your account.
+.PP
+The idempotency key is printed before sending. If the response is lost or the server asks you to retry, repeat the same message, --bug setting and organization with --idempotency-key KEY. For a key conflict, use the original content or omit --idempotency-key to create a new submission. Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it. Use -- before a message beginning with a dash, help, or a word resembling status.
+.PP
+Examples: avr feedback "Please support Lambda Cloud" avr feedback --bug "Run logs are missing" avr feedback status FEEDBACK_ID
+.SH ARGUMENTS
+.TP
+[\fIMESSAGE\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-bug\fR
+Mark the feedback as a bug report.
+.TP
+\fB\-\-idempotency\-key\fR \fITEXT\fR
+Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter JSON with an embedded jq expression.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output comma-separated fields, * for all, or ? to list fields.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Attribute feedback to this organization slug or ID.
+.SH COMMANDS
+.TP
+status
+Read the delivery status of your feedback.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-tests (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-feedback-status (1)

@@ -489,6 +489,7 @@ avr <group> <command> --help      # full flag list with examples
 
 ## Documentation
 
+- [Send feedback and check delivery](https://github.com/avrea-com/cli/blob/main/docs/go-feedback.md), including safe retries.
 - Full command reference: [`docs/REFERENCE.md`](./docs/REFERENCE.md). The native Homebrew formula also installs `man avr`; native archives include man pages for manual installation.
 - Online docs: [docs.avrea.com/cli](https://docs.avrea.com/cli)
 - Print the same reference inline: `avr --help` and `avr <command> --help`
