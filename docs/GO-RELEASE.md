@@ -1,6 +1,6 @@
 # Native release preparation
 
-The Go version is `internal/version/VERSION`, currently `0.7.0`.
+The Go version is `internal/version/VERSION`, currently `0.8.0`.
 `pyproject.toml` configures development tools only; the retired Python CLI is
 available as the published 0.6.0 package.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
@@ -22,7 +22,7 @@ in PowerShell). Building and validating do not replace your installed command.
 Revalidate an archive with its adjacent checksum sidecar:
 
 ```sh
-python3 scripts/go_package.py --verify build/go/packages/avr_0.7.0_darwin_arm64.tar.gz
+python3 scripts/go_package.py --verify build/go/packages/avr_0.8.0_darwin_arm64.tar.gz
 ```
 
 Validation checks safe extraction, checksums, payload files, embedded build
@@ -60,7 +60,7 @@ Run the portable tests and native build locally:
 python -m unittest scripts.test_go_package scripts.test_go_distribution -v
 python scripts/go_package.py --out build/go/install-check
 python -m scripts.go_distribution \
-  --archive build/go/install-check/avr_0.7.0_darwin_arm64.tar.gz \
+  --archive build/go/install-check/avr_0.8.0_darwin_arm64.tar.gz \
   --out build/go/install-check
 python -m scripts.validate_go_install --directory build/go/install-check
 ```
@@ -77,7 +77,7 @@ Before publishing:
    validations for the exact release commit. Review generated notices/SBOMs.
    Run `make go-api-check AVREA_CORE=/path/to/avrea-core` against current core
    OpenAPI; see [the API check's coverage and limits](../api/README.md#request-compatibility-check).
-2. Validate the CI artifacts before publishing stable 0.7.0; no published RC is
+2. Validate the CI artifacts before publishing a stable release; no published RC is
    required. Exercise installers, package upgrades, credentials, completion and
    rollback on clean machines. Confirm GitHub-backed mise installation once
    the separately authorized release assets exist.
