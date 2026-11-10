@@ -73,3 +73,36 @@ func TestTestsHonorsCancellation(t *testing.T) {
 		t.Fatal(code, out, stderr)
 	}
 }
+
+func TestTestsBadRequestHintMatchesWhetherCursorWasSent(t *testing.T) {
+	for _, cursor := range []string{"", "next"} {
+		t.Run(cursor, func(t *testing.T) {
+			d, out, stderr := testDeps(t)
+			d.LoadConfig = func() (config.Config, error) {
+				return config.Config{Host: "https://api.example.test", Token: "fixture", Org: inspectionOrg}, nil
+			}
+			d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: 400, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{"detail":"Unsupported test selector"}`)), Request: r}, nil
+			})}
+			args := []string{"tests", resultTestJob, "--repo", resultTestRepo, "--status", "failed"}
+			if cursor != "" {
+				args = append(args, "--cursor", cursor)
+			}
+			code := Execute(t.Context(), args, d)
+			want := "Check the test filters and whether this API deployment supports them."
+			if cursor != "" {
+				want = "Use the same filters the cursor was issued with, or restart without --cursor."
+			}
+			if code != 1 || out.Len() != 0 || !strings.Contains(stderr.String(), want) || !strings.Contains(stderr.String(), "Unsupported test selector") {
+				t.Fatal(code, out, stderr)
+			}
+		})
+	}
+}
+
+func TestTestsGroupHelpIncludesJobURLs(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	if code := Execute(t.Context(), []string{"tests", "--help"}, d); code != 0 || !strings.Contains(out.String(), "GitHub run IDs and run or job URLs") {
+		t.Fatal(code, out, stderr)
+	}
+}

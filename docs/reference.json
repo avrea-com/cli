@@ -10622,7 +10622,7 @@
         "full": "avr tests",
         "is_group": true,
         "short_help": "Read a job's tests, timings and recorded failure messages.",
-        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
+        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run or job URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -10639,7 +10639,7 @@
             "full": "avr tests list",
             "is_group": false,
             "short_help": "Read one job's latest confirmed execution, including repeated tests.",
-            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nFilters match literally and are combined with AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n",
+            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\nA GitHub job URL selects that job first; --job must also match it.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAll outcomes are included by default. Repeat --status to match any selected\noutcome, for example --status failed --status errored. Names match literally\nand combine with the status selection using AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n\nCounts cover all recorded occurrences before filtering, including repeats.\nUnknown counts stay unknown. Use --summary for counts and collection state\nwithout downloading results; it cannot combine with test filters, --cursor\nor an explicit --limit. Indexing, unavailable and limited listings do not\nmean no tests were reported.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -10809,7 +10809,7 @@
                 "default": null
               },
               {
-                "name": "outcome",
+                "name": "outcomes",
                 "kind": "option",
                 "opts": [
                   "--status"
@@ -10817,11 +10817,11 @@
                 "secondary_opts": [],
                 "type": "choice",
                 "required": false,
-                "multiple": false,
+                "multiple": true,
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Recorded test outcome.",
+                "help": "Recorded test outcome (repeatable; matches any selected outcome).",
                 "hidden": false,
                 "show_default": false,
                 "default": null,
@@ -10831,6 +10831,24 @@
                   "skipped",
                   "errored"
                 ]
+              },
+              {
+                "name": "summary",
+                "kind": "option",
+                "opts": [
+                  "--summary"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 0,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Show report counts and collection state without downloading test results.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
               },
               {
                 "name": "json_fields",

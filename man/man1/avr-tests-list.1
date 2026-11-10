@@ -7,11 +7,13 @@ avr-tests-list \- Read one job's latest confirmed execution, including repeated 
 .SH DESCRIPTION
 Read one job's latest confirmed execution, including repeated tests.
 .PP
-RUN_OR_JOB accepts the same run references as avr run view, or an Avrea job ID (job- or awj-). A run selects one job, never combines all jobs. --job NAME must match exactly one job; without it a run must have one job.
+RUN_OR_JOB accepts the same run references as avr run view, or an Avrea job ID (job- or awj-). A run selects one job, never combines all jobs. --job NAME must match exactly one job; without it a run must have one job. A GitHub job URL selects that job first; --job must also match it.
 .PP
 Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
 .PP
-Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. Filters match literally and are combined with AND. Every matching occurrence is retained, including duplicate names. A continuation means more of the report remains to be searched, not necessarily more matches. API refusal or a changed report fails the command without partial output.
+Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. All outcomes are included by default. Repeat --status to match any selected outcome, for example --status failed --status errored. Names match literally and combine with the status selection using AND. Every matching occurrence is retained, including duplicate names. A continuation means more of the report remains to be searched, not necessarily more matches. API refusal or a changed report fails the command without partial output.
+.PP
+Counts cover all recorded occurrences before filtering, including repeats. Unknown counts stay unknown. Use --summary for counts and collection state without downloading results; it cannot combine with test filters, --cursor or an explicit --limit. Indexing, unavailable and limited listings do not mean no tests were reported.
 .SH ARGUMENTS
 .TP
 \fITARGET\fR
@@ -43,7 +45,10 @@ Exact suite name; combined with other filters using AND.
 Exact nonempty class name.
 .TP
 \fB\-\-status\fR \fICHOICE\fR
-Recorded test outcome. (choices: passed, failed, skipped, errored)
+Recorded test outcome (repeatable; matches any selected outcome). (choices: passed, failed, skipped, errored; repeatable)
+.TP
+\fB\-\-summary\fR
+Show report counts and collection state without downloading test results.
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
