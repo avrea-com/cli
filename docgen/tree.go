@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	buildversion "github.com/avrea-com/cli/internal/version"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -47,7 +45,6 @@ type Node struct {
 }
 type Tree struct {
 	Program       string             `json:"program"`
-	Version       string             `json:"version"`
 	Summary       string             `json:"summary"`
 	GlobalOptions []Param            `json:"global_options"`
 	Aliases       map[string]string  `json:"aliases"`
@@ -279,7 +276,7 @@ func buildNode(c *cobra.Command, path []string, describe Describer) *Node {
 // Build derives reference output from the live Go command tree and descriptions.
 func Build(root *cobra.Command, describe Describer, sections []Section) (*Tree, error) {
 	d := describe(root)
-	tree := Tree{Program: "avr", Version: buildversion.Current(), Summary: strings.TrimSpace(d.Help),
+	tree := Tree{Program: "avr", Summary: strings.TrimSpace(d.Help),
 		GlobalOptions: params(root, d.params()), Aliases: map[string]string{}, Sections: map[string][]*Node{}}
 	live := map[string]*cobra.Command{}
 	for _, c := range root.Commands() {

@@ -1,5 +1,5 @@
 // Auto-generated from the avr command tree by `avr internal docs`.
-// Do not edit by hand — regenerate via `make -C avr-cli docs`.
+// Do not edit by hand — regenerate via `make docs`.
 
 export default {
   label: 'CLI',
