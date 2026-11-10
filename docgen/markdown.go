@@ -257,7 +257,7 @@ func finish(lines []string) string {
 func Markdown(tree *Tree) string {
 	out := []string{
 		"# " + tree.Program + "(1) — Avrea command-line client", "",
-		"Reference for `" + tree.Program + "` v" + tree.Version + ". Generated from the source tree — do not edit by hand. Run `make -C avr-cli docs` to regenerate.", "",
+		"Reference for `" + tree.Program + "`. Generated from the source tree — do not edit by hand. Run `make docs` to regenerate.", "",
 		"## Name", "", "`" + tree.Program + "` — " + tree.Summary, "", "## Synopsis", "",
 		"```sh\n" + tree.Program + " [GLOBAL OPTIONS] COMMAND [ARGS]...\n```", "",
 	}

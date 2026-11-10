@@ -157,14 +157,14 @@ func seeAlso(node *Node, nodes []*Node) [][]string {
 	}
 	return out
 }
-func manPage(node *Node, tree *Tree, nodes []*Node) string {
+func manPage(node *Node, nodes []*Node) string {
 	title := strings.ReplaceAll(strings.ToUpper(strings.Join(node.Path, "-")), "-", "\\-")
 	short := strings.TrimSpace(node.ShortHelp)
 	name := short
 	if name == "" {
 		name = node.Name
 	}
-	out := []string{".TH " + title + " 1 \"\" \"avr " + tree.Version + "\" \"Avrea CLI\"", ".SH NAME",
+	out := []string{".TH " + title + " 1 \"\" \"avr\" \"Avrea CLI\"", ".SH NAME",
 		troffEscape(strings.Join(node.Path, "-")) + " \\- " + troffEscape(name), ".SH SYNOPSIS", ".B " + node.Full}
 	if tail := strings.TrimSpace(strings.TrimPrefix(node.Usage, node.Full)); tail != "" {
 		out = append(out, troffEscape(tail))
@@ -206,7 +206,7 @@ func Man(tree *Tree) map[string]string {
 	nodes := flatten(root)
 	files := map[string]string{}
 	for _, node := range nodes {
-		files[strings.Join(node.Path, "-")+".1"] = manPage(node, tree, nodes)
+		files[strings.Join(node.Path, "-")+".1"] = manPage(node, nodes)
 	}
 	return files
 }

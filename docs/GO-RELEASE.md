@@ -1,6 +1,6 @@
 # Native release preparation
 
-The Go version is `internal/version/VERSION`, currently `0.8.0`.
+The Go version is defined in `internal/version/VERSION`.
 `pyproject.toml` configures development tools only; the retired Python CLI is
 available as the published 0.6.0 package.
 Native builds use Go 1.27.3 or newer and run with CGO disabled.
@@ -22,7 +22,8 @@ in PowerShell). Building and validating do not replace your installed command.
 Revalidate an archive with its adjacent checksum sidecar:
 
 ```sh
-python3 scripts/go_package.py --verify build/go/packages/avr_0.8.0_darwin_arm64.tar.gz
+release_version=$(cat internal/version/VERSION)
+python3 scripts/go_package.py --verify "build/go/packages/avr_${release_version}_darwin_arm64.tar.gz"
 ```
 
 Validation checks safe extraction, checksums, payload files, embedded build
@@ -57,10 +58,11 @@ checks in Alpine. Alpine uses standalone binaries, not PyPI wheels.
 Run the portable tests and native build locally:
 
 ```sh
+release_version=$(cat internal/version/VERSION)
 python -m unittest scripts.test_go_package scripts.test_go_distribution -v
 python scripts/go_package.py --out build/go/install-check
 python -m scripts.go_distribution \
-  --archive build/go/install-check/avr_0.8.0_darwin_arm64.tar.gz \
+  --archive "build/go/install-check/avr_${release_version}_darwin_arm64.tar.gz" \
   --out build/go/install-check
 python -m scripts.validate_go_install --directory build/go/install-check
 ```

@@ -26,3 +26,7 @@ in Git history at `f5688c1`. New behavior is tested against the native contract.
 `make go-docs` renders Markdown, JSON, Starlight and man pages with the native
 binary and passes the README explicitly. A packaged binary looks for its optional
 README beside the executable. Documentation commands generate the public reference.
+
+Generated references omit the release version so version-only releases do not
+rewrite documentation. Use `avr --version` to identify an installed build;
+release archives and package manifests retain their versions.

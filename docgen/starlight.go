@@ -38,7 +38,7 @@ func commandPage(node *Node) string {
 	return finish(out)
 }
 func indexPage(tree *Tree) string {
-	out := []string{"---", "title: CLI Reference", "description: \"Reference for the avr command-line client (v" + tree.Version + ").\"", "---", "",
+	out := []string{"---", "title: CLI Reference", "description: \"Reference for the avr command-line client.\"", "---", "",
 		"`" + tree.Program + "` is the Avrea command-line client. " + tree.Summary, "", "## Synopsis", "",
 		"```sh\n" + tree.Program + " [GLOBAL OPTIONS] COMMAND [ARGS]...\n```", ""}
 	out = append(out, paramList("Global options", tree.GlobalOptions, true)...)
@@ -81,7 +81,7 @@ func overviewPage(readme string, tree *Tree) string {
 func sidebar(tree *Tree, overview bool) string {
 	out := []string{
 		"// Auto-generated from the avr command tree by `avr internal docs`.",
-		"// Do not edit by hand — regenerate via `make -C avr-cli docs`.", "",
+		"// Do not edit by hand — regenerate via `make docs`.", "",
 		"export default {", "  label: 'CLI',", "  items: [",
 	}
 	if overview {

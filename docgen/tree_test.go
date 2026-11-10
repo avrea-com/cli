@@ -1,6 +1,7 @@
 package docgen_test
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,11 +12,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestDocumentationUsesNativePublicVersion(t *testing.T) {
-	root := commands.NewRoot(commands.Dependencies{Version: "custom-preview+fixture"})
-	tree, err := commands.Documentation(root)
-	if err != nil || tree.Version != buildversion.Current() {
-		t.Fatal(tree, err)
+func TestDocumentationOmitsReleaseVersion(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{Version: "custom-preview+fixture"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := docgen.JSON(tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var reference map[string]any
+	if err := json.Unmarshal([]byte(raw), &reference); err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := reference["version"]; exists {
+		t.Error("reference JSON must not carry a release version")
+	}
+	outputs := map[string]string{"reference.json": raw, "REFERENCE.md": docgen.Markdown(tree)}
+	for path, content := range docgen.Man(tree) {
+		outputs["man/"+path] = content
+	}
+	for path, content := range docgen.Starlight(tree, nil) {
+		outputs["starlight/"+path] = content
+	}
+	for path, content := range outputs {
+		for _, version := range []string{buildversion.Current(), "custom-preview+fixture"} {
+			if strings.Contains(content, version) {
+				t.Errorf("%s contains release version %q", path, version)
+			}
+		}
 	}
 }
 
