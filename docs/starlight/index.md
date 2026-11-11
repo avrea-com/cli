@@ -233,7 +233,8 @@ are not supported by that command.
 avr tests <run-id> --job unit         # select one job by name
 avr tests <github-run-id>             # a single-job run needs no selector
 avr tests <job-id>                    # names, outcomes, timings and failures
-avr tests <job-id> --status failed
+avr tests <job-id> --status failed --status errored
+avr tests <run-id> --job unit --summary # counts and reporting state only
 avr tests <job-id> --test test_login
 avr tests <job-id> --suite Authentication --class TestLogin
 avr tests <job-id> --json '*'         # reporting state and pagination
@@ -242,19 +243,27 @@ avr tests <job-id> --cursor '<cursor>' # resume with the same filters
 ```
 
 Accepts Avrea run IDs (`run-` or `awr-`), GitHub numeric run IDs, GitHub
-Actions run URLs, Avrea console run URLs, and Avrea job IDs (`job-` or
+Actions run/job URLs, Avrea console run URLs, and Avrea job IDs (`job-` or
 `awj-`). `avr tests list <run-or-job>` is equivalent. A run selects one job,
 not all jobs together. `--job NAME` matches a case-insensitive substring and
 must identify one job; ambiguous names show the available jobs and IDs.
 A run containing one job selects it automatically. The job's repository is
 resolved automatically, or use `--repo owner/name`.
+A GitHub job URL pins that job; `--job` must also match its name.
 
 The listing reads the job's latest confirmed execution, without substituting
 an older report. GitHub run URLs with `/attempts/N` select that run attempt;
 there is no separate test-execution selector. Test names match exactly and
 case-sensitively; test filters combine with AND. Outcomes are `passed`,
-`failed`, `skipped` and `errored`. Repeated matches stay separate, with their
+`failed`, `skipped` and `errored`. Repeat `--status` to match any selected
+outcome; repeated values are deduplicated. Repeated matches stay separate, with their
 recorded failure messages shown directly. `--json FIELDS` and `--jq` also work.
+
+`--summary` reads report counts and reporting state without downloading
+individual tests. Counts cover all recorded occurrences before filtering,
+including repeats. Older, missing or expired reports may have unknown counts;
+unknown counts never mean zero. `--summary` accepts run and job selection but
+cannot be combined with test filters, `--cursor` or an explicit `--limit`.
 
 Each invocation returns at most 1,000 occurrences and reads at most 20 result
 pages. Filtering can produce empty pages with a continuation. If the search
@@ -263,8 +272,11 @@ filters and `--cursor`. The retained count covers all tests, before filtering.
 Missing or expired reports are distinct from zero matches or a retained
 report containing zero tests. Complete describes collected reports, not
 whether every expected test ran.
+Indexing, unavailable and limited listings retain known counts and explain
+why individual results could not be listed.
 
-These commands require an API deployment supporting the corresponding reads.
+These commands require an API deployment supporting the corresponding reads,
+including summaries and combined status filters when those options are used.
 Filtering fails explicitly if the server does not acknowledge the selectors.
 File filters and test splitting are not supported. The commands do not rerun
 tests or change collection.

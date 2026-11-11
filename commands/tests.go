@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -18,15 +19,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testSnapshotFields = []string{"job_id", "execution_id", "status", "reporting_state", "reason", "commit_sha", "observed_at", "total_count", "filters"}
-var testResultFields = append(append([]string{"organization_id", "repository_id"}, testSnapshotFields...), "data", "pagination")
+var testSummaryFields = []string{"organization_id", "repository_id", "job_id", "execution_id", "status", "reporting_state", "reason", "commit_sha", "observed_at", "total_count", "counts"}
+var testSnapshotFields = append(slices.Clone(testSummaryFields[2:]), "filters")
+var testResultFields = append(slices.Clone(testSummaryFields), "filters", "data", "pagination")
+var testOutcomes = []string{"passed", "failed", "skipped", "errored"}
 var testJobID = lazyRegexp("^(job|awj)-[0-9a-f]{32}$")
 
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	group := &cobra.Command{Use: "tests", Short: "Read a job's tests, timings and recorded failure messages.", Annotations: map[string]string{"job-shorthand": "list"}}
-	var org, repo, cursor, jobName, testName, suite, className, outcome string
+	var org, repo, cursor, jobName, testName, suite, className string
+	var outcomes []string
+	var summary bool
 	var limit int
 	var o jsonOptions
 	c := &cobra.Command{Use: "list RUN_OR_JOB", Short: "Read the latest confirmed execution of JOB, including repeated tests.", Args: positionalArguments("RUN_OR_JOB")}
@@ -38,16 +43,30 @@ func NewTests(deps Dependencies) *cobra.Command {
 	c.Flags().StringVar(&testName, "test", "", "Exact test name (case-sensitive; no wildcards).")
 	c.Flags().StringVar(&suite, "suite", "", "Exact suite name; combined with other filters using AND.")
 	c.Flags().StringVar(&className, "class", "", "Exact nonempty class name.")
-	c.Flags().StringVar(&outcome, "status", "", "Recorded test outcome.")
+	c.Flags().StringArrayVar(&outcomes, "status", nil, "Recorded test outcome (repeatable; matches any selected outcome).")
+	c.Flags().BoolVar(&summary, "summary", false, "Show report counts and collection state without downloading test results.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if limit < 1 || limit > 1000 {
 			return usageError(cmd, "Invalid value for '--limit' / '-L': "+strconv.Itoa(limit)+" is not in the range 1<=x<=1000.")
 		}
-		if cmd.Flags().Changed("status") && outcome != "passed" && outcome != "failed" && outcome != "skipped" && outcome != "errored" {
-			return usageError(cmd, "Invalid value for '--status': "+pythonQuote(outcome)+" is not one of 'passed', 'failed', 'skipped', 'errored'.")
+		for _, outcome := range outcomes {
+			if !slices.Contains(testOutcomes, outcome) {
+				return usageError(cmd, "Invalid value for '--status': "+pythonQuote(outcome)+" is not one of 'passed', 'failed', 'skipped', 'errored'.")
+			}
 		}
-		if done, err := o.prepare(cmd, d, testResultFields); done || err != nil {
+		if summary {
+			for _, flag := range []string{"test", "suite", "class", "status", "cursor", "limit"} {
+				if cmd.Flags().Changed(flag) {
+					return usageError(cmd, "--summary cannot be combined with test filters, --cursor or --limit")
+				}
+			}
+		}
+		fields := testResultFields
+		if summary {
+			fields = testSummaryFields
+		}
+		if done, err := o.prepare(cmd, d, fields); done || err != nil {
 			return err
 		}
 		filters := map[string]any{}
@@ -55,15 +74,26 @@ func NewTests(deps Dependencies) *cobra.Command {
 			flag, key, value string
 			max              int
 		}{
-			{"test", "name", testName, 4096}, {"suite", "suite", suite, 256}, {"class", "class_name", className, 512}, {"status", "outcome", outcome, 0},
+			{"test", "name", testName, 4096}, {"suite", "suite", suite, 256}, {"class", "class_name", className, 512},
 		} {
 			if !cmd.Flags().Changed(filter.flag) {
 				continue
 			}
-			if filter.max > 0 && (utf8.RuneCountInString(filter.value) < 1 || utf8.RuneCountInString(filter.value) > filter.max) {
+			if utf8.RuneCountInString(filter.value) < 1 || utf8.RuneCountInString(filter.value) > filter.max {
 				return usageError(cmd, fmt.Sprintf("Invalid value for --%s: use between 1 and %d characters", filter.flag, filter.max))
 			}
 			filters[filter.key] = filter.value
+		}
+		slices.Sort(outcomes)
+		outcomes = slices.Compact(outcomes)
+		if len(outcomes) == 1 {
+			filters["outcome"] = outcomes[0]
+		} else if len(outcomes) > 1 {
+			selected := make([]any, len(outcomes))
+			for i, outcome := range outcomes {
+				selected[i] = outcome
+			}
+			filters["outcomes"] = selected
 		}
 		var start *string
 		if cmd.Flags().Changed("cursor") {
@@ -106,17 +136,29 @@ func NewTests(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		response, err := collectTestResults(cmd.Context(), api, cfg, "/orgs/"+organization+"/repos/"+repository+"/jobs/"+job+"/tests", job, limit, start, filters)
+		path := "/orgs/" + organization + "/repos/" + repository + "/jobs/" + job + "/tests"
+		var response map[string]any
+		if summary {
+			response, err = getTestResults(cmd.Context(), api, cfg, path+"/summary", nil, "read the job test summary", "Check the job, repository and organization, and that Repository Tests and summaries are available.")
+			if err == nil {
+				if response["job_id"] != job || (response["status"] != "available" && response["status"] != "expired" && response["status"] != "not_recorded") {
+					return &ExitError{1, "Error: The API returned an invalid job test summary."}
+				}
+				err = validateTestCounts(response)
+			}
+		} else {
+			response, err = collectTestResults(cmd.Context(), api, cfg, path, job, limit, start, filters)
+		}
 		if err != nil {
 			return err
 		}
 		response["organization_id"], response["repository_id"] = organization, repository
 		if cmd.Flags().Changed("json") {
-			err = o.record(cmd, d, response, testResultFields)
+			err = o.record(cmd, d, response, fields)
 		} else {
-			err = showTestResults(d.Out, response)
+			err = showTestResults(d.Out, response, summary)
 		}
-		if err != nil {
+		if err != nil || summary {
 			return err
 		}
 		if next, ok := response["pagination"].(map[string]any)["next_cursor"].(string); ok {
@@ -171,7 +213,10 @@ func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, 
 	var status *client.HTTPError
 	if errors.As(err, &status) && (status.Status == 404 || (status.Status == 400 && action == "read job test results")) {
 		if status.Status == 400 {
-			hint = "Use the same filters the cursor was issued with, or restart without --cursor."
+			hint = "Check the test filters and whether this API deployment supports them."
+			if query.Get("cursor") != "" {
+				hint = "Use the same filters the cursor was issued with, or restart without --cursor."
+			}
 		}
 		first, rest, found := strings.Cut(result.Error(), "\n")
 		if found {
@@ -193,7 +238,16 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 		remaining := limit - len(rows)
 		query := url.Values{"limit": {strconv.Itoa(remaining)}}
 		for key, value := range filters {
-			query.Set(key, "eq."+value.(string))
+			if key == "outcomes" {
+				values := value.([]any)
+				selected := make([]string, len(values))
+				for i, outcome := range values {
+					selected[i] = outcome.(string)
+				}
+				query.Set("outcome", "in.("+strings.Join(selected, ",")+")")
+			} else {
+				query.Set(key, "eq."+value.(string))
+			}
 		}
 		if cursor != nil {
 			query.Set("cursor", *cursor)
@@ -229,6 +283,14 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 		for _, row := range data {
 			if _, ok := row.(map[string]any); !ok {
 				return nil, &ExitError{1, "Error: The API returned an invalid test result page."}
+			}
+		}
+		if err := validateTestCounts(page); err != nil {
+			return nil, err
+		}
+		if snapshot != nil {
+			if message := testListingMessage(page["status"]); message != "" {
+				return nil, &ExitError{1, "Error: " + message}
 			}
 		}
 		if snapshot == nil {
@@ -290,7 +352,53 @@ func testValuePresent(value any) bool {
 		return true
 	}
 }
-func showTestResults(w io.Writer, response map[string]any) error {
+
+// Validate the unfiltered count contract before emitting any result pages.
+func validateTestCounts(response map[string]any) error {
+	if response["counts"] == nil {
+		return nil
+	}
+	invalid := &ExitError{1, "Error: The API returned invalid test outcome counts."}
+	counts, ok := response["counts"].(map[string]any)
+	total, totalOK := response["total_count"].(json.Number)
+	if !ok || len(counts) != len(testOutcomes) || !totalOK {
+		return invalid
+	}
+	remaining, err := total.Int64()
+	if err != nil || remaining < 0 || response["status"] == "expired" || response["status"] == "not_recorded" {
+		return invalid
+	}
+	for _, outcome := range testOutcomes {
+		number, ok := counts[outcome].(json.Number)
+		if !ok {
+			return invalid
+		}
+		count, err := number.Int64()
+		if err != nil || count < 0 || count > remaining {
+			return invalid
+		}
+		remaining -= count
+	}
+	if remaining != 0 {
+		return invalid
+	}
+	return nil
+}
+
+func testListingMessage(state any) string {
+	switch state {
+	case "indexing":
+		return "Test results are still being indexed. Retry later; retained counts are not a complete listing."
+	case "unavailable":
+		return "Test results cannot currently be listed. Retained counts remain separate from listing availability."
+	case "limited":
+		return "The test listing reached a read limit. Retry or narrow the filters; no complete listing is available."
+	default:
+		return ""
+	}
+}
+
+func showTestResults(w io.Writer, response map[string]any, summary bool) error {
 	var b strings.Builder
 	text := func(key string) string { return testText(response[key]) }
 	fmt.Fprintf(&b, "Job: %s\nOrganization: %s  Repository: %s\n", text("job_id"), text("organization_id"), text("repository_id"))
@@ -300,6 +408,26 @@ func showTestResults(w io.Writer, response map[string]any) error {
 	fmt.Fprintf(&b, "Commit: %s\nReporting: %s  Results: %s\n", text("commit_sha"), text("reporting_state"), text("status"))
 	if testValuePresent(response["reason"]) {
 		fmt.Fprintf(&b, "Reason: %s\n", text("reason"))
+	}
+	if response["reporting_state"] == "partial" {
+		b.WriteString("Partial collection: only the reports received are included.\n")
+	}
+	if counts, ok := response["counts"].(map[string]any); ok {
+		parts := make([]string, 0, len(testOutcomes))
+		for _, outcome := range testOutcomes {
+			parts = append(parts, outcome+": "+testText(counts[outcome]))
+		}
+		fmt.Fprintf(&b, "Recorded outcomes (all tests): %s\n", strings.Join(parts, "; "))
+	} else {
+		b.WriteString("Counts: unknown. Older, missing or expired reports may not have a summary.\n")
+	}
+	if response["reporting_state"] == "complete" {
+		b.WriteString("Complete describes the collected reports, not whether every expected test ran.\n")
+	}
+	if summary {
+		fmt.Fprintf(&b, "Retained occurrences (all tests): %s\n", text("total_count"))
+		_, err := io.WriteString(w, b.String())
+		return err
 	}
 	rows := response["data"].([]any)
 	label := "shown"
@@ -333,6 +461,8 @@ func showTestResults(w io.Writer, response map[string]any) error {
 			}
 			fmt.Fprintf(&b, "\n%s: %s\n", label, testText(row["failure_summary"]))
 		}
+	} else if message := testListingMessage(response["status"]); message != "" {
+		b.WriteString(message + "\n")
 	} else if response["status"] == "available" {
 		if !testValuePresent(response["total_count"]) && response["total_count"] != nil {
 			b.WriteString("The retained report contains zero test occurrences. This does not establish that no tests ran.\n")
@@ -347,9 +477,6 @@ func showTestResults(w io.Writer, response map[string]any) error {
 		}
 	} else {
 		b.WriteString("No test results returned. Missing or expired reports do not mean that zero tests ran.\n")
-	}
-	if response["reporting_state"] == "complete" {
-		b.WriteString("Complete describes the collected reports, not whether every expected test ran.\n")
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
@@ -374,7 +501,7 @@ func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api 
 	if err != nil {
 		var exit *ExitError
 		if errors.Is(err, errInvalidRunReference) || (errors.As(err, &exit) && exit.Code == 2) {
-			err = usageError(cmd, "Invalid value for RUN_OR_JOB: Use an Avrea run or job ID, a positive GitHub run ID, a GitHub Actions run URL or an Avrea console run URL. For GitLab jobs, use their Avrea job ID (job- or awj-).")
+			err = usageError(cmd, "Invalid value for RUN_OR_JOB: Use an Avrea run or job ID, a positive GitHub run ID, a GitHub Actions run or job URL or an Avrea console run URL. For GitLab jobs, use their Avrea job ID (job- or awj-).")
 		}
 		return "", "", err
 	}
@@ -396,11 +523,17 @@ func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api 
 	}
 	matched := []map[string]any{}
 	for _, job := range jobs {
+		if ref.platformJobID != "" && fieldText(job, "platform_job_id") != ref.platformJobID {
+			continue
+		}
 		if !hasName || strings.Contains(strings.ToLower(fieldText(job, "job_name")), strings.ToLower(name)) {
 			matched = append(matched, job)
 		}
 	}
 	if len(matched) != 1 {
+		if ref.platformJobID != "" && len(matched) == 0 {
+			return "", "", &ExitError{1, "Error: --job does not match the job selected by the GitHub URL. Use its name or omit --job."}
+		}
 		choices := []string{}
 		for _, job := range jobs {
 			choices = append(choices, "  "+testText(job["job_name"])+": "+testText(job["job_id"]))

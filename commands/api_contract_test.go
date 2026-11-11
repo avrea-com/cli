@@ -213,6 +213,8 @@ func TestAPIContract(t *testing.T) {
 		{"run view " + inspectionRun, "GET " + org + "/workflow-runs/{run_id}"},
 		{"job list --limit 17 --cursor next", "GET " + org + "/jobs"},
 		{"job view " + inspectionJob, "GET " + org + "/jobs/{job_id}"},
+		{"tests " + resultTestJob + " --repo " + repo + " --summary", "GET " + org + "/repos/{repo_id}/jobs/{job_id}/tests/summary"},
+		{"tests " + resultTestJob + " --repo " + repo + " --status failed --status errored --test test_login", "GET " + org + "/repos/{repo_id}/jobs/{job_id}/tests"},
 		{"cache usage --repo " + repo, "GET " + org + "/repos/{repo_id}/cache"},
 		{"cache delete --repo " + repo + " --all --yes", "DELETE " + org + "/repos/{repo_id}/cache"},
 		{"vm list", "GET " + org + "/vms"},
