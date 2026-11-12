@@ -355,6 +355,24 @@ func TestPRCommentJSONOutput(t *testing.T) {
 			t.Fatalf("%q", h.out)
 		}
 	})
+	// A --jq failure after the write would invite a rerun that posts twice.
+	for _, tc := range []struct{ name, expression, want string }{
+		{"jq syntax error", ".id |", "jq error: invalid expression"},
+		{"jq compile error", "nosuchfn", "jq error: could not compile expression"},
+	} {
+		for _, inline := range []bool{false, true} {
+			t.Run(fmt.Sprint(tc.name, " inline=", inline), func(t *testing.T) {
+				h := newPRCommentHarness(t, prCommentRoutes)
+				args := []string{"42", "--repo", prCommentTestRepo, "--body", "x", "--json", "id", "--jq", tc.expression}
+				if inline {
+					args = append(args, "--path", "src/app.go", "--line", "18")
+				}
+				if code := h.run(t, args...); code != 1 || len(h.requests) != 0 || h.out.Len() != 0 || !strings.Contains(h.stderr.String(), tc.want) {
+					t.Fatal(code, h.requests, h.out, h.stderr)
+				}
+			})
+		}
+	}
 	t.Run("discovery", func(t *testing.T) {
 		d, out, _ := testDeps(t)
 		d.LoadConfig = func() (config.Config, error) { t.Fatal("field discovery loaded config"); return config.Config{}, nil }
