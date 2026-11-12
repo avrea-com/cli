@@ -233,6 +233,9 @@ func TestPRCommentRejectsInvalidInputBeforeLoadingConfig(t *testing.T) {
 		{"blank file", []string{"42", "--body-file", file}, "", "body is empty"},
 		{"blank stdin", []string{"42", "--body-file", "-"}, "", "body is empty"},
 		{"invalid UTF-8", []string{"42", "--body-file", "-"}, "ok \xff", "UTF-8"},
+		{"NUL in body", []string{"42", "--body", "a\x00b"}, "", "cannot contain NUL characters"},
+		{"NUL in stdin", []string{"42", "--body-file", "-"}, "a\x00b", "cannot contain NUL characters"},
+		{"inline NUL in stdin", append([]string{"42", "--body-file", "-"}, inline...), "a\x00b", "cannot contain NUL characters"},
 		{"general over limit", []string{"42", "--body-file", "-"}, strings.Repeat("x", prCommentBodyLimit+1), "262144-character limit for pull request comments"},
 		{"general over byte cap", []string{"42", "--body-file", "-"}, strings.Repeat("😀", prCommentBodyLimit+1), "262144-character limit"},
 		{"inline over limit", append([]string{"42", "--body-file", "-"}, inline...), strings.Repeat("x", prInlineCommentBodyLimit+1), "65536-character limit for inline comments"},
@@ -388,6 +391,7 @@ func TestPRCommentReportsPublicationState(t *testing.T) {
 		{`{"revision":1,"status":"synced"}`, "Avrea published it to GitHub."},
 		{`{"revision":2,"status":"failed","error":"GitHub denied permission\u001b[31m"}`, "Publishing to GitHub failed: GitHub denied permission"},
 		{`{"revision":1,"status":"failed","error":null}`, "Publishing to GitHub failed"},
+		{`{"revision":1,"status":"retrying"}`, "GitHub publication status: retrying"},
 	} {
 		for _, inline := range []bool{false, true} {
 			t.Run(fmt.Sprint(tc.publication, inline), func(t *testing.T) {
@@ -410,6 +414,11 @@ func TestPRCommentReportsPublicationState(t *testing.T) {
 				line := h.out.String()
 				if !strings.Contains(line, tc.want) || strings.Count(line, "\n") != 1 || strings.Contains(line, "\x1b") {
 					t.Fatalf("%q", line)
+				}
+				for _, claim := range []string{"Avrea will publish", "Avrea published"} {
+					if strings.Contains(line, claim) != strings.Contains(tc.want, claim) {
+						t.Fatalf("%q", line)
+					}
 				}
 			})
 		}
@@ -569,6 +578,35 @@ func TestPRCommentAmbiguousWriteWarnsBeforeRetry(t *testing.T) {
 	}
 }
 
+// Cancelling the write leaves the same doubt as a lost response.
+func TestPRCommentInterruptedWriteWarnsBeforeRetry(t *testing.T) {
+	for _, inline := range []bool{false, true} {
+		t.Run(fmt.Sprint("inline=", inline), func(t *testing.T) {
+			h := newPRCommentHarness(t, prCommentRoutes)
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			transport := h.d.HTTP.Transport
+			posted := false
+			h.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				if r.Method == http.MethodPost {
+					posted = true
+					cancel()
+					return nil, context.Canceled
+				}
+				return transport.RoundTrip(r)
+			})}
+			args := []string{"pr", "comment", "42", "--repo", prCommentTestRepo, "--body", "x"}
+			if inline {
+				args = append(args, "--path", "src/app.go", "--line", "18")
+			}
+			code := Execute(ctx, args, h.d)
+			if message := h.stderr.String(); code != 130 || !posted || h.out.Len() != 0 || !strings.Contains(message, "Interrupted.") || !strings.Contains(message, "may have been created") {
+				t.Fatal(code, posted, message)
+			}
+		})
+	}
+}
+
 func TestPRCommentValidationErrorFromServer(t *testing.T) {
 	h := newPRCommentHarness(t, func(r *http.Request) (int, string) {
 		if r.Method == http.MethodPost {
@@ -582,13 +620,22 @@ func TestPRCommentValidationErrorFromServer(t *testing.T) {
 }
 
 func TestPRCommentRejectsScopedTokensBeforeRequests(t *testing.T) {
-	h := newPRCommentHarness(t, prCommentRoutes)
-	h.d.LoadConfig = func() (config.Config, error) {
-		return config.Config{Host: "https://api.example.test", Token: "avs_fixture_private", Org: inspectionOrg}, nil
-	}
-	code := h.run(t, "42", "--repo", prCommentTestRepo, "--body", "x")
-	if code != 4 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "scoped tokens cannot post comments") || strings.Contains(h.stderr.String(), "avs_fixture_private") {
-		t.Fatal(code, h.requests, h.stderr)
+	for _, inline := range []bool{false, true} {
+		t.Run(fmt.Sprint("inline=", inline), func(t *testing.T) {
+			h := newPRCommentHarness(t, prCommentRoutes)
+			h.d.LoadConfig = func() (config.Config, error) {
+				return config.Config{Host: "https://api.example.test", Token: "avs_fixture_private", Org: inspectionOrg}, nil
+			}
+			args := []string{"42", "--repo", prCommentTestRepo, "--body", "x"}
+			if inline {
+				args = append(args, "--path", "src/app.go", "--line", "18")
+			}
+			code := h.run(t, args...)
+			message := h.stderr.String()
+			if code != 4 || len(h.requests) != 0 || !strings.Contains(message, "scoped tokens cannot post comments") || !strings.Contains(message, "avr auth login") || strings.Contains(message, "avs_fixture_private") {
+				t.Fatal(code, h.requests, message)
+			}
+		})
 	}
 }
 

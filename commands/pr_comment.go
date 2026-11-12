@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -204,6 +205,10 @@ func prCommentBody(cmd *cobra.Command, d Dependencies, text, file string, limit 
 	switch {
 	case !utf8.ValidString(text):
 		return "", &ExitError{2, "Error: The comment body must be UTF-8 text."}
+	// PostgreSQL text cannot hold NUL, so the server would fail with a 5xx that
+	// reads as a possibly committed write.
+	case strings.ContainsRune(text, 0):
+		return "", &ExitError{2, "Error: The comment body cannot contain NUL characters."}
 	case strings.TrimSpace(text) == "":
 		return "", &ExitError{2, "Error: The comment body is empty."}
 	case utf8.RuneCountInString(text) > limit:
@@ -213,15 +218,19 @@ func prCommentBody(cmd *cobra.Command, d Dependencies, text, file string, limit 
 }
 
 // These routes take no idempotency key. Only a client error proves nothing was
-// written; after a lost or unreadable response or a server error, a blind retry
-// may post the comment twice.
+// written; after an interruption, a lost or unreadable response or a server
+// error, a blind retry may post the comment twice.
 func prCommentError(cfg config.Config, err error, goal string) error {
+	const hint = "\n  Hint: the comment may have been created. Check the pull request before retrying."
+	if errors.Is(err, context.Canceled) {
+		return &ExitError{130, "Interrupted." + hint}
+	}
 	result := prRequestError(cfg, err, goal, goal)
 	var response *client.HTTPError
 	if errors.As(err, &response) && response.Status < 500 {
 		return result
 	}
-	return fmt.Errorf("%w\n  Hint: %s", result, "the comment may have been created. Check the pull request before retrying.")
+	return fmt.Errorf("%w%s", result, hint)
 }
 
 func prCommentRecord(comment map[string]any, number int, repository string) map[string]any {
