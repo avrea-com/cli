@@ -1,13 +1,16 @@
 .TH AVR\-PR 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-pr \- View pull requests.
+avr-pr \- View and comment on pull requests.
 .SH SYNOPSIS
 .B avr pr
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-View pull requests.
+View and comment on pull requests.
 .PP
 .SH COMMANDS
+.TP
+comment
+Comment on a pull request.
 .TP
 list
 List pull requests across repositories.
@@ -34,4 +37,5 @@ List pull requests across repositories.
 .BR avr-org (1),
 .BR avr-health (1),
 .BR avr-feedback (1),
+.BR avr-pr-comment (1),
 .BR avr-pr-list (1)

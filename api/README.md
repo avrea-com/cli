@@ -44,14 +44,16 @@ make go-api-check OPENAPI_URL=https://<public-api-host>/<schema-path>
 ```
 
 This fetches the current schema and checks real command-generated requests in
-`commands/api_contract_test.go`. A mock transport supplies the PR feature flag
+`commands/api_contract_test.go`. A mock transport supplies the PR feature flags
 and rejects target requests, including writes; it never contacts an Avrea
 environment. Cases assert that the intended endpoint is reached, then compare
 the route, method, query names,
 required queries, primitive types/bounds and enum values against OpenAPI.
 
 Coverage is representative, not exhaustive: auth, organizations, repositories,
-pull-request scopes, runs, jobs, cache usage/purge and VMs. Add cases as request
+pull-request scopes and comments, runs, jobs, cache usage/purge and VMs. Request
+chains that need earlier responses, such as firewall imports and inline
+pull-request comments, are checked against canned responses. Add cases as request
 shapes change. Bodies, responses, path-value formats, streaming and full JSON
 Schema validation remain outside this check; native tests cover behavior.
 Some server routes parse queries outside OpenAPI, so these need separate tests.
