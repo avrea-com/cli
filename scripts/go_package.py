@@ -101,8 +101,8 @@ def extract(archive, destination):
 
 def require_patched_go(version):
     match = re.fullmatch(r"go(\d+)\.(\d+)\.(\d+)", version)
-    if match is None or tuple(map(int, match.groups())) < (1, 27, 3):
-        raise ValueError("Distributable binaries require stable Go 1.27.3 or newer")
+    if match is None or tuple(map(int, match.groups())) < (1, 27, 4):
+        raise ValueError("Distributable binaries require stable Go 1.27.4 or newer")
 
 
 def validate_build_info(info, manifest):
