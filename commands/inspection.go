@@ -33,8 +33,15 @@ func (o jsonOptions) prepare(cmd *cobra.Command, d Dependencies, available []str
 	if o.fields == "?" {
 		return true, output.Discovery(d.Out, available)
 	}
-	_, err := output.Fields(o.fields, available)
-	return false, err
+	if _, err := output.Fields(o.fields, available); err != nil {
+		return false, err
+	}
+	if o.expression != "" {
+		if _, err := output.CompileJQ(o.expression); err != nil {
+			return false, err
+		}
+	}
+	return false, nil
 }
 
 func (o jsonOptions) list(cmd *cobra.Command, d Dependencies, records []map[string]any, available []string) error {

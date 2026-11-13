@@ -5964,14 +5964,236 @@
         ],
         "full": "avr pr",
         "is_group": true,
-        "short_help": "View pull requests.",
-        "help": "View pull requests.",
+        "short_help": "View and comment on pull requests.",
+        "help": "View and comment on pull requests.",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
         "usage": "avr pr [OPTIONS] COMMAND [ARGS]...",
         "params": [],
         "subcommands": [
+          {
+            "name": "comment",
+            "path": [
+              "avr",
+              "pr",
+              "comment"
+            ],
+            "full": "avr pr comment",
+            "is_group": false,
+            "short_help": "Comment on a pull request.",
+            "help": "Comment on a pull request.\n\nAvrea stores the comment and, when GitHub sync is enabled for the\norganization, publishes it to GitHub asynchronously as the Avrea GitHub App or\nyour linked GitHub account, with attribution.\n\nWithout --path, the comment applies to the whole pull request. With --path and\n--line, it starts an inline review thread on the pull request's current head\ncommit. --start-line extends it to a range of lines. Line numbers refer to the\nnew file (--side right) or the old file (--side left).\n\nRequires a signed-in account (scoped tokens cannot comment), pull request\ncomments enabled for the organization, and an Avrea Git mirror of the\nrepository.\n\n\b\nExamples:\n    avr pr comment 42 --body \"Looks good to me.\"\n    avr pr comment 42 --body-file review.md\n    go test ./... 2\u003e\u00261 | tail -n 20 | avr pr comment 42 --body-file -\n    avr pr comment 42 --path src/app.go --line 18 --body \"Handle this error.\"\n    avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body \"Why?\"\n    avr pr comment 42 --body \"Ship it\" --json id,publication\n\n\b\nJSON FIELDS\n    base_sha, body, commit_sha, created_at, end_line, id, path, publication,\n    pull_number, repository_id, side, start_line, thread_id\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr pr comment [OPTIONS] NUMBER",
+            "params": [
+              {
+                "name": "number",
+                "kind": "argument",
+                "opts": [
+                  "number"
+                ],
+                "secondary_opts": [],
+                "type": "integer",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "body",
+                "kind": "option",
+                "opts": [
+                  "--body"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Comment text in Markdown.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "body_file",
+                "kind": "option",
+                "opts": [
+                  "--body-file"
+                ],
+                "secondary_opts": [],
+                "type": "filename",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Read the comment text from a file, or - for stdin.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "path",
+                "kind": "option",
+                "opts": [
+                  "--path"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Comment inline on this file, relative to the repository root. Requires --line.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "line",
+                "kind": "option",
+                "opts": [
+                  "--line"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Line to comment on, or the last line of a --start-line range.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "start_line",
+                "kind": "option",
+                "opts": [
+                  "--start-line"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "First line of a multi-line inline comment. Defaults to --line.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "side",
+                "kind": "option",
+                "opts": [
+                  "--side"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Diff side the lines refer to: right for the new file, left for the old file.",
+                "hidden": false,
+                "show_default": true,
+                "default": "right",
+                "choices": [
+                  "right",
+                  "left"
+                ]
+              },
+              {
+                "name": "repository",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
           {
             "name": "list",
             "path": [

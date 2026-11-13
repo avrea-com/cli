@@ -377,7 +377,7 @@ func TestExplicitEmptyRepositoryRejectedAcrossCommands(t *testing.T) {
 		{"firewall", "edit", firewallTestRule, "--action", "deny"},
 		{"firewall", "import", "--file", "-"}, {"firewall", "set-default", "--action", "deny"},
 		{"firewall", "show"}, {"firewall", "flow-summaries"}, {"cache", "usage"},
-		{"status"}, {"run", "list"}, {"job", "list"}, {"pr", "list"},
+		{"status"}, {"run", "list"}, {"job", "list"}, {"pr", "list"}, {"pr", "comment", "42", "--body", "x"},
 		{"workflow", "list"},
 		{"run", "list", "--repo", firewallTestRepo},
 	}

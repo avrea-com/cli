@@ -1,0 +1,73 @@
+.TH AVR\-PR\-COMMENT 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-pr-comment \- Comment on a pull request.
+.SH SYNOPSIS
+.B avr pr comment
+[OPTIONS] NUMBER
+.SH DESCRIPTION
+Comment on a pull request.
+.PP
+Avrea stores the comment and, when GitHub sync is enabled for the organization, publishes it to GitHub asynchronously as the Avrea GitHub App or your linked GitHub account, with attribution.
+.PP
+Without --path, the comment applies to the whole pull request. With --path and --line, it starts an inline review thread on the pull request's current head commit. --start-line extends it to a range of lines. Line numbers refer to the new file (--side right) or the old file (--side left).
+.PP
+Requires a signed-in account (scoped tokens cannot comment), pull request comments enabled for the organization, and an Avrea Git mirror of the repository.
+.PP
+.RS 4
+.nf
+Examples:
+    avr pr comment 42 --body "Looks good to me."
+    avr pr comment 42 --body-file review.md
+    go test ./... 2>&1 | tail -n 20 | avr pr comment 42 --body-file -
+    avr pr comment 42 --path src/app.go --line 18 --body "Handle this error."
+    avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body "Why?"
+    avr pr comment 42 --body "Ship it" --json id,publication
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    base_sha, body, commit_sha, created_at, end_line, id, path, publication,
+    pull_number, repository_id, side, start_line, thread_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fINUMBER\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-body\fR \fITEXT\fR
+Comment text in Markdown.
+.TP
+\fB\-\-body\-file\fR \fIFILENAME\fR
+Read the comment text from a file, or - for stdin.
+.TP
+\fB\-\-path\fR \fITEXT\fR
+Comment inline on this file, relative to the repository root. Requires --line.
+.TP
+\fB\-\-line\fR \fIINTEGER RANGE\fR
+Line to comment on, or the last line of a --start-line range.
+.TP
+\fB\-\-start\-line\fR \fIINTEGER RANGE\fR
+First line of a multi-line inline comment. Defaults to --line.
+.TP
+\fB\-\-side\fR \fICHOICE\fR
+Diff side the lines refer to: right for the new file, left for the old file. (choices: right, left; default: right)
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-pr (1),
+.BR avr-pr-list (1)

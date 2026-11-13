@@ -195,7 +195,7 @@ func TestAPIContract(t *testing.T) {
 	const org = "/orgs/{org_id}"
 	const repo = "rep-019a0000000070008000000000000002"
 	// Each command must reach its intended operation. The transport supplies the
-	// PR feature flag and rejects target requests, including mutations. No API,
+	// PR feature flags and rejects target requests, including mutations. No API,
 	// browser, SSH or subprocess is needed.
 	// Add cases when adding request shapes; this is representative, not exhaustive.
 	cases := []struct{ args, operation string }{
@@ -209,6 +209,8 @@ func TestAPIContract(t *testing.T) {
 		{"pr list --scope involved", "GET " + org + "/pull-requests"},
 		{"pr list --scope rest", "GET " + org + "/pull-requests"},
 		{"pr list --scope attention", "GET " + org + "/pull-requests"},
+		{"pr comment 42 --body hello", "POST " + org + "/repos/{repo_id}/mirror/pulls/{number}/comments"},
+		{"pr comment 42 --body hello --path src/app.go --line 3", "GET " + org + "/repos/{repo_id}/mirror/pulls/{number}"},
 		{"run list --status success --limit 17 --cursor next", "GET " + org + "/workflow-runs"},
 		{"run view " + inspectionRun, "GET " + org + "/workflow-runs/{run_id}"},
 		{"job list --limit 17 --cursor next", "GET " + org + "/jobs"},
@@ -237,7 +239,7 @@ func TestAPIContract(t *testing.T) {
 				if err != nil {
 					t.Errorf("%s: %v", r.URL, err)
 				}
-				if r.Method == "GET" && r.URL.Path == "/orgs/"+inspectionOrg+"/feature-flags/"+prFeature {
+				if r.Method == "GET" && (r.URL.Path == "/orgs/"+inspectionOrg+"/feature-flags/"+prFeature || r.URL.Path == "/orgs/"+inspectionOrg+"/feature-flags/"+prCommentsFeature) {
 					return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{"enabled":true}`)), Request: r}, nil
 				}
 				calls++
@@ -248,6 +250,40 @@ func TestAPIContract(t *testing.T) {
 			})}
 			if code := Execute(t.Context(), strings.Fields(tc.args), d); code == 0 || calls != 1 {
 				t.Fatalf("code=%d, requests=%d: %s", code, calls, stderr)
+			}
+		})
+	}
+}
+
+// An inline comment reads the pull request's commits before creating the
+// thread, so the probe above stops before the write.
+func TestAPIContractPRCommentRequestChains(t *testing.T) {
+	document := loadContractDocument(t)
+	const mirror = "/orgs/{org_id}/repos/{repo_id}/mirror"
+	flag := "GET /orgs/{org_id}/feature-flags/{flag_key}"
+	for _, tc := range []struct {
+		args       string
+		operations []string
+	}{
+		{"pr comment 42 --body hello", []string{flag, "POST " + mirror + "/pulls/{number}/comments"}},
+		{"pr comment 42 --body hello --path src/app.go --start-line 2 --line 3 --side left", []string{flag, "GET " + mirror + "/pulls/{number}", "POST " + mirror + "/review-threads"}},
+	} {
+		t.Run(tc.args, func(t *testing.T) {
+			calls := 0
+			h := newPRCommentHarness(t, func(r *http.Request) (int, string) {
+				operation, err := document.checkRequest(r)
+				if err != nil {
+					t.Error(err)
+				}
+				if calls >= len(tc.operations) || operation != tc.operations[calls] {
+					t.Errorf("unexpected operation %s at request %d", operation, calls)
+				}
+				calls++
+				return prCommentRoutes(r)
+			})
+			args := append(strings.Fields(tc.args), "--repo", prCommentTestRepo)
+			if code := h.run(t, args[2:]...); code != 0 || len(h.requests) != len(tc.operations) {
+				t.Fatalf("code=%d requests=%v: %s", code, h.requests, h.stderr)
 			}
 		})
 	}

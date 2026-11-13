@@ -185,7 +185,7 @@ func TestSBOMWaitJQErrorDoesNotAnnounceStoppedWait(t *testing.T) {
 		}
 		return sbomTestResponse(r, 200, fmt.Sprintf("{\"ai_task_id\":%q,\"status\":%q}", sbomTestTask, status)), nil
 	})}
-	code := Execute(t.Context(), []string{"sbom", "generate", "--repo", sbomTestRepo, "--wait", "--json", "status", "--jq", "." + "["}, d)
+	code := Execute(t.Context(), []string{"sbom", "generate", "--repo", sbomTestRepo, "--wait", "--json", "status", "--jq", `error("x")`}, d)
 	if code != 1 || !strings.Contains(stderr.String(), "jq error") || strings.Contains(stderr.String(), "Stopped waiting") {
 		t.Fatal(code, stderr)
 	}

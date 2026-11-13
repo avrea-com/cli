@@ -3,7 +3,7 @@
 The Go version is defined in `internal/version/VERSION`.
 `pyproject.toml` configures development tools only; the retired Python CLI is
 available as the published 0.6.0 package.
-Native builds use Go 1.27.3 or newer and run with CGO disabled.
+Native builds use Go 1.27.4 or newer and run with CGO disabled.
 
 ## Build and validate packages
 

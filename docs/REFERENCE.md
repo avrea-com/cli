@@ -37,7 +37,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr artifact`](#avr-artifact) — Manage workflow artifacts.
 - [`avr status`](#avr-status) — Show recent runs, performance stats, and cache health.
 - [`avr run`](#avr-run) — View and manage CI workflow runs.
-- [`avr pr`](#avr-pr) — View pull requests.
+- [`avr pr`](#avr-pr) — View and comment on pull requests.
 - [`avr job`](#avr-job) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
@@ -443,11 +443,65 @@ Examples:
 
 ### `avr pr`
 
-View pull requests.
+View and comment on pull requests.
 
 ```sh
 avr pr [OPTIONS] COMMAND [ARGS]...
 ```
+
+#### `avr pr comment`
+
+Comment on a pull request.
+
+```sh
+avr pr comment [OPTIONS] NUMBER
+```
+
+Avrea stores the comment and, when GitHub sync is enabled for the
+organization, publishes it to GitHub asynchronously as the Avrea GitHub App or
+your linked GitHub account, with attribution.
+
+Without --path, the comment applies to the whole pull request. With --path and
+--line, it starts an inline review thread on the pull request's current head
+commit. --start-line extends it to a range of lines. Line numbers refer to the
+new file (--side right) or the old file (--side left).
+
+Requires a signed-in account (scoped tokens cannot comment), pull request
+comments enabled for the organization, and an Avrea Git mirror of the
+repository.
+
+```sh
+Examples:
+    avr pr comment 42 --body "Looks good to me."
+    avr pr comment 42 --body-file review.md
+    go test ./... 2>&1 | tail -n 20 | avr pr comment 42 --body-file -
+    avr pr comment 42 --path src/app.go --line 18 --body "Handle this error."
+    avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body "Why?"
+    avr pr comment 42 --body "Ship it" --json id,publication
+```
+
+```sh
+JSON FIELDS
+    base_sha, body, commit_sha, created_at, end_line, id, path, publication,
+    pull_number, repository_id, side, start_line, thread_id
+```
+
+**Arguments**
+
+- `NUMBER`
+
+**Options**
+
+- `--body <TEXT>` — Comment text in Markdown.
+- `--body-file <FILENAME>` — Read the comment text from a file, or - for stdin.
+- `--path <TEXT>` — Comment inline on this file, relative to the repository root. Requires --line.
+- `--line <INTEGER RANGE>` — Line to comment on, or the last line of a --start-line range.
+- `--start-line <INTEGER RANGE>` — First line of a multi-line inline comment. Defaults to --line.
+- `--side <CHOICE>` — Diff side the lines refer to: right for the new file, left for the old file. _(choices: `right`, `left` · default: `right`)_
+- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 #### `avr pr list`
 

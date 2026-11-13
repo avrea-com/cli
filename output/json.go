@@ -79,6 +79,20 @@ func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields
 	return jsonValue(ctx, w, selected, expression, terminal...)
 }
 
+// CompileJQ lets commands reject a bad --jq expression before they send a
+// request, so a mutation is never followed by an output failure.
+func CompileJQ(expression string) (*gojq.Code, error) {
+	query, err := gojq.Parse(expression)
+	if err != nil {
+		return nil, errors.New("jq error: invalid expression")
+	}
+	code, err := gojq.Compile(query)
+	if err != nil {
+		return nil, errors.New("jq error: could not compile expression")
+	}
+	return code, nil
+}
+
 func jsonValue(ctx context.Context, w io.Writer, selected any, expression string, terminal ...bool) error {
 	if expression == "" {
 		var buffer bytes.Buffer
@@ -98,13 +112,9 @@ func jsonValue(ctx context.Context, w io.Writer, selected any, expression string
 		}
 		return nil
 	}
-	query, err := gojq.Parse(expression)
+	code, err := CompileJQ(expression)
 	if err != nil {
-		return errors.New("jq error: invalid expression")
-	}
-	code, err := gojq.Compile(query)
-	if err != nil {
-		return errors.New("jq error: could not compile expression")
+		return err
 	}
 	// gojq normalizes json.Number into arbitrary-precision integers itself.
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)

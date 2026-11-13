@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -22,16 +23,35 @@ const prFeature = "feature.org-pull-requests.enabled"
 // NewPR returns shared pull-request inspection commands.
 func NewPR(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "pr", Aliases: []string{"prs"}, Short: "View pull requests."}
-	group.AddCommand(newPRList(d))
+	group := &cobra.Command{Use: "pr", Aliases: []string{"prs"}, Short: "View and comment on pull requests."}
+	group.AddCommand(newPRList(d), newPRComment(d))
 	return group
 }
-func prRequestError(cfg config.Config, err error, action string) error {
+
+// failure names the command's goal; action names the request that failed.
+func prRequestError(cfg config.Config, err error, failure, action string) error {
 	var transport *client.TransportError
 	if errors.As(err, &transport) {
-		return &ExitError{1, "Error: Could not list pull requests because the request to Avrea failed: " + transport.Reason}
+		return &ExitError{1, "Error: Could not " + failure + " because the request to Avrea failed: " + transport.Reason}
 	}
 	return apiError(cfg, err, action)
+}
+
+// requirePRFeature checks a rollout flag that gates a pull-request command.
+// subject is a singular noun phrase such as "pull request listing".
+func requirePRFeature(ctx context.Context, cfg config.Config, api *client.Client, org, flag, subject, failure string) error {
+	feature, err := api.FeatureFlag(ctx, org, flag)
+	if err != nil {
+		var httpErr *client.HTTPError
+		if errors.As(err, &httpErr) && httpErr.Status == 404 {
+			return &ExitError{1, "Error: Sorry, we could not find this organization or confirm " + subject + " support. Organizations without Avrea Git are not supported yet. Coming soon."}
+		}
+		return prRequestError(cfg, err, failure, "check "+subject+" availability")
+	}
+	if feature["enabled"] != true {
+		return &ExitError{1, "Error: Sorry, " + subject + " is not yet supported for this organization. Coming soon."}
+	}
+	return nil
 }
 func newPRList(d Dependencies) *cobra.Command {
 	var o jsonOptions
@@ -75,16 +95,8 @@ func newPRList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		feature, err := api.FeatureFlag(cmd.Context(), id, prFeature)
-		if err != nil {
-			var httpErr *client.HTTPError
-			if errors.As(err, &httpErr) && httpErr.Status == 404 {
-				return &ExitError{1, "Error: Sorry, we could not find this organization or confirm pull request listing support. Organizations without Avrea Git are not supported yet. Coming soon."}
-			}
-			return prRequestError(cfg, err, "check pull request listing availability")
-		}
-		if feature["enabled"] != true {
-			return &ExitError{1, "Error: Sorry, pull request listing is not yet supported for this organization. Coming soon."}
+		if err = requirePRFeature(cmd.Context(), cfg, api, id, prFeature, "pull request listing", "list pull requests"); err != nil {
+			return err
 		}
 		ids, err := resolveRepositories(cmd.Context(), d, cfg, api, id, repos, true)
 		if err != nil {
@@ -108,7 +120,7 @@ func newPRList(d Dependencies) *cobra.Command {
 		}
 		page, err := api.PullRequests(cmd.Context(), id, query)
 		if err != nil {
-			return prRequestError(cfg, err, "list pull requests")
+			return prRequestError(cfg, err, "list pull requests", "list pull requests")
 		}
 		rows := rawRecords(page)
 		if f.Changed("json") {

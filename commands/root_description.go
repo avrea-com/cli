@@ -30,7 +30,7 @@ func rootDescription(path string) docgen.Description {
 				{Name: "job", Description: "Inspect Avrea job VMs (SSH, metrics, logs).", Section: descriptionText("Core Commands")},
 				{Name: "log", Description: "Search across runner execution logs.", Section: descriptionText("Core Commands")},
 				{Name: "org", Description: "Manage organizations and installations.", Section: descriptionText("Additional Commands")},
-				{Name: "pr", Description: "View pull requests.", Section: descriptionText("Core Commands")},
+				{Name: "pr", Description: "View and comment on pull requests.", Section: descriptionText("Core Commands")},
 				{Name: "repo", Description: "Manage repositories, git mirrors, and public mirrors.", Section: descriptionText("Additional Commands")},
 				{Name: "run", Description: "View and manage CI workflow runs.", Section: descriptionText("Core Commands")},
 				{Name: "sbom", Description: "View, generate, and download repository SBOMs.", Section: descriptionText("Core Commands")},
