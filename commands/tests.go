@@ -28,7 +28,7 @@ var testJobID = lazyRegexp("^(job|awj)-[0-9a-f]{32}$")
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "tests", Short: "Read a job's tests, timings and recorded failure messages.", Annotations: map[string]string{"job-shorthand": "list"}}
+	group := &cobra.Command{Use: "tests", Short: "Read recorded tests: a job's results, a repository search and one test's history.", Annotations: map[string]string{"job-shorthand": "list"}}
 	var org, repo, cursor, jobName, testName, suite, className string
 	var outcomes []string
 	var summary bool
@@ -170,7 +170,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 		}
 		return err
 	})
-	group.AddCommand(c)
+	group.AddCommand(c, newTestsSearch(d), newTestsHistory(d))
 	return group
 }
 

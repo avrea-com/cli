@@ -217,6 +217,8 @@ func TestAPIContract(t *testing.T) {
 		{"job view " + inspectionJob, "GET " + org + "/jobs/{job_id}"},
 		{"tests " + resultTestJob + " --repo " + repo + " --summary", "GET " + org + "/repos/{repo_id}/jobs/{job_id}/tests/summary"},
 		{"tests " + resultTestJob + " --repo " + repo + " --status failed --status errored --test test_login", "GET " + org + "/repos/{repo_id}/jobs/{job_id}/tests"},
+		{"tests search login --repo " + repo + " --status failed --status errored --limit 17 --cursor next", "GET " + org + "/repos/{repo_id}/tests"},
+		{"tests history " + historyTestID + " --configuration " + historyConfiguration + " --repo " + repo + " --limit 17 --cursor next", "GET " + org + "/repos/{repo_id}/tests/history/{test_id}"},
 		{"cache usage --repo " + repo, "GET " + org + "/repos/{repo_id}/cache"},
 		{"cache delete --repo " + repo + " --all --yes", "DELETE " + org + "/repos/{repo_id}/cache"},
 		{"vm list", "GET " + org + "/vms"},

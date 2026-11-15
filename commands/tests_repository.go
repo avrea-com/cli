@@ -1,0 +1,447 @@
+package commands
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/url"
+	"slices"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/avrea-com/cli/client"
+	"github.com/avrea-com/cli/config"
+	"github.com/avrea-com/cli/output"
+	"github.com/spf13/cobra"
+)
+
+var testSearchFields = []string{"organization_id", "repository_id", "status", "scope", "truncated", "filters", "data", "pagination"}
+var testHistoryFields = []string{"organization_id", "repository_id", "test_id", "configuration_digest", "identity", "status", "pending", "reason", "as_of_revision", "current_revision", "data", "pagination"}
+var testDigest = lazyRegexp("^[0-9a-f]{64}$")
+
+// The API serves at most this many rows per request on both endpoints.
+const testPageLimit = 100
+
+// testRepository resolves the organization and repository shared by the
+// repository-wide test commands.
+func testRepository(cmd *cobra.Command, d Dependencies, org, repo string) (config.Config, *client.Client, string, string, error) {
+	cfg, _, api, err := d.load()
+	if err != nil {
+		return cfg, nil, "", "", err
+	}
+	if err = authenticated(cfg); err != nil {
+		return cfg, nil, "", "", err
+	}
+	organization, err := resolveOrg(cmd.Context(), d, cfg, api, org)
+	if err != nil {
+		return cfg, nil, "", "", err
+	}
+	repository, err := requiredWorkflowRepo(cmd.Context(), d, cfg, api, organization, repo)
+	return cfg, api, organization, repository, err
+}
+
+func testOutcomeQuery(cmd *cobra.Command, outcomes []string) (string, []string, error) {
+	for _, outcome := range outcomes {
+		if !slices.Contains(testOutcomes, outcome) {
+			return "", nil, usageError(cmd, "Invalid value for '--status': "+pythonQuote(outcome)+" is not one of 'passed', 'failed', 'skipped', 'errored'.")
+		}
+	}
+	selected := slices.Clone(outcomes)
+	slices.Sort(selected)
+	selected = slices.Compact(selected)
+	switch len(selected) {
+	case 0:
+		return "", nil, nil
+	case 1:
+		return "eq." + selected[0], selected, nil
+	default:
+		return "in.(" + strings.Join(selected, ",") + ")", selected, nil
+	}
+}
+
+// searchRepositoryTests follows short pages until limit rows are read. The
+// first page's status and scope describe the listing.
+func searchRepositoryTests(ctx context.Context, api *client.Client, cfg config.Config, path, text, outcome string, outcomes []string, limit int, cursor *string) (map[string]any, error) {
+	invalid := &ExitError{1, "Error: The API returned an invalid repository test listing."}
+	rows := make([]any, 0)
+	var snapshot map[string]any
+	truncated := false
+	seen := map[string]bool{}
+	if cursor != nil {
+		seen[*cursor] = true
+	}
+	for range 20 {
+		query := url.Values{"limit": {strconv.Itoa(min(limit-len(rows), testPageLimit))}}
+		if text != "" {
+			query.Set("q", text)
+		}
+		if outcome != "" {
+			query.Set("outcome", outcome)
+		}
+		if cursor != nil {
+			query.Set("cursor", *cursor)
+		}
+		page, err := getTestResults(ctx, api, cfg, path, query, "search repository tests", "Check the repository and organization, and that Repository Tests are enabled. If you passed --cursor, restart without it.")
+		if err != nil {
+			return nil, err
+		}
+		data, dataOK := page["data"].([]any)
+		pagination, paginationOK := page["pagination"].(map[string]any)
+		_, statusOK := page["status"].(string)
+		if !dataOK || !paginationOK || !statusOK || len(data) > limit-len(rows) {
+			return nil, invalid
+		}
+		for _, row := range data {
+			if _, ok := row.(map[string]any); !ok {
+				return nil, invalid
+			}
+		}
+		filters, _ := page["filters"].(map[string]any)
+		confirmed := make([]string, 0, len(outcomes))
+		if values, ok := filters["outcomes"].([]any); ok {
+			for _, value := range values {
+				name, _ := value.(string)
+				confirmed = append(confirmed, name)
+			}
+			slices.Sort(confirmed)
+		}
+		confirmedText, _ := filters["query"].(string)
+		if confirmedText != text || !slices.Equal(confirmed, outcomes) {
+			return nil, &ExitError{1, "Error: The API did not confirm the requested test filters. It may need an update."}
+		}
+		if value, _ := page["truncated"].(bool); value {
+			truncated = true
+		}
+		if snapshot == nil {
+			snapshot = page
+		}
+		rows = append(rows, data...)
+		cursor = nil
+		if value := pagination["next_cursor"]; value != nil {
+			next, ok := value.(string)
+			if !ok || !validTestCursor(next) {
+				return nil, &ExitError{1, "Error: The API returned an invalid next cursor."}
+			}
+			if seen[next] {
+				return nil, &ExitError{1, "Error: The API repeated a test-results cursor; stopping pagination."}
+			}
+			seen[next] = true
+			cursor = &next
+		}
+		if cursor == nil || len(rows) == limit {
+			break
+		}
+	}
+	var next any
+	if cursor != nil {
+		next = *cursor
+	}
+	snapshot["data"], snapshot["pagination"], snapshot["truncated"] = rows, map[string]any{"next_cursor": next}, truncated
+	return snapshot, nil
+}
+
+func repositoryTestMessage(state any) string {
+	switch state {
+	case "not_recorded":
+		return "No test reports are recorded for this repository."
+	case "expired":
+		return "The recorded test reports have expired."
+	default:
+		return testListingMessage(state)
+	}
+}
+
+func testCount(value any) int64 {
+	number, _ := value.(json.Number)
+	count, _ := number.Int64()
+	return count
+}
+
+func testTime(value any) string {
+	text, _ := value.(string)
+	if text == "" {
+		return "unknown"
+	}
+	return formatTimestamp(text)
+}
+
+func showRepositoryTests(w io.Writer, response map[string]any) error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Organization: %s  Repository: %s\n", testText(response["organization_id"]), testText(response["repository_id"]))
+	if scope, ok := response["scope"].(map[string]any); ok {
+		fmt.Fprintf(&b, "Reports searched: %s", testText(scope["reports_searched"]))
+		if scope["oldest_recorded_at"] != nil && scope["newest_recorded_at"] != nil {
+			fmt.Fprintf(&b, " (%s to %s)", testTime(scope["oldest_recorded_at"]), testTime(scope["newest_recorded_at"]))
+		}
+		if count := testCount(scope["reports_indexing"]); count > 0 {
+			fmt.Fprintf(&b, "; still indexing: %d", count)
+		}
+		if count := testCount(scope["reports_unavailable"]); count > 0 {
+			fmt.Fprintf(&b, "; unavailable: %d", count)
+		}
+		b.WriteString("\n")
+		if complete, ok := scope["complete"].(bool); ok && !complete {
+			b.WriteString("Not every recorded report was searched; absent tests may still be recorded.\n")
+		}
+	}
+	rows := response["data"].([]any)
+	if len(rows) == 0 {
+		message := repositoryTestMessage(response["status"])
+		if message == "" {
+			message = "No matching tests."
+			if response["pagination"].(map[string]any)["next_cursor"] != nil {
+				message = "No matches in the searched portion."
+			}
+		}
+		b.WriteString(message + "\n")
+		_, err := io.WriteString(w, b.String())
+		return err
+	}
+	if message := testListingMessage(response["status"]); message != "" {
+		b.WriteString(message + "\n")
+	}
+	cells := make([][]string, 0, len(rows))
+	for _, item := range rows {
+		row := item.(map[string]any)
+		cells = append(cells, []string{testText(row["class_name"]), testText(row["name"]), testText(row["outcome"]), testText(row["duration_ms"]), testTime(row["recorded_at"]), testText(row["job_id"])})
+	}
+	if err := output.Grid(&b, []string{"Class", "Test", "Outcome", "Time (ms)", "Recorded", "Job"}, cells); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func newTestsSearch(d Dependencies) *cobra.Command {
+	var org, repo, cursor string
+	var outcomes []string
+	var limit int
+	var o jsonOptions
+	c := &cobra.Command{Use: "search [QUERY]", Short: "Search the tests recorded for a repository.", Args: cobra.MaximumNArgs(1)}
+	orgFlag(c, &org)
+	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
+	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tests to return; short pages are followed, up to 20 result pages.")
+	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
+	c.Flags().StringArrayVar(&outcomes, "status", nil, "Latest recorded outcome (repeatable; matches any selected outcome).")
+	o.flags(c)
+	c.RunE = run(func(cmd *cobra.Command, args []string) error {
+		if limit < 1 || limit > 1000 {
+			return usageError(cmd, "Invalid value for '--limit' / '-L': "+strconv.Itoa(limit)+" is not in the range 1<=x<=1000.")
+		}
+		outcome, selected, err := testOutcomeQuery(cmd, outcomes)
+		if err != nil {
+			return err
+		}
+		text := ""
+		if len(args) == 1 {
+			text = strings.TrimSpace(args[0])
+			if text == "" || utf8.RuneCountInString(text) > 200 {
+				return usageError(cmd, "Invalid value for QUERY: use between 1 and 200 characters")
+			}
+		}
+		var start *string
+		if cmd.Flags().Changed("cursor") {
+			if !validTestCursor(cursor) {
+				return usageError(cmd, "Invalid value: --cursor must be 1..1024 chars and not surrounded by whitespace")
+			}
+			start = &cursor
+		}
+		if done, err := o.prepare(cmd, d, testSearchFields); done || err != nil {
+			return err
+		}
+		cfg, api, organization, repository, err := testRepository(cmd, d, org, repo)
+		if err != nil {
+			return err
+		}
+		response, err := searchRepositoryTests(cmd.Context(), api, cfg, "/orgs/"+organization+"/repos/"+repository+"/tests", text, outcome, selected, limit, start)
+		if err != nil {
+			return err
+		}
+		response["organization_id"], response["repository_id"] = organization, repository
+		if cmd.Flags().Changed("json") {
+			err = o.record(cmd, d, response, testSearchFields)
+		} else {
+			err = showRepositoryTests(d.Out, response)
+		}
+		if err != nil {
+			return err
+		}
+		if next, ok := response["pagination"].(map[string]any)["next_cursor"].(string); ok {
+			_, err = fmt.Fprintf(d.Err, "More results available. Continue with the same query and filters and --cursor %s\n", shellQuotePython(testText(next)))
+		}
+		return err
+	})
+	return c
+}
+
+// selectHistoryTest finds the one recorded test a name refers to. An exact
+// name wins over tests that only contain it.
+func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Config, path, name string) (map[string]any, error) {
+	page, err := searchRepositoryTests(ctx, api, cfg, path, name, "", nil, testPageLimit, nil)
+	if err != nil {
+		return nil, err
+	}
+	var matches []map[string]any
+	exact := false
+	seen := map[string]bool{}
+	for _, item := range page["data"].([]any) {
+		row := item.(map[string]any)
+		id, configuration := fieldText(row, "test_id"), fieldText(row, "configuration_digest")
+		if !testDigest().MatchString(id) || !testDigest().MatchString(configuration) {
+			return nil, &ExitError{1, "Error: The API returned an invalid repository test listing."}
+		}
+		if seen[id+configuration] {
+			continue
+		}
+		seen[id+configuration] = true
+		if isExact := row["name"] == name; isExact && !exact {
+			exact, matches = true, nil
+		} else if exact && !isExact {
+			continue
+		}
+		matches = append(matches, row)
+	}
+	more := page["pagination"].(map[string]any)["next_cursor"] != nil
+	if len(matches) == 1 && !more {
+		return matches[0], nil
+	}
+	if len(matches) == 0 {
+		message := repositoryTestMessage(page["status"])
+		if message == "" {
+			message = "No recorded test matches " + pythonQuote(name) + ". Find tests with avr tests search."
+		}
+		return nil, &ExitError{1, "Error: " + message}
+	}
+	choices := []string{}
+	for _, row := range matches[:min(len(matches), 10)] {
+		choices = append(choices, fmt.Sprintf("  %s.%s\n    avr tests history %s --configuration %s", testText(row["class_name"]), testText(row["name"]), row["test_id"], row["configuration_digest"]))
+	}
+	note := ""
+	if more || len(matches) > 10 {
+		note = "\nMore tests match than are listed; use a more specific name."
+	}
+	return nil, &ExitError{1, "Error: Several recorded tests match " + pythonQuote(name) + ". Pass a test ID and its configuration:\n" + strings.Join(choices, "\n") + note}
+}
+
+func showTestHistory(w io.Writer, response map[string]any) error {
+	var b strings.Builder
+	if identity, ok := response["identity"].(map[string]any); ok {
+		fmt.Fprintf(&b, "Test: %s.%s  Suite: %s\n", testText(identity["class_name"]), testText(identity["name"]), testText(identity["suite"]))
+	}
+	fmt.Fprintf(&b, "Test ID: %s\nConfiguration: %s\n", testText(response["test_id"]), testText(response["configuration_digest"]))
+	fmt.Fprintf(&b, "Organization: %s  Repository: %s\n", testText(response["organization_id"]), testText(response["repository_id"]))
+	fmt.Fprintf(&b, "History: %s\n", testText(response["status"]))
+	if testValuePresent(response["reason"]) {
+		fmt.Fprintf(&b, "Reason: %s\n", testText(response["reason"]))
+	}
+	if pending, _ := response["pending"].(bool); pending {
+		b.WriteString("History is still being updated; the newest reports may be missing.\n")
+	}
+	rows := response["data"].([]any)
+	if len(rows) == 0 {
+		switch response["status"] {
+		case "unavailable":
+			b.WriteString("History cannot currently be read. This does not mean the test never ran.\n")
+		default:
+			b.WriteString("No recorded runs for this test and configuration.\n")
+		}
+		_, err := io.WriteString(w, b.String())
+		return err
+	}
+	cells := make([][]string, 0, len(rows))
+	for _, item := range rows {
+		row := item.(map[string]any)
+		// One report can hold several occurrences of a test; show their mean.
+		duration := testText(row["duration_status"])
+		if samples := testCount(row["duration_sample_count"]); row["duration_status"] == "available" && samples > 0 {
+			duration = strconv.FormatInt((testCount(row["duration_total_ms"])+samples/2)/samples, 10)
+		}
+		job := "unknown"
+		if row["job_id"] != nil {
+			job = testText(row["job_id"])
+		}
+		cells = append(cells, []string{testTime(row["captured_at"]), testText(row["passed_count"]), testText(row["failed_count"]), testText(row["errored_count"]), testText(row["skipped_count"]), duration, job})
+	}
+	if err := output.Grid(&b, []string{"Recorded", "Passed", "Failed", "Errored", "Skipped", "Time (ms)", "Job"}, cells); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func newTestsHistory(d Dependencies) *cobra.Command {
+	var org, repo, cursor, configuration string
+	var limit int
+	var o jsonOptions
+	c := &cobra.Command{Use: "history TEST", Short: "Read one test's recorded runs in a repository, newest first.", Args: positionalArguments("TEST")}
+	orgFlag(c, &org)
+	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
+	c.Flags().StringVar(&configuration, "configuration", "", "Configuration digest of the test; required with a test ID.")
+	c.Flags().IntVarP(&limit, "limit", "L", 20, "Maximum recorded runs to return.")
+	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
+	o.flags(c)
+	c.RunE = run(func(cmd *cobra.Command, args []string) error {
+		if limit < 1 || limit > testPageLimit {
+			return usageError(cmd, "Invalid value for '--limit' / '-L': "+strconv.Itoa(limit)+" is not in the range 1<=x<=100.")
+		}
+		target := strings.TrimSpace(args[0])
+		byID := cmd.Flags().Changed("configuration")
+		if byID && (!testDigest().MatchString(configuration) || !testDigest().MatchString(target)) {
+			return usageError(cmd, "Invalid value: with --configuration, TEST and --configuration are each 64 lowercase hex characters")
+		}
+		if !byID && (target == "" || utf8.RuneCountInString(target) > 200) {
+			return usageError(cmd, "Invalid value for TEST: use a test name of 1 to 200 characters, or a test ID with --configuration")
+		}
+		query := url.Values{"limit": {strconv.Itoa(limit)}}
+		if cmd.Flags().Changed("cursor") {
+			if !validTestCursor(cursor) {
+				return usageError(cmd, "Invalid value: --cursor must be 1..1024 chars and not surrounded by whitespace")
+			}
+			query.Set("cursor", cursor)
+		}
+		if done, err := o.prepare(cmd, d, testHistoryFields); done || err != nil {
+			return err
+		}
+		cfg, api, organization, repository, err := testRepository(cmd, d, org, repo)
+		if err != nil {
+			return err
+		}
+		path := "/orgs/" + organization + "/repos/" + repository + "/tests"
+		var identity any
+		if !byID {
+			row, err := selectHistoryTest(cmd.Context(), api, cfg, path, target)
+			if err != nil {
+				return err
+			}
+			target, configuration = row["test_id"].(string), row["configuration_digest"].(string)
+			identity = map[string]any{"suite": row["suite"], "class_name": row["class_name"], "name": row["name"]}
+		}
+		query.Set("configuration", configuration)
+		response, err := getTestResults(cmd.Context(), api, cfg, path+"/history/"+target, query, "read the test history", "Check the test ID, configuration, repository and organization, and that Repository Tests are enabled.")
+		if err != nil {
+			return err
+		}
+		data, dataOK := response["data"].([]any)
+		pagination, paginationOK := response["pagination"].(map[string]any)
+		if _, statusOK := response["status"].(string); !dataOK || !paginationOK || !statusOK || len(data) != len(objectList(response["data"])) {
+			return &ExitError{1, "Error: The API returned an invalid test history."}
+		}
+		response["organization_id"], response["repository_id"] = organization, repository
+		response["test_id"], response["configuration_digest"], response["identity"] = target, configuration, identity
+		if cmd.Flags().Changed("json") {
+			err = o.record(cmd, d, response, testHistoryFields)
+		} else {
+			err = showTestHistory(d.Out, response)
+		}
+		if err != nil {
+			return err
+		}
+		if next, ok := pagination["next_cursor"].(string); ok {
+			_, err = fmt.Fprintf(d.Err, "Older runs available. Continue with: avr tests history %s --configuration %s --cursor %s\n", target, configuration, shellQuotePython(testText(next)))
+		}
+		return err
+	})
+	return c
+}

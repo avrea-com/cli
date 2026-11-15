@@ -1,0 +1,45 @@
+.TH AVR\-TESTS\-HISTORY 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-tests-history \- Read one test's recorded runs in a repository, newest first.
+.SH SYNOPSIS
+.B avr tests history
+[OPTIONS] TEST
+.SH DESCRIPTION
+Read one test's recorded runs in a repository, newest first.
+.PP
+TEST is a test name. An exact name is preferred over tests that only contain it. When several recorded tests match, the command lists them with the test ID and configuration to pass instead; it never picks one.
+.PP
+Each row is one report: how often the test passed, failed, errored or was skipped in it, the mean recorded duration and the job that ran it. A duration that cannot be shown names the reason. Open a row's job with avr tests JOB --test NAME to read its failure message.
+.PP
+History that is still being updated is marked; unavailable history does not mean the test never ran. Continue with --cursor for older runs.
+.SH ARGUMENTS
+.TP
+\fITEST\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the current git repository.
+.TP
+\fB\-\-configuration\fR \fITEXT\fR
+Configuration digest of the test; required with a test ID.
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Maximum recorded runs to return. (default: 20)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Continue from a previous response's next_cursor.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1),
+.BR avr-tests-list (1),
+.BR avr-tests-search (1)
