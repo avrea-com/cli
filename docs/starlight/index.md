@@ -292,10 +292,12 @@ avr tests history <test-id> --configuration <digest>
 
 `avr tests search` reads across the repository's retained reports, not one
 job. The query matches a substring of the test name, suite or class,
-case-insensitively and literally. The header shows how many reports were
-searched and their time range; reports still being indexed or unavailable
-are counted, and an incomplete search says so. Each row names the job that
-recorded it: read its failure message with `avr tests <job-id> --status failed`.
+case-insensitively and literally. With `--status`, each row is the test's
+most recent result with a selected outcome, so a test that has passed since
+still appears. The header shows how many reports were searched and their
+time range; reports still being indexed or unavailable are counted, and an
+incomplete search says so. Each row names the job that recorded it: read its
+failure message with `avr tests <job-id> --status failed`.
 
 `avr tests history` takes a test name and prefers an exact match. When
 several recorded tests match, it lists each with the test ID and

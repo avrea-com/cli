@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -23,6 +24,9 @@ var testDigest = lazyRegexp("^[0-9a-f]{64}$")
 
 // The API serves at most this many rows per request on both endpoints.
 const testPageLimit = 100
+
+// The API ends a repository test search walk after this many rows.
+const testSearchWalk = 1000
 
 // testRepository resolves the organization and repository shared by the
 // repository-wide test commands.
@@ -113,6 +117,11 @@ func searchRepositoryTests(ctx context.Context, api *client.Client, cfg config.C
 		}
 		if value, _ := page["truncated"].(bool); value {
 			truncated = true
+		}
+		if snapshot != nil {
+			if err := laterTestPageError(page); err != nil {
+				return nil, err
+			}
 		}
 		if snapshot == nil {
 			snapshot = page
@@ -224,7 +233,7 @@ func newTestsSearch(d Dependencies) *cobra.Command {
 	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tests to return; short pages are followed, up to 20 result pages.")
 	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
-	c.Flags().StringArrayVar(&outcomes, "status", nil, "Latest recorded outcome (repeatable; matches any selected outcome).")
+	c.Flags().StringArrayVar(&outcomes, "status", nil, "Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if limit < 1 || limit > 1000 {
@@ -271,20 +280,28 @@ func newTestsSearch(d Dependencies) *cobra.Command {
 		if next, ok := response["pagination"].(map[string]any)["next_cursor"].(string); ok {
 			_, err = fmt.Fprintf(d.Err, "More results available. Continue with the same query and filters and --cursor %s\n", shellQuotePython(testText(next)))
 		}
+		if truncated, _ := response["truncated"].(bool); truncated && err == nil {
+			_, err = fmt.Fprintln(d.Err, "Search stopped at 1,000 tests; more match. Narrow the query or --status.")
+		}
 		return err
 	})
 	return c
 }
 
 // selectHistoryTest finds the one recorded test a name refers to. An exact
-// name wins over tests that only contain it.
+// name wins over tests that only contain it, so the whole search walk is read
+// first; a walk that stops early never picks a test.
 func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Config, path, name string) (map[string]any, error) {
-	page, err := searchRepositoryTests(ctx, api, cfg, path, name, "", nil, testPageLimit, nil)
+	beyond := "The search for " + pythonQuote(name) + " stopped before reading every test that contains it, so a test with exactly this name may be beyond what was searched. Pass a test ID and its configuration; find them with:\n  avr tests search " + shellQuotePython(name) + " --json data"
+	page, err := searchRepositoryTests(ctx, api, cfg, path, name, "", nil, testSearchWalk, nil)
+	var stopped *testListingStopped
+	if errors.As(err, &stopped) {
+		return nil, &ExitError{1, stopped.Message + "\n" + beyond}
+	}
 	if err != nil {
 		return nil, err
 	}
-	var matches []map[string]any
-	exact := false
+	var exact, contained []map[string]any
 	seen := map[string]bool{}
 	for _, item := range page["data"].([]any) {
 		row := item.(map[string]any)
@@ -296,33 +313,45 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 			continue
 		}
 		seen[id+configuration] = true
-		if isExact := row["name"] == name; isExact && !exact {
-			exact, matches = true, nil
-		} else if exact && !isExact {
-			continue
+		if row["name"] == name {
+			exact = append(exact, row)
+		} else {
+			contained = append(contained, row)
 		}
-		matches = append(matches, row)
 	}
-	more := page["pagination"].(map[string]any)["next_cursor"] != nil
-	if len(matches) == 1 && !more {
-		return matches[0], nil
+	choices := func(rows []map[string]any) string {
+		lines := []string{}
+		for _, row := range rows[:min(len(rows), 10)] {
+			lines = append(lines, fmt.Sprintf("  %s.%s\n    avr tests history %s --configuration %s", testText(row["class_name"]), testText(row["name"]), row["test_id"], row["configuration_digest"]))
+		}
+		if len(rows) > 10 {
+			lines = append(lines, "More tests match than are listed; use a more specific name.")
+		}
+		return strings.Join(lines, "\n")
 	}
+	if page["pagination"].(map[string]any)["next_cursor"] != nil || page["truncated"] == true {
+		message := "Error: " + beyond
+		if len(exact) > 0 {
+			message += "\nTests with this exact name found so far:\n" + choices(exact)
+		}
+		return nil, &ExitError{1, message}
+	}
+	matches := exact
 	if len(matches) == 0 {
+		matches = contained
+	}
+	switch len(matches) {
+	case 0:
 		message := repositoryTestMessage(page["status"])
 		if message == "" {
 			message = "No recorded test matches " + pythonQuote(name) + ". Find tests with avr tests search."
 		}
 		return nil, &ExitError{1, "Error: " + message}
+	case 1:
+		return matches[0], nil
+	default:
+		return nil, &ExitError{1, "Error: Several recorded tests match " + pythonQuote(name) + ". Pass a test ID and its configuration:\n" + choices(matches)}
 	}
-	choices := []string{}
-	for _, row := range matches[:min(len(matches), 10)] {
-		choices = append(choices, fmt.Sprintf("  %s.%s\n    avr tests history %s --configuration %s", testText(row["class_name"]), testText(row["name"]), row["test_id"], row["configuration_digest"]))
-	}
-	note := ""
-	if more || len(matches) > 10 {
-		note = "\nMore tests match than are listed; use a more specific name."
-	}
-	return nil, &ExitError{1, "Error: Several recorded tests match " + pythonQuote(name) + ". Pass a test ID and its configuration:\n" + strings.Join(choices, "\n") + note}
 }
 
 func showTestHistory(w io.Writer, response map[string]any) error {
@@ -439,7 +468,14 @@ func newTestsHistory(d Dependencies) *cobra.Command {
 			return err
 		}
 		if next, ok := pagination["next_cursor"].(string); ok {
-			_, err = fmt.Fprintf(d.Err, "Older runs available. Continue with: avr tests history %s --configuration %s --cursor %s\n", target, configuration, shellQuotePython(testText(next)))
+			scope := ""
+			if cmd.Flags().Changed("repo") {
+				scope += " --repo " + shellQuotePython(repo)
+			}
+			if cmd.Flags().Changed("org") {
+				scope += " --org " + shellQuotePython(org)
+			}
+			_, err = fmt.Fprintf(d.Err, "Older runs available. Continue with: avr tests history %s --configuration %s%s --cursor %s\n", target, configuration, scope, shellQuotePython(testText(next)))
 		}
 		return err
 	})

@@ -119,7 +119,9 @@ Search the tests recorded for a repository, newest report first.
 Each row is a test's latest recorded result across the repository's
 retained reports. QUERY matches a substring of the test name, suite or
 class, case-insensitively and literally. Repeat --status to match any
-selected outcome, for example --status failed --status errored.
+selected outcome, for example --status failed --status errored. With
+--status, each row is the test's most recent result with a selected
+outcome, so a test that has passed since still appears.
 
 The header reports how many reports were searched and their time range.
 Reports still being indexed or unavailable are counted, not hidden; a
@@ -139,6 +141,6 @@ configuration digests and result IDs.
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the current git repository.
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Maximum tests to return; short pages are followed, up to 20 result pages. _(default: `50`)_
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Continue from a previous response's next_cursor with the same query and filters.
-- <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Latest recorded outcome (repeatable; matches any selected outcome). _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears. _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.

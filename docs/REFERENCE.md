@@ -1548,7 +1548,9 @@ Search the tests recorded for a repository, newest report first.
 Each row is a test's latest recorded result across the repository's
 retained reports. QUERY matches a substring of the test name, suite or
 class, case-insensitively and literally. Repeat --status to match any
-selected outcome, for example --status failed --status errored.
+selected outcome, for example --status failed --status errored. With
+--status, each row is the test's most recent result with a selected
+outcome, so a test that has passed since still appears.
 
 The header reports how many reports were searched and their time range.
 Reports still being indexed or unavailable are counted, not hidden; a
@@ -1568,7 +1570,7 @@ configuration digests and result IDs.
 - `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the current git repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum tests to return; short pages are followed, up to 20 result pages. _(default: `50`)_
 - `--cursor <TEXT>` — Continue from a previous response's next_cursor with the same query and filters.
-- `--status <CHOICE>` — Latest recorded outcome (repeatable; matches any selected outcome). _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
+- `--status <CHOICE>` — Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears. _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

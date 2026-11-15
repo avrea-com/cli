@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
 	"strings"
 	"testing"
 
@@ -154,32 +153,22 @@ func TestTestsHistoryResolvesAnExactNameThenReadsItsRuns(t *testing.T) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
 	}
-	if !strings.Contains(stderr, "avr tests history "+historyTestID+" --configuration "+historyConfiguration+" --cursor older") {
+	if !strings.Contains(stderr, "avr tests history "+historyTestID+" --configuration "+historyConfiguration+" --repo "+resultTestRepo+" --cursor older") {
 		t.Error(stderr)
 	}
 }
 
 func TestTestsHistoryNeverPicksAmongSeveralTests(t *testing.T) {
-	for _, tc := range []struct{ name, cursor, want string }{
-		{"two tests", "null", "avr tests history " + otherTestID + " --configuration " + historyConfiguration},
-		{"unsearched remainder", `"next"`, "More tests match than are listed"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			requests := 0
-			execute := repositoryTestsDeps(t, func(r *http.Request) (int, string) {
-				requests++
-				// A full page of one test's results leaves the rest unsearched.
-				rows := slices.Repeat([]string{discoveredTest(historyTestID, "tests.auth", "test_login", "passed")}, 100)
-				if tc.cursor == "null" {
-					rows = []string{rows[0], discoveredTest(otherTestID, "tests.api", "test_login", "passed")}
-				}
-				return 200, discoveryPage(`{"query":"test_login"}`, tc.cursor, rows...)
-			})
-			code, out, stderr := execute("history", "test_login", "--repo", resultTestRepo)
-			if code != 1 || out != "" || requests != 1 || !strings.Contains(stderr, "Several recorded tests match") || !strings.Contains(stderr, tc.want) {
-				t.Fatal(code, requests, out, stderr)
-			}
-		})
+	requests := 0
+	execute := repositoryTestsDeps(t, func(r *http.Request) (int, string) {
+		requests++
+		return 200, discoveryPage(`{"query":"test_login"}`, "null",
+			discoveredTest(historyTestID, "tests.auth", "test_login", "passed"),
+			discoveredTest(otherTestID, "tests.api", "test_login", "passed"))
+	})
+	code, out, stderr := execute("history", "test_login", "--repo", resultTestRepo)
+	if code != 1 || out != "" || requests != 1 || !strings.Contains(stderr, "Several recorded tests match") || !strings.Contains(stderr, "avr tests history "+otherTestID+" --configuration "+historyConfiguration) {
+		t.Fatal(code, requests, out, stderr)
 	}
 }
 
@@ -201,5 +190,143 @@ func TestTestsHistoryByIDSkipsResolutionAndReportsNoMatch(t *testing.T) {
 	}
 	if code, _, stderr := execute("history", "absent", "--repo", resultTestRepo); code != 1 || !strings.Contains(stderr, "No recorded test matches") {
 		t.Fatal(code, stderr)
+	}
+}
+
+// testDigestN is a distinct valid test ID for generated fixtures.
+func testDigestN(n int) string {
+	return fmt.Sprintf("%064x", n+16)
+}
+
+func limitedPage(status string) string {
+	return strings.Replace(discoveryPage(`{"query":"test_login"}`, "null"), `"status":"available"`, `"status":"`+status+`"`, 1)
+}
+
+func TestTestsSearchFailsWhenALaterPageCannotBeListed(t *testing.T) {
+	for _, status := range []string{"limited", "unavailable"} {
+		for _, args := range [][]string{{}, {"--json", "status,data"}} {
+			t.Run(status+strings.Join(args, ""), func(t *testing.T) {
+				requests := 0
+				execute := repositoryTestsDeps(t, func(r *http.Request) (int, string) {
+					requests++
+					if requests == 1 {
+						return 200, discoveryPage(`{"query":"test_login"}`, `"next"`, discoveredTest(historyTestID, "tests.auth", "test_login", "failed"))
+					}
+					return 200, limitedPage(status)
+				})
+				code, out, stderr := execute(append([]string{"search", "test_login", "--repo", resultTestRepo}, args...)...)
+				if code != 1 || out != "" || requests != 2 || !strings.Contains(stderr, testListingMessage(status)) {
+					t.Fatal(code, requests, out, stderr)
+				}
+			})
+		}
+	}
+}
+
+func TestTestsSearchSaysWhenTheWalkWasTruncated(t *testing.T) {
+	const hint = "Search stopped at 1,000 tests; more match."
+	for _, truncated := range []bool{true, false} {
+		t.Run(fmt.Sprint(truncated), func(t *testing.T) {
+			execute := repositoryTestsDeps(t, func(*http.Request) (int, string) {
+				page := discoveryPage(`{}`, "null", discoveredTest(historyTestID, "tests.auth", "test_login", "failed"))
+				return 200, strings.Replace(page, `"truncated":false`, fmt.Sprintf(`"truncated":%t`, truncated), 1)
+			})
+			code, out, stderr := execute("search", "--repo", resultTestRepo)
+			if code != 0 || !strings.Contains(out, "test_login") || strings.Contains(stderr, hint) != truncated {
+				t.Fatal(code, out, stderr)
+			}
+		})
+	}
+}
+
+// historyAfterResolution answers resolution searches with pages in order and
+// records which test's history is then read.
+func historyAfterResolution(t *testing.T, read *string, pages ...string) func(...string) (int, string, string) {
+	t.Helper()
+	searches := 0
+	return repositoryTestsDeps(t, func(r *http.Request) (int, string) {
+		if strings.HasSuffix(r.URL.Path, "/tests") {
+			if searches >= len(pages) || (searches > 0) != r.URL.Query().Has("cursor") {
+				t.Errorf("unexpected resolution request %d: %s", searches, r.URL)
+				return 500, `{}`
+			}
+			searches++
+			return 200, pages[searches-1]
+		}
+		*read = r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+		return 200, historyPage
+	})
+}
+
+func TestTestsHistoryReadsTheWholeSearchBeforeChoosing(t *testing.T) {
+	filters := `{"query":"test_login"}`
+	contained := make([]string, 100)
+	for i := range contained {
+		contained[i] = discoveredTest(testDigestN(i), "tests.auth", fmt.Sprintf("test_login_%d", i), "passed")
+	}
+	for _, tc := range []struct {
+		name  string
+		pages []string
+	}{
+		{"exact name in a full first page, more matches later", []string{
+			discoveryPage(filters, `"next"`, append([]string{discoveredTest(historyTestID, "tests.auth", "test_login", "failed")}, contained[1:]...)...),
+			discoveryPage(filters, "null", discoveredTest(otherTestID, "tests.auth", "test_login_expired", "passed")),
+		}},
+		{"exact name beyond the first 100 rows", []string{
+			discoveryPage(filters, `"next"`, contained...),
+			discoveryPage(filters, "null", discoveredTest(historyTestID, "tests.auth", "test_login", "failed")),
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			read := ""
+			code, out, stderr := historyAfterResolution(t, &read, tc.pages...)("history", "test_login", "--repo", resultTestRepo)
+			if code != 0 || read != historyTestID || !strings.Contains(out, "Test: tests.auth.test_login  Suite: pytest") {
+				t.Fatal(code, read, out, stderr)
+			}
+		})
+	}
+}
+
+func TestTestsHistoryNeverPicksFromAnUnfinishedSearch(t *testing.T) {
+	filters := `{"query":"test_login"}`
+	exact := discoveredTest(historyTestID, "tests.auth", "test_login", "failed")
+	truncated := strings.Replace(discoveryPage(filters, "null", exact), `"truncated":false`, `"truncated":true`, 1)
+	for _, tc := range []struct {
+		name  string
+		pages []string
+		want  string
+	}{
+		{"truncated walk", []string{truncated}, "avr tests history " + historyTestID + " --configuration " + historyConfiguration},
+		{"later page limited", []string{discoveryPage(filters, `"next"`, exact), limitedPage("limited")}, testListingMessage("limited")},
+		{"later page unavailable", []string{discoveryPage(filters, `"next"`, exact), limitedPage("unavailable")}, testListingMessage("unavailable")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			read := ""
+			code, out, stderr := historyAfterResolution(t, &read, tc.pages...)("history", "test_login", "--repo", resultTestRepo)
+			if code != 1 || out != "" || read != "" || strings.Contains(stderr, "Several") {
+				t.Fatal(code, read, out, stderr)
+			}
+			for _, want := range []string{"may be beyond what was searched", "avr tests search test_login --json data", tc.want} {
+				if !strings.Contains(stderr, want) {
+					t.Errorf("missing %q in:\n%s", want, stderr)
+				}
+			}
+		})
+	}
+}
+
+func TestTestsHistoryContinuationKeepsRepositoryAndOrganization(t *testing.T) {
+	execute := repositoryTestsDeps(t, func(*http.Request) (int, string) {
+		return 200, historyPage
+	})
+	code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo, "--org", inspectionOrg)
+	if code != 0 {
+		t.Fatal(code, out, stderr)
+	}
+	_, hint, _ := strings.Cut(stderr, "Continue with: ")
+	for _, want := range []string{"avr tests history " + historyTestID + " --configuration " + historyConfiguration, " --repo " + resultTestRepo, " --org " + inspectionOrg, " --cursor older"} {
+		if !strings.Contains(hint, want) {
+			t.Errorf("missing %q in:\n%s", want, stderr)
+		}
 	}
 }

@@ -59,7 +59,9 @@ func testsDescription(path string) docgen.Description {
 				"Each row is a test's latest recorded result across the repository's\n" +
 				"retained reports. QUERY matches a substring of the test name, suite or\n" +
 				"class, case-insensitively and literally. Repeat --status to match any\n" +
-				"selected outcome, for example --status failed --status errored.\n" +
+				"selected outcome, for example --status failed --status errored. With\n" +
+				"--status, each row is the test's most recent result with a selected\n" +
+				"outcome, so a test that has passed since still appears.\n" +
 				"\n" +
 				"The header reports how many reports were searched and their time range.\n" +
 				"Reports still being indexed or unavailable are counted, not hidden; a\n" +
@@ -77,7 +79,7 @@ func testsDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "repo_id", Kind: "option", Opts: []string{"--repo"}, Type: "text", Nargs: 1, Help: descriptionText("Repository (owner/name or rep-ID). Defaults to the current git repository.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "limit", Kind: "option", Opts: []string{"-L", "--limit"}, Type: "integer range", Nargs: 1, Help: descriptionText("Maximum tests to return; short pages are followed, up to 20 result pages."), ShowDefault: true, Default: 50}, Suffix: "  [default: 50; 1<=x<=1000]", CompletionKind: "IntRange"},
 				{Param: docgen.Param{Name: "cursor", Kind: "option", Opts: []string{"--cursor"}, Type: "text", Nargs: 1, Help: descriptionText("Continue from a previous response's next_cursor with the same query and filters.")}, CompletionKind: "String"},
-				{Param: docgen.Param{Name: "outcomes", Kind: "option", Opts: []string{"--status"}, Type: "choice", Multiple: true, Nargs: 1, Help: descriptionText("Latest recorded outcome (repeatable; matches any selected outcome)."), Choices: testOutcomes}, CompletionKind: "Choice", CaseSensitive: true},
+				{Param: docgen.Param{Name: "outcomes", Kind: "option", Opts: []string{"--status"}, Type: "choice", Multiple: true, Nargs: 1, Help: descriptionText("Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears."), Choices: testOutcomes}, CompletionKind: "Choice", CaseSensitive: true},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "jq_expr", Kind: "option", Opts: []string{"-q", "--jq"}, Type: "text", Nargs: 1, Help: descriptionText("Filter --json output through a jq expression.")}, CompletionKind: "String"},
 			},
