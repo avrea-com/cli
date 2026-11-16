@@ -298,16 +298,26 @@ func TestTestsHistoryNameSelectionRequiresCompleteReportsForFallback(t *testing.
 		{"indexing", `{"complete":true,"reports_indexing":1,"reports_unavailable":0}`, true},
 		{"unavailable", `{"complete":true,"reports_indexing":0,"reports_unavailable":1}`, true},
 	} {
-		for _, match := range []string{"exact", "substring", "absent"} {
+		for _, match := range []string{"exact", "substring", "class only", "suite only", "absent"} {
 			for _, jsonOutput := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/%s/json=%t", coverage.name, match, jsonOutput), func(t *testing.T) {
 					var rows []string
 					if match != "absent" {
 						name := "test_login"
-						if match == "substring" {
-							name += "_expired"
+						class := "tests.auth"
+						switch match {
+						case "substring":
+							name = "TEST_LOGIN_expired"
+						case "class only":
+							name, class = "test_logout", "tests.test_login"
+						case "suite only":
+							name = "test_logout"
 						}
-						rows = append(rows, discoveredTest(historyTestID, "tests.auth", name, "passed"))
+						row := discoveredTest(historyTestID, class, name, "passed")
+						if match == "suite only" {
+							row = strings.Replace(row, `"suite":"pytest"`, `"suite":"test_login"`, 1)
+						}
+						rows = append(rows, row)
 					}
 					var page map[string]json.RawMessage
 					if err := json.Unmarshal([]byte(discoveryPage(`{"query":"test_login"}`, "null", rows...)), &page); err != nil {
@@ -344,6 +354,12 @@ func TestTestsHistoryNameSelectionRequiresCompleteReportsForFallback(t *testing.
 						t.Fatalf("missing %q in: %s", want, stderr)
 					}
 					want = "avr tests search test_login --repo " + resultTestRepo + " --org " + inspectionOrg + " -L 1000 --json data"
+					if match != "substring" {
+						want = "avr tests search --repo " + resultTestRepo + " --org " + inspectionOrg
+						if strings.Contains(stderr, "avr tests search test_login") || strings.Contains(stderr, "avr tests history "+historyTestID) {
+							t.Fatal(stderr)
+						}
+					}
 					if !strings.Contains(stderr, want) {
 						t.Fatalf("missing %q in: %s", want, stderr)
 					}
@@ -356,6 +372,31 @@ func TestTestsHistoryNameSelectionRequiresCompleteReportsForFallback(t *testing.
 				})
 			}
 		}
+	}
+}
+
+func TestTestsHistoryPreservesEmptyListingStatus(t *testing.T) {
+	for _, tc := range []struct{ state, want string }{
+		{"indexing", "Test results are still being indexed. Retry later"},
+		{"unavailable", "Test results cannot currently be listed."},
+		{"limited", "The test listing reached a read limit. Retry or narrow the filters"},
+		{"expired", "The recorded test reports have expired."},
+		{"not_recorded", "No test reports are recorded for this repository."},
+	} {
+		t.Run(tc.state, func(t *testing.T) {
+			page := limitedPage(tc.state)
+			if tc.state != "indexing" {
+				page = strings.Replace(page, `"reports_indexing":2`, `"reports_indexing":0`, 1)
+			}
+			if tc.state == "unavailable" {
+				page = strings.Replace(page, `"reports_unavailable":0`, `"reports_unavailable":1`, 1)
+			}
+			read := ""
+			code, out, stderr := historyAfterResolution(t, &read, page)("history", "test_login", "--repo", resultTestRepo)
+			if code != 1 || read != "" || out != "" || !strings.Contains(stderr, tc.want) || !strings.Contains(stderr, "Not every recorded report was searched") {
+				t.Fatal(code, read, out, stderr)
+			}
+		})
 	}
 }
 
@@ -389,7 +430,7 @@ func TestTestsHistoryNeverPicksFromAnUnfinishedSearch(t *testing.T) {
 
 func TestTestsHistorySearchHintQuotesName(t *testing.T) {
 	read := ""
-	page := discoveryPage(`{"query":"login's test"}`, "null")
+	page := discoveryPage(`{"query":"login's test"}`, "null", discoveredTest(historyTestID, "tests.auth", "login's test expired", "passed"))
 	code, out, stderr := historyAfterResolution(t, &read, page)("history", "login's test", "--repo", resultTestRepo)
 	want := "avr tests search 'login'\"'\"'s test' --repo " + resultTestRepo + " -L 1000 --json data"
 	if code != 1 || out != "" || read != "" || !strings.Contains(stderr, want) || strings.Contains(stderr, "--org") {

@@ -293,6 +293,7 @@ func newTestsSearch(d Dependencies) *cobra.Command {
 // first; a walk that stops early never picks a test. Substring fallback also
 // requires complete report coverage so an omitted exact match cannot lose.
 func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Config, path, name, scopeFlags string) (map[string]any, error) {
+	browse := "Find tests with:\n  avr tests search" + scopeFlags
 	find := "Pass a test ID and its configuration; find them with:\n  avr tests search " + shellQuotePython(name) + scopeFlags + " -L " + strconv.Itoa(testSearchWalk) + " --json data"
 	beyond := "The search for " + pythonQuote(name) + " stopped before reading every test that contains it, so a test with exactly this name may be beyond what was searched. " + find
 	page, err := searchRepositoryTests(ctx, api, cfg, path, name, "", nil, testSearchWalk, nil)
@@ -317,7 +318,7 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 		seen[id+configuration] = true
 		if row["name"] == name {
 			exact = append(exact, row)
-		} else {
+		} else if strings.Contains(strings.ToLower(fieldText(row, "name")), strings.ToLower(name)) {
 			contained = append(contained, row)
 		}
 	}
@@ -342,11 +343,16 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 	if len(matches) == 0 {
 		scope, _ := page["scope"].(map[string]any)
 		if scope["complete"] == false || testCount(scope["reports_indexing"]) > 0 || testCount(scope["reports_unavailable"]) > 0 {
-			message := "Error: Not every recorded report was searched; a test with exactly this name may be in an unsearched report. " + find
+			message := "Not every recorded report was searched; a test with exactly this name may be in an unsearched report."
 			if len(contained) > 0 {
-				message += "\nTests containing this name found so far:\n" + choices(contained)
+				message += " " + find + "\nTests containing this name found so far:\n" + choices(contained)
+			} else {
+				if reason := repositoryTestMessage(page["status"]); reason != "" {
+					message = reason + "\n" + message
+				}
+				message += " " + browse
 			}
-			return nil, &ExitError{1, message}
+			return nil, &ExitError{1, "Error: " + message}
 		}
 		matches = contained
 	}
@@ -354,7 +360,7 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 	case 0:
 		message := repositoryTestMessage(page["status"])
 		if message == "" {
-			message = "No recorded test matches " + pythonQuote(name) + ". " + find
+			message = "No recorded test matches " + pythonQuote(name) + ". " + browse
 		}
 		return nil, &ExitError{1, "Error: " + message}
 	case 1:
