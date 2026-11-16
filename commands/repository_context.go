@@ -75,7 +75,9 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 			_, _ = fmt.Fprintln(d.Err, d.errorPaint(fmt.Sprintf("(using repo: %s → %s)", output.CellText(repo), output.CellText(actual)), "2"))
 		}
 	}
-	if config.IsScoped(cfg.Token) {
+	// The resolve route is not open to organization-bound tokens; match the
+	// repositories the token lists instead.
+	if config.IsOrgBound(cfg.Token) {
 		query := url.Values{"q": {repo}, "limit": {"100"}}
 		seen := map[string]bool{}
 		for {
@@ -94,7 +96,7 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 				}
 			}
 			if page.NextCursor == "" {
-				return "", &missingRepository{fmt.Sprintf("This scoped token does not reach repository %q.\n  \x60avr repo list\x60 shows the repositories it reaches.\nAborted!", output.CellText(repo))}
+				return "", &missingRepository{fmt.Sprintf("This %s does not reach repository %q.\n  \x60avr repo list\x60 shows the repositories it reaches.\nAborted!", config.Kind(cfg.Token), output.CellText(repo))}
 			}
 			if len(page.Items) == 0 || seen[page.NextCursor] {
 				return "", errors.New("repository listing returned a cursor that does not advance")
@@ -191,8 +193,8 @@ func resolveRepositories(ctx context.Context, d Dependencies, cfg config.Config,
 			var missing *missingRepository
 			if detected && soft && errors.As(err, &missing) {
 				note := fmt.Sprintf("auto-detected %s isn't in this org — showing org-wide results.", output.CellText(repo))
-				if config.IsScoped(cfg.Token) {
-					note = fmt.Sprintf("auto-detected %s is not a repository this scoped token reaches; showing all that it reaches.", output.CellText(repo))
+				if config.IsOrgBound(cfg.Token) {
+					note = fmt.Sprintf("auto-detected %s is not a repository this %s reaches; showing all that it reaches.", output.CellText(repo), config.Kind(cfg.Token))
 				}
 				_, _ = fmt.Fprintln(d.Err, d.errorPaint("  ("+note+")", "2"))
 				return nil, nil

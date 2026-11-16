@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -72,6 +73,19 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 	if config.IsScoped(cfg.Token) {
 		return "", &ExitError{1, "Error: A scoped token is bound to one organization and cannot look it up.\nPass --org org-... or set AVR_ORG to the organization ID."}
 	}
+	if config.IsService(cfg.Token) {
+		if value != "" {
+			return "", &ExitError{1, fmt.Sprintf("Error: A service token is bound to one organization and cannot look up '%s'.\nOmit --org and AVR_ORG to use the token's organization, or pass its ID (org-...).", output.Text(value))}
+		}
+		identity, err := serviceIdentity(ctx, cfg, api)
+		if err != nil {
+			return "", apiError(cfg, err, "resolve the service token's organization")
+		}
+		if id := fieldText(identity, "organization_id"); strings.HasPrefix(id, "org-") {
+			return id, nil
+		}
+		return "", errors.New("unexpected API response: organization_id is missing")
+	}
 	page, err := api.Organizations(ctx)
 	if err != nil {
 		return "", apiError(cfg, err, "resolve the organization")
@@ -118,7 +132,7 @@ func orgSlug(ctx context.Context, cfg config.Config, api *client.Client, org str
 	if slug := knownOrganizationSlug(ctx, cfg, org); slug != "" {
 		return slug
 	}
-	if config.IsScoped(cfg.Token) {
+	if config.IsOrgBound(cfg.Token) {
 		return org
 	}
 	page, err := api.Organizations(ctx)

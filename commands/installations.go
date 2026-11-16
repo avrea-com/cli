@@ -202,6 +202,10 @@ func newInstallationAdd(d Dependencies) *cobra.Command {
 		if hasJSON && waitSeconds <= 0 {
 			return &ExitError{2, "Error: --json needs a positive --wait-seconds with --platform github"}
 		}
+		// GitHub setup reads the signed-in person's installations.
+		if err = requirePerson(cfg, "Connecting GitHub", "install the GitHub App"); err != nil {
+			return err
+		}
 		id, err := resolveOrg(cmd.Context(), d, cfg, api, org)
 		if err != nil {
 			return err

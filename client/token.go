@@ -25,6 +25,12 @@ func (c *Client) AccessToken(ctx context.Context, path string) (map[string]any, 
 	return decodeRecord(body)
 }
 
+// ServiceTokenIdentity reads the presented service token's own identity. The
+// API answers only a service token; other credentials receive 403.
+func (c *Client) ServiceTokenIdentity(ctx context.Context) (map[string]any, error) {
+	return c.AccessToken(ctx, "/service-tokens/self")
+}
+
 // MintAccessToken keeps the successful raw JSON until the one-time credential
 // is delivered. An unrelated malformed summary field must not discard it.
 func (c *Client) MintAccessToken(ctx context.Context, path string, body map[string]any) (any, error) {

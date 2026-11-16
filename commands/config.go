@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -55,7 +56,7 @@ func NewConfig(deps Dependencies) *cobra.Command {
 		if err = authenticated(cfg); err != nil {
 			return err
 		}
-		if err = refuseScopedStoredOrg(cfg, "set"); err != nil {
+		if err = refuseBoundStoredOrg(cfg, "set"); err != nil {
 			return err
 		}
 		page, err := api.Organizations(cmd.Context())
@@ -115,7 +116,7 @@ func NewConfig(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err = refuseScopedStoredOrg(cfg, "unset"); err != nil {
+		if err = refuseBoundStoredOrg(cfg, "unset"); err != nil {
 			return err
 		}
 		if err = cmd.Context().Err(); err != nil {
@@ -135,11 +136,20 @@ func NewConfig(deps Dependencies) *cobra.Command {
 	group.AddCommand(get, set, unset)
 	return group
 }
-func refuseScopedStoredOrg(cfg config.Config, verb string) error {
-	if !config.IsScoped(cfg.Token) {
+func refuseBoundStoredOrg(cfg config.Config, verb string) error {
+	kind := config.Kind(cfg.Token)
+	var next string
+	switch kind {
+	case config.PersonalKey:
 		return nil
+	case config.ScopedToken:
+		next = "Pass that organization's ID with --org org-... or set AVR_ORG to it."
+	case config.ServiceToken:
+		next = "Its organization is resolved automatically, so --org and AVR_ORG can be omitted."
+	default:
+		return fmt.Errorf("unsupported credential: %s", kind)
 	}
-	return &ExitError{1, "Error: A scoped token is bound to one organization and has no stored default to " + verb + ".\nPass that organization's ID with --org org-... or set AVR_ORG to it.\nAborted!"}
+	return &ExitError{1, "Error: A " + kind.String() + " is bound to one organization and has no stored default to " + verb + ".\n" + next + "\nAborted!"}
 }
 func printConfigStatus(ctx context.Context, d Dependencies) error {
 	cfg, store, api, err := d.load()
@@ -168,7 +178,7 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 	if _, err = fmt.Fprintln(d.Out, d.paint(output.CellText(host), "1")+" "+source(hostSource)); err != nil {
 		return err
 	}
-	var authLine string
+	var authLine, identityOrg string
 	if cfg.Token == "" {
 		authLine = "  " + d.paint("✗", "31") + " not authenticated (run: avr auth login)"
 	} else {
@@ -176,10 +186,16 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 		if d.Getenv("AVR_TOKEN") != "" {
 			tokenSource = "AVR_TOKEN"
 		}
-		if config.IsScoped(cfg.Token) {
+		kind := config.Kind(cfg.Token)
+		switch kind {
+		case config.ScopedToken:
 			authLine = "  - scoped token " + source(tokenSource) + ", not checked against the API"
-		} else {
-			me, e := api.Get(ctx, "/users/me", nil)
+		case config.PersonalKey, config.ServiceToken:
+			path, fetch := "/users/me", func() (map[string]any, error) { return api.Get(ctx, "/users/me", nil) }
+			if kind == config.ServiceToken {
+				path, fetch = "/service-tokens/self", func() (map[string]any, error) { return serviceIdentity(ctx, cfg, api) }
+			}
+			me, e := fetch()
 			if e != nil {
 				if ctx.Err() != nil {
 					return ctx.Err()
@@ -196,20 +212,28 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 				me = inner
 			}
 			switch {
+			case kind == config.ServiceToken && len(me) > 0:
+				authLine = "  " + d.paint("✓", "32") + " authenticated with service token " + output.CellText(cmp.Or(fieldText(me, "name"), fieldText(me, "api_key_id"))) + " " + source(tokenSource)
+				identityOrg = fieldText(me, "organization_id")
 			case fieldText(me, "email") != "":
 				authLine = "  " + d.paint("✓", "32") + " authenticated as " + output.CellText(fieldText(me, "email")) + " " + source(tokenSource)
 			case len(me) > 0:
 				authLine = "  " + d.paint("✓", "32") + " authenticated " + source(tokenSource)
 			default:
-				authLine = "  " + d.paint("!", "33") + " token set but /users/me failed " + source(tokenSource)
+				authLine = "  " + d.paint("!", "33") + " token set but " + path + " failed " + source(tokenSource)
 			}
+		default:
+			return fmt.Errorf("unsupported credential: %s", kind)
 		}
 	}
 	if _, err = fmt.Fprintln(d.Out, authLine); err != nil {
 		return err
 	}
 	org := d.paint("(not set)", "2")
-	if cfg.Org != "" {
+	if cfg.Org == "" && identityOrg != "" {
+		// A service token's own organization applies when none is configured.
+		org = d.paint(output.CellText(identityOrg), "1") + " " + source("service token")
+	} else if cfg.Org != "" {
 		slug := cfg.Org
 		if cfg.Token != "" {
 			slug = orgSlug(ctx, cfg, api, cfg.Org)

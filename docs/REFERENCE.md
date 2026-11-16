@@ -466,9 +466,9 @@ Without --path, the comment applies to the whole pull request. With --path and
 commit. --start-line extends it to a range of lines. Line numbers refer to the
 new file (--side right) or the old file (--side left).
 
-Requires a signed-in account (scoped tokens cannot comment), pull request
-comments enabled for the organization, and an Avrea Git mirror of the
-repository.
+Requires a signed-in account (scoped and service tokens cannot comment),
+pull request comments enabled for the organization, and an Avrea Git
+mirror of the repository.
 
 ```sh
 Examples:

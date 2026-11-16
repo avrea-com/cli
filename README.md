@@ -130,7 +130,7 @@ Log out (revokes the active API key on the server):
 avr auth logout
 ```
 
-For non-interactive environments (CI, scripts), set a token via env var instead. See [Configuration](#configuration).
+For non-interactive environments (CI, scripts), set a token via env var instead, such as an organization's [service token](#scripting--automation) in `AVR_TOKEN`. See [Configuration](#configuration).
 
 ## Your first command
 
@@ -444,6 +444,10 @@ Creation returns the credential only once. If `--jq` fails or removes it, the co
 
 If `avr token create` returns a 404, check the API's reason, the organization and the API host. If scoped-token access is unavailable, contact support@avrea.com to request it. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
 
+**Service tokens**
+
+A service token (`avt_...`) belongs to a group in one organization rather than to a person. An organization admin mints, rotates and revokes it; the CLI uses it only from `AVR_TOKEN`. The token's organization applies automatically, so `--org` and `AVR_ORG` can be omitted; when given, they must be the `org-...` ID. Reading the organization costs one request per command, and a service token has 60 requests per minute, so set `AVR_ORG` to the ID in loops. `avr auth status` checks the token against the API and shows its organization and token ID, and its name, owning group, expiry and access when the API reports them. An API that does not report them leaves those rows as `-` and the JSON fields `null`. A `-` expiry means unknown, not that the token never expires; in JSON, `expiring_soon` is `null` only in that case. Commands that need a signed-in person, such as `avr feedback` and `avr pr comment`, refuse a service token, and `avr auth logout` does not revoke one: unset `AVR_TOKEN` instead. A 403 or 404 comes with a reminder that the token reaches only what its access names.
+
 **Pipe-aware output**
 
 When stdout isn't a TTY, list commands switch to tab-separated rows (no color, no truncation, ISO timestamps), so `avr run list | awk` works without flags. Control characters, Unicode line separators and bidirectional controls inside cells are escaped (`\t`, `\x1b`, `\u2028`), keeping each item on one row with stable columns. The escaping is not reversible: a literal backslash is left as it is, so a cell that reads `a\tb` may hold either a tab or a backslash and a `t`. Use `--json` when the exact value matters; JSON retains the original values. `avr run watch | jq -c .` automatically switches to NDJSON event mode.
@@ -455,8 +459,8 @@ When stdout isn't a TTY, list commands switch to tab-separated rows (no color, n
 | Variable         | Purpose                                                                                          |
 | ---------------- | ------------------------------------------------------------------------------------------------ |
 | `AVR_HOST`       | Avrea API URL. Defaults to the active host in `hosts.json`, then `https://api.avrea.com`.        |
-| `AVR_TOKEN`      | API key or scoped token. Overrides whatever's stored for the active host.                         |
-| `AVR_ORG`        | Default organization ID. Overrides the stored default. A scoped token needs it, or `--org`, except for `repo clone`. |
+| `AVR_TOKEN`      | API key, scoped token or service token. Overrides whatever's stored for the active host.          |
+| `AVR_ORG`        | Default organization ID. Overrides the stored default. A scoped token needs it, or `--org`, except for `repo clone`; a service token uses its own organization without it. |
 | `AVR_REPO`       | Default repository (`org/name` or `rep-xxx`). Overrides git auto-detect.                          |
 | `AVR_BROWSER`    | Browser to launch for `--web` and OAuth login. Falls back to `BROWSER`, then system default.      |
 | `AVR_PAGER`      | Pager for long output. Overrides `PAGER`. Set to empty string to disable paging.                  |
