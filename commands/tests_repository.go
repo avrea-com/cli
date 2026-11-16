@@ -347,7 +347,11 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 			if len(contained) > 0 {
 				message += " " + find + "\nTests containing this name found so far:\n" + choices(contained)
 			} else {
-				if reason := repositoryTestMessage(page["status"]); reason != "" {
+				reason := repositoryTestMessage(page["status"])
+				if page["status"] == "not_recorded" || page["status"] == "expired" {
+					reason = "No retained test reports were found in the searched portion."
+				}
+				if reason != "" {
 					message = reason + "\n" + message
 				}
 				message += " " + browse
