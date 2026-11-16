@@ -168,8 +168,5 @@ func feedbackAuthenticated(cfg config.Config) error {
 	if err := authenticated(cfg); err != nil {
 		return err
 	}
-	if config.IsScoped(cfg.Token) {
-		return &ExitError{4, "Error: Feedback needs a signed-in account; scoped tokens cannot send or read feedback.\n  Hint: unset AVR_TOKEN if it contains the scoped token, then run avr auth login."}
-	}
-	return nil
+	return requirePerson(cfg, "Feedback", "send or read feedback")
 }

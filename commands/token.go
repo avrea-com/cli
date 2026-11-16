@@ -178,11 +178,16 @@ func tokenVMUsage(row map[string]any) string {
 	return pythonValue(row["vm_create_count"])
 }
 func tokenGrantsSummary(row map[string]any) string {
-	repos, vms, allVMs := 0, 0, false
+	repos, vms, allVMs, rules, allRules := 0, 0, false, 0, false
 	for _, grant := range objectList(row["grants"]) {
 		switch fieldText(grant, "resource_type") {
 		case "repository":
 			repos++
+		case "egress_firewall_rule":
+			rules++
+			if grant["resource_id"] == nil {
+				allRules = true
+			}
 		case "customer_vm":
 			vms++
 			if grant["resource_id"] == nil {
@@ -206,6 +211,15 @@ func tokenGrantsSummary(row map[string]any) string {
 			label += "s"
 		}
 		parts = append(parts, fmt.Sprintf("%d %s", vms, label))
+	}
+	if allRules {
+		parts = append(parts, "all firewall rules")
+	} else if rules > 0 {
+		label := "firewall rule"
+		if rules > 1 {
+			label += "s"
+		}
+		parts = append(parts, fmt.Sprintf("%d %s", rules, label))
 	}
 	if row["allow_vm_create"] == true {
 		label := "VM create"

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,10 @@ import (
 )
 
 var statusFields = []string{"email", "name", "created_at", "user_id", "host", "default_org", "token", "credential_type"}
+
+// serviceStatusFields extends statusFields with a service token's identity;
+// the other credential kinds keep their field set.
+var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "expiring_soon", "grants")
 
 func newStatus(d Dependencies) *cobra.Command {
 	var show bool
@@ -27,51 +32,75 @@ func newStatus(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		kind := config.Kind(cfg.Token)
+		available := statusFields
+		if kind == config.ServiceToken {
+			available = serviceStatusFields
+		}
 		hasJSON := cmd.Flags().Changed("json")
 		if expression != "" && !hasJSON {
 			return &ExitError{2, "Error: --jq requires --json"}
 		}
+		var selected []string
 		if hasJSON {
 			if fields == "?" {
-				return output.Discovery(d.Out, statusFields)
+				return output.Discovery(d.Out, available)
 			}
-			if _, err := output.Fields(fields, statusFields); err != nil {
+			if _, err := output.Fields(fields, available); err != nil {
 				return err
 			}
 		}
 		if err := authenticated(cfg); err != nil {
 			return err
 		}
-		scoped := config.IsScoped(cfg.Token)
-		result := map[string]any{}
-		if !scoped {
-			result, err = d.apiClient(cfg).Do(cmd.Context(), http.MethodGet, "/users/me", nil)
-			if err != nil {
-				return apiError(cfg, err, "fetch user info")
-			}
-		}
 		if hasJSON {
-			schema := make([]string, 0, len(statusFields))
-			for _, f := range statusFields {
+			// Checked before the identity request, which a service token pays
+			// for out of its request allowance.
+			schema := make([]string, 0, len(available))
+			for _, f := range available {
 				if f != "token" || show {
 					schema = append(schema, f)
 				}
 			}
-			selected, err := output.Fields(fields, schema)
-			if err != nil {
+			if selected, err = output.Fields(fields, schema); err != nil {
 				return err
 			}
-			kind := "api_key"
-			if scoped {
-				kind = "scoped_token"
+			if expression != "" {
+				if _, err = output.CompileJQ(expression); err != nil {
+					return err
+				}
 			}
+		}
+		result := map[string]any{}
+		var credentialType string
+		switch kind {
+		case config.PersonalKey:
+			credentialType = "api_key"
+			result, err = d.apiClient(cfg).Do(cmd.Context(), http.MethodGet, "/users/me", nil)
+			if err != nil {
+				return apiError(cfg, err, "fetch user info")
+			}
+		case config.ScopedToken:
+			credentialType = "scoped_token"
+		case config.ServiceToken:
+			// Unlike a scoped token, a service token can read its own identity,
+			// so this verifies it against the API.
+			credentialType = "service_token"
+			result, err = serviceIdentity(cmd.Context(), cfg, d.apiClient(cfg))
+			if err != nil {
+				return apiError(cfg, err, "verify the service token")
+			}
+		default:
+			return fmt.Errorf("unsupported credential: %s", kind)
+		}
+		if hasJSON {
 			result["user_id"] = result["id"]
 			result["host"] = cfg.Host
 			result["default_org"] = nil
 			if cfg.Org != "" {
 				result["default_org"] = cfg.Org
 			}
-			result["credential_type"] = kind
+			result["credential_type"] = credentialType
 			delete(result, "token")
 			if show {
 				result["token"] = cfg.Token
@@ -80,11 +109,12 @@ func newStatus(d Dependencies) *cobra.Command {
 		}
 		var b strings.Builder
 		width := 12
-		if scoped {
+		if config.IsOrgBound(cfg.Token) {
 			width = 13
 		}
 		row := func(key string, value any) { fmt.Fprintf(&b, "%-*s %s\n", width, key, output.Text(fmt.Sprint(value))) }
-		if scoped {
+		switch kind {
+		case config.ScopedToken:
 			row("Credential", "scoped token")
 			row("Host", cfg.Host)
 			org := cfg.Org
@@ -96,7 +126,31 @@ func newStatus(d Dependencies) *cobra.Command {
 			row("Organization", org)
 			row("Token", maskToken(cfg.Token, show))
 			b.WriteString("\n" + d.paint("  A scoped token reaches only the repositories and VMs it names.", "2") + "\n" + d.paint("  It is not checked here: an expired or revoked one fails on first use.", "2") + "\n")
-		} else {
+		case config.ServiceToken:
+			expires, present := result["expires_at"]
+			switch {
+			case !present:
+				expires = "-"
+			case expires == nil:
+				expires = "never"
+			default:
+				expires = formatTimestamp(fieldText(result, "expires_at"))
+			}
+			row("Credential", "service token")
+			row("Name", fallback(result["name"], "-"))
+			row("Token ID", fallback(result["api_key_id"], "-"))
+			row("Organization", fallback(result["organization_id"], "-"))
+			row("Group", fallback(result["group_id"], "-"))
+			row("Expires", expires)
+			row("Grants", tokenGrantsSummary(result))
+			row("Host", cfg.Host)
+			row("Token", maskToken(cfg.Token, show))
+			b.WriteString("\n")
+			if result["expiring_soon"] == true {
+				b.WriteString(d.paint("  ! This service token expires soon: ask an organization admin to rotate it, then update AVR_TOKEN.", "33") + "\n")
+			}
+			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")
+		case config.PersonalKey:
 			row("User ID", fallback(result["id"], "-"))
 			row("Email", fallback(result["email"], "-"))
 			name, exists := result["name"]
@@ -145,6 +199,9 @@ func NewLogout(deps Dependencies) *cobra.Command {
 			cfg, store, api, err := d.load()
 			if err != nil {
 				return err
+			}
+			if config.IsService(cfg.Token) {
+				return &ExitError{1, "Error: Logout does not revoke a service token and leaves stored credentials unchanged.\n  Hint: unset AVR_TOKEN to stop using the token. An organization admin can revoke it."}
 			}
 			if err := store.ValidateMutation(); err != nil {
 				return err
@@ -224,17 +281,22 @@ func apiError(cfg config.Config, err error, action string) error {
 	if !errors.As(err, &he) {
 		return err
 	}
-	scoped := config.IsScoped(cfg.Token)
-	if he.Status == 401 && scoped {
-		subject := "The scoped token was rejected"
+	kind := config.Kind(cfg.Token)
+	bound := config.IsOrgBound(cfg.Token)
+	if he.Status == 401 && bound {
+		subject := "The " + kind.String() + " was rejected"
 		if cfg.Host != config.DefaultHost {
-			subject = cfg.Host + " rejected the scoped token"
+			subject = cfg.Host + " rejected the " + kind.String()
 		}
 		detail := "."
 		if he.Detail != "" {
 			detail = ": " + output.CellText(he.Detail)
 		}
-		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."}
+		hint := "ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."
+		if kind == config.ServiceToken {
+			hint = "the service token may be expired or revoked. An organization admin can rotate it or mint a new one; then set it as AVR_TOKEN."
+		}
+		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: " + hint}
 	}
 	if he.Status == 401 {
 		origin := ""
@@ -251,7 +313,7 @@ func apiError(cfg config.Config, err error, action string) error {
 	switch he.Status {
 	case 403:
 		message = "You don't have access to " + action + " (HTTP 403)" + detail
-		if !scoped {
+		if !bound {
 			message += "\n  Hint: run `avr org list` to see available orgs, or pass --org."
 		}
 	case 404:
@@ -277,11 +339,27 @@ func apiError(cfg config.Config, err error, action string) error {
 			message = fmt.Sprintf("Failed to %s (HTTP %d)%s", action, he.Status, detail)
 		}
 	}
-	if scoped && (he.Status == 403 || he.Status == 404) {
-		message += "\n  Hint: a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
+	if he.Status == 403 || he.Status == 404 {
+		switch kind {
+		case config.ScopedToken:
+			message += "\n  Hint: a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
+		case config.ServiceToken:
+			message += "\n  Hint: a service token reaches only what its access names, and only the operations open to service tokens."
+		case config.PersonalKey:
+		}
 	}
 	if cfg.Host != config.DefaultHost {
 		message += "\n  API: " + cfg.Host + he.Path
 	}
 	return errors.New(message)
+}
+
+// requirePerson refuses an organization-bound token before a command that acts
+// as a signed-in person sends any request.
+func requirePerson(cfg config.Config, subject, action string) error {
+	if !config.IsOrgBound(cfg.Token) {
+		return nil
+	}
+	kind := config.Kind(cfg.Token).String()
+	return &ExitError{4, "Error: " + subject + " needs a signed-in account; " + kind + "s cannot " + action + ".\n  Hint: unset AVR_TOKEN if it contains the " + kind + ", then run avr auth login."}
 }

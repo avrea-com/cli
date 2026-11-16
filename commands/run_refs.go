@@ -125,8 +125,8 @@ func referenceAndOrg(ctx context.Context, d Dependencies, cfg config.Config, api
 
 func resolveRunOrg(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, ref runReference, org string) (runReference, string, error) {
 	if ref.orgSlug != "" {
-		if config.IsScoped(cfg.Token) {
-			return ref, "", fmt.Errorf("a scoped token cannot resolve a run URL's organization. Pass the run ID instead")
+		if config.IsOrgBound(cfg.Token) {
+			return ref, "", fmt.Errorf("a %s cannot resolve a run URL's organization. Pass the run ID instead", config.Kind(cfg.Token))
 		}
 		if org == "" {
 			org = ref.orgSlug

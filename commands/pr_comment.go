@@ -85,10 +85,11 @@ func newPRComment(d Dependencies) *cobra.Command {
 		if err = authenticated(cfg); err != nil {
 			return err
 		}
-		// The API closes every pull-request write to scoped tokens, and its
-		// feature-flag read would otherwise answer them with a misleading 404.
-		if config.IsScoped(cfg.Token) {
-			return &ExitError{4, "Error: Commenting on pull requests needs a signed-in account; scoped tokens cannot post comments.\n  Hint: unset AVR_TOKEN if it contains the scoped token, then run avr auth login."}
+		// The API closes every pull-request write to organization-bound tokens,
+		// and its feature-flag read would otherwise answer them with a
+		// misleading 404.
+		if err = requirePerson(cfg, "Commenting on pull requests", "post comments"); err != nil {
+			return err
 		}
 		id, err := resolveOrg(cmd.Context(), d, cfg, api, org)
 		if err != nil {

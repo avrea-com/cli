@@ -264,3 +264,46 @@ func assertStoreReadFailure(t *testing.T, s *Store) {
 		t.Fatal("org clear accepted unreadable store")
 	}
 }
+
+func TestCredentialKind(t *testing.T) {
+	for _, tt := range []struct {
+		token                  string
+		kind                   CredentialKind
+		name                   string
+		scoped, service, bound bool
+	}{
+		{"", PersonalKey, "API key", false, false, false},
+		{"avr_personal", PersonalKey, "API key", false, false, false},
+		{"AVT_upper", PersonalKey, "API key", false, false, false},
+		{"xavt_embedded", PersonalKey, "API key", false, false, false},
+		{"avs_scoped", ScopedToken, "scoped token", true, false, true},
+		{"avt_service", ServiceToken, "service token", false, true, true},
+	} {
+		kind := Kind(tt.token)
+		if kind != tt.kind || kind.String() != tt.name || IsScoped(tt.token) != tt.scoped || IsService(tt.token) != tt.service || IsOrgBound(tt.token) != tt.bound {
+			t.Errorf("%q: kind=%v scoped=%v service=%v bound=%v", tt.token, kind, IsScoped(tt.token), IsService(tt.token), IsOrgBound(tt.token))
+		}
+	}
+}
+
+func TestServiceTokenIgnoresStoredOrganization(t *testing.T) {
+	s := &Store{Path: filepath.Join(t.TempDir(), "hosts.json")}
+	if err := s.Set("https://saved.test", "default_org", "org-saved"); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		env map[string]string
+		org string
+	}{
+		{map[string]string{"AVR_TOKEN": "avt_fixture"}, ""},
+		{map[string]string{"AVR_TOKEN": "avt_fixture", "AVR_ORG": "org-explicit"}, "org-explicit"},
+	} {
+		c, err := Load(s, func(k string) string { return tt.env[k] })
+		if err != nil {
+			t.Fatal(err)
+		}
+		if c.Token != "avt_fixture" || c.Org != tt.org {
+			t.Fatalf("%v: %#v", tt.env, c)
+		}
+	}
+}

@@ -24,7 +24,53 @@ type Config struct {
 	Repo             string
 }
 
-func IsScoped(token string) bool { return strings.HasPrefix(token, "avs_") }
+// CredentialKind is what a token authenticates as, decided by its prefix.
+type CredentialKind int
+
+const (
+	// PersonalKey belongs to a user, who may belong to several organizations.
+	PersonalKey CredentialKind = iota
+	// ScopedToken (avs_) is minted by a member and bound to one organization.
+	ScopedToken
+	// ServiceToken (avt_) is owned by a group, has no user and is bound to one
+	// organization. It is supplied only through AVR_TOKEN.
+	ServiceToken
+)
+
+func Kind(token string) CredentialKind {
+	switch {
+	case strings.HasPrefix(token, "avs_"):
+		return ScopedToken
+	case strings.HasPrefix(token, "avt_"):
+		return ServiceToken
+	default:
+		return PersonalKey
+	}
+}
+
+// String names the kind in user-facing messages.
+func (k CredentialKind) String() string {
+	switch k {
+	case PersonalKey:
+		return "API key"
+	case ScopedToken:
+		return "scoped token"
+	case ServiceToken:
+		return "service token"
+	default:
+		return fmt.Sprintf("credential kind %d", int(k))
+	}
+}
+
+func IsScoped(token string) bool  { return Kind(token) == ScopedToken }
+func IsService(token string) bool { return Kind(token) == ServiceToken }
+
+// IsOrgBound reports a token bound to one organization with no user behind
+// it: /users/me routes and stored organization defaults do not apply.
+func IsOrgBound(token string) bool {
+	kind := Kind(token)
+	return kind == ScopedToken || kind == ServiceToken
+}
 
 // ConfigDir preserves the Python CLI's platformdirs conventions.
 func ConfigDir(getenv func(string) string, home, platform string) string {
@@ -98,7 +144,7 @@ func Load(store *Store, getenv func(string) string) (Config, error) {
 	if c.Token == "" {
 		c.Token = data.Value(host, "token")
 	}
-	if c.Org == "" && !IsScoped(c.Token) {
+	if c.Org == "" && !IsOrgBound(c.Token) {
 		c.Org = data.Value(host, "default_org")
 	}
 	return c, nil
