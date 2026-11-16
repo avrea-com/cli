@@ -95,7 +95,9 @@ func newVMLifecycle(d Dependencies, operation string) *cobra.Command {
 		if _, err = fmt.Fprintf(d.Err, "Waiting up to %ds for %s to %s...\n", timeout, output.CellText(id), label); err != nil {
 			return err
 		}
-		state, disposition, err := waitForVM(cmd.Context(), d, cfg, api, path, timeout, ready, operation == "delete", failed)
+		notifications := &vmStateNotifications{api: api, path: path, d: d}
+		defer notifications.Close()
+		state, disposition, err := waitForVM(cmd.Context(), d, cfg, api, path, timeout, ready, operation == "delete", failed, notifications.Wait)
 		if err != nil {
 			return err
 		}

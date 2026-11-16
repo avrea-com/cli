@@ -59,7 +59,10 @@ func newVMFork(d Dependencies) *cobra.Command {
 		if _, err = fmt.Fprintf(d.Err, "Waiting up to %ds for %s to become RUNNING...\n", timeout, output.CellText(id)); err != nil {
 			return err
 		}
-		final, disposition, err := waitForVM(cmd.Context(), d, cfg, api, vmBase(orgID)+"/"+url.PathEscape(id), timeout, vmConnectable, false, nil)
+		path := vmBase(orgID) + "/" + url.PathEscape(id)
+		notifications := &vmStateNotifications{api: api, path: path, d: d}
+		defer notifications.Close()
+		final, disposition, err := waitForVM(cmd.Context(), d, cfg, api, path, timeout, vmConnectable, false, nil, notifications.Wait)
 		if err != nil {
 			return err
 		}
