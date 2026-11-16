@@ -28,7 +28,7 @@ var testJobID = lazyRegexp("^(job|awj)-[0-9a-f]{32}$")
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "tests", Short: "Read a job's tests, timings and recorded failure messages.", Annotations: map[string]string{"job-shorthand": "list"}}
+	group := &cobra.Command{Use: "tests", Short: "Read recorded tests: a job's results, a repository search and one test's history.", Annotations: map[string]string{"job-shorthand": "list"}}
 	var org, repo, cursor, jobName, testName, suite, className string
 	var outcomes []string
 	var summary bool
@@ -50,10 +50,9 @@ func NewTests(deps Dependencies) *cobra.Command {
 		if limit < 1 || limit > 1000 {
 			return usageError(cmd, "Invalid value for '--limit' / '-L': "+strconv.Itoa(limit)+" is not in the range 1<=x<=1000.")
 		}
-		for _, outcome := range outcomes {
-			if !slices.Contains(testOutcomes, outcome) {
-				return usageError(cmd, "Invalid value for '--status': "+pythonQuote(outcome)+" is not one of 'passed', 'failed', 'skipped', 'errored'.")
-			}
+		_, selected, err := testOutcomeQuery(cmd, outcomes)
+		if err != nil {
+			return err
 		}
 		if summary {
 			for _, flag := range []string{"test", "suite", "class", "status", "cursor", "limit"} {
@@ -84,16 +83,14 @@ func NewTests(deps Dependencies) *cobra.Command {
 			}
 			filters[filter.key] = filter.value
 		}
-		slices.Sort(outcomes)
-		outcomes = slices.Compact(outcomes)
-		if len(outcomes) == 1 {
-			filters["outcome"] = outcomes[0]
-		} else if len(outcomes) > 1 {
-			selected := make([]any, len(outcomes))
-			for i, outcome := range outcomes {
-				selected[i] = outcome
+		if len(selected) == 1 {
+			filters["outcome"] = selected[0]
+		} else if len(selected) > 1 {
+			values := make([]any, len(selected))
+			for i, outcome := range selected {
+				values[i] = outcome
 			}
-			filters["outcomes"] = selected
+			filters["outcomes"] = values
 		}
 		var start *string
 		if cmd.Flags().Changed("cursor") {
@@ -170,7 +167,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 		}
 		return err
 	})
-	group.AddCommand(c)
+	group.AddCommand(c, newTestsSearch(d), newTestsHistory(d))
 	return group
 }
 
@@ -289,8 +286,8 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 			return nil, err
 		}
 		if snapshot != nil {
-			if message := testListingMessage(page["status"]); message != "" {
-				return nil, &ExitError{1, "Error: " + message}
+			if err := laterTestPageError(page); err != nil {
+				return nil, err
 			}
 		}
 		if snapshot == nil {
@@ -396,6 +393,21 @@ func testListingMessage(state any) string {
 	default:
 		return ""
 	}
+}
+
+// testListingStopped is a page after the first that could not be listed:
+// the pages read before it are not a complete listing.
+type testListingStopped struct{ ExitError }
+
+func (e *testListingStopped) Unwrap() error { return &e.ExitError }
+
+// laterTestPageError fails a walk on a later page that cannot be listed. Such
+// a page has no rows and no cursor, so ending there would look complete.
+func laterTestPageError(page map[string]any) error {
+	if message := testListingMessage(page["status"]); message != "" {
+		return &testListingStopped{ExitError{1, "Error: " + message}}
+	}
+	return nil
 }
 
 func showTestResults(w io.Writer, response map[string]any, summary bool) error {

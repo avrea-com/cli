@@ -281,6 +281,34 @@ Filtering fails explicitly if the server does not acknowledge the selectors.
 File filters and test splitting are not supported. The commands do not rerun
 tests or change collection.
 
+**Search a repository's recorded tests and read one test's history**
+
+```sh
+avr tests search                          # latest recorded result of each test
+avr tests search login                    # name, suite or class contains "login"
+avr tests search --status failed --status errored
+avr tests search --repo owner/name --json '*'
+avr tests history test_login              # that test's recorded runs, newest first
+avr tests history <test-id> --configuration <digest>
+```
+
+`avr tests search` reads across the repository's retained reports, not one
+job. The query matches a substring of the test name, suite or class,
+case-insensitively and literally. With `--status`, each row is the test's
+most recent result with a selected outcome, so a test that has passed since
+still appears. The header shows how many reports were searched and their
+time range; reports still being indexed or unavailable are counted, and an
+incomplete search says so. Each row names the job that recorded it: read its
+failure message with `avr tests <job-id> --status failed`.
+
+`avr tests history` takes a test name and prefers an exact match. When
+several recorded tests match, it lists each with the test ID and
+configuration to pass instead and reads none of them. If some reports were
+not searched, only an exact name can be selected. Each row is one
+report: outcome counts, the mean recorded duration and the job. Both
+commands default to the current git repository and accept `--repo`,
+`--json FIELDS`, `--jq` and `--cursor`.
+
 **Trigger a workflow_dispatch**
 
 ```sh

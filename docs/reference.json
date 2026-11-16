@@ -11044,14 +11044,179 @@
         ],
         "full": "avr tests",
         "is_group": true,
-        "short_help": "Read a job's tests, timings and recorded failure messages.",
-        "help": "Read a job's tests, timings and recorded failure messages.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea\nrun/job IDs, GitHub run IDs and run or job URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n",
+        "short_help": "Read recorded tests: a job's results, a repository search and one test's history.",
+        "help": "Read recorded tests: a job's results, a repository search and one test's history.\n\nUse avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB) for one job's\ntests, timings and failure messages. Accepts Avrea run/job IDs,\nGitHub run IDs and run or job URLs, and Avrea console run URLs.\nA single-job run is selected automatically. Use --job NAME to select\none job from a run with several jobs.\n\nUse avr tests search to find tests across a repository's reports, and\navr tests history for one test's earlier runs.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
         "usage": "avr tests [OPTIONS] COMMAND [ARGS]...",
         "params": [],
         "subcommands": [
+          {
+            "name": "history",
+            "path": [
+              "avr",
+              "tests",
+              "history"
+            ],
+            "full": "avr tests history",
+            "is_group": false,
+            "short_help": "Read one test's recorded runs in a repository, newest first.",
+            "help": "Read one test's recorded runs in a repository, newest first.\n\nTEST is a test name. An exact name is preferred over tests that only\ncontain it. When several recorded tests match, the command lists them\nwith the test ID and configuration to pass instead; it never picks one.\nIf some reports were not searched, only an exact name can be selected.\n\nEach row is one report: how often the test passed, failed, errored or\nwas skipped in it, the mean recorded duration and the job that ran it.\nA duration that cannot be shown names the reason. Open a row's job with\navr tests JOB --test NAME to read its failure message.\n\nHistory that is still being updated is marked; unavailable history does\nnot mean the test never ran. Continue with --cursor for older runs.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr tests history [OPTIONS] TEST",
+            "params": [
+              {
+                "name": "test",
+                "kind": "argument",
+                "opts": [
+                  "test"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to the current git repository.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "configuration",
+                "kind": "option",
+                "opts": [
+                  "--configuration"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Configuration digest of the test; required with a test ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Maximum recorded runs to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 20
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Continue from a previous response's next_cursor.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
           {
             "name": "list",
             "path": [
@@ -11272,6 +11437,177 @@
                 "hidden": false,
                 "show_default": false,
                 "default": false
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "search",
+            "path": [
+              "avr",
+              "tests",
+              "search"
+            ],
+            "full": "avr tests search",
+            "is_group": false,
+            "short_help": "Search the tests recorded for a repository.",
+            "help": "Search the tests recorded for a repository, newest report first.\n\nEach row is a test's latest recorded result across the repository's\nretained reports. QUERY matches a substring of the test name, suite or\nclass, case-insensitively and literally. Repeat --status to match any\nselected outcome, for example --status failed --status errored. With\n--status, each row is the test's most recent result with a selected\noutcome, so a test that has passed since still appears.\n\nThe header reports how many reports were searched and their time range.\nReports still being indexed or unavailable are counted, not hidden; a\ntest absent from an incomplete search may still be recorded.\n\nRead a row's failure message with avr tests JOB --status failed, and\nits earlier runs with avr tests history. Use --json '*' for test IDs,\nconfiguration digests and result IDs.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr tests search [OPTIONS] [QUERY]",
+            "params": [
+              {
+                "name": "query",
+                "kind": "argument",
+                "opts": [
+                  "query"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Defaults to the configured organization.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "repo_id",
+                "kind": "option",
+                "opts": [
+                  "--repo"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository (owner/name or rep-ID). Defaults to the current git repository.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Maximum tests to return; short pages are followed, up to 20 result pages.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Continue from a previous response's next_cursor with the same query and filters.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "outcomes",
+                "kind": "option",
+                "opts": [
+                  "--status"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "passed",
+                  "failed",
+                  "skipped",
+                  "errored"
+                ]
               },
               {
                 "name": "json_fields",

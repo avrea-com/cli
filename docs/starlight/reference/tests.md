@@ -1,20 +1,59 @@
 ---
 title: avr tests
-description: "Read a job's tests, timings and recorded failure messages."
+description: "Read recorded tests: a job's results, a repository search and one test's history."
 ---
 
-Read a job's tests, timings and recorded failure messages.
+Read recorded tests: a job's results, a repository search and one test's history.
 
 ```sh
 avr tests [OPTIONS] COMMAND [ARGS]...
 ```
 
-Use avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB). Accepts Avrea
-run/job IDs, GitHub run IDs and run or job URLs, and Avrea console run URLs.
+Use avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB) for one job's
+tests, timings and failure messages. Accepts Avrea run/job IDs,
+GitHub run IDs and run or job URLs, and Avrea console run URLs.
 A single-job run is selected automatically. Use --job NAME to select
 one job from a run with several jobs.
 
+Use avr tests search to find tests across a repository's reports, and
+avr tests history for one test's earlier runs.
+
 ## Subcommands
+
+### `avr tests history`
+
+Read one test's recorded runs in a repository, newest first.
+
+```sh
+avr tests history [OPTIONS] TEST
+```
+
+TEST is a test name. An exact name is preferred over tests that only
+contain it. When several recorded tests match, the command lists them
+with the test ID and configuration to pass instead; it never picks one.
+If some reports were not searched, only an exact name can be selected.
+
+Each row is one report: how often the test passed, failed, errored or
+was skipped in it, the mean recorded duration and the job that ran it.
+A duration that cannot be shown names the reason. Open a row's job with
+avr tests JOB --test NAME to read its failure message.
+
+History that is still being updated is marked; unavailable history does
+not mean the test never ran. Continue with --cursor for older runs.
+
+**Arguments**
+
+- <code class="cli-arg">TEST</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the current git repository.
+- <code class="cli-flag">&#x2D;&#x2D;configuration</code> <code class="cli-value">&lt;TEXT&gt;</code> — Configuration digest of the test; required with a test ID.
+- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Maximum recorded runs to return. _(default: `20`)_
+- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Continue from a previous response's next_cursor.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
 ### `avr tests list`
 
@@ -65,5 +104,44 @@ mean no tests were reported.
 - <code class="cli-flag">&#x2D;&#x2D;class</code> <code class="cli-value">&lt;TEXT&gt;</code> — Exact nonempty class name.
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Recorded test outcome (repeatable; matches any selected outcome). _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;summary</code> — Show report counts and collection state without downloading test results.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+### `avr tests search`
+
+Search the tests recorded for a repository.
+
+```sh
+avr tests search [OPTIONS] [QUERY]
+```
+
+Search the tests recorded for a repository, newest report first.
+
+Each row is a test's latest recorded result across the repository's
+retained reports. QUERY matches a substring of the test name, suite or
+class, case-insensitively and literally. Repeat --status to match any
+selected outcome, for example --status failed --status errored. With
+--status, each row is the test's most recent result with a selected
+outcome, so a test that has passed since still appears.
+
+The header reports how many reports were searched and their time range.
+Reports still being indexed or unavailable are counted, not hidden; a
+test absent from an incomplete search may still be recorded.
+
+Read a row's failure message with avr tests JOB --status failed, and
+its earlier runs with avr tests history. Use --json '*' for test IDs,
+configuration digests and result IDs.
+
+**Arguments**
+
+- <code class="cli-arg">[QUERY]</code>
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Defaults to the configured organization.
+- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (owner/name or rep-ID). Defaults to the current git repository.
+- <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Maximum tests to return; short pages are followed, up to 20 result pages. _(default: `50`)_
+- <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Continue from a previous response's next_cursor with the same query and filters.
+- <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears. _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
