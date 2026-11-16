@@ -3,14 +3,19 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
+	"github.com/coder/websocket"
 )
 
 func TestVMWaitBoundsBackoffAndStopsPermanentErrors(t *testing.T) {
@@ -79,6 +84,70 @@ func TestVMLifecycleMutationIsNotRetried(t *testing.T) {
 			}
 			if code := Execute(t.Context(), args, d); code != 1 || calls != 1 {
 				t.Fatal(code, calls)
+			}
+		})
+	}
+}
+func TestVMLifecycleWaitWakesFromStatusStream(t *testing.T) {
+	const source, fork = "cvm-019a0000000070008000000000000001", "cvm-019a0000000070008000000000000002"
+	running := `{"data":{"state":"RUNNING","endpoints":{"ssh":{"host":"fixture.example.test"}}}}`
+	for _, tc := range []struct{ operation, waited, pending, final string }{
+		{"pause", source, "PAUSING", `{"data":{"state":"PAUSED"}}`},
+		{"resume", source, "STARTING", running},
+		{"delete", source, "DELETING", ""},
+		{"fork", fork, "STARTING", running},
+	} {
+		t.Run(tc.operation, func(t *testing.T) {
+			d, out, stderr := testDeps(t)
+			now := time.Unix(100, 0)
+			d.Now = func() time.Time { return now }
+			var delays []time.Duration
+			d.Wait = func(ctx context.Context, delay time.Duration) error {
+				delays = append(delays, delay)
+				now = now.Add(delay)
+				return ctx.Err()
+			}
+			var gets, streams atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/observability/stream"):
+					streams.Add(1)
+					if !strings.HasSuffix(r.URL.Path, "/vms/"+tc.waited+"/observability/stream") || r.URL.RawQuery != "signals=status" {
+						t.Error(r.URL)
+					}
+					conn, err := websocket.Accept(w, r, nil)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					defer func() { _ = conn.CloseNow() }()
+					if err := conn.Write(r.Context(), websocket.MessageText, []byte(`{"type":"changed","signal":"status"}`)); err != nil {
+						t.Error(err)
+						return
+					}
+					_, _, _ = conn.Read(r.Context())
+				case r.Method != http.MethodGet:
+					_, _ = fmt.Fprintf(w, `{"data":{"customer_vm_id":%q,"state":%q}}`, tc.waited, tc.pending)
+				case gets.Add(1) == 1:
+					_, _ = fmt.Fprintf(w, `{"data":{"state":%q}}`, tc.pending)
+				case tc.final == "":
+					http.Error(w, "{}", http.StatusNotFound)
+				default:
+					_, _ = fmt.Fprint(w, tc.final)
+				}
+			}))
+			defer server.Close()
+			d.HTTP = server.Client()
+			d.LoadConfig = func() (config.Config, error) {
+				return config.Config{Host: server.URL, Token: "fixture", Org: "org-019a0000000070008000000000000001"}, nil
+			}
+			args := []string{"vm", tc.operation, source, "--wait", "--json"}
+			if tc.operation == "delete" {
+				args = append(args, "--yes")
+			}
+			code := Execute(t.Context(), args, d)
+			if code != 0 || gets.Load() != 2 || streams.Load() != 1 || !reflect.DeepEqual(delays, []time.Duration{time.Second}) {
+				t.Fatal(code, gets.Load(), streams.Load(), delays, out, stderr)
 			}
 		})
 	}
