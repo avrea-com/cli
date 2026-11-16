@@ -278,6 +278,8 @@ why individual results could not be listed.
 These commands require an API deployment supporting the corresponding reads,
 including summaries and combined status filters when those options are used.
 Filtering fails explicitly if the server does not acknowledge the selectors.
+File filters and test splitting are not supported. The commands do not rerun
+tests or change collection.
 
 **Search a repository's recorded tests and read one test's history**
 
@@ -301,12 +303,11 @@ failure message with `avr tests <job-id> --status failed`.
 
 `avr tests history` takes a test name and prefers an exact match. When
 several recorded tests match, it lists each with the test ID and
-configuration to pass instead and reads none of them. Each row is one
+configuration to pass instead and reads none of them. If some reports were
+not searched, only an exact name can be selected. Each row is one
 report: outcome counts, the mean recorded duration and the job. Both
 commands default to the current git repository and accept `--repo`,
 `--json FIELDS`, `--jq` and `--cursor`.
-File filters and test splitting are not supported. The commands do not rerun
-tests or change collection.
 
 **Trigger a workflow_dispatch**
 

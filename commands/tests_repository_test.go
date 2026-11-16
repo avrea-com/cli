@@ -166,8 +166,8 @@ func TestTestsHistoryNeverPicksAmongSeveralTests(t *testing.T) {
 			discoveredTest(historyTestID, "tests.auth", "test_login", "passed"),
 			discoveredTest(otherTestID, "tests.api", "test_login", "passed"))
 	})
-	code, out, stderr := execute("history", "test_login", "--repo", resultTestRepo)
-	if code != 1 || out != "" || requests != 1 || !strings.Contains(stderr, "Several recorded tests match") || !strings.Contains(stderr, "avr tests history "+otherTestID+" --configuration "+historyConfiguration) {
+	code, out, stderr := execute("history", "test_login", "--repo", resultTestRepo, "--org", inspectionOrg)
+	if code != 1 || out != "" || requests != 1 || !strings.Contains(stderr, "Several recorded tests match") || !strings.Contains(stderr, "avr tests history "+otherTestID+" --configuration "+historyConfiguration+" --repo "+resultTestRepo+" --org "+inspectionOrg) {
 		t.Fatal(code, requests, out, stderr)
 	}
 }
@@ -188,7 +188,7 @@ func TestTestsHistoryByIDSkipsResolutionAndReportsNoMatch(t *testing.T) {
 	if code != 0 || requests != 1 || !strings.Contains(out, "No recorded runs for this test and configuration.") {
 		t.Fatal(code, requests, out, stderr)
 	}
-	if code, _, stderr := execute("history", "absent", "--repo", resultTestRepo); code != 1 || !strings.Contains(stderr, "No recorded test matches") {
+	if code, _, stderr := execute("history", "absent", "--repo", resultTestRepo); code != 1 || !strings.Contains(stderr, "Not every recorded report was searched") {
 		t.Fatal(code, stderr)
 	}
 }
@@ -287,6 +287,78 @@ func TestTestsHistoryReadsTheWholeSearchBeforeChoosing(t *testing.T) {
 	}
 }
 
+func TestTestsHistoryNameSelectionRequiresCompleteReportsForFallback(t *testing.T) {
+	for _, coverage := range []struct {
+		name       string
+		scope      string
+		incomplete bool
+	}{
+		{"complete", `{"complete":true,"reports_indexing":0,"reports_unavailable":0}`, false},
+		{"older reports omitted", `{"complete":false,"reports_indexing":0,"reports_unavailable":0}`, true},
+		{"indexing", `{"complete":true,"reports_indexing":1,"reports_unavailable":0}`, true},
+		{"unavailable", `{"complete":true,"reports_indexing":0,"reports_unavailable":1}`, true},
+	} {
+		for _, match := range []string{"exact", "substring", "absent"} {
+			for _, jsonOutput := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/%s/json=%t", coverage.name, match, jsonOutput), func(t *testing.T) {
+					var rows []string
+					if match != "absent" {
+						name := "test_login"
+						if match == "substring" {
+							name += "_expired"
+						}
+						rows = append(rows, discoveredTest(historyTestID, "tests.auth", name, "passed"))
+					}
+					var page map[string]json.RawMessage
+					if err := json.Unmarshal([]byte(discoveryPage(`{"query":"test_login"}`, "null", rows...)), &page); err != nil {
+						t.Fatal(err)
+					}
+					page["scope"] = json.RawMessage(coverage.scope)
+					body, err := json.Marshal(page)
+					if err != nil {
+						t.Fatal(err)
+					}
+					args := []string{"history", "test_login", "--repo", resultTestRepo, "--org", inspectionOrg}
+					if jsonOutput {
+						args = append(args, "--json", "data")
+					}
+					read := ""
+					code, out, stderr := historyAfterResolution(t, &read, string(body))(args...)
+					if match == "exact" || (match == "substring" && !coverage.incomplete) {
+						if code != 0 || read != historyTestID || out == "" {
+							t.Fatal(code, read, out, stderr)
+						}
+						return
+					}
+					if code != 1 || read != "" || out != "" {
+						t.Fatal(code, read, out, stderr)
+					}
+					want := "No recorded test matches"
+					if coverage.incomplete {
+						want = "Not every recorded report was searched"
+						if strings.Contains(stderr, "No recorded test matches") {
+							t.Fatal(stderr)
+						}
+					}
+					if !strings.Contains(stderr, want) {
+						t.Fatalf("missing %q in: %s", want, stderr)
+					}
+					want = "avr tests search test_login --repo " + resultTestRepo + " --org " + inspectionOrg + " -L 1000 --json data"
+					if !strings.Contains(stderr, want) {
+						t.Fatalf("missing %q in: %s", want, stderr)
+					}
+					if coverage.incomplete && match == "substring" {
+						want = "avr tests history " + historyTestID + " --configuration " + historyConfiguration + " --repo " + resultTestRepo + " --org " + inspectionOrg
+						if !strings.Contains(stderr, want) {
+							t.Fatalf("missing %q in: %s", want, stderr)
+						}
+					}
+				})
+			}
+		}
+	}
+}
+
 func TestTestsHistoryNeverPicksFromAnUnfinishedSearch(t *testing.T) {
 	filters := `{"query":"test_login"}`
 	exact := discoveredTest(historyTestID, "tests.auth", "test_login", "failed")
@@ -296,22 +368,32 @@ func TestTestsHistoryNeverPicksFromAnUnfinishedSearch(t *testing.T) {
 		pages []string
 		want  string
 	}{
-		{"truncated walk", []string{truncated}, "avr tests history " + historyTestID + " --configuration " + historyConfiguration},
+		{"truncated walk", []string{truncated}, "avr tests history " + historyTestID + " --configuration " + historyConfiguration + " --repo " + resultTestRepo + " --org " + inspectionOrg},
 		{"later page limited", []string{discoveryPage(filters, `"next"`, exact), limitedPage("limited")}, testListingMessage("limited")},
 		{"later page unavailable", []string{discoveryPage(filters, `"next"`, exact), limitedPage("unavailable")}, testListingMessage("unavailable")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			read := ""
-			code, out, stderr := historyAfterResolution(t, &read, tc.pages...)("history", "test_login", "--repo", resultTestRepo)
+			code, out, stderr := historyAfterResolution(t, &read, tc.pages...)("history", "test_login", "--repo", resultTestRepo, "--org", inspectionOrg)
 			if code != 1 || out != "" || read != "" || strings.Contains(stderr, "Several") {
 				t.Fatal(code, read, out, stderr)
 			}
-			for _, want := range []string{"may be beyond what was searched", "avr tests search test_login --json data", tc.want} {
+			for _, want := range []string{"may be beyond what was searched", "avr tests search test_login --repo " + resultTestRepo + " --org " + inspectionOrg + " -L 1000 --json data", tc.want} {
 				if !strings.Contains(stderr, want) {
 					t.Errorf("missing %q in:\n%s", want, stderr)
 				}
 			}
 		})
+	}
+}
+
+func TestTestsHistorySearchHintQuotesName(t *testing.T) {
+	read := ""
+	page := discoveryPage(`{"query":"login's test"}`, "null")
+	code, out, stderr := historyAfterResolution(t, &read, page)("history", "login's test", "--repo", resultTestRepo)
+	want := "avr tests search 'login'\"'\"'s test' --repo " + resultTestRepo + " -L 1000 --json data"
+	if code != 1 || out != "" || read != "" || !strings.Contains(stderr, want) || strings.Contains(stderr, "--org") {
+		t.Fatal(code, read, out, stderr)
 	}
 }
 

@@ -31,6 +31,7 @@ avr tests history [OPTIONS] TEST
 TEST is a test name. An exact name is preferred over tests that only
 contain it. When several recorded tests match, the command lists them
 with the test ID and configuration to pass instead; it never picks one.
+If some reports were not searched, only an exact name can be selected.
 
 Each row is one report: how often the test passed, failed, errored or
 was skipped in it, the mean recorded duration and the job that ran it.

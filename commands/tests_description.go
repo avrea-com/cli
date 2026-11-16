@@ -91,6 +91,7 @@ func testsDescription(path string) docgen.Description {
 				"TEST is a test name. An exact name is preferred over tests that only\n" +
 				"contain it. When several recorded tests match, the command lists them\n" +
 				"with the test ID and configuration to pass instead; it never picks one.\n" +
+				"If some reports were not searched, only an exact name can be selected.\n" +
 				"\n" +
 				"Each row is one report: how often the test passed, failed, errored or\n" +
 				"was skipped in it, the mean recorded duration and the job that ran it.\n" +

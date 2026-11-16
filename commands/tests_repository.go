@@ -290,9 +290,11 @@ func newTestsSearch(d Dependencies) *cobra.Command {
 
 // selectHistoryTest finds the one recorded test a name refers to. An exact
 // name wins over tests that only contain it, so the whole search walk is read
-// first; a walk that stops early never picks a test.
-func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Config, path, name string) (map[string]any, error) {
-	beyond := "The search for " + pythonQuote(name) + " stopped before reading every test that contains it, so a test with exactly this name may be beyond what was searched. Pass a test ID and its configuration; find them with:\n  avr tests search " + shellQuotePython(name) + " --json data"
+// first; a walk that stops early never picks a test. Substring fallback also
+// requires complete report coverage so an omitted exact match cannot lose.
+func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Config, path, name, scopeFlags string) (map[string]any, error) {
+	find := "Pass a test ID and its configuration; find them with:\n  avr tests search " + shellQuotePython(name) + scopeFlags + " -L " + strconv.Itoa(testSearchWalk) + " --json data"
+	beyond := "The search for " + pythonQuote(name) + " stopped before reading every test that contains it, so a test with exactly this name may be beyond what was searched. " + find
 	page, err := searchRepositoryTests(ctx, api, cfg, path, name, "", nil, testSearchWalk, nil)
 	var stopped *testListingStopped
 	if errors.As(err, &stopped) {
@@ -322,7 +324,7 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 	choices := func(rows []map[string]any) string {
 		lines := []string{}
 		for _, row := range rows[:min(len(rows), 10)] {
-			lines = append(lines, fmt.Sprintf("  %s.%s\n    avr tests history %s --configuration %s", testText(row["class_name"]), testText(row["name"]), row["test_id"], row["configuration_digest"]))
+			lines = append(lines, fmt.Sprintf("  %s.%s\n    avr tests history %s --configuration %s%s", testText(row["class_name"]), testText(row["name"]), row["test_id"], row["configuration_digest"], scopeFlags))
 		}
 		if len(rows) > 10 {
 			lines = append(lines, "More tests match than are listed; use a more specific name.")
@@ -338,13 +340,21 @@ func selectHistoryTest(ctx context.Context, api *client.Client, cfg config.Confi
 	}
 	matches := exact
 	if len(matches) == 0 {
+		scope, _ := page["scope"].(map[string]any)
+		if scope["complete"] == false || testCount(scope["reports_indexing"]) > 0 || testCount(scope["reports_unavailable"]) > 0 {
+			message := "Error: Not every recorded report was searched; a test with exactly this name may be in an unsearched report. " + find
+			if len(contained) > 0 {
+				message += "\nTests containing this name found so far:\n" + choices(contained)
+			}
+			return nil, &ExitError{1, message}
+		}
 		matches = contained
 	}
 	switch len(matches) {
 	case 0:
 		message := repositoryTestMessage(page["status"])
 		if message == "" {
-			message = "No recorded test matches " + pythonQuote(name) + ". Find tests with avr tests search."
+			message = "No recorded test matches " + pythonQuote(name) + ". " + find
 		}
 		return nil, &ExitError{1, "Error: " + message}
 	case 1:
@@ -438,9 +448,16 @@ func newTestsHistory(d Dependencies) *cobra.Command {
 			return err
 		}
 		path := "/orgs/" + organization + "/repos/" + repository + "/tests"
+		scope := ""
+		if cmd.Flags().Changed("repo") {
+			scope += " --repo " + shellQuotePython(repo)
+		}
+		if cmd.Flags().Changed("org") {
+			scope += " --org " + shellQuotePython(org)
+		}
 		var identity any
 		if !byID {
-			row, err := selectHistoryTest(cmd.Context(), api, cfg, path, target)
+			row, err := selectHistoryTest(cmd.Context(), api, cfg, path, target, scope)
 			if err != nil {
 				return err
 			}
@@ -468,13 +485,6 @@ func newTestsHistory(d Dependencies) *cobra.Command {
 			return err
 		}
 		if next, ok := pagination["next_cursor"].(string); ok {
-			scope := ""
-			if cmd.Flags().Changed("repo") {
-				scope += " --repo " + shellQuotePython(repo)
-			}
-			if cmd.Flags().Changed("org") {
-				scope += " --org " + shellQuotePython(org)
-			}
 			_, err = fmt.Fprintf(d.Err, "Older runs available. Continue with: avr tests history %s --configuration %s%s --cursor %s\n", target, configuration, scope, shellQuotePython(testText(next)))
 		}
 		return err
