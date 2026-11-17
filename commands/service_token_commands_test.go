@@ -835,9 +835,22 @@ func TestServiceTokenListAtMaximumLimitAdvisesFilters(t *testing.T) {
 		}
 		return manageReply{200, nil, manageJSON(t, map[string]any{"data": rows, "pagination": map[string]any{"next_cursor": "after-" + r.query.Get("cursor")}})}
 	})
-	code := h.run(t, "service-token", "list", "-L", "1000", "--json", "id")
-	if message := h.stderr.String(); code != 0 || !strings.Contains(message, "Narrow the list with --group or --status") || strings.Contains(message, "Raise --limit") {
-		t.Fatal(code, message)
+	// Only a filter not yet applied can narrow the list.
+	for _, tc := range []struct {
+		filters []string
+		advice  string
+	}{
+		{nil, "Narrow the list with --group or --status to see the rest."},
+		{[]string{"--group", manageGroupID}, "Narrow the list with --status to see the rest."},
+		{[]string{"--status", "revoked"}, "Narrow the list with --group to see the rest."},
+		{[]string{"--group", manageGroupID, "--status", "revoked"}, "The CLI shows at most 1000 service tokens for these filters."},
+	} {
+		h.out.Reset()
+		h.stderr.Reset()
+		code := h.run(t, append([]string{"service-token", "list", "-L", "1000", "--json", "id"}, tc.filters...)...)
+		if message := h.stderr.String(); code != 0 || !strings.Contains(message, "Showing the first 1000 service tokens. "+tc.advice+"\n") || strings.Contains(message, "Raise --limit") {
+			t.Fatal(tc.filters, code, message)
+		}
 	}
 }
 

@@ -382,7 +382,17 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 		if more {
 			advice := "Raise --limit to see the rest."
 			if limit == 1000 {
-				advice = "Narrow the list with --group or --status to see the rest."
+				// The CLI has no cursor option, so only an unused filter helps.
+				var unset []string
+				for _, name := range []string{"group", "status"} {
+					if !cmd.Flags().Changed(name) {
+						unset = append(unset, "--"+name)
+					}
+				}
+				advice = "The CLI shows at most 1000 service tokens for these filters."
+				if len(unset) > 0 {
+					advice = "Narrow the list with " + strings.Join(unset, " or ") + " to see the rest."
+				}
 			}
 			_, err = fmt.Fprintf(d.Err, "\nShowing the first %d service tokens. %s\n", len(rows), advice)
 		}
