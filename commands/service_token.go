@@ -153,7 +153,7 @@ func serviceTokenReauthentication(cfg config.Config, he *client.HTTPError, actio
 		detail = ": " + output.CellText(he.Detail)
 	}
 	message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
-		"\n  Hint: creating or rotating a service token, and changing its access, need a recent sign-in. Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
+		"\n  Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
 	if cfg.Host != config.DefaultHost {
 		message += "\n  API: " + cfg.Host + he.Path
 	}

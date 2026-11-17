@@ -386,7 +386,7 @@ func TestServiceTokenCreateRefusals(t *testing.T) {
 		want, avoid []string
 	}{
 		{"recent sign-in", manageReply{403, http.Header{"X-Reauthentication-Required": {"recent-login"}}, `{"detail":"API key was created more than 1 hours ago"}`}, 4,
-			[]string{"needs a recent sign-in to create a service token (HTTP 403): API key was created", "changing its access, need a recent sign-in", "avr auth login", "If AVR_TOKEN is set, unset it first"}, []string{"avr org list"}},
+			[]string{"needs a recent sign-in to create a service token (HTTP 403): API key was created", "Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first"}, []string{"avr org list", "need a recent sign-in"}},
 		{"plain 403 is not a sign-in refusal", manageReply{403, nil, `{"detail":"grants[1] names an object you cannot reach at that level"}`}, 1,
 			[]string{"You don't have access to create a service token", "grants[N] counts from 0", "--firewall-rule values"}, []string{"recent sign-in"}},
 		{"grant validation", manageReply{422, nil, `{"detail":[{"type":"target_not_found","loc":["body","grants",1],"msg":"target not found"}]}`}, 1,
