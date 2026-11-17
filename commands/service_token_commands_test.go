@@ -689,13 +689,15 @@ func TestServiceTokenRotateSaysWhatElseChanged(t *testing.T) {
 	overlapping := manageRecord(map[string]any{"previous_valid_until": "2026-11-16T12:00:00Z"})
 	ended := manageRecord(map[string]any{"previous_valid_until": "2026-11-15T12:00:00Z"})
 	const expiry, overlap = "did not expire before; its new secret expires at 2026-12-16T10:00:00.00Z", "earlier rotation was still in its overlap"
+	// Following the advice at once would end the overlap the rotation opened.
+	const cost = "switch consumers to the new secret first, then rotate with --never-expires: rotating before the overlap ends retires the previous secret at once"
 	for _, tc := range []struct {
 		name        string
 		current     map[string]any
 		args        []string
 		want, avoid []string
 	}{
-		{"never-expiring token gets the default lifetime", never, nil, []string{expiry, "--never-expires"}, []string{overlap}},
+		{"never-expiring token gets the default lifetime", never, nil, []string{expiry, cost}, []string{overlap}},
 		{"lifetime was chosen", never, []string{"--ttl", "30d"}, nil, []string{"did not expire before"}},
 		{"stays never-expiring", never, []string{"--never-expires"}, nil, []string{"did not expire before"}},
 		{"earlier overlap still open", overlapping, nil, []string{overlap}, []string{"did not expire before"}},
@@ -710,9 +712,21 @@ func TestServiceTokenRotateSaysWhatElseChanged(t *testing.T) {
 				t.Fatal(code, h.stderr)
 			}
 			message := h.stderr.String()
+			// stdout holds exactly the selected record and no notice.
+			decoder := json.NewDecoder(bytes.NewReader(h.out.Bytes()))
+			var document map[string]any
+			if err := decoder.Decode(&document); err != nil || manageJSON(t, document) != manageJSON(t, map[string]any{"token": manageSecret}) {
+				t.Fatalf("stdout is not the record: %v %q", err, h.out)
+			}
+			if _, err := decoder.Token(); err != io.EOF {
+				t.Fatalf("stdout has more than one JSON value: %q", h.out)
+			}
 			for _, want := range tc.want {
 				if !strings.Contains(message, want) {
 					t.Errorf("missing %q in %q", want, message)
+				}
+				if strings.Contains(h.out.String(), want) {
+					t.Errorf("notice %q on stdout: %q", want, h.out)
 				}
 			}
 			for _, avoid := range tc.avoid {
@@ -721,6 +735,42 @@ func TestServiceTokenRotateSaysWhatElseChanged(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The notices are advice: when stderr fails, the rotation has still committed
+// and the new secret must reach stdout.
+func TestServiceTokenRotateNoticesDoNotBlockTheSecret(t *testing.T) {
+	never := manageRecord(map[string]any{"expires_at": nil})
+	overlapping := manageRecord(map[string]any{"previous_valid_until": "2026-11-16T12:00:00Z"})
+	for _, current := range []map[string]any{never, overlapping} {
+		for _, format := range [][]string{nil, {"--json", "token"}} {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
+			h.d.Err = tokenBrokenWriter{}
+			code := h.run(t, append([]string{"service-token", "rotate", manageTokenID}, format...)...)
+			if code != 0 || strings.Count(h.out.String(), manageSecret) != 1 || !slices.Contains(h.operations(), "POST "+manageBase+"/"+manageTokenID+"/rotate") {
+				t.Fatal(current["expires_at"], format, code, h.out)
+			}
+		}
+	}
+}
+
+// The notices go to stderr, so stderr decides whether they are colored.
+func TestServiceTokenRotateNoticesColorFollowsStderr(t *testing.T) {
+	never := manageRecord(map[string]any{"expires_at": nil, "previous_valid_until": "2026-11-16T12:00:00Z"})
+	for _, stderrTerminal := range []bool{false, true} {
+		h := newManageHarness(t, managePersonal, manageRoutes(t, never))
+		h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
+		h.d.IsTerminal = func() bool { return !stderrTerminal }
+		h.d.IsErrorTerminal = func() bool { return stderrTerminal }
+		if code := h.run(t, "service-token", "rotate", manageTokenID); code != 0 {
+			t.Fatal(code, h.stderr)
+		}
+		message := h.stderr.String()
+		if strings.Count(message, "\x1b[33m! ") != map[bool]int{false: 0, true: 2}[stderrTerminal] || !strings.Contains(message, "did not expire before") || !strings.Contains(message, "earlier rotation") {
+			t.Fatalf("stderr terminal %v: %q", stderrTerminal, message)
+		}
 	}
 }
 

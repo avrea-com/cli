@@ -610,16 +610,13 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 			return &ExitError{1, "Error: The API reported success without a secret. " + unknown}
 		}
 		// What the rotation changed beyond the secret, from the token as it
-		// was read. Written to stderr so --json output stays the record.
+		// was read. Written to stderr so --json output stays the record, and
+		// best-effort: a failed notice must not keep the secret from stdout.
 		if current["expires_at"] == nil && !l.never && !f.Changed("ttl") {
-			if _, err = fmt.Fprintln(d.Err, d.paint("! This token did not expire before; its new secret expires at "+formatTimestamp(fieldText(record, "expires_at"))+". Rotate with --never-expires to keep a token from expiring.", "33")); err != nil {
-				return err
-			}
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint("! This token did not expire before; its new secret expires at "+formatTimestamp(fieldText(record, "expires_at"))+". To keep it from expiring, switch consumers to the new secret first, then rotate with --never-expires: rotating before the overlap ends retires the previous secret at once.", "33"))
 		}
 		if timestampAfter(fieldText(current, "previous_valid_until"), d.Now()) {
-			if _, err = fmt.Fprintln(d.Err, d.paint("! An earlier rotation was still in its overlap: the secret it replaced stopped working now.", "33")); err != nil {
-				return err
-			}
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint("! An earlier rotation was still in its overlap: the secret it replaced stopped working now.", "33"))
 		}
 		return deliverOneTimeCredential(cmd.Context(), d, oneTimeCredential{
 			record: record, credential: credential, hasJSON: f.Changed("json"), fields: fields, expression: o.expression,
