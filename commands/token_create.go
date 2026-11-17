@@ -357,7 +357,7 @@ func deliverOneTimeCredential(ctx context.Context, d Dependencies, c oneTimeCred
 		// start recovery, which would print the secret a second time, but the
 		// caller still learns that the change happened.
 		if ctx.Err() != nil {
-			return &ExitError{130, "Interrupted. " + c.outcome + " and its output on stdout is complete; do not run the command again." + c.recovery}
+			return &ExitError{130, "Interrupted. " + c.outcome + " and its output on stdout is complete; if that output was saved, do not run the command again." + c.recovery}
 		}
 		return nil
 	}

@@ -647,9 +647,9 @@ func TestServiceTokenSecretIsNotRepeatedAfterLateCancellation(t *testing.T) {
 		outcome string
 	}{
 		{[]string{"service-token", "create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA, "--json", "token"},
-			"The service token was created and its output on stdout is complete; do not run the command again. To discard it, run \x60avr service-token revoke " + manageTokenID + " --org " + inspectionOrg + "\x60."},
+			"The service token was created and its output on stdout is complete; if that output was saved, do not run the command again. To discard it, run \x60avr service-token revoke " + manageTokenID + " --org " + inspectionOrg + "\x60."},
 		{[]string{"service-token", "rotate", manageTokenID, "--json", "token"},
-			"The service token was rotated and its output on stdout is complete; do not run the command again. If the new secret was not saved, check \x60avr service-token view " + manageTokenID},
+			"The service token was rotated and its output on stdout is complete; if that output was saved, do not run the command again. If the new secret was not saved, check \x60avr service-token view " + manageTokenID + " --org " + inspectionOrg + "\x60 and rotate again. Rotating again retires the previous secret at once."},
 	} {
 		h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
 		ctx, cancel := context.WithCancel(t.Context())
