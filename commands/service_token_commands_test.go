@@ -938,22 +938,23 @@ func TestServiceTokenRotateDoesNotAskForATokenThatIsNotLive(t *testing.T) {
 	}
 }
 
-// The API refuses with this 503 before it writes, so a retry is safe.
+// The API refuses with this 503 before it writes, so a retry is safe. It
+// sends no Retry-After with it (control/avrea/api/authz.py).
 func TestServiceTokenDelegationNotReadyWroteNothing(t *testing.T) {
 	for _, tc := range []struct {
 		args       []string
 		want, kept string
 	}{
-		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA}, "No service token was created. Retry in 30s.", "may have been created"},
-		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, "The token's access was not changed. Retry in 30s.", "may have been replaced"},
-		{[]string{"rotate", manageTokenID}, "The token was not rotated. Retry in 30s.", "may have been rotated"},
+		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA}, "No service token was created. Retry shortly.", "may have been created"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, "The token's access was not changed. Retry shortly.", "may have been replaced"},
+		{[]string{"rotate", manageTokenID}, "The token was not rotated. Retry shortly.", "may have been rotated"},
 	} {
 		routes := manageRoutes(t, manageRecord(nil))
 		h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
 			if r.method == "GET" {
 				return routes(r)
 			}
-			return manageReply{503, http.Header{"Retry-After": {"30"}}, `{"detail":"Delegation authorization is not ready"}`}
+			return manageReply{503, nil, `{"detail":"Delegation authorization is not ready"}`}
 		})
 		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
 		if message := h.stderr.String(); code != 1 || !strings.Contains(message, tc.want) || strings.Contains(message, tc.kept) {
@@ -967,6 +968,19 @@ func TestServiceTokenDelegationNotReadyWroteNothing(t *testing.T) {
 // listing tokens is the wrong advice.
 func TestServiceTokenWriteNotFoundFollowsTheRead(t *testing.T) {
 	disabled := manageRecord(map[string]any{"blocked_by": "feature_disabled"})
+	// widens reports whether the PUT grants anything the token lacks.
+	widens := func(current, body map[string]any) bool {
+		held := map[string]bool{}
+		for _, grant := range objectList(current["grants"]) {
+			held[manageJSON(t, grant)] = true
+		}
+		for _, grant := range objectList(body["grants"]) {
+			if !held[manageJSON(t, grant)] {
+				return true
+			}
+		}
+		return false
+	}
 	for _, tc := range []struct {
 		args    []string
 		current map[string]any
@@ -974,14 +988,19 @@ func TestServiceTokenWriteNotFoundFollowsTheRead(t *testing.T) {
 		avoid   string
 	}{
 		{[]string{"rotate", manageTokenID}, disabled, []string{"Service tokens are not available for this change", "narrowing a token's access and revoking it still work", "support@avrea.com"}, "service-token list"},
-		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, disabled, []string{"Service tokens are not available for this change", "support@avrea.com"}, "service-token list"},
+		// The API checks availability only for added access, so the
+		// selection adds manageRepoB to the manageRepoA the token holds.
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--repo", manageRepoB}, disabled, []string{"Service tokens are not available for this change", "support@avrea.com"}, "service-token list"},
 		{[]string{"rotate", manageTokenID}, manageRecord(nil), []string{"avr service-token list --org " + inspectionOrg}, "not available for this change"},
-		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, manageRecord(nil), []string{"avr service-token list --org " + inspectionOrg}, "not available for this change"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--repo", manageRepoB}, manageRecord(nil), []string{"avr service-token list --org " + inspectionOrg}, "not available for this change"},
 	} {
 		routes := manageRoutes(t, tc.current)
 		h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
 			if r.method == "GET" {
 				return routes(r)
+			}
+			if r.method == "PUT" && !widens(tc.current, r.body) {
+				t.Errorf("%v: the selection %v adds nothing to %v", tc.args, r.body["grants"], tc.current["grants"])
 			}
 			return manageReply{404, nil, `{"detail":"Not found"}`}
 		})
