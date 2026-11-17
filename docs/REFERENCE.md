@@ -2236,9 +2236,10 @@ avr service-token set-access [OPTIONS] TOKEN_ID
 The grants given here replace everything the token reaches: a grant you
 leave out is removed, so repeat the ones to keep. The command reads the
 token first and the change fails if the token changes in between. A
-grant that widens its access must be within your own access now, and
-any change needs a recent sign-in. The change applies to the token's
-next request.
+grant that widens its access must be within your own access now. The
+API may ask for a recent sign-in; the command then exits 4 and says to
+run `avr auth login` again. The change applies to the token's next
+request.
 
 ```sh
 Examples:
