@@ -493,7 +493,7 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		return deliverOneTimeCredential(cmd.Context(), d, oneTimeCredential{
 			record: record, credential: credential, hasJSON: f.Changed("json"), fields: fields, expression: o.expression,
 			intro:    "The secret is shown only once. Store it now, for example as a CI secret, and set it as AVR_TOKEN where the token is used:",
-			exports:  [][2]string{{"AVR_TOKEN", credential}},
+			exports:  [][2]string{{"AVR_TOKEN", credential}, {"AVR_ORG", id}},
 			summary:  func() error { return renderServiceToken(d, record) },
 			outcome:  "The service token was created",
 			recovery: serviceTokenDiscardHint(record, id),
@@ -652,7 +652,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 		return deliverOneTimeCredential(cmd.Context(), d, oneTimeCredential{
 			record: record, credential: credential, hasJSON: f.Changed("json"), fields: fields, expression: o.expression,
 			intro:   "The new secret is shown only once. Store it now and set it as AVR_TOKEN wherever the token is used:",
-			exports: [][2]string{{"AVR_TOKEN", credential}},
+			exports: [][2]string{{"AVR_TOKEN", credential}, {"AVR_ORG", id}},
 			summary: func() error {
 				previous := "The previous secret no longer works."
 				if until := fieldText(record, "previous_valid_until"); until != "" {
@@ -818,7 +818,7 @@ func renderServiceToken(d Dependencies, row map[string]any) error {
 		{"Organization", fieldText(row, "organization_id")}, {"Group", fieldText(row, "group_id")},
 		{"Status", status}, {"Created", optional("created_at", "unknown")},
 		{"Created by", cmp.Or(fieldText(row, "created_by"), "-")}, {"Expires", serviceTokenExpiry(row)},
-		{"Rotated", optional("rotated_at", "unknown")}, {"Old secret until", optional("previous_valid_until", "-")},
+		{"Secret issued", optional("rotated_at", "unknown")}, {"Old secret until", optional("previous_valid_until", "-")},
 		{"Last used", optional("last_used_at", "never")},
 		{"Versions", "rotation " + cmp.Or(pythonValue(row["rotation_version"]), "-") + ", grants " + cmp.Or(pythonValue(row["grants_version"]), "-")},
 	}

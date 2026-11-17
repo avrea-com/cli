@@ -240,7 +240,10 @@ func TestServiceTokenViewTextAndJSON(t *testing.T) {
 		t.Fatal(code, h.stderr)
 	}
 	text := strings.Join(strings.Fields(h.out.String()), " ")
-	for _, want := range []string{"Token ID " + manageTokenID, "Group " + manageGroupID, "Status live", "Versions rotation 3, grants 7", "Old secret until 2026-11-02T10:00:00.00Z", "firewall rule | every firewall rule", "repository | " + manageRepoA} {
+	if strings.Contains(text, "Rotated") {
+		t.Errorf("a token's issue time is not a rotation:\n%s", text)
+	}
+	for _, want := range []string{"Token ID " + manageTokenID, "Group " + manageGroupID, "Status live", "Secret issued 2026-11-01T10:00:00.00Z", "Versions rotation 3, grants 7", "Old secret until 2026-11-02T10:00:00.00Z", "firewall rule | every firewall rule", "repository | " + manageRepoA} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q in\n%s", want, text)
 		}
@@ -318,7 +321,7 @@ func TestServiceTokenCreatePrintsSecretOnce(t *testing.T) {
 		t.Fatal(code, h.stderr)
 	}
 	text := h.out.String()
-	if strings.Count(text, manageSecret) != 1 || !strings.Contains(text, "export AVR_TOKEN="+manageSecret) || !strings.Contains(text, "shown only once") || strings.Contains(text, "AVR_ORG") || !strings.Contains(text, manageGroupID) || strings.Contains(h.stderr.String(), manageSecret) {
+	if strings.Count(text, manageSecret) != 1 || !strings.Contains(text, "export AVR_TOKEN="+manageSecret) || !strings.Contains(text, "shown only once") || !strings.Contains(text, manageGroupID) || strings.Contains(h.stderr.String(), manageSecret) {
 		t.Fatal(text, h.stderr)
 	}
 	for _, fields := range []string{"token", "*", "id,token"} {
@@ -994,6 +997,23 @@ func TestServiceTokenSetAccessLostResponseMayHaveCommitted(t *testing.T) {
 		want := map[bool]int{false: 1, true: 130}[cancelled]
 		if code != want || !strings.Contains(message, "The response to the access change was not received. The access may have been replaced; check \x60avr service-token view "+manageTokenID+" --org "+inspectionOrg+"\x60 before retrying.") || h.out.Len() != 0 {
 			t.Fatal(cancelled, code, message)
+		}
+	}
+}
+
+// A service token refuses an AVR_ORG slug, so the printed setup exports the
+// resolved organization ID next to the secret, even when --org was a slug.
+func TestServiceTokenSecretSetupExportsOrganizationID(t *testing.T) {
+	for _, args := range [][]string{
+		{"create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA, "--org", "acme"},
+		{"rotate", manageTokenID, "--org", "acme"},
+	} {
+		h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
+		if code := h.run(t, append([]string{"service-token"}, args...)...); code != 0 {
+			t.Fatal(args, code, h.stderr)
+		}
+		if text := h.out.String(); !strings.Contains(text, "  export AVR_TOKEN="+manageSecret+"\n  export AVR_ORG="+inspectionOrg+"\n") {
+			t.Fatal(args, text)
 		}
 	}
 }
