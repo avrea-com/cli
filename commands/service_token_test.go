@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/avrea-com/cli/config"
 	"github.com/spf13/cobra"
@@ -170,11 +171,14 @@ func TestServiceTokenAuthStatusText(t *testing.T) {
 		{"full", serviceTokenSelf, []string{"Credential    service token", "Name          ci reader", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         grp-019a0000000070008000000000000003", "Expires       2026-12-16T10:00:00.00Z", "Grants        1 repo, all firewall rules", "Host          " + serviceTokenHost, "Token         avt_****"}, []string{"expires soon", "avr auth login", "avr config set org"}},
 		{"expiring soon", expiring, []string{"Expires       2026-12-16T10:00:00.00Z", "expires soon", "rotate"}, nil},
 		{"rotation overlap", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","expiring_soon"`, 1), []string{"replaced secret stops working at 2026-11-17T10:00:00.00Z"}, nil},
+		// The field stays set once the overlap has ended.
+		{"rotation overlap ended", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-15T10:00:00Z","expiring_soon"`, 1), nil, []string{"replaced secret", "was rotated"}},
 		{"never expires", never, []string{"Expires       never"}, []string{"expires soon"}},
 		{"old API", serviceTokenSelfOld, []string{"Name          -", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         -", "Expires       -", "Grants        -"}, []string{"expires soon"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newServiceTokenHarness(t, "", serviceTokenRoutes(tc.self))
+			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
 			if code := h.run(t, "auth", "status"); code != 0 {
 				t.Fatal(code, h.stderr)
 			}

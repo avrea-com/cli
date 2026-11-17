@@ -125,6 +125,31 @@ func TestServiceTokenGroupResolvesNameOrPath(t *testing.T) {
 	}
 }
 
+func TestServiceTokenGroupMatchingRules(t *testing.T) {
+	nested := "grp-" + "019a0000000070008000000000000027"
+	deleted := groupRecord("grp-"+"019a0000000070008000000000000028", groupAcme, "Tools")
+	deleted["soft_deleted_at"] = "2026-11-02T10:00:00Z"
+	rows := append(groupTree(), groupRecord(nested, groupData, "Acme"), groupRecord(groupTools+"x", groupData, "Tools"), deleted)
+	for _, tc := range []struct{ name, value, want string }{
+		// No longer path names the root, so its whole path wins over
+		// Acme/Data/Acme, which only ends with the name.
+		{"whole path over suffix", "Acme", groupAcme},
+		{"case does not matter", "platform/ci", groupPlatCI},
+		// Without the deleted Acme/Tools this name has one match.
+		{"deleted groups are left out", "Tools", groupTools + "x"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, groupPages(t, rows))
+			if code := h.run(t, "service-token", "create", "--name", "ci", "--group", tc.value, "--repo", manageRepoA); code != 0 {
+				t.Fatal(code, h.stderr)
+			}
+			if got := h.requests[len(h.requests)-1].body["group_id"]; got != tc.want {
+				t.Fatalf("group_id %v, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestServiceTokenGroupNoMatch(t *testing.T) {
 	for _, args := range [][]string{
 		{"service-token", "create", "--name", "ci", "--group", "Platform/Nope", "--repo", manageRepoA},

@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/avrea-com/cli/config"
 )
@@ -381,7 +382,7 @@ func TestServiceTokenCreateRefusals(t *testing.T) {
 		want, avoid []string
 	}{
 		{"recent sign-in", manageReply{403, http.Header{"X-Reauthentication-Required": {"recent-login"}}, `{"detail":"API key was created more than 1 hours ago"}`}, 4,
-			[]string{"needs a recent sign-in to create a service token (HTTP 403): API key was created", "widening its access, need a recent sign-in", "avr auth login", "If AVR_TOKEN is set, unset it first"}, []string{"avr org list"}},
+			[]string{"needs a recent sign-in to create a service token (HTTP 403): API key was created", "changing its access, need a recent sign-in", "avr auth login", "If AVR_TOKEN is set, unset it first"}, []string{"avr org list"}},
 		{"plain 403 is not a sign-in refusal", manageReply{403, nil, `{"detail":"grants[1] names an object you cannot reach at that level"}`}, 1,
 			[]string{"You don't have access to create a service token", "grants[N] counts from 0", "--firewall-rule values"}, []string{"recent sign-in"}},
 		{"grant validation", manageReply{422, nil, `{"detail":[{"type":"target_not_found","loc":["body","grants",1],"msg":"target not found"}]}`}, 1,
@@ -392,6 +393,9 @@ func TestServiceTokenCreateRefusals(t *testing.T) {
 			[]string{"maximum number of live service tokens"}, []string{"changed after", "Retry"}},
 		{"nothing written", manageReply{503, http.Header{"Retry-After": {"60"}}, `{"detail":"Service tokens are not yet available in every service revision"}`}, 1,
 			[]string{"No service token was created. Retry in 60s."}, []string{"may have been created"}},
+		// Only the API's own reasons say that nothing was written.
+		{"503 from elsewhere", manageReply{503, nil, `{"detail":"upstream connect error"}`}, 1,
+			[]string{"may have been created"}, []string{"No service token was created"}},
 		{"unknown outcome", manageReply{502, nil, `{}`}, 1,
 			[]string{"may have been created", "avr service-token list --org " + inspectionOrg}, nil},
 	} {
@@ -680,13 +684,102 @@ func TestServiceTokenNotFoundHintsNameTheOrganization(t *testing.T) {
 	}
 }
 
+func TestServiceTokenRotateSaysWhatElseChanged(t *testing.T) {
+	never := manageRecord(map[string]any{"expires_at": nil})
+	overlapping := manageRecord(map[string]any{"previous_valid_until": "2026-11-16T12:00:00Z"})
+	ended := manageRecord(map[string]any{"previous_valid_until": "2026-11-15T12:00:00Z"})
+	const expiry, overlap = "did not expire before; its new secret expires at 2026-12-16T10:00:00.00Z", "earlier rotation was still in its overlap"
+	for _, tc := range []struct {
+		name        string
+		current     map[string]any
+		args        []string
+		want, avoid []string
+	}{
+		{"never-expiring token gets the default lifetime", never, nil, []string{expiry, "--never-expires"}, []string{overlap}},
+		{"lifetime was chosen", never, []string{"--ttl", "30d"}, nil, []string{"did not expire before"}},
+		{"stays never-expiring", never, []string{"--never-expires"}, nil, []string{"did not expire before"}},
+		{"earlier overlap still open", overlapping, nil, []string{overlap}, []string{"did not expire before"}},
+		{"earlier overlap ended", ended, nil, nil, []string{overlap}},
+		{"nothing else changed", manageRecord(nil), nil, nil, []string{"did not expire before", overlap}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, tc.current))
+			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
+			// With --json the notices must not join the record on stdout.
+			if code := h.run(t, append([]string{"service-token", "rotate", manageTokenID, "--json", "token"}, tc.args...)...); code != 0 {
+				t.Fatal(code, h.stderr)
+			}
+			message := h.stderr.String()
+			for _, want := range tc.want {
+				if !strings.Contains(message, want) {
+					t.Errorf("missing %q in %q", want, message)
+				}
+			}
+			for _, avoid := range tc.avoid {
+				if strings.Contains(message+h.out.String(), avoid) {
+					t.Errorf("unexpected %q in %q", avoid, message+h.out.String())
+				}
+			}
+		})
+	}
+}
+
+func TestServiceTokenGrantLimitCountsDistinctGrants(t *testing.T) {
+	args := []string{"service-token", "create", "--name", "ci", "--group", manageGroupID}
+	for range 60 {
+		args = append(args, "--repo", "acme/web", "--firewall-rule", manageRuleA)
+	}
+	h := newManageHarness(t, managePersonal, manageRoutes(t, nil))
+	if code := h.run(t, args...); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	// 120 flags name two grants, and the repository resolves once.
+	resolves := 0
+	for _, operation := range h.operations() {
+		if strings.HasSuffix(operation, "/repos/resolve") {
+			resolves++
+		}
+	}
+	grants, _ := h.requests[len(h.requests)-1].body["grants"].([]any)
+	if resolves != 1 || len(grants) != 2 {
+		t.Fatal(resolves, grants)
+	}
+}
+
+func TestServiceTokenGrantOrderHintOnlyWhereGrantsAreSent(t *testing.T) {
+	refused := func(manageRequest) manageReply {
+		return manageReply{403, nil, `{"detail":"grants[1] names an object you cannot reach at that level"}`}
+	}
+	h := newManageHarness(t, managePersonal, refused)
+	if code := h.run(t, "service-token", "view", manageTokenID); code != 1 || strings.Contains(h.stderr.String(), "grants[N] counts from 0") {
+		t.Fatal(code, h.stderr)
+	}
+	// A refusal that only mentions grants elsewhere names no grant.
+	h = newManageHarness(t, managePersonal, func(manageRequest) manageReply {
+		return manageReply{403, nil, `{"detail":"You cannot change the grants of this token"}`}
+	})
+	if code := h.run(t, "service-token", "create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA); code != 1 || strings.Contains(h.stderr.String(), "grants[N] counts from 0") {
+		t.Fatal(code, h.stderr)
+	}
+}
+
+func TestServiceTokenListStopsAtACursorThatRepeats(t *testing.T) {
+	h := newManageHarness(t, managePersonal, func(manageRequest) manageReply {
+		return manageReply{200, nil, manageJSON(t, map[string]any{"data": []any{manageRecord(nil)}, "pagination": map[string]any{"next_cursor": "same"}})}
+	})
+	code := h.run(t, "service-token", "list", "--json", "id")
+	if message := h.stderr.String(); code != 1 || len(h.requests) != 2 || h.out.Len() != 0 || !strings.Contains(message, "cursor that does not advance") {
+		t.Fatal(code, len(h.requests), message)
+	}
+}
+
 func TestServiceTokenListAtMaximumLimitAdvisesFilters(t *testing.T) {
 	h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
 		rows := make([]map[string]any, 200)
 		for i := range rows {
 			rows[i] = manageRecord(nil)
 		}
-		return manageReply{200, nil, manageJSON(t, map[string]any{"data": rows, "pagination": map[string]any{"next_cursor": "more"}})}
+		return manageReply{200, nil, manageJSON(t, map[string]any{"data": rows, "pagination": map[string]any{"next_cursor": "after-" + r.query.Get("cursor")}})}
 	})
 	code := h.run(t, "service-token", "list", "-L", "1000", "--json", "id")
 	if message := h.stderr.String(); code != 0 || !strings.Contains(message, "Narrow the list with --group or --status") || strings.Contains(message, "Raise --limit") {

@@ -144,8 +144,9 @@ func serviceTokenDescription(path string) docgen.Description {
 				"The grants given here replace everything the token reaches: a grant you\n" +
 				"leave out is removed, so repeat the ones to keep. The command reads the\n" +
 				"token first and the change fails if the token changes in between. A\n" +
-				"grant that widens its access must be within your own access now and\n" +
-				"needs a recent sign-in. The change applies to the token's next request.\n" +
+				"grant that widens its access must be within your own access now, and\n" +
+				"any change needs a recent sign-in. The change applies to the token's\n" +
+				"next request.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +

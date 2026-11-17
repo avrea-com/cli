@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -75,10 +76,44 @@ func serviceTokensPath(org string) string { return "/orgs/" + url.PathEscape(org
 // serviceTokenRefusal names the hints a refused request gets beyond apiError's.
 type serviceTokenRefusal struct {
 	action    string // completes "You don't have access to ..."
+	grants    bool   // the request carried grants, so a refusal may name one
 	notFound  string // 404
 	stale     string // 409 without Retry-After
-	unchanged string // 503 with the API's reason: nothing was written
+	unchanged string // 503 the API answers before it writes
 	unknown   string // another 5xx: the write may have happened
+}
+
+// serviceTokenUnwritten holds the 503 reasons the service-token routes give
+// before any write (control/avrea/api/routers/service_tokens.py). The API
+// sends no error code, so any other 503, such as one from a proxy after the
+// write committed, is treated as an unknown outcome.
+var serviceTokenUnwritten = []string{
+	"Service tokens are not yet available in every service revision",
+	"Repository permissions are temporarily unavailable",
+}
+
+// refusalNamesGrant reports whether the API's answer points at one grant: a
+// validation error located in grants, or a refusal that starts with grants[N].
+func refusalNamesGrant(he *client.HTTPError) bool {
+	if strings.HasPrefix(he.Detail, "grants[") {
+		return true
+	}
+	details, _ := he.Payload["detail"].([]any)
+	for _, detail := range details {
+		entry, _ := detail.(map[string]any)
+		loc, _ := entry["loc"].([]any)
+		if len(loc) > 1 && loc[1] == "grants" {
+			return true
+		}
+	}
+	return false
+}
+
+// timestampAfter reports whether an API timestamp lies after now; an absent
+// or unreadable one does not.
+func timestampAfter(value string, now time.Time) bool {
+	t, err := time.Parse(time.RFC3339Nano, value)
+	return err == nil && t.After(now)
 }
 
 func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) error {
@@ -93,7 +128,7 @@ func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) erro
 	hint := ""
 	switch {
 	case he.Status == 401:
-	case (he.Status == 403 || he.Status == 422) && strings.Contains(pythonValue(he.Payload), "grants"):
+	case r.grants && (he.Status == 403 || he.Status == 422) && refusalNamesGrant(he):
 		hint = serviceTokenGrantOrderHint
 	case he.Status == 404:
 		hint = r.notFound
@@ -101,7 +136,7 @@ func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) erro
 		hint = tokenRetryAfter(he)
 	case he.Status == 409:
 		hint = r.stale
-	case he.Status == 503 && he.Detail != "" && r.unchanged != "":
+	case he.Status == 503 && r.unchanged != "" && slices.Contains(serviceTokenUnwritten, he.Detail):
 		hint = r.unchanged + " " + tokenRetryAfter(he)
 	case he.Status >= 500:
 		hint = r.unknown
@@ -117,7 +152,7 @@ func serviceTokenReauthentication(cfg config.Config, he *client.HTTPError, actio
 		detail = ": " + output.CellText(he.Detail)
 	}
 	message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
-		"\n  Hint: creating or rotating a service token, and widening its access, need a recent sign-in. Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
+		"\n  Hint: creating or rotating a service token, and changing its access, need a recent sign-in. Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
 	if cfg.Host != config.DefaultHost {
 		message += "\n  API: " + cfg.Host + he.Path
 	}
@@ -161,6 +196,9 @@ func (g serviceTokenGrantOptions) validate() ([]string, []string, error) {
 			return nil, nil, &ExitError{2, fmt.Sprintf("Error: Invalid --firewall-rule value %s: expected a rule ID, efr- followed by 32 lowercase hexadecimal characters.", pythonQuote(output.CellText(spec)))}
 		}
 	}
+	// Repeats are one grant, so they neither count toward the limit nor
+	// resolve twice.
+	repos, rules = distinct(repos), distinct(rules)
 	count := len(repos) + len(rules)
 	if g.allRules {
 		count++
@@ -171,19 +209,26 @@ func (g serviceTokenGrantOptions) validate() ([]string, []string, error) {
 	return repos, rules, nil
 }
 
-// build resolves the repositories and returns the grants in the order the
-// grant-order hint describes, without repeats.
+// distinct keeps the first of each repeated value, in order.
+func distinct(values []string) []string {
+	seen := map[string]bool{}
+	return slices.DeleteFunc(slices.Clone(values), func(value string) bool {
+		repeated := seen[value]
+		seen[value] = true
+		return repeated
+	})
+}
+
+// build resolves the repositories validate returned and gives the grants in
+// the order the grant-order hint describes. Two names of one repository
+// still become one grant.
 func (g serviceTokenGrantOptions) build(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, repos, rules []string) ([]map[string]any, error) {
 	grants, err := repositoryReadGrants(ctx, d, cfg, api, org, repos)
 	if err != nil {
 		return nil, err
 	}
-	seen := map[string]bool{}
 	for _, rule := range rules {
-		if !seen[rule] {
-			grants = append(grants, map[string]any{"resource_type": "egress_firewall_rule", "resource_id": rule, "access_level": "read"})
-			seen[rule] = true
-		}
+		grants = append(grants, map[string]any{"resource_type": "egress_firewall_rule", "resource_id": rule, "access_level": "read"})
 	}
 	if g.allRules {
 		// An explicit null resource_id grants every rule of the organization.
@@ -296,10 +341,8 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 			}
 			base.Set("group_id", "eq."+group)
 		}
-		rows := []map[string]any{}
-		cursor := ""
-		for {
-			query := url.Values{"limit": {strconv.Itoa(min(limit-len(rows), 200))}}
+		rows, more, err := walkPages("service token", limit, func(cursor string, wanted int) (client.Page, error) {
+			query := url.Values{"limit": {strconv.Itoa(min(wanted, 200))}}
 			for key, values := range base {
 				query[key] = values
 			}
@@ -308,17 +351,12 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 			}
 			page, e := api.AccessTokens(cmd.Context(), serviceTokensPath(id), query)
 			if e != nil {
-				return serviceTokenError(cfg, e, serviceTokenRefusal{action: "list service tokens"})
+				return page, serviceTokenError(cfg, e, serviceTokenRefusal{action: "list service tokens"})
 			}
-			rows = append(rows, rawRecords(page)...)
-			cursor = page.NextCursor
-			if cursor == "" || len(page.Items) == 0 || len(rows) >= limit {
-				break
-			}
-		}
-		more := cursor != "" || len(rows) > limit
-		if len(rows) > limit {
-			rows = rows[:limit]
+			return page, nil
+		})
+		if err != nil {
+			return err
 		}
 		if cmd.Flags().Changed("json") {
 			err = o.list(cmd, d, rows, serviceTokenFields)
@@ -426,6 +464,7 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 			if errors.As(err, &he) {
 				return serviceTokenError(cfg, he, serviceTokenRefusal{
 					action:    "create a service token",
+					grants:    true,
 					notFound:  "Check the organization and API host. If service tokens are unavailable for this organization, contact support@avrea.com.",
 					unchanged: "No service token was created.",
 					unknown:   unknown,
@@ -472,6 +511,8 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		// Repositories resolve before the token is read, so the version the
+		// write echoes is as fresh as it can be.
 		grants, err := g.build(cmd.Context(), d, cfg, api, id, repos, rules)
 		if err != nil {
 			return err
@@ -488,6 +529,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err != nil {
 			return serviceTokenError(cfg, err, serviceTokenRefusal{
 				action:    "replace the service token's access",
+				grants:    true,
 				notFound:  serviceTokenListHint(id),
 				stale:     serviceTokenWriteStale(current, serviceTokenStaleHint),
 				unchanged: "The token's access was not changed.",
@@ -566,6 +608,18 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 		credential, ok := record["token"].(string)
 		if !ok || credential == "" {
 			return &ExitError{1, "Error: The API reported success without a secret. " + unknown}
+		}
+		// What the rotation changed beyond the secret, from the token as it
+		// was read. Written to stderr so --json output stays the record.
+		if current["expires_at"] == nil && !l.never && !f.Changed("ttl") {
+			if _, err = fmt.Fprintln(d.Err, d.paint("! This token did not expire before; its new secret expires at "+formatTimestamp(fieldText(record, "expires_at"))+". Rotate with --never-expires to keep a token from expiring.", "33")); err != nil {
+				return err
+			}
+		}
+		if timestampAfter(fieldText(current, "previous_valid_until"), d.Now()) {
+			if _, err = fmt.Fprintln(d.Err, d.paint("! An earlier rotation was still in its overlap: the secret it replaced stopped working now.", "33")); err != nil {
+				return err
+			}
 		}
 		return deliverOneTimeCredential(cmd.Context(), d, oneTimeCredential{
 			record: record, credential: credential, hasJSON: f.Changed("json"), fields: fields, expression: o.expression,

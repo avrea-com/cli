@@ -149,7 +149,9 @@ func newStatus(d Dependencies) *cobra.Command {
 			if result["expiring_soon"] == true {
 				b.WriteString(d.paint("  ! This service token expires soon: an organization admin can rotate it with \x60avr service-token rotate\x60; then update AVR_TOKEN.", "33") + "\n")
 			}
-			if until := fieldText(result, "previous_valid_until"); until != "" {
+			// The field stays set after the overlap ends; by then the replaced
+			// secret is already refused and the advice no longer applies.
+			if until := fieldText(result, "previous_valid_until"); timestampAfter(until, d.Now()) {
 				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
 			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")

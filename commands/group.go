@@ -46,27 +46,49 @@ func groupError(cfg config.Config, err error) error {
 	return &ExitError{1, message}
 }
 
-// listGroups reads every group of the organization.
-func listGroups(ctx context.Context, cfg config.Config, api *client.Client, org string) ([]map[string]any, error) {
-	rows := []map[string]any{}
+// walkPages follows a listing's cursors until it ends or holds limit rows; a
+// limit of 0 reads everything. fetch reads the page at a cursor, given how
+// many rows are still wanted. more reports rows beyond the limit. A cursor
+// that repeats, or arrives with an empty page, ends the walk with an error:
+// following it would loop or list the same rows again.
+func walkPages(noun string, limit int, fetch func(cursor string, wanted int) (client.Page, error)) (rows []map[string]any, more bool, err error) {
+	rows = []map[string]any{}
 	seen := map[string]bool{}
-	query := url.Values{"limit": {strconv.Itoa(groupPageLimit)}}
+	cursor := ""
 	for {
-		page, err := api.Groups(ctx, org, query)
+		page, err := fetch(cursor, limit-len(rows))
 		if err != nil {
-			return nil, groupError(cfg, err)
+			return nil, false, err
 		}
 		rows = append(rows, page.Items...)
-		cursor := page.NextCursor
+		cursor = page.NextCursor
+		if limit > 0 && len(rows) >= limit {
+			return rows[:limit], cursor != "" || len(rows) > limit, nil
+		}
 		if cursor == "" {
-			return rows, nil
+			return rows, false, nil
 		}
 		if len(page.Items) == 0 || seen[cursor] {
-			return nil, errors.New("group listing returned a cursor that does not advance")
+			return nil, false, errors.New(noun + " listing returned a cursor that does not advance")
 		}
 		seen[cursor] = true
-		query.Set("cursor", cursor)
 	}
+}
+
+// listGroups reads every group of the organization.
+func listGroups(ctx context.Context, cfg config.Config, api *client.Client, org string) ([]map[string]any, error) {
+	rows, _, err := walkPages("group", 0, func(cursor string, _ int) (client.Page, error) {
+		query := url.Values{"limit": {strconv.Itoa(groupPageLimit)}}
+		if cursor != "" {
+			query.Set("cursor", cursor)
+		}
+		page, err := api.Groups(ctx, org, query)
+		if err != nil {
+			return page, groupError(cfg, err)
+		}
+		return page, nil
+	})
+	return rows, err
 }
 
 // groupPaths returns each row's display names from the root down. The walk
@@ -101,7 +123,10 @@ func checkGroupOption(value string) error {
 }
 
 // resolveGroup returns the ID of the group value names. A group ID is used as
-// is; any other value must equal exactly one group's path or end it after a /.
+// is. Any other value names the one group whose whole path it is, or else the
+// one group whose path ends with it after a /. Names compare without case, as
+// the API keeps sibling names unique that way, and deleted groups are left
+// out: they cannot own a token and would only make a name ambiguous.
 func resolveGroup(ctx context.Context, cfg config.Config, api *client.Client, org, value string) (string, error) {
 	if serviceTokenGroupPattern().MatchString(value) {
 		return value, nil
@@ -111,12 +136,26 @@ func resolveGroup(ctx context.Context, cfg config.Config, api *client.Client, or
 		return "", err
 	}
 	type match struct{ path, id string }
-	var matches []match
+	var whole, matches []match
+	wanted := strings.ToLower(value)
 	for i, names := range groupPaths(rows) {
-		path := strings.Join(names, "/")
-		if path == value || strings.HasSuffix(path, "/"+value) {
-			matches = append(matches, match{path, fieldText(rows[i], "group_id")})
+		if rows[i]["soft_deleted_at"] != nil {
+			continue
 		}
+		path := strings.Join(names, "/")
+		found := match{path, fieldText(rows[i], "group_id")}
+		switch folded := strings.ToLower(path); {
+		case folded == wanted:
+			whole = append(whole, found)
+			matches = append(matches, found)
+		case strings.HasSuffix(folded, "/"+wanted):
+			matches = append(matches, found)
+		}
+	}
+	// A whole path cannot be made longer, so it wins over paths that end
+	// with the same names.
+	if len(whole) == 1 {
+		return whole[0].id, nil
 	}
 	quoted := pythonQuote(output.CellText(value))
 	switch len(matches) {
