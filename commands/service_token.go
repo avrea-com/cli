@@ -546,6 +546,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 
 func newServiceTokenRotate(d Dependencies) *cobra.Command {
 	var org, overlap string
+	var yes bool
 	var l serviceTokenLifetime
 	var o jsonOptions
 	c := &cobra.Command{Use: "rotate TOKEN_ID", Short: "Issue a service token a new secret and print it once.", Args: tokenIDArgs}
@@ -553,6 +554,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 	f.StringVar(&org, "org", "", "Organization ID or slug.")
 	l.flags(c)
 	f.StringVar(&overlap, "overlap", "", "How long the old secret keeps working: 1h to 7d (default 24h).")
+	f.BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		body := map[string]any{}
@@ -583,6 +585,17 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 			return err
 		}
 		body["expected_rotation_version"] = version
+		// Rotating inside an earlier overlap retires the secret that rotation
+		// replaced, which consumers may still use. Only an interactive run is
+		// asked, so scripts keep working; the prompt goes to stderr to keep
+		// stdout for the secret.
+		if until := fieldText(current, "previous_valid_until"); !yes && d.IsInputTerminal() && timestampAfter(until, d.Now()) {
+			prompting := d
+			prompting.Out = d.Err
+			if err = confirmMutation(cmd.Context(), prompting, "rotating would retire the secret an earlier rotation replaced", "An earlier rotation of service token "+args[0]+" is still in its overlap until "+formatTimestamp(until)+". Rotating now retires the secret it replaced at once. Rotate?"); err != nil {
+				return err
+			}
+		}
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}

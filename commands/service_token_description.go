@@ -164,7 +164,8 @@ func serviceTokenDescription(path string) docgen.Description {
 				"The new secret gets its own lifetime. The old secret keeps working for\n" +
 				"the overlap, never past the expiry of either secret, so pipelines can\n" +
 				"switch without a gap. Rotating again inside the overlap retires the old\n" +
-				"secret at once. Rotating needs a recent sign-in.\n" +
+				"secret at once; run from a terminal, the command asks first unless --yes\n" +
+				"is given. Rotating needs a recent sign-in.\n" +
 				"\n" +
 				serviceTokenSecretJSONHelp +
 				"\n" +
@@ -182,7 +183,7 @@ func serviceTokenDescription(path string) docgen.Description {
 			Usage:          []string{"[OPTIONS]", "TOKEN_ID"},
 			Parameters: append(append(append([]docgen.Parameter{serviceTokenIDParameter()}, serviceTokenLifetimeParameters()...),
 				docgen.Parameter{Param: docgen.Param{Name: "overlap", Kind: "option", Opts: []string{"--overlap"}, Type: "text", Nargs: 1, Help: descriptionText("How long the old secret keeps working: e.g. 2h, 3d, or a number of seconds. 1 hour to 7 days; the server default is 24 hours.")}, CompletionKind: "String"},
-				serviceTokenOrgParameter()), serviceTokenJSONParameters()...),
+				serviceTokenOrgParameter(), serviceTokenYesParameter()), serviceTokenJSONParameters()...),
 		}
 	case "avr service-token revoke":
 		return docgen.Description{

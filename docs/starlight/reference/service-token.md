@@ -170,7 +170,8 @@ avr service-token rotate [OPTIONS] TOKEN_ID
 The new secret gets its own lifetime. The old secret keeps working for
 the overlap, never past the expiry of either secret, so pipelines can
 switch without a gap. Rotating again inside the overlap retires the old
-secret at once. Rotating needs a recent sign-in.
+secret at once; run from a terminal, the command asks first unless --yes
+is given. Rotating needs a recent sign-in.
 
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
@@ -202,6 +203,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;never-expires</code> — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
 - <code class="cli-flag">&#x2D;&#x2D;overlap</code> <code class="cli-value">&lt;TEXT&gt;</code> — How long the old secret keeps working: e.g. 2h, 3d, or a number of seconds. 1 hour to 7 days; the server default is 24 hours.
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 

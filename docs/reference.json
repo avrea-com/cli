@@ -13648,7 +13648,7 @@
             "full": "avr service-token rotate",
             "is_group": false,
             "short_help": "Issue a service token a new secret and print it once.",
-            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once. Rotating needs a recent sign-in.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once; run from a terminal, the command asks first unless --yes\nis given. Rotating needs a recent sign-in.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13740,6 +13740,25 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip the confirmation prompt.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

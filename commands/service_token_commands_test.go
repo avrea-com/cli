@@ -836,3 +836,56 @@ func TestServiceTokenListAtMaximumLimitAdvisesFilters(t *testing.T) {
 		t.Fatal(code, message)
 	}
 }
+
+// A rotation inside an earlier overlap retires the secret that rotation
+// replaced, so an interactive run asks first; scripts are not asked.
+func TestServiceTokenRotateConfirmsEndingAnOpenOverlap(t *testing.T) {
+	overlapping := manageRecord(map[string]any{"previous_valid_until": "2026-11-16T12:00:00Z"})
+	ended := manageRecord(map[string]any{"previous_valid_until": "2026-11-15T12:00:00Z"})
+	const question = "still in its overlap until 2026-11-16T12:00:00.00Z. Rotating now retires the secret it replaced at once. Rotate? [y/N]"
+	for _, tc := range []struct {
+		name, input       string
+		current           map[string]any
+		terminal          bool
+		args              []string
+		env               map[string]string
+		prompted, rotated bool
+	}{
+		{"declined", "n\n", overlapping, true, nil, nil, true, false},
+		{"no answer", "", overlapping, true, nil, nil, true, false},
+		{"accepted", "y\n", overlapping, true, nil, nil, true, true},
+		{"--yes", "", overlapping, true, []string{"--yes"}, nil, false, true},
+		{"-y with --json", "", overlapping, true, []string{"-y", "--json", "token"}, nil, false, true},
+		{"not a terminal", "", overlapping, false, nil, nil, false, true},
+		{"overlap ended", "", ended, true, nil, nil, false, true},
+		{"no earlier overlap", "", manageRecord(nil), true, nil, nil, false, true},
+		{"prompts disabled", "y\n", overlapping, true, nil, map[string]string{"AVR_PROMPT_DISABLED": "1"}, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, tc.current))
+			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
+			h.d.In = strings.NewReader(tc.input)
+			h.d.IsInputTerminal = func() bool { return tc.terminal }
+			h.d.Getenv = func(key string) string { return tc.env[key] }
+			code := h.run(t, append([]string{"service-token", "rotate", manageTokenID}, tc.args...)...)
+			message := h.stderr.String()
+			// The question goes to stderr so stdout stays the secret.
+			if strings.Contains(message, question) != tc.prompted || strings.Contains(h.out.String(), "Rotate?") {
+				t.Fatalf("prompted: stdout %q stderr %q", h.out, message)
+			}
+			rotated := slices.Contains(h.operations(), "POST "+manageBase+"/"+manageTokenID+"/rotate")
+			if rotated != tc.rotated {
+				t.Fatal(h.operations(), message)
+			}
+			if tc.rotated {
+				if code != 0 || strings.Count(h.out.String(), manageSecret) != 1 {
+					t.Fatal(code, h.out, message)
+				}
+				return
+			}
+			if code != 1 || h.out.Len() != 0 || !strings.Contains(message, "Abort") {
+				t.Fatal(code, h.out, message)
+			}
+		})
+	}
+}
