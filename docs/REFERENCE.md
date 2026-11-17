@@ -2043,11 +2043,14 @@ working when you leave the organization. It needs at least one grant;
 every grant is a read and must be within your own access now. The
 secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
-Creating a service token needs a recent sign-in.
+The API may ask for a recent sign-in; the command then exits 4 and says
+to run `avr auth login` again.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
-such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
-group name like CI, works when it selects only one group.
+such as Acme/Platform/CI. Names compare without case. A value equal to
+one group's whole path selects that group; otherwise the end of a path,
+such as Platform/CI or a group name like CI, must select exactly one
+group.
 
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
@@ -2095,8 +2098,10 @@ last. A live token whose requests are refused all the same, for example
 while its group is suspended, shows as blocked with the reason.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
-such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
-group name like CI, works when it selects only one group.
+such as Acme/Platform/CI. Names compare without case. A value equal to
+one group's whole path selects that group; otherwise the end of a path,
+such as Platform/CI or a group name like CI, must select exactly one
+group.
 
 ```sh
 Examples:
@@ -2183,7 +2188,8 @@ The new secret gets its own lifetime. The old secret keeps working for
 the overlap, never past the expiry of either secret, so pipelines can
 switch without a gap. Rotating again inside the overlap retires the old
 secret at once; run from a terminal, the command asks first unless --yes
-is given. Rotating needs a recent sign-in.
+is given. The API may ask for a recent sign-in; the command then exits 4
+and says to run `avr auth login` again.
 
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the

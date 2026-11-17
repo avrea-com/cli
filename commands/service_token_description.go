@@ -10,8 +10,10 @@ const serviceTokenJSONFields = "    blocked_by, created_at, created_by, expires_
 
 // groupOptionHelp states how --group selects a group.
 const groupOptionHelp = "--group takes a group ID or a group's path as `avr group list` shows it,\n" +
-	"such as Acme/Platform/CI. The end of a path, such as Platform/CI or a\n" +
-	"group name like CI, works when it selects only one group.\n"
+	"such as Acme/Platform/CI. Names compare without case. A value equal to\n" +
+	"one group's whole path selects that group; otherwise the end of a path,\n" +
+	"such as Platform/CI or a group name like CI, must select exactly one\n" +
+	"group.\n"
 
 // serviceTokenSecretJSONHelp states the --json contract of the commands that
 // return a secret once.
@@ -65,7 +67,8 @@ func serviceTokenDescription(path string) docgen.Description {
 				"every grant is a read and must be within your own access now. The\n" +
 				"secret is shown once and cannot be retrieved later: store it, for\n" +
 				"example as a CI secret, and set it as AVR_TOKEN where the token is used.\n" +
-				"Creating a service token needs a recent sign-in.\n" +
+				"The API may ask for a recent sign-in; the command then exits 4 and says\n" +
+				"to run `avr auth login` again.\n" +
 				"\n" +
 				groupOptionHelp +
 				"\n" +
@@ -165,7 +168,8 @@ func serviceTokenDescription(path string) docgen.Description {
 				"the overlap, never past the expiry of either secret, so pipelines can\n" +
 				"switch without a gap. Rotating again inside the overlap retires the old\n" +
 				"secret at once; run from a terminal, the command asks first unless --yes\n" +
-				"is given. Rotating needs a recent sign-in.\n" +
+				"is given. The API may ask for a recent sign-in; the command then exits 4\n" +
+				"and says to run `avr auth login` again.\n" +
 				"\n" +
 				serviceTokenSecretJSONHelp +
 				"\n" +
