@@ -9,11 +9,13 @@ List the organization's service tokens, soonest expiry first.
 .PP
 Lists live, expired and revoked tokens; tokens that never expire come last. A live token whose requests are refused all the same, for example while its group is suspended, shows as blocked with the reason.
 .PP
+--group takes a group ID or a group's path as `avr group list` shows it, such as Acme/Platform/CI. The end of a path, such as Platform/CI or a group name like CI, works when it selects only one group.
+.PP
 .RS 4
 .nf
 Examples:
     avr service-token list
-    avr service-token list --status live --group <group-id>
+    avr service-token list --status live --group Platform/CI
     avr service-token list --json id,name,expires_at
 .fi
 .RE
@@ -33,7 +35,7 @@ JSON FIELDS
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-group\fR \fITEXT\fR
-Only the tokens this group owns, by group ID (grp-xxx).
+Only the tokens this group owns, by group name, path or ID (grp-xxx).
 .TP
 \fB\-\-status\fR \fICHOICE\fR
 Only tokens with this status. (choices: live, expired, revoked)

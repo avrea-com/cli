@@ -21,6 +21,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ## Aliases
 
+- `groups` → `group`
 - `jobs` → `job`
 - `logs` → `log`
 - `orgs` → `org`
@@ -52,6 +53,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr auth`](#avr-auth) — Authenticate and manage credentials.
 - [`avr token`](#avr-token) — Create and manage scoped access tokens.
 - [`avr service-token`](#avr-service-token) — Create and manage the organization's service tokens.
+- [`avr group`](#avr-group) — View the organization's groups.
 - [`avr config`](#avr-config) — View and manage CLI configuration.
 - [`avr settings`](#avr-settings) — View and toggle cache and runner settings.
 - [`avr firewall`](#avr-firewall) — Manage the egress firewall rule list for orgs and repositories.
@@ -2043,6 +2045,10 @@ secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
 Creating a service token needs a recent sign-in.
 
+--group takes a group ID or a group's path as `avr group list` shows it,
+such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
+group name like CI, works when it selects only one group.
+
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
@@ -2050,8 +2056,8 @@ nonzero, so the secret is not lost.
 
 ```sh
 Examples:
-    avr service-token create --name ci --group <group-id> --repo acme/api
-    avr service-token create --name egress --group <group-id> --all-firewall-rules --ttl 7d
+    avr service-token create --name ci --group Platform/CI --repo acme/api
+    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
     avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 ```
 
@@ -2066,7 +2072,7 @@ JSON FIELDS
 **Options**
 
 - `--name <TEXT>` — Token name (1-100 characters). _(required)_
-- `--group <TEXT>` — ID of the group that owns the token (grp-xxx). _(required)_
+- `--group <TEXT>` — The group that owns the token: its name, path or ID (grp-xxx). _(required)_
 - `--repo <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--firewall-rule <TEXT>` — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - `--all-firewall-rules` — Grant read access to every egress firewall rule, including rules added later.
@@ -2088,10 +2094,14 @@ Lists live, expired and revoked tokens; tokens that never expire come
 last. A live token whose requests are refused all the same, for example
 while its group is suspended, shows as blocked with the reason.
 
+--group takes a group ID or a group's path as `avr group list` shows it,
+such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
+group name like CI, works when it selects only one group.
+
 ```sh
 Examples:
     avr service-token list
-    avr service-token list --status live --group <group-id>
+    avr service-token list --status live --group Platform/CI
     avr service-token list --json id,name,expires_at
 ```
 
@@ -2106,7 +2116,7 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--group <TEXT>` — Only the tokens this group owns, by group ID (grp-xxx).
+- `--group <TEXT>` — Only the tokens this group owns, by group name, path or ID (grp-xxx).
 - `--status <CHOICE>` — Only tokens with this status. _(choices: `live`, `expired`, `revoked`)_
 - `-L, --limit <INTEGER RANGE>` — Max tokens to return. _(default: `50`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -2271,6 +2281,50 @@ JSON FIELDS
 **Options**
 
 - `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr group`
+
+View the organization's groups.
+
+```sh
+avr group [OPTIONS] COMMAND [ARGS]...
+```
+
+Each service token belongs to one of these groups. Organization members
+list them while signed in with `avr auth login`; a scoped or service
+token cannot.
+
+#### `avr group list`
+
+List the organization's groups by path.
+
+```sh
+avr group list [OPTIONS]
+```
+
+A group's path is the display names from the root group down, joined
+with /, such as Acme/Platform/CI; a parent is listed before its
+children. Pass a group's ID or path to --group when you create or list
+service tokens.
+
+```sh
+Examples:
+    avr group list
+    avr group list --json group_id,path --jq '.[].path'
+```
+
+```sh
+JSON FIELDS
+    created_at, display_name, group_id, label, member_count, ownership,
+    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+```
+
+**Options**
+
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-L, --limit <INTEGER RANGE>` — Max groups to return. _(default: `50`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

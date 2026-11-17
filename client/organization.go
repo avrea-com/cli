@@ -21,6 +21,13 @@ func (c *Client) OrganizationMembers(ctx context.Context, org string) (Page, err
 	}
 	return decodePage(body)
 }
+func (c *Client) Groups(ctx context.Context, org string, query url.Values) (Page, error) {
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/groups", query)
+	if err != nil {
+		return Page{}, err
+	}
+	return decodePage(body)
+}
 func (c *Client) EmailDomains(ctx context.Context, path string) (Page, error) {
 	body, err := c.Get(ctx, path, nil)
 	if err != nil {

@@ -454,7 +454,8 @@ If `avr token create` returns a 404, check the API's reason, the organization an
 A service token (`avt_...`) belongs to a group in one organization rather than to a person, and keeps working when its creator leaves. An organization admin manages it while signed in with `avr auth login`:
 
 ```sh
-avr service-token create --name ci --group <group-id> --repo acme/api --ttl 30d  # prints the secret once
+avr group list                                                                   # the groups and paths --group accepts
+avr service-token create --name ci --group Platform/CI --repo acme/api --ttl 30d  # prints the secret once
 avr service-token list --status live
 avr service-token view <token-id>
 avr service-token set-access <token-id> --repo acme/api --all-firewall-rules    # replaces the whole selection

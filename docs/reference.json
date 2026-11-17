@@ -80,6 +80,7 @@
     }
   ],
   "aliases": {
+    "groups": "group",
     "jobs": "job",
     "logs": "log",
     "orgs": "org",
@@ -13183,7 +13184,7 @@
             "full": "avr service-token create",
             "is_group": false,
             "short_help": "Create a service token and print its secret once.",
-            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant;\nevery grant is a read and must be within your own access now. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nCreating a service token needs a recent sign-in.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api\n    avr service-token create --name egress --group \u003cgroup-id\u003e --all-firewall-rules --ttl 7d\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant;\nevery grant is a read and must be within your own access now. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nCreating a service token needs a recent sign-in.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. The end of a path, such as Platform/CI or a\ngroup name like CI, works when it selects only one group.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group Platform/CI --repo acme/api\n    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13220,7 +13221,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "ID of the group that owns the token (grp-xxx).",
+                "help": "The group that owns the token: its name, path or ID (grp-xxx).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13383,7 +13384,7 @@
             "full": "avr service-token list",
             "is_group": false,
             "short_help": "List the organization's service tokens, soonest expiry first.",
-            "help": "List the organization's service tokens, soonest expiry first.\n\nLists live, expired and revoked tokens; tokens that never expire come\nlast. A live token whose requests are refused all the same, for example\nwhile its group is suspended, shows as blocked with the reason.\n\n\b\nExamples:\n    avr service-token list\n    avr service-token list --status live --group \u003cgroup-id\u003e\n    avr service-token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status\n",
+            "help": "List the organization's service tokens, soonest expiry first.\n\nLists live, expired and revoked tokens; tokens that never expire come\nlast. A live token whose requests are refused all the same, for example\nwhile its group is suspended, shows as blocked with the reason.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. The end of a path, such as Platform/CI or a\ngroup name like CI, works when it selects only one group.\n\n\b\nExamples:\n    avr service-token list\n    avr service-token list --status live --group Platform/CI\n    avr service-token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13420,7 +13421,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Only the tokens this group owns, by group ID (grp-xxx).",
+                "help": "Only the tokens this group owns, by group name, path or ID (grp-xxx).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -13943,6 +13944,117 @@
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "group",
+        "path": [
+          "avr",
+          "group"
+        ],
+        "full": "avr group",
+        "is_group": true,
+        "short_help": "View the organization's groups.",
+        "help": "View the organization's groups.\n\nEach service token belongs to one of these groups. Organization members\nlist them while signed in with `avr auth login`; a scoped or service\ntoken cannot.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr group [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "group",
+              "list"
+            ],
+            "full": "avr group list",
+            "is_group": false,
+            "short_help": "List the organization's groups by path.",
+            "help": "List the organization's groups by path.\n\nA group's path is the display names from the root group down, joined\nwith /, such as Acme/Platform/CI; a parent is listed before its\nchildren. Pass a group's ID or path to --group when you create or list\nservice tokens.\n\n\b\nExamples:\n    avr group list\n    avr group list --json group_id,path --jq '.[].path'\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, label, member_count, ownership,\n    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max groups to return.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
               },
               {
                 "name": "json_fields",

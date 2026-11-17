@@ -26,6 +26,7 @@ func rootDescription(path string) docgen.Description {
 				{Name: "cache", Description: "Inspect and manage the Avrea build cache.", Section: descriptionText("Core Commands")},
 				{Name: "config", Description: "View and manage CLI configuration.", Section: descriptionText("Setup & Config")},
 				{Name: "firewall", Description: "Manage the egress firewall rule list for orgs and repositories.", Section: descriptionText("Setup & Config")},
+				{Name: "group", Description: "View the organization's groups.", Section: descriptionText("Setup & Config")},
 				{Name: "health", Description: "Check Avrea platform status.", Section: descriptionText("Additional Commands")},
 				{Name: "job", Description: "Inspect Avrea job VMs (SSH, metrics, logs).", Section: descriptionText("Core Commands")},
 				{Name: "log", Description: "Search across runner execution logs.", Section: descriptionText("Core Commands")},

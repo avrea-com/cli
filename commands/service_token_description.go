@@ -8,6 +8,11 @@ const serviceTokenJSONFields = "    blocked_by, created_at, created_by, expires_
 	"    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n" +
 	"    rotation_version, status"
 
+// groupOptionHelp states how --group selects a group.
+const groupOptionHelp = "--group takes a group ID or a group's path as `avr group list` shows it,\n" +
+	"such as Acme/Platform/CI. The end of a path, such as Platform/CI or a\n" +
+	"group name like CI, works when it selects only one group.\n"
+
 // serviceTokenSecretJSONHelp states the --json contract of the commands that
 // return a secret once.
 const serviceTokenSecretJSONHelp = "With --json, the selection must include the token field, because the\n" +
@@ -62,12 +67,14 @@ func serviceTokenDescription(path string) docgen.Description {
 				"example as a CI secret, and set it as AVR_TOKEN where the token is used.\n" +
 				"Creating a service token needs a recent sign-in.\n" +
 				"\n" +
+				groupOptionHelp +
+				"\n" +
 				serviceTokenSecretJSONHelp +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
-				"    avr service-token create --name ci --group <group-id> --repo acme/api\n" +
-				"    avr service-token create --name egress --group <group-id> --all-firewall-rules --ttl 7d\n" +
+				"    avr service-token create --name ci --group Platform/CI --repo acme/api\n" +
+				"    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n" +
 				"    avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token\n" +
 				"\n" +
 				"\b\n" +
@@ -77,7 +84,7 @@ func serviceTokenDescription(path string) docgen.Description {
 			CompletionHelp: "Create a service token and print its...",
 			Parameters: append(append(append([]docgen.Parameter{
 				{Param: docgen.Param{Name: "name", Kind: "option", Opts: []string{"--name"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("Token name (1-100 characters).")}, Suffix: "  [required]", CompletionKind: "String"},
-				{Param: docgen.Param{Name: "group_id", Kind: "option", Opts: []string{"--group"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("ID of the group that owns the token (grp-xxx).")}, Suffix: "  [required]", CompletionKind: "String"},
+				{Param: docgen.Param{Name: "group_id", Kind: "option", Opts: []string{"--group"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("The group that owns the token: its name, path or ID (grp-xxx).")}, Suffix: "  [required]", CompletionKind: "String"},
 			}, serviceTokenGrantParameters()...), serviceTokenLifetimeParameters()...),
 				append([]docgen.Parameter{serviceTokenOrgParameter()}, serviceTokenJSONParameters()...)...),
 		}
@@ -89,10 +96,12 @@ func serviceTokenDescription(path string) docgen.Description {
 				"last. A live token whose requests are refused all the same, for example\n" +
 				"while its group is suspended, shows as blocked with the reason.\n" +
 				"\n" +
+				groupOptionHelp +
+				"\n" +
 				"\b\n" +
 				"Examples:\n" +
 				"    avr service-token list\n" +
-				"    avr service-token list --status live --group <group-id>\n" +
+				"    avr service-token list --status live --group Platform/CI\n" +
 				"    avr service-token list --json id,name,expires_at\n" +
 				"\n" +
 				"\b\n" +
@@ -102,7 +111,7 @@ func serviceTokenDescription(path string) docgen.Description {
 			CompletionHelp: "List the organization's service tokens,...",
 			Parameters: append([]docgen.Parameter{
 				serviceTokenOrgParameter(),
-				{Param: docgen.Param{Name: "group_id", Kind: "option", Opts: []string{"--group"}, Type: "text", Nargs: 1, Help: descriptionText("Only the tokens this group owns, by group ID (grp-xxx).")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "group_id", Kind: "option", Opts: []string{"--group"}, Type: "text", Nargs: 1, Help: descriptionText("Only the tokens this group owns, by group name, path or ID (grp-xxx).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "status", Kind: "option", Opts: []string{"--status"}, Type: "choice", Nargs: 1, Help: descriptionText("Only tokens with this status."), Choices: []string{"live", "expired", "revoked"}}, CompletionKind: "Choice", CaseSensitive: true},
 				{Param: docgen.Param{Name: "limit", Kind: "option", Opts: []string{"-L", "--limit"}, Type: "integer range", Nargs: 1, Help: descriptionText("Max tokens to return."), ShowDefault: true, Default: 50}, Suffix: "  [default: 50; 1<=x<=1000]", CompletionKind: "IntRange"},
 			}, serviceTokenJSONParameters()...),

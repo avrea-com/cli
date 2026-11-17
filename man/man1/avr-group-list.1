@@ -1,0 +1,42 @@
+.TH AVR\-GROUP\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-list \- List the organization's groups by path.
+.SH SYNOPSIS
+.B avr group list
+[OPTIONS]
+.SH DESCRIPTION
+List the organization's groups by path.
+.PP
+A group's path is the display names from the root group down, joined with /, such as Acme/Platform/CI; a parent is listed before its children. Pass a group's ID or path to --group when you create or list service tokens.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group list
+    avr group list --json group_id,path --jq '.[].path'
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    created_at, display_name, group_id, label, member_count, ownership,
+    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max groups to return. (default: 50)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group (1)

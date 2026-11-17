@@ -222,7 +222,7 @@ func TestServiceTokenListTerminalAndPipedRows(t *testing.T) {
 
 func TestServiceTokenListRejectsInvalidOptionsBeforeRequests(t *testing.T) {
 	for _, args := range [][]string{
-		{"--status", "active"}, {"--group", "acme"}, {"--group", ""}, {"-L", "0"}, {"-L", "1001"}, {"--jq", ".id"},
+		{"--status", "active"}, {"--group", ""}, {"--group", " "}, {"-L", "0"}, {"-L", "1001"}, {"--jq", ".id"},
 	} {
 		h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
 		if code := h.run(t, append([]string{"service-token", "list"}, args...)...); code != 2 || len(h.requests) != 0 {
@@ -354,7 +354,7 @@ func TestServiceTokenCreateRejectsInvalidOptionsBeforeRequests(t *testing.T) {
 	}{
 		{[]string{"--group", manageGroupID, "--repo", manageRepoA}, "Missing option '--name'"},
 		{[]string{"--name", "ci", "--repo", manageRepoA}, "Missing option '--group'"},
-		{[]string{"--name", "ci", "--group", "grp-1", "--repo", manageRepoA}, "expected a group ID"},
+		{[]string{"--name", "ci", "--group", "", "--repo", manageRepoA}, "expected a group name, path or ID"},
 		{base, "at least one of --repo, --firewall-rule or --all-firewall-rules"},
 		{append(slices.Clone(base), "--all-firewall-rules", "--firewall-rule", manageRuleA), "already grants every firewall rule"},
 		{append(slices.Clone(base), "--firewall-rule", "rule-1"), "expected a rule ID"},

@@ -235,6 +235,8 @@ func TestAPIContract(t *testing.T) {
 		{"service-token rotate " + manageTokenID, "GET " + org + "/service-tokens/{token_id}"},
 		{"service-token revoke " + manageTokenID + " --yes", "DELETE " + org + "/service-tokens/{token_id}"},
 		{"service-token revoke-all --yes", "POST " + org + "/service-tokens/revoke-all"},
+		{"service-token list --group CI", "GET " + org + "/groups"},
+		{"group list --limit 17", "GET " + org + "/groups"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.args, func(t *testing.T) {

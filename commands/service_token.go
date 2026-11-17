@@ -44,10 +44,10 @@ func NewServiceToken(deps Dependencies) *cobra.Command {
 	return c
 }
 
-// serviceTokenContext loads a signed-in person's credentials and resolves the
-// organization. The API closes these routes to scoped and service tokens, so
-// they are refused before any request.
-func serviceTokenContext(ctx context.Context, d Dependencies, org string) (config.Config, *client.Client, string, error) {
+// personContext loads a signed-in person's credentials and resolves the
+// organization. Routes the API closes to scoped and service tokens are refused
+// before any request; subject and action complete requirePerson's message.
+func personContext(ctx context.Context, d Dependencies, org, subject, action string) (config.Config, *client.Client, string, error) {
 	cfg, _, api, err := d.load()
 	if err != nil {
 		return cfg, api, "", err
@@ -55,11 +55,15 @@ func serviceTokenContext(ctx context.Context, d Dependencies, org string) (confi
 	if err = authenticated(cfg); err != nil {
 		return cfg, api, "", err
 	}
-	if err = requirePerson(cfg, "Managing service tokens", "manage service tokens"); err != nil {
+	if err = requirePerson(cfg, subject, action); err != nil {
 		return cfg, api, "", err
 	}
 	id, err := resolveOrg(ctx, d, cfg, api, org)
 	return cfg, api, id, err
+}
+
+func serviceTokenContext(ctx context.Context, d Dependencies, org string) (config.Config, *client.Client, string, error) {
+	return personContext(ctx, d, org, "Managing service tokens", "manage service tokens")
 }
 
 func serviceTokenListHint(org string) string {
@@ -259,7 +263,7 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "list", Short: "List the organization's service tokens, soonest expiry first.", Args: cobra.NoArgs}
 	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
-	c.Flags().StringVar(&group, "group", "", "Only the tokens this group owns (grp-...).")
+	c.Flags().StringVar(&group, "group", "", "Only the tokens this group owns: a group name, path or ID (grp-...).")
 	c.Flags().StringVar(&status, "status", "", "Only tokens with this status: live, expired or revoked.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tokens (1–1000).")
 	o.flags(c)
@@ -269,10 +273,9 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 		}
 		base := url.Values{}
 		if cmd.Flags().Changed("group") {
-			if !serviceTokenGroupPattern().MatchString(group) {
-				return &ExitError{2, "Error: Invalid value for '--group': expected a group ID, grp- followed by 32 lowercase hexadecimal characters."}
+			if err := checkGroupOption(group); err != nil {
+				return err
 			}
-			base.Set("group_id", "eq."+group)
 		}
 		if cmd.Flags().Changed("status") {
 			if err := validateFirewallChoice("status", status, []string{"live", "expired", "revoked"}); err != nil {
@@ -286,6 +289,12 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 		cfg, api, id, err := serviceTokenContext(cmd.Context(), d, org)
 		if err != nil {
 			return err
+		}
+		if cmd.Flags().Changed("group") {
+			if group, err = resolveGroup(cmd.Context(), cfg, api, id, group); err != nil {
+				return err
+			}
+			base.Set("group_id", "eq."+group)
 		}
 		rows := []map[string]any{}
 		cursor := ""
@@ -366,7 +375,7 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 	f := c.Flags()
 	f.StringVar(&org, "org", "", "Organization ID or slug.")
 	f.StringVar(&name, "name", "", "Token name (1–100 characters).")
-	f.StringVar(&group, "group", "", "The group that owns the token (grp-...).")
+	f.StringVar(&group, "group", "", "The group that owns the token: a group name, path or ID (grp-...).")
 	g.flags(c)
 	l.flags(c)
 	o.flags(c)
@@ -377,10 +386,10 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		if !f.Changed("group") {
 			return &ExitError{2, "Error: Missing option '--group'."}
 		}
-		if !serviceTokenGroupPattern().MatchString(group) {
-			return &ExitError{2, "Error: Invalid value for '--group': expected a group ID, grp- followed by 32 lowercase hexadecimal characters."}
+		if err := checkGroupOption(group); err != nil {
+			return err
 		}
-		body := map[string]any{"name": name, "group_id": group}
+		body := map[string]any{"name": name}
 		if err := l.apply(cmd, body); err != nil {
 			return err
 		}
@@ -397,6 +406,9 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		}
 		cfg, api, id, err := serviceTokenContext(cmd.Context(), d, org)
 		if err != nil {
+			return err
+		}
+		if body["group_id"], err = resolveGroup(cmd.Context(), cfg, api, id, group); err != nil {
 			return err
 		}
 		grants, err := g.build(cmd.Context(), d, cfg, api, id, repos, rules)

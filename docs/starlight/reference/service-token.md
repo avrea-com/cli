@@ -33,6 +33,10 @@ secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
 Creating a service token needs a recent sign-in.
 
+--group takes a group ID or a group's path as `avr group list` shows it,
+such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
+group name like CI, works when it selects only one group.
+
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
@@ -40,8 +44,8 @@ nonzero, so the secret is not lost.
 
 ```sh
 Examples:
-    avr service-token create --name ci --group <group-id> --repo acme/api
-    avr service-token create --name egress --group <group-id> --all-firewall-rules --ttl 7d
+    avr service-token create --name ci --group Platform/CI --repo acme/api
+    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
     avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 ```
 
@@ -56,7 +60,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Token name (1-100 characters). _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — ID of the group that owns the token (grp-xxx). _(required)_
+- <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — The group that owns the token: its name, path or ID (grp-xxx). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;firewall-rule</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;all-firewall-rules</code> — Grant read access to every egress firewall rule, including rules added later.
@@ -78,10 +82,14 @@ Lists live, expired and revoked tokens; tokens that never expire come
 last. A live token whose requests are refused all the same, for example
 while its group is suspended, shows as blocked with the reason.
 
+--group takes a group ID or a group's path as `avr group list` shows it,
+such as Acme/Platform/CI. The end of a path, such as Platform/CI or a
+group name like CI, works when it selects only one group.
+
 ```sh
 Examples:
     avr service-token list
-    avr service-token list --status live --group <group-id>
+    avr service-token list --status live --group Platform/CI
     avr service-token list --json id,name,expires_at
 ```
 
@@ -96,7 +104,7 @@ JSON FIELDS
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only the tokens this group owns, by group ID (grp-xxx).
+- <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only the tokens this group owns, by group name, path or ID (grp-xxx).
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Only tokens with this status. _(choices: `live`, `expired`, `revoked`)_
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max tokens to return. _(default: `50`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
