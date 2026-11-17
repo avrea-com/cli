@@ -34,7 +34,6 @@ const (
 )
 
 const serviceTokenGrantOrderHint = "grants[N] counts from 0 after repositories are resolved and duplicates removed: the --repo values first, then the --firewall-rule values in the order given, or --all-firewall-rules."
-const serviceTokenStaleHint = "The token changed after this command read it. Run the command again to act on its current state."
 
 // NewServiceToken exposes the management of an organization's group-owned
 // service tokens to a signed-in organization admin.
@@ -548,7 +547,11 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
-		unknown := "The access may have been replaced; check \x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60 before retrying."
+		view := "\x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60"
+		unknown := "The access may have been replaced; check " + view + " before retrying."
+		// A rerun sends the same whole selection, which would undo a change
+		// another admin made in between.
+		stale := "The token changed after this command read it. Check " + view + ", then run set-access again with the full selection you want."
 		record, err := api.Do(cmd.Context(), http.MethodPut, path+"/grants", map[string]any{"grants": grants, "expected_grants_version": version})
 		if err != nil {
 			var he *client.HTTPError
@@ -557,12 +560,12 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 					action:    "replace the service token's access",
 					grants:    true,
 					notFound:  serviceTokenWriteNotFound(current, id),
-					stale:     serviceTokenWriteStale(current, serviceTokenStaleHint),
+					stale:     serviceTokenWriteStale(current, stale),
 					unchanged: "The token's access was not changed.",
 					unknown:   unknown,
 				})
 			}
-			return tokenCreationFailure("The response to the access change was not received. "+unknown, err)
+			return tokenCreationFailure("Could not confirm the access change: "+err.Error()+". "+unknown, err)
 		}
 		if _, err = fmt.Fprintf(d.Out, "Replaced the access of service token %s.\n\n", args[0]); err != nil {
 			return err

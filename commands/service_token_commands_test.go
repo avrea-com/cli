@@ -455,7 +455,9 @@ func TestServiceTokenStaleVersionConflict(t *testing.T) {
 		read  map[string]any
 		stale string
 	}{
-		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, manageRecord(nil), "Run the command again"},
+		// A rerun resends the whole selection and would undo the other change,
+		// so the hint says to look first and to pass the full selection.
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, manageRecord(nil), "Check \x60avr service-token view " + manageTokenID + " --org " + inspectionOrg + "\x60, then run set-access again with the full selection you want."},
 		// A retry of rotate may end an overlap, so its hint says to look first.
 		{[]string{"rotate", manageTokenID}, manageRecord(nil), "Check \x60avr service-token view " + manageTokenID + " --org " + inspectionOrg + "\x60 before retrying: if it was rotated, rotating again retires the previous secret at once."},
 		// The read already showed why the write is refused; the API's reason says so.
@@ -471,7 +473,7 @@ func TestServiceTokenStaleVersionConflict(t *testing.T) {
 		})
 		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
 		message := h.stderr.String()
-		if code != 1 || len(h.requests) != 2 || !strings.Contains(message, "(HTTP 409): refused") || strings.Contains(message, "changed after this command read it") != (tc.stale != "") || !strings.Contains(message, tc.stale) || strings.Contains(message, "Run the command again") != (tc.args[0] == "set-access" && tc.stale != "") || strings.Contains(message, "Retry in") {
+		if code != 1 || len(h.requests) != 2 || !strings.Contains(message, "(HTTP 409): refused") || strings.Contains(message, "changed after this command read it") != (tc.stale != "") || !strings.Contains(message, tc.stale) || strings.Contains(message, "Run the command again") || strings.Contains(message, "Retry in") {
 			t.Fatal(tc.args, tc.read["status"], code, message)
 		}
 	}
@@ -1012,34 +1014,52 @@ func TestServiceTokenRotateUnknownOutcomeNamesStartingVersion(t *testing.T) {
 	}
 }
 
-// A PUT whose response is lost may have committed, so set-access says the
-// access may have been replaced, as create and rotate do.
+// A PUT whose response is lost or unreadable may have committed, so
+// set-access says the access may have been replaced, as create and rotate do.
 func TestServiceTokenSetAccessLostResponseMayHaveCommitted(t *testing.T) {
-	for _, cancelled := range []bool{false, true} {
-		h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
-		ctx, cancel := context.WithCancel(t.Context())
-		inner := h.d.HTTP.Transport
-		h.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
-			if r.Method != http.MethodPut {
-				return inner.RoundTrip(r)
-			}
-			// The change commits; then the answer is lost.
-			if _, err := inner.RoundTrip(r); err != nil {
-				t.Fatal(err)
-			}
-			if cancelled {
-				cancel()
-				return nil, context.Canceled
-			}
+	for _, tc := range []struct {
+		name   string
+		lost   func(cancel context.CancelFunc) (*http.Response, error)
+		code   int
+		reason string
+	}{
+		{"connection reset", func(context.CancelFunc) (*http.Response, error) {
 			return nil, errors.New("connection reset by peer")
-		})}
-		code := Execute(ctx, []string{"service-token", "set-access", manageTokenID, "--repo", manageRepoA}, h.d)
-		cancel()
-		message := h.stderr.String()
-		want := map[bool]int{false: 1, true: 130}[cancelled]
-		if code != want || !strings.Contains(message, "The response to the access change was not received. The access may have been replaced; check \x60avr service-token view "+manageTokenID+" --org "+inspectionOrg+"\x60 before retrying.") || h.out.Len() != 0 {
-			t.Fatal(cancelled, code, message)
-		}
+		}, 1, "could not reach " + serviceTokenHost},
+		{"cancelled", func(cancel context.CancelFunc) (*http.Response, error) {
+			cancel()
+			return nil, context.Canceled
+		}, 130, "context canceled"},
+		// A malformed 2xx body was answered, so "not received" would be wrong.
+		{"malformed 2xx body", func(context.CancelFunc) (*http.Response, error) {
+			return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader("not json"))}, nil
+		}, 1, "unexpected API response"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			inner := h.d.HTTP.Transport
+			h.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				if r.Method != http.MethodPut {
+					return inner.RoundTrip(r)
+				}
+				// The change commits; then the answer is lost or unreadable.
+				if _, err := inner.RoundTrip(r); err != nil {
+					t.Fatal(err)
+				}
+				response, err := tc.lost(cancel)
+				if response != nil {
+					response.Request = r
+				}
+				return response, err
+			})}
+			code := Execute(ctx, []string{"service-token", "set-access", manageTokenID, "--repo", manageRepoA}, h.d)
+			message := h.stderr.String()
+			if code != tc.code || !strings.Contains(message, "Could not confirm the access change: "+tc.reason) || !strings.Contains(message, ". The access may have been replaced; check \x60avr service-token view "+manageTokenID+" --org "+inspectionOrg+"\x60 before retrying.") || strings.Contains(message, "not received") || h.out.Len() != 0 {
+				t.Fatal(code, message)
+			}
+		})
 	}
 }
 
