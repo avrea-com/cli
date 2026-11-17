@@ -34,6 +34,7 @@ func rootDescription(path string) docgen.Description {
 				{Name: "repo", Description: "Manage repositories, git mirrors, and public mirrors.", Section: descriptionText("Additional Commands")},
 				{Name: "run", Description: "View and manage CI workflow runs.", Section: descriptionText("Core Commands")},
 				{Name: "sbom", Description: "View, generate, and download repository SBOMs.", Section: descriptionText("Core Commands")},
+				{Name: "service-token", Description: "Create and manage the organization's service tokens.", Section: descriptionText("Setup & Config")},
 				{Name: "settings", Description: "View and toggle cache and runner settings.", Section: descriptionText("Setup & Config")},
 				{Name: "status", Description: "Show recent runs, performance stats, and cache health.", Section: descriptionText("Core Commands")},
 				{Name: "tests", Description: "Read a job's tests, timings and recorded failure messages.", Section: descriptionText("Core Commands")},

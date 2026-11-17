@@ -39,7 +39,11 @@ func stripTokenLevel(spec, kind, flag, level string) (string, error) {
 	}
 	return target, nil
 }
-func tokenTTL(value string) (int, error) {
+func tokenTTL(value string) (int, error) { return tokenDuration("--ttl", value, 60, 604800) }
+
+// tokenDuration parses 30m, 8h, 7d or plain seconds for a duration option and
+// checks it against the API's bounds in seconds.
+func tokenDuration(flag, value string, minimum, maximum int64) (int, error) {
 	text := strings.ToLower(strings.TrimSpace(value))
 	number, multiplier := text, int64(1)
 	if len(text) > 0 {
@@ -58,12 +62,12 @@ func tokenTTL(value string) (int, error) {
 		}
 	}
 	if !tokenDurationDigits().MatchString(number) {
-		return 0, &ExitError{2, fmt.Sprintf("Error: Invalid value for --ttl: invalid duration %s: use e.g. 30m, 8h, 7d, or a number of seconds", pythonQuote(output.CellText(value)))}
+		return 0, &ExitError{2, fmt.Sprintf("Error: Invalid value for %s: invalid duration %s: use e.g. 30m, 8h, 7d, or a number of seconds", flag, pythonQuote(output.CellText(value)))}
 	}
 	seconds, _ := new(big.Int).SetString(number, 10)
 	seconds.Mul(seconds, big.NewInt(multiplier))
-	if seconds.Cmp(big.NewInt(60)) < 0 || seconds.Cmp(big.NewInt(604800)) > 0 {
-		return 0, &ExitError{2, fmt.Sprintf("Error: Invalid value for --ttl: must be between 60s and 604800s (got %ss)", seconds.String())}
+	if seconds.Cmp(big.NewInt(minimum)) < 0 || seconds.Cmp(big.NewInt(maximum)) > 0 {
+		return 0, &ExitError{2, fmt.Sprintf("Error: Invalid value for %s: must be between %ds and %ds (got %ss)", flag, minimum, maximum, seconds.String())}
 	}
 	return int(seconds.Int64()), nil
 }
@@ -146,18 +150,11 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		grants := []map[string]any{}
-		repoSeen, vmSeen := map[string]bool{}, map[string]bool{}
-		for _, repo := range repoNames {
-			rid, e := resolveRepository(cmd.Context(), d, cfg, api, id, repo, "")
-			if e != nil {
-				return e
-			}
-			if !repoSeen[rid] {
-				grants = append(grants, map[string]any{"resource_type": "repository", "resource_id": rid, "access_level": "read"})
-				repoSeen[rid] = true
-			}
+		grants, err := repositoryReadGrants(cmd.Context(), d, cfg, api, id, repoNames)
+		if err != nil {
+			return err
 		}
+		vmSeen := map[string]bool{}
 		for _, vm := range vmIDs {
 			if !vmSeen[vm] {
 				grants = append(grants, map[string]any{"resource_type": "customer_vm", "resource_id": vm, "access_level": "admin"})
@@ -184,6 +181,24 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 		return deliverCreatedToken(cmd.Context(), d, record, credential, id, hasJSON, fields, o.expression)
 	})
 	return c
+}
+
+// repositoryReadGrants resolves repositories in the order given and drops
+// repeats, so grants[N] in an API refusal follows the --repo values.
+func repositoryReadGrants(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, names []string) ([]map[string]any, error) {
+	grants := []map[string]any{}
+	seen := map[string]bool{}
+	for _, repo := range names {
+		rid, err := resolveRepository(ctx, d, cfg, api, org, repo, "")
+		if err != nil {
+			return nil, err
+		}
+		if !seen[rid] {
+			grants = append(grants, map[string]any{"resource_type": "repository", "resource_id": rid, "access_level": "read"})
+			seen[rid] = true
+		}
+	}
+	return grants, nil
 }
 func tokenDiscardHint(record map[string]any, org string) string {
 	if id, ok := record["id"].(string); ok && tokenIDPattern().MatchString(id) {
@@ -221,16 +236,26 @@ func tokenCreateError(cfg config.Config, he *client.HTTPError, namesVMs bool) er
 		if he.Status >= 500 {
 			hint = tokenUnknownOutcome
 			if he.Status == 503 && he.Detail != "" {
-				retry := "Retry shortly."
-				value := strings.TrimSpace(he.RetryAfter)
-				if tokenDurationDigits().MatchString(value) {
-					seconds, _ := new(big.Int).SetString(value, 10)
-					retry = "Retry in " + seconds.String() + "s."
-				}
-				hint = "No token was created. " + retry
+				hint = "No token was created. " + tokenRetryAfter(he)
 			}
 		}
 	}
+	return insertTokenHint(result, hint)
+}
+
+// tokenRetryAfter reads a refusal's Retry-After seconds as advice.
+func tokenRetryAfter(he *client.HTTPError) string {
+	value := strings.TrimSpace(he.RetryAfter)
+	if !tokenDurationDigits().MatchString(value) {
+		return "Retry shortly."
+	}
+	seconds, _ := new(big.Int).SetString(value, 10)
+	return "Retry in " + seconds.String() + "s."
+}
+
+// insertTokenHint places a hint after the API's reason and before the
+// credential-kind hint and API line that apiError appends.
+func insertTokenHint(result error, hint string) error {
 	if hint == "" {
 		return result
 	}
@@ -252,12 +277,53 @@ func flushTokenOutput(out io.Writer) error {
 	return nil
 }
 func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]any, credential, org string, hasJSON bool, fields []string, expression string) error {
+	target := fieldText(record, "organization_id")
+	if target == "" {
+		target = org
+	}
+	return deliverOneTimeCredential(ctx, d, oneTimeCredential{
+		record: record, credential: credential, hasJSON: hasJSON, fields: fields, expression: expression,
+		intro:   "The credential is shown only once. To use the token:",
+		exports: [][2]string{{"AVR_TOKEN", credential}, {"AVR_ORG", target}},
+		summary: func() error {
+			// Python's human summary rejects non-string timestamps after writing
+			// exports. Preserve the delivered credential and report the same recovery.
+			for _, key := range []string{"created_at", "expires_at", "last_used_at", "revoked_at"} {
+				if value := record[key]; value != nil {
+					if _, ok := value.(string); !ok {
+						return errors.New("invalid token summary")
+					}
+				}
+			}
+			return renderToken(d, record)
+		},
+		outcome:  "The token was created",
+		recovery: tokenDiscardHint(record, org),
+	})
+}
+
+// oneTimeCredential is a credential the API returns once, with what to print
+// around it and how to recover when its output fails.
+type oneTimeCredential struct {
+	record            map[string]any
+	credential        string
+	hasJSON           bool
+	fields            []string
+	expression        string
+	intro             string
+	exports           [][2]string
+	summary           func() error
+	outcome, recovery string
+}
+
+func deliverOneTimeCredential(ctx context.Context, d Dependencies, c oneTimeCredential) error {
+	record, credential, hasJSON, fields := c.record, c.credential, c.hasJSON, c.fields
 	exportsShown := false
 	retained := true
 	err := func() error {
 		if hasJSON {
 			var buffer bytes.Buffer
-			if err := output.JSON(ctx, &buffer, record, fields, expression, d.IsTerminal()); err != nil {
+			if err := output.JSON(ctx, &buffer, record, fields, c.expression, d.IsTerminal()); err != nil {
 				return err
 			}
 			if !strings.Contains(buffer.String(), credential) {
@@ -268,47 +334,36 @@ func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]
 				return err
 			}
 		} else {
-			if _, err := fmt.Fprintln(d.Out, "The credential is shown only once. To use the token:"); err != nil {
+			if _, err := fmt.Fprintln(d.Out, c.intro); err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintln(d.Out, "  export AVR_TOKEN="+shellQuotePython(credential)); err != nil {
-				return err
-			}
-			target := fieldText(record, "organization_id")
-			if target == "" {
-				target = org
-			}
-			if _, err := fmt.Fprintln(d.Out, "  export AVR_ORG="+shellQuotePython(target)); err != nil {
-				return err
+			for _, export := range c.exports {
+				if _, err := fmt.Fprintln(d.Out, "  export "+export[0]+"="+shellQuotePython(export[1])); err != nil {
+					return err
+				}
 			}
 			exportsShown = true
 			if _, err := fmt.Fprintln(d.Out); err != nil {
 				return err
 			}
-			// Python's human summary rejects non-string timestamps after writing
-			// exports. Preserve the delivered credential and report the same recovery.
-			for _, key := range []string{"created_at", "expires_at", "last_used_at", "revoked_at"} {
-				if value := record[key]; value != nil {
-					if _, ok := value.(string); !ok {
-						return errors.New("invalid token summary")
-					}
-				}
-			}
-			if err := renderToken(d, record); err != nil {
+			if err := c.summary(); err != nil {
 				return err
 			}
 		}
 		return flushTokenOutput(d.Out)
 	}()
 	if err == nil {
-		err = ctx.Err()
-	}
-	if err == nil {
+		// Everything reached stdout. A cancellation that arrives now must not
+		// start recovery, which would print the secret a second time, but the
+		// caller still learns that the change happened.
+		if ctx.Err() != nil {
+			return &ExitError{130, "Interrupted. " + c.outcome + " and its output on stdout is complete; do not run the command again." + c.recovery}
+		}
 		return nil
 	}
-	message := "The token was created, but output failed."
+	message := c.outcome + ", but output failed."
 	if !retained {
-		message = "The token was created, but output failed: " + tokenFilterRetain
+		message = c.outcome + ", but output failed: " + tokenFilterRetain
 	}
 	delivered := ""
 	recovery := func() error {
@@ -330,5 +385,5 @@ func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]
 	if ctx.Err() != nil {
 		err = ctx.Err()
 	}
-	return tokenCreationFailure(message+delivered+tokenDiscardHint(record, org), err)
+	return tokenCreationFailure(message+delivered+c.recovery, err)
 }

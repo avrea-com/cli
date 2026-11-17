@@ -169,6 +169,7 @@ func TestServiceTokenAuthStatusText(t *testing.T) {
 	}{
 		{"full", serviceTokenSelf, []string{"Credential    service token", "Name          ci reader", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         grp-019a0000000070008000000000000003", "Expires       2026-12-16T10:00:00.00Z", "Grants        1 repo, all firewall rules", "Host          " + serviceTokenHost, "Token         avt_****"}, []string{"expires soon", "avr auth login", "avr config set org"}},
 		{"expiring soon", expiring, []string{"Expires       2026-12-16T10:00:00.00Z", "expires soon", "rotate"}, nil},
+		{"rotation overlap", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","expiring_soon"`, 1), []string{"replaced secret stops working at 2026-11-17T10:00:00.00Z"}, nil},
 		{"never expires", never, []string{"Expires       never"}, []string{"expires soon"}},
 		{"old API", serviceTokenSelfOld, []string{"Name          -", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         -", "Expires       -", "Grants        -"}, []string{"expires soon"}},
 	} {
@@ -272,7 +273,7 @@ func TestServiceTokenAPIErrors(t *testing.T) {
 		args        []string
 		want, avoid []string
 	}{
-		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "expired or revoked", "rotate it or mint a new one", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
+		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "expired or revoked", "avr service-token rotate <token-id>", "avr service-token create", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
 		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "a service token reaches only what its access names", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "scoped token"}},
 		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "a service token reaches only what its access names"}, []string{"avr org list", "avr auth login", "scoped token"}},
 	} {
@@ -370,7 +371,7 @@ func TestServiceTokenLogoutRefusedWithoutRequests(t *testing.T) {
 		code := h.run(t, args...)
 		message := h.stderr.String()
 		after, _ := os.ReadFile(h.d.Store.Path)
-		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || h.out.Len() != 0 || !strings.Contains(message, "does not revoke a service token") || !strings.Contains(message, "unset AVR_TOKEN") || !strings.Contains(message, "organization admin") {
+		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || h.out.Len() != 0 || !strings.Contains(message, "does not revoke a service token") || !strings.Contains(message, "unset AVR_TOKEN") || !strings.Contains(message, "organization admin") || !strings.Contains(message, "avr service-token revoke <token-id>") {
 			t.Fatal(args, code, h.requests, message)
 		}
 	}

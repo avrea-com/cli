@@ -18,7 +18,7 @@ var statusFields = []string{"email", "name", "created_at", "user_id", "host", "d
 
 // serviceStatusFields extends statusFields with a service token's identity;
 // the other credential kinds keep their field set.
-var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "expiring_soon", "grants")
+var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants")
 
 func newStatus(d Dependencies) *cobra.Command {
 	var show bool
@@ -147,7 +147,10 @@ func newStatus(d Dependencies) *cobra.Command {
 			row("Token", maskToken(cfg.Token, show))
 			b.WriteString("\n")
 			if result["expiring_soon"] == true {
-				b.WriteString(d.paint("  ! This service token expires soon: ask an organization admin to rotate it, then update AVR_TOKEN.", "33") + "\n")
+				b.WriteString(d.paint("  ! This service token expires soon: an organization admin can rotate it with \x60avr service-token rotate\x60; then update AVR_TOKEN.", "33") + "\n")
+			}
+			if until := fieldText(result, "previous_valid_until"); until != "" {
+				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
 			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")
 		case config.PersonalKey:
@@ -201,7 +204,7 @@ func NewLogout(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if config.IsService(cfg.Token) {
-				return &ExitError{1, "Error: Logout does not revoke a service token and leaves stored credentials unchanged.\n  Hint: unset AVR_TOKEN to stop using the token. An organization admin can revoke it."}
+				return &ExitError{1, "Error: Logout does not revoke a service token and leaves stored credentials unchanged.\n  Hint: unset AVR_TOKEN to stop using the token. An organization admin can revoke it with `avr service-token revoke <token-id>`."}
 			}
 			if err := store.ValidateMutation(); err != nil {
 				return err
@@ -294,7 +297,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		}
 		hint := "ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."
 		if kind == config.ServiceToken {
-			hint = "the service token may be expired or revoked. An organization admin can rotate it or mint a new one; then set it as AVR_TOKEN."
+			hint = "the service token may be expired or revoked. An organization admin can rotate it with `avr service-token rotate <token-id>` or mint a new one with `avr service-token create`; then set it as AVR_TOKEN."
 		}
 		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: " + hint}
 	}

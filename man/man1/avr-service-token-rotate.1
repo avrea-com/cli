@@ -1,0 +1,63 @@
+.TH AVR\-SERVICE\-TOKEN\-ROTATE 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-rotate \- Issue a service token a new secret and print it once.
+.SH SYNOPSIS
+.B avr service-token rotate
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Issue a service token a new secret and print it once.
+.PP
+The new secret gets its own lifetime. The old secret keeps working for the overlap, never past the expiry of either secret, so pipelines can switch without a gap. Rotating again inside the overlap retires the old secret at once. Rotating needs a recent sign-in.
+.PP
+With --json, the selection must include the token field, because the secret cannot be read again. If a --jq filter fails or drops the secret, the command prints the unfiltered JSON instead and exits nonzero, so the secret is not lost.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token rotate <token-id>
+    avr service-token rotate <token-id> --ttl 30d --overlap 2h
+    avr service-token rotate <token-id> --json token --jq .token
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
+    grants_version, group_id, id, last_used_at, name, organization_id,
+    previous_valid_until, revoked_at, revoked_reason, rotated_at,
+    rotation_version, status, token
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-ttl\fR \fITEXT\fR
+Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
+.TP
+\fB\-\-never\-expires\fR
+The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
+.TP
+\fB\-\-overlap\fR \fITEXT\fR
+How long the old secret keeps working: e.g. 2h, 3d, or a number of seconds. 1 hour to 7 days; the server default is 24 hours.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-list (1),
+.BR avr-service-token-revoke (1),
+.BR avr-service-token-revoke-all (1),
+.BR avr-service-token-set-access (1),
+.BR avr-service-token-view (1)

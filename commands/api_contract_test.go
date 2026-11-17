@@ -228,6 +228,13 @@ func TestAPIContract(t *testing.T) {
 		{"firewall edit efr-019a0000000070008000000000000001 --proto icmp --repo " + repo, "PATCH " + org + "/repos/{repo_id}/firewall/rules/{rule_id}"},
 		{"firewall set-default --action deny", "POST " + org + "/firewall/rules"},
 		{"firewall set-default --inherit --repo " + repo, "GET " + org + "/firewall/rules"},
+		{"service-token list --group " + manageGroupID + " --status live --limit 17", "GET " + org + "/service-tokens"},
+		{"service-token view " + manageTokenID, "GET " + org + "/service-tokens/{token_id}"},
+		{"service-token create --name ci --group " + manageGroupID + " --repo " + repo + " --all-firewall-rules", "POST " + org + "/service-tokens"},
+		{"service-token set-access " + manageTokenID + " --repo " + repo, "GET " + org + "/service-tokens/{token_id}"},
+		{"service-token rotate " + manageTokenID, "GET " + org + "/service-tokens/{token_id}"},
+		{"service-token revoke " + manageTokenID + " --yes", "DELETE " + org + "/service-tokens/{token_id}"},
+		{"service-token revoke-all --yes", "POST " + org + "/service-tokens/revoke-all"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.args, func(t *testing.T) {
@@ -368,5 +375,36 @@ func checkFirewallContractChain(t *testing.T, document contractDocument, args, o
 	d.In = strings.NewReader(`{"version":1,"rules":[{"action":"deny","fqdn":"example.com"}]}`)
 	if code := Execute(t.Context(), args, d); code != 0 || calls != len(operations) {
 		t.Fatalf("code=%d requests=%d", code, calls)
+	}
+}
+
+// set-access and rotate read the token before their write, so the probe above
+// stops at the read.
+func TestAPIContractServiceTokenWriteChains(t *testing.T) {
+	document := loadContractDocument(t)
+	const token = "/orgs/{org_id}/service-tokens/{token_id}"
+	for _, tc := range []struct {
+		args       []string
+		operations []string
+	}{
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, []string{"GET " + token, "PUT " + token + "/grants"}},
+		{[]string{"rotate", manageTokenID, "--overlap", "2h"}, []string{"GET " + token, "POST " + token + "/rotate"}},
+	} {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
+			routes := manageRoutes(t, manageRecord(nil))
+			var operations []string
+			h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+				request := httptest.NewRequestWithContext(t.Context(), r.method, r.path+"?"+r.query.Encode(), nil)
+				operation, err := document.checkRequest(request)
+				if err != nil {
+					t.Error(err)
+				}
+				operations = append(operations, operation)
+				return routes(r)
+			})
+			if code := h.run(t, append([]string{"service-token"}, tc.args...)...); code != 0 || !slices.Equal(operations, tc.operations) {
+				t.Fatalf("code=%d operations=%v: %s", code, operations, h.stderr)
+			}
+		})
 	}
 }

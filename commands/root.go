@@ -242,7 +242,7 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
 		"avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics",
-		"avr token list", "avr token view", "avr settings list", "avr cache list",
+		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr settings list", "avr cache list",
 		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
 		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
 		"avr audit events list", "avr org install list", "avr org saml show",
@@ -286,7 +286,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 		return prepareGlobalOptions(cmd, d)
 	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
+	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)

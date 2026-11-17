@@ -29,6 +29,23 @@ func TestTokenCreateCancelledFilterRecoversCredentialWithExit130(t *testing.T) {
 	}
 }
 
+// A cancellation that lands after the credential reached stdout leaves one
+// JSON document and one credential, and reports the created token.
+func TestTokenCreateLateCancellationDoesNotRepeatCredential(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	d.Out = cancelOnWrite{out, cancel}
+	err := deliverCreatedToken(ctx, d, tokenMintFixture(), createdTokenFixture, inspectionOrg, true, []string{"token", "id"}, "")
+	var exit *ExitError
+	var document map[string]any
+	if e := json.Unmarshal(out.Bytes(), &document); e != nil || document["token"] != createdTokenFixture {
+		t.Fatal(e, out)
+	}
+	if !errors.As(err, &exit) || exit.Code != 130 || !strings.Contains(err.Error(), "Interrupted. The token was created and its output on stdout is complete; do not run the command again.") || strings.Contains(err.Error()+stderr.String(), createdTokenFixture) {
+		t.Fatal(err, stderr)
+	}
+}
+
 type tokenBrokenWriter struct{}
 
 func (tokenBrokenWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
