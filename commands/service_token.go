@@ -613,11 +613,13 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 			return err
 		}
 		body["expected_rotation_version"] = version
-		// Rotating inside an earlier overlap retires the secret that rotation
-		// replaced, which consumers may still use. Only an interactive run is
-		// asked, so scripts keep working; the prompt goes to stderr to keep
-		// stdout for the secret.
-		if until := fieldText(current, "previous_valid_until"); !yes && d.IsInputTerminal() && timestampAfter(until, d.Now()) {
+		// Rotating a live token inside an earlier overlap retires the secret
+		// that rotation replaced, which consumers may still use. Only a run
+		// with stdin and stderr on a terminal is asked, so scripts keep
+		// working and a prompt never hides in a redirected log; it goes to
+		// stderr to keep stdout for the secret. A revoked or expired token
+		// keeps previous_valid_until, but the API refuses to rotate it.
+		if until := fieldText(current, "previous_valid_until"); !yes && d.IsInputTerminal() && d.IsErrorTerminal() && fieldText(current, "status") == "live" && timestampAfter(until, d.Now()) {
 			prompting := d
 			prompting.Out = d.Err
 			if err = confirmMutation(cmd.Context(), prompting, "rotating would retire the secret an earlier rotation replaced", "An earlier rotation of service token "+args[0]+" is still in its overlap until "+formatTimestamp(until)+". Rotating now retires the secret it replaced at once. Rotate?"); err != nil {

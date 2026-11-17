@@ -867,22 +867,26 @@ func TestServiceTokenRotateConfirmsEndingAnOpenOverlap(t *testing.T) {
 		args              []string
 		env               map[string]string
 		prompted, rotated bool
+		stderrLogged      bool
 	}{
-		{"declined", "n\n", overlapping, true, nil, nil, true, false},
-		{"no answer", "", overlapping, true, nil, nil, true, false},
-		{"accepted", "y\n", overlapping, true, nil, nil, true, true},
-		{"--yes", "", overlapping, true, []string{"--yes"}, nil, false, true},
-		{"-y with --json", "", overlapping, true, []string{"-y", "--json", "token"}, nil, false, true},
-		{"not a terminal", "", overlapping, false, nil, nil, false, true},
-		{"overlap ended", "", ended, true, nil, nil, false, true},
-		{"no earlier overlap", "", manageRecord(nil), true, nil, nil, false, true},
-		{"prompts disabled", "y\n", overlapping, true, nil, map[string]string{"AVR_PROMPT_DISABLED": "1"}, false, false},
+		{"declined", "n\n", overlapping, true, nil, nil, true, false, false},
+		{"no answer", "", overlapping, true, nil, nil, true, false, false},
+		{"accepted", "y\n", overlapping, true, nil, nil, true, true, false},
+		{"--yes", "", overlapping, true, []string{"--yes"}, nil, false, true, false},
+		{"-y with --json", "", overlapping, true, []string{"-y", "--json", "token"}, nil, false, true, false},
+		{"not a terminal", "", overlapping, false, nil, nil, false, true, false},
+		// A question in a redirected log would block the run unseen.
+		{"stderr redirected", "", overlapping, true, []string{"--json", "token"}, nil, false, true, true},
+		{"overlap ended", "", ended, true, nil, nil, false, true, false},
+		{"no earlier overlap", "", manageRecord(nil), true, nil, nil, false, true, false},
+		{"prompts disabled", "y\n", overlapping, true, nil, map[string]string{"AVR_PROMPT_DISABLED": "1"}, false, false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, tc.current))
 			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
 			h.d.In = strings.NewReader(tc.input)
 			h.d.IsInputTerminal = func() bool { return tc.terminal }
+			h.d.IsErrorTerminal = func() bool { return !tc.stderrLogged }
 			h.d.Getenv = func(key string) string { return tc.env[key] }
 			code := h.run(t, append([]string{"service-token", "rotate", manageTokenID}, tc.args...)...)
 			message := h.stderr.String()
@@ -898,12 +902,37 @@ func TestServiceTokenRotateConfirmsEndingAnOpenOverlap(t *testing.T) {
 				if code != 0 || strings.Count(h.out.String(), manageSecret) != 1 {
 					t.Fatal(code, h.out, message)
 				}
+				if tc.current["previous_valid_until"] == overlapping["previous_valid_until"] && !strings.Contains(message, "earlier rotation was still in its overlap") {
+					t.Fatal("missing overlap notice:", message)
+				}
 				return
 			}
 			if code != 1 || h.out.Len() != 0 || !strings.Contains(message, "Abort") {
 				t.Fatal(code, h.out, message)
 			}
 		})
+	}
+}
+
+// A revoked token keeps previous_valid_until, but there is no overlap to
+// end: the API refuses the rotation, and that refusal is what the user sees.
+func TestServiceTokenRotateDoesNotAskForATokenThatIsNotLive(t *testing.T) {
+	revoked := manageRecord(map[string]any{"status": "revoked", "revoked_at": "2026-11-16T09:00:00Z", "previous_valid_until": "2026-11-16T12:00:00Z"})
+	routes := manageRoutes(t, revoked)
+	h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+		if r.method == "GET" {
+			return routes(r)
+		}
+		return manageReply{409, nil, `{"detail":"The token is revoked"}`}
+	})
+	h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
+	h.d.In = strings.NewReader("")
+	h.d.IsInputTerminal = func() bool { return true }
+	h.d.IsErrorTerminal = func() bool { return true }
+	code := h.run(t, "service-token", "rotate", manageTokenID)
+	message := h.stderr.String()
+	if code != 1 || strings.Contains(message, "Rotate?") || strings.Contains(message, "Abort") || !slices.Contains(h.operations(), "POST "+manageBase+"/"+manageTokenID+"/rotate") || !strings.Contains(message, "(HTTP 409): The token is revoked") {
+		t.Fatal(code, h.operations(), message)
 	}
 }
 
