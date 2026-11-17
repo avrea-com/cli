@@ -84,12 +84,14 @@ type serviceTokenRefusal struct {
 }
 
 // serviceTokenUnwritten holds the 503 reasons the service-token routes give
-// before any write (control/avrea/api/routers/service_tokens.py). The API
-// sends no error code, so any other 503, such as one from a proxy after the
-// write committed, is treated as an unknown outcome.
+// before any write (control/avrea/api/routers/service_tokens.py and the
+// delegation check in control/avrea/api/authz.py). The API sends no error
+// code, so any other 503, such as one from a proxy after the write
+// committed, is treated as an unknown outcome.
 var serviceTokenUnwritten = []string{
 	"Service tokens are not yet available in every service revision",
 	"Repository permissions are temporarily unavailable",
+	"Delegation authorization is not ready",
 }
 
 // refusalNamesGrant reports whether the API's answer points at one grant: a
@@ -300,6 +302,17 @@ func serviceTokenWriteStale(current map[string]any, hint string) string {
 		return hint
 	}
 	return ""
+}
+
+// serviceTokenWriteNotFound is the 404 hint for a write after a successful
+// read. While service tokens are switched off for the organization, the read
+// still succeeds and shows the block, but rotating and widening access answer
+// 404; narrowing and revoking still work.
+func serviceTokenWriteNotFound(current map[string]any, org string) string {
+	if fieldText(current, "blocked_by") == "feature_disabled" {
+		return "Service tokens are not available for this change in this organization; narrowing a token's access and revoking it still work. Contact support@avrea.com to enable them."
+	}
+	return serviceTokenListHint(org)
 }
 
 func newServiceTokenList(d Dependencies) *cobra.Command {
@@ -525,16 +538,21 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
+		unknown := "The access may have been replaced; check \x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60 before retrying."
 		record, err := api.Do(cmd.Context(), http.MethodPut, path+"/grants", map[string]any{"grants": grants, "expected_grants_version": version})
 		if err != nil {
-			return serviceTokenError(cfg, err, serviceTokenRefusal{
-				action:    "replace the service token's access",
-				grants:    true,
-				notFound:  serviceTokenListHint(id),
-				stale:     serviceTokenWriteStale(current, serviceTokenStaleHint),
-				unchanged: "The token's access was not changed.",
-				unknown:   "The access may have been replaced; check \x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60 before retrying.",
-			})
+			var he *client.HTTPError
+			if errors.As(err, &he) {
+				return serviceTokenError(cfg, he, serviceTokenRefusal{
+					action:    "replace the service token's access",
+					grants:    true,
+					notFound:  serviceTokenWriteNotFound(current, id),
+					stale:     serviceTokenWriteStale(current, serviceTokenStaleHint),
+					unchanged: "The token's access was not changed.",
+					unknown:   unknown,
+				})
+			}
+			return tokenCreationFailure("The response to the access change was not received. "+unknown, err)
 		}
 		if _, err = fmt.Fprintf(d.Out, "Replaced the access of service token %s.\n\n", args[0]); err != nil {
 			return err
@@ -601,7 +619,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 		}
 		retire := "Rotating again retires the previous secret at once."
 		view := "\x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60"
-		unknown := "The token may have been rotated; check its rotation version with " + view + " before retrying. " + retire
+		unknown := fmt.Sprintf("The token may have been rotated; it was at rotation version %d before this attempt. Check its rotation version with %s before retrying: a higher version means a rotation happened. %s", version, view, retire)
 		stale := "The token changed after this command read it. Check " + view + " before retrying: if it was rotated, rotating again retires the previous secret at once."
 		minted, err := api.MintAccessToken(cmd.Context(), path+"/rotate", body)
 		if err != nil {
@@ -609,7 +627,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 			if errors.As(err, &he) {
 				return serviceTokenError(cfg, he, serviceTokenRefusal{
 					action:    "rotate the service token",
-					notFound:  serviceTokenListHint(id),
+					notFound:  serviceTokenWriteNotFound(current, id),
 					stale:     serviceTokenWriteStale(current, stale),
 					unchanged: "The token was not rotated.",
 					unknown:   unknown,

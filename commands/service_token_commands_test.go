@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -887,5 +888,112 @@ func TestServiceTokenRotateConfirmsEndingAnOpenOverlap(t *testing.T) {
 				t.Fatal(code, h.out, message)
 			}
 		})
+	}
+}
+
+// The API refuses with this 503 before it writes, so a retry is safe.
+func TestServiceTokenDelegationNotReadyWroteNothing(t *testing.T) {
+	for _, tc := range []struct {
+		args       []string
+		want, kept string
+	}{
+		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA}, "No service token was created. Retry in 30s.", "may have been created"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, "The token's access was not changed. Retry in 30s.", "may have been replaced"},
+		{[]string{"rotate", manageTokenID}, "The token was not rotated. Retry in 30s.", "may have been rotated"},
+	} {
+		routes := manageRoutes(t, manageRecord(nil))
+		h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+			if r.method == "GET" {
+				return routes(r)
+			}
+			return manageReply{503, http.Header{"Retry-After": {"30"}}, `{"detail":"Delegation authorization is not ready"}`}
+		})
+		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
+		if message := h.stderr.String(); code != 1 || !strings.Contains(message, tc.want) || strings.Contains(message, tc.kept) {
+			t.Fatal(tc.args, code, message)
+		}
+	}
+}
+
+// While service tokens are switched off, the read succeeds and shows the
+// block but rotating and widening access answer 404: the token exists, so
+// listing tokens is the wrong advice.
+func TestServiceTokenWriteNotFoundFollowsTheRead(t *testing.T) {
+	disabled := manageRecord(map[string]any{"blocked_by": "feature_disabled"})
+	for _, tc := range []struct {
+		args    []string
+		current map[string]any
+		want    []string
+		avoid   string
+	}{
+		{[]string{"rotate", manageTokenID}, disabled, []string{"Service tokens are not available for this change", "narrowing a token's access and revoking it still work", "support@avrea.com"}, "service-token list"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, disabled, []string{"Service tokens are not available for this change", "support@avrea.com"}, "service-token list"},
+		{[]string{"rotate", manageTokenID}, manageRecord(nil), []string{"avr service-token list --org " + inspectionOrg}, "not available for this change"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, manageRecord(nil), []string{"avr service-token list --org " + inspectionOrg}, "not available for this change"},
+	} {
+		routes := manageRoutes(t, tc.current)
+		h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+			if r.method == "GET" {
+				return routes(r)
+			}
+			return manageReply{404, nil, `{"detail":"Not found"}`}
+		})
+		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
+		message := h.stderr.String()
+		if code != 1 || len(h.requests) != 2 || strings.Contains(message, tc.avoid) {
+			t.Fatal(tc.args, tc.current["blocked_by"], code, message)
+		}
+		for _, want := range tc.want {
+			if !strings.Contains(message, want) {
+				t.Errorf("%v: missing %q in %q", tc.args, want, message)
+			}
+		}
+	}
+}
+
+// After an unknown outcome the rotation version tells whether the attempt
+// rotated, so the message names the version it started from.
+func TestServiceTokenRotateUnknownOutcomeNamesStartingVersion(t *testing.T) {
+	routes := manageRoutes(t, manageRecord(nil))
+	h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+		if r.method == "GET" {
+			return routes(r)
+		}
+		return manageReply{502, nil, `{}`}
+	})
+	code := h.run(t, "service-token", "rotate", manageTokenID)
+	if message := h.stderr.String(); code != 1 || !strings.Contains(message, "may have been rotated; it was at rotation version 3 before this attempt.") || !strings.Contains(message, "a higher version means a rotation happened") {
+		t.Fatal(code, message)
+	}
+}
+
+// A PUT whose response is lost may have committed, so set-access says the
+// access may have been replaced, as create and rotate do.
+func TestServiceTokenSetAccessLostResponseMayHaveCommitted(t *testing.T) {
+	for _, cancelled := range []bool{false, true} {
+		h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
+		ctx, cancel := context.WithCancel(t.Context())
+		inner := h.d.HTTP.Transport
+		h.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+			if r.Method != http.MethodPut {
+				return inner.RoundTrip(r)
+			}
+			// The change commits; then the answer is lost.
+			if _, err := inner.RoundTrip(r); err != nil {
+				t.Fatal(err)
+			}
+			if cancelled {
+				cancel()
+				return nil, context.Canceled
+			}
+			return nil, errors.New("connection reset by peer")
+		})}
+		code := Execute(ctx, []string{"service-token", "set-access", manageTokenID, "--repo", manageRepoA}, h.d)
+		cancel()
+		message := h.stderr.String()
+		want := map[bool]int{false: 1, true: 130}[cancelled]
+		if code != want || !strings.Contains(message, "The response to the access change was not received. The access may have been replaced; check \x60avr service-token view "+manageTokenID+" --org "+inspectionOrg+"\x60 before retrying.") || h.out.Len() != 0 {
+			t.Fatal(cancelled, code, message)
+		}
 	}
 }
