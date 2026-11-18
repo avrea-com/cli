@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 )
@@ -12,7 +14,18 @@ func (c *Client) FirewallRules(ctx context.Context, path string) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	return decodeArray(raw)
+	// Older organization APIs and repository lists return a bare array.
+	if bytes.HasPrefix(bytes.TrimSpace(raw), []byte("[")) {
+		return decodeArray(raw)
+	}
+	body, err := decodeObject(raw)
+	if err != nil {
+		return Page{}, err
+	}
+	if _, ok := body["data"].([]any); !ok {
+		return Page{}, errors.New("unexpected API response: expected a data array")
+	}
+	return decodePage(body)
 }
 func (c *Client) ResolvedFirewall(ctx context.Context, path string) (map[string]any, error) {
 	body, err := c.Get(ctx, path, nil)

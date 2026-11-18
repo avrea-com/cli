@@ -88,7 +88,7 @@ func TestFirewallInheritOnlyDeletesRepoDefault(t *testing.T) {
 		deletes := 0
 		_, run := firewallTestDeps(t, func(r *http.Request) (int, string) {
 			if r.Method == "GET" && r.URL.Path == "/orgs/"+firewallTestOrg+"/firewall/rules" {
-				return 200, `[{"is_default":true,"action":"deny"}]`
+				return 200, `{"data":[{"is_default":true,"action":"deny"}],"has_hidden_rules":false}`
 			}
 			if !strings.Contains(r.URL.Path, "/repos/"+firewallTestRepo+"/") {
 				t.Fatal(r.URL)
