@@ -146,7 +146,7 @@ func TestVMLifecycleWaitWakesFromStatusStream(t *testing.T) {
 				args = append(args, "--yes")
 			}
 			code := Execute(t.Context(), args, d)
-			if code != 0 || gets.Load() != 2 || streams.Load() != 1 || !reflect.DeepEqual(delays, []time.Duration{time.Second}) {
+			if code != 0 || gets.Load() != 2 || streams.Load() != 1 || !reflect.DeepEqual(delays, []time.Duration{100 * time.Millisecond}) {
 				t.Fatal(code, gets.Load(), streams.Load(), delays, out, stderr)
 			}
 		})

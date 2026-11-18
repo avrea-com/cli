@@ -101,7 +101,7 @@ func TestVMStateNotificationsWakeFloorAndPermanentFallback(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			want := time.Second
+			want := 100 * time.Millisecond
 			if fail {
 				want = 3 * time.Second
 			}
