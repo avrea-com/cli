@@ -17,19 +17,79 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The pre-commit hooks in .pre-commit-config.yaml, run by prek over the
+  # change set, then a clean-tree check: the fix hooks still fail on
+  # unfixable findings, and pure formatting drift fails with the diff.
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # HEAD and its parents: the lint base below is HEAD^1 (PR merge ref)
+          # or github.event.before (single-commit push).
+          fetch-depth: 2
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.14"
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version-file: pyproject.toml
-      - run: make tooling-lint
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      # Standalone, not uvx: a uv-wrapped prek exports UV into every hook,
+      # overriding the Makefile's UV.
+      - name: Install prek
+        env:
+          UV_TOOL_BIN_DIR: ${{ runner.temp }}/uv-tools
+        run: uv tool install 'prek==0.5.7'
+      # HEAD is the PR merge ref, whose first parent is the base actually
+      # merged, so HEAD^1..HEAD is exactly the PR's change set.
+      - name: Resolve lint diff base
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          base=""
+          if [ "$EVENT_NAME" = pull_request ]; then
+            if [ "$(git rev-list --parents -n 1 HEAD | wc -w)" -eq 3 ]; then
+              base=$(git rev-parse HEAD^1)
+            else
+              base="$PR_BASE_SHA"
+            fi
+          else
+            base="$BEFORE"
+          fi
+          if [ -n "$base" ] && ! git cat-file -e "$base" 2>/dev/null; then
+            base=""
+          fi
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+      - name: Run pre-commit hooks against the change set
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          PREK: ${{ runner.temp }}/uv-tools/prek
+        run: |
+          set -euo pipefail
+          if [ -n "$BASE_SHA" ]; then
+            git diff --name-only "$BASE_SHA" HEAD
+            "$PREK" run --from-ref "$BASE_SHA" --to-ref HEAD --show-diff-on-failure
+          else
+            # No usable base (tag push via release.yml, force push, new branch).
+            "$PREK" run --all-files --show-diff-on-failure
+          fi
+      - name: Assert hooks left the tree clean
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::pre-commit fix hooks modified files - run 'prek run' (or 'make fix') locally and commit the result"
+            exit 1
+          fi
 
   test:
     strategy:
