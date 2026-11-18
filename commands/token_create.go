@@ -176,7 +176,7 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 		record, _ := minted.(map[string]any)
 		credential, ok := record["token"].(string)
 		if !ok || credential == "" {
-			return &ExitError{1, "Error: The API reported success without a credential, so a token may exist that nothing can use." + tokenDiscardHint(record, id)}
+			return &ExitError{1, "Error: The API reported success without a credential, so a token may exist that nothing can use." + discardHint("token", record, id)}
 		}
 		return deliverCreatedToken(cmd.Context(), d, record, credential, id, hasJSON, fields, o.expression)
 	})
@@ -200,11 +200,14 @@ func repositoryReadGrants(ctx context.Context, d Dependencies, cfg config.Config
 	}
 	return grants, nil
 }
-func tokenDiscardHint(record map[string]any, org string) string {
+
+// discardHint tells how to revoke a token whose secret was not delivered;
+// command is the token's command group, token or service-token.
+func discardHint(command string, record map[string]any, org string) string {
 	if id, ok := record["id"].(string); ok && tokenIDPattern().MatchString(id) {
-		return " To discard it, run \x60avr token revoke " + id + " --org " + shellQuotePython(org) + "\x60."
+		return " To discard it, run \x60avr " + command + " revoke " + id + " --org " + shellQuotePython(org) + "\x60."
 	}
-	return " Check \x60avr token list\x60 before retrying."
+	return " Check \x60avr " + command + " list --org " + shellQuotePython(org) + "\x60 before retrying."
 }
 func tokenCreationFailure(message string, cause error) error {
 	code := 1
@@ -298,7 +301,7 @@ func deliverCreatedToken(ctx context.Context, d Dependencies, record map[string]
 			return renderToken(d, record)
 		},
 		outcome:  "The token was created",
-		recovery: tokenDiscardHint(record, org),
+		recovery: discardHint("token", record, org),
 	})
 }
 

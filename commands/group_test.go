@@ -137,6 +137,8 @@ func TestServiceTokenGroupMatchingRules(t *testing.T) {
 		{"case does not matter", "platform/ci", groupPlatCI},
 		// Without the deleted Acme/Tools this name has one match.
 		{"deleted groups are left out", "Tools", groupTools + "x"},
+		// Spaces and slashes around a path are not part of it.
+		{"surrounding spaces and slashes", " /Platform/CI/ ", groupPlatCI},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, groupPages(t, rows))

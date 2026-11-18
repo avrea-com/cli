@@ -281,10 +281,28 @@ func newSwitch(d Dependencies) *cobra.Command {
 		})}
 }
 
+// reauthenticationRequired reports the API's X-Reauthentication-Required
+// refusal: the credential is too old for a change that outlives the session.
+func reauthenticationRequired(he *client.HTTPError) bool {
+	return he.Status == 403 && he.Reauthentication != ""
+}
+
 func apiError(cfg config.Config, err error, action string) error {
 	var he *client.HTTPError
 	if !errors.As(err, &he) {
 		return err
+	}
+	if reauthenticationRequired(he) {
+		detail := ""
+		if he.Detail != "" {
+			detail = ": " + output.CellText(he.Detail)
+		}
+		message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
+			"\n  Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
+		if cfg.Host != config.DefaultHost {
+			message += "\n  API: " + cfg.Host + he.Path
+		}
+		return &ExitError{4, message}
 	}
 	kind := config.Kind(cfg.Token)
 	bound := config.IsOrgBound(cfg.Token)
@@ -299,7 +317,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		}
 		hint := "ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."
 		if kind == config.ServiceToken {
-			hint = "the service token may be expired or revoked. An organization admin can rotate it with `avr service-token rotate <token-id>` or mint a new one with `avr service-token create`; then set it as AVR_TOKEN."
+			hint = "an organization admin can check the token with `avr service-token view <token-id>`. A revoked or expired token cannot be rotated: create a new one with `avr service-token create`. A live token was rotated: use its new secret, or rotate it again with `avr service-token rotate <token-id>`. Then set the secret as AVR_TOKEN."
 		}
 		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: " + hint}
 	}

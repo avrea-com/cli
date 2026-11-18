@@ -48,18 +48,7 @@ func NewServiceToken(deps Dependencies) *cobra.Command {
 // organization. Routes the API closes to scoped and service tokens are refused
 // before any request; subject and action complete requirePerson's message.
 func personContext(ctx context.Context, d Dependencies, org, subject, action string) (config.Config, *client.Client, string, error) {
-	cfg, _, api, err := d.load()
-	if err != nil {
-		return cfg, api, "", err
-	}
-	if err = authenticated(cfg); err != nil {
-		return cfg, api, "", err
-	}
-	if err = requirePerson(cfg, subject, action); err != nil {
-		return cfg, api, "", err
-	}
-	id, err := resolveOrg(ctx, d, cfg, api, org)
-	return cfg, api, id, err
+	return orgContext(ctx, d, org, func(cfg config.Config) error { return requirePerson(cfg, subject, action) })
 }
 
 func serviceTokenContext(ctx context.Context, d Dependencies, org string) (config.Config, *client.Client, string, error) {
@@ -110,11 +99,15 @@ func refusalNamesGrant(he *client.HTTPError) bool {
 	return false
 }
 
-// timestampAfter reports whether an API timestamp lies after now; an absent
-// or unreadable one does not.
+// timestampAfter reports whether an API timestamp lies after now. An absent
+// one does not; one that cannot be read counts as after, so the caller asks or
+// warns rather than staying silent.
 func timestampAfter(value string, now time.Time) bool {
-	t, err := time.Parse(time.RFC3339Nano, value)
-	return err == nil && t.After(now)
+	if value == "" {
+		return false
+	}
+	t, err := parseAPITimestamp(value)
+	return err != nil || t.After(now)
 }
 
 func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) error {
@@ -122,13 +115,10 @@ func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) erro
 	if !errors.As(err, &he) {
 		return err
 	}
-	if he.Status == 403 && he.Reauthentication != "" {
-		return serviceTokenReauthentication(cfg, he, r.action)
-	}
 	result := apiError(cfg, he, r.action)
 	hint := ""
 	switch {
-	case he.Status == 401:
+	case he.Status == 401, reauthenticationRequired(he):
 	case r.grants && (he.Status == 403 || he.Status == 422) && refusalNamesGrant(he):
 		hint = serviceTokenGrantOrderHint
 	case he.Status == 404:
@@ -145,19 +135,21 @@ func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) erro
 	return insertTokenHint(result, hint)
 }
 
-// serviceTokenReauthentication answers the API's X-Reauthentication-Required
-// refusal: the API key is too old for a change that outlives the session.
-func serviceTokenReauthentication(cfg config.Config, he *client.HTTPError, action string) error {
-	detail := ""
-	if he.Detail != "" {
-		detail = ": " + output.CellText(he.Detail)
+// serviceTokenWriteError explains a failed write. An HTTP refusal gets
+// serviceTokenError's hints. Any other error, including a success response
+// that could not be read, leaves the outcome unknown, so the cause is shown
+// with r.unknown; change names what could not be confirmed.
+func serviceTokenWriteError(cfg config.Config, err error, r serviceTokenRefusal, change string) error {
+	var he *client.HTTPError
+	if errors.As(err, &he) {
+		return serviceTokenError(cfg, he, r)
 	}
-	message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
-		"\n  Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
-	if cfg.Host != config.DefaultHost {
-		message += "\n  API: " + cfg.Host + he.Path
-	}
-	return &ExitError{4, message}
+	return tokenCreationFailure("Could not confirm "+change+": "+err.Error()+". "+r.unknown, err)
+}
+
+// serviceTokenViewHint is the command that shows a token's current state.
+func serviceTokenViewHint(token, org string) string {
+	return "\x60avr service-token view " + token + " --org " + shellQuotePython(org) + "\x60"
 }
 
 // serviceTokenGrantOptions selects what a service token reads.
@@ -330,7 +322,8 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 		}
 		base := url.Values{}
 		if cmd.Flags().Changed("group") {
-			if err := checkGroupOption(group); err != nil {
+			var err error
+			if group, err = groupOption(group); err != nil {
 				return err
 			}
 		}
@@ -446,7 +439,8 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		if !f.Changed("group") {
 			return &ExitError{2, "Error: Missing option '--group'."}
 		}
-		if err := checkGroupOption(group); err != nil {
+		var err error
+		if group, err = groupOption(group); err != nil {
 			return err
 		}
 		body := map[string]any{"name": name}
@@ -479,25 +473,20 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
-		unknown := "A service token may have been created; check \x60avr service-token list --org " + shellQuotePython(id) + "\x60 before retrying."
 		minted, err := api.MintAccessToken(cmd.Context(), serviceTokensPath(id), body)
 		if err != nil {
-			var he *client.HTTPError
-			if errors.As(err, &he) {
-				return serviceTokenError(cfg, he, serviceTokenRefusal{
-					action:    "create a service token",
-					grants:    true,
-					notFound:  "Check the organization and API host. If service tokens are unavailable for this organization, contact support@avrea.com.",
-					unchanged: "No service token was created.",
-					unknown:   unknown,
-				})
-			}
-			return tokenCreationFailure("The creation response was not received. "+unknown, err)
+			return serviceTokenWriteError(cfg, err, serviceTokenRefusal{
+				action:    "create a service token",
+				grants:    true,
+				notFound:  "Check the organization and API host. If service tokens are unavailable for this organization, contact support@avrea.com.",
+				unchanged: "No service token was created.",
+				unknown:   "A service token may have been created; check \x60avr service-token list --org " + shellQuotePython(id) + "\x60 before retrying.",
+			}, "the creation")
 		}
 		record, _ := minted.(map[string]any)
 		credential, ok := record["token"].(string)
 		if !ok || credential == "" {
-			return &ExitError{1, "Error: The API reported success without a secret, so a service token may exist that nothing can use." + serviceTokenDiscardHint(record, id)}
+			return &ExitError{1, "Error: The API reported success without a secret, so a service token may exist that nothing can use." + discardHint("service-token", record, id)}
 		}
 		return deliverOneTimeCredential(cmd.Context(), d, oneTimeCredential{
 			record: record, credential: credential, hasJSON: f.Changed("json"), fields: fields, expression: o.expression,
@@ -505,17 +494,10 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 			exports:  [][2]string{{"AVR_TOKEN", credential}, {"AVR_ORG", id}},
 			summary:  func() error { return renderServiceToken(d, record) },
 			outcome:  "The service token was created",
-			recovery: serviceTokenDiscardHint(record, id),
+			recovery: discardHint("service-token", record, id),
 		})
 	})
 	return c
-}
-
-func serviceTokenDiscardHint(record map[string]any, org string) string {
-	if id, ok := record["id"].(string); ok && tokenIDPattern().MatchString(id) {
-		return " To discard it, run \x60avr service-token revoke " + id + " --org " + shellQuotePython(org) + "\x60."
-	}
-	return " Check \x60avr service-token list --org " + shellQuotePython(org) + "\x60 before retrying."
 }
 
 func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
@@ -547,25 +529,20 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
-		view := "\x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60"
-		unknown := "The access may have been replaced; check " + view + " before retrying."
+		view := serviceTokenViewHint(args[0], id)
 		// A rerun sends the same whole selection, which would undo a change
 		// another admin made in between.
 		stale := "The token changed after this command read it. Check " + view + ", then run set-access again with the full selection you want."
 		record, err := api.Do(cmd.Context(), http.MethodPut, path+"/grants", map[string]any{"grants": grants, "expected_grants_version": version})
 		if err != nil {
-			var he *client.HTTPError
-			if errors.As(err, &he) {
-				return serviceTokenError(cfg, he, serviceTokenRefusal{
-					action:    "replace the service token's access",
-					grants:    true,
-					notFound:  serviceTokenWriteNotFound(current, id),
-					stale:     serviceTokenWriteStale(current, stale),
-					unchanged: "The token's access was not changed.",
-					unknown:   unknown,
-				})
-			}
-			return tokenCreationFailure("Could not confirm the access change: "+err.Error()+". "+unknown, err)
+			return serviceTokenWriteError(cfg, err, serviceTokenRefusal{
+				action:    "replace the service token's access",
+				grants:    true,
+				notFound:  serviceTokenWriteNotFound(current, id),
+				stale:     serviceTokenWriteStale(current, stale),
+				unchanged: "The token's access was not changed.",
+				unknown:   "The access may have been replaced; check " + view + " before retrying.",
+			}, "the access change")
 		}
 		if _, err = fmt.Fprintf(d.Out, "Replaced the access of service token %s.\n\n", args[0]); err != nil {
 			return err
@@ -633,22 +610,18 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 			return err
 		}
 		retire := "Rotating again retires the previous secret at once."
-		view := "\x60avr service-token view " + args[0] + " --org " + shellQuotePython(id) + "\x60"
+		view := serviceTokenViewHint(args[0], id)
 		unknown := fmt.Sprintf("The token may have been rotated; it was at rotation version %d before this attempt. Check its rotation version with %s before retrying: a higher version means a rotation happened. %s", version, view, retire)
 		stale := "The token changed after this command read it. Check " + view + " before retrying: if it was rotated, rotating again retires the previous secret at once."
 		minted, err := api.MintAccessToken(cmd.Context(), path+"/rotate", body)
 		if err != nil {
-			var he *client.HTTPError
-			if errors.As(err, &he) {
-				return serviceTokenError(cfg, he, serviceTokenRefusal{
-					action:    "rotate the service token",
-					notFound:  serviceTokenWriteNotFound(current, id),
-					stale:     serviceTokenWriteStale(current, stale),
-					unchanged: "The token was not rotated.",
-					unknown:   unknown,
-				})
-			}
-			return tokenCreationFailure("The rotation response was not received. "+unknown, err)
+			return serviceTokenWriteError(cfg, err, serviceTokenRefusal{
+				action:    "rotate the service token",
+				notFound:  serviceTokenWriteNotFound(current, id),
+				stale:     serviceTokenWriteStale(current, stale),
+				unchanged: "The token was not rotated.",
+				unknown:   unknown,
+			}, "the rotation")
 		}
 		record, _ := minted.(map[string]any)
 		credential, ok := record["token"].(string)

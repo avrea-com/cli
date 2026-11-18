@@ -102,14 +102,21 @@ func newJobView(d Dependencies) *cobra.Command {
 	return c
 }
 
-func formatTimestamp(value string) string {
-	if value == "" {
-		return "unknown"
-	}
+// parseAPITimestamp reads an API timestamp: RFC 3339, or a time without a
+// zone, which the API writes in UTC.
+func parseAPITimestamp(value string) (time.Time, error) {
 	t, err := time.Parse(time.RFC3339Nano, value)
 	if err != nil {
 		t, err = time.Parse("2006-01-02T15:04:05", value)
 	}
+	return t, err
+}
+
+func formatTimestamp(value string) string {
+	if value == "" {
+		return "unknown"
+	}
+	t, err := parseAPITimestamp(value)
 	if err != nil {
 		return output.CellText(value)
 	}

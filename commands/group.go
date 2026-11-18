@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -113,13 +114,15 @@ func groupPaths(rows []map[string]any) [][]string {
 	return paths
 }
 
-// checkGroupOption rejects a --group value no group can match before any
+// groupOption returns a --group value as resolveGroup compares it, without
+// surrounding spaces or slashes, and rejects one no group can match before any
 // request.
-func checkGroupOption(value string) error {
-	if strings.TrimSpace(value) == "" {
-		return &ExitError{2, "Error: Invalid value for '--group': expected a group name, path or ID (grp-...)."}
+func groupOption(value string) (string, error) {
+	value = strings.TrimFunc(value, func(r rune) bool { return r == '/' || unicode.IsSpace(r) })
+	if value == "" {
+		return "", &ExitError{2, "Error: Invalid value for '--group': expected a group name, path or ID (grp-...)."}
 	}
-	return nil
+	return value, nil
 }
 
 // resolveGroup returns the ID of the group value names. A group ID is used as

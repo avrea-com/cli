@@ -1098,3 +1098,42 @@ func TestServiceTokenSecretSetupExportsOrganizationID(t *testing.T) {
 		}
 	}
 }
+
+// A create or rotate whose success response cannot be read may have
+// committed, so the error names the cause beside the unknown outcome.
+func TestServiceTokenMintUnreadableResponseShowsCause(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"service-token", "create", "--name", "ci", "--group", manageGroupID, "--repo", manageRepoA},
+			[]string{"Could not confirm the creation: invalid token creation response", ". A service token may have been created; check \x60avr service-token list --org " + inspectionOrg + "\x60 before retrying."}},
+		{[]string{"service-token", "rotate", manageTokenID},
+			[]string{"Could not confirm the rotation: invalid token creation response", ". The token may have been rotated; it was at rotation version"}},
+	} {
+		t.Run(tc.args[1], func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
+			inner := h.d.HTTP.Transport
+			h.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				if r.Method != http.MethodPost {
+					return inner.RoundTrip(r)
+				}
+				// The write commits; then its answer cannot be read.
+				if _, err := inner.RoundTrip(r); err != nil {
+					t.Fatal(err)
+				}
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader("not json")), Request: r}, nil
+			})}
+			code := h.run(t, tc.args...)
+			message := h.stderr.String()
+			if code != 1 || strings.Contains(message, "not received") || h.out.Len() != 0 {
+				t.Fatal(code, message)
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(message, want) {
+					t.Fatalf("missing %q in %q", want, message)
+				}
+			}
+		})
+	}
+}

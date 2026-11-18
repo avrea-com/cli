@@ -37,7 +37,10 @@ func tokenIDArgs(cmd *cobra.Command, args []string) error {
 	}
 	return nil
 }
-func tokenContext(ctx context.Context, d Dependencies, org string) (config.Config, *client.Client, string, error) {
+
+// orgContext loads the credentials, requires a sign-in and resolves the
+// organization. refuse, when set, rejects a credential before any request.
+func orgContext(ctx context.Context, d Dependencies, org string, refuse func(config.Config) error) (config.Config, *client.Client, string, error) {
 	cfg, _, api, err := d.load()
 	if err != nil {
 		return cfg, api, "", err
@@ -45,7 +48,17 @@ func tokenContext(ctx context.Context, d Dependencies, org string) (config.Confi
 	if err = authenticated(cfg); err != nil {
 		return cfg, api, "", err
 	}
+	if refuse != nil {
+		if err = refuse(cfg); err != nil {
+			return cfg, api, "", err
+		}
+	}
 	id, err := resolveOrg(ctx, d, cfg, api, org)
+	return cfg, api, id, err
+}
+
+func tokenContext(ctx context.Context, d Dependencies, org string) (config.Config, *client.Client, string, error) {
+	cfg, api, id, err := orgContext(ctx, d, org, nil)
 	return cfg, api, "/orgs/" + url.PathEscape(id) + "/access-tokens", err
 }
 func tokenError(cfg config.Config, err error, action string) error {
