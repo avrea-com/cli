@@ -22,6 +22,8 @@ updates:
         update-types: ["minor", "patch"]
     open-pull-requests-limit: 10
     ignore:
+      # Frozen Python baseline for native upgrade/rollback tests, not a dependency.
+      - dependency-name: "avr-cli"
       # ty is pre-release; we pin to ==0.0.15 in pyproject.
       # bump deliberately in its own PR when 0.1.x stabilizes.
       - dependency-name: "ty"

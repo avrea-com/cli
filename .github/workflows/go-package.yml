@@ -87,7 +87,7 @@ jobs:
           version-file: pyproject.toml
           enable-cache: false
       - name: Install pipx validation tool
-        run: python -m pip install pipx==1.18.11
+        run: python -m pip install pipx==1.18.16
       - name: Validate downloaded archive on a fresh native runner
         env:
           EXPECTED_TARGET: ${{ matrix.target }}
@@ -146,7 +146,7 @@ jobs:
           path: build/go/sbom-source
           format: cyclonedx-json
           output-file: build/go/bom.cyclonedx.json
-          syft-version: v1.56.0
+          syft-version: v1.57.1
           upload-artifact: false
           upload-release-assets: false
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
@@ -154,7 +154,7 @@ jobs:
           path: build/go/sbom-source
           format: spdx-json
           output-file: build/go/bom.spdx.json
-          syft-version: v1.56.0
+          syft-version: v1.57.1
           upload-artifact: false
           upload-release-assets: false
       - name: Scan native distribution SBOM
