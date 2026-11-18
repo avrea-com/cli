@@ -172,7 +172,7 @@ func newJobLogs(d Dependencies) *cobra.Command {
 	var o logOptions
 	c := &cobra.Command{Use: "logs JOB_ID", Short: "View job logs grouped by step.", Args: cobra.ExactArgs(1)}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.BoolVar(&o.failed, "failed", false, "Only failed-step logs.")
 	f.StringVar(&o.step, "step", "", "Exact step name.")
 	f.StringVar(&o.level, "level", "", "Log level.")

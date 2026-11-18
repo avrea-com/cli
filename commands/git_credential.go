@@ -69,7 +69,7 @@ func newGitCredential(d Dependencies) *cobra.Command {
 	var rawURL, repo string
 	cmd := &cobra.Command{Use: "git-credential <get|store|erase>", Short: "Git credential protocol adapter.", Hidden: true, Args: cobra.ExactArgs(1)}
 	cmd.Flags().StringVar(&rawURL, "url", "", "Exact clone URL this helper may authenticate.")
-	cmd.Flags().StringVar(&repo, "repo", "", "Repository whose Git token to request.")
+	cmd.Flags().StringVarP(&repo, "repo", "R", "", "Repository whose Git token to request.")
 	_ = cmd.MarkFlagRequired("url")
 	_ = cmd.MarkFlagRequired("repo")
 	cmd.RunE = run(func(cmd *cobra.Command, args []string) error {

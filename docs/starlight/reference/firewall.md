@@ -23,8 +23,8 @@ Add a rule. Exactly one of --cidr, --fqdn, --any must be specified.
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, adds at repo scope.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, adds at repo scope.
 - <code class="cli-flag">&#x2D;&#x2D;action</code> <code class="cli-value">&lt;CHOICE&gt;</code> _(choices: `allow`, `deny` · required)_
 - <code class="cli-flag">&#x2D;&#x2D;cidr</code> <code class="cli-value">&lt;TEXT&gt;</code> — Destination CIDR (e.g. 10.0.0.0/8 or 1.2.3.4/32).
 - <code class="cli-flag">&#x2D;&#x2D;fqdn</code> <code class="cli-value">&lt;TEXT&gt;</code> — Destination hostname (e.g. api.example.com).
@@ -47,8 +47,8 @@ avr firewall delete [OPTIONS] RULE_ID
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, deletes a repo-level rule.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, deletes a repo-level rule.
 
 ### `avr firewall edit`
 
@@ -72,9 +72,9 @@ Use --ports all to remove a port restriction; numeric ports require a TCP/UDP ru
 - <code class="cli-flag">&#x2D;&#x2D;proto</code> <code class="cli-value">&lt;CHOICE&gt;</code> _(choices: `tcp`, `udp`, `icmp`, `any`)_
 - <code class="cli-flag">&#x2D;&#x2D;cidr</code> <code class="cli-value">&lt;TEXT&gt;</code> — Destination IPv4 address or CIDR; replaces the hostname.
 - <code class="cli-flag">&#x2D;&#x2D;fqdn</code> <code class="cli-value">&lt;TEXT&gt;</code> — Destination hostname; replaces the CIDR.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
 - <code class="cli-flag">&#x2D;&#x2D;ports</code> <code class="cli-value">&lt;TEXT&gt;</code> — Port, range, or all to clear the port restriction.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
 
 ### `avr firewall export`
 
@@ -90,8 +90,8 @@ Inherited rules and storage IDs are excluded. Use --file PATH, or redirect stdou
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;file</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output file, or - for stdout. Existing files are not overwritten. _(default: `-`)_
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
 
 ### `avr firewall flow-summaries`
 
@@ -109,8 +109,8 @@ attempt for a job.
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. _(required)_
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;job, &#x2D;&#x2D;job-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter to every VM execution attempt for a job ID.
 - <code class="cli-flag">&#x2D;&#x2D;with-drops</code> — Show only summaries where the firewall blocked at least one flow.
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max summaries to return. _(default: `20`)_
@@ -139,8 +139,8 @@ If the policy changes after preview, the import fails without overwriting it.
 - <code class="cli-flag">&#x2D;&#x2D;mode</code> <code class="cli-value">&lt;CHOICE&gt;</code> _(choices: `append`, `replace` · default: `append`)_
 - <code class="cli-flag">&#x2D;&#x2D;dry-run</code> — Validate and summarize changes without applying them.
 - <code class="cli-flag">&#x2D;&#x2D;file</code> <code class="cli-value">&lt;TEXT&gt;</code> — Policy file, or - to read stdin. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug; defaults to the configured organization.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, uses repository scope.
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip replacement confirmation.
 
 ### `avr firewall list`
@@ -153,8 +153,8 @@ avr firewall list [OPTIONS]
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, shows the repo-level list.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, shows the repo-level list.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Output rules as JSON instead of a table.
 
 ### `avr firewall move`
@@ -172,8 +172,8 @@ avr firewall move [OPTIONS] RULE_ID
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;to</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Target 0-indexed position. _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, moves a repo-level rule.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, moves a repo-level rule.
 
 ### `avr firewall set-default`
 
@@ -185,8 +185,8 @@ avr firewall set-default [OPTIONS]
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, sets the repo-level default.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. If provided, sets the repo-level default.
 - <code class="cli-flag">&#x2D;&#x2D;action</code> <code class="cli-value">&lt;CHOICE&gt;</code> _(choices: `allow`, `deny`)_
 - <code class="cli-flag">&#x2D;&#x2D;inherit</code> — Remove the repository default override.
 
@@ -202,6 +202,6 @@ Show rules in evaluation order with repository/organization ownership. Built-in 
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. _(required)_
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository ID or owner/repo. _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Output resolved rules as JSON instead of a table.

@@ -70,7 +70,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -90,7 +90,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -118,7 +118,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip confirmation prompt.
 
 #### `avr org email-domain verify`
@@ -150,7 +150,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -209,7 +209,7 @@ JSON FIELDS (GitLab)
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;platform</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Source platform to install. _(choices: `github`, `gitlab` · default: `github`)_
 - <code class="cli-flag">&#x2D;&#x2D;group-full-path</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab group full path, such as acme/platform.
 - <code class="cli-flag">&#x2D;&#x2D;project-selection</code> <code class="cli-value">&lt;CHOICE&gt;</code> — GitLab project selection mode. _(choices: `all`, `selected`)_
@@ -259,7 +259,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Installation ID to remove (ins-xxx format) _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip confirmation prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -292,7 +292,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;access-token-stdin</code> — Read the GitLab group access token from stdin instead of prompting.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -325,7 +325,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;machine-type</code> <code class="cli-value">&lt;TEXT&gt;</code> — Machine type to create; repeat for multiple machine types. _(repeatable · required)_
 - <code class="cli-flag">&#x2D;&#x2D;protected</code> — Restrict the runners to protected branches and tags.
@@ -354,7 +354,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -375,7 +375,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
@@ -403,7 +403,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;runner-token-stdin</code> — Read the runner authentication token from standard input.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -433,7 +433,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;project-selection</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Project selection mode. _(choices: `all`, `selected` · required)_
 - <code class="cli-flag">&#x2D;&#x2D;project-id</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — GitLab numeric project ID to select (repeatable, up to 1,000). _(repeatable)_
@@ -487,7 +487,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -532,7 +532,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;email-attribute, &#x2D;&#x2D;attr-email</code> <code class="cli-value">&lt;TEXT&gt;</code> — IdP attribute carrying the member email. _(default: `email`)_
 - <code class="cli-flag">&#x2D;&#x2D;given-name-attribute, &#x2D;&#x2D;attr-given-name</code> <code class="cli-value">&lt;TEXT&gt;</code> — IdP given-name attribute.
 - <code class="cli-flag">&#x2D;&#x2D;family-name-attribute, &#x2D;&#x2D;attr-family-name</code> <code class="cli-value">&lt;TEXT&gt;</code> — IdP family-name attribute.
@@ -566,7 +566,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -583,7 +583,7 @@ disabled for automation).
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip confirmation prompt.
 
 #### `avr org saml show`
@@ -604,7 +604,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -626,7 +626,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 
 #### `avr org saml test`
 
@@ -647,5 +647,5 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;no-browser</code> — Print the test URL without opening a browser.

@@ -43,7 +43,7 @@ func NewFeedback(deps Dependencies) *cobra.Command {
 			"    avr feedback status FEEDBACK_ID",
 	}
 	c.Flags().BoolVar(&bug, "bug", false, "Mark the feedback as a bug report.")
-	c.Flags().StringVar(&org, "org", "", "Attribute feedback to this organization slug or ID.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Attribute feedback to this organization slug or ID.")
 	invocationKeyFlag(c, &key, "Reuse a previous submission UUID (normalized to 32 lowercase hex characters).")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {

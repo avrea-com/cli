@@ -63,8 +63,8 @@ func cacheContext(ctx context.Context, d Dependencies, org, repo string) (config
 	return cfg, api, id, repository, err
 }
 func cacheScopeFlags(c *cobra.Command, org, repo *string) {
-	c.Flags().StringVar(org, "org", "", "Organization ID or slug.")
-	c.Flags().StringVar(repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
+	c.Flags().StringVarP(org, "org", "o", "", "Organization ID or slug.")
+	c.Flags().StringVarP(repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
 }
 
 func newCacheList(d Dependencies) *cobra.Command {

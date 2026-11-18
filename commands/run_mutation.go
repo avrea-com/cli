@@ -79,7 +79,7 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 	var jobs []string
 	var yes, failed bool
 	cmd := &cobra.Command{Use: name + " RUN", Short: summary, Args: cobra.ExactArgs(1)}
-	cmd.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	cmd.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	if rerun {
 		cmd.Flags().BoolVar(&failed, "failed", false, "Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.")

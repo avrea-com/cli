@@ -37,7 +37,7 @@ Examples:
 - <code class="cli-flag">&#x2D;&#x2D;idempotency-key</code> <code class="cli-value">&lt;TEXT&gt;</code> — Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
 - <code class="cli-flag">&#x2D;&#x2D;jq, -q</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter JSON with an embedded jq expression.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output comma-separated fields, * for all, or ? to list fields.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Attribute feedback to this organization slug or ID.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Attribute feedback to this organization slug or ID.
 
 ## Subcommands
 

@@ -228,7 +228,7 @@ func NewRepo(deps Dependencies) *cobra.Command {
 	var limit int
 	cmd := &cobra.Command{Use: "list", Short: "List repositories you can access in an organization.", Args: cobra.NoArgs}
 	options.flags(cmd)
-	cmd.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	cmd.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	cmd.Flags().IntVarP(&limit, "limit", "L", 100, "Maximum repositories to return (1–1000).")
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		if limit < 1 || limit > 1000 {

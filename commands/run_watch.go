@@ -33,8 +33,8 @@ func newRunWatch(d Dependencies) *cobra.Command {
 	var exitStatus, ndjson bool
 	cmd := &cobra.Command{Use: "watch [RUN]", Short: "Watch a workflow run until it completes.", Args: cobra.MaximumNArgs(1)}
 	f := cmd.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Scope automatic run selection to repositories (repeatable).")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Scope automatic run selection to repositories (repeatable).")
 	f.IntVar(&interval, "interval", 3, "Polling interval in seconds (at least 1).")
 	f.BoolVar(&exitStatus, "exit-status", false, "Exit unsuccessfully if the run fails.")
 	f.BoolVar(&ndjson, "ndjson", false, "Stream JSON events; automatic when stdout is piped.")

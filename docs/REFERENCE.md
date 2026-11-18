@@ -27,8 +27,10 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `orgs` → `org`
 - `prs` → `pr`
 - `repos` → `repo`
+- `secrets` → `secret`
 - `service-tokens` → `service-token`
 - `tokens` → `token`
+- `variables` → `variable`
 - `vms` → `vm`
 - `workflows` → `workflow`
 
@@ -67,6 +69,8 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr health`](#avr-health) — Check Avrea platform status.
 - [`avr api`](#avr-api) — Call an Avrea API endpoint.
 - [`avr feedback`](#avr-feedback) — Send feedback or report a bug.
+- [`avr secret`](#avr-secret) — Manage organization and repository secrets.
+- [`avr variable`](#avr-variable) — Manage organization and repository variables.
 
 ## Reference
 
@@ -92,8 +96,8 @@ avr artifact delete [OPTIONS] ART_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
-- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository name or ID; defaults to the current git repository.
 - `--yes, -y` — Skip confirmation.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -112,8 +116,8 @@ avr artifact download [OPTIONS] ART_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
-- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository name or ID; defaults to the current git repository.
 - `--path <PATH>` — Destination directory or filename. ZIPs stay archived. _(default: `.`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -132,8 +136,8 @@ avr artifact get [OPTIONS] ART_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
-- `--repo <TEXT>` — Repository name or ID; defaults to the current git repository.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository name or ID; defaults to the current git repository.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -151,7 +155,7 @@ avr artifact list [OPTIONS] REPO
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--run-id <TEXT>` — Numeric GitHub run ID, run- ID, or native awr- ID.
 - `--limit <INTEGER RANGE>` — Maximum artifacts per page. _(default: `50`)_
 - `--cursor <TEXT>` — Continue from a previous page's cursor.
@@ -168,8 +172,8 @@ avr status [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `--since <TEXT>` — Time window for stats panels: '7d', '24h', etc. _(default: `7d`)_
 - `--json` — Output raw JSON.
 
@@ -204,7 +208,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `-y, --yes` — Skip the confirmation prompt.
 
 #### `avr run diagnose`
@@ -235,7 +239,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--json` — Output the diagnostic report as JSON.
 
 #### `avr run list`
@@ -267,8 +271,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--branch <TEXT>` — Filter by head branch (repeatable). _(repeatable)_
 - `--ci-provider <CHOICE>` — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
@@ -313,7 +317,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--job <TEXT>` — Restrict to GitHub jobs whose name contains this string.
 - `-f, --follow` — Tail logs as they appear (running jobs only).
 - `--failed` — Show only logs from failed jobs.
@@ -349,7 +353,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--failed` — Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.
 - `--job <TEXT>` — Avrea job name or ID to rerun with dependents; repeat for multiple jobs. _(repeatable)_
 - `--idempotency-key <UUID>` — Reuse a previous Avrea CI rerun request UUID.
@@ -397,7 +401,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--steps` — Expand each job to show its individual steps.
 - `--log` — Print full logs for all jobs.
 - `--log-failed` — Print logs only for failed steps.
@@ -440,8 +444,8 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
-- `--repo <TEXT>` — Scope the auto-select to a repo (org/name or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Scope the auto-select to a repo (org/name or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
 - `--exit-status` — Exit non-zero if run failed.
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `3`)_
 - `--ndjson` — Force NDJSON event stream (default when stdout isn't a TTY).
@@ -503,8 +507,8 @@ JSON FIELDS
 - `--line <INTEGER RANGE>` — Line to comment on, or the last line of a --start-line range.
 - `--start-line <INTEGER RANGE>` — First line of a multi-line inline comment. Defaults to --line.
 - `--side <CHOICE>` — Diff side the lines refer to: right for the new file, left for the old file. _(choices: `right`, `left` · default: `right`)_
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -535,8 +539,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--scope <CHOICE>` — List all, authored, involved, rest, or attention PRs. Attention requires open state. _(choices: `all`, `authored`, `involved`, `rest`, `attention` · default: `all`)_
 - `--state <CHOICE>` — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
 - `-L, --limit <INTEGER RANGE>` — Max PRs to return. _(default: `20`)_
@@ -579,8 +583,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--on-avrea / --shadowing` — Filter by Avrea-run vs shadowing jobs.
@@ -615,7 +619,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--failed` — Only show logs from failed steps.
 - `--step <TEXT>` — Filter to a specific step by name.
 - `--level <CHOICE>` — Filter by log level. _(choices: `debug`, `info`, `notice`, `warning`, `error`)_
@@ -644,7 +648,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--source <CHOICE>` — Metric source (repeatable). Defaults to cpu and memory. _(choices: `cpu`, `memory`, `filesystem`, `load`, `disk-io`, `disk-ops`, `network` · repeatable)_
 - `--start <INTEGER>` — Start time (Unix seconds). Single-shot only; defaults to execution start.
 - `--end <INTEGER>` — End time (Unix seconds). Single-shot only; defaults to execution end or now.
@@ -697,7 +701,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--log` — Print full logs for the job.
 - `--log-failed` — Print logs only for failed steps.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -715,8 +719,8 @@ avr job watch [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - `--name <TEXT>` — Filter by job name (repeatable). _(repeatable)_
 - `--interval <INTEGER>` — Refresh interval in seconds. _(default: `5`)_
 - `--ndjson` — Emit one JSON object per refresh (default when stdout isn't a TTY).
@@ -757,13 +761,13 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--setup-github / --no-setup-github` — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
 - `--install <TEXT>` — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
 - `--forward-agent-creds` — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
 - `--install-avr` — Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).
-- `--repo <TEXT>` — Clone this git repo into the VM's home directory.
+- `--repo, -R <TEXT>` — Clone this git repo into the VM's home directory.
 - `--ref <TEXT>` — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
 - `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.
 - `--env <TEXT>` — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
@@ -780,7 +784,7 @@ avr vm capabilities [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--json` — Emit capabilities and quotas as JSON.
 
 #### `avr vm create`
@@ -808,7 +812,7 @@ example, as Claude Code's spawn-runner hook:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--name <TEXT>` — Unique VM name. Generated by the server when omitted.
 - `--os <CHOICE>` — Guest operating system. Required unless --from-spawn-script, which is always linux. _(choices: `linux`, `macos`, `windows`)_
 - `--arch <TEXT>` — CPU architecture (see: avr vm capabilities). Defaults to the selected OS's default.
@@ -820,7 +824,7 @@ example, as Claude Code's spawn-runner hook:
 - `--remote-desktop / --no-remote-desktop` — Enable a remote desktop: RDP (Windows, Linux) or VNC (macOS Screen Sharing). Availability depends on OS version; the server validates.
 - `--ttl <TEXT>` — TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
-- `--repo <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
+- `--repo, -R <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 - `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
 - `--fetch-depth <INTEGER RANGE>` — Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
 - `--disable-cache <TEXT>` — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
@@ -845,7 +849,7 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 - `--wait` — Wait until the VM is fully deleted before returning.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
@@ -872,7 +876,7 @@ update --rotate-password if needed. Requires admin access to the source.
 
 - `--name <TEXT>` — Fork name. Defaults to a name derived from the source.
 - `--ttl <TEXT>` — Fork TTL (e.g. 8h, 7d). Default 8h, max 7d.
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--wait` — Wait for the fork to become connectable.
 - `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the fork VM as JSON.
@@ -887,7 +891,7 @@ avr vm list [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--state <CHOICE>` — Filter by lifecycle state. _(choices: `PENDING`, `STARTING`, `RUNNING`, `PAUSING`, `PAUSED`, `STOPPING`, `DELETING`, `FAILED`)_
 - `--scope <CHOICE>` — Visible VMs or only your own. _(choices: `all`, `mine` · default: `all`)_
 - `--sandbox / --no-sandbox` — Agent sandboxes only, or human-created VMs only.
@@ -909,7 +913,7 @@ avr vm metrics [OPTIONS] VM_ID_OR_NAME
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--source <CHOICE>` — Metric source. Repeatable; defaults to cpu and memory. _(choices: `cpu`, `memory`, `filesystem`, `load`, `disk-io`, `disk-ops`, `network` · repeatable)_
 - `--start <INTEGER>` — Start time in Unix seconds (single-shot only).
 - `--end <INTEGER>` — End time in Unix seconds (single-shot only).
@@ -934,7 +938,7 @@ preserve guest memory and continue processes from where they stopped.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--memory` — Include guest memory and device state so running processes continue on resume.
 - `--wait` — Wait until the VM reaches PAUSED before returning.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
@@ -963,7 +967,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--port <TEXT>` — Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable. _(repeatable · required)_
 - `--local-port <INTEGER RANGE>` — Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
@@ -987,7 +991,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
@@ -1013,7 +1017,7 @@ running processes.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--discard-memory` — Ignore saved memory state and fresh-boot the preserved disk (recovery for a stuck memory restore).
 - `--wait` — Wait until the VM is RUNNING and connectable.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
@@ -1037,7 +1041,7 @@ a paused VM picks up the new URLs at resume.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
+- `--org, -o <TEXT>` — Organization ID or slug.
 - `--json` — Emit the updated VM as JSON.
 
 #### `avr vm show`
@@ -1054,7 +1058,7 @@ avr vm show [OPTIONS] VM_ID_OR_NAME
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--json` — Emit the full VM record (with egress rules) as JSON.
 
 #### `avr vm ssh`
@@ -1130,7 +1134,7 @@ warning is printed.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `-i, --identity <PATH>` — IdentityFile to write into the block.
 - `--host-alias <TEXT>` — Host alias for the block (default: avr-&lt;vm-id&gt;).
 - `--known-hosts-file <PATH>` — Where to pin the host key (default: ~/.ssh/avr_known_hosts).
@@ -1153,7 +1157,7 @@ Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--name <TEXT>` — New display name.
 - `--ttl <TEXT>` — Extend the TTL window from now (e.g. 8h, 7d). Max 7d.
 - `--ssh-key <TEXT>` — Replace stored SSH public keys (literal or @path). Repeatable. Applies live on a RUNNING VM, otherwise at next resume. _(repeatable)_
@@ -1176,7 +1180,7 @@ Deleted VMs are included: usage survives deletion.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--start <DATETIME>` — Inclusive period start (default: 30 days ago).
 - `--end <DATETIME>` — Exclusive period end (default: now).
 - `--json` — Emit the usage report as JSON.
@@ -1199,7 +1203,7 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
 - `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
 - `--launch / --no-launch` — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
@@ -1239,8 +1243,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--repo <TEXT>` — Filter by repository (org/repo or rep-xxx ID, repeatable). _(repeatable)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Filter by repository (org/repo or rep-xxx ID, repeatable). _(repeatable)_
 - `--since <TEXT>` — Time window: '30d', '7d', '24h', or 'all'. _(default: `30d`)_
 - `-L, --limit <INTEGER RANGE>` — Max workflows to show. _(default: `20`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -1281,8 +1285,8 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
 - `-r, --ref <TEXT>` — Branch or tag to run at. Defaults to the repository's default branch.
 - `-f, --raw-field <TEXT>` — Workflow input: key=value (repeatable). _(repeatable)_
 - `--json` — Read a JSON object of inputs from stdin.
@@ -1328,8 +1332,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote when WORKFLOW is a filename or display name.
+- `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote when WORKFLOW is a filename or display name.
 - `--since <TEXT>` — Time window: '30d', '7d', '24h', or 'all'. _(default: `30d`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -1363,8 +1367,8 @@ Examples:
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--type <TEXT>` — Cache type (required with --key, e.g. gha, bazel, sccache).
 - `--key <TEXT>` — Delete entries matching this cache key name.
 - `--ref <TEXT>` — Ref to narrow deletion scope (used by gha).
@@ -1398,8 +1402,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--type <TEXT>` — Filter by cache type (e.g. gha, bazel, turbo, rclone).
 - `--key <TEXT>` — Filter by key prefix.
 - `--ref <TEXT>` — Filter by exact ref match.
@@ -1432,8 +1436,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -1481,8 +1485,8 @@ not mean the test never ran. Continue with --cursor for older runs.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
-- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the current git repository.
+- `--org, -o <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository (owner/name or rep-ID). Defaults to the current git repository.
 - `--configuration <TEXT>` — Configuration digest of the test; required with a test ID.
 - `-L, --limit <INTEGER RANGE>` — Maximum recorded runs to return. _(default: `20`)_
 - `--cursor <TEXT>` — Continue from a previous response's next_cursor.
@@ -1529,8 +1533,8 @@ mean no tests were reported.
 **Options**
 
 - `--job <TEXT>` — Select one run job by case-insensitive name substring.
-- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
-- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
+- `--org, -o <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository (owner/name or rep-ID). Defaults to the job's repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum occurrences to return; short pages are followed, up to 20 result pages. _(default: `100`)_
 - `--cursor <TEXT>` — Continue from a previous response's next_cursor with the same filters.
 - `--test <TEXT>` — Exact test name (case-sensitive; no wildcards).
@@ -1572,8 +1576,8 @@ configuration digests and result IDs.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Defaults to the configured organization.
-- `--repo <TEXT>` — Repository (owner/name or rep-ID). Defaults to the current git repository.
+- `--org, -o <TEXT>` — Organization ID or slug. Defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository (owner/name or rep-ID). Defaults to the current git repository.
 - `-L, --limit <INTEGER RANGE>` — Maximum tests to return; short pages are followed, up to 20 result pages. _(default: `50`)_
 - `--cursor <TEXT>` — Continue from a previous response's next_cursor with the same query and filters.
 - `--status <CHOICE>` — Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears. _(choices: `passed`, `failed`, `skipped`, `errored` · repeatable)_
@@ -1613,8 +1617,8 @@ Examples:
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--commit <TEXT>` — Same as the COMMIT argument.
 - `--format <CHOICE>` — Artifact to download. _(choices: `cyclonedx`, `inventory`, `spdx` · default: `cyclonedx`)_
 - `--out <TEXT>` — Output file path, or "-" for stdout. Defaults to the artifact filename in the current directory.
@@ -1665,8 +1669,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--ref <TEXT>` — Same as the REF argument.
 - `--wait` — Wait until generation finishes before returning.
 - `--wait-timeout <INTEGER RANGE>` — Seconds to wait when --wait is set. _(default: `900`)_
@@ -1698,8 +1702,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max SBOMs to return. _(default: `50`)_
 - `--cursor <TEXT>` — Opaque cursor from a previous response's next_cursor.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -1741,8 +1745,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--commit <TEXT>` — Same as the COMMIT argument.
 - `--full` — List every license and copyleft dependency in the summary. Long lists are otherwise cut to the 10 most common licenses and the first 10 copyleft dependencies.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -1784,8 +1788,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
 - `--query <TEXT>` — Full-text search query
 - `--stream <CHOICE>` — Filter by output stream _(choices: `stdout`, `stderr`)_
 - `--level <CHOICE>` — Filter by log level _(choices: `debug`, `info`, `warning`, `error`)_
@@ -1916,12 +1920,12 @@ JSON FIELDS
 **Options**
 
 - `--name <TEXT>` — Token name (1-100 characters). _(required)_
-- `--repo <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- `--repo, -R <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--vm <TEXT>` — Grant admin access to a VM, by VM ID. Repeatable. _(repeatable)_
 - `--allow-vm-create` — Let the token create VMs.
 - `--vm-create-limit <INTEGER RANGE>` — Max VMs the token may create; needs --allow-vm-create. The server default is 1.
 - `--ttl <TEXT>` — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 7 days; the server default is 8 hours.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -1952,7 +1956,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max tokens to return. _(default: `50`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -1980,7 +1984,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 
 #### `avr token view`
@@ -2012,7 +2016,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2077,12 +2081,12 @@ JSON FIELDS
 
 - `--name <TEXT>` — Token name (1-100 characters). _(required)_
 - `--group <TEXT>` — The group that owns the token: its name, path or ID (grp-xxx). _(required)_
-- `--repo <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- `--repo, -R <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--firewall-rule <TEXT>` — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - `--all-firewall-rules` — Grant read access to every egress firewall rule, including rules added later.
 - `--ttl <TEXT>` — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
 - `--never-expires` — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2121,7 +2125,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--group <TEXT>` — Only the tokens this group owns, by group name, path or ID (grp-xxx).
 - `--status <CHOICE>` — Only tokens with this status. _(choices: `live`, `expired`, `revoked`)_
 - `-L, --limit <INTEGER RANGE>` — Max tokens to return. _(default: `50`)_
@@ -2152,7 +2156,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 
 #### `avr service-token revoke-all`
@@ -2174,7 +2178,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 
 #### `avr service-token rotate`
@@ -2221,7 +2225,7 @@ JSON FIELDS
 - `--ttl <TEXT>` — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
 - `--never-expires` — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
 - `--overlap <TEXT>` — How long the old secret keeps working: e.g. 2h, 3d, or a number of seconds. 1 hour to 7 days; the server default is 24 hours.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -2254,10 +2258,10 @@ Examples:
 
 **Options**
 
-- `--repo <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- `--repo, -R <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--firewall-rule <TEXT>` — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - `--all-firewall-rules` — Grant read access to every egress firewall rule, including rules added later.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 
 #### `avr service-token view`
 
@@ -2291,7 +2295,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2334,7 +2338,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max groups to return. _(default: `50`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -2455,8 +2459,8 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 - `--prefix <TEXT>` — Filter by key prefix (e.g. 'cache.').
 - `--web` — Open in browser.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -2486,8 +2490,8 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 
 #### `avr settings schema`
 
@@ -2547,8 +2551,8 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
 
 ### `avr firewall`
 
@@ -2570,8 +2574,8 @@ Add a rule. Exactly one of --cidr, --fqdn, --any must be specified.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, adds at repo scope.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, adds at repo scope.
 - `--action <CHOICE>` _(choices: `allow`, `deny` · required)_
 - `--cidr <TEXT>` — Destination CIDR (e.g. 10.0.0.0/8 or 1.2.3.4/32).
 - `--fqdn <TEXT>` — Destination hostname (e.g. api.example.com).
@@ -2594,8 +2598,8 @@ avr firewall delete [OPTIONS] RULE_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, deletes a repo-level rule.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, deletes a repo-level rule.
 
 #### `avr firewall edit`
 
@@ -2619,9 +2623,9 @@ Use --ports all to remove a port restriction; numeric ports require a TCP/UDP ru
 - `--proto <CHOICE>` _(choices: `tcp`, `udp`, `icmp`, `any`)_
 - `--cidr <TEXT>` — Destination IPv4 address or CIDR; replaces the hostname.
 - `--fqdn <TEXT>` — Destination hostname; replaces the CIDR.
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
 - `--ports <TEXT>` — Port, range, or all to clear the port restriction.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
 
 #### `avr firewall export`
 
@@ -2637,8 +2641,8 @@ Inherited rules and storage IDs are excluded. Use --file PATH, or redirect stdou
 **Options**
 
 - `--file <TEXT>` — Output file, or - for stdout. Existing files are not overwritten. _(default: `-`)_
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
 
 #### `avr firewall flow-summaries`
 
@@ -2656,8 +2660,8 @@ attempt for a job.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. _(required)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. _(required)_
 - `--job, --job-id <TEXT>` — Filter to every VM execution attempt for a job ID.
 - `--with-drops` — Show only summaries where the firewall blocked at least one flow.
 - `-L, --limit <INTEGER RANGE>` — Max summaries to return. _(default: `20`)_
@@ -2686,8 +2690,8 @@ If the policy changes after preview, the import fails without overwriting it.
 - `--mode <CHOICE>` _(choices: `append`, `replace` · default: `append`)_
 - `--dry-run` — Validate and summarize changes without applying them.
 - `--file <TEXT>` — Policy file, or - to read stdin. _(required)_
-- `--org <TEXT>` — Organization ID or slug; defaults to the configured organization.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
+- `--org, -o <TEXT>` — Organization ID or slug; defaults to the configured organization.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, uses repository scope.
 - `--yes, -y` — Skip replacement confirmation.
 
 #### `avr firewall list`
@@ -2700,8 +2704,8 @@ avr firewall list [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, shows the repo-level list.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, shows the repo-level list.
 - `--json` — Output rules as JSON instead of a table.
 
 #### `avr firewall move`
@@ -2719,8 +2723,8 @@ avr firewall move [OPTIONS] RULE_ID
 **Options**
 
 - `--to <INTEGER>` — Target 0-indexed position. _(required)_
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, moves a repo-level rule.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, moves a repo-level rule.
 
 #### `avr firewall set-default`
 
@@ -2732,8 +2736,8 @@ avr firewall set-default [OPTIONS]
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. If provided, sets the repo-level default.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. If provided, sets the repo-level default.
 - `--action <CHOICE>` _(choices: `allow`, `deny`)_
 - `--inherit` — Remove the repository default override.
 
@@ -2749,8 +2753,8 @@ Show rules in evaluation order with repository/organization ownership. Built-in 
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified.
-- `--repo <TEXT>` — Repository ID or owner/repo. _(required)_
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
+- `--repo, -R <TEXT>` — Repository ID or owner/repo. _(required)_
 - `--json` — Output resolved rules as JSON instead of a table.
 
 ### `avr billing`
@@ -2783,7 +2787,7 @@ avr billing invoices download [OPTIONS] INVOICE_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--out <TEXT>` — Output file path. Defaults to &lt;invoice_id&gt;.pdf.
 
 ##### `avr billing invoices list`
@@ -2802,7 +2806,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max invoices to return. _(default: `50`)_
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -2828,7 +2832,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2852,7 +2856,7 @@ Card details are sent directly to Stripe and never touch Avrea servers.
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--number <TEXT>` — Credit card number. Prefer prompting over --number to avoid shell history. _(required)_
 - `--exp-month <INTEGER RANGE>` — Card expiration month. _(required)_
 - `--exp-year <INTEGER>` — Card expiration year. _(required)_
@@ -2874,7 +2878,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2892,7 +2896,7 @@ avr billing payment-methods remove [OPTIONS] PM_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes` — Skip confirmation prompt.
 
 ##### `avr billing payment-methods set-default`
@@ -2909,7 +2913,7 @@ avr billing payment-methods set-default [OPTIONS] PM_ID
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 
 #### `avr billing settings`
 
@@ -2927,7 +2931,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2946,7 +2950,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2973,7 +2977,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--email <TEXT>` — Billing email address(es), comma-separated.
 - `--tax-id <TEXT>` — Tax ID (e.g. VAT number).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3003,7 +3007,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--resource-type <TEXT>` — Filter by resource type (e.g. api_key, user).
 - `--action <TEXT>` — Filter by action (CREATE, UPDATE, DELETE, ...).
 - `--actor-user-id <TEXT>` — Filter by acting user id.
@@ -3081,7 +3085,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max repositories to return. _(default: `100`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3132,7 +3136,7 @@ JSON FIELDS
 
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--location <TEXT>` — Cluster ID, datacenter ID, or unique name from `avr repo mirror locations`. _(required)_
-- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses the default organization.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3160,8 +3164,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3192,8 +3196,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3221,7 +3225,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses the default organization.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses the default organization.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3254,8 +3258,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3282,8 +3286,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3316,8 +3320,8 @@ JSON FIELDS
 
 **Options**
 
-- `--repo <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 - `--source <CHOICE>` — Source platform. GitLab requires GitLab mirroring to be enabled for your organization. _(choices: `github`, `gitlab` · default: `github`)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3361,7 +3365,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip the confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3440,7 +3444,7 @@ JSON FIELDS
 **Options**
 
 - `--reason <TEXT>` — Why your organization needs this repository mirrored.
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3469,7 +3473,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3501,7 +3505,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3572,7 +3576,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3592,7 +3596,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3620,7 +3624,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip confirmation prompt.
 
 ##### `avr org email-domain verify`
@@ -3652,7 +3656,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -3711,7 +3715,7 @@ JSON FIELDS (GitLab)
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--platform <CHOICE>` — Source platform to install. _(choices: `github`, `gitlab` · default: `github`)_
 - `--group-full-path <TEXT>` — GitLab group full path, such as acme/platform.
 - `--project-selection <CHOICE>` — GitLab project selection mode. _(choices: `all`, `selected`)_
@@ -3761,7 +3765,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — Installation ID to remove (ins-xxx format) _(required)_
 - `--yes, -y` — Skip confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3794,7 +3798,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--access-token-stdin` — Read the GitLab group access token from stdin instead of prompting.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3827,7 +3831,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--machine-type <TEXT>` — Machine type to create; repeat for multiple machine types. _(repeatable · required)_
 - `--protected` — Restrict the runners to protected branches and tags.
@@ -3856,7 +3860,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--yes, -y` — Skip the confirmation prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3877,7 +3881,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
@@ -3905,7 +3909,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--runner-token-stdin` — Read the runner authentication token from standard input.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -3935,7 +3939,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--project-selection <CHOICE>` — Project selection mode. _(choices: `all`, `selected` · required)_
 - `--project-id <INTEGER RANGE>` — GitLab numeric project ID to select (repeatable, up to 1,000). _(repeatable)_
@@ -3989,7 +3993,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -4034,7 +4038,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--email-attribute, --attr-email <TEXT>` — IdP attribute carrying the member email. _(default: `email`)_
 - `--given-name-attribute, --attr-given-name <TEXT>` — IdP given-name attribute.
 - `--family-name-attribute, --attr-family-name <TEXT>` — IdP family-name attribute.
@@ -4068,7 +4072,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -4085,7 +4089,7 @@ disabled for automation).
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Skip confirmation prompt.
 
 ##### `avr org saml show`
@@ -4106,7 +4110,7 @@ JSON FIELDS
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -4128,7 +4132,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 
 ##### `avr org saml test`
 
@@ -4149,7 +4153,7 @@ Examples:
 
 **Options**
 
-- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--no-browser` — Print the test URL without opening a browser.
 
 ### `avr health`
@@ -4241,7 +4245,7 @@ Examples:
 - `--idempotency-key <TEXT>` — Reuse a previous submission UUID (normalized to 32 lowercase hex characters).
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
 - `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
-- `--org <TEXT>` — Attribute feedback to this organization slug or ID.
+- `--org, -o <TEXT>` — Attribute feedback to this organization slug or ID.
 
 #### `avr feedback status`
 
@@ -4259,3 +4263,263 @@ avr feedback status [OPTIONS] FEEDBACK_ID
 
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
 - `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+
+### `avr secret`
+
+Manage organization and repository secrets.
+
+```sh
+avr secret [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr secret delete`
+
+Delete one scoped value, or the whole name with --all.
+
+```sh
+avr secret delete [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--all` — Delete the name and all of its scoped values.
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--yes, -y` — Skip confirmation.
+
+#### `avr secret edit`
+
+Edit description, label, or availability without replacing a value.
+
+```sh
+avr secret edit [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--clear-branch` — Remove branch restrictions.
+- `--clear-env` — Remove environment restrictions.
+- `--clear-label` — Clear the scoped value label.
+- `--clear-workflow` — Remove workflow restrictions.
+- `--description <TEXT>` — Organization-wide description shared by all scoped values; an empty string clears it.
+- `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--label <TEXT>` — Label for the scoped value.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--repos <TEXT>` — Organization availability: repository names or IDs, comma-separated. _(default: `()` · repeatable)_
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--visibility <TEXT>` — Organization availability: all, private, or selected (requires --repos).
+- `--workflow <TEXT>` — Workflow path pattern; repeat for alternatives. _(default: `()` · repeatable)_
+
+#### `avr secret get`
+
+Inspect a secret.
+
+```sh
+avr secret get [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--version-id <TEXT>` — Inspect a specific submitted version without resubmitting it.
+
+#### `avr secret list`
+
+List names, scoped-value counts, and update times.
+
+```sh
+avr secret list [OPTIONS]
+```
+
+**Options**
+
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+
+#### `avr secret set`
+
+Create or replace a scoped value.
+
+```sh
+avr secret set [OPTIONS] [NAME]
+```
+
+**Arguments**
+
+- `[NAME]`
+
+**Options**
+
+- `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--description <TEXT>` — Description for a newly created name; use edit to change an existing description.
+- `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file; no expansion.
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--label <TEXT>` — Label for the scoped value.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--repos <TEXT>` — Organization availability: repository names or IDs, comma-separated. _(default: `()` · repeatable)_
+- `--type <TEXT>` — Secret type: env_var or file; chosen at creation. _(default: `env_var`)_
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--visibility <TEXT>` — Organization availability: all, private, or selected (requires --repos).
+- `--wait <TEXT>` — Wait for write confirmation. With 0s, return the receipt immediately; unconfirmed writes exit nonzero. _(default: `30s`)_
+- `--workflow <TEXT>` — Workflow path pattern; repeat for alternatives. _(default: `()` · repeatable)_
+
+### `avr variable`
+
+Manage organization and repository variables.
+
+```sh
+avr variable [OPTIONS] COMMAND [ARGS]...
+```
+
+#### `avr variable delete`
+
+Delete one scoped value, or the whole name with --all.
+
+```sh
+avr variable delete [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--all` — Delete the name and all of its scoped values.
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--yes, -y` — Skip confirmation.
+
+#### `avr variable edit`
+
+Edit description, label, or availability without replacing a value.
+
+```sh
+avr variable edit [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--clear-branch` — Remove branch restrictions.
+- `--clear-env` — Remove environment restrictions.
+- `--clear-label` — Clear the scoped value label.
+- `--clear-workflow` — Remove workflow restrictions.
+- `--description <TEXT>` — Organization-wide description shared by all scoped values; an empty string clears it.
+- `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--label <TEXT>` — Label for the scoped value.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--repos <TEXT>` — Organization availability: repository names or IDs, comma-separated. _(default: `()` · repeatable)_
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--visibility <TEXT>` — Organization availability: all, private, or selected (requires --repos).
+- `--workflow <TEXT>` — Workflow path pattern; repeat for alternatives. _(default: `()` · repeatable)_
+
+#### `avr variable get`
+
+Inspect a variable.
+
+```sh
+avr variable get [OPTIONS] NAME
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+
+#### `avr variable list`
+
+List names, scoped-value counts, and update times.
+
+```sh
+avr variable list [OPTIONS]
+```
+
+**Options**
+
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+
+#### `avr variable set`
+
+Create or replace a scoped value.
+
+```sh
+avr variable set [OPTIONS] [NAME]
+```
+
+**Arguments**
+
+- `[NAME]`
+
+**Options**
+
+- `--body, -b <TEXT>` — Variable value; otherwise prompt or read stdin.
+- `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--description <TEXT>` — Description for a newly created name; use edit to change an existing description.
+- `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
+- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file; no expansion.
+- `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
+- `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
+- `--label <TEXT>` — Label for the scoped value.
+- `--org, -o <TEXT>` — Organization ID or slug; does not broaden availability.
+- `--repo, -R <TEXT>` — Repository full name or ID; defaults to the current checkout.
+- `--repos <TEXT>` — Organization availability: repository names or IDs, comma-separated. _(default: `()` · repeatable)_
+- `--variant <TEXT>` — Select an existing scoped value by label.
+- `--variant-id <TEXT>` — Select an existing scoped value by ID.
+- `--visibility <TEXT>` — Organization availability: all, private, or selected (requires --repos).
+- `--workflow <TEXT>` — Workflow path pattern; repeat for alternatives. _(default: `()` · repeatable)_

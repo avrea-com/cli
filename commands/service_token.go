@@ -159,7 +159,7 @@ type serviceTokenGrantOptions struct {
 }
 
 func (g *serviceTokenGrantOptions) flags(c *cobra.Command) {
-	c.Flags().StringArrayVar(&g.repos, "repo", nil, "Repository read grant (owner/name or rep-...), repeatable.")
+	c.Flags().StringArrayVarP(&g.repos, "repo", "R", nil, "Repository read grant (owner/name or rep-...), repeatable.")
 	c.Flags().StringArrayVar(&g.rules, "firewall-rule", nil, "Egress firewall rule read grant (efr-...), repeatable.")
 	c.Flags().BoolVar(&g.allRules, "all-firewall-rules", false, "Read every egress firewall rule, including later ones.")
 }
@@ -311,7 +311,7 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 	var limit int
 	var o jsonOptions
 	c := &cobra.Command{Use: "list", Short: "List the organization's service tokens, soonest expiry first.", Args: cobra.NoArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().StringVar(&group, "group", "", "Only the tokens this group owns: a group name, path or ID (grp-...).")
 	c.Flags().StringVar(&status, "status", "", "Only tokens with this status: live, expired or revoked.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tokens (1–1000).")
@@ -397,7 +397,7 @@ func newServiceTokenView(d Dependencies) *cobra.Command {
 	var org string
 	var o jsonOptions
 	c := &cobra.Command{Use: "view TOKEN_ID", Short: "Show a service token's details, versions and grants.", Args: tokenIDArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if done, err := o.prepare(cmd, d, serviceTokenFields); done || err != nil {
@@ -426,7 +426,7 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "create", Short: "Create a service token and print its secret once.", Args: cobra.NoArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&name, "name", "", "Token name (1–100 characters).")
 	f.StringVar(&group, "group", "", "The group that owns the token: a group name, path or ID (grp-...).")
 	g.flags(c)
@@ -504,7 +504,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 	var org string
 	var g serviceTokenGrantOptions
 	c := &cobra.Command{Use: "set-access TOKEN_ID", Short: "Replace a service token's whole access selection.", Args: tokenIDArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	g.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		repos, rules, err := g.validate()
@@ -559,7 +559,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "rotate TOKEN_ID", Short: "Issue a service token a new secret and print it once.", Args: tokenIDArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	l.flags(c)
 	f.StringVar(&overlap, "overlap", "", "How long the old secret keeps working: 1h to 7d (default 24h).")
 	f.BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
@@ -662,7 +662,7 @@ func newServiceTokenRevoke(d Dependencies) *cobra.Command {
 	var org string
 	var yes bool
 	c := &cobra.Command{Use: "revoke TOKEN_ID", Short: "Revoke a service token.", Args: tokenIDArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, id, err := serviceTokenContext(cmd.Context(), d, org)
@@ -690,7 +690,7 @@ func newServiceTokenRevokeAll(d Dependencies) *cobra.Command {
 	var org string
 	var yes bool
 	c := &cobra.Command{Use: "revoke-all", Short: "Revoke every service token of the organization.", Args: cobra.NoArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		cfg, api, id, err := serviceTokenContext(cmd.Context(), d, org)

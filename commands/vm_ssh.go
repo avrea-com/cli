@@ -145,7 +145,7 @@ func newVMSSH(d Dependencies) *cobra.Command {
 	var org, identity, session string
 	var login, printOnly bool
 	c := &cobra.Command{Use: "ssh VM_ID_OR_NAME [SSH_ARGS...]", Short: "Open an SSH session or run a command on a VM.", DisableFlagParsing: true}
-	orgFlag(c, &org)
+	c.Flags().StringVar(&org, "org", "", "Organization ID or slug; defaults to the configured organization.")
 	f := c.Flags()
 	f.StringVarP(&identity, "identity", "i", "", "SSH private key file.")
 	f.StringVar(&session, "session", "", "Attach to or create a persistent tmux session.")

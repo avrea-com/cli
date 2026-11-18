@@ -27,7 +27,7 @@ func organizationContext(ctx context.Context, d Dependencies, org string) (confi
 	return cfg, api, id, err
 }
 func orgFlag(cmd *cobra.Command, org *string) {
-	cmd.Flags().StringVar(org, "org", "", "Organization ID or slug; defaults to the configured organization.")
+	cmd.Flags().StringVarP(org, "org", "o", "", "Organization ID or slug; defaults to the configured organization.")
 }
 func newOrgCreate(d Dependencies) *cobra.Command {
 	var o jsonOptions

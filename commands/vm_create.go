@@ -78,7 +78,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 	f.Lookup("no-remote-desktop").NoOptDefVal = "true"
 	f.StringVar(&o.ttl, "ttl", "", "Auto-stop duration, e.g. 8h, 7d, or 1800s. Defaults to 8h.")
 	f.StringVar(&o.egress, "egress-rules", "", "Per-VM egress rules as a JSON array or @path.")
-	f.StringVar(&o.repo, "repo", "", "Git repository to preload (owner/repo).")
+	f.StringVarP(&o.repo, "repo", "R", "", "Git repository to preload (owner/repo).")
 	f.StringVar(&o.ref, "ref", "", "Branch to preload; requires --repo.")
 	f.IntVar(&o.depth, "fetch-depth", 0, "History to preload; 0 means all branches and tags.")
 	f.StringArrayVar(&o.caches, "disable-cache", nil, "Disable caches; repeatable or comma-separated.")

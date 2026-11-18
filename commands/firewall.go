@@ -23,7 +23,7 @@ func NewFirewall(deps Dependencies) *cobra.Command {
 }
 func firewallScopeFlags(c *cobra.Command, org, repo *string, required bool) {
 	orgFlag(c, org)
-	c.Flags().StringVar(repo, "repo", "", "Repository ID or owner/repo. If provided, uses repository scope.")
+	c.Flags().StringVarP(repo, "repo", "R", "", "Repository ID or owner/repo. If provided, uses repository scope.")
 	if required {
 		_ = c.MarkFlagRequired("repo")
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -155,6 +156,23 @@ func lookupFlag(c *cobra.Command, option string) *pflag.Flag {
 	}
 	return nil
 }
+
+// LiveOptionNames preserves documented option order while adding live aliases.
+func LiveOptionNames(c *cobra.Command, options []string) []string {
+	names := []string{}
+	for _, option := range options {
+		if lookupFlag(c, option) != nil && !slices.Contains(names, option) {
+			names = append(names, option)
+		}
+	}
+	for _, option := range options {
+		if f := lookupFlag(c, option); f != nil && f.Shorthand != "" && !slices.Contains(names, "-"+f.Shorthand) {
+			names = append(names, "-"+f.Shorthand)
+		}
+	}
+	return names
+}
+
 func params(c *cobra.Command, original []Param) []Param {
 	out := []Param{}
 	arguments := []Param{}
@@ -206,7 +224,7 @@ func params(c *cobra.Command, original []Param) []Param {
 		}
 		keep := func(options []string) []string {
 			kept := []string{}
-			for _, option := range options {
+			for _, option := range LiveOptionNames(c, options) {
 				if f := lookupFlag(c, option); f != nil {
 					kept = append(kept, option)
 					used[f.Name] = true

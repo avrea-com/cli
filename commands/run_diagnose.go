@@ -13,7 +13,7 @@ func newRunDiagnose(d Dependencies) *cobra.Command {
 	var org string
 	var raw bool
 	c := &cobra.Command{Use: "diagnose RUN", Short: "Explain a failed or unexpectedly slow workflow run.", Args: cobra.ExactArgs(1)}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().BoolVar(&raw, "json", false, "Output the diagnostic report as JSON.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, _, api, err := d.load()

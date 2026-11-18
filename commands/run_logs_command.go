@@ -12,7 +12,7 @@ func newRunLogs(d Dependencies) *cobra.Command {
 	var o logOptions
 	c := &cobra.Command{Use: "logs RUN", Short: "Fetch logs for a workflow run's jobs.", Args: cobra.ExactArgs(1)}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&filter, "job", "", "Filter job names by substring.")
 	f.BoolVarP(&o.follow, "follow", "f", false, "Follow one active job.")
 	f.BoolVar(&o.failed, "failed", false, "Show failed jobs.")

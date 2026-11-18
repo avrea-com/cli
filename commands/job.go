@@ -60,8 +60,8 @@ func newJobList(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "list", Short: "List jobs for an organization.", Args: cobra.NoArgs}
 	o.flags(c)
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
 	f.StringArrayVar(&names, "name", nil, "Job name (repeatable).")
 	f.StringArrayVar(&statuses, "status", nil, "State or conclusion (repeatable).")
 	f.StringArrayVarP(&workflows, "workflow", "w", nil, "Workflow ID (repeatable).")

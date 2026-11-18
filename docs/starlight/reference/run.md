@@ -34,7 +34,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">-y, &#x2D;&#x2D;yes</code> — Skip the confirmation prompt.
 
 ### `avr run diagnose`
@@ -65,7 +65,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Output the diagnostic report as JSON.
 
 ### `avr run list`
@@ -97,8 +97,8 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by head branch (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;ci-provider</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
@@ -143,7 +143,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;job</code> <code class="cli-value">&lt;TEXT&gt;</code> — Restrict to GitHub jobs whose name contains this string.
 - <code class="cli-flag">-f, &#x2D;&#x2D;follow</code> — Tail logs as they appear (running jobs only).
 - <code class="cli-flag">&#x2D;&#x2D;failed</code> — Show only logs from failed jobs.
@@ -179,7 +179,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;failed</code> — Re-run failed jobs and dependents; includes cancelled jobs for Avrea CI.
 - <code class="cli-flag">&#x2D;&#x2D;job</code> <code class="cli-value">&lt;TEXT&gt;</code> — Avrea job name or ID to rerun with dependents; repeat for multiple jobs. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;idempotency-key</code> <code class="cli-value">&lt;UUID&gt;</code> — Reuse a previous Avrea CI rerun request UUID.
@@ -227,7 +227,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
 - <code class="cli-flag">&#x2D;&#x2D;steps</code> — Expand each job to show its individual steps.
 - <code class="cli-flag">&#x2D;&#x2D;log</code> — Print full logs for all jobs.
 - <code class="cli-flag">&#x2D;&#x2D;log-failed</code> — Print logs only for failed steps.
@@ -270,8 +270,8 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Scope the auto-select to a repo (org/name or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Scope the auto-select to a repo (org/name or rep-xxx, repeatable). Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;exit-status</code> — Exit non-zero if run failed.
 - <code class="cli-flag">&#x2D;&#x2D;interval</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Refresh interval in seconds. _(default: `3`)_
 - <code class="cli-flag">&#x2D;&#x2D;ndjson</code> — Force NDJSON event stream (default when stdout isn't a TTY).

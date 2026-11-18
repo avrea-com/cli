@@ -86,8 +86,10 @@
     "orgs": "org",
     "prs": "pr",
     "repos": "repo",
+    "secrets": "secret",
     "service-tokens": "service-token",
     "tokens": "token",
+    "variables": "variable",
     "vms": "vm",
     "workflows": "workflow"
   },
@@ -244,7 +246,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -413,7 +416,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -488,7 +492,8 @@
                     "name": "repo_id",
                     "kind": "option",
                     "opts": [
-                      "--repo"
+                      "--repo",
+                      "-R"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -506,7 +511,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -622,7 +628,8 @@
                     "name": "repo_id",
                     "kind": "option",
                     "opts": [
-                      "--repo"
+                      "--repo",
+                      "-R"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -640,7 +647,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -737,7 +745,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -830,7 +839,8 @@
                     "name": "repo_id",
                     "kind": "option",
                     "opts": [
-                      "--repo"
+                      "--repo",
+                      "-R"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -848,7 +858,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -945,7 +956,8 @@
                     "name": "repo_id",
                     "kind": "option",
                     "opts": [
-                      "--repo"
+                      "--repo",
+                      "-R"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -963,7 +975,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1078,7 +1091,8 @@
                     "name": "repo_id",
                     "kind": "option",
                     "opts": [
-                      "--repo"
+                      "--repo",
+                      "-R"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1096,7 +1110,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1249,7 +1264,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1454,7 +1470,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1529,7 +1546,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1622,7 +1640,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1808,7 +1827,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1901,7 +1921,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -1976,7 +1997,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -2051,7 +2073,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -2163,7 +2186,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -2429,7 +2453,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -2541,7 +2566,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -2671,7 +2697,8 @@
                         "name": "org_id",
                         "kind": "option",
                         "opts": [
-                          "--org"
+                          "--org",
+                          "-o"
                         ],
                         "secondary_opts": [],
                         "type": "text",
@@ -2837,7 +2864,8 @@
                         "name": "org_id",
                         "kind": "option",
                         "opts": [
-                          "--org"
+                          "--org",
+                          "-o"
                         ],
                         "secondary_opts": [],
                         "type": "text",
@@ -2950,7 +2978,8 @@
                         "name": "org_id",
                         "kind": "option",
                         "opts": [
-                          "--org"
+                          "--org",
+                          "-o"
                         ],
                         "secondary_opts": [],
                         "type": "text",
@@ -3062,7 +3091,8 @@
                         "name": "org_id",
                         "kind": "option",
                         "opts": [
-                          "--org"
+                          "--org",
+                          "-o"
                         ],
                         "secondary_opts": [],
                         "type": "text",
@@ -3175,7 +3205,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3365,7 +3396,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -3457,7 +3489,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3689,7 +3722,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3786,7 +3820,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3843,7 +3878,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3918,7 +3954,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -3956,7 +3993,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -4346,7 +4384,8 @@
             "name": "org",
             "kind": "option",
             "opts": [
-              "--org"
+              "--org",
+              "-o"
             ],
             "secondary_opts": [],
             "type": "text",
@@ -4437,6 +4476,2251 @@
             "subcommands": []
           }
         ]
+      },
+      {
+        "name": "secret",
+        "path": [
+          "avr",
+          "secret"
+        ],
+        "full": "avr secret",
+        "is_group": true,
+        "short_help": "Manage organization and repository secrets.",
+        "help": "Manage organization and repository secrets.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr secret [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "delete",
+            "path": [
+              "avr",
+              "secret",
+              "delete"
+            ],
+            "full": "avr secret delete",
+            "is_group": false,
+            "short_help": "Delete one scoped value, or the whole name with --all.",
+            "help": "Delete one scoped value, or the whole name with --all.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr secret delete [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "all",
+                "kind": "option",
+                "opts": [
+                  "--all"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Delete the name and all of its scoped values.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip confirmation.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "edit",
+            "path": [
+              "avr",
+              "secret",
+              "edit"
+            ],
+            "full": "avr secret edit",
+            "is_group": false,
+            "short_help": "Edit description, label, or availability without replacing a value.",
+            "help": "Edit description, label, or availability without replacing a value.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr secret edit [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "branch",
+                "kind": "option",
+                "opts": [
+                  "--branch"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "clear_branch",
+                "kind": "option",
+                "opts": [
+                  "--clear-branch"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove branch restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_env",
+                "kind": "option",
+                "opts": [
+                  "--clear-env"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove environment restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_label",
+                "kind": "option",
+                "opts": [
+                  "--clear-label"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Clear the scoped value label.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_workflow",
+                "kind": "option",
+                "opts": [
+                  "--clear-workflow"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove workflow restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "description",
+                "kind": "option",
+                "opts": [
+                  "--description"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization-wide description shared by all scoped values; an empty string clears it.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "env",
+                "kind": "option",
+                "opts": [
+                  "--env",
+                  "-e"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Environment pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Label for the scoped value.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repos"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: repository names or IDs, comma-separated.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "visibility",
+                "kind": "option",
+                "opts": [
+                  "--visibility"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: all, private, or selected (requires --repos).",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "workflow",
+                "kind": "option",
+                "opts": [
+                  "--workflow"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Workflow path pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "get",
+            "path": [
+              "avr",
+              "secret",
+              "get"
+            ],
+            "full": "avr secret get",
+            "is_group": false,
+            "short_help": "Inspect a secret.",
+            "help": "Inspect a secret.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr secret get [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "version_id",
+                "kind": "option",
+                "opts": [
+                  "--version-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Inspect a specific submitted version without resubmitting it.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "secret",
+              "list"
+            ],
+            "full": "avr secret list",
+            "is_group": false,
+            "short_help": "List names, scoped-value counts, and update times.",
+            "help": "List names, scoped-value counts, and update times.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr secret list [OPTIONS]",
+            "params": [
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "set",
+            "path": [
+              "avr",
+              "secret",
+              "set"
+            ],
+            "full": "avr secret set",
+            "is_group": false,
+            "short_help": "Create or replace a scoped value.",
+            "help": "Create or replace a scoped value.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr secret set [OPTIONS] [NAME]",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "branch",
+                "kind": "option",
+                "opts": [
+                  "--branch"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "description",
+                "kind": "option",
+                "opts": [
+                  "--description"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Description for a newly created name; use edit to change an existing description.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "env",
+                "kind": "option",
+                "opts": [
+                  "--env",
+                  "-e"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Environment pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "env_file",
+                "kind": "option",
+                "opts": [
+                  "--env-file",
+                  "-f"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Read literal NAME=value entries from a dotenv file; no expansion.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Label for the scoped value.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repos"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: repository names or IDs, comma-separated.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "type",
+                "kind": "option",
+                "opts": [
+                  "--type"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Secret type: env_var or file; chosen at creation.",
+                "hidden": false,
+                "show_default": false,
+                "default": "env_var"
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "visibility",
+                "kind": "option",
+                "opts": [
+                  "--visibility"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: all, private, or selected (requires --repos).",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "wait",
+                "kind": "option",
+                "opts": [
+                  "--wait"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Wait for write confirmation. With 0s, return the receipt immediately; unconfirmed writes exit nonzero.",
+                "hidden": false,
+                "show_default": false,
+                "default": "30s"
+              },
+              {
+                "name": "workflow",
+                "kind": "option",
+                "opts": [
+                  "--workflow"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Workflow path pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "variable",
+        "path": [
+          "avr",
+          "variable"
+        ],
+        "full": "avr variable",
+        "is_group": true,
+        "short_help": "Manage organization and repository variables.",
+        "help": "Manage organization and repository variables.",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr variable [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "delete",
+            "path": [
+              "avr",
+              "variable",
+              "delete"
+            ],
+            "full": "avr variable delete",
+            "is_group": false,
+            "short_help": "Delete one scoped value, or the whole name with --all.",
+            "help": "Delete one scoped value, or the whole name with --all.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr variable delete [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "all",
+                "kind": "option",
+                "opts": [
+                  "--all"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Delete the name and all of its scoped values.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip confirmation.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "edit",
+            "path": [
+              "avr",
+              "variable",
+              "edit"
+            ],
+            "full": "avr variable edit",
+            "is_group": false,
+            "short_help": "Edit description, label, or availability without replacing a value.",
+            "help": "Edit description, label, or availability without replacing a value.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr variable edit [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "branch",
+                "kind": "option",
+                "opts": [
+                  "--branch"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "clear_branch",
+                "kind": "option",
+                "opts": [
+                  "--clear-branch"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove branch restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_env",
+                "kind": "option",
+                "opts": [
+                  "--clear-env"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove environment restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_label",
+                "kind": "option",
+                "opts": [
+                  "--clear-label"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Clear the scoped value label.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "clear_workflow",
+                "kind": "option",
+                "opts": [
+                  "--clear-workflow"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove workflow restrictions.",
+                "hidden": false,
+                "show_default": false,
+                "default": false
+              },
+              {
+                "name": "description",
+                "kind": "option",
+                "opts": [
+                  "--description"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization-wide description shared by all scoped values; an empty string clears it.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "env",
+                "kind": "option",
+                "opts": [
+                  "--env",
+                  "-e"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Environment pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Label for the scoped value.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repos"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: repository names or IDs, comma-separated.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "visibility",
+                "kind": "option",
+                "opts": [
+                  "--visibility"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: all, private, or selected (requires --repos).",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "workflow",
+                "kind": "option",
+                "opts": [
+                  "--workflow"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Workflow path pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "get",
+            "path": [
+              "avr",
+              "variable",
+              "get"
+            ],
+            "full": "avr variable get",
+            "is_group": false,
+            "short_help": "Inspect a variable.",
+            "help": "Inspect a variable.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr variable get [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "variable",
+              "list"
+            ],
+            "full": "avr variable list",
+            "is_group": false,
+            "short_help": "List names, scoped-value counts, and update times.",
+            "help": "List names, scoped-value counts, and update times.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr variable list [OPTIONS]",
+            "params": [
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "set",
+            "path": [
+              "avr",
+              "variable",
+              "set"
+            ],
+            "full": "avr variable set",
+            "is_group": false,
+            "short_help": "Create or replace a scoped value.",
+            "help": "Create or replace a scoped value.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr variable set [OPTIONS] [NAME]",
+            "params": [
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "body",
+                "kind": "option",
+                "opts": [
+                  "--body",
+                  "-b"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Variable value; otherwise prompt or read stdin.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "branch",
+                "kind": "option",
+                "opts": [
+                  "--branch"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Branch pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "description",
+                "kind": "option",
+                "opts": [
+                  "--description"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Description for a newly created name; use edit to change an existing description.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "env",
+                "kind": "option",
+                "opts": [
+                  "--env",
+                  "-e"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Environment pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "env_file",
+                "kind": "option",
+                "opts": [
+                  "--env-file",
+                  "-f"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Read literal NAME=value entries from a dotenv file; no expansion.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "jq",
+                "kind": "option",
+                "opts": [
+                  "--jq",
+                  "-q"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter JSON with an embedded jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output comma-separated fields, * for all, or ? to list fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Label for the scoped value.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "org",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug; does not broaden availability.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repo",
+                "kind": "option",
+                "opts": [
+                  "--repo",
+                  "-R"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Repository full name or ID; defaults to the current checkout.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "repos",
+                "kind": "option",
+                "opts": [
+                  "--repos"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: repository names or IDs, comma-separated.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              },
+              {
+                "name": "variant",
+                "kind": "option",
+                "opts": [
+                  "--variant"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by label.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "variant_id",
+                "kind": "option",
+                "opts": [
+                  "--variant-id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Select an existing scoped value by ID.",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "visibility",
+                "kind": "option",
+                "opts": [
+                  "--visibility"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization availability: all, private, or selected (requires --repos).",
+                "hidden": false,
+                "show_default": false,
+                "default": ""
+              },
+              {
+                "name": "workflow",
+                "kind": "option",
+                "opts": [
+                  "--workflow"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Workflow path pattern; repeat for alternatives.",
+                "hidden": false,
+                "show_default": false,
+                "default": []
+              }
+            ],
+            "subcommands": []
+          }
+        ]
       }
     ],
     "Core Commands": [
@@ -4494,7 +6778,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4512,7 +6797,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4623,7 +6909,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4641,7 +6928,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4751,7 +7039,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4769,7 +7058,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4861,7 +7151,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -4990,7 +7281,8 @@
             "name": "org_id",
             "kind": "option",
             "opts": [
-              "--org"
+              "--org",
+              "-o"
             ],
             "secondary_opts": [],
             "type": "text",
@@ -5008,7 +7300,8 @@
             "name": "repo_id",
             "kind": "option",
             "opts": [
-              "--repo"
+              "--repo",
+              "-R"
             ],
             "secondary_opts": [],
             "type": "text",
@@ -5115,7 +7408,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5189,7 +7483,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5244,7 +7539,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5262,7 +7558,8 @@
                 "name": "repository_ids",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5579,7 +7876,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5725,7 +8023,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -5853,7 +8152,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6053,7 +8353,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6071,7 +8372,8 @@
                 "name": "repo_options",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6310,7 +8612,8 @@
                 "name": "repository",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6328,7 +8631,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6402,7 +8706,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6420,7 +8725,8 @@
                 "name": "repository_ids",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6598,7 +8904,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6616,7 +8923,8 @@
                 "name": "repository_ids",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -6897,7 +9205,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7068,7 +9377,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7296,7 +9606,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7442,7 +9753,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7460,7 +9772,8 @@
                 "name": "repository_ids",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7587,7 +9900,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7698,7 +10012,8 @@
                 "name": "repo_url",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7825,7 +10140,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -7880,7 +10196,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8103,7 +10420,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8305,7 +10623,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8469,7 +10788,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8560,7 +10880,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8740,7 +11061,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -8895,7 +11217,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9022,7 +11345,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9150,7 +11474,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9280,7 +11605,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9407,7 +11733,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9480,7 +11807,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9699,7 +12027,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -9845,7 +12174,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10026,7 +12356,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10135,7 +12466,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10265,7 +12597,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10283,7 +12616,8 @@
                 "name": "repo_ids",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10412,7 +12746,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10430,7 +12765,8 @@
                 "name": "repo_flag",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10617,7 +12953,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10635,7 +12972,8 @@
                 "name": "repo_flag",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10763,7 +13101,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10781,7 +13120,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10909,7 +13249,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -10927,7 +13268,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11150,7 +13492,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11168,7 +13511,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11278,7 +13622,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11296,7 +13641,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11461,7 +13807,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11479,7 +13826,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11704,7 +14052,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11722,7 +14071,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11893,7 +14243,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -11911,7 +14262,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12025,7 +14377,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12043,7 +14396,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12171,7 +14525,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12189,7 +14544,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12318,7 +14674,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12336,7 +14693,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12464,7 +14822,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12482,7 +14841,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -12939,7 +15299,8 @@
                 "name": "repos",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13029,7 +15390,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13103,7 +15465,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13214,7 +15577,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13288,7 +15652,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13416,7 +15781,8 @@
                 "name": "repos",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13506,7 +15872,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13580,7 +15947,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13732,7 +16100,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13788,7 +16157,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -13916,7 +16286,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14027,7 +16398,8 @@
                 "name": "repos",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14081,7 +16453,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14136,7 +16509,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14228,7 +16602,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14513,7 +16888,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14531,7 +16907,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14659,7 +17036,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14677,7 +17055,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14846,7 +17225,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14864,7 +17244,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14919,7 +17300,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -14937,7 +17319,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15128,7 +17511,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15146,7 +17530,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15283,7 +17668,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15319,7 +17705,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15374,7 +17761,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15392,7 +17780,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15429,7 +17818,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15447,7 +17837,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15672,7 +18063,8 @@
                 "name": "org",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15690,7 +18082,8 @@
                 "name": "repo",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15746,7 +18139,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15764,7 +18158,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15855,7 +18250,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15873,7 +18269,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15910,7 +18307,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -15928,7 +18326,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -16005,7 +18404,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -16023,7 +18423,8 @@
                 "name": "repo_id",
                 "kind": "option",
                 "opts": [
-                  "--repo"
+                  "--repo",
+                  "-R"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -16132,7 +18533,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16188,7 +18590,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16318,7 +18721,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16412,7 +18816,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16522,7 +18927,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16615,7 +19021,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16689,7 +19096,8 @@
                     "name": "org_id",
                     "kind": "option",
                     "opts": [
-                      "--org"
+                      "--org",
+                      "-o"
                     ],
                     "secondary_opts": [],
                     "type": "text",
@@ -16728,7 +19136,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -16802,7 +19211,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -16876,7 +19286,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",
@@ -17004,7 +19415,8 @@
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
-                  "--org"
+                  "--org",
+                  "-o"
                 ],
                 "secondary_opts": [],
                 "type": "text",

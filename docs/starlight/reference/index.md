@@ -53,6 +53,8 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr health`](./health/) — Check Avrea platform status.
 - [`avr api`](./api/) — Call an Avrea API endpoint.
 - [`avr feedback`](./feedback/) — Send feedback or report a bug.
+- [`avr secret`](./secret/) — Manage organization and repository secrets.
+- [`avr variable`](./variable/) — Manage organization and repository variables.
 
 ## Aliases
 
@@ -62,7 +64,9 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - `orgs` → [`org`](./org/)
 - `prs` → [`pr`](./pr/)
 - `repos` → [`repo`](./repo/)
+- `secrets` → [`secret`](./secret/)
 - `service-tokens` → [`service-token`](./service-token/)
 - `tokens` → [`token`](./token/)
+- `variables` → [`variable`](./variable/)
 - `vms` → [`vm`](./vm/)
 - `workflows` → [`workflow`](./workflow/)

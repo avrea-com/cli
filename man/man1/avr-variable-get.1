@@ -1,0 +1,39 @@
+.TH AVR\-VARIABLE\-GET 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-variable-get \- Inspect a variable.
+.SH SYNOPSIS
+.B avr variable get
+[OPTIONS] NAME
+.SH DESCRIPTION
+Inspect a variable.
+.PP
+.SH ARGUMENTS
+.TP
+\fINAME\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter JSON with an embedded jq expression.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output comma-separated fields, * for all, or ? to list fields.
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug; does not broaden availability.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository full name or ID; defaults to the current checkout.
+.TP
+\fB\-\-variant\fR \fITEXT\fR
+Select an existing scoped value by label.
+.TP
+\fB\-\-variant\-id\fR \fITEXT\fR
+Select an existing scoped value by ID.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-variable (1),
+.BR avr-variable-delete (1),
+.BR avr-variable-edit (1),
+.BR avr-variable-list (1),
+.BR avr-variable-set (1)

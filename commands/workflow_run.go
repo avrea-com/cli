@@ -37,8 +37,8 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 	var interval int
 	c := &cobra.Command{Use: "run WORKFLOW", Short: "Trigger a workflow_dispatch event.", Args: cobra.ExactArgs(1)}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
 	f.StringVarP(&ref, "ref", "r", "", "Branch or tag; defaults to the repository default branch.")
 	f.StringArrayVarP(&fields, "raw-field", "f", nil, "Workflow input key=value (repeatable).")
 	f.BoolVar(&jsonInputs, "json", false, "Read a JSON object of inputs from stdin.")

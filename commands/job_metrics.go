@@ -53,7 +53,7 @@ func newJobMetrics(d Dependencies) *cobra.Command {
 		return cobra.ExactArgs(1)(cmd, args)
 	}}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringArrayVar(&sources, "source", nil, "Metric source (repeatable): cpu, memory, filesystem, load, disk-io, disk-ops, network.")
 	f.Int64Var(&start, "start", 0, "Start time (Unix seconds); defaults to execution start.")
 	f.Int64Var(&end, "end", 0, "End time (Unix seconds); defaults to execution end or now.")

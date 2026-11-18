@@ -64,12 +64,12 @@ JSON FIELDS
 
 - <code class="cli-flag">&#x2D;&#x2D;name</code> <code class="cli-value">&lt;TEXT&gt;</code> — Token name (1-100 characters). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — The group that owns the token: its name, path or ID (grp-xxx). _(required)_
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;firewall-rule</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;all-firewall-rules</code> — Grant read access to every egress firewall rule, including rules added later.
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
 - <code class="cli-flag">&#x2D;&#x2D;never-expires</code> — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -108,7 +108,7 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;group</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only the tokens this group owns, by group name, path or ID (grp-xxx).
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Only tokens with this status. _(choices: `live`, `expired`, `revoked`)_
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max tokens to return. _(default: `50`)_
@@ -139,7 +139,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 
 ### `avr service-token revoke-all`
@@ -161,7 +161,7 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 
 ### `avr service-token rotate`
@@ -208,7 +208,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;ttl</code> <code class="cli-value">&lt;TEXT&gt;</code> — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
 - <code class="cli-flag">&#x2D;&#x2D;never-expires</code> — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
 - <code class="cli-flag">&#x2D;&#x2D;overlap</code> <code class="cli-value">&lt;TEXT&gt;</code> — How long the old secret keeps working: e.g. 2h, 3d, or a number of seconds. 1 hour to 7 days; the server default is 24 hours.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;yes, -y</code> — Skip the confirmation prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
@@ -241,10 +241,10 @@ Examples:
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;firewall-rule</code> <code class="cli-value">&lt;TEXT&gt;</code> — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;all-firewall-rules</code> — Grant read access to every egress firewall rule, including rules added later.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 
 ### `avr service-token view`
 
@@ -278,6 +278,6 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.

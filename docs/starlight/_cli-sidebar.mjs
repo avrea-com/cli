@@ -47,6 +47,8 @@ export default {
         { label: "avr health", slug: "cli/reference/health" },
         { label: "avr api", slug: "cli/reference/api" },
         { label: "avr feedback", slug: "cli/reference/feedback" },
+        { label: "avr secret", slug: "cli/reference/secret" },
+        { label: "avr variable", slug: "cli/reference/variable" },
       ],
     },
   ],

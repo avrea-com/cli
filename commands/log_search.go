@@ -22,8 +22,8 @@ func NewLog(deps Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "search", Short: "Search logs for a repository.", Args: cobra.NoArgs}
 	f := c.Flags()
 	o.flags(c)
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
 	f.StringVar(&query, "query", "", "Full-text search query.")
 	f.StringVar(&stream, "stream", "", "Filter by stdout or stderr.")
 	f.StringVar(&level, "level", "", "Filter by debug, info, warning, or error.")

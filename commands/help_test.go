@@ -62,3 +62,15 @@ func TestBareRootAndGroupUseDifferentExitAndOutputContracts(t *testing.T) {
 		t.Fatal(code, out, stderr)
 	}
 }
+
+func TestHelpShowsLiveScopeAliases(t *testing.T) {
+	for _, args := range [][]string{{"vm", "list", "--help"}, {"run", "list", "--help"}} {
+		d, out, stderr := testDeps(t)
+		if code := Execute(t.Context(), args, d); code != 0 {
+			t.Fatal(code, stderr)
+		}
+		if !strings.Contains(out.String(), "-o, --org") {
+			t.Fatal(out)
+		}
+	}
+}

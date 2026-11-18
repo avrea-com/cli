@@ -27,7 +27,7 @@ example, as Claude Code's spawn-runner hook:
 .RE
 .SH OPTIONS
 .TP
-\fB\-\-org\fR \fITEXT\fR
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-name\fR \fITEXT\fR
@@ -63,7 +63,7 @@ TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). De
 \fB\-\-egress\-rules\fR \fITEXT\fR
 Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 .TP
-\fB\-\-repo\fR \fITEXT\fR
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
 Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
 .TP
 \fB\-\-ref\fR \fITEXT\fR
