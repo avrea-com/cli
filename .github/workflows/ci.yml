@@ -46,7 +46,7 @@ jobs:
       - name: Install prek
         env:
           UV_TOOL_BIN_DIR: ${{ runner.temp }}/uv-tools
-        run: uv tool install 'prek==0.5.7'
+        run: uv tool install 'prek==0.5.10'
       # HEAD is the PR merge ref, whose first parent is the base actually
       # merged, so HEAD^1..HEAD is exactly the PR's change set.
       - name: Resolve lint diff base
