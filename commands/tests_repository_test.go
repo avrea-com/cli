@@ -380,8 +380,8 @@ func TestTestsHistoryPreservesEmptyListingStatus(t *testing.T) {
 		{"indexing", "Test results are still being indexed. Retry later"},
 		{"unavailable", "Test results cannot currently be listed."},
 		{"limited", "The test listing reached a read limit. Retry or narrow the filters"},
-		{"expired", "The recorded test reports have expired."},
-		{"not_recorded", "No test reports are recorded for this repository."},
+		{"expired", "No retained test reports were found in the searched portion."},
+		{"not_recorded", "No retained test reports were found in the searched portion."},
 	} {
 		t.Run(tc.state, func(t *testing.T) {
 			page := limitedPage(tc.state)
