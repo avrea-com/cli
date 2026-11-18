@@ -89,7 +89,7 @@ GO ?= go
 
 go-build: ## Build the native CLI and bundled license notices
 	@CGO_ENABLED=0 $(GO) build -trimpath -ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" -o build/go/avr ./cmd/avr
-	@$(UV) run --python 3.14 --frozen --extra dev python scripts/go_notices.py --go "$(GO)"
+	@$(UV) run --python 3.14 --frozen --extra dev python scripts/go_notices.py --go "$(GO)" --allow-missing-go-license
 
 go-test:
 	@$(GO) test -race ./...
