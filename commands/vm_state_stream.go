@@ -59,7 +59,7 @@ func (s *vmStateNotifications) Wait(ctx context.Context, timeout time.Duration) 
 				continue
 			}
 			if value["type"] == "changed" && (value["signal"] == nil || value["signal"] == "status") {
-				floor := min(started.Add(100 * time.Millisecond).Sub(s.d.Now()), deadline.Sub(s.d.Now()))
+				floor := min(started.Add(100*time.Millisecond).Sub(s.d.Now()), deadline.Sub(s.d.Now()))
 				if floor > 0 {
 					return s.d.Wait(ctx, floor)
 				}

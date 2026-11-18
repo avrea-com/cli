@@ -14,3 +14,7 @@ linters:
     - noctx
     - nilerr
     - wastedassign
+
+formatters:
+  enable:
+    - gofmt
