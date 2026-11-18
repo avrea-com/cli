@@ -18,7 +18,7 @@ var statusFields = []string{"email", "name", "created_at", "user_id", "host", "d
 
 // serviceStatusFields extends statusFields with a service token's identity;
 // the other credential kinds keep their field set.
-var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "expiring_soon", "grants")
+var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants")
 
 func newStatus(d Dependencies) *cobra.Command {
 	var show bool
@@ -147,7 +147,12 @@ func newStatus(d Dependencies) *cobra.Command {
 			row("Token", maskToken(cfg.Token, show))
 			b.WriteString("\n")
 			if result["expiring_soon"] == true {
-				b.WriteString(d.paint("  ! This service token expires soon: ask an organization admin to rotate it, then update AVR_TOKEN.", "33") + "\n")
+				b.WriteString(d.paint("  ! This service token expires soon: an organization admin can rotate it with \x60avr service-token rotate\x60; then update AVR_TOKEN.", "33") + "\n")
+			}
+			// The field stays set after the overlap ends; by then the replaced
+			// secret is already refused and the advice no longer applies.
+			if until := fieldText(result, "previous_valid_until"); timestampAfter(until, d.Now()) {
+				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
 			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")
 		case config.PersonalKey:
@@ -201,7 +206,7 @@ func NewLogout(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if config.IsService(cfg.Token) {
-				return &ExitError{1, "Error: Logout does not revoke a service token and leaves stored credentials unchanged.\n  Hint: unset AVR_TOKEN to stop using the token. An organization admin can revoke it."}
+				return &ExitError{1, "Error: Logout does not revoke a service token and leaves stored credentials unchanged.\n  Hint: unset AVR_TOKEN to stop using the token. An organization admin can revoke it with `avr service-token revoke <token-id>`."}
 			}
 			if err := store.ValidateMutation(); err != nil {
 				return err
@@ -276,10 +281,28 @@ func newSwitch(d Dependencies) *cobra.Command {
 		})}
 }
 
+// reauthenticationRequired reports the API's X-Reauthentication-Required
+// refusal: the credential is too old for a change that outlives the session.
+func reauthenticationRequired(he *client.HTTPError) bool {
+	return he.Status == 403 && he.Reauthentication != ""
+}
+
 func apiError(cfg config.Config, err error, action string) error {
 	var he *client.HTTPError
 	if !errors.As(err, &he) {
 		return err
+	}
+	if reauthenticationRequired(he) {
+		detail := ""
+		if he.Detail != "" {
+			detail = ": " + output.CellText(he.Detail)
+		}
+		message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
+			"\n  Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
+		if cfg.Host != config.DefaultHost {
+			message += "\n  API: " + cfg.Host + he.Path
+		}
+		return &ExitError{4, message}
 	}
 	kind := config.Kind(cfg.Token)
 	bound := config.IsOrgBound(cfg.Token)
@@ -294,7 +317,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		}
 		hint := "ask a member of the organization to check the API's reason above. If a replacement is needed, create one with `avr token create` and set it as AVR_TOKEN."
 		if kind == config.ServiceToken {
-			hint = "the service token may be expired or revoked. An organization admin can rotate it or mint a new one; then set it as AVR_TOKEN."
+			hint = "an organization admin can check the token with `avr service-token view <token-id>`. A revoked or expired token cannot be rotated: create a new one with `avr service-token create`. A live token was rotated: use its new secret, or rotate it again with `avr service-token rotate <token-id>`. Then set the secret as AVR_TOKEN."
 		}
 		return &ExitError{4, "Error: " + subject + " (HTTP 401)" + detail + "\n  Hint: " + hint}
 	}

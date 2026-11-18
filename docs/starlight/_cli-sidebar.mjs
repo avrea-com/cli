@@ -29,6 +29,8 @@ export default {
       items: [
         { label: "avr auth", slug: "cli/reference/auth" },
         { label: "avr token", slug: "cli/reference/token" },
+        { label: "avr service-token", slug: "cli/reference/service-token" },
+        { label: "avr group", slug: "cli/reference/group" },
         { label: "avr config", slug: "cli/reference/config" },
         { label: "avr settings", slug: "cli/reference/settings" },
         { label: "avr firewall", slug: "cli/reference/firewall" },

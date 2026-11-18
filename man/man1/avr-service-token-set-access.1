@@ -1,0 +1,44 @@
+.TH AVR\-SERVICE\-TOKEN\-SET\-ACCESS 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-set-access \- Replace a service token's whole access selection.
+.SH SYNOPSIS
+.B avr service-token set-access
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Replace a service token's whole access selection.
+.PP
+The grants given here replace everything the token reaches: a grant you leave out is removed, so repeat the ones to keep. The command reads the token first and the change fails if the token changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to run `avr auth login` again. The change applies to the token's next request.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token set-access <token-id> --repo acme/api --repo acme/web
+    avr service-token set-access <token-id> --all-firewall-rules
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-repo\fR \fITEXT\fR
+Grant read access to a repository (org/repo or rep-xxx). Repeatable. (repeatable)
+.TP
+\fB\-\-firewall\-rule\fR \fITEXT\fR
+Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. (repeatable)
+.TP
+\fB\-\-all\-firewall\-rules\fR
+Grant read access to every egress firewall rule, including rules added later.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-list (1),
+.BR avr-service-token-revoke (1),
+.BR avr-service-token-revoke-all (1),
+.BR avr-service-token-rotate (1),
+.BR avr-service-token-view (1)

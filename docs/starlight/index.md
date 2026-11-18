@@ -451,7 +451,21 @@ If `avr token create` returns a 404, check the API's reason, the organization an
 
 **Service tokens**
 
-A service token (`avt_...`) belongs to a group in one organization rather than to a person. An organization admin mints, rotates and revokes it; the CLI uses it only from `AVR_TOKEN`. The token's organization applies automatically, so `--org` and `AVR_ORG` can be omitted; when given, they must be the `org-...` ID. Reading the organization costs one request per command, and a service token has 60 requests per minute, so set `AVR_ORG` to the ID in loops. `avr auth status` checks the token against the API and shows its organization and token ID, and its name, owning group, expiry and access when the API reports them. An API that does not report them leaves those rows as `-` and the JSON fields `null`. A `-` expiry means unknown, not that the token never expires; in JSON, `expiring_soon` is `null` only in that case. Commands that need a signed-in person, such as `avr feedback` and `avr pr comment`, refuse a service token, and `avr auth logout` does not revoke one: unset `AVR_TOKEN` instead. A 403 or 404 comes with a reminder that the token reaches only what its access names.
+A service token (`avt_...`) belongs to a group in one organization rather than to a person, and keeps working when its creator leaves. An organization admin manages it while signed in with `avr auth login`:
+
+```sh
+avr group list                                                                   # the groups and paths --group accepts
+avr service-token create --name ci --group Platform/CI --repo acme/api --ttl 30d  # prints the secret once
+avr service-token list --status live
+avr service-token view <token-id>
+avr service-token set-access <token-id> --repo acme/api --all-firewall-rules    # replaces the whole selection
+avr service-token rotate <token-id> --overlap 2h                                 # prints the new secret once
+avr service-token revoke <token-id>
+```
+
+Grants are read-only: `--repo` names one repository, `--firewall-rule` one egress firewall rule, and `--all-firewall-rules` every rule, including later ones. A secret lives 30 days unless `--ttl` (60 seconds to 90 days) or `--never-expires` says otherwise. `create` and `rotate` print the secret only once, with `export AVR_TOKEN=...` and `export AVR_ORG=<org-...>` lines; store it, for example as a CI secret. After `rotate`, the old secret keeps working for the overlap (1 hour to 7 days, 24 hours by default) and the command says until when; rotating again inside the overlap retires the old secret at once, so from a terminal `rotate` asks first (`--yes` skips the question). `set-access` and `rotate` read the token first and fail with a conflict if it changes in between. Check `avr service-token view <token-id>` before running either again: `set-access` replaces the whole selection, so pass the full selection you want rather than undoing a change made in between, and if the token was rotated in between, rotating again retires the previous secret at once. The API may ask for a recent sign-in to create or rotate a token or change its access; then run `avr auth login` again. `revoke-all` revokes every service token of the organization after a suspected leak.
+
+The CLI uses a service token only from `AVR_TOKEN`. The token's organization applies automatically, so `--org` and `AVR_ORG` can be omitted; when given, they must be the `org-...` ID. Reading the organization costs one request per command, and a service token has 60 requests per minute, so set `AVR_ORG` to the ID in loops. `avr auth status` checks the token against the API and shows its organization and token ID, and its name, owning group, expiry and access when the API reports them. An API that does not report them leaves those rows as `-` and the JSON fields `null`. A `-` expiry means unknown, not that the token never expires; in JSON, `expiring_soon` is `null` only in that case. While a rotation overlaps, it also says when the replaced secret stops working. Commands that need a signed-in person, such as `avr feedback` and `avr pr comment`, refuse a service token, and `avr auth logout` does not revoke one: unset `AVR_TOKEN` instead. A 403 or 404 comes with a reminder that the token reaches only what its access names.
 
 **Pipe-aware output**
 

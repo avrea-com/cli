@@ -29,6 +29,35 @@ func TestTokenCreateCancelledFilterRecoversCredentialWithExit130(t *testing.T) {
 	}
 }
 
+// A cancellation that lands after the credential reached stdout leaves one
+// JSON document and one credential, and reports the created token.
+func TestTokenCreateLateCancellationDoesNotRepeatCredential(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: "https://api.example.test", Token: "fixture", Org: inspectionOrg}, nil
+	}
+	calls := 0
+	d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		data, err := json.Marshal(tokenMintFixture())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return &http.Response{StatusCode: 201, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(data)), Request: r}, nil
+	})}
+	ctx, cancel := context.WithCancel(t.Context())
+	d.Out = cancelOnWrite{out, cancel}
+	code := Execute(ctx, []string{"token", "create", "--name", "ci", "--allow-vm-create", "--json", "token,id"}, d)
+	var document map[string]any
+	if e := json.Unmarshal(out.Bytes(), &document); e != nil || document["token"] != createdTokenFixture || strings.Count(out.String(), createdTokenFixture) != 1 {
+		t.Fatal(e, out)
+	}
+	want := "Interrupted. The token was created and its output on stdout is complete; if that output was saved, do not run the command again. To discard it, run \x60avr token revoke " + tokenMintFixture()["id"].(string) + " --org " + inspectionOrg + "\x60."
+	if message := stderr.String(); code != 130 || calls != 1 || !strings.Contains(message, want) || strings.Contains(message, createdTokenFixture) {
+		t.Fatal(code, calls, message)
+	}
+}
+
 type tokenBrokenWriter struct{}
 
 func (tokenBrokenWriter) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }

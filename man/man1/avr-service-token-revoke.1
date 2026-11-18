@@ -1,0 +1,38 @@
+.TH AVR\-SERVICE\-TOKEN\-REVOKE 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-revoke \- Revoke a service token.
+.SH SYNOPSIS
+.B avr service-token revoke
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Revoke a service token.
+.PP
+Its current secret and any old secret still in its rotation overlap stop working on their next request, and its grants are removed. Revoking a token that is already revoked succeeds.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token revoke <token-id>
+    avr service-token revoke <token-id> --yes
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-list (1),
+.BR avr-service-token-revoke-all (1),
+.BR avr-service-token-rotate (1),
+.BR avr-service-token-set-access (1),
+.BR avr-service-token-view (1)

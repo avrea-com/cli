@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
 	"github.com/spf13/cobra"
 )
@@ -169,11 +172,15 @@ func TestServiceTokenAuthStatusText(t *testing.T) {
 	}{
 		{"full", serviceTokenSelf, []string{"Credential    service token", "Name          ci reader", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         grp-019a0000000070008000000000000003", "Expires       2026-12-16T10:00:00.00Z", "Grants        1 repo, all firewall rules", "Host          " + serviceTokenHost, "Token         avt_****"}, []string{"expires soon", "avr auth login", "avr config set org"}},
 		{"expiring soon", expiring, []string{"Expires       2026-12-16T10:00:00.00Z", "expires soon", "rotate"}, nil},
+		{"rotation overlap", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","expiring_soon"`, 1), []string{"replaced secret stops working at 2026-11-17T10:00:00.00Z"}, nil},
+		// The field stays set once the overlap has ended.
+		{"rotation overlap ended", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-15T10:00:00Z","expiring_soon"`, 1), nil, []string{"replaced secret", "was rotated"}},
 		{"never expires", never, []string{"Expires       never"}, []string{"expires soon"}},
 		{"old API", serviceTokenSelfOld, []string{"Name          -", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         -", "Expires       -", "Grants        -"}, []string{"expires soon"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newServiceTokenHarness(t, "", serviceTokenRoutes(tc.self))
+			h.d.Now = func() time.Time { return time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC) }
 			if code := h.run(t, "auth", "status"); code != 0 {
 				t.Fatal(code, h.stderr)
 			}
@@ -272,7 +279,7 @@ func TestServiceTokenAPIErrors(t *testing.T) {
 		args        []string
 		want, avoid []string
 	}{
-		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "expired or revoked", "rotate it or mint a new one", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
+		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "avr service-token view <token-id>", "revoked or expired token cannot be rotated: create a new one with \x60avr service-token create\x60", "A live token was rotated", "avr service-token rotate <token-id>", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
 		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "a service token reaches only what its access names", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "scoped token"}},
 		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "a service token reaches only what its access names"}, []string{"avr org list", "avr auth login", "scoped token"}},
 	} {
@@ -370,7 +377,7 @@ func TestServiceTokenLogoutRefusedWithoutRequests(t *testing.T) {
 		code := h.run(t, args...)
 		message := h.stderr.String()
 		after, _ := os.ReadFile(h.d.Store.Path)
-		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || h.out.Len() != 0 || !strings.Contains(message, "does not revoke a service token") || !strings.Contains(message, "unset AVR_TOKEN") || !strings.Contains(message, "organization admin") {
+		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || h.out.Len() != 0 || !strings.Contains(message, "does not revoke a service token") || !strings.Contains(message, "unset AVR_TOKEN") || !strings.Contains(message, "organization admin") || !strings.Contains(message, "avr service-token revoke <token-id>") {
 			t.Fatal(args, code, h.requests, message)
 		}
 	}
@@ -423,5 +430,39 @@ func TestServiceTokenGitHubSetupRefusedBeforeRequest(t *testing.T) {
 	code := h.run(t, "org", "install", "add", "--no-browser")
 	if code != 4 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "needs a signed-in account; service tokens cannot install the GitHub App") {
 		t.Fatal(code, h.requests, h.stderr)
+	}
+}
+
+// An overlap end that is present but unreadable counts as still running, so
+// rotate asks and auth status warns instead of staying silent.
+func TestTimestampAfter(t *testing.T) {
+	now := time.Date(2026, 11, 18, 10, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		value string
+		want  bool
+	}{
+		{"", false},
+		{"2026-11-18T11:00:00Z", true},
+		{"2026-11-18T09:00:00.5+00:00", false},
+		// A time without a zone is UTC, as formatTimestamp reads it.
+		{"2026-11-18T11:00:00", true},
+		{"2026-11-18T09:00:00", false},
+		{"tomorrow", true},
+	} {
+		if got := timestampAfter(tc.value, now); got != tc.want {
+			t.Errorf("timestampAfter(%q) = %v, want %v", tc.value, got, tc.want)
+		}
+	}
+}
+
+// The recent-sign-in refusal is explained on every route, not only on the
+// service-token commands.
+func TestAPIErrorAsksForARecentSignInOnAnyRoute(t *testing.T) {
+	he := &client.HTTPError{Path: "/orgs/" + inspectionOrg + "/settings", Status: 403, Detail: "Sign in again to continue", Reauthentication: "recent-login"}
+	var exit *ExitError
+	if err := apiError(config.Config{Host: config.DefaultHost}, he, "change the setting"); !errors.As(err, &exit) || exit.Code != 4 ||
+		!strings.Contains(exit.Message, "Avrea needs a recent sign-in to change the setting (HTTP 403): Sign in again to continue") ||
+		!strings.Contains(exit.Message, "Run \x60avr auth login\x60 again") || strings.Contains(exit.Message, "You don't have access") {
+		t.Fatal(err)
 	}
 }

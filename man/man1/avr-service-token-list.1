@@ -1,0 +1,59 @@
+.TH AVR\-SERVICE\-TOKEN\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-list \- List the organization's service tokens, soonest expiry first.
+.SH SYNOPSIS
+.B avr service-token list
+[OPTIONS]
+.SH DESCRIPTION
+List the organization's service tokens, soonest expiry first.
+.PP
+Lists live, expired and revoked tokens; tokens that never expire come last. A live token whose requests are refused all the same, for example while its group is suspended, shows as blocked with the reason.
+.PP
+--group takes a group ID or a group's path as `avr group list` shows it, such as Acme/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token list
+    avr service-token list --status live --group Platform/CI
+    avr service-token list --json id,name,expires_at
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
+    grants_version, group_id, id, last_used_at, name, organization_id,
+    previous_valid_until, revoked_at, revoked_reason, rotated_at,
+    rotation_version, status
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-group\fR \fITEXT\fR
+Only the tokens this group owns, by group name, path or ID (grp-xxx).
+.TP
+\fB\-\-status\fR \fICHOICE\fR
+Only tokens with this status. (choices: live, expired, revoked)
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max tokens to return. (default: 50)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-revoke (1),
+.BR avr-service-token-revoke-all (1),
+.BR avr-service-token-rotate (1),
+.BR avr-service-token-set-access (1),
+.BR avr-service-token-view (1)

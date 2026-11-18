@@ -1,0 +1,34 @@
+.TH AVR\-SERVICE\-TOKEN\-REVOKE\-ALL 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-revoke-all \- Revoke every service token of the organization.
+.SH SYNOPSIS
+.B avr service-token revoke-all
+[OPTIONS]
+.SH DESCRIPTION
+Revoke every service token of the organization.
+.PP
+For a suspected leak: every unrevoked service token of the organization, expired ones included, stops working on its next request.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token revoke-all --org <org>
+    avr service-token revoke-all --org <org> --yes
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-list (1),
+.BR avr-service-token-revoke (1),
+.BR avr-service-token-rotate (1),
+.BR avr-service-token-set-access (1),
+.BR avr-service-token-view (1)

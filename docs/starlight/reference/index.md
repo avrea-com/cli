@@ -38,6 +38,8 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 - [`avr auth`](./auth/) — Authenticate and manage credentials.
 - [`avr token`](./token/) — Create and manage scoped access tokens.
+- [`avr service-token`](./service-token/) — Create and manage the organization's service tokens.
+- [`avr group`](./group/) — View the organization's groups.
 - [`avr config`](./config/) — View and manage CLI configuration.
 - [`avr settings`](./settings/) — View and toggle cache and runner settings.
 - [`avr firewall`](./firewall/) — Manage the egress firewall rule list for orgs and repositories.
@@ -53,11 +55,13 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ## Aliases
 
+- `groups` → [`group`](./group/)
 - `jobs` → [`job`](./job/)
 - `logs` → [`log`](./log/)
 - `orgs` → [`org`](./org/)
 - `prs` → [`pr`](./pr/)
 - `repos` → [`repo`](./repo/)
+- `service-tokens` → [`service-token`](./service-token/)
 - `tokens` → [`token`](./token/)
 - `vms` → [`vm`](./vm/)
 - `workflows` → [`workflow`](./workflow/)

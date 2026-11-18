@@ -1,0 +1,51 @@
+.TH AVR\-SERVICE\-TOKEN\-VIEW 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-service-token-view \- Show a service token's details, versions and grants.
+.SH SYNOPSIS
+.B avr service-token view
+[OPTIONS] TOKEN_ID
+.SH DESCRIPTION
+Show a service token's details, versions and grants.
+.PP
+Reads a revoked or expired token as well. Its grants are removed when it is revoked and 30 days after it expires. The secret itself is never shown again after `avr service-token create` or `rotate`.
+.PP
+.RS 4
+.nf
+Examples:
+    avr service-token view <token-id>
+    avr service-token view <token-id> --json grants
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
+    grants_version, group_id, id, last_used_at, name, organization_id,
+    previous_valid_until, revoked_at, revoked_reason, rotated_at,
+    rotation_version, status
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fITOKEN_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-service-token (1),
+.BR avr-service-token-create (1),
+.BR avr-service-token-list (1),
+.BR avr-service-token-revoke (1),
+.BR avr-service-token-revoke-all (1),
+.BR avr-service-token-rotate (1),
+.BR avr-service-token-set-access (1)

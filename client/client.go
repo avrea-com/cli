@@ -86,7 +86,10 @@ type HTTPError struct {
 	Path       string
 	Detail     string
 	RetryAfter string
-	Payload    map[string]any
+	// Reauthentication holds X-Reauthentication-Required: set on a 403 that
+	// asks the caller to sign in again before the operation.
+	Reauthentication string
+	Payload          map[string]any
 }
 
 func (e *HTTPError) Error() string { return fmt.Sprintf("HTTP %d", e.Status) }
@@ -229,7 +232,7 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		var payload map[string]any
 		_ = json.Unmarshal(data, &payload)
 		detail := errorDetail(payload["detail"])
-		return nil, &HTTPError{Path: path, Status: resp.StatusCode, Detail: detail, RetryAfter: resp.Header.Get("Retry-After"), Payload: payload}
+		return nil, &HTTPError{Path: path, Status: resp.StatusCode, Detail: detail, RetryAfter: resp.Header.Get("Retry-After"), Reauthentication: resp.Header.Get("X-Reauthentication-Required"), Payload: payload}
 	}
 	return data, nil
 }
