@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help deps test lint tooling-test tooling-lint fix scan update all clean docs docs-check docs-staged-check
+.PHONY: help deps test lint tooling-test tooling-lint fix tooling-fix scan update all clean docs docs-check docs-staged-check
 
 UV ?= uv
 LINT_UV := $(UV) run --extra dev
@@ -29,7 +29,8 @@ deps: ## Install/sync dependencies (including dev extras)
 	@echo "📦 Installing avr dependencies..."
 	@$(UV) sync --extra dev
 	@$(GO) mod download
-	@git config core.hooksPath .githooks
+	@git config --unset core.hooksPath || true
+	@if command -v prek >/dev/null; then prek install; else echo "⚠️  prek not found: install it (brew install prek) and run prek install"; fi
 	@echo "✅ avr dependencies installed"
 
 test: go-test tooling-test go-integration ## Run native, tooling and integration tests
@@ -45,7 +46,9 @@ tooling-lint: ## Check for linting issues and formatting problems
 	@bash -c 'set -o pipefail && $(LINT_UV) ty check --output-format=concise $(LINT_TY_PATHS) 2>&1 | sed "/WARN ty is pre-release software/d"'
 	@echo "✅ avr lint passed"
 
-fix: ## Auto-fix linting issues and format code
+fix: go-fix tooling-fix ## Auto-fix Go and Python tooling
+
+tooling-fix: ## Auto-fix linting issues and format code
 	@$(LINT_UV) ruff format $(LINT_RUFF_PATHS)
 	@$(LINT_UV) ruff check --fix $(LINT_RUFF_PATHS)
 	@bash -c 'set -o pipefail && $(LINT_UV) ty check --output-format=concise $(LINT_TY_PATHS) 2>&1 | sed "/WARN ty is pre-release software/d"'
@@ -82,7 +85,7 @@ update: ## Update dependencies
 # Native CLI. Python is used only for development and packaging tools.
 GO ?= go
 
-.PHONY: go-build go-test go-lint go-integration go-scan go-check
+.PHONY: go-build go-test go-lint go-fix go-tidy go-integration go-scan go-check
 
 go-build: ## Build the native CLI and bundled license notices
 	@CGO_ENABLED=0 $(GO) build -trimpath -ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" -o build/go/avr ./cmd/avr
@@ -92,8 +95,14 @@ go-test:
 	@$(GO) test -race ./...
 
 go-lint:
-	@$(GO) vet ./...
 	@$(GO) tool -modfile=tools/go.mod golangci-lint run ./...
+
+go-fix:
+	@$(GO) tool -modfile=tools/go.mod golangci-lint run --fix ./...
+
+go-tidy:
+	@$(GO) mod tidy
+	@cd tools && $(GO) mod tidy
 
 go-integration: go-build
 	@AVR_GO_BINARY=build/go/avr $(UV) run --python 3.14 --frozen --extra dev python -m pytest scripts/test_go_clone.py scripts/test_go_billing_card.py scripts/test_go_vm_ssh.py scripts/test_go_vm_tunnels.py scripts/test_go_vm_bootstrap.py scripts/test_go_docs.py scripts/test_go_completion.py -q

@@ -1,0 +1,61 @@
+# Install with `make deps` (or `prek install`); run by hand with `prek run`.
+# NB: priority: should be equal for anything that does not conflict, as prek
+# runs those hooks in parallel. If conflicting things happen, use different
+# priority values for them.
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      # .golangci.yml is the config and tools/go.mod pins golangci-lint, so a
+      # config-only or linter-bump change still re-lints the whole module.
+      - id: go-fix
+        name: go fix
+        entry: make go-fix
+        priority: 10
+        language: system
+        pass_filenames: false
+        files: \.go$|^(\.golangci\.yml|go\.(mod|sum)|tools/go\.(mod|sum))$
+
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: make go-tidy
+        priority: 10
+        language: system
+        pass_filenames: false
+        files: \.go$|(^|/)go\.(mod|sum)$
+
+      - id: tooling-fix
+        name: tooling fix
+        entry: make tooling-fix
+        priority: 10
+        language: system
+        pass_filenames: false
+        files: \.py$|^(pyproject\.toml|ruff\.toml|uv\.lock)$
+
+      - id: uv-lock-check
+        name: uv lock check
+        entry: uv lock --check
+        priority: 10
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
+
+      # Refuse the commit when docs/ or man/ are stale relative to the source.
+      # Only source that can invalidate the generated reference triggers it.
+      # Runs after the fixers: go-docs builds the binary and rewrites README.md.
+      - id: docs-staged-check
+        name: generated docs staged
+        entry: sh -c 'make docs-staged-check || { echo "Docs out of sync with source. Run make docs and re-stage docs/ man/." >&2; exit 1; }'
+        priority: 20
+        language: system
+        pass_filenames: false
+        files: ^(commands|docgen|internal/version)/|^README\.md$
+
+      - id: release-tag-version
+        name: release tag matches version
+        entry: scripts/check-release-tag.sh
+        priority: 10
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
