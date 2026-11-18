@@ -1,12 +1,14 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,5 +81,29 @@ func TestCancellation(t *testing.T) {
 	_, err := c.Do(ctx, "GET", "/users/me", nil)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
+	}
+}
+
+func TestCallAPIHeadersAndTrace(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Accept-Encoding") != "zstd, gzip" {
+			t.Errorf("accept encoding %q", r.Header.Get("Accept-Encoding"))
+		}
+		_, _ = fmt.Fprintf(w, "%s|%s|%s", r.Header.Get("Authorization"), r.Header.Get("Content-Type"), r.Header.Get("User-Agent"))
+	}))
+	defer server.Close()
+	var trace bytes.Buffer
+	c := New(config.Config{Host: server.URL, Token: "fixture"}, server.Client(), "avr-cli/test")
+	c.Trace = &trace
+	// Keys from a plain map literal are not canonical; they must still be honoured.
+	r, err := c.CallAPI(context.Background(), "POST", "/x?secret=1", []byte("a"), http.Header{"authorization": {"Bearer mine"}, "Content-Type": {"text/plain"}, "Accept-Encoding": {"br"}})
+	if err != nil || string(r.Body) != "Bearer mine|text/plain|avr-cli/test" {
+		t.Fatal(string(r.Body), err)
+	}
+	if _, err := c.Raw(context.Background(), "GET", "/y?limit=5", nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := trace.String(); strings.Contains(got, "secret") || !strings.Contains(got, "/y?limit=5") {
+		t.Fatal(got)
 	}
 }

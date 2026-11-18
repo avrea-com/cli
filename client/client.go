@@ -136,6 +136,39 @@ func (c *Client) Request(ctx context.Context, method, path string, body any, hea
 }
 
 func (c *Client) request(ctx context.Context, method, path string, body any, headers http.Header, trace bool) ([]byte, error) {
+	return c.exchange(ctx, method, path, body, headers, trace, nil)
+}
+
+type APIResponse struct {
+	Protocol, Status string
+	Code             int
+	Headers          http.Header
+	Body             []byte
+}
+
+func (c *Client) CallAPI(ctx context.Context, method, path string, body []byte, headers http.Header) (APIResponse, error) {
+	var response APIResponse
+	// Canonical keys keep a caller's "authorization" from sending a second credential.
+	canonical := make(http.Header, len(headers))
+	for key, values := range headers {
+		for _, value := range values {
+			canonical.Add(key, value)
+		}
+	}
+	headers = canonical
+	if len(headers.Values("Authorization")) == 0 && c.Config.Token != "" {
+		headers.Set("Authorization", "Bearer "+c.Config.Token)
+	}
+	var payload any
+	if body != nil {
+		payload = rawRequestContent{data: body, contentType: "application/json", noTransportRetry: true}
+	}
+	data, err := c.exchange(ctx, method, path, payload, headers, true, &response)
+	response.Body = data
+	return response, err
+}
+
+func (c *Client) exchange(ctx context.Context, method, path string, body any, headers http.Header, trace bool, response *APIResponse) ([]byte, error) {
 	if err := config.ValidateHost(c.Config.Host); err != nil {
 		return nil, err
 	}
@@ -167,8 +200,13 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("User-Agent", c.UserAgent)
+	// CallAPI callers may choose their own Content-Type and User-Agent. The
+	// response decoder below only understands the encodings requested here.
+	for key, value := range map[string]string{"Content-Type": contentType, "User-Agent": c.UserAgent} {
+		if response == nil || req.Header.Get(key) == "" {
+			req.Header.Set(key, value)
+		}
+	}
 	req.Header.Set("Accept-Encoding", "zstd, gzip")
 	var timing *requestTiming
 	if c.Timings != nil {
@@ -185,7 +223,12 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 		if resp != nil {
 			status = fmt.Sprint(resp.StatusCode)
 		}
-		_, _ = fmt.Fprintf(c.Trace, "  → %s %s [%s]\n", method, c.Config.Host+path, status)
+		traced := path
+		if response != nil {
+			// Arbitrary CallAPI query parameters may carry secrets.
+			traced, _, _ = strings.Cut(path, "?")
+		}
+		_, _ = fmt.Fprintf(c.Trace, "  → %s %s [%s]\n", method, c.Config.Host+traced, status)
 	}
 	if err != nil {
 		if ctx.Err() != nil {
@@ -197,7 +240,8 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 	defer func() { _ = resp.Body.Close() }()
 	bodyReader := &responseReader{Reader: resp.Body}
 	var source io.Reader = bodyReader
-	switch strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Encoding"))) {
+	encoding := strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Encoding")))
+	switch encoding {
 	case "zstd":
 		decoder, e := zstd.NewReader(bodyReader, zstd.WithDecoderMaxMemory(64<<20))
 		if e != nil {
@@ -228,6 +272,19 @@ func (c *Client) request(ctx context.Context, method, path string, body any, hea
 	if len(data) > limit {
 		return nil, errors.New("API response is too large")
 	}
+	if response != nil {
+		response.Protocol = resp.Proto
+		response.Status = resp.Status
+		response.Code = resp.StatusCode
+		response.Headers = resp.Header
+		if encoding != "" && encoding != "identity" {
+			// The body is returned decoded, so wire framing headers no longer describe it.
+			response.Headers = resp.Header.Clone()
+			response.Headers.Del("Content-Encoding")
+			response.Headers.Del("Content-Length")
+		}
+		return data, nil
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var payload map[string]any
 		_ = json.Unmarshal(data, &payload)
@@ -241,17 +298,32 @@ func decodeObject(data []byte) (map[string]any, error) {
 	if len(data) == 0 {
 		return map[string]any{}, nil
 	}
+	value, err := DecodeJSON(data)
+	if errors.Is(err, errTrailingJSON) {
+		return nil, errors.New("unexpected API response: invalid JSON")
+	}
+	result, ok := value.(map[string]any)
+	if err != nil || !ok {
+		return nil, errors.New("unexpected API response: expected a JSON object")
+	}
+	return result, nil
+}
+
+var errTrailingJSON = errors.New("unexpected data after JSON value")
+
+// DecodeJSON parses exactly one JSON value in a single pass, keeping numbers exact.
+func DecodeJSON(data []byte) (any, error) {
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.UseNumber()
-	var result map[string]any
-	if d.Decode(&result) != nil || result == nil {
-		return nil, errors.New("unexpected API response: expected a JSON object")
+	var value any
+	if err := d.Decode(&value); err != nil {
+		return nil, err
 	}
 	var extra any
 	if d.Decode(&extra) != io.EOF {
-		return nil, errors.New("unexpected API response: invalid JSON")
+		return nil, errTrailingJSON
 	}
-	return result, nil
+	return value, nil
 }
 
 // FastAPI's field-level validation diagnostics are part of useful terminal output.
