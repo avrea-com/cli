@@ -65,6 +65,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr repo`](#avr-repo) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](#avr-org) — Manage organizations and installations.
 - [`avr health`](#avr-health) — Check Avrea platform status.
+- [`avr api`](#avr-api) — Call an Avrea API endpoint.
 - [`avr feedback`](#avr-feedback) — Send feedback or report a bug.
 
 ## Reference
@@ -4170,6 +4171,39 @@ Examples:
 
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+### `avr api`
+
+Call an Avrea API endpoint.
+
+```sh
+avr api [OPTIONS] <endpoint>
+```
+
+Use GET by default, or POST when supplying fields or input. With GET, HEAD, or --input, fields become query parameters.
+
+```sh
+Examples:
+  avr api users/me/organizations
+  avr api /orgs/acme/workflow-runs -X GET -F limit=5
+  avr api /logs/search --input search.json
+  avr api users/me/organizations -i
+```
+
+**Arguments**
+
+- `ENDPOINT`
+
+**Options**
+
+- `--field, -F <TEXT>` — Add a typed field (key=value, @file or @-). _(default: `()` · repeatable)_
+- `--header, -H <TEXT>` — Set a request header (name: value). _(default: `()` · repeatable)_
+- `--include, -i` — Print response status and headers.
+- `--input <TEXT>` — Read the body from a file or - for stdin.
+- `--jq, -q <TEXT>` — Filter the JSON response.
+- `--method, -X <TEXT>` — HTTP request method.
+- `--raw-field, -f <TEXT>` — Add a literal string field (key=value). _(default: `()` · repeatable)_
+- `--silent` — Suppress the response body.
 
 ### `avr feedback`
 

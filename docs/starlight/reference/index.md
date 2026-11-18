@@ -51,6 +51,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr repo`](./repo/) — Manage repositories, git mirrors, and public mirrors.
 - [`avr org`](./org/) — Manage organizations and installations.
 - [`avr health`](./health/) — Check Avrea platform status.
+- [`avr api`](./api/) — Call an Avrea API endpoint.
 - [`avr feedback`](./feedback/) — Send feedback or report a bug.
 
 ## Aliases

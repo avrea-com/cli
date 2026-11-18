@@ -4051,6 +4051,192 @@
         "subcommands": []
       },
       {
+        "name": "api",
+        "path": [
+          "avr",
+          "api"
+        ],
+        "full": "avr api",
+        "is_group": false,
+        "short_help": "Call an Avrea API endpoint.",
+        "help": "Call an Avrea API endpoint.\n\nUse GET by default, or POST when supplying fields or input. With GET, HEAD, or --input, fields become query parameters.\n\n\b\nExamples:\n  avr api users/me/organizations\n  avr api /orgs/acme/workflow-runs -X GET -F limit=5\n  avr api /logs/search --input search.json\n  avr api users/me/organizations -i",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr api [OPTIONS] \u003cendpoint\u003e",
+        "params": [
+          {
+            "name": "endpoint",
+            "kind": "argument",
+            "opts": [
+              "endpoint"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": true,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": null,
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "field",
+            "kind": "option",
+            "opts": [
+              "--field",
+              "-F"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": true,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Add a typed field (key=value, @file or @-).",
+            "hidden": false,
+            "show_default": false,
+            "default": []
+          },
+          {
+            "name": "header",
+            "kind": "option",
+            "opts": [
+              "--header",
+              "-H"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": true,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Set a request header (name: value).",
+            "hidden": false,
+            "show_default": false,
+            "default": []
+          },
+          {
+            "name": "include",
+            "kind": "option",
+            "opts": [
+              "--include",
+              "-i"
+            ],
+            "secondary_opts": [],
+            "type": "boolean",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": true,
+            "envvar": null,
+            "help": "Print response status and headers.",
+            "hidden": false,
+            "show_default": false,
+            "default": false
+          },
+          {
+            "name": "input",
+            "kind": "option",
+            "opts": [
+              "--input"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Read the body from a file or - for stdin.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "jq",
+            "kind": "option",
+            "opts": [
+              "--jq",
+              "-q"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Filter the JSON response.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "method",
+            "kind": "option",
+            "opts": [
+              "--method",
+              "-X"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "HTTP request method.",
+            "hidden": false,
+            "show_default": false,
+            "default": ""
+          },
+          {
+            "name": "raw_field",
+            "kind": "option",
+            "opts": [
+              "--raw-field",
+              "-f"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": true,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Add a literal string field (key=value).",
+            "hidden": false,
+            "show_default": false,
+            "default": []
+          },
+          {
+            "name": "silent",
+            "kind": "option",
+            "opts": [
+              "--silent"
+            ],
+            "secondary_opts": [],
+            "type": "boolean",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": true,
+            "envvar": null,
+            "help": "Suppress the response body.",
+            "hidden": false,
+            "show_default": false,
+            "default": false
+          }
+        ],
+        "subcommands": []
+      },
+      {
         "name": "feedback",
         "path": [
           "avr",

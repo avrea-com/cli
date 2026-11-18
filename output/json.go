@@ -64,7 +64,7 @@ func JSON(ctx context.Context, w io.Writer, record map[string]any, fields []stri
 	for _, field := range fields {
 		selected[field] = record[field]
 	}
-	return jsonValue(ctx, w, selected, expression, terminal...)
+	return JSONValue(ctx, w, selected, expression, terminal...)
 }
 
 func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields []string, expression string, terminal ...bool) error {
@@ -76,7 +76,7 @@ func JSONList(ctx context.Context, w io.Writer, records []map[string]any, fields
 		}
 		selected = append(selected, row)
 	}
-	return jsonValue(ctx, w, selected, expression, terminal...)
+	return JSONValue(ctx, w, selected, expression, terminal...)
 }
 
 // CompileJQ lets commands reject a bad --jq expression before they send a
@@ -93,7 +93,7 @@ func CompileJQ(expression string) (*gojq.Code, error) {
 	return code, nil
 }
 
-func jsonValue(ctx context.Context, w io.Writer, selected any, expression string, terminal ...bool) error {
+func JSONValue(ctx context.Context, w io.Writer, selected any, expression string, terminal ...bool) error {
 	if expression == "" {
 		var buffer bytes.Buffer
 		target := w

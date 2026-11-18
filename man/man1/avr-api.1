@@ -1,0 +1,75 @@
+.TH AVR\-API 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-api \- Call an Avrea API endpoint.
+.SH SYNOPSIS
+.B avr api
+[OPTIONS] <endpoint>
+.SH DESCRIPTION
+Call an Avrea API endpoint.
+.PP
+Use GET by default, or POST when supplying fields or input. With GET, HEAD, or --input, fields become query parameters.
+.PP
+.RS 4
+.nf
+Examples:
+  avr api users/me/organizations
+  avr api /orgs/acme/workflow-runs -X GET -F limit=5
+  avr api /logs/search --input search.json
+  avr api users/me/organizations -i
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIENDPOINT\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-field\fR, \fB\-F\fR \fITEXT\fR
+Add a typed field (key=value, @file or @-). (default: (); repeatable)
+.TP
+\fB\-\-header\fR, \fB\-H\fR \fITEXT\fR
+Set a request header (name: value). (default: (); repeatable)
+.TP
+\fB\-\-include\fR, \fB\-i\fR
+Print response status and headers.
+.TP
+\fB\-\-input\fR \fITEXT\fR
+Read the body from a file or - for stdin.
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter the JSON response.
+.TP
+\fB\-\-method\fR, \fB\-X\fR \fITEXT\fR
+HTTP request method.
+.TP
+\fB\-\-raw\-field\fR, \fB\-f\fR \fITEXT\fR
+Add a literal string field (key=value). (default: (); repeatable)
+.TP
+\fB\-\-silent\fR
+Suppress the response body.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-tests (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-service-token (1),
+.BR avr-group (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-feedback (1)

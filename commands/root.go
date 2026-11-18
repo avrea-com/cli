@@ -236,6 +236,10 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		return false
 	}
 	switch canonicalHelpPath(c) {
+	case "avr api":
+		// RunE resolves the bound --method variable, defaulted or explicit.
+		method, _ := c.Flags().GetString("method")
+		return method == "GET" || method == "HEAD"
 	case "avr auth status", "avr config", "avr config list", "avr config get",
 		"avr status", "avr org list", "avr repo list",
 		"avr run list", "avr run view", "avr run logs", "avr run watch", "avr run diagnose",
@@ -286,7 +290,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 		return prepareGlobalOptions(cmd, d)
 	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
+	root.AddCommand(NewAPI(d), NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)
