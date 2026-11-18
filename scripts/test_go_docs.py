@@ -76,10 +76,9 @@ def test_docs_default_bundled_readme(tmp_path):
 
 def test_pre_commit_accepts_staged_docs_and_rejects_stale_output(tmp_path):
     make = shutil.which("make")
-    bash = shutil.which("bash")
-    if os.name == "nt" or make is None or bash is None:
-        pytest.skip("requires POSIX make and bash")
-    assert make is not None and bash is not None
+    if os.name == "nt" or make is None:
+        pytest.skip("requires POSIX make")
+    assert make is not None
     root = Path(__file__).resolve().parents[1]
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     # Exercise the real hook and check recipes with a deterministic generator.
@@ -95,7 +94,7 @@ def test_pre_commit_accepts_staged_docs_and_rejects_stale_output(tmp_path):
 
     def hook():
         return subprocess.run(
-            [bash, str(root / ".githooks/pre-commit")],
+            [make, "docs-staged-check"],
             cwd=tmp_path,
             capture_output=True,
             text=True,
