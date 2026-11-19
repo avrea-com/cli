@@ -80,8 +80,9 @@ The tap is updated separately from GitHub and PyPI. Use
 `brew info avrea-com/tap/avr` to check its available version.
 
 Installing with the full name, `brew install avrea-com/tap/avr`, trusts that
-formula. If Homebrew ignores an existing untrusted tap during an upgrade,
-trust only AVR and retry:
+formula. Installations made before Homebrew required tap trust have no such
+record, so `brew upgrade avr` stops with `Refusing to load formula
+avrea-com/tap/avr from untrusted tap avrea-com/tap`. Trust only AVR and retry:
 
 ```sh
 brew trust --formula avrea-com/tap/avr

@@ -29,7 +29,7 @@ uv tool install avr-cli                                 # PyPI (also pipx or pip
 
 Shell and PowerShell installers and plain archives are on [GitHub Releases](https://github.com/avrea-com/cli/releases/latest). With `go install`, make sure `$(go env GOBIN)` is on PATH, or `$(go env GOPATH)/bin` when `GOBIN` is unset. The PyPI package uses Python only to install; `avr` itself runs without it.
 
-Update with the same method: `brew upgrade avr`, `mise upgrade github:avrea-com/cli`, `go install github.com/avrea-com/cli/cmd/avr@latest` or `uv tool upgrade avr-cli`. `avr` may tell you about a new version but never updates itself. Run `avr --version` and `which -a avr` to see which installation your shell uses.
+Update with the same method: `brew upgrade avr`, `mise upgrade github:avrea-com/cli`, `go install github.com/avrea-com/cli/cmd/avr@latest` or `uv tool upgrade avr-cli`. If `brew upgrade avr` refuses to load the formula from an untrusted tap, run `brew trust --formula avrea-com/tap/avr` once and retry. `avr` may tell you about a new version but never updates itself. Run `avr --version` and `which -a avr` to see which installation your shell uses.
 
 [Installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md) covers platform requirements, version pins, installer options, Homebrew tap trust and release verification.
 
