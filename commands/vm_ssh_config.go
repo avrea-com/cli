@@ -67,9 +67,11 @@ func vmKnownHostsLine(key, host string, port int) (string, error) {
 	return host + " " + key + "\n", nil
 }
 
-// Atomic replacement retains unrelated SSH settings and publishes only private,
-// complete files. Existing parent directory permissions are not changed.
-func vmAtomicText(path, content string) error {
+// writeTextAtomic replaces path through a temporary file in the same
+// directory, so a reader sees the old or the new content, never a partial
+// file. The mode is set before the rename. Missing parent directories are
+// created private; existing ones keep their permissions.
+func writeTextAtomic(path, content string, mode os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
@@ -82,6 +84,10 @@ func vmAtomicText(path, content string) error {
 		_ = file.Close()
 		return err
 	}
+	if err = file.Chmod(mode); err != nil {
+		_ = file.Close()
+		return err
+	}
 	if err = file.Sync(); err != nil {
 		_ = file.Close()
 		return err
@@ -91,7 +97,10 @@ func vmAtomicText(path, content string) error {
 	}
 	return os.Rename(file.Name(), path)
 }
-func vmReadText(path string) (string, error) {
+
+// readTextFile reads at most 16 MiB of UTF-8 text with newlines normalized.
+// A missing file reads as empty. label names the file in errors.
+func readTextFile(path, label string) (string, error) {
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil
@@ -105,16 +114,16 @@ func vmReadText(path string) (string, error) {
 		return "", err
 	}
 	if len(raw) > 16<<20 {
-		return "", errors.New("SSH file exceeds 16 MiB")
+		return "", errors.New(label + " exceeds 16 MiB")
 	}
 	if !utf8.Valid(raw) {
-		return "", errors.New("SSH file is not valid UTF-8")
+		return "", errors.New(label + " is not valid UTF-8")
 	}
 	// Python read_text uses universal newline handling.
 	return strings.ReplaceAll(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\r", "\n"), nil
 }
 func vmUpsertKnownHosts(path, line string) error {
-	text, err := vmReadText(path)
+	text, err := readTextFile(path, "SSH file")
 	if err != nil {
 		return err
 	}
@@ -128,7 +137,7 @@ func vmUpsertKnownHosts(path, line string) error {
 	if kept != "" && !strings.HasSuffix(kept, "\n") {
 		kept += "\n"
 	}
-	return vmAtomicText(path, kept+line)
+	return writeTextAtomic(path, kept+line, 0o600)
 }
 func vmSSHConfigPath(value, label string) (string, error) {
 	if strings.ContainsAny(value, "\r\n") {
@@ -161,7 +170,7 @@ func vmSSHConfigBlock(alias, host, user string, port int, identity, known string
 	return strings.Join(lines, "\n") + "\n", nil
 }
 func vmUpsertSSHBlock(path, alias, block string) (string, error) {
-	text, err := vmReadText(path)
+	text, err := readTextFile(path, "SSH file")
 	if err != nil {
 		return "", err
 	}
@@ -206,10 +215,10 @@ func vmUpsertSSHBlock(path, alias, block string) (string, error) {
 		}
 		kept = append(kept, managed...)
 	}
-	return action, vmAtomicText(path, strings.Join(kept, "\n")+"\n")
+	return action, writeTextAtomic(path, strings.Join(kept, "\n")+"\n", 0o600)
 }
 func vmPinningOverrides(path string) ([]string, error) {
-	text, err := vmReadText(path)
+	text, err := readTextFile(path, "SSH file")
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,8 @@ var skillGuide string
 
 const skillName = "avrea-cli"
 
-// Present in every stub avr has installed; a SKILL.md without it is not ours.
+// Every stub avr has installed ends with an HTML comment that starts with this
+// text; a SKILL.md without that last line is not ours.
 const skillMarker = "Managed by `avr skill install`"
 
 // "agents" is the shared Agent Skills location (.agents/skills) that Codex,
@@ -42,43 +44,67 @@ func skillAgent(agent string) string {
 	return agent
 }
 
+func skillManaged(content string) bool {
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	last := strings.TrimSpace(lines[len(lines)-1])
+	return strings.HasPrefix(last, "<!-- "+skillMarker) && strings.HasSuffix(last, "-->")
+}
+
 // skillProjectRoot is the top of the git checkout holding the working
 // directory, where a committed skill reaches cloud agents.
 func skillProjectRoot(ctx context.Context) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 	out, err := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel").Output()
-	if err != nil {
+	var exitErr *exec.ExitError
+	switch {
+	case ctx.Err() != nil:
+		return "", fmt.Errorf("find the git repository: %w", ctx.Err())
+	case errors.As(err, &exitErr):
 		return "", &ExitError{1, "Error: --project needs a git repository; run it inside the checkout."}
+	case err != nil:
+		return "", fmt.Errorf("find the git repository: %w", err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return filepath.EvalSymlinks(strings.TrimSpace(string(out)))
 }
 
-func skillPath(d Dependencies, agent, project string) (string, error) {
-	var root string
-	switch agent {
-	case "claude":
-		if project != "" {
-			root = filepath.Join(project, ".claude")
-		} else if root = d.Getenv("CLAUDE_CONFIG_DIR"); root == "" {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return "", err
-			}
-			root = filepath.Join(home, ".claude")
+// skillWithin refuses a project path that a committed symlink sends outside
+// the repository. The path need not exist yet.
+func skillWithin(root, path string) error {
+	existing, rest := path, ""
+	for {
+		if _, err := os.Lstat(existing); err == nil {
+			break
 		}
-	case "agents":
-		if project != "" {
-			root = filepath.Join(project, ".agents")
-		} else {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return "", err
-			}
-			root = filepath.Join(home, ".agents")
-		}
-	default:
-		return "", fmt.Errorf("unknown agent %q", agent)
+		rest = filepath.Join(filepath.Base(existing), rest)
+		existing = filepath.Dir(existing)
 	}
-	return filepath.Join(root, "skills", skillName, "SKILL.md"), nil
+	resolved, err := filepath.EvalSymlinks(existing)
+	if err == nil {
+		var rel string
+		rel, err = filepath.Rel(root, filepath.Join(resolved, rest))
+		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return nil
+		}
+	}
+	return &ExitError{1, "Error: " + path + " leads outside the repository through a symlink."}
+}
+
+// skillRoots holds each agent's configuration directory: in the project when
+// one is given, otherwise in the home directory.
+func skillRoots(d Dependencies, project string) (map[string]string, error) {
+	if project != "" {
+		return map[string]string{"claude": filepath.Join(project, ".claude"), "agents": filepath.Join(project, ".agents")}, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	claude := d.Getenv("CLAUDE_CONFIG_DIR")
+	if claude == "" {
+		claude = filepath.Join(home, ".claude")
+	}
+	return map[string]string{"claude": claude, "agents": filepath.Join(home, ".agents")}, nil
 }
 
 type skillTarget struct {
@@ -87,14 +113,33 @@ type skillTarget struct {
 	content     string
 }
 
+func readSkill(target *skillTarget) error {
+	info, err := os.Stat(target.path)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return nil
+	case err != nil:
+		return err
+	case !info.Mode().IsRegular():
+		return &ExitError{1, "Error: " + target.path + " is not a regular file."}
+	}
+	target.content, err = readTextFile(target.path, "Skill file")
+	target.installed = err == nil
+	return err
+}
+
 func skillTargets(d Dependencies, agents []string, project string, force bool) ([]skillTarget, error) {
 	if len(agents) == 0 {
 		agents = skillDefaultAgents
 	}
+	roots, err := skillRoots(d, project)
+	if err != nil {
+		return nil, err
+	}
 	targets := []skillTarget{}
 	seen := map[string]bool{}
 	for _, agent := range agents {
-		if err := validateFirewallChoice("agent", agent, skillAgents); err != nil {
+		if err := validateChoice("agent", agent, skillAgents); err != nil {
 			return nil, err
 		}
 		agent = skillAgent(agent)
@@ -102,20 +147,17 @@ func skillTargets(d Dependencies, agents []string, project string, force bool) (
 			continue
 		}
 		seen[agent] = true
-		path, err := skillPath(d, agent, project)
-		if err != nil {
+		target := skillTarget{agent: agent, path: filepath.Join(roots[agent], "skills", skillName, "SKILL.md")}
+		if project != "" {
+			if err := skillWithin(project, target.path); err != nil {
+				return nil, err
+			}
+		}
+		if err := readSkill(&target); err != nil {
 			return nil, err
 		}
-		target := skillTarget{agent: agent, path: path}
-		data, err := os.ReadFile(path)
-		switch {
-		case err == nil:
-			target.installed, target.content = true, string(data)
-		case !errors.Is(err, fs.ErrNotExist):
-			return nil, err
-		}
-		if target.installed && !force && !strings.Contains(target.content, skillMarker) {
-			return nil, &ExitError{1, "Error: " + path + " was not installed by avr. Pass --force to replace or remove it."}
+		if target.installed && !force && !skillManaged(target.content) {
+			return nil, &ExitError{1, "Error: " + target.path + " was not installed by avr. Pass --force to replace or remove it."}
 		}
 		targets = append(targets, target)
 	}
@@ -126,15 +168,25 @@ func skillTargets(d Dependencies, agents []string, project string, force bool) (
 // so it gets the permissions of ordinary repository files.
 func writeSkill(path string, project bool) error {
 	if !project {
-		return vmAtomicText(path, skillStub)
+		return writeTextAtomic(path, skillStub, 0o600)
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	if err := vmAtomicText(path, skillStub); err != nil {
+	return writeTextAtomic(path, skillStub, 0o644)
+}
+
+func removeSkill(path string) error {
+	if err := os.Remove(path); err != nil {
 		return err
 	}
-	return os.Chmod(path, 0o644)
+	// os.Remove keeps a directory that still holds the user's files. A linked
+	// directory (a symlink, or a junction on Windows) belongs to the user even
+	// when empty, and Lstat reports neither as a directory.
+	if info, err := os.Lstat(filepath.Dir(path)); err == nil && info.IsDir() {
+		_ = os.Remove(filepath.Dir(path))
+	}
+	return nil
 }
 
 type skillOptions struct {
@@ -149,16 +201,31 @@ func (o *skillOptions) bind(c *cobra.Command, verb string) {
 	c.Flags().BoolVar(&o.force, "force", false, "Replace or remove a skill that avr did not install.")
 }
 
-func (o *skillOptions) targets(ctx context.Context, d Dependencies) ([]skillTarget, error) {
+// apply resolves and checks every target before act changes any of them, so
+// a refusal leaves all locations untouched. act returns the state to print.
+func (o *skillOptions) apply(ctx context.Context, d Dependencies, act func(skillTarget) (string, error)) error {
 	project := ""
 	if o.project {
 		root, err := skillProjectRoot(ctx)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		project = root
 	}
-	return skillTargets(d, o.agents, project, o.force)
+	targets, err := skillTargets(d, o.agents, project, o.force)
+	if err != nil {
+		return err
+	}
+	for _, target := range targets {
+		state, err := act(target)
+		if err != nil {
+			return err
+		}
+		if _, err = fmt.Fprintf(d.Out, "%s for %s: %s\n", state, skillAgentLabels[target.agent], target.path); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewSkill prints the agent guide and installs the skill that points at it.
@@ -175,56 +242,28 @@ func NewSkill(deps Dependencies) *cobra.Command {
 	install := &cobra.Command{Use: "install", Short: "Install the avr skill for coding agents.", Args: cobra.NoArgs}
 	add.bind(install, "install for")
 	install.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		targets, err := add.targets(cmd.Context(), d)
-		if err != nil {
-			return err
-		}
-		for _, target := range targets {
-			state := "Installed"
+		return add.apply(cmd.Context(), d, func(target skillTarget) (string, error) {
 			switch {
 			case target.content == skillStub:
-				state = "Already installed"
+				return "Already installed", nil
 			case target.installed:
-				state = "Updated"
+				return "Updated", writeSkill(target.path, add.project)
+			default:
+				return "Installed", writeSkill(target.path, add.project)
 			}
-			if target.content != skillStub {
-				if err = writeSkill(target.path, add.project); err != nil {
-					return err
-				}
-			}
-			if _, err = fmt.Fprintf(d.Out, "%s for %s: %s\n", state, skillAgentLabels[target.agent], target.path); err != nil {
-				return err
-			}
-		}
-		return nil
+		})
 	})
 
 	var remove skillOptions
 	uninstall := &cobra.Command{Use: "uninstall", Short: "Remove the installed avr skill.", Args: cobra.NoArgs}
 	remove.bind(uninstall, "uninstall from")
 	uninstall.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		targets, err := remove.targets(cmd.Context(), d)
-		if err != nil {
-			return err
-		}
-		for _, target := range targets {
-			state := "Not installed"
-			if target.installed {
-				state = "Uninstalled"
-				if err = os.Remove(target.path); err != nil {
-					return err
-				}
-				// os.Remove keeps a directory that still holds the user's files. A
-				// linked directory belongs to the user even when empty.
-				if info, err := os.Lstat(filepath.Dir(target.path)); err == nil && info.Mode()&os.ModeSymlink == 0 {
-					_ = os.Remove(filepath.Dir(target.path))
-				}
+		return remove.apply(cmd.Context(), d, func(target skillTarget) (string, error) {
+			if !target.installed {
+				return "Not installed", nil
 			}
-			if _, err = fmt.Fprintf(d.Out, "%s for %s: %s\n", state, skillAgentLabels[target.agent], target.path); err != nil {
-				return err
-			}
-		}
-		return nil
+			return "Uninstalled", removeSkill(target.path)
+		})
 	})
 	c.AddCommand(show, install, uninstall)
 	return c

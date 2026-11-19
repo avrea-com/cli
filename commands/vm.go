@@ -70,11 +70,11 @@ func newVMList(d Dependencies) *cobra.Command {
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		if cmd.Flags().Changed("state") {
 			state = strings.ToUpper(state)
-			if err := validateFirewallChoice("state", state, []string{"PENDING", "STARTING", "RUNNING", "PAUSING", "PAUSED", "STOPPING", "DELETING", "FAILED"}); err != nil {
+			if err := validateChoice("state", state, []string{"PENDING", "STARTING", "RUNNING", "PAUSING", "PAUSED", "STOPPING", "DELETING", "FAILED"}); err != nil {
 				return err
 			}
 		}
-		if err := validateFirewallChoice("scope", scope, []string{"all", "mine"}); err != nil {
+		if err := validateChoice("scope", scope, []string{"all", "mine"}); err != nil {
 			return err
 		}
 		if limit < 1 || limit > 100 {

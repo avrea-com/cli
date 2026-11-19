@@ -33,6 +33,8 @@ func TestDispatchMatching(t *testing.T) {
 		{"another workflow", row("2026-10-29T12:00:01Z", "43", "main", "1"), byTime, false},
 		{"any workflow when unknown", row("2026-10-29T12:00:01Z", "43", "main", "1"), dispatchTarget{at: now, ref: "main"}, true},
 		{"another branch", row("2026-10-29T12:00:01Z", "42", "feat/x", "1"), byTime, false},
+		{"fully qualified branch", row("2026-10-29T12:00:01Z", "42", "main", "1"), dispatchTarget{at: now, workflow: "42", ref: "refs/heads/main"}, true},
+		{"fully qualified tag", row("2026-10-29T12:00:01Z", "42", "v1", "1"), dispatchTarget{at: now, workflow: "42", ref: "refs/tags/v1"}, true},
 		{"invalid time", row("invalid", "42", "main", "1"), byTime, false},
 		{"the run GitHub returned", row("2026-10-29T12:00:01Z", "42", "main", "900"), byRunID, true},
 		{"another run of the same workflow and branch", row("2026-10-29T12:00:01Z", "42", "main", "901"), byRunID, false},
@@ -47,12 +49,18 @@ func TestDispatchMatching(t *testing.T) {
 // same branch, must never stand in for the dispatched one.
 func TestDispatchPollingSelectsTheDispatchedRun(t *testing.T) {
 	now := time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)
-	runs := `{"data":[` +
+	// The newest page no longer holds the dispatched run on a busy repository;
+	// only a lookup by its run ID finds it.
+	newest := `{"data":[` +
 		`{"run_id":"run-other-branch","created_at":"2026-10-29T12:00:09Z","platform_workflow_id":42,"head_branch":"feat/x","platform_run_id":902},` +
-		`{"run_id":"run-same-branch","created_at":"2026-10-29T12:00:05Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":901},` +
-		`{"run_id":"run-dispatched","created_at":"2026-10-29T12:00:03Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":900}]}`
+		`{"run_id":"run-same-branch","created_at":"2026-10-29T12:00:05Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":901}]}`
+	byRunID := map[string]string{"900": `{"data":[{"run_id":"run-dispatched","created_at":"2026-10-29T12:00:03Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":900}]}`}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, runs)
+		if id := r.URL.Query().Get("platform_run_id"); id != "" {
+			_, _ = io.WriteString(w, byRunID[id])
+			return
+		}
+		_, _ = io.WriteString(w, newest)
 	}))
 	defer server.Close()
 	for _, test := range []struct {
@@ -64,7 +72,12 @@ func TestDispatchPollingSelectsTheDispatchedRun(t *testing.T) {
 	} {
 		d, _, _ := testDeps(t)
 		d = d.defaults()
-		d.Now = func() time.Time { return now }
+		clock := now
+		d.Now = func() time.Time { return clock }
+		d.Wait = func(ctx context.Context, delay time.Duration) error {
+			clock = clock.Add(delay)
+			return ctx.Err()
+		}
 		cfg := config.Config{Host: server.URL, Token: "avr_fixture"}
 		row, err := pollDispatchedRun(t.Context(), d, cfg, client.New(cfg, nil, "fixture"), inspectionOrg, "rep-fixture", test.target)
 		if err != nil || fieldText(row, "run_id") != test.want {

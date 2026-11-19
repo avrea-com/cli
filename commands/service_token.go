@@ -328,7 +328,7 @@ func newServiceTokenList(d Dependencies) *cobra.Command {
 			}
 		}
 		if cmd.Flags().Changed("status") {
-			if err := validateFirewallChoice("status", status, []string{"live", "expired", "revoked"}); err != nil {
+			if err := validateChoice("status", status, []string{"live", "expired", "revoked"}); err != nil {
 				return err
 			}
 			base.Set("status", "eq."+status)

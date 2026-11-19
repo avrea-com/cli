@@ -244,7 +244,8 @@ func watchDispatchedWorkflow(cmd *cobra.Command, d Dependencies, cfg config.Conf
 
 // dispatchTarget identifies the run a GitHub dispatch started. GitHub returns
 // the run ID for most dispatches; without it, the closest match is a run of
-// the same workflow on the dispatched ref, created after the dispatch.
+// the same workflow on the dispatched ref, created after the dispatch. A run
+// records its branch or tag by short name, whichever form --ref used.
 type dispatchTarget struct {
 	at                   time.Time
 	workflow, ref, runID string
@@ -258,7 +259,8 @@ func dispatchMatches(row map[string]any, target dispatchTarget) bool {
 	if err != nil || created.Before(target.at.Add(-5*time.Second)) {
 		return false
 	}
-	if fieldText(row, "head_branch") != target.ref {
+	ref := strings.TrimPrefix(strings.TrimPrefix(target.ref, "refs/heads/"), "refs/tags/")
+	if fieldText(row, "head_branch") != ref {
 		return false
 	}
 	return target.workflow == "" || fieldText(row, "platform_workflow_id") == target.workflow
@@ -272,8 +274,12 @@ func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, a
 			_, _ = fmt.Fprintln(d.Err)
 		}
 	}
+	query := url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}}
+	if target.runID != "" {
+		query.Set("platform_run_id", target.runID)
+	}
 	for d.Now().Before(deadline) {
-		page, err := api.Runs(ctx, org, url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}})
+		page, err := api.Runs(ctx, org, query)
 		if err == nil {
 			for _, row := range page.Items {
 				if dispatchMatches(row, target) {

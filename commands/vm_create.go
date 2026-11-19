@@ -97,7 +97,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 			{"from-spawn-script", o.spawn, []string{"claude-code"}},
 		} {
 			if f.Changed(item.flag) {
-				if err := validateFirewallChoice(item.flag, item.value, item.choices); err != nil {
+				if err := validateChoice(item.flag, item.value, item.choices); err != nil {
 					return err
 				}
 			}

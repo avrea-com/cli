@@ -32,7 +32,7 @@ go install github.com/avrea-com/cli/cmd/avr@latest      # Go
 uv tool install avr-cli                                 # PyPI (also pipx or pip)
 ```
 
-Shell and PowerShell installers and plain archives are on [GitHub Releases](https://github.com/avrea-com/cli/releases/latest). With `go install`, make sure `$(go env GOPATH)/bin` is on PATH. The PyPI package uses Python only to install; `avr` itself runs without it.
+Shell and PowerShell installers and plain archives are on [GitHub Releases](https://github.com/avrea-com/cli/releases/latest). With `go install`, make sure `$(go env GOBIN)` is on PATH, or `$(go env GOPATH)/bin` when `GOBIN` is unset. The PyPI package uses Python only to install; `avr` itself runs without it.
 
 Update with the same method: `brew upgrade avr`, `mise upgrade github:avrea-com/cli`, `go install github.com/avrea-com/cli/cmd/avr@latest` or `uv tool upgrade avr-cli`. `avr` may tell you about a new version but never updates itself. Run `avr --version` and `which -a avr` to see which installation your shell uses.
 
@@ -151,7 +151,7 @@ avr cache list
 
 **On-demand VMs**
 
-Linux, macOS and Windows VMs reachable over SSH, with RDP or VNC for a desktop. A VM created with `--repo` gets that repository's checkout and caches.
+Linux, macOS and Windows VMs reachable over SSH, with RDP or VNC for a desktop. A VM created with `--repo` gets that repository's caches and, when Avrea mirrors the repository, a preloaded checkout; otherwise `vm create` says so, and `avr vm bootstrap --repo` clones it in the VM.
 
 ```sh
 avr vm create --name dev --os linux --size 2-vcpu --ssh-key @~/.ssh/id_ed25519.pub --wait

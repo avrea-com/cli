@@ -37,20 +37,37 @@ func skillTestRead(t *testing.T, path string) string {
 	return string(data)
 }
 
+// skillGuideCommands returns the avr commands in fenced blocks and inline code
+// spans. A span such as `avr <command> --help` names no real command.
+func skillGuideCommands(document string) []string {
+	commands := []string{}
+	fenced := false
+	for _, line := range strings.Split(document, "\n") {
+		if strings.HasPrefix(line, "```") {
+			fenced = !fenced
+			continue
+		}
+		if fenced {
+			if strings.HasPrefix(line, "avr ") {
+				commands = append(commands, line)
+			}
+			continue
+		}
+		for i, span := range strings.Split(line, "`") {
+			if i%2 == 1 && strings.HasPrefix(span, "avr ") && !strings.HasPrefix(span, "avr <") {
+				commands = append(commands, span)
+			}
+		}
+	}
+	return commands
+}
+
 // Every command the guide teaches must be accepted by the real command tree,
 // so a renamed command or removed flag fails here instead of in an agent.
 func TestSkillGuideCommandsParse(t *testing.T) {
 	checked := 0
 	for _, document := range []string{skillGuide, skillStub} {
-		fenced := false
-		for _, line := range strings.Split(document, "\n") {
-			if strings.HasPrefix(line, "```") {
-				fenced = !fenced
-				continue
-			}
-			if !fenced || !strings.HasPrefix(line, "avr ") {
-				continue
-			}
+		for _, line := range skillGuideCommands(document) {
 			words, err := shellquote.Split(line)
 			if err != nil {
 				t.Fatalf("%s: %v", line, err)
@@ -67,6 +84,22 @@ func TestSkillGuideCommandsParse(t *testing.T) {
 			command, rest, err := root.Find(words[1:])
 			if err != nil || !command.Runnable() {
 				t.Errorf("%s: no such command (%v)", line, err)
+				continue
+			}
+			// vm ssh passes unknown options to ssh, so a misspelt avr flag before
+			// the separator would not fail. Require each one to exist.
+			if command.DisableFlagParsing {
+				command.Flags().AddFlagSet(command.InheritedFlags())
+				for _, word := range rest {
+					if word == "--" {
+						break
+					}
+					name, _, _ := strings.Cut(strings.TrimPrefix(word, "--"), "=")
+					if strings.HasPrefix(word, "--") && command.Flags().Lookup(name) == nil {
+						t.Errorf("%s: unknown flag %s", line, word)
+					}
+				}
+				checked++
 				continue
 			}
 			if err = command.ParseFlags(rest); err != nil {
@@ -97,6 +130,15 @@ func TestSkillInstallAndUninstall(t *testing.T) {
 	code, out, stderr := skillTestRun(t, nil, "install")
 	if code != 0 || stderr != "" || !strings.Contains(out, "Installed for Claude Code: "+claude) || !strings.Contains(out, "Installed for Agent Skills tools (Codex, OpenCode, Pi, Devin): "+codex) {
 		t.Fatal(code, out, stderr)
+	}
+	if runtime.GOOS != "windows" {
+		for _, path := range []string{claude, codex} {
+			file, fileErr := os.Stat(path)
+			dir, dirErr := os.Stat(filepath.Dir(path))
+			if fileErr != nil || dirErr != nil || file.Mode().Perm() != 0o600 || dir.Mode().Perm() != 0o700 {
+				t.Fatal("personal skill must be private", path, file, dir)
+			}
+		}
 	}
 	installed := skillTestRead(t, claude)
 	// Agents load a skill only when its name matches the directory and it can
@@ -143,15 +185,22 @@ func TestSkillLeavesForeignSkillAlone(t *testing.T) {
 	if err := os.WriteFile(codex, []byte("my own skill"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	for _, action := range []string{"install", "uninstall"} {
-		code, out, stderr := skillTestRun(t, nil, action)
-		if code != 1 || out != "" || !strings.Contains(stderr, codex) || !strings.Contains(stderr, "--force") {
-			t.Fatal(action, code, out, stderr)
-		}
-		// The refusal comes before any write, including for the other agent.
-		if _, err := os.Stat(claude); !os.IsNotExist(err) || skillTestRead(t, codex) != "my own skill" {
-			t.Fatal(action, err)
-		}
+	// The refusal comes before any write, including for the other agent.
+	if code, out, stderr := skillTestRun(t, nil, "install"); code != 1 || out != "" || !strings.Contains(stderr, codex) || !strings.Contains(stderr, "--force") {
+		t.Fatal(code, out, stderr)
+	}
+	if _, err := os.Stat(claude); !os.IsNotExist(err) || skillTestRead(t, codex) != "my own skill" {
+		t.Fatal(err)
+	}
+	// Likewise uninstall keeps the other agent's skill.
+	if code, _, stderr := skillTestRun(t, nil, "install", "--agent", "claude"); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	if code, out, stderr := skillTestRun(t, nil, "uninstall"); code != 1 || out != "" || !strings.Contains(stderr, codex) {
+		t.Fatal(code, out, stderr)
+	}
+	if skillTestRead(t, claude) != skillStub || skillTestRead(t, codex) != "my own skill" {
+		t.Fatal("uninstall changed a skill before refusing")
 	}
 	if code, _, stderr := skillTestRun(t, nil, "install", "--agent", "codex", "--force"); code != 0 || !strings.Contains(skillTestRead(t, codex), skillMarker) {
 		t.Fatal(code, stderr)
@@ -240,7 +289,8 @@ func TestSkillProjectInstallsAtRepositoryTop(t *testing.T) {
 	}
 	claude := filepath.Join(top, ".claude", "skills", "avrea-cli", "SKILL.md")
 	shared := filepath.Join(top, ".agents", "skills", "avrea-cli", "SKILL.md")
-	code, out, stderr := skillTestRun(t, nil, "install", "--project")
+	elsewhere := filepath.Join(t.TempDir(), "claude-config")
+	code, out, stderr := skillTestRun(t, map[string]string{"CLAUDE_CONFIG_DIR": elsewhere}, "install", "--project")
 	if code != 0 || !strings.Contains(out, claude) || !strings.Contains(out, shared) {
 		t.Fatal(code, out, stderr)
 	}
@@ -256,9 +306,9 @@ func TestSkillProjectInstallsAtRepositoryTop(t *testing.T) {
 			}
 		}
 	}
-	for _, path := range []string{claudeHome, sharedHome} {
+	for _, path := range []string{claudeHome, sharedHome, elsewhere} {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			t.Fatal("home skill written", path, err)
+			t.Fatal("skill written outside the project", path, err)
 		}
 	}
 	if code, out, _ = skillTestRun(t, nil, "uninstall", "--project"); code != 0 || strings.Count(out, "Uninstalled for ") != 2 {
@@ -290,4 +340,95 @@ func TestSkillDescriptionFitsAgentSkillsLimit(t *testing.T) {
 		}
 	}
 	t.Fatal("no description in the skill frontmatter")
+}
+
+func skillTestRepository(t *testing.T) string {
+	t.Helper()
+	repo := t.TempDir()
+	if out, err := exec.CommandContext(t.Context(), "git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+	t.Chdir(repo)
+	return repo
+}
+
+// A cloned repository decides what its .claude and .agents paths are, so a
+// committed symlink must not let --project write or delete outside it.
+func TestSkillProjectStaysInsideTheRepository(t *testing.T) {
+	skillTestHome(t)
+	repo := skillTestRepository(t)
+	outside := t.TempDir()
+	victim := filepath.Join(outside, "skills", "avrea-cli", "SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(victim), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(victim, []byte(skillStub), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(repo, ".claude")); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"install", "--project"}, {"uninstall", "--project", "--force"}} {
+		code, out, stderr := skillTestRun(t, nil, args...)
+		if code != 1 || out != "" || !strings.Contains(stderr, "outside the repository") {
+			t.Fatal(args, code, out, stderr)
+		}
+	}
+	if skillTestRead(t, victim) != skillStub {
+		t.Fatal("file outside the repository changed")
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".agents")); !os.IsNotExist(err) {
+		t.Fatal("refusal must come before any write", err)
+	}
+	// A link that stays inside the repository is fine.
+	if err := os.Remove(filepath.Join(repo, ".claude")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "config", "claude"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(repo, "config", "claude"), filepath.Join(repo, ".claude")); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, stderr := skillTestRun(t, nil, "install", "--project", "--agent", "claude"); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	if skillTestRead(t, filepath.Join(repo, "config", "claude", "skills", "avrea-cli", "SKILL.md")) != skillStub {
+		t.Fatal("skill not written through the in-repository link")
+	}
+}
+
+// Reading a device or a pipe would never finish.
+func TestSkillRefusesNonRegularFile(t *testing.T) {
+	claude, _ := skillTestHome(t)
+	if err := os.MkdirAll(claude, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"install", "uninstall"} {
+		code, _, stderr := skillTestRun(t, nil, action, "--agent", "claude", "--force")
+		if code != 1 || !strings.Contains(stderr, "not a regular file") {
+			t.Fatal(action, code, stderr)
+		}
+	}
+}
+
+// Only the closing comment marks a stub as avr's. A user's skill that quotes
+// the marker keeps its protection.
+func TestSkillMarkerMustBeTheLastLine(t *testing.T) {
+	claude, _ := skillTestHome(t)
+	if err := os.MkdirAll(filepath.Dir(claude), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	mine := "My notes: avr writes <!-- " + skillMarker + ". --> at the end.\nMore notes.\n"
+	if err := os.WriteFile(claude, []byte(mine), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"install", "uninstall"} {
+		if code, _, stderr := skillTestRun(t, nil, action, "--agent", "claude"); code != 1 || !strings.Contains(stderr, "--force") {
+			t.Fatal(action, code, stderr)
+		}
+	}
+	if skillTestRead(t, claude) != mine {
+		t.Fatal("user skill changed")
+	}
 }

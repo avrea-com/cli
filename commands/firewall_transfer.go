@@ -139,7 +139,7 @@ func newFirewallImport(d Dependencies) *cobra.Command {
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "Validate and summarize changes without applying them.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Skip replacement confirmation.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		if err := validateFirewallChoice("mode", mode, []string{"append", "replace"}); err != nil {
+		if err := validateChoice("mode", mode, []string{"append", "replace"}); err != nil {
 			return err
 		}
 		reader := d.In

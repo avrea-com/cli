@@ -23,9 +23,9 @@ avr config list
   run or job URL.
 - Exit status 4 means authentication is required or the credential was
   rejected. If `AVR_TOKEN` is set, it takes precedence over any sign-in, so
-  signing in does not help: report that the token was rejected, with the host
-  from `avr auth status`, and stop. Otherwise start
-  `avr auth device-login --no-qr` in the background or with a timeout of
+  signing in does not help: report the error and that it came with
+  `AVR_TOKEN` set, with the host from `avr auth status`, and stop. Otherwise
+  start `avr auth device-login --no-qr` in the background or with a timeout of
   several minutes: it prints a link and a code, then waits until the user
   approves. Read the link and code from its output while it runs, give them
   to the user to approve on any device, and wait for the command to exit; it
@@ -40,8 +40,10 @@ avr config list
   can mean the wrong repository or organization, a repository not connected
   to Avrea, or data not recorded yet. A command you stopped or that timed out
   produced no result. Say which, never "no failures".
-- On a server error (5xx) or a network failure, retry once after a few
-  seconds; on 429, wait longer. If it fails again, report it.
+- On a server error (5xx) or a network failure, retry a read once after a few
+  seconds; on 429, wait longer. If it fails again, report it. Never repeat a
+  command that changes something: the first attempt may have taken effect.
+  Check first (`run list`, `vm list`, `token list`), and report what you find.
 - Off a terminal, list commands print tab-separated rows. For exact values use
   `--json FIELDS` with the built-in `--jq`; `--json '?'` lists the fields.
 
@@ -117,8 +119,8 @@ avr artifact list owner/name --run-id <run>
 
 Before changing code, decide whether the failure is in the change, a flaky
 test, the cache, or the infrastructure. Report the run, the commit and the
-failing step. Rerun only when the evidence points to a flake or an
-infrastructure fault:
+failing step. Rerun only when the task allows it and the evidence points to a
+flake or an infrastructure fault, and say so before you do:
 
 ```sh
 avr run rerun <run> --failed --yes
@@ -170,7 +172,7 @@ suggested label. Before changing `runs-on`:
 
 A VM is billed compute. Create one when the user asks for it or the task needs
 a clean machine, another operating system or more hardware than is available
-locally, and say that you did.
+locally, and say so before you create it.
 
 Pick a unique name first, such as `agent-<task>-<random>`, and refer to the VM
 by that name from then on:

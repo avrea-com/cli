@@ -37,8 +37,6 @@ type cache struct {
 	Latest  string    `json:"latest"`
 }
 
-func New(version string) Checker { return Checker{Version: version} }
-
 // Start does no filesystem or network work on the command goroutine. The
 // invocation may finish before a check does; the caller never joins this worker.
 func (c Checker) Start(ctx context.Context) <-chan string {

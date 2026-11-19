@@ -12,10 +12,12 @@ If `avr` is not installed, install it with
 `go install github.com/avrea-com/cli/cmd/avr@latest` or
 `uv tool install avr-cli`, or see https://docs.avrea.com/cli.
 
-If a command exits with status 4, start `avr auth device-login --no-qr` in
-the background (it waits for approval), read the link and code from its
-output, ask the user to open the link and approve, then wait for the command
-to exit. When no user can approve, as in a scheduled or cloud session, report
-that `AVR_TOKEN` must be set to a scoped or service token in the environment.
+If a command exits with status 4 and `AVR_TOKEN` is set, signing in does not
+help, because the token takes precedence: report the error and stop.
+Otherwise start `avr auth device-login --no-qr` in the background (it waits
+for approval), read the link and code from its output, ask the user to open
+the link and approve, then wait for the command to exit. When no user can
+approve, as in a scheduled or cloud session, report that `AVR_TOKEN` must be
+set to a scoped or service token in the environment.
 
 <!-- Managed by `avr skill install`. Edits are overwritten; remove with `avr skill uninstall`. -->
