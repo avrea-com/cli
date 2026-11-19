@@ -65,7 +65,7 @@ func configurationInputValue(c *cobra.Command, d Dependencies, kind, body string
 			}
 		}
 		prompt := configurationPrompt(d)
-		value, err := cardPrompt(c.Context(), prompt, bufio.NewReader(d.In), "Value", kind == "secret")
+		value, err := terminalPrompt(c.Context(), prompt, bufio.NewReader(d.In), "Value", kind == "secret")
 		if err != nil {
 			return "", err
 		}

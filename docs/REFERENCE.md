@@ -2962,15 +2962,13 @@ Add a credit card as a payment method.
 avr billing payment-methods add [OPTIONS]
 ```
 
-Card details are sent directly to Stripe and never touch Avrea servers.
+Opens the billing page of the Avrea console, where you enter the card and complete any 3D Secure authentication your card issuer requires. Card details go directly to Stripe and never pass through the CLI or Avrea servers.
+
+The command waits until the new card appears.
 
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- `--number <TEXT>` — Credit card number. Prefer prompting over --number to avoid shell history. _(required)_
-- `--exp-month <INTEGER RANGE>` — Card expiration month. _(required)_
-- `--exp-year <INTEGER>` — Card expiration year. _(required)_
-- `--cvc <TEXT>` — Card CVC/CVV code. Prefer prompting over --cvc to avoid shell history. _(required)_
 
 ##### `avr billing payment-methods list`
 

@@ -1,4 +1,4 @@
-"""Real-terminal checks for card-input echo suppression and interruption."""
+"""Real-terminal checks for hidden-prompt echo suppression and interruption."""
 
 from pathlib import Path
 import errno
@@ -12,8 +12,7 @@ import time
 pty = pytest.importorskip("pty")
 termios = pytest.importorskip("termios")
 
-NUMBER = "4242424242424242"
-CVC = "987"
+SECRET = "glrt-fixture-hidden-secret"
 
 
 def terminal_run(executable, directory, interrupt=False):
@@ -24,11 +23,23 @@ def terminal_run(executable, directory, interrupt=False):
     env.update(
         AVR_CONFIG_DIR=str(directory / "config"),
         AVR_HOST="http://127.0.0.1:1",
+        AVR_TOKEN="avr_fixture_private",
         NO_COLOR="1",
         TERM="xterm-256color",
     )
     process = subprocess.Popen(
-        [*executable, "billing", "payment-methods", "add"],
+        [
+            *executable,
+            "org",
+            "install",
+            "runner",
+            "set",
+            "linux-x64",
+            "--installation-id",
+            "gli-fixture",
+            "--org",
+            "org-0196f0c0a1b27c3d8e9f0a1b2c3d4e5f",
+        ],
         stdin=slave,
         stdout=slave,
         stderr=slave,
@@ -59,19 +70,12 @@ def terminal_run(executable, directory, interrupt=False):
             time.sleep(0.01)
 
     try:
-        until(b"Card number: ")
+        until(b"GitLab runner authentication token: ")
         hidden_ready()
         if interrupt:
             process.send_signal(signal.SIGINT)
         else:
-            os.write(master, (NUMBER + "\n").encode())
-            until(b"Expiration month (1-12): ")
-            os.write(master, b"3\n")
-            until(b"Expiration year (e.g. 2027): ")
-            os.write(master, b"2028\n")
-            until(b"CVC: ")
-            hidden_ready()
-            os.write(master, (CVC + "\n").encode())
+            os.write(master, (SECRET + "\n").encode())
         process.wait(timeout=10)
         while select.select([master], [], [], 0.05)[0]:
             try:
@@ -85,7 +89,7 @@ def terminal_run(executable, directory, interrupt=False):
             chunks.extend(data)
         assert termios.tcgetattr(slave)[3] & termios.ECHO == before[3] & termios.ECHO
         result = chunks.decode().replace("\r\n", "\n")
-        assert NUMBER not in result and CVC not in result
+        assert SECRET not in result
         return process.returncode, result
     finally:
         if process.poll() is None:
@@ -104,12 +108,13 @@ def binary():
     return Path(path).resolve()
 
 
-def test_hidden_card_prompts(binary, tmp_path):
+def test_hidden_prompt(binary, tmp_path):
     code, _ = terminal_run([str(binary)], tmp_path)
-    assert code == 4
+    # The prompt read the secret; the API at 127.0.0.1:1 is unreachable.
+    assert code == 1
 
 
-def test_card_prompt_interrupt_restores_echo(binary, tmp_path):
+def test_hidden_prompt_interrupt_restores_echo(binary, tmp_path):
     code, output = terminal_run([str(binary)], tmp_path, interrupt=True)
     assert code == 130
     assert "Interrupted." in output
