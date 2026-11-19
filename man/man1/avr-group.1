@@ -7,7 +7,7 @@ avr-group \- View the organization's groups.
 .SH DESCRIPTION
 View the organization's groups.
 .PP
-Each service token belongs to one of these groups. Organization members list them while signed in with `avr auth login`; a scoped or service token cannot.
+Each service token belongs to one of these groups. Organization members list them while signed in (avr auth device-login or avr auth login); a scoped or service token cannot.
 .SH COMMANDS
 .TP
 list
@@ -30,6 +30,7 @@ List the organization's groups by path.
 .BR avr-service-token (1),
 .BR avr-config (1),
 .BR avr-settings (1),
+.BR avr-skill (1),
 .BR avr-firewall (1),
 .BR avr-billing (1),
 .BR avr-audit-events (1),

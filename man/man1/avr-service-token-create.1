@@ -7,7 +7,7 @@ avr-service-token-create \- Create a service token and print its secret once.
 .SH DESCRIPTION
 Create a service token and print its secret once.
 .PP
-The token belongs to the group --group names, not to you, and keeps working when you leave the organization. It needs at least one grant; every grant is a read and must be within your own access now. The secret is shown once and cannot be retrieved later: store it, for example as a CI secret, and set it as AVR_TOKEN where the token is used. The API may ask for a recent sign-in; the command then exits 4 and says to run `avr auth login` again.
+The token belongs to the group --group names, not to you, and keeps working when you leave the organization. It needs at least one grant; every grant is a read and must be within your own access now. The secret is shown once and cannot be retrieved later: store it, for example as a CI secret, and set it as AVR_TOKEN where the token is used. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again.
 .PP
 --group takes a group ID or a group's path as `avr group list` shows it, such as Acme/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
 .PP

@@ -180,7 +180,7 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 	}
 	var authLine, identityOrg string
 	if cfg.Token == "" {
-		authLine = "  " + d.paint("✗", "31") + " not authenticated (run: avr auth login)"
+		authLine = "  " + d.paint("✗", "31") + " not authenticated (run: avr auth device-login)"
 	} else {
 		tokenSource := "hosts.json"
 		if d.Getenv("AVR_TOKEN") != "" {

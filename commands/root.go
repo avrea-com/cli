@@ -169,7 +169,7 @@ type ExitError struct {
 
 func (e *ExitError) Error() string { return e.Message }
 
-const authHint = "To get started with Avrea CLI, please run:  avr auth login\nAlternatively, set the AVR_TOKEN environment variable to an Avrea API token."
+const authHint = "To get started with Avrea CLI, please run:  avr auth device-login\nAlternatively, set the AVR_TOKEN environment variable to an Avrea API token."
 
 func authenticated(cfg config.Config) error {
 	if cfg.Token == "" {
@@ -250,7 +250,8 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
 		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
 		"avr audit events list", "avr org install list", "avr org saml show",
-		"avr org domain list", "avr billing invoice list", "avr billing invoice show":
+		"avr org domain list", "avr billing invoice list", "avr billing invoice show",
+		"avr skill show":
 		return true
 	}
 	return false
@@ -295,7 +296,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	login.Hidden = true
 	logout := NewLogout(d)
 	logout.Hidden = true
-	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d))
+	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d), NewSkill(d))
 	configureHelp(root, d)
 	return root
 }

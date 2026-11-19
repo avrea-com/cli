@@ -12,9 +12,16 @@ avr service-token [OPTIONS] COMMAND [ARGS]...
 A service token (avt_...) belongs to a group of one organization rather
 than to a person, and keeps working when its creator leaves. It reads
 only the repositories and egress firewall rules its access names.
-Organization admins manage service tokens while signed in with
-`avr auth login`; a scoped or service token cannot. To use a service
-token, set AVR_TOKEN to its secret.
+Organization admins manage service tokens while signed in (avr auth
+device-login or avr auth login); a scoped or service token cannot.
+
+To use a service token, set AVR_TOKEN to its secret. Its organization
+applies automatically; set AVR_ORG to the org-... ID in loops to save a
+request per command, since a service token has 60 requests per minute.
+Commands that need a person, such as avr feedback, refuse it, and avr
+auth logout does not revoke it: unset AVR_TOKEN instead. After a
+suspected leak, revoke-all revokes every service token of the
+organization.
 
 ## Subcommands
 
@@ -32,7 +39,7 @@ every grant is a read and must be within your own access now. The
 secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
 The API may ask for a recent sign-in; the command then exits 4 and says
-to run `avr auth login` again.
+to sign in again.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
 such as Acme/Platform/CI. Names compare without case. A value equal to
@@ -177,7 +184,7 @@ the overlap, never past the expiry of either secret, so pipelines can
 switch without a gap. Rotating again inside the overlap retires the old
 secret at once; run from a terminal, the command asks first unless --yes
 is given. The API may ask for a recent sign-in; the command then exits 4
-and says to run `avr auth login` again.
+and says to sign in again.
 
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
@@ -226,7 +233,7 @@ leave out is removed, so repeat the ones to keep. The command reads the
 token first and the change fails if the token changes in between. A
 grant that widens its access must be within your own access now. The
 API may ask for a recent sign-in; the command then exits 4 and says to
-run `avr auth login` again. The change applies to the token's next
+sign in again. The change applies to the token's next
 request.
 
 ```sh

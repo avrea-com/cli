@@ -1,8 +1,8 @@
 # Install and update AVR
 
 AVR **0.7.0 and later** use a native Go executable. Install from
-[GitHub Releases](https://github.com/avrea-com/cli/releases), PyPI, Homebrew or
-mise. The public command remains `avr`; Python is no longer needed at runtime.
+[GitHub Releases](https://github.com/avrea-com/cli/releases), PyPI, Homebrew,
+mise or `go install`. The public command remains `avr`; Python is no longer needed at runtime.
 
 Supported native targets: macOS 13+ on Apple Silicon, Linux AMD64/ARM64, and
 Windows AMD64. Intel macOS builds are not included. PyPI
@@ -21,6 +21,7 @@ fails clearly if no compatible wheel exists. There is no fallback source distrib
 | pipx | `pipx install avr-cli` | `pipx upgrade avr-cli` |
 | pip, in an environment | `python -m pip install avr-cli` | `python -m pip install --upgrade avr-cli` |
 | mise | `mise use -g github:avrea-com/cli@latest` | `mise upgrade github:avrea-com/cli` (change exact pins explicitly) |
+| Go | `go install github.com/avrea-com/cli/cmd/avr@latest` | the same command |
 
 The PyPI package contains native executables named `avr` and `avr-cli`.
 Python is needed by the package manager, but is not launched when running
@@ -52,6 +53,26 @@ and check your [mise shell setup](https://mise.jdx.dev/shell-setup.html).
 Each release also includes `mise.toml` with an exact version, platform asset
 names and checksums. Merge its `[tools]` entry into an existing project
 configuration if you want these explicit download settings.
+
+## Go
+
+```sh
+go install github.com/avrea-com/cli/cmd/avr@latest
+avr --version
+```
+
+This builds `avr` from the published module with your Go toolchain. The
+required Go version is in [go.mod](https://github.com/avrea-com/cli/blob/main/go.mod);
+with the default `GOTOOLCHAIN=auto`, an older local Go downloads it
+automatically. Replace `latest` with a release such as `v0.8.0` to pin a
+version.
+
+The executable goes to `$(go env GOBIN)`, or `$(go env GOPATH)/bin` when
+`GOBIN` is unset. Add that directory to PATH, and run `which -a avr`
+(PowerShell: `Get-Command avr -All`) if another installation is found first.
+`avr --version` reports the module version that was installed. A `go install` build
+does not include man pages or completion files; see
+[Native installation](#native-installation-without-python) for those.
 
 ## Homebrew tap trust
 
@@ -113,6 +134,19 @@ version must already have published release assets. The installer prints PATH
 instructions and refuses to overwrite a package-managed installation; move or
 remove that installation using its original package manager first.
 
+## Verify a release
+
+Release archives and PyPI wheels carry keyless
+[SLSA build provenance](https://slsa.dev/) signed through Sigstore. Verify a
+downloaded file against this repository with the GitHub CLI:
+
+```sh
+gh attestation verify ./path/to/downloaded-archive --repo avrea-com/cli
+```
+
+A successful check confirms that the file was built by this repository's
+release workflow and has not been changed since.
+
 ## Credentials and rollback
 
 The command stays `avr`, using the existing configuration and credentials.
@@ -141,6 +175,6 @@ before it finishes; that attempt still suppresses another check for 24 hours.
 Notices and checks are disabled for help, version, completion, hidden commands,
 structured output, redirected stdout/stderr, CI and automation. Set
 `AVR_NO_UPDATE_NOTIFIER=1` to disable them explicitly. Notices suggest Homebrew,
-uv, pipx or mise commands when their installation path is recognizable;
+uv, pipx, mise or `go install` commands when the installation is recognizable;
 otherwise they link to these instructions. Custom installation directories may
 require choosing the appropriate package manager yourself.

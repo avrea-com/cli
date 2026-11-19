@@ -68,7 +68,7 @@ func serviceTokenDescription(path string) docgen.Description {
 				"secret is shown once and cannot be retrieved later: store it, for\n" +
 				"example as a CI secret, and set it as AVR_TOKEN where the token is used.\n" +
 				"The API may ask for a recent sign-in; the command then exits 4 and says\n" +
-				"to run `avr auth login` again.\n" +
+				"to sign in again.\n" +
 				"\n" +
 				groupOptionHelp +
 				"\n" +
@@ -149,7 +149,7 @@ func serviceTokenDescription(path string) docgen.Description {
 				"token first and the change fails if the token changes in between. A\n" +
 				"grant that widens its access must be within your own access now. The\n" +
 				"API may ask for a recent sign-in; the command then exits 4 and says to\n" +
-				"run `avr auth login` again. The change applies to the token's next\n" +
+				"sign in again. The change applies to the token's next\n" +
 				"request.\n" +
 				"\n" +
 				"\b\n" +
@@ -170,7 +170,7 @@ func serviceTokenDescription(path string) docgen.Description {
 				"switch without a gap. Rotating again inside the overlap retires the old\n" +
 				"secret at once; run from a terminal, the command asks first unless --yes\n" +
 				"is given. The API may ask for a recent sign-in; the command then exits 4\n" +
-				"and says to run `avr auth login` again.\n" +
+				"and says to sign in again.\n" +
 				"\n" +
 				serviceTokenSecretJSONHelp +
 				"\n" +
@@ -227,9 +227,16 @@ func serviceTokenDescription(path string) docgen.Description {
 				"A service token (avt_...) belongs to a group of one organization rather\n" +
 				"than to a person, and keeps working when its creator leaves. It reads\n" +
 				"only the repositories and egress firewall rules its access names.\n" +
-				"Organization admins manage service tokens while signed in with\n" +
-				"`avr auth login`; a scoped or service token cannot. To use a service\n" +
-				"token, set AVR_TOKEN to its secret.\n",
+				"Organization admins manage service tokens while signed in (avr auth\n" +
+				"device-login or avr auth login); a scoped or service token cannot.\n" +
+				"\n" +
+				"To use a service token, set AVR_TOKEN to its secret. Its organization\n" +
+				"applies automatically; set AVR_ORG to the org-... ID in loops to save a\n" +
+				"request per command, since a service token has 60 requests per minute.\n" +
+				"Commands that need a person, such as avr feedback, refuse it, and avr\n" +
+				"auth logout does not revoke it: unset AVR_TOKEN instead. After a\n" +
+				"suspected leak, revoke-all revokes every service token of the\n" +
+				"organization.\n",
 			Short:    "Create and manage the organization's service tokens.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,

@@ -1,0 +1,50 @@
+.TH AVR\-SKILL 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-skill \- Teach coding agents to use avr.
+.SH SYNOPSIS
+.B avr skill
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Teach coding agents to use avr.
+.PP
+The skill follows the open Agent Skills format. It tells an agent when avr is relevant and points it at avr skill show, so the guidance always matches the installed avr. Claude Code reads it from .claude/skills; Codex, OpenCode, Pi, Devin and other Agent Skills tools read it from .agents/skills. For an agent that reads neither, add a line to its instructions that says to run avr skill show before working with Avrea CI.
+.SH COMMANDS
+.TP
+install
+Install the avr skill for coding agents.
+.TP
+show
+Print the avr guide for coding agents.
+.TP
+uninstall
+Remove the installed avr skill.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-tests (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-service-token (1),
+.BR avr-group (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-api (1),
+.BR avr-feedback (1),
+.BR avr-skill-install (1),
+.BR avr-skill-show (1),
+.BR avr-skill-uninstall (1)

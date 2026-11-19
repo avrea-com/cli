@@ -9,520 +9,245 @@ description: "Avrea on the command line."
 
 # Avrea CLI
 
-Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs, jobs, logs, and workflow control into your terminal.
+Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs, jobs, logs, tests, caches and on-demand VMs into your terminal and into your coding agent.
+
+## Quickstart
+
+```sh
+brew install avrea-com/tap/avr      # or another method below
+avr auth device-login               # approve the sign-in from any browser
+avr status                          # recent runs, performance and cache health of this repository
+```
+
+Using a coding agent? Run `avr skill install` and see [For coding agents](#for-coding-agents).
 
 ## Install
 
-AVR is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64,
-and Windows AMD64. See [installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
-for platform requirements and upgrade details.
-
-### Homebrew
+`avr` is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64 and Windows AMD64. On other platforms Go supports, such as Intel macOS, build it with `go install`.
 
 ```sh
-brew install avrea-com/tap/avr
+brew install avrea-com/tap/avr                          # Homebrew
+mise use -g github:avrea-com/cli@latest                 # mise
+go install github.com/avrea-com/cli/cmd/avr@latest      # Go
+uv tool install avr-cli                                 # PyPI (also pipx or pip)
 ```
 
-If Homebrew reports an untrusted existing tap, trust the AVR formula and retry:
+Shell and PowerShell installers and plain archives are on [GitHub Releases](https://github.com/avrea-com/cli/releases/latest). With `go install`, make sure `$(go env GOPATH)/bin` is on PATH. The PyPI package uses Python only to install; `avr` itself runs without it.
 
-```sh
-brew trust --formula avrea-com/tap/avr
-```
+Update with the same method: `brew upgrade avr`, `mise upgrade github:avrea-com/cli`, `go install github.com/avrea-com/cli/cmd/avr@latest` or `uv tool upgrade avr-cli`. `avr` may tell you about a new version but never updates itself. Run `avr --version` and `which -a avr` to see which installation your shell uses.
 
-The tap is updated separately from GitHub and PyPI; `brew info avrea-com/tap/avr`
-shows the version currently available through Homebrew.
+[Installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md) covers platform requirements, version pins, installer options, Homebrew tap trust and release verification.
 
-### mise
-
-Use mise's built-in GitHub backend:
-
-```sh
-mise use -g github:avrea-com/cli@latest
-mise exec github:avrea-com/cli@latest -- avr --version
-```
-
-Omit `-g` to configure AVR in the current project's `mise.toml` instead.
-
-### PyPI (uv, pipx or pip)
-
-```sh
-uv tool install avr-cli
-```
-
-The package manager uses Python for installation; the installed `avr`
-executable runs without Python.
-You can also use `pipx install avr-cli`, or install with
-`python -m pip install avr-cli` inside a virtual environment.
-
-### Native installers and downloads
-
-Download the shell installer (Linux/macOS), PowerShell installer (Windows),
-or an archive from [GitHub Releases](https://github.com/avrea-com/cli/releases/latest).
-See [native installation](docs/INSTALL.md#native-installation-without-python)
-for version pins, checksum verification and PATH setup.
-
-### Update
-
-Use the same method you installed with:
-
-```sh
-brew upgrade avr             # Homebrew
-uv tool upgrade avr-cli      # uv
-pipx upgrade avr-cli         # pipx
-mise upgrade github:avrea-com/cli  # mise (tracking latest)
-```
-
-Run `avr --version` to verify which executable your shell is using. AVR may
-notify you about updates, but does not install them automatically.
-
-### From source
-
-```sh
-git clone git@github.com:avrea-com/cli.git
-cd cli
-make go-build
-./build/go/avr --version
-```
-
-Source builds require the Go toolchain specified in [go.mod](go.mod) and uv
-(for packaging tools). Run
-`make test` for native and tooling tests, and `make lint` for both languages.
-
-### Verifying a release
-
-Release artefacts (the native archives and PyPI wheels) carry keyless
-[SLSA build provenance](https://slsa.dev/) signed via Sigstore. Verify a
-downloaded artefact against this repository with the GitHub CLI:
-
-```sh
-gh attestation verify ./path/to/downloaded-archive --repo avrea-com/cli
-```
-
-A successful check confirms the artefact was built by this repository's release
-workflow and has not been tampered with.
-
-## Authenticate
-
-Browser-based login (recommended):
-
-```sh
-avr auth login
-```
-
-On a remote machine, VM, or terminal without a browser:
+## Sign in
 
 ```sh
 avr auth device-login
 ```
 
-Open the displayed link on your laptop or phone, or scan the terminal QR code.
-Confirm the code and approve the request. The CLI waits for approval and saves
-the credential on the machine where you ran the command. Use `--no-qr` to hide
-the QR code; the sign-in link is always displayed. QR output is omitted when
-piped or when the terminal cannot display it. Device login requires support
-on your Avrea server; `avr auth login` keeps its existing browser flow.
+Open the printed link on your laptop or phone, or scan the QR code, confirm the code and approve. The CLI waits and saves the credential on the machine where you ran it. This works everywhere: your laptop, an SSH session, a VM, a container or a coding agent's terminal. Pass `--no-qr` to print only the link.
 
-Show who you are and where you're pointing:
+On a machine with a browser you can also use `avr auth login`, which opens the browser directly.
 
 ```sh
-avr auth status
-avr config            # combined: host, auth, active org, default repo, all with sources
+avr auth status         # who you are and which host you use
+avr config              # host, sign-in, default organization and repository, with their sources
+avr auth logout         # revoke the stored API key
 ```
 
-Log out (revokes the active API key on the server):
+In CI and scripts, set `AVR_TOKEN` instead: a [scoped token or service token](#tokens-for-ci-scripts-and-agents).
+
+## For coding agents
+
+`avr` works well from Claude Code, Codex, OpenCode, Pi, Devin and other coding agents: output is plain text or JSON, exit codes are stable, and every command documents itself in `--help`.
+
+Install the skill once on each machine:
 
 ```sh
-avr auth logout
+avr skill install                    # Claude Code, plus Codex, OpenCode, Pi, Devin and other Agent Skills tools
+avr skill install --agent claude     # one location only: claude or agents
+avr skill install --project          # commit it to the repository for cloud agents
+avr skill show                       # print the guide the skill points to
 ```
 
-For non-interactive environments (CI, scripts), set a token via env var instead, such as an organization's [service token](#scripting--automation) in `AVR_TOKEN`. See [Configuration](#configuration).
+The skill uses the open [Agent Skills](https://agentskills.io/) format. Claude Code reads it from `~/.claude/skills`, and Codex, OpenCode, Pi, Devin CLI and other tools read it from `~/.agents/skills`. It tells the agent when `avr` is relevant and to read `avr skill show`, a guide to testing a change in CI, diagnosing failed or slow runs, reading tests and logs, and using on-demand VMs. The guide ships with `avr`, so it always matches the installed version. `avr skill uninstall` removes the skill.
 
-## Your first command
+Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills`. Their environment also needs `avr` installed and `AVR_TOKEN` set to a [scoped or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."
 
-Inside any git checkout of an Avrea-connected repository:
+What the agent needs to know:
+
+- **Sign in:** start `avr auth device-login --no-qr` in the background; it prints a link and code, then waits until the user approves them in a browser. For unattended agents, create a [scoped token](#tokens-for-ci-scripts-and-agents) and set `AVR_TOKEN` and `AVR_ORG`.
+- **No prompts:** set `AVR_PROMPT_DISABLED=1` so a command fails instead of waiting for input, and pass `--yes` only where the action is intended.
+- **Structured output:** `--json '?'` lists a command's fields, `--json a,b` selects them, and `--jq` filters them without a separate `jq`.
+- **Exit codes:** `0` success, `1` failure, `2` usage error, `4` sign-in required, `130` interrupted.
+- **Discovery:** `avr --help`, `avr <command> --help`, the [command reference](https://docs.avrea.com/cli/reference/) and its machine-readable form, [`docs/reference.json`](https://github.com/avrea-com/cli/blob/main/docs/reference.json). `avr api <endpoint>` calls any Avrea API endpoint the CLI does not cover yet.
 
 ```sh
-avr run list                           # uses git remote to scope the query
-avr run view <run-id>                  # full run with jobs
-avr run view <run-id> --log-failed     # jump straight to failed-step output
+avr run diagnose <run> --json                         # start here for a failed or slow run
+avr run view <run> --log-failed                       # failed steps only
+avr tests <run> --job unit --status failed            # failed tests of one job
+avr run watch <run> --exit-status                     # wait for a run; its result becomes the exit code
 ```
-
-Auto-detection means most commands "just work" without `--repo`. Outside a git tree (or to override), pass `--repo org/name` or `--repo rep-xxx`.
 
 ## Common workflows
+
+Inside a git checkout of a repository connected to Avrea, commands use the git remote to pick the repository. Elsewhere, pass `--repo owner/name` or `--repo rep-...`. Run arguments accept an Avrea run ID, a GitHub run ID, or a GitHub Actions run or job URL. Every command's `--help` has the full details and more examples.
+
+**Find and watch runs**
+
+```sh
+avr run list
+avr run watch                          # the latest active run of this repository
+avr run watch <run> --exit-status
+avr run view <run> --web               # open it in the console
+```
+
+**Triage a failure**
+
+```sh
+avr run diagnose <run>                 # failed steps, log tails, timings, metrics and a baseline
+avr run view <run> --log-failed
+avr job logs <job> --follow
+avr job metrics <job> --watch          # live CPU, memory and IO of the job's VM
+avr job ssh <job>                      # while the job is still running
+```
+
+**Read test results**
+
+```sh
+avr tests <run> --job unit             # one job's tests, outcomes, timings and failures
+avr tests <job> --status failed --status errored
+avr tests <run> --job unit --summary   # counts only
+avr tests search login                 # latest result of each matching test in the repository
+avr tests history test_login           # one test's recorded runs, newest first
+```
+
+**Rerun, cancel and dispatch**
+
+```sh
+avr run rerun <run> --failed
+avr run cancel <run>
+avr workflow run ci.yml --ref feat/x -f env=staging --watch --exit-status
+```
+
+**Metrics, logs and right-sizing**
+
+```sh
+avr job metrics <job> --source cpu --source memory
+avr vm metrics <vm> --watch
+avr log search --repo owner/name --query "OOM" --level error   # across the repository's recent runs
+avr api /orgs/<org-id>/repos/<repo-id>/workflows/right-sizing -X GET -F window_days=7
+```
+
+The last call returns a suggested runner label per job; see [Right-sizing](https://docs.avrea.com/right-sizing/). Check the workflow too: a job limited to one worker (`pytest -n 1`, `make -j1`) looks oversized.
+
+**Workflow performance and caches**
+
+```sh
+avr workflow list                      # per-workflow stats for the last 30 days
+avr workflow view <workflow>           # per-job timings, failure rates and recent runs
+avr cache usage
+avr cache list
+```
+
+**On-demand VMs**
+
+Linux, macOS and Windows VMs reachable over SSH, with RDP or VNC for a desktop. A VM created with `--repo` gets that repository's checkout and caches.
+
+```sh
+avr vm create --name dev --os linux --size 2-vcpu --ssh-key @~/.ssh/id_ed25519.pub --wait
+avr vm bootstrap dev --setup-github --install claude,codex --repo https://github.com/org/project
+avr vm ssh dev --session work          # persistent tmux session
+avr vm ssh-config dev --append         # plain ssh, scp and VS Code Remote-SSH
+avr vm pause dev ; avr vm resume dev --wait
+avr vm delete dev --yes
+```
 
 **Clone from a nearby Git mirror**
 
 ```sh
-avr repo clone foo/faa
-avr repo clone foo/faa my-checkout --depth 1 --branch main
-avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+avr repo clone owner/repo
+avr repo mirror create owner/repo --location <location>   # organization admins
 ```
 
-Avrea uses a single available placement directly. With multiple placements,
-it picks the first mirror that responds successfully from your machine.
-`--placement` accepts an advertised mirror URL or hostname to select one
-explicitly. Give the `owner/repository` name or an Avrea repository ID (`rep-...`).
-Requires Git 2.31 or newer. The repository must already have Git mirroring
-enabled and a usable placement.
-
-`origin` stays on the selected read-only mirror. The clone installs a
-repository-local credential helper so ordinary `git fetch` and `git pull`
-obtain fresh Git tokens through your Avrea login. Push changes to the source
-repository using a separate remote, for example:
-
-```sh
-git remote add upstream git@github.com:foo/faa.git
-git push upstream HEAD
-```
-
-Tokens normally last one hour; scoped API keys are limited to ten minutes or
-their remaining lifetime. Git tokens are never saved in the remote URL or
-repository configuration. Keep `avr` installed and logged in for later Git
-operations; the helper continues to use the API host used for the clone.
-
-**Create a mirror at a location**
-
-```sh
-avr repo mirror locations
-avr repo mirror create foo/faa --location gsc-fi
-avr repo mirror create group/subgroup/project --source gitlab --location gsc-fi
-avr repo mirror status --repo group/subgroup/project --source gitlab
-```
-
-`--source` defaults to `github`; `gitlab` supports nested group names. The
-repository must already be connected to your Avrea organization. Use `--org`
-to select an organization. Mirror management requires the organization's
-Git-mirror feature and an admin role.
-
-`--location` accepts a cluster ID, datacenter ID, or unique name from `locations`.
-The command enables mirroring and adds the placement, preserving existing
-placements. Sync runs asynchronously; use `status` to check it. Repeating
-`create` is safe, including when enabling succeeded but placement failed.
-`locations` and `create` also support `--json` and `--jq`.
-
-GitLab repositories cannot be mirrored until GitLab mirroring is enabled
-for your organization. `--source gitlab` is available for deployments that
-support it, including repositories in nested groups. If a GitLab repository
-returns “not found,” check its connection to Avrea, your access, and whether
-GitLab mirroring is enabled.
-
-**Watch a run live**
-
-```sh
-avr run watch                          # auto-selects the latest active run for the current repo
-avr run watch <run-id>                 # specific run
-avr run watch <run-id> --exit-status   # propagate the run's success/failure into the shell exit code
-```
-
-**Triage a failure without leaving the terminal**
-
-```sh
-avr run view <run-id> --log-failed     # only the steps that failed, grouped by job
-avr run logs <run-id>                  # full log dump, paginated
-avr job logs <job-id> --follow         # tail one job in real time
-avr run diagnose <run-id>             # timings, baseline, metrics and failed logs
-```
-
-`run diagnose` currently supports external CI runs; native Avrea CI runs
-are not supported by that command.
-
-**Read recorded tests from a run or job**
-
-```sh
-avr tests <run-id> --job unit         # select one job by name
-avr tests <github-run-id>             # a single-job run needs no selector
-avr tests <job-id>                    # names, outcomes, timings and failures
-avr tests <job-id> --status failed --status errored
-avr tests <run-id> --job unit --summary # counts and reporting state only
-avr tests <job-id> --test test_login
-avr tests <job-id> --suite Authentication --class TestLogin
-avr tests <job-id> --json '*'         # reporting state and pagination
-avr tests <job-id> --limit 500         # maximum matching occurrences to return
-avr tests <job-id> --cursor '<cursor>' # resume with the same filters
-```
-
-Accepts Avrea run IDs (`run-` or `awr-`), GitHub numeric run IDs, GitHub
-Actions run/job URLs, Avrea console run URLs, and Avrea job IDs (`job-` or
-`awj-`). `avr tests list <run-or-job>` is equivalent. A run selects one job,
-not all jobs together. `--job NAME` matches a case-insensitive substring and
-must identify one job; ambiguous names show the available jobs and IDs.
-A run containing one job selects it automatically. The job's repository is
-resolved automatically, or use `--repo owner/name`.
-A GitHub job URL pins that job; `--job` must also match its name.
-
-The listing reads the job's latest confirmed execution, without substituting
-an older report. GitHub run URLs with `/attempts/N` select that run attempt;
-there is no separate test-execution selector. Test names match exactly and
-case-sensitively; test filters combine with AND. Outcomes are `passed`,
-`failed`, `skipped` and `errored`. Repeat `--status` to match any selected
-outcome; repeated values are deduplicated. Repeated matches stay separate, with their
-recorded failure messages shown directly. `--json FIELDS` and `--jq` also work.
-
-`--summary` reads report counts and reporting state without downloading
-individual tests. Counts cover all recorded occurrences before filtering,
-including repeats. Older, missing or expired reports may have unknown counts;
-unknown counts never mean zero. `--summary` accepts run and job selection but
-cannot be combined with test filters, `--cursor` or an explicit `--limit`.
-
-Each invocation returns at most 1,000 occurrences and reads at most 20 result
-pages. Filtering can produce empty pages with a continuation. If the search
-stops before the report ends, the command says so; resume with the same job,
-filters and `--cursor`. The retained count covers all tests, before filtering.
-Missing or expired reports are distinct from zero matches or a retained
-report containing zero tests. Complete describes collected reports, not
-whether every expected test ran.
-Indexing, unavailable and limited listings retain known counts and explain
-why individual results could not be listed.
-
-These commands require an API deployment supporting the corresponding reads,
-including summaries and combined status filters when those options are used.
-Filtering fails explicitly if the server does not acknowledge the selectors.
-File filters and test splitting are not supported. The commands do not rerun
-tests or change collection.
-
-**Search a repository's recorded tests and read one test's history**
-
-```sh
-avr tests search                          # latest recorded result of each test
-avr tests search login                    # name, suite or class contains "login"
-avr tests search --status failed --status errored
-avr tests search --repo owner/name --json '*'
-avr tests history test_login              # that test's recorded runs, newest first
-avr tests history <test-id> --configuration <digest>
-```
-
-`avr tests search` reads across the repository's retained reports, not one
-job. The query matches a substring of the test name, suite or class,
-case-insensitively and literally. With `--status`, each row is the test's
-most recent result with a selected outcome, so a test that has passed since
-still appears. The header shows how many reports were searched and their
-time range; reports still being indexed or unavailable are counted, and an
-incomplete search says so. Each row names the job that recorded it: read its
-failure message with `avr tests <job-id> --status failed`.
-
-`avr tests history` takes a test name and prefers an exact match. When
-several recorded tests match, it lists each with the test ID and
-configuration to pass instead and reads none of them. If some reports were
-not searched, only an exact name can be selected. Each row is one
-report: outcome counts, the mean recorded duration and the job. Both
-commands default to the current git repository and accept `--repo`,
-`--json FIELDS`, `--jq` and `--cursor`.
-
-**Trigger a workflow_dispatch**
-
-```sh
-avr workflow run ci.yml                                         # default branch
-avr workflow run ci.yml --ref feat/x -f env=staging             # with inputs
-avr workflow run "Build and Deploy" --watch --exit-status       # dispatch + watch + script-friendly exit
-echo '{"env":"prod"}' | avr workflow run deploy.yml --json      # inputs from stdin
-```
-
-WORKFLOW accepts an Avrea ID (`wfl-...`), the GitHub numeric ID, a filename (`ci.yml`, `ci`), or the display name.
-
-**SSH into a running job's VM**
-
-```sh
-avr job ssh <job-id>
-avr job ssh <job-id> --print-command   # just print the ssh string
-```
-
-**Live VM metrics while a job runs**
-
-```sh
-avr job metrics <job-id> --watch       # CPU/memory/IO gauges, streamed live
-avr job metrics <job-id>               # static post-mortem after the job ended
-```
-
-**Long-running dev VMs**
-
-Durable, org-scoped VMs reachable over SSH (plus RDP/VNC for a desktop), separate from job VMs. Create one with your key, then set it up in a single command:
-
-```sh
-avr vm create --name dev --os linux --size 2-vcpu \
-  --ssh-key @~/.ssh/id_ed25519.pub --wait      # boot, wait for SSH, print connect
-avr vm create --name ci --os linux --size 8-vcpu \
-  --repo org/project --disable-cache gha,packages          # attach a repo, narrow which caches it uses
-avr vm bootstrap <vm-id> --setup-github --install claude,codex \
-  --repo https://github.com/org/project --env AWS_REGION=eu-north-1
-avr vm ssh <vm-id>                                          # SSH session, host key pinned when published (or: -- <cmd>)
-avr vm ssh <vm-id> --login -- claude -p 'summarize the repo' # one-off command in a login shell (sees forwarded env)
-avr vm ssh <vm-id> --session dev                            # persistent tmux session, survives a dropped connection
-avr vm ssh-config <vm-id> --append                          # add `ssh <alias>` (scp/rsync, VS Code Remote-SSH) to ~/.ssh/config
-avr vm list ; avr vm pause <vm-id>                           # lifecycle
-avr vm resume <vm-id> --wait
-avr vm fork <paused-vm-id> --name experiment --wait
-avr vm capabilities
-avr vm create --os linux --arch arm64 --size 2-vcpu --https-port 3000 --https-port 8080
-avr vm metrics <vm-id> --watch
-```
-
-`bootstrap` runs each step over SSH and streams it live, feeding secrets (GitHub token, env values, agent credentials) on stdin rather than argv. `--forward-agent-creds` carries your local `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`, or a Claude subscription token — if none is set it offers to run `claude setup-token` and forwards the pasted `CLAUDE_CODE_OAUTH_TOKEN`. Bootstrap changes survive pause and resume. `avr vm ssh` pins the VM's host key when its endpoint publishes one; if it doesn't, `avr` warns and falls back to trust-on-first-use — pass `--session <name>` to attach to (or create) a persistent tmux session that survives a dropped connection. A one-off `avr vm ssh -- <cmd>` runs in a non-login shell that sources no startup files, so pass `--login` when the command needs bootstrap-forwarded env (e.g. `claude`'s subscription token). `avr vm ssh-config` emits a host-key-pinned SSH config block so plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH reach the VM without wrapping each tool — `--append` writes it into `~/.ssh/config` for you (idempotent: re-run after a resume to refresh the endpoint in place). For a desktop, `avr vm rdp` / `avr vm vnc` tunnel over the same SSH endpoint, and `avr vm port-forward` is the generic primitive (repeat `--port` to forward several ports over one connection). A VM created with `--repo` inherits that repository's build/CI caches; `--disable-cache <name>` narrows them per VM (it can turn an inherited cache off, never on).
-
-VM references accept IDs or display names. Names are generated when omitted. TTL expiry pauses the VM, or deletes it when pausing is unavailable. Agent sandboxes boot once and cannot be paused or resumed. HTTPS URLs are public to anyone who has them; the first configured port is the default. Port updates apply live on a running VM, otherwise at the next start or resume; `avr vm rotate-https-label` replaces leaked URLs. Metrics watch uses a WebSocket stream for both VM and job metrics; explicit `--start`/`--end` windows require single-shot mode.
-
-**Cancel or rerun a run**
-
-```sh
-avr run cancel <run-id>
-avr run rerun <run-id>
-avr run rerun <run-id> --failed        # only failed jobs
-```
-
-**Workflow stats and the slowest steps**
-
-```sh
-avr workflow list                      # aggregate stats per workflow over the last 30d
-avr workflow view <wfl-id>             # per-job p95/median/failure breakdown + recent runs
-avr status                             # current repo: recent runs, performance and cache health
-```
-
-**Cache**
-
-```sh
-avr cache list --repo <repo>           # entries
-avr cache usage --repo <repo>          # size vs quota
-avr cache delete --key <key> --type <type> --repo <repo>
-```
+`origin` points at the read-only mirror, and `git fetch` and `git pull` keep working through your Avrea sign-in. Push through a separate remote for the source repository.
 
 ## Scripting & automation
 
-Use `--json` for structured output on list/view commands. Check each command's
-`--help` for available fields; commands such as `status` and `run diagnose`
-accept a plain `--json` switch instead of a field list.
-
-**Discover available fields**
+**JSON and jq**
 
 ```sh
-avr run list --json '?'                # prints the field schema
-```
-
-**Select specific fields**
-
-```sh
+avr run list --json '?'                                  # list the fields
 avr run list --json status,conclusion,head_branch
-avr run list --json '*'                # all fields
-```
-
-**Pipe through `jq`**
-
-```sh
 avr run list --json '*' -q '.[] | select(.conclusion == "failure") | .run_id'
-avr workflow list --json name,runs -q '.[] | "\(.runs)\t\(.name)"'
 ```
 
-`-q/--jq` is built in (no need to pipe to `jq` yourself), but the schema-projected output is also `jq`-friendly.
-The Go CLI uses embedded gojq, like GitHub CLI: object keys are sorted. For ordered columns use explicit fields, for example `[.status,.conclusion,.run_id]`. See [installation notes](docs/INSTALL.md#json-and-jq).
+`-q/--jq` is built in. Object keys come out sorted; for ordered columns use an array such as `[.status,.conclusion,.run_id]`. Some commands, such as `status` and `run diagnose`, take a plain `--json` switch.
 
-**Detect "auth required" in scripts**
+**Piped output**
+
+When stdout is not a terminal, list commands print tab-separated rows without color or truncation, with ISO timestamps, so `avr run list | awk` works without flags. Control characters inside cells are escaped to keep one item per row; use `--json` when the exact value matters. `avr run watch | jq -c .` switches to NDJSON events.
+
+**Exit codes**
+
+`0` success, `1` failure, `2` usage error, `4` sign-in required, `130` interrupted with Ctrl-C.
 
 ```sh
 avr run list >/dev/null
-result=$?
-case "$result" in
+case $? in
   0) ;;
-  4) echo "logged out, re-auth needed"; exit 4 ;;
-  *) echo "command failed (exit $result)" >&2; exit "$result" ;;
+  4) echo "sign-in required" >&2; exit 4 ;;
+  *) echo "avr failed" >&2; exit 1 ;;
 esac
 ```
 
-Exit code `4` is reserved for "auth required". `1` is general failure; `2` is a usage error. `130` means Ctrl-C
-ended the command, including a watch, a log follow or a tunnel that is stopped that way.
+### Tokens for CI, scripts and agents
 
-**Scoped tokens for scripts and agents**
+A **scoped token** is a short-lived credential of your own, from 60 seconds to 7 days, that reads only the repositories it names and administers only the VMs it names:
 
 ```sh
-avr token create --name ci-read --org <org-id> --repo acme/api --ttl 8h  # prints the credential once
+avr token create --name ci-read --org <org-id> --repo acme/api --ttl 8h
 avr token create --name agent --org <org-id> --vm <vm-id> --allow-vm-create --vm-create-limit 3
-avr token list
-avr token view <token-id>
-avr token revoke <token-id>
+avr token list ; avr token revoke <token-id>
 ```
 
-A scoped token is a short-lived credential (60 seconds to 7 days, 8 hours by default) bound to one organization. Repository grants are read-only and VM grants are admin: it reads only the repositories it names, has admin access to only the VMs it names, and cannot create further tokens. `create` prints the `export AVR_TOKEN=...` and `export AVR_ORG=...` lines for whatever will use the token. Scoped tokens require the `org-...` ID in `AVR_ORG` or `--org`; they ignore the login's stored organization and cannot resolve a slug. `avr auth status` reports this configuration without checking whether the token is still live. A 403 or 404 comes with a reminder that the token reaches only what it names.
-
-`avr repo clone acme/api` uses the `owner/repository` name directly.
-
-With a scoped token, a repository name (`--repo acme/api`, `AVR_REPO` or the checkout's remote) is matched against the repositories the token reaches; a `rep-...` ID works as well. For runs, use the run ID rather than an Avrea console URL, whose organization slug cannot be resolved with a scoped token. Token IDs for `view` and `revoke` are `key-` followed by 32 lowercase hexadecimal characters.
-
-Creation returns the credential only once. If `--jq` fails or removes it, the command falls back to the requested JSON without filtering and exits nonzero. Save the credential from that JSON. Output failures also report a revoke command on stderr without exposing the credential there. If the creation request is interrupted, its response is lost, or the answer is a server error (5xx), a token may already exist: check `avr token list` before retrying. Only a 503 that carries the API's own reason means that no token was created.
-
-If `avr token create` returns a 404, check the API's reason, the organization and the API host. If scoped-token access is unavailable, contact support@avrea.com to request it. VM grants and `--allow-vm-create` also require customer VMs to be enabled for the organization. `list`, `view` and `revoke` remain available when token creation is disabled.
-
-**Service tokens**
-
-A service token (`avt_...`) belongs to a group in one organization rather than to a person, and keeps working when its creator leaves. An organization admin manages it while signed in with `avr auth login`:
+A **service token** belongs to a group in the organization rather than to a person, keeps working when its creator leaves, and lives 30 days unless you choose up to 90 days or no expiry. Organization admins manage it:
 
 ```sh
-avr group list                                                                   # the groups and paths --group accepts
-avr service-token create --name ci --group Platform/CI --repo acme/api --ttl 30d  # prints the secret once
+avr service-token create --name ci --group Platform/CI --repo acme/api --ttl 30d
+avr service-token rotate <token-id> --overlap 2h
 avr service-token list --status live
-avr service-token view <token-id>
-avr service-token set-access <token-id> --repo acme/api --all-firewall-rules    # replaces the whole selection
-avr service-token rotate <token-id> --overlap 2h                                 # prints the new secret once
-avr service-token revoke <token-id>
 ```
 
-Grants are read-only: `--repo` names one repository, `--firewall-rule` one egress firewall rule, and `--all-firewall-rules` every rule, including later ones. A secret lives 30 days unless `--ttl` (60 seconds to 90 days) or `--never-expires` says otherwise. `create` and `rotate` print the secret only once, with `export AVR_TOKEN=...` and `export AVR_ORG=<org-...>` lines; store it, for example as a CI secret. After `rotate`, the old secret keeps working for the overlap (1 hour to 7 days, 24 hours by default) and the command says until when; rotating again inside the overlap retires the old secret at once, so from a terminal `rotate` asks first (`--yes` skips the question). `set-access` and `rotate` read the token first and fail with a conflict if it changes in between. Check `avr service-token view <token-id>` before running either again: `set-access` replaces the whole selection, so pass the full selection you want rather than undoing a change made in between, and if the token was rotated in between, rotating again retires the previous secret at once. The API may ask for a recent sign-in to create or rotate a token or change its access; then run `avr auth login` again. `revoke-all` revokes every service token of the organization after a suspected leak.
-
-The CLI uses a service token only from `AVR_TOKEN`. The token's organization applies automatically, so `--org` and `AVR_ORG` can be omitted; when given, they must be the `org-...` ID. Reading the organization costs one request per command, and a service token has 60 requests per minute, so set `AVR_ORG` to the ID in loops. `avr auth status` checks the token against the API and shows its organization and token ID, and its name, owning group, expiry and access when the API reports them. An API that does not report them leaves those rows as `-` and the JSON fields `null`. A `-` expiry means unknown, not that the token never expires; in JSON, `expiring_soon` is `null` only in that case. While a rotation overlaps, it also says when the replaced secret stops working. Commands that need a signed-in person, such as `avr feedback` and `avr pr comment`, refuse a service token, and `avr auth logout` does not revoke one: unset `AVR_TOKEN` instead. A 403 or 404 comes with a reminder that the token reaches only what its access names.
-
-**Pipe-aware output**
-
-When stdout isn't a TTY, list commands switch to tab-separated rows (no color, no truncation, ISO timestamps), so `avr run list | awk` works without flags. Control characters, Unicode line separators and bidirectional controls inside cells are escaped (`\t`, `\x1b`, `\u2028`), keeping each item on one row with stable columns. The escaping is not reversible: a literal backslash is left as it is, so a cell that reads `a\tb` may hold either a tab or a backslash and a `t`. Use `--json` when the exact value matters; JSON retains the original values. `avr run watch | jq -c .` automatically switches to NDJSON event mode.
+Both print the secret once, with `export AVR_TOKEN=...` and `export AVR_ORG=...` lines. Store it, for example as a CI secret. A scoped token needs the `org-...` ID in `AVR_ORG` or `--org`. See `avr token --help` and `avr service-token --help` for grants, rotation and troubleshooting.
 
 ## Configuration
 
-### Environment variables
-
-| Variable         | Purpose                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------ |
-| `AVR_HOST`       | Avrea API URL. Defaults to the active host in `hosts.json`, then `https://api.avrea.com`.        |
-| `AVR_TOKEN`      | API key, scoped token or service token. Overrides whatever's stored for the active host.          |
-| `AVR_ORG`        | Default organization ID. Overrides the stored default. A scoped token needs it, or `--org`, except for `repo clone`; a service token uses its own organization without it. |
-| `AVR_REPO`       | Default repository (`org/name` or `rep-xxx`). Overrides git auto-detect.                          |
-| `AVR_BROWSER`    | Browser to launch for `--web` and OAuth login. Falls back to `BROWSER`, then system default.      |
-| `AVR_PAGER`      | Pager for long output. Overrides `PAGER`. Set to empty string to disable paging.                  |
-| `AVR_LINKS`      | Set to `0` to disable OSC 8 hyperlinks. Same as `--no-links`.                                     |
-| `AVR_DEBUG`      | Set to `api` for request diagnostics or `timing` for timing measurements; `1`/`true` enables request diagnostics. |
+| Variable | Purpose |
+| --- | --- |
+| `AVR_HOST` | Avrea API URL. Defaults to the active host in `hosts.json`, then `https://api.avrea.com`. |
+| `AVR_TOKEN` | API key, scoped token or service token. Overrides the stored credential. |
+| `AVR_ORG` | Default organization ID. A scoped token needs it, or `--org`, except for `repo clone`; a service token uses its own organization. |
+| `AVR_REPO` | Default repository (`owner/name` or `rep-...`). Overrides the git remote. |
+| `AVR_PROMPT_DISABLED` | Refuse interactive prompts, so scripts and agents fail fast instead of waiting for input. |
+| `AVR_BROWSER` | Browser for `--web` and `avr auth login`. Falls back to `BROWSER`, then the system default. |
+| `AVR_PAGER` | Pager for long output. Overrides `PAGER`; set it empty to disable paging. |
+| `AVR_LINKS` | Set to `0` to disable terminal hyperlinks, like `--no-links`. |
+| `AVR_DEBUG` | `api` (or `1`) for request diagnostics, `timing` for timings. |
 | `AVR_NO_UPDATE_NOTIFIER` | Set to `1` to disable update checks and notices. |
-| `AVR_PROMPT_DISABLED` | Refuse interactive prompts (scripts fail fast instead of hanging on stdin).                  |
-| `AVR_CONFIG_DIR` | Override the config directory. Defaults to `$XDG_CONFIG_HOME/avrea` or `~/.config/avrea`.         |
-| `AVR_MACOS_NATIVE_PATHS` | Set to `1` on macOS to use `~/Library/...` instead of the default `~/.config/avrea`.       |
-| `NO_COLOR`       | Disable colored output (any non-empty value). Same as `--no-color`.                                |
-
-### Config commands
+| `AVR_CONFIG_DIR` | Config directory. Defaults to `$XDG_CONFIG_HOME/avrea` or `~/.config/avrea`. |
+| `AVR_MACOS_NATIVE_PATHS` | Set to `1` on macOS to use `~/Library/...` instead. |
+| `NO_COLOR` | Disable colored output, like `--no-color`. |
 
 ```sh
-avr config                        # status: host, auth, org, repo with sources
-avr config list                   # same as bare `avr config`
 avr config set org <org-id>       # store a default organization
 avr config get org
 avr config unset org
+avr auth switch                   # pick between stored hosts
 ```
 
-Persistent state lives in `$XDG_CONFIG_HOME/avrea/hosts.json` (host-keyed credentials and per-host defaults).
-
-### Switching hosts
-
-```sh
-avr auth switch                   # interactive picker across stored hosts
-AVR_HOST=https://beta.api.avrea.com avr run list   # one-shot override
-```
+Credentials and per-host defaults are stored in `hosts.json` in the config directory.
 
 ## Tips
-
-**Open anything on the console**
-
-```sh
-avr run view <run-id> --web
-avr workflow view <wfl-id> --web
-avr cache list --repo <repo> --web
-```
-
-**Click-to-open in your terminal**
-
-IDs in tables are wrapped in OSC 8 hyperlinks. Clicking one opens the matching console page in your browser (supported by iTerm2, Kitty, WezTerm, Ghostty, GNOME Terminal, Konsole, Windows Terminal, and most modern terminals). Disable with `--no-links` or `AVR_LINKS=0` if your terminal renders them as visible garbage.
 
 **Tab completion**
 
@@ -536,37 +261,37 @@ eval "$(_AVR_COMPLETE=zsh_source avr)"
 _AVR_COMPLETE=fish_source avr | source
 ```
 
-**Verbose mode**
+**Clickable IDs**
 
-```sh
-avr -v run list                   # prints HTTP requests, useful for debugging
-```
+IDs in tables are terminal hyperlinks to the matching console page in most modern terminals. Disable them with `--no-links` or `AVR_LINKS=0` if your terminal shows them as garbage. `avr run view`, `avr run list`, `avr job view`, `avr workflow view` and `avr cache list` also take `--web` to open the console.
 
-**Filter the help surface**
+**Debugging**
 
-```sh
-avr --help                        # top-level groups
-avr <group> --help                # subcommands
-avr <group> <command> --help      # full flag list with examples
-```
+`avr -v <command>` prints the HTTP requests it makes.
 
 ## Documentation
 
-- [Send feedback and check delivery](https://github.com/avrea-com/cli/blob/main/docs/go-feedback.md), including safe retries.
-- Full command reference: [`docs/REFERENCE.md`](./docs/REFERENCE.md). The native Homebrew formula also installs `man avr`; native archives include man pages for manual installation.
-- Online docs: [docs.avrea.com/cli](https://docs.avrea.com/cli)
-- Print the same reference inline: `avr --help` and `avr <command> --help`
+- Command reference: [docs.avrea.com/cli/reference](https://docs.avrea.com/cli/reference/), [`docs/REFERENCE.md`](https://github.com/avrea-com/cli/blob/main/docs/REFERENCE.md), `avr <command> --help`, and `man avr` with Homebrew and the release archives.
+- [Installation and updates](https://github.com/avrea-com/cli/blob/main/docs/INSTALL.md)
+- [Send feedback and check delivery](https://github.com/avrea-com/cli/blob/main/docs/go-feedback.md)
 
 ## Contributing and reporting issues
 
-- Bug reports and feature requests: [github.com/avrea-com/cli/issues](https://github.com/avrea-com/cli/issues)
+Report bugs and request features at [github.com/avrea-com/cli/issues](https://github.com/avrea-com/cli/issues).
+
+To build from source you need the Go toolchain named in [go.mod](https://github.com/avrea-com/cli/blob/main/go.mod) and [uv](https://docs.astral.sh/uv/) for the packaging tools. Commits must be signed.
+
+```sh
+git clone git@github.com:avrea-com/cli.git      # or https://github.com/avrea-com/cli.git
+cd cli
+make go-build && ./build/go/avr --version
+make test lint
+```
 
 ## Reporting a vulnerability
 
-If you believe you have found a security issue in `avr`, please email
-<security@avrea.com>. Do not open a public issue. See [SECURITY.md](SECURITY.md)
-for our coordinated-disclosure policy, response targets, and safe-harbour terms.
+If you believe you have found a security issue in `avr`, email <security@avrea.com>. Do not open a public issue. See [SECURITY.md](https://github.com/avrea-com/cli/blob/main/SECURITY.md) for our coordinated-disclosure policy, response targets and safe-harbour terms.
 
 ## License
 
-Licensed under the [Apache License, Version 2.0](./LICENSE). Copyright 2026 Avrea.
+Licensed under the [Apache License, Version 2.0](https://github.com/avrea-com/cli/blob/main/LICENSE). Copyright 2026 Avrea.

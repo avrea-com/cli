@@ -9,7 +9,8 @@ Send feedback or report a bug.
 avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID
 ```
 
-Send MESSAGE to the Avrea team. Sign in with avr auth login first.
+Send MESSAGE to the Avrea team. Sign in with avr auth device-login or avr auth login
+first.
 
 Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an
 organization. Without --org, feedback is personal, regardless of your default

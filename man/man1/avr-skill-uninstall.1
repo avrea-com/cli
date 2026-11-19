@@ -1,0 +1,25 @@
+.TH AVR\-SKILL\-UNINSTALL 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-skill-uninstall \- Remove the installed avr skill.
+.SH SYNOPSIS
+.B avr skill uninstall
+[OPTIONS]
+.SH DESCRIPTION
+Remove the installed avr skill.
+.PP
+Without --agent, the skill is removed from both locations. With --project, it is removed from the current git repository. Other files in the skill directory are kept.
+.SH OPTIONS
+.TP
+\fB\-\-agent\fR \fICHOICE\fR
+Location to uninstall from (repeatable): claude or agents. Defaults to both. (choices: claude, agents, codex; repeatable)
+.TP
+\fB\-\-project\fR
+Use the current git repository instead of your home directory.
+.TP
+\fB\-\-force\fR
+Remove a skill that avr did not install.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-skill (1),
+.BR avr-skill-install (1),
+.BR avr-skill-show (1)

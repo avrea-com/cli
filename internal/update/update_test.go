@@ -113,7 +113,7 @@ func TestInstructions(t *testing.T) {
 		"/home/user/.local/share/pipx/venvs/avr-cli/bin/avr":                   "pipx upgrade",
 		"/custom/avr": "Install instructions:",
 	} {
-		if got := instruction(path); !strings.Contains(got, want) {
+		if got := instruction(path, false); !strings.Contains(got, want) {
 			t.Fatal(path, got)
 		}
 	}
@@ -124,7 +124,10 @@ func TestInstructions(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "share", "avr", "install-method"), []byte("pypi\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(instruction(filepath.Join(dir, "bin", "avr")), "python -m pip") {
+	if !strings.Contains(instruction(filepath.Join(dir, "bin", "avr"), false), "python -m pip") {
 		t.Fatal("missing pip instruction")
+	}
+	if got := instruction("/home/user/go/bin/avr", true); !strings.Contains(got, "go install github.com/avrea-com/cli/cmd/avr@latest") {
+		t.Fatal(got)
 	}
 }

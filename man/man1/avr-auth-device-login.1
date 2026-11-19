@@ -1,13 +1,15 @@
 .TH AVR\-AUTH\-DEVICE\-LOGIN 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-auth-device-login \- Sign in from a remote machine using a browser on any device.
+avr-auth-device-login \- Sign in by approving this machine from any device.
 .SH SYNOPSIS
 .B avr auth device-login
 [OPTIONS]
 .SH DESCRIPTION
-Sign in from a remote machine using a browser on any device.
+Sign in by approving this machine from any device.
 .PP
-Open the displayed link or scan the QR code, confirm the code, and approve access. The CLI waits for approval and saves your credentials. No browser is opened on this machine. QR codes appear only in compatible terminals wide enough to display them. Requires device-login support on the server.
+Sign in by approving this machine from a browser on any device.
+.PP
+Works anywhere: a laptop, an SSH session, a VM, a container or a coding agent's terminal. Open the displayed link or scan the QR code, confirm the code, and approve access. The CLI waits for approval and saves your credentials. No browser is opened on this machine. QR codes appear only in compatible terminals wide enough to display them.
 .SH OPTIONS
 .TP
 \fB\-\-no\-qr\fR

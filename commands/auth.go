@@ -247,7 +247,7 @@ func newSwitch(d Dependencies) *cobra.Command {
 			}
 			h := store.Read()
 			if len(h.Order) == 0 {
-				return &ExitError{1, "No stored credentials. Run `avr auth login` first."}
+				return &ExitError{1, "No stored credentials. Run `avr auth device-login` or `avr auth login` first."}
 			}
 			if len(args) == 0 {
 				if d.IsTerminal() {
@@ -298,7 +298,7 @@ func apiError(cfg config.Config, err error, action string) error {
 			detail = ": " + output.CellText(he.Detail)
 		}
 		message := "Error: Avrea needs a recent sign-in to " + action + " (HTTP 403)" + detail +
-			"\n  Hint: Run \x60avr auth login\x60 again, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
+			"\n  Hint: Sign in again with \x60avr auth device-login\x60 or \x60avr auth login\x60, then retry. If AVR_TOKEN is set, unset it first: it takes precedence over the new sign-in."
 		if cfg.Host != config.DefaultHost {
 			message += "\n  API: " + cfg.Host + he.Path
 		}
@@ -384,5 +384,5 @@ func requirePerson(cfg config.Config, subject, action string) error {
 		return nil
 	}
 	kind := config.Kind(cfg.Token).String()
-	return &ExitError{4, "Error: " + subject + " needs a signed-in account; " + kind + "s cannot " + action + ".\n  Hint: unset AVR_TOKEN if it contains the " + kind + ", then run avr auth login."}
+	return &ExitError{4, "Error: " + subject + " needs a signed-in account; " + kind + "s cannot " + action + ".\n  Hint: unset AVR_TOKEN if it contains the " + kind + ", then run avr auth device-login or avr auth login."}
 }

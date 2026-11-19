@@ -1,0 +1,36 @@
+.TH AVR\-SKILL\-INSTALL 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-skill-install \- Install the avr skill for coding agents.
+.SH SYNOPSIS
+.B avr skill install
+[OPTIONS]
+.SH DESCRIPTION
+Install the avr skill for coding agents.
+.PP
+Writes one SKILL.md per location: ~/.claude/skills/avrea-cli for Claude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli for Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without --agent, both are installed; codex is accepted for agents. Running it again updates the file. A SKILL.md that avr did not install is left alone unless --force is given.
+.PP
+With --project, the skill goes into .claude/skills and .agents/skills at the top of the current git repository instead. Commit it so cloud agents working on the repository, such as Devin or Codex cloud, find it. Those environments also need avr installed and AVR_TOKEN set to a scoped or service token.
+.PP
+.RS 4
+.nf
+Examples:
+    avr skill install
+    avr skill install --agent claude
+    avr skill install --project --agent agents
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-agent\fR \fICHOICE\fR
+Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both. (choices: claude, agents, codex; repeatable)
+.TP
+\fB\-\-project\fR
+Use the current git repository instead of your home directory.
+.TP
+\fB\-\-force\fR
+Replace a skill that avr did not install.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-skill (1),
+.BR avr-skill-show (1),
+.BR avr-skill-uninstall (1)

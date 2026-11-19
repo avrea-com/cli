@@ -126,7 +126,7 @@ func TestFeedbackRejectsInvalidInputWithoutRequests(t *testing.T) {
 func TestFeedbackRequiresSignIn(t *testing.T) {
 	for _, args := range [][]string{{"feedback", "hello"}, {"feedback", "status", feedbackTestID}} {
 		d, out, stderr := testDeps(t)
-		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "avr auth login") {
+		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "avr auth device-login") {
 			t.Fatal(code, out, stderr)
 		}
 	}
@@ -340,7 +340,7 @@ func TestFeedbackRejectsScopedTokensBeforeRequests(t *testing.T) {
 			t.Error("scoped token reached API")
 			return nil, errors.New("unexpected request")
 		})}
-		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "AVR_TOKEN") || !strings.Contains(stderr.String(), "avr auth login") {
+		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "AVR_TOKEN") || !strings.Contains(stderr.String(), "avr auth device-login") {
 			t.Fatal(code, out, stderr)
 		}
 	}

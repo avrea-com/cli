@@ -4245,7 +4245,7 @@
         "full": "avr feedback",
         "is_group": true,
         "short_help": "Send feedback or report a bug.",
-        "help": "Send MESSAGE to the Avrea team. Sign in with avr auth login first.\n\nUse --bug for a bug report and --org SLUG_OR_ID to attribute it to an\norganization. Without --org, feedback is personal, regardless of your default\norganization. Contact details come from your account.\n\nThe idempotency key is printed before sending. If the response is lost or\nthe server asks you to retry, repeat the same message, --bug setting and organization\nwith --idempotency-key KEY. For a key conflict, use the original content\nor omit --idempotency-key to create a new submission.\nAcceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\nUse -- before a message beginning with a dash, help, or a word resembling status.\n\nExamples:\n    avr feedback \"Please support Lambda Cloud\"\n    avr feedback --bug \"Run logs are missing\"\n    avr feedback status FEEDBACK_ID",
+        "help": "Send MESSAGE to the Avrea team. Sign in with avr auth device-login or avr auth login\nfirst.\n\nUse --bug for a bug report and --org SLUG_OR_ID to attribute it to an\norganization. Without --org, feedback is personal, regardless of your default\norganization. Contact details come from your account.\n\nThe idempotency key is printed before sending. If the response is lost or\nthe server asks you to retry, repeat the same message, --bug setting and organization\nwith --idempotency-key KEY. For a key conflict, use the original content\nor omit --idempotency-key to create a new submission.\nAcceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\nUse -- before a message beginning with a dash, help, or a word resembling status.\n\nExamples:\n    avr feedback \"Please support Lambda Cloud\"\n    avr feedback --bug \"Run logs are missing\"\n    avr feedback status FEEDBACK_ID",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -12666,8 +12666,8 @@
             ],
             "full": "avr auth device-login",
             "is_group": false,
-            "short_help": "Sign in from a remote machine using a browser on any device.",
-            "help": "Sign in from a remote machine using a browser on any device.\n\nOpen the displayed link or scan the QR code, confirm the code, and approve\naccess. The CLI waits for approval and saves your credentials. No browser\nis opened on this machine. QR codes appear only in compatible terminals\nwide enough to display them. Requires device-login support on the server.\n",
+            "short_help": "Sign in by approving this machine from any device.",
+            "help": "Sign in by approving this machine from a browser on any device.\n\nWorks anywhere: a laptop, an SSH session, a VM, a container or a coding\nagent's terminal. Open the displayed link or scan the QR code, confirm\nthe code, and approve access. The CLI waits for approval and saves your\ncredentials. No browser is opened on this machine. QR codes appear only\nin compatible terminals wide enough to display them.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -12704,7 +12704,7 @@
             "full": "avr auth login",
             "is_group": false,
             "short_help": "Authenticate via browser and store credentials.",
-            "help": "Authenticate via browser and store credentials.",
+            "help": "Authenticate via a browser on this machine and store credentials.\n\nWithout a local browser, as over SSH or in a coding agent, use\navr auth device-login.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -12911,7 +12911,7 @@
             "full": "avr token create",
             "is_group": false,
             "short_help": "Create a scoped token and print its credential.",
-            "help": "Create a scoped token and print its credential.\n\nThe credential is shown once and cannot be retrieved later. A token needs\nat least one of --repo, --vm or --allow-vm-create. Repository grants are\nread-only and VM grants are admin; an optional level suffix\n(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n\n\b\nExamples:\n    avr token create --name ci-read --repo acme/api --repo acme/web\n    avr token create --name agent --vm cvm-abc123 --ttl 30m\n    avr token create --name sandbox --allow-vm-create --vm-create-limit 3\n    avr token create --name ci-read --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, token, user_id,\n    vm_create_count, vm_create_limit\n",
+            "help": "Create a scoped token and print its credential.\n\nThe credential is shown once and cannot be retrieved later. A token needs\nat least one of --repo, --vm or --allow-vm-create. Repository grants are\nread-only and VM grants are admin; an optional level suffix\n(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n\nThe command prints export lines for AVR_TOKEN and AVR_ORG. A scoped\ntoken needs the org-... ID in AVR_ORG or --org, ignores the stored\norganization and cannot create further tokens. Pass run IDs rather than\nconsole URLs, whose organization slug a scoped token cannot resolve.\nIf the request is\ninterrupted or the server answers with a 5xx error, a token may already\nexist: check avr token list before retrying. A 404 names its reason;\nif scoped tokens are not enabled for the organization, contact\nsupport@avrea.com.\n\n\b\nExamples:\n    avr token create --name ci-read --repo acme/api --repo acme/web\n    avr token create --name agent --vm cvm-abc123 --ttl 30m\n    avr token create --name sandbox --allow-vm-create --vm-create-limit 3\n    avr token create --name ci-read --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n    name, organization_id, revoked_at, revoked_reason, token, user_id,\n    vm_create_count, vm_create_limit\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13353,7 +13353,7 @@
         "full": "avr service-token",
         "is_group": true,
         "short_help": "Create and manage the organization's service tokens.",
-        "help": "Create and manage the organization's service tokens.\n\nA service token (avt_...) belongs to a group of one organization rather\nthan to a person, and keeps working when its creator leaves. It reads\nonly the repositories and egress firewall rules its access names.\nOrganization admins manage service tokens while signed in with\n`avr auth login`; a scoped or service token cannot. To use a service\ntoken, set AVR_TOKEN to its secret.\n",
+        "help": "Create and manage the organization's service tokens.\n\nA service token (avt_...) belongs to a group of one organization rather\nthan to a person, and keeps working when its creator leaves. It reads\nonly the repositories and egress firewall rules its access names.\nOrganization admins manage service tokens while signed in (avr auth\ndevice-login or avr auth login); a scoped or service token cannot.\n\nTo use a service token, set AVR_TOKEN to its secret. Its organization\napplies automatically; set AVR_ORG to the org-... ID in loops to save a\nrequest per command, since a service token has 60 requests per minute.\nCommands that need a person, such as avr feedback, refuse it, and avr\nauth logout does not revoke it: unset AVR_TOKEN instead. After a\nsuspected leak, revoke-all revokes every service token of the\norganization.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -13370,7 +13370,7 @@
             "full": "avr service-token create",
             "is_group": false,
             "short_help": "Create a service token and print its secret once.",
-            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant;\nevery grant is a read and must be within your own access now. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nThe API may ask for a recent sign-in; the command then exits 4 and says\nto run `avr auth login` again.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group Platform/CI --repo acme/api\n    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant;\nevery grant is a read and must be within your own access now. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nThe API may ask for a recent sign-in; the command then exits 4 and says\nto sign in again.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group Platform/CI --repo acme/api\n    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13834,7 +13834,7 @@
             "full": "avr service-token rotate",
             "is_group": false,
             "short_help": "Issue a service token a new secret and print it once.",
-            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once; run from a terminal, the command asks first unless --yes\nis given. The API may ask for a recent sign-in; the command then exits 4\nand says to run `avr auth login` again.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once; run from a terminal, the command asks first unless --yes\nis given. The API may ask for a recent sign-in; the command then exits 4\nand says to sign in again.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -13999,7 +13999,7 @@
             "full": "avr service-token set-access",
             "is_group": false,
             "short_help": "Replace a service token's whole access selection.",
-            "help": "Replace a service token's whole access selection.\n\nThe grants given here replace everything the token reaches: a grant you\nleave out is removed, so repeat the ones to keep. The command reads the\ntoken first and the change fails if the token changes in between. A\ngrant that widens its access must be within your own access now. The\nAPI may ask for a recent sign-in; the command then exits 4 and says to\nrun `avr auth login` again. The change applies to the token's next\nrequest.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules\n",
+            "help": "Replace a service token's whole access selection.\n\nThe grants given here replace everything the token reaches: a grant you\nleave out is removed, so repeat the ones to keep. The command reads the\ntoken first and the change fails if the token changes in between. A\ngrant that widens its access must be within your own access now. The\nAPI may ask for a recent sign-in; the command then exits 4 and says to\nsign in again. The change applies to the token's next\nrequest.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -14201,7 +14201,7 @@
         "full": "avr group",
         "is_group": true,
         "short_help": "View the organization's groups.",
-        "help": "View the organization's groups.\n\nEach service token belongs to one of these groups. Organization members\nlist them while signed in with `avr auth login`; a scoped or service\ntoken cannot.\n",
+        "help": "View the organization's groups.\n\nEach service token belongs to one of these groups. Organization members\nlist them while signed in (avr auth device-login or avr auth login); a scoped or service\ntoken cannot.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -14874,6 +14874,198 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": "Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "skill",
+        "path": [
+          "avr",
+          "skill"
+        ],
+        "full": "avr skill",
+        "is_group": true,
+        "short_help": "Teach coding agents to use avr.",
+        "help": "Teach coding agents to use avr.\n\nThe skill follows the open Agent Skills format. It tells an agent when\navr is relevant and points it at avr skill show, so the guidance always\nmatches the installed avr. Claude Code reads it from .claude/skills;\nCodex, OpenCode, Pi, Devin and other Agent Skills tools read it from\n.agents/skills. For an agent that reads neither, add a line to its\ninstructions that says to run avr skill show before working with\nAvrea CI.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr skill [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "install",
+            "path": [
+              "avr",
+              "skill",
+              "install"
+            ],
+            "full": "avr skill install",
+            "is_group": false,
+            "short_help": "Install the avr skill for coding agents.",
+            "help": "Install the avr skill for coding agents.\n\nWrites one SKILL.md per location: ~/.claude/skills/avrea-cli for\nClaude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli\nfor Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without\n--agent, both are installed; codex is accepted for agents. Running it\nagain updates the file. A SKILL.md that avr did not install is left\nalone unless --force is given.\n\nWith --project, the skill goes into .claude/skills and .agents/skills\nat the top of the current git repository instead. Commit it so cloud\nagents working on the repository, such as Devin or Codex cloud, find it.\nThose environments also need avr installed and AVR_TOKEN set to a scoped\nor service token.\n\n\b\nExamples:\n    avr skill install\n    avr skill install --agent claude\n    avr skill install --project --agent agents\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill install [OPTIONS]",
+            "params": [
+              {
+                "name": "agents",
+                "kind": "option",
+                "opts": [
+                  "--agent"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "claude",
+                  "agents",
+                  "codex"
+                ]
+              },
+              {
+                "name": "project",
+                "kind": "option",
+                "opts": [
+                  "--project"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Use the current git repository instead of your home directory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "force",
+                "kind": "option",
+                "opts": [
+                  "--force"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Replace a skill that avr did not install.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "show",
+            "path": [
+              "avr",
+              "skill",
+              "show"
+            ],
+            "full": "avr skill show",
+            "is_group": false,
+            "short_help": "Print the avr guide for coding agents.",
+            "help": "Print the avr guide for coding agents.\n\nThe guide covers testing a change in CI, diagnosing failed or slow runs,\nstructured output and on-demand VMs for the installed avr version.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill show [OPTIONS]",
+            "params": [],
+            "subcommands": []
+          },
+          {
+            "name": "uninstall",
+            "path": [
+              "avr",
+              "skill",
+              "uninstall"
+            ],
+            "full": "avr skill uninstall",
+            "is_group": false,
+            "short_help": "Remove the installed avr skill.",
+            "help": "Remove the installed avr skill.\n\nWithout --agent, the skill is removed from both locations. With\n--project, it is removed from the current git repository. Other files\nin the skill directory are kept.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr skill uninstall [OPTIONS]",
+            "params": [
+              {
+                "name": "agents",
+                "kind": "option",
+                "opts": [
+                  "--agent"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Location to uninstall from (repeatable): claude or agents. Defaults to both.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "claude",
+                  "agents",
+                  "codex"
+                ]
+              },
+              {
+                "name": "project",
+                "kind": "option",
+                "opts": [
+                  "--project"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Use the current git repository instead of your home directory.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "force",
+                "kind": "option",
+                "opts": [
+                  "--force"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove a skill that avr did not install.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

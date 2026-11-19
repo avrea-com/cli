@@ -13,16 +13,19 @@ avr auth [OPTIONS] COMMAND [ARGS]...
 
 ### `avr auth device-login`
 
-Sign in from a remote machine using a browser on any device.
+Sign in by approving this machine from any device.
 
 ```sh
 avr auth device-login [OPTIONS]
 ```
 
-Open the displayed link or scan the QR code, confirm the code, and approve
-access. The CLI waits for approval and saves your credentials. No browser
-is opened on this machine. QR codes appear only in compatible terminals
-wide enough to display them. Requires device-login support on the server.
+Sign in by approving this machine from a browser on any device.
+
+Works anywhere: a laptop, an SSH session, a VM, a container or a coding
+agent's terminal. Open the displayed link or scan the QR code, confirm
+the code, and approve access. The CLI waits for approval and saves your
+credentials. No browser is opened on this machine. QR codes appear only
+in compatible terminals wide enough to display them.
 
 **Options**
 
@@ -35,6 +38,11 @@ Authenticate via browser and store credentials.
 ```sh
 avr auth login [OPTIONS]
 ```
+
+Authenticate via a browser on this machine and store credentials.
+
+Without a local browser, as over SSH or in a coding agent, use
+avr auth device-login.
 
 **Options**
 

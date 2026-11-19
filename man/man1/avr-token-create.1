@@ -9,6 +9,8 @@ Create a scoped token and print its credential.
 .PP
 The credential is shown once and cannot be retrieved later. A token needs at least one of --repo, --vm or --allow-vm-create. Repository grants are read-only and VM grants are admin; an optional level suffix (--repo acme/api:read, --vm cvm-abc123:admin) must name that level.
 .PP
+The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped token needs the org-... ID in AVR_ORG or --org, ignores the stored organization and cannot create further tokens. Pass run IDs rather than console URLs, whose organization slug a scoped token cannot resolve. If the request is interrupted or the server answers with a 5xx error, a token may already exist: check avr token list before retrying. A 404 names its reason; if scoped tokens are not enabled for the organization, contact support@avrea.com.
+.PP
 .RS 4
 .nf
 Examples:

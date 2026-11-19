@@ -1,0 +1,83 @@
+---
+title: avr skill
+description: "Teach coding agents to use avr."
+---
+
+Teach coding agents to use avr.
+
+```sh
+avr skill [OPTIONS] COMMAND [ARGS]...
+```
+
+The skill follows the open Agent Skills format. It tells an agent when
+avr is relevant and points it at avr skill show, so the guidance always
+matches the installed avr. Claude Code reads it from .claude/skills;
+Codex, OpenCode, Pi, Devin and other Agent Skills tools read it from
+.agents/skills. For an agent that reads neither, add a line to its
+instructions that says to run avr skill show before working with
+Avrea CI.
+
+## Subcommands
+
+### `avr skill install`
+
+Install the avr skill for coding agents.
+
+```sh
+avr skill install [OPTIONS]
+```
+
+Writes one SKILL.md per location: ~/.claude/skills/avrea-cli for
+Claude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli
+for Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without
+--agent, both are installed; codex is accepted for agents. Running it
+again updates the file. A SKILL.md that avr did not install is left
+alone unless --force is given.
+
+With --project, the skill goes into .claude/skills and .agents/skills
+at the top of the current git repository instead. Commit it so cloud
+agents working on the repository, such as Devin or Codex cloud, find it.
+Those environments also need avr installed and AVR_TOKEN set to a scoped
+or service token.
+
+```sh
+Examples:
+    avr skill install
+    avr skill install --agent claude
+    avr skill install --project --agent agents
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;agent</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;project</code> — Use the current git repository instead of your home directory.
+- <code class="cli-flag">&#x2D;&#x2D;force</code> — Replace a skill that avr did not install.
+
+### `avr skill show`
+
+Print the avr guide for coding agents.
+
+```sh
+avr skill show [OPTIONS]
+```
+
+The guide covers testing a change in CI, diagnosing failed or slow runs,
+structured output and on-demand VMs for the installed avr version.
+
+### `avr skill uninstall`
+
+Remove the installed avr skill.
+
+```sh
+avr skill uninstall [OPTIONS]
+```
+
+Without --agent, the skill is removed from both locations. With
+--project, it is removed from the current git repository. Other files
+in the skill directory are kept.
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;agent</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Location to uninstall from (repeatable): claude or agents. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;project</code> — Use the current git repository instead of your home directory.
+- <code class="cli-flag">&#x2D;&#x2D;force</code> — Remove a skill that avr did not install.

@@ -255,7 +255,7 @@ func configureHelp(root *cobra.Command, d Dependencies) {
 		}
 		if cfg.Token == "" {
 			_, err = fmt.Fprintf(d.Out, "Welcome to Avrea CLI.\n\n  %s Run %s to sign in.\n  %s Run %s to see all commands.\n",
-				d.paint("→", "36"), d.paint("avr auth login", "1"), d.paint("→", "36"), d.paint("avr --help", "1"))
+				d.paint("→", "36"), d.paint("avr auth device-login", "1"), d.paint("→", "36"), d.paint("avr --help", "1"))
 			return err
 		}
 		spec, err := get(cmd)
