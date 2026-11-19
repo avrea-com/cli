@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -202,6 +203,9 @@ func configurationWriteStatus(err error) string {
 	return "unconfirmed"
 }
 func configurationWriteError(cfg config.Config, err error) error {
+	if errors.Is(err, context.Canceled) {
+		return &ExitError{130, "Error: Interrupted; write outcome is unconfirmed; do not retry automatically."}
+	}
 	if configurationWriteStatus(err) == "failed" {
 		return configurationAPIError(cfg, err)
 	}

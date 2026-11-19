@@ -4381,7 +4381,7 @@ avr secret set [OPTIONS] [NAME]
 - `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
 - `--description <TEXT>` — Description for a newly created name; use edit to change an existing description.
 - `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
-- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file; no expansion.
+- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
 - `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
 - `--label <TEXT>` — Label for the scoped value.
@@ -4512,7 +4512,7 @@ avr variable set [OPTIONS] [NAME]
 - `--branch <TEXT>` — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
 - `--description <TEXT>` — Description for a newly created name; use edit to change an existing description.
 - `--env, -e <TEXT>` — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
-- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file; no expansion.
+- `--env-file, -f <TEXT>` — Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
 - `--json <TEXT>` — Output comma-separated fields, * for all, or ? to list fields.
 - `--label <TEXT>` — Label for the scoped value.

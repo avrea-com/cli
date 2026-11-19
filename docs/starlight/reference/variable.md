@@ -120,7 +120,7 @@ avr variable set [OPTIONS] [NAME]
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Branch pattern; repeat for alternatives. _(default: `()` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;description</code> <code class="cli-value">&lt;TEXT&gt;</code> — Description for a newly created name; use edit to change an existing description.
 - <code class="cli-flag">&#x2D;&#x2D;env, -e</code> <code class="cli-value">&lt;TEXT&gt;</code> — Environment pattern; repeat for alternatives. _(default: `()` · repeatable)_
-- <code class="cli-flag">&#x2D;&#x2D;env-file, -f</code> <code class="cli-value">&lt;TEXT&gt;</code> — Read literal NAME=value entries from a dotenv file; no expansion.
+- <code class="cli-flag">&#x2D;&#x2D;env-file, -f</code> <code class="cli-value">&lt;TEXT&gt;</code> — Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.
 - <code class="cli-flag">&#x2D;&#x2D;jq, -q</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter JSON with an embedded jq expression.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output comma-separated fields, * for all, or ? to list fields.
 - <code class="cli-flag">&#x2D;&#x2D;label</code> <code class="cli-value">&lt;TEXT&gt;</code> — Label for the scoped value.

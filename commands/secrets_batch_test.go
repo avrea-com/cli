@@ -3,13 +3,16 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -296,5 +299,160 @@ func TestConfigurationWriteFailurePrintedOnce(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestConfigurationDotenvFormatting(t *testing.T) {
+	for _, tc := range []struct {
+		name, input string
+		want        []configurationInput
+		rejected    bool
+	}{
+		{"cr only", "FOO=abc\rBAR=def\r", nil, true},
+		{"cr comment", "# comment\rFOO=abc", nil, true},
+		{"cr after quote", "FOO='abc'\rBAR=def", nil, true},
+		{"bom export tab", "\ufeffexport\tFOO=abc\nBAR=def\n", []configurationInput{{"FOO", "abc"}, {"BAR", "def"}}, false},
+		{"crlf", "FOO=abc\r\nBAR=def\r\n", []configurationInput{{"FOO", "abc"}, {"BAR", "def"}}, false},
+		{"quoted cr", "FOO='abc\rdef'\nBAR=def\n", []configurationInput{{"FOO", "abc\rdef"}, {"BAR", "def"}}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "input.env")
+			if err := os.WriteFile(path, []byte(tc.input), 0600); err != nil {
+				t.Fatal(err)
+			}
+			got, err := configurationEnvFile(path)
+			if tc.rejected {
+				if err == nil {
+					t.Fatalf("accepted malformed input: %#v", got)
+				}
+				return
+			}
+			if err != nil || fmt.Sprint(got) != fmt.Sprint(tc.want) {
+				t.Fatal(got, err)
+			}
+		})
+	}
+}
+
+func TestConfigurationDotenvStdin(t *testing.T) {
+	for _, kind := range []string{"secret", "variable"} {
+		s := &configurationServer{values: sampleConfiguration(client.Availability{})}
+		code, out, errout := configurationTest(t, s, []string{kind, "set", "--env-file", "-", "--org", testSecretOrg}, "TOKEN='synthetic\nmultiline'\n")
+		if code != 0 || len(s.calls) != 2 || s.calls[1].body["value"] != "synthetic\nmultiline" {
+			t.Fatal(code, out, errout, s.calls)
+		}
+	}
+}
+
+func TestConfigurationDotenvFileSecretsRejected(t *testing.T) {
+	for _, existing := range []bool{false, true} {
+		s := &configurationServer{values: sampleConfiguration(client.Availability{})}
+		s.values[0].Name = "SECOND"
+		s.values[0].AsFile = existing
+		if !existing {
+			s.values = nil
+		}
+		path := filepath.Join(t.TempDir(), "values.env")
+		if err := os.WriteFile(path, []byte("FIRST=synthetic\nSECOND=synthetic\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		args := []string{"secret", "set", "--env-file", path, "--org", testSecretOrg, "--visibility", "all"}
+		if !existing {
+			args = append(args, "--type", "file")
+		}
+		code, out, errout := configurationTest(t, s, args, "FIRST=synthetic\nSECOND=synthetic\n")
+		if code != 2 || !strings.Contains(errout, "File secrets") {
+			t.Fatal(code, out, errout)
+		}
+		for _, call := range s.calls {
+			if call.method != "GET" {
+				t.Fatal("partial import", s.calls)
+			}
+		}
+	}
+}
+
+func TestConfigurationCancelledWriteWarning(t *testing.T) {
+	for _, operation := range []string{"create-name", "create-scope", "value", "edit-scope", "edit-description", "delete", "confirm"} {
+		t.Run(operation, func(t *testing.T) {
+			d, out, stderr := testDeps(t)
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			d.LoadConfig = func() (config.Config, error) {
+				return config.Config{Host: "https://api.example.test", Token: "fixture", Org: testSecretOrg}, nil
+			}
+			d.In = strings.NewReader("synthetic")
+			s := &configurationServer{values: sampleConfiguration(client.Availability{})}
+			args := []string{"secret", "set", "TOKEN", "--org", testSecretOrg, "--visibility", "all"}
+			switch operation {
+			case "confirm":
+				s.pending = true
+			case "create-name":
+				s.values = nil
+			case "create-scope":
+				s.values[0].Variants = nil
+			case "edit-scope":
+				args = []string{"secret", "edit", "TOKEN", "--org", testSecretOrg, "--label", "new"}
+			case "edit-description":
+				args = []string{"secret", "edit", "TOKEN", "--org", testSecretOrg, "--description", "new"}
+			case "delete":
+				args = []string{"secret", "delete", "TOKEN", "--org", testSecretOrg, "--yes"}
+			}
+			d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				if operation == "confirm" && strings.Contains(r.URL.Path, "/versions/") || operation != "confirm" && r.Method != "GET" {
+					cancel()
+					return nil, ctx.Err()
+				}
+				return s.roundTrip(t, r)
+			})}
+			code := Execute(ctx, args, d)
+			if code != 130 || !strings.Contains(stderr.String(), "unconfirmed") || !strings.Contains(stderr.String(), "do not retry automatically") || strings.Contains(out.String()+stderr.String(), "synthetic") {
+				t.Fatal(code, out, stderr)
+			}
+		})
+	}
+}
+
+func TestConfigurationEnvInputCancellation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		reader, writer := io.Pipe()
+		defer func() { _ = reader.Close(); _ = writer.Close() }()
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		done := make(chan error, 1)
+		go func() { _, err := configurationEnvInput(ctx, reader, "-"); done <- err }()
+		synctest.Wait()
+		cancel()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
+	})
+}
+
+type configurationInputFailure struct{ err error }
+
+func (r configurationInputFailure) Read([]byte) (int, error) { return 0, r.err }
+func TestConfigurationEnvReadErrors(t *testing.T) {
+	for _, tc := range []struct {
+		err     error
+		message string
+	}{
+		{fs.ErrNotExist, "file does not exist"}, {fs.ErrPermission, "permission denied"},
+		{io.ErrUnexpectedEOF, "could not read --env-file"},
+	} {
+		_, err := readConfigurationEnv(configurationInputFailure{&os.PathError{Op: "read", Path: "private-file-name", Err: tc.err}})
+		if err == nil || !strings.Contains(err.Error(), tc.message) || strings.Contains(err.Error(), "private-file-name") {
+			t.Fatal(err)
+		}
+	}
+	_, err := configurationEnvFile(filepath.Join(t.TempDir(), "missing"))
+	if err == nil || !strings.Contains(err.Error(), "file does not exist") {
+		t.Fatal(err)
+	}
+}
+func TestConfigurationEnvStdinSizeLimit(t *testing.T) {
+	_, err := configurationEnvInput(t.Context(), strings.NewReader(strings.Repeat("#", 16*1024*1024+1)), "-")
+	if err == nil || !strings.Contains(err.Error(), "16 MiB") {
+		t.Fatal(err)
 	}
 }

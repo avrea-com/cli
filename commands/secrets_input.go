@@ -3,10 +3,13 @@ package commands
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
@@ -68,23 +71,25 @@ func configurationInputValue(c *cobra.Command, d Dependencies, kind, body string
 		}
 		return value, validateConfigurationValue(value)
 	}
-	type inputResult struct {
-		value string
+	return configurationRead(c.Context(), func() (string, error) { return readConfigurationInput(c.Context(), d.In, asFile) })
+}
+
+func configurationRead[T any](ctx context.Context, read func() (T, error)) (T, error) {
+	type result struct {
+		value T
 		err   error
 	}
-	done := make(chan inputResult, 1)
-	go func() {
-		value, err := readConfigurationInput(c.Context(), d.In, asFile)
-		done <- inputResult{value, err}
-	}()
+	done := make(chan result, 1)
+	go func() { value, err := read(); done <- result{value, err} }()
+	var zero T
 	select {
-	case <-c.Context().Done():
-		return "", c.Context().Err()
-	case result := <-done:
-		if err := c.Context().Err(); err != nil {
-			return "", err
+	case <-ctx.Done():
+		return zero, ctx.Err()
+	case r := <-done:
+		if err := ctx.Err(); err != nil {
+			return zero, err
 		}
-		return result.value, result.err
+		return r.value, r.err
 	}
 }
 
@@ -132,23 +137,49 @@ func readConfigurationInput(ctx context.Context, input io.Reader, asFile bool) (
 	return result, validateConfigurationValue(result)
 }
 
-// Parse literal dotenv entries: quotes and multiline values are supported, but
-// shell expansion and variable interpolation are intentionally never evaluated.
+func configurationEnvInput(ctx context.Context, input io.Reader, path string) ([]configurationInput, error) {
+	return configurationRead(ctx, func() ([]configurationInput, error) {
+		if path == "-" {
+			return readConfigurationEnv(input)
+		}
+		return configurationEnvFile(path)
+	})
+}
+
+func configurationEnvError(err error) error {
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return errors.New("could not read --env-file: file does not exist")
+	case errors.Is(err, fs.ErrPermission):
+		return errors.New("could not read --env-file: permission denied")
+	default:
+		return errors.New("could not read --env-file")
+	}
+}
+
 func configurationEnvFile(path string) ([]configurationInput, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("could not open --env-file")
+		return nil, configurationEnvError(err)
 	}
 	defer func() { _ = f.Close() }()
+	return readConfigurationEnv(f)
+}
+
+// Parse literal dotenv entries; shell expansion and interpolation are disabled.
+func readConfigurationEnv(input io.Reader) ([]configurationInput, error) {
 	const fileLimit = 16 * 1024 * 1024
-	raw, err := io.ReadAll(io.LimitReader(f, fileLimit+1))
+	raw, err := io.ReadAll(io.LimitReader(input, fileLimit+1))
 	if err != nil {
-		return nil, fmt.Errorf("could not read --env-file")
+		return nil, configurationEnvError(err)
 	}
 	if len(raw) > fileLimit || !utf8.Valid(raw) || strings.ContainsRune(string(raw), 0) {
 		return nil, configurationUsage("The dotenv file must be UTF-8 text without NUL bytes, at most 16 MiB.")
 	}
-	text := strings.ReplaceAll(string(raw), "\r\n", "\n")
+	text := strings.TrimPrefix(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\ufeff")
+	crError := func() error {
+		return configurationUsage("CR-only dotenv line endings are not supported; use LF or CRLF.")
+	}
 	inputs := []configurationInput{}
 	seen := map[string]bool{}
 	line := 0
@@ -158,12 +189,21 @@ func configurationEnvFile(path string) ([]configurationInput, error) {
 		text = rest
 		current = strings.TrimLeft(current, " \t")
 		if strings.TrimSpace(current) == "" || strings.HasPrefix(current, "#") {
+			if strings.ContainsRune(current, '\r') {
+				return nil, crError()
+			}
 			continue
 		}
-		if strings.HasPrefix(current, "export ") {
-			current = strings.TrimLeft(strings.TrimPrefix(current, "export "), " \t")
+		if rest, ok := strings.CutPrefix(current, "export"); ok {
+			trimmed := strings.TrimLeftFunc(rest, func(r rune) bool { return r != '\r' && unicode.IsSpace(r) })
+			if len(trimmed) < len(rest) {
+				current = trimmed
+			}
 		}
 		key, value, ok := strings.Cut(current, "=")
+		if strings.ContainsRune(key, '\r') {
+			return nil, crError()
+		}
 		key = strings.TrimSpace(key)
 		bad := func() error {
 			return configurationUsage(fmt.Sprintf("Invalid dotenv entry at line %d; expected NAME=value with balanced quotes.", line))
@@ -189,6 +229,9 @@ func configurationEnvFile(path string) ([]configurationInput, error) {
 				for i := 0; i < len(source); i++ {
 					ch := source[i]
 					if ch == quote {
+						if strings.ContainsRune(source[i+1:], '\r') {
+							return nil, crError()
+						}
 						suffix := strings.TrimSpace(source[i+1:])
 						if suffix != "" && !strings.HasPrefix(suffix, "#") {
 							return nil, bad()
@@ -227,6 +270,9 @@ func configurationEnvFile(path string) ([]configurationInput, error) {
 			}
 			value = result.String()
 		} else {
+			if strings.ContainsRune(value, '\r') {
+				return nil, crError()
+			}
 			value = strings.TrimSpace(value)
 			for i, ch := range value {
 				if ch == '#' && (i == 0 || value[i-1] == ' ' || value[i-1] == '\t') {

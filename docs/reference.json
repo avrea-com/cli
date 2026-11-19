@@ -5388,7 +5388,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Read literal NAME=value entries from a dotenv file; no expansion.",
+                "help": "Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.",
                 "hidden": false,
                 "show_default": false,
                 "default": ""
@@ -6529,7 +6529,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Read literal NAME=value entries from a dotenv file; no expansion.",
+                "help": "Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.",
                 "hidden": false,
                 "show_default": false,
                 "default": ""

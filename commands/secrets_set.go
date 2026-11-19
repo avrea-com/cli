@@ -65,15 +65,24 @@ func waitConfigurationWrite(c *cobra.Command, d Dependencies, x configurationCon
 		if err == nil || errors.As(err, &he) && he.Status != 404 && he.Status < 500 {
 			return checked
 		}
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return configurationWriteError(x.cfg, ctx.Err())
+		}
 		remaining := deadline.Sub(d.Now())
 		if remaining <= 0 || ctx.Err() != nil {
 			return errors.New("write accepted but confirmation timed out")
 		}
 		if err := d.Wait(ctx, min(time.Second, remaining)); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return configurationWriteError(x.cfg, err)
+			}
 			return errors.New("write accepted but confirmation was interrupted")
 		}
 	}
 }
+
+const configurationFileImportHint = "File secrets cannot be imported from dotenv; use avr secret set NAME --type file < path."
+
 func newConfigurationSet(d Dependencies, kind string) *cobra.Command {
 	o := configurationOptions{}
 	var body, envFile, description, valueType string
@@ -82,7 +91,7 @@ func newConfigurationSet(d Dependencies, kind string) *cobra.Command {
 	o.contextFlags(c)
 	o.selectionFlags(c)
 	o.availabilityFlags(c, false)
-	c.Flags().StringVarP(&envFile, "env-file", "f", "", "Read literal NAME=value entries from a dotenv file; no expansion.")
+	c.Flags().StringVarP(&envFile, "env-file", "f", "", "Read literal NAME=value entries from a dotenv file (- for stdin); no expansion.")
 	c.Flags().StringVar(&description, "description", "", "Description for a newly created name; use edit to change an existing description.")
 	if kind == "variable" {
 		c.Flags().StringVarP(&body, "body", "b", "", "Variable value; otherwise prompt or read stdin.")
@@ -113,7 +122,10 @@ func newConfigurationSet(d Dependencies, kind string) *cobra.Command {
 			if envFile == "" || len(args) != 0 {
 				return configurationUsage("Use either NAME or --env-file PATH.")
 			}
-			inputs, err = configurationEnvFile(envFile)
+			if kind == "secret" && valueType == "file" {
+				return configurationUsage(configurationFileImportHint)
+			}
+			inputs, err = configurationEnvInput(c.Context(), d.In, envFile)
 			if err != nil {
 				return err
 			}
@@ -147,6 +159,9 @@ func newConfigurationSet(d Dependencies, kind string) *cobra.Command {
 			plan, err := planConfigurationSet(c, d, x, o, values, input, description, valueType, availability)
 			if err != nil {
 				return err
+			}
+			if c.Flags().Changed("env-file") && plan.asFile {
+				return configurationUsage(configurationFileImportHint)
 			}
 			plans = append(plans, plan)
 		}
@@ -349,7 +364,7 @@ func (p configurationSetPlan) execute(c *cobra.Command, d Dependencies, x config
 	var write client.ValueWrite
 	if err := x.api.ConfigurationRequest(c.Context(), http.MethodPut, x.variantPath(v.ID())+"/value", map[string]string{"value": p.input.value}, &write); err != nil {
 		r = fail(err)
-		if r.Status == "unconfirmed" {
+		if r.Status == "unconfirmed" && !errors.Is(err, context.Canceled) {
 			r.Message = "The write outcome is unconfirmed and no version ID was received; do not retry automatically."
 			r.cause = errors.New(r.Message)
 		}
