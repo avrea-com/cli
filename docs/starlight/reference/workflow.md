@@ -65,8 +65,9 @@ invocation with its resolved ref, inputs and --idempotency-key.
 following a pending native dispatch.
 
 For GitHub Actions, --watch follows the run GitHub returned for the
-dispatch, or else the next run of the workflow on --ref. With
---exit-status, a run that does not appear within 90 seconds exits 1.
+dispatch, or else the newest workflow_dispatch run of the workflow on
+the dispatched ref. With --exit-status, a run that does not appear
+within 90 seconds exits 1.
 
 ```sh
 Examples:

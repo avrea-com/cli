@@ -232,7 +232,7 @@ func pollRerun(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 		return nil, fmt.Errorf("invalid run attempt in API response")
 	}
 	query := url.Values{"platform_run_id": {platform}, "limit": {"10"}, "order": {"created_at.desc"}}
-	return pollRuns(ctx, d, cfg, api, org, query, 30*time.Second, "poll for rerun attempt", false, func(row map[string]any) bool {
+	return pollRuns(ctx, d, cfg, api, org, []url.Values{query}, 30*time.Second, "poll for rerun attempt", false, func(row map[string]any) bool {
 		next, _ := strconv.ParseInt(fieldText(row, "run_attempt"), 10, 64)
 		return next > current
 	})

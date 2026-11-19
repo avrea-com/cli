@@ -132,19 +132,27 @@ func readSkill(target *skillTarget, force bool) error {
 		return nil
 	case err != nil:
 		return err
-	case info.Mode()&os.ModeSymlink != 0 && !force:
-		// Writing replaces the link with a file, so its source would go stale.
-		return &ExitError{1, "Error: " + target.path + " is a symlink. Pass --force to replace or remove it."}
-	}
-	if info, err = os.Stat(target.path); err != nil {
-		return err
-	}
-	if !info.Mode().IsRegular() {
+	case info.Mode()&os.ModeSymlink != 0:
+		if !force {
+			// Writing replaces the link with a file, so its source would go stale.
+			return &ExitError{1, "Error: " + target.path + " is a symlink. Pass --force to replace or remove it."}
+		}
+		// --force acts on the link itself, so where it points, even nowhere,
+		// does not matter.
+		target.installed = true
+		return nil
+	case !info.Mode().IsRegular():
 		return &ExitError{1, "Error: " + target.path + " is not a regular file."}
 	}
-	target.content, err = readTextFile(target.path, "Skill file")
-	target.installed = err == nil
-	return err
+	target.installed = true
+	content, err := readTextFile(target.path, "Skill file")
+	if err != nil && !force {
+		return err
+	}
+	// With --force, content is only compared with the stub, so a file that
+	// cannot be read as text is simply replaced or removed.
+	target.content = content
+	return nil
 }
 
 func skillTargets(d Dependencies, agents []string, project string, force bool) ([]skillTarget, error) {
@@ -160,20 +168,31 @@ func skillTargets(d Dependencies, agents []string, project string, force bool) (
 	for _, agent := range agents {
 		agent = skillAgent(agent)
 		path := filepath.Join(roots[agent], "skills", skillName, "SKILL.md")
-		resolved, err := resolveSkillPath(path)
-		if project != "" && (err != nil || !skillWithin(project, resolved)) {
-			return nil, &ExitError{1, "Error: " + path + " leads outside the repository through a symlink."}
+		// Agents share a target when their skill directories are the same
+		// directory. A linked SKILL.md is its own location: --force replaces or
+		// removes the link, not the file it points to.
+		dir, err := resolveSkillPath(filepath.Dir(path))
+		if project != "" {
+			// The directory holding SKILL.md is where the command writes and
+			// removes, so it must stay in the repository.
+			if err != nil {
+				return nil, &ExitError{1, "Error: " + path + " cannot be resolved: " + err.Error()}
+			}
+			if !skillWithin(project, dir) {
+				return nil, &ExitError{1, "Error: " + path + " leads outside the repository through a symlink."}
+			}
 		}
 		if err != nil {
 			return nil, err
 		}
-		if i, ok := byFile[resolved]; ok {
+		key := filepath.Join(dir, "SKILL.md")
+		if i, ok := byFile[key]; ok {
 			if label := skillAgentLabels[agent]; !slices.Contains(targets[i].labels, label) {
 				targets[i].labels = append(targets[i].labels, label)
 			}
 			continue
 		}
-		byFile[resolved] = len(targets)
+		byFile[key] = len(targets)
 		target := skillTarget{labels: []string{skillAgentLabels[agent]}, path: path}
 		if err := readSkill(&target, force); err != nil {
 			return nil, err

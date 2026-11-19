@@ -216,17 +216,22 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		if row == nil {
-			resume := "avr run watch <run-id>"
+			// --org keeps the suggestions on the organization this dispatch used.
+			orgArg := " --org " + output.CellText(orgSlug(cmd.Context(), cfg, api, orgID))
+			resume := "avr run watch <run-id>" + orgArg
 			if runID != "" {
-				resume = "avr run watch " + runID
+				resume = "avr run watch " + runID + orgArg
 			}
-			message := "Avrea has not recorded the run 90 seconds after the dispatch. Once `avr run list --repo " + output.CellText(hintRepo) + "` shows it, follow it with `" + resume + "`."
+			message := "Avrea has not recorded the run 90 seconds after the dispatch. Once `avr run list --repo " + output.CellText(hintRepo) + orgArg + "` shows it, follow it with `" + resume + "`."
 			if exitStatus {
 				// The exit code reports the dispatched run, which was never seen.
 				return &ExitError{1, "Error: " + message}
 			}
 			_, err = fmt.Fprintln(d.Err, d.errorPaint("  "+message, "2"))
 			return err
+		}
+		if runID == "" {
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint("  GitHub returned no run ID; following the newest workflow_dispatch run of this workflow on "+output.CellText(ref)+", which a concurrent dispatch could also have started.", "2"))
 		}
 		return watchDispatchedWorkflow(cmd, d, cfg, api, orgID, fieldText(row, "run_id"), interval, exitStatus)
 	})
@@ -258,6 +263,11 @@ type dispatchTarget struct {
 }
 
 func dispatchMatches(row map[string]any, target dispatchTarget) bool {
+	// Avrea CI runs share the repository's run list. A row without
+	// ci_provider is GitHub Actions, as everywhere else in the CLI.
+	if runCIProvider(row) != "github_actions" {
+		return false
+	}
 	if target.runID != "" {
 		return fieldText(row, "platform_run_id") == target.runID
 	}
@@ -279,11 +289,16 @@ func dispatchMatches(row map[string]any, target dispatchTarget) bool {
 }
 
 func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo string, target dispatchTarget) (map[string]any, error) {
-	query := url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}}
+	page := url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}}
+	queries := []url.Values{page}
 	if target.runID != "" {
-		query.Set("platform_run_id", target.runID)
+		// The exact lookup finds the run however busy the repository is, but
+		// covers only GitHub.com runs; a run from a registered GitHub host is
+		// still found on the repository's newest page.
+		byID := url.Values{"repository_ids": {repo}, "platform_run_id": {target.runID}, "limit": {"10"}, "order": {"created_at.desc"}}
+		queries = []url.Values{byID, page}
 	}
-	return pollRuns(ctx, d, cfg, api, org, query, 90*time.Second, "poll for dispatched run", true, func(row map[string]any) bool {
+	return pollRuns(ctx, d, cfg, api, org, queries, 90*time.Second, "poll for dispatched run", true, func(row map[string]any) bool {
 		return dispatchMatches(row, target)
 	})
 }

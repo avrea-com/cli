@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -44,8 +43,10 @@ func readTextFile(path, label string) (string, error) {
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 		return "", nil
-	case errors.Is(err, errTextTooLarge), errors.Is(err, errTextNotUTF8):
-		return "", fmt.Errorf("%s: %w", label, err)
+	case errors.Is(err, errTextTooLarge):
+		return "", errors.New(label + " exceeds 16 MiB")
+	case errors.Is(err, errTextNotUTF8):
+		return "", errors.New(label + " is not valid UTF-8")
 	case err != nil:
 		return "", err
 	}

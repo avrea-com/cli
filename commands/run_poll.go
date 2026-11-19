@@ -11,11 +11,12 @@ import (
 	"github.com/avrea-com/cli/config"
 )
 
-// pollRuns lists runs with query once a second until match picks a row, or
-// returns no row once timeout passes. Server errors, 429 and network failures
-// are retried; any other API error ends the poll and is reported for action.
+// pollRuns lists runs with each query in turn, once a second, until match
+// picks a row, or returns no row once timeout passes. Server errors, 429 and
+// network failures are retried; any other API error ends the poll and is
+// reported for action.
 // With progress, a dot every five seconds shows a terminal user the wait.
-func pollRuns(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, query url.Values, timeout time.Duration, action string, progress bool, match func(map[string]any) bool) (map[string]any, error) {
+func pollRuns(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, queries []url.Values, timeout time.Duration, action string, progress bool, match func(map[string]any) bool) (map[string]any, error) {
 	deadline := d.Now().Add(timeout)
 	tick := d.Now().Add(5 * time.Second)
 	dots := progress && d.IsErrorTerminal()
@@ -25,15 +26,17 @@ func pollRuns(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 		}
 	}
 	for d.Now().Before(deadline) {
-		page, err := api.Runs(ctx, org, query)
-		if err == nil {
-			for _, row := range page.Items {
-				if match(row) {
-					finish()
-					return row, nil
+		for _, query := range queries {
+			page, err := api.Runs(ctx, org, query)
+			if err == nil {
+				for _, row := range page.Items {
+					if match(row) {
+						finish()
+						return row, nil
+					}
 				}
+				continue
 			}
-		} else {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
@@ -49,6 +52,7 @@ func pollRuns(ctx context.Context, d Dependencies, cfg config.Config, api *clien
 				finish()
 				return nil, err
 			}
+			break // retry the whole round after the wait
 		}
 		if dots && !d.Now().Before(tick) {
 			_, _ = fmt.Fprint(d.Err, ".")

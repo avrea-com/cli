@@ -487,3 +487,128 @@ func TestSkillLinkedFileNeedsForce(t *testing.T) {
 		t.Fatal("link replaced", err)
 	}
 }
+
+// A file link from one agent's SKILL.md to the other's is two locations, not
+// one: with --force each is replaced or removed, so neither keeps a stale copy.
+func TestSkillLinkedFileToTheOtherAgentIsSeparate(t *testing.T) {
+	claude, shared := skillTestHome(t)
+	old := "old stub\n<!-- " + skillMarker + ". -->\n"
+	for _, dir := range []string{filepath.Dir(claude), filepath.Dir(shared)} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(shared, []byte(old), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(shared, claude); err != nil {
+		t.Fatal(err)
+	}
+	code, out, stderr := skillTestRun(t, nil, "install", "--force")
+	if code != 0 || strings.Count(out, "\n") != 2 || skillTestRead(t, claude) != skillStub || skillTestRead(t, shared) != skillStub {
+		t.Fatalf("install: code %d out %q stderr %q", code, out, stderr)
+	}
+	if err := os.Remove(claude); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(shared, []byte(old), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(shared, claude); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, stderr = skillTestRun(t, nil, "uninstall", "--force"); code != 0 || strings.Count(out, "Uninstalled") != 2 {
+		t.Fatalf("uninstall: code %d out %q stderr %q", code, out, stderr)
+	}
+	for _, path := range []string{claude, shared} {
+		if _, err := os.Lstat(path); !os.IsNotExist(err) {
+			t.Fatal("left behind", path, err)
+		}
+	}
+}
+
+// A dangling link inside the repository is not an escape; say what it is.
+func TestSkillProjectReportsADanglingLink(t *testing.T) {
+	skillTestHome(t)
+	repo := skillTestRepository(t)
+	if err := os.Symlink(filepath.Join(repo, "missing"), filepath.Join(repo, ".claude")); err != nil {
+		t.Fatal(err)
+	}
+	code, _, stderr := skillTestRun(t, nil, "install", "--project", "--agent", "claude")
+	if code != 1 || strings.Contains(stderr, "outside the repository") || !strings.Contains(stderr, "cannot be resolved") {
+		t.Fatal(code, stderr)
+	}
+}
+
+// --force acts on a linked SKILL.md itself, so the link's target may point back
+// into the repository; the directory holding the link must still be inside.
+func TestSkillProjectForceStaysInsideTheRepository(t *testing.T) {
+	skillTestHome(t)
+	repo := skillTestRepository(t)
+	inside := filepath.Join(repo, "inside.md")
+	if err := os.WriteFile(inside, []byte("mine\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "avrea-cli")
+	if err := os.MkdirAll(outside, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(outside, "SKILL.md")
+	if err := os.Symlink(inside, victim); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, ".claude", "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(repo, ".claude", "skills", "avrea-cli")); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"install", "uninstall"} {
+		code, out, stderr := skillTestRun(t, nil, action, "--project", "--force", "--agent", "claude")
+		if code != 1 || out != "" || !strings.Contains(stderr, "outside the repository") {
+			t.Fatal(action, code, out, stderr)
+		}
+	}
+	if info, err := os.Lstat(victim); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("link outside the repository changed", err)
+	}
+}
+
+// --force promises to replace or remove what is there, including a link to a
+// deleted file and a file that is not text.
+func TestSkillForceHandlesUnreadableSkills(t *testing.T) {
+	claude, _ := skillTestHome(t)
+	if err := os.MkdirAll(filepath.Dir(claude), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for name, plant := range map[string]func() error{
+		"dangling link": func() error { return os.Symlink(filepath.Join(t.TempDir(), "deleted.md"), claude) },
+		"not UTF-8":     func() error { return os.WriteFile(claude, []byte{0xff, 0xfe, '\n'}, 0o600) },
+	} {
+		for _, action := range []string{"install", "uninstall"} {
+			if err := plant(); err != nil {
+				t.Fatal(err)
+			}
+			if code, _, stderr := skillTestRun(t, nil, action, "--agent", "claude"); code != 1 || !strings.Contains(stderr, "--force") && !strings.Contains(stderr, "UTF-8") {
+				t.Fatal(name, action, "without --force", code, stderr)
+			}
+			code, out, stderr := skillTestRun(t, nil, action, "--agent", "claude", "--force")
+			if code != 0 {
+				t.Fatal(name, action, code, stderr)
+			}
+			if action == "install" {
+				if !strings.HasPrefix(out, "Updated") || skillTestRead(t, claude) != skillStub {
+					t.Fatal(name, "not replaced", out)
+				}
+				if err := os.Remove(claude); err != nil {
+					t.Fatal(err)
+				}
+			} else if _, err := os.Lstat(claude); !os.IsNotExist(err) || !strings.HasPrefix(out, "Uninstalled") {
+				t.Fatal(name, "not removed", out, err)
+			}
+		}
+		if err := os.MkdirAll(filepath.Dir(claude), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

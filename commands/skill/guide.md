@@ -43,7 +43,8 @@ avr config list
 - On a server error (5xx) or a network failure, retry a read once after a few
   seconds; on 429, wait longer. If it fails again, report it. Never repeat a
   command that changes something: the first attempt may have taken effect.
-  Check first (`run list`, `vm list`, `token list`), and report what you find.
+  Check first (`avr run list`, `avr vm list`, `avr token list`), and report
+  what you find.
 - Off a terminal, list commands print tab-separated rows. For exact values use
   `--json FIELDS` with the built-in `--jq`; `--json '?'` lists the fields.
 
