@@ -13,6 +13,10 @@ import argparse
 import json
 import subprocess
 import tempfile
+import time
+
+DRAFT_LOOKUP_ATTEMPTS = 7
+DRAFT_LOOKUP_DELAY_SECONDS = 5
 
 
 def gh(*args):
@@ -26,7 +30,7 @@ def verify_pypi(files, published):
             raise ValueError("PyPI already contains different artifacts for this version; refusing to resume")
 
 
-def prepare(directory, tag):
+def prepare(directory, tag, sleep=time.sleep):
     version = (directory / "avr-version.txt").read_text().strip()
     if tag != "v" + version:
         raise ValueError("Release tag must match tested artifact version")
@@ -39,7 +43,13 @@ def prepare(directory, tag):
     release = find_release()
     if release is None:
         gh("release", "create", tag, "--draft", "--verify-tag", "--title", tag, "--generate-notes")
-        release = find_release()
+        # The release list can lag behind a draft that was just created.
+        for attempt in range(DRAFT_LOOKUP_ATTEMPTS):
+            if attempt:
+                sleep(DRAFT_LOOKUP_DELAY_SECONDS)
+            release = find_release()
+            if release is not None:
+                break
     if release is None:
         raise ValueError("Created release draft could not be found")
     existing = json.loads(gh("api", "repos/{owner}/{repo}/releases/" + str(release["id"])))["assets"]

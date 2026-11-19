@@ -68,3 +68,47 @@ def test_existing_pypi_bytes_must_match(tmp_path):
     for name, checksum in [(wheel.name, "wrong"), ("unexpected.whl", publish.digest(wheel))]:
         with pytest.raises(ValueError, match="different artifacts"):
             publish.verify_pypi([wheel], [{"filename": name, "digests": {"sha256": checksum}}])
+
+
+def lagging_release_list(tmp_path, monkeypatch, stale_lookups):
+    """Fake GitHub whose release list omits a new draft for `stale_lookups` reads."""
+    (tmp_path / "avr-version.txt").write_text("0.9.0\n")
+    state: dict[str, Any] = {"created": 0, "stale": 0, "uploaded": [], "sleeps": []}
+
+    def gh(*args):
+        if args[0] == "api" and args[-1].endswith("/releases/123"):
+            return json.dumps({"assets": []})
+        if args[0] == "api":
+            if not state["created"]:
+                return json.dumps([[]])
+            if state["stale"] < stale_lookups:
+                state["stale"] += 1
+                return json.dumps([[]])
+            return json.dumps([[{"tag_name": "v0.9.0", "id": 123}]])
+        if args[:2] == ("release", "create"):
+            state["created"] += 1
+        elif args[:2] == ("release", "upload"):
+            state["uploaded"].append(Path(args[3]).name)
+        else:
+            pytest.fail(f"unexpected mutation: {args}")
+        return ""
+
+    monkeypatch.setattr(publish, "gh", gh)
+    monkeypatch.setattr(publish, "urlopen", lambda *a, **k: io.BytesIO(json.dumps({"urls": []}).encode()))
+    return state
+
+
+def test_new_draft_missing_from_release_list_is_awaited(tmp_path, monkeypatch):
+    state = lagging_release_list(tmp_path, monkeypatch, stale_lookups=2)
+    publish.prepare(tmp_path, "v0.9.0", sleep=state["sleeps"].append)
+    assert state["created"] == 1
+    assert state["uploaded"] == ["avr-version.txt"]
+    assert len(state["sleeps"]) == 2
+
+
+def test_draft_that_never_appears_fails_after_bounded_lookups(tmp_path, monkeypatch):
+    state = lagging_release_list(tmp_path, monkeypatch, stale_lookups=1000)
+    with pytest.raises(ValueError, match="could not be found"):
+        publish.prepare(tmp_path, "v0.9.0", sleep=state["sleeps"].append)
+    assert state["created"] == 1 and not state["uploaded"]
+    assert 0 < len(state["sleeps"]) < 100
