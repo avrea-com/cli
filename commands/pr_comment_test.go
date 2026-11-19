@@ -304,7 +304,7 @@ func TestPRCommentBodyLimitBoundaries(t *testing.T) {
 			if tc.inline {
 				args = append(args, inline...)
 			}
-			if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "avr auth login") {
+			if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "avr auth device-login") {
 				t.Fatalf("code=%d stderr=%q", code, stderr)
 			}
 		})

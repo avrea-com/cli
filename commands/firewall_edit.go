@@ -31,7 +31,7 @@ func newFirewallEdit(d Dependencies) *cobra.Command {
 		body := map[string]any{}
 		changed := cmd.Flags().Changed
 		if changed("action") {
-			if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
+			if err := validateChoice("action", action, []string{"allow", "deny"}); err != nil {
 				return err
 			}
 			body["action"] = action
@@ -54,7 +54,7 @@ func newFirewallEdit(d Dependencies) *cobra.Command {
 			body["cidr"] = nil
 		}
 		if changed("proto") {
-			if err := validateFirewallChoice("proto", protocol, []string{"tcp", "udp", "icmp", "any"}); err != nil {
+			if err := validateChoice("proto", protocol, []string{"tcp", "udp", "icmp", "any"}); err != nil {
 				return err
 			}
 			body["protocol"] = protocol

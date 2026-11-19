@@ -7,7 +7,9 @@ avr-service-token \- Create and manage the organization's service tokens.
 .SH DESCRIPTION
 Create and manage the organization's service tokens.
 .PP
-A service token (avt_...) belongs to a group of one organization rather than to a person, and keeps working when its creator leaves. It reads only the repositories and egress firewall rules its access names. Organization admins manage service tokens while signed in with `avr auth login`; a scoped or service token cannot. To use a service token, set AVR_TOKEN to its secret.
+A service token (avt_...) belongs to a group of one organization rather than to a person, and keeps working when its creator leaves. It reads only the repositories and egress firewall rules its access names. Organization admins manage service tokens while signed in (avr auth device-login or avr auth login); a scoped or service token cannot.
+.PP
+To use a service token, set AVR_TOKEN to its secret. Its organization applies automatically; set AVR_ORG to the org-... ID in loops to save a request per command, since a service token has 60 requests per minute. Commands that need a person, such as avr feedback, refuse it, and avr auth logout does not revoke it: unset AVR_TOKEN instead. After a suspected leak, revoke-all revokes every service token of the organization.
 .SH COMMANDS
 .TP
 create
@@ -48,6 +50,7 @@ Show a service token's details, versions and grants.
 .BR avr-group (1),
 .BR avr-config (1),
 .BR avr-settings (1),
+.BR avr-skill (1),
 .BR avr-firewall (1),
 .BR avr-billing (1),
 .BR avr-audit-events (1),

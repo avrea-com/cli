@@ -218,12 +218,6 @@ func firewallAction(c *cobra.Command, action *string) {
 	c.Flags().StringVar(action, "action", "", "Rule action: allow or deny.")
 	_ = c.MarkFlagRequired("action")
 }
-func validateFirewallChoice(flag, value string, choices []string) error {
-	if slices.Contains(choices, value) {
-		return nil
-	}
-	return &ExitError{2, "Error: Invalid value for '--" + flag + "': " + pythonQuote(output.CellText(value)) + " is not one of " + strings.Join(choices, ", ")}
-}
 func newFirewallAdd(d Dependencies) *cobra.Command {
 	var org, repo, action, cidr, fqdn, protocol, ports string
 	var anyMatcher bool
@@ -238,10 +232,10 @@ func newFirewallAdd(d Dependencies) *cobra.Command {
 	c.Flags().StringVar(&ports, "ports", "", "Port or port range.")
 	c.Flags().IntVar(&position, "position", 0, "Insert at a specific 0-indexed position.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
+		if err := validateChoice("action", action, []string{"allow", "deny"}); err != nil {
 			return err
 		}
-		if err := validateFirewallChoice("proto", protocol, []string{"tcp", "udp", "icmp", "any"}); err != nil {
+		if err := validateChoice("proto", protocol, []string{"tcp", "udp", "icmp", "any"}); err != nil {
 			return err
 		}
 		targets := 0
@@ -381,7 +375,7 @@ func newFirewallDefault(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --inherit requires --repo."}
 		}
 		if !inherit {
-			if err := validateFirewallChoice("action", action, []string{"allow", "deny"}); err != nil {
+			if err := validateChoice("action", action, []string{"allow", "deny"}); err != nil {
 				return err
 			}
 		}

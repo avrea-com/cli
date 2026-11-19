@@ -67,7 +67,7 @@ func TestAPICommandAuthentication(t *testing.T) {
 	d, out, stderr := testDeps(t)
 	d.HTTP = srv.Client()
 	d.LoadConfig = func() (config.Config, error) { return config.Config{Host: srv.URL}, nil }
-	if code := Execute(t.Context(), []string{"api", "x"}, d); code != 4 || len(seen) != 0 || !strings.Contains(stderr.String(), "avr auth login") {
+	if code := Execute(t.Context(), []string{"api", "x"}, d); code != 4 || len(seen) != 0 || !strings.Contains(stderr.String(), "avr auth device-login") {
 		t.Fatalf("code %d requests %q stdout %q stderr %q", code, seen, out, stderr)
 	}
 	stderr.Reset()

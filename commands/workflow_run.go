@@ -184,8 +184,8 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		links := linksEnabled(cmd, d)
-		if response["platform_run_id"] != nil {
-			runID := fieldText(response, "platform_run_id")
+		runID := fieldText(response, "platform_run_id")
+		if runID != "" {
 			label := d.paint(output.CellText(runID), "96;1")
 			if links {
 				fullName := ""
@@ -211,13 +211,27 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		_, _ = fmt.Fprintln(d.Err, d.errorPaint("Waiting for run to appear in Avrea...", "2"))
-		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, platform, dispatched)
+		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, dispatchTarget{at: dispatched, workflow: platform, file: filename, ref: ref, runID: runID})
 		if err != nil {
 			return err
 		}
 		if row == nil {
-			_, err = fmt.Fprintln(d.Err, d.errorPaint("  Avrea hasn't ingested the run yet after 90s. Re-run with `avr run watch <run-id>` once `avr run list --repo "+output.CellText(hintRepo)+string(rune(96))+" shows it.", "2"))
+			// --org keeps the suggestions on the organization this dispatch used.
+			orgArg := " --org " + output.CellText(orgSlug(cmd.Context(), cfg, api, orgID))
+			resume := "avr run watch <run-id>" + orgArg
+			if runID != "" {
+				resume = "avr run watch " + runID + orgArg
+			}
+			message := "Avrea has not recorded the run 90 seconds after the dispatch. Once `avr run list --repo " + output.CellText(hintRepo) + orgArg + "` shows it, follow it with `" + resume + "`."
+			if exitStatus {
+				// The exit code reports the dispatched run, which was never seen.
+				return &ExitError{1, "Error: " + message}
+			}
+			_, err = fmt.Fprintln(d.Err, d.errorPaint("  "+message, "2"))
 			return err
+		}
+		if runID == "" {
+			_, _ = fmt.Fprintln(d.Err, d.errorPaint("  GitHub returned no run ID; following the newest workflow_dispatch run of this workflow on "+output.CellText(ref)+", which a concurrent dispatch could also have started.", "2"))
 		}
 		return watchDispatchedWorkflow(cmd, d, cfg, api, orgID, fieldText(row, "run_id"), interval, exitStatus)
 	})
@@ -237,56 +251,54 @@ func watchDispatchedWorkflow(cmd *cobra.Command, d Dependencies, cfg config.Conf
 	return watchRun(cmd.Context(), d, cfg, api, orgID, runID, time.Duration(interval)*time.Second, exitStatus, false, slug)
 }
 
-func dispatchMatches(row map[string]any, dispatched time.Time, platform string) bool {
-	created, err := time.Parse(time.RFC3339Nano, fieldText(row, "created_at"))
-	if err != nil || created.Before(dispatched.Add(-5*time.Second)) {
-		return false
-	}
-	return platform == "" || fieldText(row, "platform_workflow_id") == platform
+// dispatchTarget identifies the run a GitHub dispatch started. GitHub returns
+// the run ID for most dispatches; without it, the closest match is a
+// workflow_dispatch run of the same workflow on the dispatched ref, created
+// after the dispatch. The workflow is its GitHub ID when known, otherwise its
+// file name. A run records its branch or tag by short name, whichever form
+// --ref used.
+type dispatchTarget struct {
+	at                         time.Time
+	workflow, file, ref, runID string
 }
 
-func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo, platform string, dispatched time.Time) (map[string]any, error) {
-	deadline := d.Now().Add(90 * time.Second)
-	tick := d.Now().Add(5 * time.Second)
-	finish := func() {
-		if d.IsErrorTerminal() {
-			_, _ = fmt.Fprintln(d.Err)
-		}
+func dispatchMatches(row map[string]any, target dispatchTarget) bool {
+	// Avrea CI runs share the repository's run list. A row without
+	// ci_provider is GitHub Actions, as everywhere else in the CLI.
+	if runCIProvider(row) != "github_actions" {
+		return false
 	}
-	for d.Now().Before(deadline) {
-		page, err := api.Runs(ctx, org, url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}})
-		if err == nil {
-			for _, row := range page.Items {
-				if dispatchMatches(row, dispatched, platform) {
-					finish()
-					return row, nil
-				}
-			}
-		} else {
-			if ctx.Err() != nil {
-				return nil, ctx.Err()
-			}
-			var httpErr *client.HTTPError
-			if errors.As(err, &httpErr) {
-				if httpErr.Status < 500 && httpErr.Status != 429 {
-					finish()
-					return nil, apiError(cfg, err, "poll for dispatched run")
-				}
-			} else {
-				var transport *client.TransportError
-				if !errors.As(err, &transport) {
-					return nil, err
-				}
-			}
-		}
-		if d.IsErrorTerminal() && !d.Now().Before(tick) {
-			_, _ = fmt.Fprint(d.Err, ".")
-			tick = d.Now().Add(5 * time.Second)
-		}
-		if err := d.Wait(ctx, time.Second); err != nil {
-			return nil, err
-		}
+	if target.runID != "" {
+		return fieldText(row, "platform_run_id") == target.runID
 	}
-	finish()
-	return nil, nil
+	if fieldText(row, "event") != "workflow_dispatch" {
+		return false
+	}
+	created, err := time.Parse(time.RFC3339Nano, fieldText(row, "created_at"))
+	if err != nil || created.Before(target.at.Add(-5*time.Second)) {
+		return false
+	}
+	ref := strings.TrimPrefix(strings.TrimPrefix(target.ref, "refs/heads/"), "refs/tags/")
+	if fieldText(row, "head_branch") != ref {
+		return false
+	}
+	if target.workflow != "" {
+		return fieldText(row, "platform_workflow_id") == target.workflow
+	}
+	return path.Base(fieldText(row, "workflow_path")) == path.Base(target.file)
+}
+
+func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo string, target dispatchTarget) (map[string]any, error) {
+	page := url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}}
+	queries := []url.Values{page}
+	if target.runID != "" {
+		// The exact lookup finds the run however busy the repository is, but
+		// covers only GitHub.com runs; a run from a registered GitHub host is
+		// still found on the repository's newest page.
+		byID := url.Values{"repository_ids": {repo}, "platform_run_id": {target.runID}, "limit": {"10"}, "order": {"created_at.desc"}}
+		queries = []url.Values{byID, page}
+	}
+	return pollRuns(ctx, d, cfg, api, org, queries, 90*time.Second, "poll for dispatched run", true, func(row map[string]any) bool {
+		return dispatchMatches(row, target)
+	})
 }

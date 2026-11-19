@@ -42,6 +42,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr group`](./group/) — View the organization's groups.
 - [`avr config`](./config/) — View and manage CLI configuration.
 - [`avr settings`](./settings/) — View and toggle cache and runner settings.
+- [`avr skill`](./skill/) — Teach coding agents to use avr.
 - [`avr firewall`](./firewall/) — Manage the egress firewall rule list for orgs and repositories.
 - [`avr billing`](./billing/) — Manage billing, invoices, and payment methods.
 - [`avr audit-events`](./audit-events/) — View audit events for organization writes.

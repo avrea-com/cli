@@ -10,7 +10,7 @@ avr group [OPTIONS] COMMAND [ARGS]...
 ```
 
 Each service token belongs to one of these groups. Organization members
-list them while signed in with `avr auth login`; a scoped or service
+list them while signed in (avr auth device-login or avr auth login); a scoped or service
 token cannot.
 
 ## Subcommands

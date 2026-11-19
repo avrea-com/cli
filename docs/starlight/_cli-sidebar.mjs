@@ -33,6 +33,7 @@ export default {
         { label: "avr group", slug: "cli/reference/group" },
         { label: "avr config", slug: "cli/reference/config" },
         { label: "avr settings", slug: "cli/reference/settings" },
+        { label: "avr skill", slug: "cli/reference/skill" },
         { label: "avr firewall", slug: "cli/reference/firewall" },
         { label: "avr billing", slug: "cli/reference/billing" },
         { label: "avr audit-events", slug: "cli/reference/audit-events" },

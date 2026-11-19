@@ -34,7 +34,7 @@ func groupDescription(path string) docgen.Description {
 			Help: "View the organization's groups.\n" +
 				"\n" +
 				"Each service token belongs to one of these groups. Organization members\n" +
-				"list them while signed in with `avr auth login`; a scoped or service\n" +
+				"list them while signed in (avr auth device-login or avr auth login); a scoped or service\n" +
 				"token cannot.\n",
 			Short:    "View the organization's groups.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},

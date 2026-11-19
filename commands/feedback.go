@@ -27,7 +27,7 @@ func NewFeedback(deps Dependencies) *cobra.Command {
 	c := &cobra.Command{
 		SuggestionsMinimumDistance: 2,
 		Use:                        "feedback [MESSAGE]", Short: "Send feedback or report a bug.", Args: cobra.MaximumNArgs(1),
-		Long: "Send MESSAGE to the Avrea team. Sign in with avr auth login first.\n\n" +
+		Long: "Send MESSAGE to the Avrea team. Sign in with avr auth device-login or avr auth login\nfirst.\n\n" +
 			"Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an\n" +
 			"organization. Without --org, feedback is personal, regardless of your default\n" +
 			"organization. Contact details come from your account.\n\n" +

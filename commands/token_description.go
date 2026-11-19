@@ -14,6 +14,16 @@ func tokenDescription(path string) docgen.Description {
 				"read-only and VM grants are admin; an optional level suffix\n" +
 				"(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n" +
 				"\n" +
+				"The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped\n" +
+				"token needs the org-... ID in AVR_ORG or --org, ignores the stored\n" +
+				"organization and cannot create further tokens. Pass run IDs rather than\n" +
+				"console URLs, whose organization slug a scoped token cannot resolve.\n" +
+				"If the request is\n" +
+				"interrupted or the server answers with a 5xx error, a token may already\n" +
+				"exist: check avr token list before retrying. A 404 names its reason;\n" +
+				"if scoped tokens are not enabled for the organization, contact\n" +
+				"support@avrea.com.\n" +
+				"\n" +
 				"\b\n" +
 				"Examples:\n" +
 				"    avr token create --name ci-read --repo acme/api --repo acme/web\n" +

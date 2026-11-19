@@ -462,7 +462,7 @@ func TestAPIErrorAsksForARecentSignInOnAnyRoute(t *testing.T) {
 	var exit *ExitError
 	if err := apiError(config.Config{Host: config.DefaultHost}, he, "change the setting"); !errors.As(err, &exit) || exit.Code != 4 ||
 		!strings.Contains(exit.Message, "Avrea needs a recent sign-in to change the setting (HTTP 403): Sign in again to continue") ||
-		!strings.Contains(exit.Message, "Run \x60avr auth login\x60 again") || strings.Contains(exit.Message, "You don't have access") {
+		!strings.Contains(exit.Message, "Sign in again with \x60avr auth device-login\x60 or \x60avr auth login\x60") || strings.Contains(exit.Message, "You don't have access") {
 		t.Fatal(err)
 	}
 }

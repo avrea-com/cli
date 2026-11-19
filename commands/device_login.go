@@ -29,7 +29,7 @@ var deviceAccessToken = lazyRegexp(`^avk_[A-Za-z0-9_-]{43}$`)
 func NewDeviceLogin(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	var noQR bool
-	cmd := &cobra.Command{Use: "device-login", Short: "Sign in from a remote machine using a browser on any device.", Args: cobra.NoArgs}
+	cmd := &cobra.Command{Use: "device-login", Short: "Sign in by approving this machine from any device.", Args: cobra.NoArgs}
 	cmd.Flags().BoolVar(&noQR, "no-qr", false, "Hide the terminal QR code; still display the sign-in link.")
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		cfg, store, api, err := d.load()

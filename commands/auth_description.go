@@ -7,14 +7,15 @@ func authDescription(path string) docgen.Description {
 	switch path {
 	case "avr auth device-login":
 		return docgen.Description{
-			Help: "Sign in from a remote machine using a browser on any device.\n" +
+			Help: "Sign in by approving this machine from a browser on any device.\n" +
 				"\n" +
-				"Open the displayed link or scan the QR code, confirm the code, and approve\n" +
-				"access. The CLI waits for approval and saves your credentials. No browser\n" +
-				"is opened on this machine. QR codes appear only in compatible terminals\n" +
-				"wide enough to display them. Requires device-login support on the server.\n",
-			Short:          "Sign in from a remote machine using a browser on any device.",
-			CompletionHelp: "Sign in from a remote machine using a...",
+				"Works anywhere: a laptop, an SSH session, a VM, a container or a coding\n" +
+				"agent's terminal. Open the displayed link or scan the QR code, confirm\n" +
+				"the code, and approve access. The CLI waits for approval and saves your\n" +
+				"credentials. No browser is opened on this machine. QR codes appear only\n" +
+				"in compatible terminals wide enough to display them.\n",
+			Short:          "Sign in by approving this machine from any device.",
+			CompletionHelp: "Sign in by approving this machine from...",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "no_qr", Kind: "option", Opts: []string{"--no-qr"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Hide the terminal QR code; still display the sign-in link.")}, CompletionKind: "Bool"},
 			},
@@ -32,7 +33,10 @@ func authDescription(path string) docgen.Description {
 		}
 	case "avr auth login":
 		return docgen.Description{
-			Help:           "Authenticate via browser and store credentials.",
+			Help: "Authenticate via a browser on this machine and store credentials.\n" +
+				"\n" +
+				"Without a local browser, as over SSH or in a coding agent, use\n" +
+				"avr auth device-login.\n",
 			Short:          "Authenticate via browser and store credentials.",
 			CompletionHelp: "Authenticate via browser and store...",
 			Parameters: []docgen.Parameter{
@@ -79,7 +83,7 @@ func authDescription(path string) docgen.Description {
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,
 			Commands: []docgen.HelpCommand{
-				{Name: "device-login", Description: "Sign in from a remote machine using a browser on any device.", AutoShort: true},
+				{Name: "device-login", Description: "Sign in by approving this machine from any device.", AutoShort: true},
 				{Name: "login", Description: "Authenticate via browser and store credentials.", AutoShort: true},
 				{Name: "logout", Description: "Revoke the current API key and remove stored credentials.", AutoShort: true},
 				{Name: "status", Description: "Display the authenticated user and connection state.", AutoShort: true},

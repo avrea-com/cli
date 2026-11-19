@@ -22,6 +22,8 @@ var versionPattern = regexp.MustCompile(`^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0
 
 type Checker struct {
 	Version string
+	// GoInstall selects the `go install` upgrade instruction.
+	GoInstall bool
 	// Overrides are for isolated tests. Production always uses the public feed.
 	cachePath  string
 	endpoint   string
@@ -34,8 +36,6 @@ type cache struct {
 	Checked time.Time `json:"checked"`
 	Latest  string    `json:"latest"`
 }
-
-func New(version string) Checker { return Checker{Version: version} }
 
 // Start does no filesystem or network work on the command goroutine. The
 // invocation may finish before a check does; the caller never joins this worker.
@@ -90,7 +90,7 @@ func (c Checker) check(ctx context.Context) string {
 	if resolved, err := filepath.EvalSymlinks(executable); err == nil {
 		executable = resolved
 	}
-	return fmt.Sprintf("A new version of avr is available: %s → %s. %s", c.Version, saved.Latest, instruction(executable))
+	return fmt.Sprintf("A new version of avr is available: %s → %s. %s", c.Version, saved.Latest, instruction(executable, c.GoInstall))
 }
 
 func (c Checker) latest(ctx context.Context) string {
@@ -168,9 +168,11 @@ func newer(latest, current string) bool {
 	return b[4] != ""
 }
 
-func instruction(executable string) string {
+func instruction(executable string, goInstall bool) string {
 	path := strings.ToLower(filepath.ToSlash(executable))
 	switch {
+	case goInstall:
+		return "Run: go install github.com/avrea-com/cli/cmd/avr@latest"
 	case strings.Contains(path, "/cellar/avr/") || strings.Contains(path, "/linuxbrew/"):
 		return "Run: brew upgrade avr"
 	case strings.Contains(path, "/mise/installs/"):

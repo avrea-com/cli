@@ -58,6 +58,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr group`](#avr-group) — View the organization's groups.
 - [`avr config`](#avr-config) — View and manage CLI configuration.
 - [`avr settings`](#avr-settings) — View and toggle cache and runner settings.
+- [`avr skill`](#avr-skill) — Teach coding agents to use avr.
 - [`avr firewall`](#avr-firewall) — Manage the egress firewall rule list for orgs and repositories.
 - [`avr billing`](#avr-billing) — Manage billing, invoices, and payment methods.
 - [`avr audit-events`](#avr-audit-events) — View audit events for organization writes.
@@ -1270,6 +1271,11 @@ invocation with its resolved ref, inputs and --idempotency-key.
 --no-watch prints the accepted ref and commit plus a command to resume
 following a pending native dispatch.
 
+For GitHub Actions, --watch follows the run GitHub returned for the
+dispatch, or else the newest workflow_dispatch run of the workflow on
+the dispatched ref. With --exit-status, a run that does not appear
+within 90 seconds exits 1.
+
 ```sh
 Examples:
     avr workflow run build.yml
@@ -1808,16 +1814,19 @@ avr auth [OPTIONS] COMMAND [ARGS]...
 
 #### `avr auth device-login`
 
-Sign in from a remote machine using a browser on any device.
+Sign in by approving this machine from any device.
 
 ```sh
 avr auth device-login [OPTIONS]
 ```
 
-Open the displayed link or scan the QR code, confirm the code, and approve
-access. The CLI waits for approval and saves your credentials. No browser
-is opened on this machine. QR codes appear only in compatible terminals
-wide enough to display them. Requires device-login support on the server.
+Sign in by approving this machine from a browser on any device.
+
+Works anywhere: a laptop, an SSH session, a VM, a container or a coding
+agent's terminal. Open the displayed link or scan the QR code, confirm
+the code, and approve access. The CLI waits for approval and saves your
+credentials. No browser is opened on this machine. QR codes appear only
+in compatible terminals wide enough to display them.
 
 **Options**
 
@@ -1830,6 +1839,11 @@ Authenticate via browser and store credentials.
 ```sh
 avr auth login [OPTIONS]
 ```
+
+Authenticate via a browser on this machine and store credentials.
+
+Without a local browser, as over SSH or in a coding agent, use
+avr auth device-login.
 
 **Options**
 
@@ -1901,6 +1915,16 @@ The credential is shown once and cannot be retrieved later. A token needs
 at least one of --repo, --vm or --allow-vm-create. Repository grants are
 read-only and VM grants are admin; an optional level suffix
 (--repo acme/api:read, --vm cvm-abc123:admin) must name that level.
+
+The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped
+token needs the org-... ID in AVR_ORG or --org, ignores the stored
+organization and cannot create further tokens. Pass run IDs rather than
+console URLs, whose organization slug a scoped token cannot resolve.
+If the request is
+interrupted or the server answers with a 5xx error, a token may already
+exist: check avr token list before retrying. A 404 names its reason;
+if scoped tokens are not enabled for the organization, contact
+support@avrea.com.
 
 ```sh
 Examples:
@@ -2031,9 +2055,16 @@ avr service-token [OPTIONS] COMMAND [ARGS]...
 A service token (avt_...) belongs to a group of one organization rather
 than to a person, and keeps working when its creator leaves. It reads
 only the repositories and egress firewall rules its access names.
-Organization admins manage service tokens while signed in with
-`avr auth login`; a scoped or service token cannot. To use a service
-token, set AVR_TOKEN to its secret.
+Organization admins manage service tokens while signed in (avr auth
+device-login or avr auth login); a scoped or service token cannot.
+
+To use a service token, set AVR_TOKEN to its secret. Its organization
+applies automatically; set AVR_ORG to the org-... ID in loops to save a
+request per command, since a service token has 60 requests per minute.
+Commands that need a person, such as avr feedback, refuse it, and avr
+auth logout does not revoke it: unset AVR_TOKEN instead. After a
+suspected leak, revoke-all revokes every service token of the
+organization.
 
 #### `avr service-token create`
 
@@ -2049,7 +2080,7 @@ every grant is a read and must be within your own access now. The
 secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
 The API may ask for a recent sign-in; the command then exits 4 and says
-to run `avr auth login` again.
+to sign in again.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
 such as Acme/Platform/CI. Names compare without case. A value equal to
@@ -2194,7 +2225,7 @@ the overlap, never past the expiry of either secret, so pipelines can
 switch without a gap. Rotating again inside the overlap retires the old
 secret at once; run from a terminal, the command asks first unless --yes
 is given. The API may ask for a recent sign-in; the command then exits 4
-and says to run `avr auth login` again.
+and says to sign in again.
 
 With --json, the selection must include the token field, because the
 secret cannot be read again. If a --jq filter fails or drops the
@@ -2243,7 +2274,7 @@ leave out is removed, so repeat the ones to keep. The command reads the
 token first and the change fails if the token changes in between. A
 grant that widens its access must be within your own access now. The
 API may ask for a recent sign-in; the command then exits 4 and says to
-run `avr auth login` again. The change applies to the token's next
+sign in again. The change applies to the token's next
 request.
 
 ```sh
@@ -2308,7 +2339,7 @@ avr group [OPTIONS] COMMAND [ARGS]...
 ```
 
 Each service token belongs to one of these groups. Organization members
-list them while signed in with `avr auth login`; a scoped or service
+list them while signed in (avr auth device-login or avr auth login); a scoped or service
 token cannot.
 
 #### `avr group list`
@@ -2553,6 +2584,85 @@ Examples:
 
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified.
 - `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx). Auto-detected from git unless --org given.
+
+### `avr skill`
+
+Teach coding agents to use avr.
+
+```sh
+avr skill [OPTIONS] COMMAND [ARGS]...
+```
+
+The skill follows the open Agent Skills format. It tells an agent when
+avr is relevant and points it at avr skill show, so the guidance always
+matches the installed avr. Claude Code reads it from .claude/skills;
+Codex, OpenCode, Pi, Devin and other Agent Skills tools read it from
+.agents/skills. For an agent that reads neither, add a line to its
+instructions that says to run avr skill show before working with
+Avrea CI.
+
+#### `avr skill install`
+
+Install the avr skill for coding agents.
+
+```sh
+avr skill install [OPTIONS]
+```
+
+Writes one SKILL.md per location: ~/.claude/skills/avrea-cli for
+Claude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli
+for Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without
+--agent, both are installed; codex is accepted for agents. Running it
+again updates the file. A SKILL.md that avr did not install is left
+alone unless --force is given.
+
+With --project, the skill goes into .claude/skills and .agents/skills
+at the top of the current git repository instead. Commit it so cloud
+agents working on the repository, such as Devin or Codex cloud, find it.
+Those environments also need avr installed and AVR_TOKEN set to a scoped
+or service token.
+
+```sh
+Examples:
+    avr skill install
+    avr skill install --agent claude
+    avr skill install --project --agent agents
+```
+
+**Options**
+
+- `--agent <CHOICE>` — Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- `--project` — Use the current git repository instead of your home directory.
+- `--force` — Replace a skill that avr did not install.
+
+#### `avr skill show`
+
+Print the avr guide for coding agents.
+
+```sh
+avr skill show [OPTIONS]
+```
+
+The guide covers testing a change in CI, diagnosing failed or slow runs,
+structured output and on-demand VMs for the installed avr version.
+
+#### `avr skill uninstall`
+
+Remove the installed avr skill.
+
+```sh
+avr skill uninstall [OPTIONS]
+```
+
+Without --agent, the skill is removed from both locations. With
+--project, it is removed from the current git repository. Other files
+in the skill directory are kept.
+
+**Options**
+
+- `--agent <CHOICE>` — Location to uninstall from (repeatable): claude or agents. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- `--project` — Use the current git repository instead of your home directory.
+- `--force` — Remove a skill that avr did not install.
 
 ### `avr firewall`
 
@@ -4217,7 +4327,8 @@ Send feedback or report a bug.
 avr feedback [OPTIONS] MESSAGE | status FEEDBACK_ID
 ```
 
-Send MESSAGE to the Avrea team. Sign in with avr auth login first.
+Send MESSAGE to the Avrea team. Sign in with avr auth device-login or avr auth login
+first.
 
 Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an
 organization. Without --org, feedback is personal, regardless of your default
