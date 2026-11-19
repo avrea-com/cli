@@ -64,6 +64,10 @@ invocation with its resolved ref, inputs and --idempotency-key.
 --no-watch prints the accepted ref and commit plus a command to resume
 following a pending native dispatch.
 
+For GitHub Actions, --watch follows the run GitHub returned for the
+dispatch, or else the next run of the workflow on --ref. With
+--exit-status, a run that does not appear within 90 seconds exits 1.
+
 ```sh
 Examples:
     avr workflow run build.yml

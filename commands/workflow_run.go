@@ -184,8 +184,8 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		links := linksEnabled(cmd, d)
-		if response["platform_run_id"] != nil {
-			runID := fieldText(response, "platform_run_id")
+		runID := fieldText(response, "platform_run_id")
+		if runID != "" {
 			label := d.paint(output.CellText(runID), "96;1")
 			if links {
 				fullName := ""
@@ -211,12 +211,17 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		_, _ = fmt.Fprintln(d.Err, d.errorPaint("Waiting for run to appear in Avrea...", "2"))
-		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, platform, dispatched)
+		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, dispatchTarget{at: dispatched, workflow: platform, ref: ref, runID: runID})
 		if err != nil {
 			return err
 		}
 		if row == nil {
-			_, err = fmt.Fprintln(d.Err, d.errorPaint("  Avrea hasn't ingested the run yet after 90s. Re-run with `avr run watch <run-id>` once `avr run list --repo "+output.CellText(hintRepo)+string(rune(96))+" shows it.", "2"))
+			message := "  Avrea hasn't ingested the run yet after 90s. Re-run with `avr run watch <run-id>` once `avr run list --repo " + output.CellText(hintRepo) + string(rune(96)) + " shows it."
+			if exitStatus {
+				// The exit code reports the dispatched run, which was never seen.
+				return &ExitError{1, message}
+			}
+			_, err = fmt.Fprintln(d.Err, d.errorPaint(message, "2"))
 			return err
 		}
 		return watchDispatchedWorkflow(cmd, d, cfg, api, orgID, fieldText(row, "run_id"), interval, exitStatus)
@@ -237,15 +242,29 @@ func watchDispatchedWorkflow(cmd *cobra.Command, d Dependencies, cfg config.Conf
 	return watchRun(cmd.Context(), d, cfg, api, orgID, runID, time.Duration(interval)*time.Second, exitStatus, false, slug)
 }
 
-func dispatchMatches(row map[string]any, dispatched time.Time, platform string) bool {
-	created, err := time.Parse(time.RFC3339Nano, fieldText(row, "created_at"))
-	if err != nil || created.Before(dispatched.Add(-5*time.Second)) {
-		return false
-	}
-	return platform == "" || fieldText(row, "platform_workflow_id") == platform
+// dispatchTarget identifies the run a GitHub dispatch started. GitHub returns
+// the run ID for most dispatches; without it, the closest match is a run of
+// the same workflow on the dispatched ref, created after the dispatch.
+type dispatchTarget struct {
+	at                   time.Time
+	workflow, ref, runID string
 }
 
-func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo, platform string, dispatched time.Time) (map[string]any, error) {
+func dispatchMatches(row map[string]any, target dispatchTarget) bool {
+	if target.runID != "" {
+		return fieldText(row, "platform_run_id") == target.runID
+	}
+	created, err := time.Parse(time.RFC3339Nano, fieldText(row, "created_at"))
+	if err != nil || created.Before(target.at.Add(-5*time.Second)) {
+		return false
+	}
+	if fieldText(row, "head_branch") != target.ref {
+		return false
+	}
+	return target.workflow == "" || fieldText(row, "platform_workflow_id") == target.workflow
+}
+
+func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo string, target dispatchTarget) (map[string]any, error) {
 	deadline := d.Now().Add(90 * time.Second)
 	tick := d.Now().Add(5 * time.Second)
 	finish := func() {
@@ -257,7 +276,7 @@ func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, a
 		page, err := api.Runs(ctx, org, url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}})
 		if err == nil {
 			for _, row := range page.Items {
-				if dispatchMatches(row, dispatched, platform) {
+				if dispatchMatches(row, target) {
 					finish()
 					return row, nil
 				}

@@ -29,8 +29,7 @@ func main() {
 	enableVirtualTerminal(os.Stdout, os.Stderr)
 	commands.IgnoreBrokenPipe()
 	ctx, stop := commands.InterruptContext(context.Background())
-	checker := update.New(version)
-	checker.GoInstall = goInstall
+	checker := update.Checker{Version: version, GoInstall: goInstall}
 	code := commands.Execute(ctx, os.Args[1:], commands.Dependencies{
 		Version:          display,
 		StartUpdateCheck: checker.Start,

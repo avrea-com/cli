@@ -78,19 +78,14 @@ recorded yet or is beyond the page: wait and retry, or continue with
 `--cursor`. Never treat a missing run as a passing one.
 
 For a workflow with a `workflow_dispatch` trigger, on a branch or tag that is
-already pushed, dispatch without watching and then watch the exact run:
+already pushed:
 
 ```sh
-avr workflow run <workflow> --repo owner/name --ref <branch> --no-watch
-avr run watch <github-run-id> --exit-status
+avr workflow run <workflow> --repo owner/name --ref <branch> --watch --exit-status
 ```
 
-For GitHub Actions, use the `GitHub run id` the dispatch prints; the run may
-take a few seconds to appear, so retry `run watch` briefly. If no run ID is
-printed, find the run with `run list --workflow` and `--branch` as above. An
-Avrea CI workflow is different: its dispatch identifies the exact run, so
-`avr workflow run <workflow> --ref <branch> --watch --exit-status` is safe
-there.
+It watches the run the dispatch started and exits 1 if that run does not
+appear within 90 seconds.
 
 ## Diagnose a failed or slow run
 

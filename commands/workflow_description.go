@@ -48,6 +48,10 @@ func workflowDescription(path string) docgen.Description {
 				"--no-watch prints the accepted ref and commit plus a command to resume\n" +
 				"following a pending native dispatch.\n" +
 				"\n" +
+				"For GitHub Actions, --watch follows the run GitHub returned for the\n" +
+				"dispatch, or else the next run of the workflow on --ref. With\n" +
+				"--exit-status, a run that does not appear within 90 seconds exits 1.\n" +
+				"\n" +
 				"\b\n" +
 				"Examples:\n" +
 				"    avr workflow run build.yml\n" +

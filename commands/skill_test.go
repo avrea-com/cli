@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -243,11 +244,16 @@ func TestSkillProjectInstallsAtRepositoryTop(t *testing.T) {
 	if code != 0 || !strings.Contains(out, claude) || !strings.Contains(out, shared) {
 		t.Fatal(code, out, stderr)
 	}
-	// Committed files must be readable by everyone who clones the repository.
 	for _, path := range []string{claude, shared} {
-		info, err := os.Stat(path)
-		if err != nil || info.Mode().Perm() != 0o644 || skillTestRead(t, path) != skillStub {
-			t.Fatal(path, info, err)
+		if skillTestRead(t, path) != skillStub {
+			t.Fatal("unexpected content", path)
+		}
+		// Committed files must be readable by everyone who clones the
+		// repository. Windows has no Unix permission bits to check.
+		if runtime.GOOS != "windows" {
+			if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o644 {
+				t.Fatal(path, info, err)
+			}
 		}
 	}
 	for _, path := range []string{claudeHome, sharedHome} {
