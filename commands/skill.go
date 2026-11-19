@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -68,26 +69,34 @@ func skillProjectRoot(ctx context.Context) (string, error) {
 	return filepath.EvalSymlinks(strings.TrimSpace(string(out)))
 }
 
-// skillWithin refuses a project path that a committed symlink sends outside
-// the repository. The path need not exist yet.
-func skillWithin(root, path string) error {
+// resolveSkillPath resolves the symlinks in a path that need not exist yet:
+// the missing components are appended to the deepest existing ancestor.
+func resolveSkillPath(path string) (string, error) {
 	existing, rest := path, ""
 	for {
-		if _, err := os.Lstat(existing); err == nil {
+		_, err := os.Lstat(existing)
+		if err == nil {
 			break
 		}
+		parent := filepath.Dir(existing)
+		if !errors.Is(err, fs.ErrNotExist) || parent == existing {
+			return "", err
+		}
 		rest = filepath.Join(filepath.Base(existing), rest)
-		existing = filepath.Dir(existing)
+		existing = parent
 	}
 	resolved, err := filepath.EvalSymlinks(existing)
-	if err == nil {
-		var rel string
-		rel, err = filepath.Rel(root, filepath.Join(resolved, rest))
-		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-			return nil
-		}
+	if err != nil {
+		return "", err
 	}
-	return &ExitError{1, "Error: " + path + " leads outside the repository through a symlink."}
+	return filepath.Join(resolved, rest), nil
+}
+
+// skillWithin reports whether a resolved path stays inside the repository,
+// which a committed symlink could otherwise send elsewhere.
+func skillWithin(root, resolved string) bool {
+	rel, err := filepath.Rel(root, resolved)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 // skillRoots holds each agent's configuration directory: in the project when
@@ -107,20 +116,30 @@ func skillRoots(d Dependencies, project string) (map[string]string, error) {
 	return map[string]string{"claude": claude, "agents": filepath.Join(home, ".agents")}, nil
 }
 
+// A target is one SKILL.md. Agents whose locations share a directory through
+// a link name the same file, so a target can serve several agents.
 type skillTarget struct {
-	agent, path string
-	installed   bool
-	content     string
+	labels    []string
+	path      string
+	installed bool
+	content   string
 }
 
-func readSkill(target *skillTarget) error {
-	info, err := os.Stat(target.path)
+func readSkill(target *skillTarget, force bool) error {
+	info, err := os.Lstat(target.path)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return nil
 	case err != nil:
 		return err
-	case !info.Mode().IsRegular():
+	case info.Mode()&os.ModeSymlink != 0 && !force:
+		// Writing replaces the link with a file, so its source would go stale.
+		return &ExitError{1, "Error: " + target.path + " is a symlink. Pass --force to replace or remove it."}
+	}
+	if info, err = os.Stat(target.path); err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
 		return &ExitError{1, "Error: " + target.path + " is not a regular file."}
 	}
 	target.content, err = readTextFile(target.path, "Skill file")
@@ -137,23 +156,26 @@ func skillTargets(d Dependencies, agents []string, project string, force bool) (
 		return nil, err
 	}
 	targets := []skillTarget{}
-	seen := map[string]bool{}
+	byFile := map[string]int{}
 	for _, agent := range agents {
-		if err := validateChoice("agent", agent, skillAgents); err != nil {
+		agent = skillAgent(agent)
+		path := filepath.Join(roots[agent], "skills", skillName, "SKILL.md")
+		resolved, err := resolveSkillPath(path)
+		if project != "" && (err != nil || !skillWithin(project, resolved)) {
+			return nil, &ExitError{1, "Error: " + path + " leads outside the repository through a symlink."}
+		}
+		if err != nil {
 			return nil, err
 		}
-		agent = skillAgent(agent)
-		if seen[agent] {
+		if i, ok := byFile[resolved]; ok {
+			if label := skillAgentLabels[agent]; !slices.Contains(targets[i].labels, label) {
+				targets[i].labels = append(targets[i].labels, label)
+			}
 			continue
 		}
-		seen[agent] = true
-		target := skillTarget{agent: agent, path: filepath.Join(roots[agent], "skills", skillName, "SKILL.md")}
-		if project != "" {
-			if err := skillWithin(project, target.path); err != nil {
-				return nil, err
-			}
-		}
-		if err := readSkill(&target); err != nil {
+		byFile[resolved] = len(targets)
+		target := skillTarget{labels: []string{skillAgentLabels[agent]}, path: path}
+		if err := readSkill(&target, force); err != nil {
 			return nil, err
 		}
 		if target.installed && !force && !skillManaged(target.content) {
@@ -204,6 +226,11 @@ func (o *skillOptions) bind(c *cobra.Command, verb string) {
 // apply resolves and checks every target before act changes any of them, so
 // a refusal leaves all locations untouched. act returns the state to print.
 func (o *skillOptions) apply(ctx context.Context, d Dependencies, act func(skillTarget) (string, error)) error {
+	for _, agent := range o.agents {
+		if err := validateChoice("agent", agent, skillAgents); err != nil {
+			return err
+		}
+	}
 	project := ""
 	if o.project {
 		root, err := skillProjectRoot(ctx)
@@ -221,7 +248,7 @@ func (o *skillOptions) apply(ctx context.Context, d Dependencies, act func(skill
 		if err != nil {
 			return err
 		}
-		if _, err = fmt.Fprintf(d.Out, "%s for %s: %s\n", state, skillAgentLabels[target.agent], target.path); err != nil {
+		if _, err = fmt.Fprintf(d.Out, "%s for %s: %s\n", state, strings.Join(target.labels, " and "), target.path); err != nil {
 			return err
 		}
 	}

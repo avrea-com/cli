@@ -18,8 +18,11 @@ import (
 func TestDispatchMatching(t *testing.T) {
 	now := time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)
 	row := func(created, workflow, branch, runID string) map[string]any {
-		return map[string]any{"created_at": created, "platform_workflow_id": workflow, "head_branch": branch, "platform_run_id": json.Number(runID)}
+		return map[string]any{"created_at": created, "platform_workflow_id": workflow, "workflow_path": ".github/workflows/build.yml", "head_branch": branch, "platform_run_id": json.Number(runID), "event": "workflow_dispatch"}
 	}
+	pushed := row("2026-10-29T12:00:01Z", "42", "main", "1")
+	pushed["event"] = "push"
+	byFile := dispatchTarget{at: now, file: "build.yml", ref: "main"}
 	byTime := dispatchTarget{at: now, workflow: "42", ref: "main"}
 	byRunID := dispatchTarget{at: now, workflow: "42", ref: "main", runID: "900"}
 	for _, test := range []struct {
@@ -31,7 +34,9 @@ func TestDispatchMatching(t *testing.T) {
 		{"same workflow and branch, just after dispatch", row("2026-10-29T11:59:55Z", "42", "main", "1"), byTime, true},
 		{"created before the dispatch", row("2026-10-29T11:59:54Z", "42", "main", "1"), byTime, false},
 		{"another workflow", row("2026-10-29T12:00:01Z", "43", "main", "1"), byTime, false},
-		{"any workflow when unknown", row("2026-10-29T12:00:01Z", "43", "main", "1"), dispatchTarget{at: now, ref: "main"}, true},
+		{"a push to the dispatched ref", pushed, byTime, false},
+		{"same file when the workflow ID is unknown", row("2026-10-29T12:00:01Z", "43", "main", "1"), byFile, true},
+		{"another file when the workflow ID is unknown", row("2026-10-29T12:00:01Z", "43", "main", "1"), dispatchTarget{at: now, file: "deploy.yml", ref: "main"}, false},
 		{"another branch", row("2026-10-29T12:00:01Z", "42", "feat/x", "1"), byTime, false},
 		{"fully qualified branch", row("2026-10-29T12:00:01Z", "42", "main", "1"), dispatchTarget{at: now, workflow: "42", ref: "refs/heads/main"}, true},
 		{"fully qualified tag", row("2026-10-29T12:00:01Z", "42", "v1", "1"), dispatchTarget{at: now, workflow: "42", ref: "refs/tags/v1"}, true},
@@ -52,9 +57,9 @@ func TestDispatchPollingSelectsTheDispatchedRun(t *testing.T) {
 	// The newest page no longer holds the dispatched run on a busy repository;
 	// only a lookup by its run ID finds it.
 	newest := `{"data":[` +
-		`{"run_id":"run-other-branch","created_at":"2026-10-29T12:00:09Z","platform_workflow_id":42,"head_branch":"feat/x","platform_run_id":902},` +
-		`{"run_id":"run-same-branch","created_at":"2026-10-29T12:00:05Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":901}]}`
-	byRunID := map[string]string{"900": `{"data":[{"run_id":"run-dispatched","created_at":"2026-10-29T12:00:03Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":900}]}`}
+		`{"run_id":"run-other-branch","created_at":"2026-10-29T12:00:09Z","platform_workflow_id":42,"head_branch":"feat/x","platform_run_id":902,"event":"workflow_dispatch"},` +
+		`{"run_id":"run-same-branch","created_at":"2026-10-29T12:00:05Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":901,"event":"workflow_dispatch"}]}`
+	byRunID := map[string]string{"900": `{"data":[{"run_id":"run-dispatched","created_at":"2026-10-29T12:00:03Z","platform_workflow_id":42,"head_branch":"main","platform_run_id":900,"event":"workflow_dispatch"}]}`}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if id := r.URL.Query().Get("platform_run_id"); id != "" {
 			_, _ = io.WriteString(w, byRunID[id])
@@ -90,11 +95,12 @@ func TestDispatchPollingSelectsTheDispatchedRun(t *testing.T) {
 // that never appeared cannot report success.
 func TestWorkflowRunExitStatusWhenTheRunNeverAppears(t *testing.T) {
 	for _, test := range []struct {
-		args []string
-		code int
+		args   []string
+		code   int
+		prefix string
 	}{
-		{[]string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main", "--exit-status"}, 1},
-		{[]string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main"}, 0},
+		{[]string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main", "--exit-status"}, 1, "Error: "},
+		{[]string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main"}, 0, "  "},
 	} {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost {
@@ -115,7 +121,8 @@ func TestWorkflowRunExitStatusWhenTheRunNeverAppears(t *testing.T) {
 		}
 		code := Execute(t.Context(), test.args, d)
 		server.Close()
-		if code != test.code || !strings.Contains(stderr.String(), "avr run watch") {
+		// The run ID GitHub returned resumes the watch without scraping stdout.
+		if code != test.code || !strings.Contains(stderr.String(), "\n"+test.prefix+"Avrea has not recorded") || !strings.Contains(stderr.String(), "`avr run watch 900`") {
 			t.Fatalf("%v: code %d stderr %q", test.args, code, stderr)
 		}
 	}

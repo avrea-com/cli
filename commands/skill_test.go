@@ -432,3 +432,58 @@ func TestSkillMarkerMustBeTheLastLine(t *testing.T) {
 		t.Fatal("user skill changed")
 	}
 }
+
+// Sharing one skills directory between agents through a link is common; both
+// agents then name the same file, which must be handled once.
+func TestSkillSharedDirectoryIsHandledOnce(t *testing.T) {
+	claude, shared := skillTestHome(t)
+	if err := os.MkdirAll(filepath.Dir(filepath.Dir(shared)), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(filepath.Dir(filepath.Dir(claude))), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Dir(filepath.Dir(shared)), filepath.Dir(filepath.Dir(claude))); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"install", "uninstall"} {
+		code, out, stderr := skillTestRun(t, nil, action)
+		if code != 0 || strings.Count(out, "\n") != 1 || !strings.Contains(out, "Claude Code and Agent Skills tools") {
+			t.Fatalf("%s: code %d out %q stderr %q", action, code, out, stderr)
+		}
+	}
+}
+
+// A misspelt agent is a usage error wherever the command runs.
+func TestSkillValidatesAgentBeforeLookingForTheRepository(t *testing.T) {
+	skillTestHome(t)
+	t.Chdir(t.TempDir())
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(t.TempDir()))
+	if code, _, stderr := skillTestRun(t, nil, "install", "--project", "--agent", "bogus"); code != 2 || !strings.Contains(stderr, "--agent") {
+		t.Fatal(code, stderr)
+	}
+}
+
+// A SKILL.md linked from elsewhere, such as a dotfiles checkout, would be
+// replaced by a plain file, leaving its source stale.
+func TestSkillLinkedFileNeedsForce(t *testing.T) {
+	claude, _ := skillTestHome(t)
+	source := filepath.Join(t.TempDir(), "SKILL.md")
+	if err := os.WriteFile(source, []byte(skillStub), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(claude), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(source, claude); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"install", "uninstall"} {
+		if code, _, stderr := skillTestRun(t, nil, action, "--agent", "claude"); code != 1 || !strings.Contains(stderr, "symlink") || !strings.Contains(stderr, "--force") {
+			t.Fatal(action, code, stderr)
+		}
+	}
+	if info, err := os.Lstat(claude); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("link replaced", err)
+	}
+}

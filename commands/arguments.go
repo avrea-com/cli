@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/avrea-com/cli/output"
@@ -25,4 +26,12 @@ func positionalArguments(names ...string) cobra.PositionalArgs {
 		}
 		return nil
 	}
+}
+
+// validateChoice reports a flag value outside its closed set as a usage error.
+func validateChoice(flag, value string, choices []string) error {
+	if slices.Contains(choices, value) {
+		return nil
+	}
+	return &ExitError{2, "Error: Invalid value for '--" + flag + "': " + pythonQuote(output.CellText(value)) + " is not one of " + strings.Join(choices, ", ")}
 }

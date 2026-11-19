@@ -231,32 +231,9 @@ func pollRerun(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 	if err != nil {
 		return nil, fmt.Errorf("invalid run attempt in API response")
 	}
-	deadline := d.Now().Add(30 * time.Second)
-	for d.Now().Before(deadline) {
-		page, err := api.Runs(ctx, org, url.Values{"platform_run_id": {platform}, "limit": {"10"}, "order": {"created_at.desc"}})
-		if err == nil {
-			for _, row := range page.Items {
-				next, _ := strconv.ParseInt(fieldText(row, "run_attempt"), 10, 64)
-				if next > current {
-					return row, nil
-				}
-			}
-		} else {
-			if ctx.Err() != nil {
-				return nil, ctx.Err()
-			}
-			var apiErr *client.HTTPError
-			if errors.As(err, &apiErr) && apiErr.Status < 500 && apiErr.Status != 429 {
-				return nil, apiError(cfg, err, "poll for rerun attempt")
-			}
-			var transport *client.TransportError
-			if !errors.As(err, &apiErr) && !errors.As(err, &transport) {
-				return nil, err
-			}
-		}
-		if err := d.Wait(ctx, time.Second); err != nil {
-			return nil, err
-		}
-	}
-	return nil, nil
+	query := url.Values{"platform_run_id": {platform}, "limit": {"10"}, "order": {"created_at.desc"}}
+	return pollRuns(ctx, d, cfg, api, org, query, 30*time.Second, "poll for rerun attempt", false, func(row map[string]any) bool {
+		next, _ := strconv.ParseInt(fieldText(row, "run_attempt"), 10, 64)
+		return next > current
+	})
 }

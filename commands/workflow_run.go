@@ -211,17 +211,21 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			return err
 		}
 		_, _ = fmt.Fprintln(d.Err, d.errorPaint("Waiting for run to appear in Avrea...", "2"))
-		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, dispatchTarget{at: dispatched, workflow: platform, ref: ref, runID: runID})
+		row, err := pollDispatchedRun(cmd.Context(), d, cfg, api, orgID, repoID, dispatchTarget{at: dispatched, workflow: platform, file: filename, ref: ref, runID: runID})
 		if err != nil {
 			return err
 		}
 		if row == nil {
-			message := "  Avrea hasn't ingested the run yet after 90s. Re-run with `avr run watch <run-id>` once `avr run list --repo " + output.CellText(hintRepo) + string(rune(96)) + " shows it."
+			resume := "avr run watch <run-id>"
+			if runID != "" {
+				resume = "avr run watch " + runID
+			}
+			message := "Avrea has not recorded the run 90 seconds after the dispatch. Once `avr run list --repo " + output.CellText(hintRepo) + "` shows it, follow it with `" + resume + "`."
 			if exitStatus {
 				// The exit code reports the dispatched run, which was never seen.
-				return &ExitError{1, message}
+				return &ExitError{1, "Error: " + message}
 			}
-			_, err = fmt.Fprintln(d.Err, d.errorPaint(message, "2"))
+			_, err = fmt.Fprintln(d.Err, d.errorPaint("  "+message, "2"))
 			return err
 		}
 		return watchDispatchedWorkflow(cmd, d, cfg, api, orgID, fieldText(row, "run_id"), interval, exitStatus)
@@ -243,17 +247,22 @@ func watchDispatchedWorkflow(cmd *cobra.Command, d Dependencies, cfg config.Conf
 }
 
 // dispatchTarget identifies the run a GitHub dispatch started. GitHub returns
-// the run ID for most dispatches; without it, the closest match is a run of
-// the same workflow on the dispatched ref, created after the dispatch. A run
-// records its branch or tag by short name, whichever form --ref used.
+// the run ID for most dispatches; without it, the closest match is a
+// workflow_dispatch run of the same workflow on the dispatched ref, created
+// after the dispatch. The workflow is its GitHub ID when known, otherwise its
+// file name. A run records its branch or tag by short name, whichever form
+// --ref used.
 type dispatchTarget struct {
-	at                   time.Time
-	workflow, ref, runID string
+	at                         time.Time
+	workflow, file, ref, runID string
 }
 
 func dispatchMatches(row map[string]any, target dispatchTarget) bool {
 	if target.runID != "" {
 		return fieldText(row, "platform_run_id") == target.runID
+	}
+	if fieldText(row, "event") != "workflow_dispatch" {
+		return false
 	}
 	created, err := time.Parse(time.RFC3339Nano, fieldText(row, "created_at"))
 	if err != nil || created.Before(target.at.Add(-5*time.Second)) {
@@ -263,55 +272,18 @@ func dispatchMatches(row map[string]any, target dispatchTarget) bool {
 	if fieldText(row, "head_branch") != ref {
 		return false
 	}
-	return target.workflow == "" || fieldText(row, "platform_workflow_id") == target.workflow
+	if target.workflow != "" {
+		return fieldText(row, "platform_workflow_id") == target.workflow
+	}
+	return path.Base(fieldText(row, "workflow_path")) == path.Base(target.file)
 }
 
 func pollDispatchedRun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo string, target dispatchTarget) (map[string]any, error) {
-	deadline := d.Now().Add(90 * time.Second)
-	tick := d.Now().Add(5 * time.Second)
-	finish := func() {
-		if d.IsErrorTerminal() {
-			_, _ = fmt.Fprintln(d.Err)
-		}
-	}
 	query := url.Values{"repository_ids": {repo}, "limit": {"100"}, "order": {"created_at.desc"}}
 	if target.runID != "" {
 		query.Set("platform_run_id", target.runID)
 	}
-	for d.Now().Before(deadline) {
-		page, err := api.Runs(ctx, org, query)
-		if err == nil {
-			for _, row := range page.Items {
-				if dispatchMatches(row, target) {
-					finish()
-					return row, nil
-				}
-			}
-		} else {
-			if ctx.Err() != nil {
-				return nil, ctx.Err()
-			}
-			var httpErr *client.HTTPError
-			if errors.As(err, &httpErr) {
-				if httpErr.Status < 500 && httpErr.Status != 429 {
-					finish()
-					return nil, apiError(cfg, err, "poll for dispatched run")
-				}
-			} else {
-				var transport *client.TransportError
-				if !errors.As(err, &transport) {
-					return nil, err
-				}
-			}
-		}
-		if d.IsErrorTerminal() && !d.Now().Before(tick) {
-			_, _ = fmt.Fprint(d.Err, ".")
-			tick = d.Now().Add(5 * time.Second)
-		}
-		if err := d.Wait(ctx, time.Second); err != nil {
-			return nil, err
-		}
-	}
-	finish()
-	return nil, nil
+	return pollRuns(ctx, d, cfg, api, org, query, 90*time.Second, "poll for dispatched run", true, func(row map[string]any) bool {
+		return dispatchMatches(row, target)
+	})
 }

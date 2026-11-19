@@ -2,14 +2,11 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
-	"os"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 func parseVMHTTPSPorts(values []string) ([]int, error) {
@@ -70,22 +67,11 @@ func vmInputFile(raw, flag, kind string) (string, string, error) {
 	if err != nil {
 		return fail(err)
 	}
-	file, err := os.Open(path)
+	text, err := readLimitedText(path)
 	if err != nil {
 		return fail(err)
 	}
-	defer func() { _ = file.Close() }()
-	data, err := io.ReadAll(io.LimitReader(file, (16<<20)+1))
-	if err != nil {
-		return fail(err)
-	}
-	if len(data) > 16<<20 {
-		return fail(errors.New("file exceeds 16 MiB"))
-	}
-	if !utf8.Valid(data) {
-		return fail(errors.New("file is not valid UTF-8"))
-	}
-	return string(data), path, nil
+	return text, path, nil
 }
 func resolveVMSSHKeys(values []string) ([]string, error) {
 	keys := []string{}

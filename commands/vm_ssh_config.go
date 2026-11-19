@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -67,61 +65,6 @@ func vmKnownHostsLine(key, host string, port int) (string, error) {
 	return host + " " + key + "\n", nil
 }
 
-// writeTextAtomic replaces path through a temporary file in the same
-// directory, so a reader sees the old or the new content, never a partial
-// file. The mode is set before the rename. Missing parent directories are
-// created private; existing ones keep their permissions.
-func writeTextAtomic(path, content string, mode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.tmp")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = os.Remove(file.Name()) }()
-	if _, err = io.WriteString(file, content); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err = file.Chmod(mode); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err = file.Sync(); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err = file.Close(); err != nil {
-		return err
-	}
-	return os.Rename(file.Name(), path)
-}
-
-// readTextFile reads at most 16 MiB of UTF-8 text with newlines normalized.
-// A missing file reads as empty. label names the file in errors.
-func readTextFile(path, label string) (string, error) {
-	file, err := os.Open(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = file.Close() }()
-	raw, err := io.ReadAll(io.LimitReader(file, (16<<20)+1))
-	if err != nil {
-		return "", err
-	}
-	if len(raw) > 16<<20 {
-		return "", errors.New(label + " exceeds 16 MiB")
-	}
-	if !utf8.Valid(raw) {
-		return "", errors.New(label + " is not valid UTF-8")
-	}
-	// Python read_text uses universal newline handling.
-	return strings.ReplaceAll(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\r", "\n"), nil
-}
 func vmUpsertKnownHosts(path, line string) error {
 	text, err := readTextFile(path, "SSH file")
 	if err != nil {

@@ -218,12 +218,6 @@ func firewallAction(c *cobra.Command, action *string) {
 	c.Flags().StringVar(action, "action", "", "Rule action: allow or deny.")
 	_ = c.MarkFlagRequired("action")
 }
-func validateChoice(flag, value string, choices []string) error {
-	if slices.Contains(choices, value) {
-		return nil
-	}
-	return &ExitError{2, "Error: Invalid value for '--" + flag + "': " + pythonQuote(output.CellText(value)) + " is not one of " + strings.Join(choices, ", ")}
-}
 func newFirewallAdd(d Dependencies) *cobra.Command {
 	var org, repo, action, cidr, fqdn, protocol, ports string
 	var anyMatcher bool
