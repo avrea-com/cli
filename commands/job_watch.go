@@ -20,8 +20,8 @@ func newJobWatch(d Dependencies) *cobra.Command {
 	var ndjson bool
 	c := &cobra.Command{Use: "watch", Short: "Watch active jobs with auto-refresh.", Args: cobra.NoArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
 	f.StringArrayVar(&names, "name", nil, "Job name (repeatable).")
 	f.IntVar(&interval, "interval", 5, "Refresh interval in seconds.")
 	f.BoolVar(&ndjson, "ndjson", false, "Emit one JSON object per refresh; automatic when piped.")

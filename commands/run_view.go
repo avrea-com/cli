@@ -20,7 +20,7 @@ func newRunView(d Dependencies) *cobra.Command {
 	cmd := &cobra.Command{Use: "view [RUN]", Short: "View a workflow run and its jobs.", Args: cobra.MaximumNArgs(1)}
 	options.flags(cmd)
 	f := cmd.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&jobFilter, "job", "", "Restrict jobs and logs to names containing this text.")
 	f.BoolVar(&steps, "steps", false, "Show individual job steps.")
 	f.BoolVar(&logs, "log", false, "Print full logs for the selected jobs.")

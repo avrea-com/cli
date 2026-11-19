@@ -60,8 +60,8 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;line</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Line to comment on, or the last line of a --start-line range.
 - <code class="cli-flag">&#x2D;&#x2D;start-line</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — First line of a multi-line inline comment. Defaults to --line.
 - <code class="cli-flag">&#x2D;&#x2D;side</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Diff side the lines refer to: right for the new file, left for the old file. _(choices: `right`, `left` · default: `right`)_
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Repository (org/repo or rep-xxx). Auto-detected from git remote if omitted.
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
@@ -92,8 +92,8 @@ JSON FIELDS
 
 **Options**
 
-- <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">&#x2D;&#x2D;repo</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;repo, -R</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by repository (org/repo or rep-xxx). Pass --repo more than once to filter multiple repositories. Auto-detected from git remote if omitted. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;scope</code> <code class="cli-value">&lt;CHOICE&gt;</code> — List all, authored, involved, rest, or attention PRs. Attention requires open state. _(choices: `all`, `authored`, `involved`, `rest`, `attention` · default: `all`)_
 - <code class="cli-flag">&#x2D;&#x2D;state</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by pull request state. 'all' removes the state filter. _(choices: `open`, `closed`, `merged`, `all` · default: `open`)_
 - <code class="cli-flag">-L, &#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Max PRs to return. _(default: `20`)_

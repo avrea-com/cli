@@ -21,8 +21,8 @@ func NewStatus(deps Dependencies) *cobra.Command {
 	var raw bool
 	c := &cobra.Command{Use: "status", Short: "Show recent runs, performance stats, and cache health.", Args: cobra.NoArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
 	f.StringVar(&since, "since", "7d", "Time window for stats panels, e.g. 7d or 24h.")
 	f.BoolVar(&raw, "json", false, "Output raw JSON.")
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {

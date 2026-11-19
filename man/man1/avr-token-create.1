@@ -32,7 +32,7 @@ JSON FIELDS
 \fB\-\-name\fR \fITEXT\fR
 Token name (1-100 characters). (required)
 .TP
-\fB\-\-repo\fR \fITEXT\fR
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
 Grant read access to a repository (org/repo or rep-xxx). Repeatable. (repeatable)
 .TP
 \fB\-\-vm\fR \fITEXT\fR
@@ -47,7 +47,7 @@ Max VMs the token may create; needs --allow-vm-create. The server default is 1.
 \fB\-\-ttl\fR \fITEXT\fR
 Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 7 days; the server default is 8 hours.
 .TP
-\fB\-\-org\fR \fITEXT\fR
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-json\fR \fITEXT\fR

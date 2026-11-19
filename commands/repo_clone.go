@@ -34,8 +34,6 @@ func (w cloneDiagnosticWriter) Write(p []byte) (int, error) {
 	return w.writer.Write(p)
 }
 
-var cloneRepositoryID = lazyRegexp("^rep-[0-9a-f]{32}$")
-
 func mirrorEndpoint(raw string) (string, error) {
 	raw = strings.TrimRight(raw, "/")
 	// Reuse the credential adapter's authority and secure-transport checks.
@@ -274,7 +272,7 @@ func newRepoClone(d Dependencies) *cobra.Command {
 			if strings.Count(repository, "/") != 1 {
 				return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name"}
 			}
-		} else if !cloneRepositoryID().MatchString(repository) {
+		} else if !repositoryIDPattern().MatchString(repository) {
 			return &ExitError{2, "Error: Invalid value for REPOSITORY: must be an owner/repository name or an Avrea repository ID (rep-...)"}
 		}
 		if _, err := exec.LookPath("git"); err != nil {

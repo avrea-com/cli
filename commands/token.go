@@ -78,7 +78,7 @@ func newTokenList(d Dependencies) *cobra.Command {
 	var limit int
 	var o jsonOptions
 	c := &cobra.Command{Use: "list", Short: "List live tokens, newest first.", Args: cobra.NoArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tokens (1–1000).")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
@@ -132,7 +132,7 @@ func newTokenView(d Dependencies) *cobra.Command {
 	var org string
 	var o jsonOptions
 	c := &cobra.Command{Use: "view TOKEN_ID", Short: "Show a token's details and grants.", Args: tokenIDArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if done, err := o.prepare(cmd, d, tokenFields); done || err != nil {
@@ -161,7 +161,7 @@ func newTokenRevoke(d Dependencies) *cobra.Command {
 	var org string
 	var yes bool
 	c := &cobra.Command{Use: "revoke TOKEN_ID", Short: "Revoke a token.", Args: tokenIDArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Skip the confirmation prompt.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, path, err := tokenContext(cmd.Context(), d, org)

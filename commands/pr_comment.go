@@ -45,8 +45,8 @@ func newPRComment(d Dependencies) *cobra.Command {
 	f.IntVar(&line, "line", 0, "Line to comment on, or the last line of a range.")
 	f.IntVar(&startLine, "start-line", 0, "First line of a multi-line inline comment.")
 	f.StringVar(&side, "side", "right", "Diff side: right (new file) or left (old file).")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if done, err := o.prepare(cmd, d, prCommentFields); done || err != nil {

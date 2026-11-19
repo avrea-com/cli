@@ -79,9 +79,9 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "create", Short: "Create a scoped token and print its credential.", Args: cobra.NoArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&name, "name", "", "Token name (1–100 characters).")
-	f.StringArrayVar(&repos, "repo", nil, "Repository read grant, repeatable.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Repository read grant, repeatable.")
 	f.StringArrayVar(&vms, "vm", nil, "VM admin grant, repeatable.")
 	f.BoolVar(&allow, "allow-vm-create", false, "Let the token create VMs.")
 	f.IntVar(&limit, "vm-create-limit", 0, "Maximum VMs the token may create (1–10).")

@@ -230,7 +230,7 @@ func newTestsSearch(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "search [QUERY]", Short: "Search the tests recorded for a repository.", Args: cobra.MaximumNArgs(1)}
 	orgFlag(c, &org)
-	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
+	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum tests to return; short pages are followed, up to 20 result pages.")
 	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
 	c.Flags().StringArrayVar(&outcomes, "status", nil, "Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears.")
@@ -426,7 +426,7 @@ func newTestsHistory(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "history TEST", Short: "Read one test's recorded runs in a repository, newest first.", Args: positionalArguments("TEST")}
 	orgFlag(c, &org)
-	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
+	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository (owner/name or rep-ID). Defaults to the current git repository.")
 	c.Flags().StringVar(&configuration, "configuration", "", "Configuration digest of the test; required with a test ID.")
 	c.Flags().IntVarP(&limit, "limit", "L", 20, "Maximum recorded runs to return.")
 	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")

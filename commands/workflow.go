@@ -47,8 +47,8 @@ func newWorkflowList(d Dependencies) *cobra.Command {
 	var limit int
 	c := &cobra.Command{Use: "list", Short: "List workflows with aggregate run stats.", Args: cobra.NoArgs}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Filter by repository name or ID (repeatable).")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Filter by repository name or ID (repeatable).")
 	f.StringVar(&since, "since", "30d", "Time window: 30d, 7d, 24h, or all.")
 	f.IntVarP(&limit, "limit", "L", 20, "Maximum workflows to show (1–1000).")
 	o.flags(c)
@@ -205,8 +205,8 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 	var web bool
 	c := &cobra.Command{Use: "view WORKFLOW", Short: "View workflow stats and per-job breakdown.", Args: cobra.ExactArgs(1)}
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; otherwise detect from Git.")
 	f.StringVar(&since, "since", "30d", "Time window: 30d, 7d, 24h, or all.")
 	f.BoolVar(&web, "web", false, "Open in browser.")
 	o.flags(c)

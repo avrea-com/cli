@@ -1,0 +1,72 @@
+.TH AVR\-VARIABLE\-EDIT 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-variable-edit \- Edit description, label, or availability without replacing a value.
+.SH SYNOPSIS
+.B avr variable edit
+[OPTIONS] NAME
+.SH DESCRIPTION
+Edit description, label, or availability without replacing a value.
+.PP
+.SH ARGUMENTS
+.TP
+\fINAME\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-branch\fR \fITEXT\fR
+Branch pattern; repeat for alternatives. (default: (); repeatable)
+.TP
+\fB\-\-clear\-branch\fR
+Remove branch restrictions.
+.TP
+\fB\-\-clear\-env\fR
+Remove environment restrictions.
+.TP
+\fB\-\-clear\-label\fR
+Clear the scoped value label.
+.TP
+\fB\-\-clear\-workflow\fR
+Remove workflow restrictions.
+.TP
+\fB\-\-description\fR \fITEXT\fR
+Organization-wide description shared by all scoped values; an empty string clears it.
+.TP
+\fB\-\-env\fR, \fB\-e\fR \fITEXT\fR
+Environment pattern; repeat for alternatives. (default: (); repeatable)
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter JSON with an embedded jq expression.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output comma-separated fields, * for all, or ? to list fields.
+.TP
+\fB\-\-label\fR \fITEXT\fR
+Label for the scoped value.
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug; does not broaden availability.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository full name or ID; defaults to the current checkout.
+.TP
+\fB\-\-repos\fR \fITEXT\fR
+Organization availability: repository names or IDs, comma-separated. (default: (); repeatable)
+.TP
+\fB\-\-variant\fR \fITEXT\fR
+Select an existing scoped value by label.
+.TP
+\fB\-\-variant\-id\fR \fITEXT\fR
+Select an existing scoped value by ID.
+.TP
+\fB\-\-visibility\fR \fITEXT\fR
+Organization availability: all, private, or selected (requires --repos).
+.TP
+\fB\-\-workflow\fR \fITEXT\fR
+Workflow path pattern; repeat for alternatives. (default: (); repeatable)
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-variable (1),
+.BR avr-variable-delete (1),
+.BR avr-variable-get (1),
+.BR avr-variable-list (1),
+.BR avr-variable-set (1)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"net/url"
 	"os/exec"
 	"strings"
@@ -20,6 +21,8 @@ func gitOrigin(ctx context.Context) (string, error) {
 	data, err := exec.CommandContext(ctx, "git", "remote", "get-url", "origin").Output()
 	return strings.TrimSpace(string(data)), err
 }
+
+var repositoryIDPattern = lazyRegexp("^rep-[0-9a-f]{32}$")
 
 var scpRemote = lazyRegexp("^[^/@:]+@([^/:]+):(.+)$")
 
@@ -79,9 +82,7 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 	// repositories the token lists instead.
 	if config.IsOrgBound(cfg.Token) {
 		query := url.Values{"q": {repo}, "limit": {"100"}}
-		seen := map[string]bool{}
-		for {
-			page, err := api.Repositories(ctx, org, query)
+		for page, err := range repositoryPages(ctx, api, org, query) {
 			if err != nil {
 				return "", apiError(cfg, err, "resolve the repository")
 			}
@@ -98,11 +99,6 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 			if page.NextCursor == "" {
 				return "", &missingRepository{fmt.Sprintf("This %s does not reach repository %q.\n  \x60avr repo list\x60 shows the repositories it reaches.\nAborted!", config.Kind(cfg.Token), output.CellText(repo))}
 			}
-			if len(page.Items) == 0 || seen[page.NextCursor] {
-				return "", errors.New("repository listing returned a cursor that does not advance")
-			}
-			seen[page.NextCursor] = true
-			query.Set("cursor", page.NextCursor)
 		}
 	}
 	query := url.Values{"name": {repo}}
@@ -204,4 +200,23 @@ func resolveRepositories(ctx context.Context, d Dependencies, cfg config.Config,
 		result = append(result, id)
 	}
 	return result, nil
+}
+
+// repositoryPages streams results so callers retain their own matching and error rules.
+func repositoryPages(ctx context.Context, api *client.Client, org string, query url.Values) iter.Seq2[client.Page, error] {
+	return func(yield func(client.Page, error) bool) {
+		seen := map[string]bool{}
+		for {
+			page, err := api.Repositories(ctx, org, query)
+			if !yield(page, err) || err != nil || page.NextCursor == "" {
+				return
+			}
+			if len(page.Items) == 0 || seen[page.NextCursor] {
+				yield(client.Page{}, errors.New("repository listing returned a cursor that does not advance"))
+				return
+			}
+			seen[page.NextCursor] = true
+			query.Set("cursor", page.NextCursor)
+		}
+	}
 }

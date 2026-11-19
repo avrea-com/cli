@@ -63,7 +63,7 @@ func TestDocumentationTracksLiveCommandsFlagsDefaultsAndAliases(t *testing.T) {
 	root.RemoveCommand(repo)
 	extra := &cobra.Command{Use: "example WIDGET", Short: "Document a new widget.", Aliases: []string{"widgets"}}
 	extra.Flags().Int("limit", 7, "Maximum widgets.")
-	root.AddCommand(extra, &cobra.Command{Use: "secret", Short: "Hidden extension.", Hidden: true})
+	root.AddCommand(extra, &cobra.Command{Use: "hidden-example", Short: "Hidden extension.", Hidden: true})
 	vm, _, err := root.Find([]string{"vm", "list"})
 	if err != nil {
 		t.Fatal(err)
@@ -77,7 +77,7 @@ func TestDocumentationTracksLiveCommandsFlagsDefaultsAndAliases(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if findNode(tree, "repo") != nil || findNode(tree, "secret") != nil {
+	if findNode(tree, "repo") != nil || findNode(tree, "hidden-example") != nil {
 		t.Fatal("removed or hidden command documented")
 	}
 	if _, ok := tree.Aliases["repos"]; ok {
@@ -152,5 +152,35 @@ func TestDocumentationDropsRemovedFlags(t *testing.T) {
 		if node.Name == "list" && len(node.Params) != 0 {
 			t.Fatal("removed flags retained", node.Params)
 		}
+	}
+}
+
+func TestReferenceShowsLiveScopeAliases(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := 0
+	var visit func(*docgen.Node)
+	visit = func(node *docgen.Node) {
+		for _, p := range node.Params {
+			if p.Name == "org" && node.Full != "avr vm ssh" {
+				checked++
+				if !strings.Contains(strings.Join(p.Opts, ","), "-o,") && !strings.HasSuffix(strings.Join(p.Opts, ","), ",-o") {
+					t.Fatal(node.Full, p.Opts)
+				}
+			}
+		}
+		for _, child := range node.Subcommands {
+			visit(child)
+		}
+	}
+	for _, nodes := range tree.Sections {
+		for _, node := range nodes {
+			visit(node)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no organization options inspected")
 	}
 }

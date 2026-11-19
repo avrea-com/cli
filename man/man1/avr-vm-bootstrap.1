@@ -30,7 +30,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \e
 \&
 .SH OPTIONS
 .TP
-\fB\-\-org\fR \fITEXT\fR
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
@@ -48,7 +48,7 @@ Forward the installed agents' credentials from your environment (ANTHROPIC_API_K
 \fB\-\-install\-avr\fR
 Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).
 .TP
-\fB\-\-repo\fR \fITEXT\fR
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
 Clone this git repo into the VM's home directory.
 .TP
 \fB\-\-ref\fR \fITEXT\fR

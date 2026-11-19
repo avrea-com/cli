@@ -10,10 +10,10 @@ Show per-VM network activity summaries captured at VM stop.
 Each row is the totals + top-N destinations for one VM run. The Blocked column counts both per-rule packet drops and DNS queries the firewall refused to resolve. Use ``--with-drops`` to triage what the firewall blocked after editing a rule or ``--job`` to include every execution attempt for a job.
 .SH OPTIONS
 .TP
-\fB\-\-org\fR \fITEXT\fR
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified.
 .TP
-\fB\-\-repo\fR \fITEXT\fR
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
 Repository ID or owner/repo. (required)
 .TP
 \fB\-\-job\fR, \fB\-\-job\-id\fR \fITEXT\fR

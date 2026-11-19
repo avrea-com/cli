@@ -1,0 +1,29 @@
+.TH AVR\-VARIABLE\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-variable-list \- List names, scoped-value counts, and update times.
+.SH SYNOPSIS
+.B avr variable list
+[OPTIONS]
+.SH DESCRIPTION
+List names, scoped-value counts, and update times.
+.PP
+.SH OPTIONS
+.TP
+\fB\-\-jq\fR, \fB\-q\fR \fITEXT\fR
+Filter JSON with an embedded jq expression.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output comma-separated fields, * for all, or ? to list fields.
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug; does not broaden availability.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository full name or ID; defaults to the current checkout.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-variable (1),
+.BR avr-variable-delete (1),
+.BR avr-variable-edit (1),
+.BR avr-variable-get (1),
+.BR avr-variable-set (1)

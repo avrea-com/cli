@@ -290,7 +290,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 		return prepareGlobalOptions(cmd, d)
 	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewAPI(d), NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
+	root.AddCommand(NewSecret(d), NewVariable(d), NewAPI(d), NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)

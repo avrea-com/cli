@@ -61,8 +61,8 @@ func newPRList(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "list", Short: "List pull requests across repositories.", Args: cobra.NoArgs}
 	o.flags(c)
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Repository name or ID (repeatable); otherwise detect from Git.")
 	f.StringVar(&scope, "scope", "all", "List all, authored, involved, rest, or attention pull requests.")
 	f.StringVar(&state, "state", "open", "Filter by state: open, closed, merged, or all.")
 	f.IntVarP(&limit, "limit", "L", 20, "Maximum pull requests (1–200).")

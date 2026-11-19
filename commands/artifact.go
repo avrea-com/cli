@@ -75,7 +75,7 @@ func newArtifactList(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "list REPO", Short: "List artifacts in REPO, optionally restricted to one run.", Args: cobra.ExactArgs(1)}
 	o.flags(c)
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&runID, "run-id", "", "Numeric GitHub run ID, run- ID, or native awr- ID.")
 	f.IntVar(&limit, "limit", 50, "Maximum artifacts per page (1–1000).")
 	f.StringVar(&cursor, "cursor", "", "Continue from a previous page's cursor.")
@@ -132,8 +132,8 @@ func newArtifactRecord(d Dependencies, action string) *cobra.Command {
 	c := &cobra.Command{Use: action + " ART_ID", Short: strings.ToUpper(action[:1]) + action[1:] + " a workflow artifact.", Args: cobra.ExactArgs(1)}
 	o.flags(c)
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug; defaults to the configured organization.")
-	f.StringVar(&repo, "repo", "", "Repository name or ID; defaults to the current git repository.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug; defaults to the configured organization.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID; defaults to the current git repository.")
 	if action == "download" {
 		f.StringVar(&destination, "path", ".", "Destination directory or filename. ZIPs stay archived.")
 	}

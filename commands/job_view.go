@@ -17,7 +17,7 @@ func newJobView(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "view JOB_ID", Short: "View a job and its steps.", Args: cobra.ExactArgs(1)}
 	o.flags(c)
 	f := c.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.BoolVar(&logs, "log", false, "Print full job logs.")
 	f.BoolVar(&failed, "log-failed", false, "Print logs from failed steps.")
 	f.BoolVar(&web, "web", false, "Open the job in a browser.")

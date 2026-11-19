@@ -39,7 +39,7 @@ Token name (1-100 characters). (required)
 \fB\-\-group\fR \fITEXT\fR
 The group that owns the token: its name, path or ID (grp-xxx). (required)
 .TP
-\fB\-\-repo\fR \fITEXT\fR
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
 Grant read access to a repository (org/repo or rep-xxx). Repeatable. (repeatable)
 .TP
 \fB\-\-firewall\-rule\fR \fITEXT\fR
@@ -54,7 +54,7 @@ Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the s
 \fB\-\-never\-expires\fR
 The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
 .TP
-\fB\-\-org\fR \fITEXT\fR
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-\-json\fR \fITEXT\fR

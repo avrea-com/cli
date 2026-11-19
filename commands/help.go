@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -52,7 +53,17 @@ func helpOptions(c *cobra.Command, spec docgen.HelpSpec) []helpRow {
 			}
 		}
 		if visible {
-			rows = append(rows, helpRow{option.Label, option.Description})
+			label := option.Label
+			missing := []string{}
+			for _, name := range docgen.LiveOptionNames(c, option.Names) {
+				if !slices.Contains(option.Names, name) {
+					missing = append(missing, name)
+				}
+			}
+			if len(missing) > 0 {
+				label = strings.Join(missing, ", ") + ", " + label
+			}
+			rows = append(rows, helpRow{label, option.Description})
 		}
 	}
 	c.LocalFlags().VisitAll(func(flag *pflag.Flag) {

@@ -36,7 +36,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "list RUN_OR_JOB", Short: "Read the latest confirmed execution of JOB, including repeated tests.", Args: positionalArguments("RUN_OR_JOB")}
 	orgFlag(c, &org)
-	c.Flags().StringVar(&repo, "repo", "", "Repository (owner/name or rep-ID). Defaults to the job's repository.")
+	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository (owner/name or rep-ID). Defaults to the job's repository.")
 	c.Flags().IntVarP(&limit, "limit", "L", 100, "Maximum occurrences to return; short pages are followed, up to 20 result pages.")
 	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
 	c.Flags().StringVar(&jobName, "job", "", "Select one run job by case-insensitive name substring.")
@@ -122,7 +122,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 					data, _ = nested.(map[string]any)
 				}
 				repository, _ = data["repository_id"].(string)
-				if !cloneRepositoryID().MatchString(repository) {
+				if !repositoryIDPattern().MatchString(repository) {
 					return &ExitError{1, "Error: The job has no available repository. Check the job and selected organization."}
 				}
 				if data["job_id"] != job {

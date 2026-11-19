@@ -82,8 +82,8 @@ func newRunList(d Dependencies) *cobra.Command {
 	cmd := &cobra.Command{Use: "list", Short: "List workflow runs for an organization.", Args: cobra.NoArgs}
 	options.flags(cmd)
 	f := cmd.Flags()
-	f.StringVar(&org, "org", "", "Organization ID or slug.")
-	f.StringArrayVar(&repos, "repo", nil, "Filter by repository name or ID (repeatable); otherwise detect from Git.")
+	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringArrayVarP(&repos, "repo", "R", nil, "Filter by repository name or ID (repeatable); otherwise detect from Git.")
 	f.StringArrayVar(&statuses, "status", nil, "Filter by run state or conclusion (repeatable).")
 	f.StringArrayVar(&branches, "branch", nil, "Filter by head branch (repeatable).")
 	f.StringArrayVarP(&workflows, "workflow", "w", nil, "Filter by workflow ID (repeatable).")

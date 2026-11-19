@@ -186,7 +186,7 @@ func newGroupList(d Dependencies) *cobra.Command {
 	var limit int
 	var o jsonOptions
 	c := &cobra.Command{Use: "list", Short: "List the organization's groups by path.", Args: cobra.NoArgs}
-	c.Flags().StringVar(&org, "org", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum groups (1–1000).")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
