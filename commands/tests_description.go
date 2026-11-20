@@ -10,7 +10,7 @@ func testsDescription(path string) docgen.Description {
 			Help: "Read one job's latest confirmed execution, including repeated tests.\n" +
 				"\n" +
 				"RUN_OR_JOB accepts the same run references as avr run view, or an Avrea\n" +
-				"job ID (job- or awj-). A run selects one job, never combines all jobs.\n" +
+				"job ID (job-). A run selects one job, never combines all jobs.\n" +
 				"--job NAME must match exactly one job; without it a run must have one job.\n" +
 				"A GitHub job URL selects that job first; --job must also match it.\n" +
 				"\n" +

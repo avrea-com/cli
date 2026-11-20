@@ -7179,7 +7179,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Numeric GitHub run ID, run- ID, or native awr- ID.",
+                "help": "Numeric GitHub run ID or run- ID.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -7660,7 +7660,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
+                "help": "Filter by workflow ID (wfl-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -7995,7 +7995,7 @@
             "full": "avr run rerun",
             "is_group": false,
             "short_help": "Re-run a completed workflow run.",
-            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI keeps the original revision. Use --failed for failed/cancelled\njobs or repeat --job for selected jobs. Their downstream dependents also\nrerun; other results are retained. The new attempt can be watched immediately.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
+            "help": "Re-run a completed workflow run.\n\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`.\n\nAvrea CI keeps the original revision. Use --failed for failed/cancelled\njobs or repeat --job for selected jobs. Their downstream dependents also\nrerun; other results are retained. The new attempt can be watched immediately.\n\n\b\nExamples:\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -8325,7 +8325,7 @@
             "full": "avr run watch",
             "is_group": false,
             "short_help": "Watch a workflow run until it completes.",
-            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\nNDJSON job and run completion events include ci_provider\n(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null\nplatform_job_id; correlate events using run_id and avrea_job_id.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
+            "help": "Watch a workflow run until it completes.\n\n\b\nRUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as\n`avr run view`. Without RUN, auto-selects the latest in-progress run.\nPass --repo (repeatable) to scope the auto-select to specific repositories.\n\nNDJSON job and run completion events include ci_provider\n(github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null\nplatform_job_id; correlate events using run_id and avrea_job_id.\n\n\b\nExamples:\n    avr run watch\n    avr run watch --repo acme/web\n    avr run watch --repo a/x --repo b/y\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status\n    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -9045,7 +9045,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Filter by workflow ID (wfl- or awf-, repeatable).",
+                "help": "Filter by workflow ID (wfl-, repeatable).",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -12718,7 +12718,7 @@
             "full": "avr workflow run",
             "is_group": false,
             "short_help": "Trigger a workflow_dispatch event.",
-            "help": "Trigger a workflow_dispatch event.\n\nWORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub\nnumeric workflow ID, a workflow path, or the workflow's display name.\nBare filenames (build.yml) select GitHub Actions; use the full\n.avrea/workflows/build.yml path for Avrea CI.\n\nNative -f inputs use the workflow's declared types. JSON preserves\nbooleans and numbers. A receipt identifies the exact native run. If a\nresponse is lost, use the printed retry command to recover the same\ninvocation with its resolved ref, inputs and --idempotency-key.\n--no-watch prints the accepted ref and commit plus a command to resume\nfollowing a pending native dispatch.\n\nFor GitHub Actions, --watch follows the run GitHub returned for the\ndispatch, or else the newest workflow_dispatch run of the workflow on\nthe dispatched ref. With --exit-status, a run that does not appear\nwithin 90 seconds exits 1.\n\n\b\nExamples:\n    avr workflow run build.yml\n    avr workflow run \"Build and Deploy\" --ref feat/x\n    avr workflow run wfl-abc123 -f env=prod -f region=eu\n    echo '{\"env\":\"prod\"}' | avr workflow run build.yml --json\n    avr workflow run build.yml --watch --exit-status\n",
+            "help": "Trigger a workflow_dispatch event.\n\nWORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric\nworkflow ID, a workflow path, or the workflow's display name. Bare\nfilenames (build.yml) select GitHub Actions; use the full\n.avrea/workflows/build.yml path for Avrea CI.\n\nInputs are sent as strings. Avrea CI converts each value to the type\nthe workflow declares.\n\n--watch follows the run the dispatch started. When GitHub returns no\nrun ID, it follows the newest workflow_dispatch run of the workflow\non the dispatched ref. With --exit-status, a run that does not appear\nwithin 90 seconds exits 1.\n\nAn Avrea CI dispatch prints a command that repeats it with its\n--idempotency-key. Repeating a dispatch never starts a second run:\nuse the command to retry after a lost response or to resume\nfollowing the run.\n\n\b\nExamples:\n    avr workflow run build.yml\n    avr workflow run \"Build and Deploy\" --ref feat/x\n    avr workflow run wfl-abc123 -f env=prod -f region=eu\n    echo '{\"env\":\"prod\"}' | avr workflow run build.yml --json\n    avr workflow run build.yml --watch --exit-status\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -12837,24 +12837,6 @@
                 "default": null
               },
               {
-                "name": "idempotency_key",
-                "kind": "option",
-                "opts": [
-                  "--idempotency-key"
-                ],
-                "secondary_opts": [],
-                "type": "uuid",
-                "required": false,
-                "multiple": false,
-                "nargs": 1,
-                "is_flag": false,
-                "envvar": null,
-                "help": "For Avrea CI, reuse this key to retry the same invocation.",
-                "hidden": false,
-                "show_default": false,
-                "default": null
-              },
-              {
                 "name": "watch",
                 "kind": "option",
                 "opts": [
@@ -12911,6 +12893,24 @@
                 "hidden": false,
                 "show_default": true,
                 "default": 3
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "uuid",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "For Avrea CI, reuse this key to retry or resume the same dispatch.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []
@@ -13761,7 +13761,7 @@
             "full": "avr tests list",
             "is_group": false,
             "short_help": "Read one job's latest confirmed execution, including repeated tests.",
-            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job- or awj-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\nA GitHub job URL selects that job first; --job must also match it.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAll outcomes are included by default. Repeat --status to match any selected\noutcome, for example --status failed --status errored. Names match literally\nand combine with the status selection using AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n\nCounts cover all recorded occurrences before filtering, including repeats.\nUnknown counts stay unknown. Use --summary for counts and collection state\nwithout downloading results; it cannot combine with test filters, --cursor\nor an explicit --limit. Indexing, unavailable and limited listings do not\nmean no tests were reported.\n",
+            "help": "Read one job's latest confirmed execution, including repeated tests.\n\nRUN_OR_JOB accepts the same run references as avr run view, or an Avrea\njob ID (job-). A run selects one job, never combines all jobs.\n--job NAME must match exactly one job; without it a run must have one job.\nA GitHub job URL selects that job first; --job must also match it.\n\nNames, outcomes, recorded durations and available failure messages are\nshown together. A failed test is data, not a command error. Missing,\npending, partial and expired evidence are reported explicitly; an older\nexecution is never substituted. Complete describes collected reports.\n\nUse --json '*' for the complete response or --json FIELDS to select\nfields. Continue with --cursor when pagination.next_cursor is present.\nAll outcomes are included by default. Repeat --status to match any selected\noutcome, for example --status failed --status errored. Names match literally\nand combine with the status selection using AND. Every matching\noccurrence is retained, including duplicate names. A continuation means\nmore of the report remains to be searched, not necessarily more matches.\nAPI refusal or a changed report fails the command without partial output.\n\nCounts cover all recorded occurrences before filtering, including repeats.\nUnknown counts stay unknown. Use --summary for counts and collection state\nwithout downloading results; it cannot combine with test filters, --cursor\nor an explicit --limit. Indexing, unavailable and limited listings do not\nmean no tests were reported.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,

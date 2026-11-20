@@ -76,7 +76,7 @@ func newArtifactList(d Dependencies) *cobra.Command {
 	o.flags(c)
 	f := c.Flags()
 	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
-	f.StringVar(&runID, "run-id", "", "Numeric GitHub run ID, run- ID, or native awr- ID.")
+	f.StringVar(&runID, "run-id", "", "Numeric GitHub run ID or run- ID.")
 	f.IntVar(&limit, "limit", 50, "Maximum artifacts per page (1–1000).")
 	f.StringVar(&cursor, "cursor", "", "Continue from a previous page's cursor.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {

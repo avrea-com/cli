@@ -162,6 +162,68 @@ func consoleURL(host string) string {
 	return strings.TrimRight(u.String(), "/")
 }
 
+// repositoryRefLink returns the page for a branch (kind "tree") or a commit of
+// a run's repository. Mirrored repositories have those pages in the console.
+// The rest link to the platform that hosts the repository, which an API
+// without repository.platform implies through the CI provider.
+func repositoryRefLink(orgBase, provider string, repo map[string]any, kind, ref string) string {
+	if ref == "" {
+		return ""
+	}
+	if id := fieldText(repo, "id"); orgBase != "" && id != "" && repo["mirror_enabled"] == true {
+		return orgBase + "/repos/" + url.PathEscape(id) + "/" + kind + "/" + escapePathSegments(ref)
+	}
+	name := fieldText(repo, "full_name")
+	if !strings.Contains(name, "/") {
+		return ""
+	}
+	platform := fieldText(repo, "platform")
+	if platform == "" {
+		switch provider {
+		case "", "github_actions":
+			platform = "github"
+		case "gitlab_ci":
+			platform = "gitlab"
+		}
+	}
+	switch platform {
+	case "github":
+		return "https://github.com/" + name + "/" + kind + "/" + escapePathSegments(ref)
+	case "gitlab":
+		return "https://gitlab.com/" + name + "/-/" + kind + "/" + escapePathSegments(ref)
+	default:
+		return ""
+	}
+}
+
+// platformRunLink returns the label and URL of a run's page on its source
+// platform. A GitLab run is a pipeline.
+func platformRunLink(provider, fullName, platformRunID, attempt string) (string, string) {
+	if fullName == "" || platformRunID == "" {
+		return "", ""
+	}
+	switch provider {
+	case "", "github_actions":
+		target := "https://github.com/" + fullName + "/actions/runs/" + platformRunID
+		if attempt != "" && attempt != "1" && attempt != "0" {
+			target += "/attempts/" + attempt
+		}
+		return "GitHub", target
+	case "gitlab_ci":
+		return "GitLab", "https://gitlab.com/" + fullName + "/-/pipelines/" + platformRunID
+	default:
+		return "", ""
+	}
+}
+
+func escapePathSegments(path string) string {
+	segments := strings.Split(path, "/")
+	for i, segment := range segments {
+		segments[i] = url.PathEscape(segment)
+	}
+	return strings.Join(segments, "/")
+}
+
 func linksEnabled(cmd *cobra.Command, d Dependencies) bool {
 	if !d.IsTerminal() {
 		return false
@@ -273,8 +335,13 @@ func NewRepo(deps Dependencies) *cobra.Command {
 			for _, row := range rows {
 				target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(slug) + "/activity?repositories=" + url.QueryEscape(row[1])
 				platformTarget := ""
-				if row[2] == "github" && row[0] != "" && row[3] != "" {
-					platformTarget = "https://github.com/" + row[0]
+				if row[0] != "" && row[3] != "" {
+					switch row[2] {
+					case "github":
+						platformTarget = "https://github.com/" + row[0]
+					case "gitlab":
+						platformTarget = "https://gitlab.com/" + row[0]
+					}
 				}
 				links = append(links, []string{target, target, "", platformTarget})
 			}

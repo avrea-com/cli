@@ -228,10 +228,7 @@ func newRunList(d Dependencies) *cobra.Command {
 			for i, row := range rows {
 				target := consoleURL(cfg.Host) + "/org/" + url.PathEscape(slug) + "/runs/" + url.PathEscape(row[5])
 				repo, _ := page.Items[i]["repository"].(map[string]any)
-				branchTarget := ""
-				if name, branch := fieldText(repo, "full_name"), fieldText(page.Items[i], "head_branch"); strings.Contains(name, "/") && branch != "" && page.Items[i]["ci_provider"] != "avrea_ci" {
-					branchTarget = "https://github.com/" + name + "/tree/" + url.PathEscape(branch)
-				}
+				branchTarget := repositoryRefLink(consoleURL(cfg.Host)+"/org/"+url.PathEscape(slug), fieldText(page.Items[i], "ci_provider"), repo, "tree", fieldText(page.Items[i], "head_branch"))
 				links = append(links, []string{"", target, target, branchTarget, "", target, "", ""})
 			}
 		}

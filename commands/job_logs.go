@@ -390,14 +390,12 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 }
 
 func noFailedSteps(id string, steps []map[string]any) string {
-	if strings.HasPrefix(id, "awj-") {
-		missing := len(steps) == 0
-		for _, step := range steps {
-			missing = missing || fieldText(step, "conclusion") == ""
-		}
-		if missing {
-			return "Step outcomes are unavailable; use " + fmt.Sprintf("%cavr job logs %s%c", 96, output.CellText(id), 96) + " for all output."
-		}
+	missing := len(steps) == 0
+	for _, step := range steps {
+		missing = missing || fieldText(step, "conclusion") == ""
+	}
+	if missing {
+		return "Step outcomes are unavailable; use " + fmt.Sprintf("%cavr job logs %s%c", 96, output.CellText(id), 96) + " for all output."
 	}
 	return "No failed steps."
 }

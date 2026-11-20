@@ -102,7 +102,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;status</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;branch</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by head branch (repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;ci-provider</code> <code class="cli-value">&lt;CHOICE&gt;</code> — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
-- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl- or awf-, repeatable). _(repeatable)_
+- <code class="cli-flag">-w, &#x2D;&#x2D;workflow</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter by workflow ID (wfl-, repeatable). _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;since</code> <code class="cli-value">&lt;TEXT&gt;</code> — Relative time window: '7d', '24h', etc. Sugar for --created-after.
 - <code class="cli-flag">&#x2D;&#x2D;from, &#x2D;&#x2D;created-after</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only runs created after this ISO timestamp.
 - <code class="cli-flag">&#x2D;&#x2D;to, &#x2D;&#x2D;created-before</code> <code class="cli-value">&lt;TEXT&gt;</code> — Only runs created before this ISO timestamp.
@@ -170,7 +170,7 @@ Examples:
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
-    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test
+    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test
 ```
 
 **Arguments**
@@ -252,7 +252,7 @@ Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
 NDJSON job and run completion events include ci_provider
-(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+(github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null
 platform_job_id; correlate events using run_id and avrea_job_id.
 
 ```sh

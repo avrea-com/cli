@@ -1,16 +1,20 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -182,14 +186,14 @@ func TestDispatchPollingBoundAndCancellation(t *testing.T) {
 }
 
 func TestWorkflowInputsBoundAndCancellation(t *testing.T) {
-	if _, err := parseWorkflowInputs(t.Context(), strings.NewReader(strings.Repeat(" ", (16<<20)+1))); err == nil {
+	if _, _, err := parseWorkflowInputs(t.Context(), strings.NewReader(strings.Repeat(" ", (16<<20)+1))); err == nil {
 		t.Fatal("unbounded workflow input")
 	}
 	input, writer := io.Pipe()
 	defer func() { _ = input.Close(); _ = writer.Close() }()
 	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
-	go func() { _, err := parseWorkflowInputs(ctx, input); done <- err }()
+	go func() { _, _, err := parseWorkflowInputs(ctx, input); done <- err }()
 	cancel()
 	select {
 	case err := <-done:
@@ -244,5 +248,239 @@ func TestWorkflowRunFollowsADispatchWithoutRunID(t *testing.T) {
 	code := Execute(t.Context(), []string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main", "--exit-status"}, d)
 	if code != 1 || !strings.Contains(out.String(), "run-dispatched") || !strings.Contains(stderr.String(), "GitHub returned no run ID") {
 		t.Fatalf("code %d out %q stderr %q", code, out, stderr)
+	}
+}
+
+func TestWorkflowInputCancellationDoesNotWaitForStdin(t *testing.T) {
+	d, _, stderr := testDeps(t)
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: "https://fixture.test", Token: "fixture"}, nil
+	}
+	d.IsInputTerminal = func() bool { return false }
+	reader, writer := io.Pipe()
+	defer func() { _ = reader.Close(); _ = writer.Close() }()
+	d.In = reader
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	done := make(chan int, 1)
+	go func() { done <- Execute(ctx, []string{"workflow", "run", "build.yml", "--json"}, d) }()
+	if _, err := writer.Write([]byte(`{"count":`)); err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	drained := make(chan struct{})
+	go func() { _, _ = writer.Write([]byte(`1}`)); _ = writer.Close(); close(drained) }()
+	select {
+	case code := <-done:
+		if code != 130 {
+			t.Fatal(code, stderr)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("stdin cancellation blocked")
+	}
+	<-drained
+}
+
+const (
+	avreaWorkflowFixture  = "wfl-019a0000000070008000000000000004"
+	avreaAdmissionFixture = "wap-019a0000000070008000000000000006"
+	avreaRunFixture       = "run-019a0000000070008000000000000007"
+)
+
+// avreaDispatchServer answers an Avrea CI dispatch with a receipt, and the
+// receipt with each of admissions in turn, repeating the last. An empty
+// admission is a 503.
+func avreaDispatchServer(t *testing.T, dispatch string, admissions ...string) (*httptest.Server, *atomic.Value) {
+	t.Helper()
+	var body atomic.Value
+	var reads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/repos/rep-fixture/dispatch-workflow"):
+			var request map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&request)
+			body.Store(request)
+			_, _ = io.WriteString(w, dispatch)
+		case strings.HasSuffix(r.URL.Path, "/repos/rep-fixture/workflow-admissions/"+avreaAdmissionFixture) && len(admissions) > 0:
+			admission := admissions[min(int(reads.Add(1)), len(admissions))-1]
+			if admission == "" {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+			_, _ = io.WriteString(w, admission)
+		case strings.HasSuffix(r.URL.Path, "/repos/rep-fixture"):
+			_, _ = io.WriteString(w, `{"data":{"repository_id":"rep-fixture","default_branch":"main"}}`)
+		case strings.HasSuffix(r.URL.Path, "/workflows"):
+			_, _ = io.WriteString(w, `{"data":[{"workflow_id":"`+avreaWorkflowFixture+`","ci_provider":"avrea_ci","platform_id":null,"name":"Build","path":".avrea/workflows/build.yml"}]}`)
+		case strings.HasSuffix(r.URL.Path, "/workflow-runs/"+avreaRunFixture):
+			_, _ = io.WriteString(w, `{"data":{"run_id":"`+avreaRunFixture+`","status":"completed","conclusion":"failure","jobs":[]}}`)
+		case strings.HasSuffix(r.URL.Path, "/workflow-runs"):
+			t.Error("an Avrea CI dispatch must not guess its run from the run list")
+		default:
+			_, _ = io.WriteString(w, `{"data":[]}`)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server, &body
+}
+
+func avreaDispatchDeps(t *testing.T, server *httptest.Server) (Dependencies, *bytes.Buffer, *bytes.Buffer) {
+	t.Helper()
+	d, stdout, stderr := testDeps(t)
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: server.URL, Token: "avr_fixture", Org: inspectionOrg}, nil
+	}
+	now := time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)
+	d.Now = func() time.Time { return now }
+	d.Wait = func(ctx context.Context, delay time.Duration) error {
+		now = now.Add(delay)
+		return ctx.Err()
+	}
+	return d, stdout, stderr
+}
+
+func avreaAdmission(state, reason string, runs ...string) string {
+	record, _ := json.Marshal(map[string]any{"data": map[string]any{"admission_id": avreaAdmissionFixture, "state": state, "reason": reason, "run_ids": append([]string{}, runs...)}})
+	return string(record)
+}
+
+const avreaDispatchAccepted = `{"data":{"workflow":"` + avreaWorkflowFixture + `","ref":"main","platform_run_id":null,"run_id":null,"admission_id":"` + avreaAdmissionFixture + `"}}`
+
+func TestWorkflowRunDispatchesAvreaCIByWorkflowID(t *testing.T) {
+	server, dispatched := avreaDispatchServer(t, avreaDispatchAccepted)
+	for _, identifier := range []string{avreaWorkflowFixture, ".avrea/workflows/build.yml", "Build"} {
+		d, stdout, stderr := avreaDispatchDeps(t, server)
+		code := Execute(t.Context(), []string{"workflow", "run", identifier, "--repo", "rep-fixture", "--ref", "main", "-f", "count=2", "--no-watch"}, d)
+		if code != 0 || !strings.Contains(stdout.String(), ".avrea/workflows/build.yml") {
+			t.Fatal(identifier, code, stdout, stderr)
+		}
+		body, _ := dispatched.Load().(map[string]any)
+		key, _ := body["invocation_key"].(string)
+		if inputs, _ := body["inputs"].(map[string]any); body["workflow"] != avreaWorkflowFixture || body["ref"] != "main" || len(inputs) != 1 || inputs["count"] != "2" {
+			t.Fatal(identifier, body)
+		}
+		// A generated key lets the printed command recover a lost response.
+		if _, err := uuid.Parse(key); err != nil || !strings.Contains(stderr.String(), "--idempotency-key "+key) {
+			t.Fatal(identifier, body, stderr)
+		}
+	}
+}
+
+func TestWorkflowRunFollowsTheRunItsAvreaCIDispatchStarted(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, avreaAdmission("pending", ""), avreaAdmission("admitted", "", avreaRunFixture))
+	d, stdout, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main", "--exit-status"}, d)
+	if code != 1 || !strings.Contains(stdout.String(), avreaRunFixture) {
+		t.Fatalf("code %d out %q stderr %q", code, stdout, stderr)
+	}
+}
+
+func TestWorkflowRunReusesTheInvocationKeyAndItsRun(t *testing.T) {
+	const key = "019a0000-0000-7000-8000-000000000008"
+	server, dispatched := avreaDispatchServer(t, `{"data":{"workflow":"`+avreaWorkflowFixture+`","ref":"main","run_id":"`+avreaRunFixture+`","admission_id":"`+avreaAdmissionFixture+`"}}`)
+	d, stdout, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main", "--idempotency-key", key}, d)
+	body, _ := dispatched.Load().(map[string]any)
+	if sent, _ := uuid.Parse(fieldText(body, "invocation_key")); code != 0 || sent.String() != key || !strings.Contains(stdout.String(), avreaRunFixture) {
+		t.Fatalf("code %d body %v out %q stderr %q", code, body, stdout, stderr)
+	}
+}
+
+func TestWorkflowRunReportsARejectedAvreaCIDispatch(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, avreaAdmission("rejected", "workflow_invalid"))
+	d, _, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, d)
+	if code != 1 || !strings.Contains(stderr.String(), "workflow_invalid") {
+		t.Fatalf("code %d stderr %q", code, stderr)
+	}
+}
+
+func TestWorkflowRunResumesAnAvreaCIDispatchThatHasNoRunYet(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, avreaAdmission("pending", ""))
+	for _, test := range []struct {
+		args []string
+		code int
+	}{{nil, 0}, {[]string{"--exit-status"}, 1}} {
+		d, _, stderr := avreaDispatchDeps(t, server)
+		code := Execute(t.Context(), append([]string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, test.args...), d)
+		if code != test.code || !strings.Contains(stderr.String(), "has not started the run") || strings.Count(stderr.String(), "--idempotency-key") < 2 {
+			t.Fatalf("code %d stderr %q", code, stderr)
+		}
+	}
+}
+
+func TestWorkflowRunRejectsAnInvocationKeyForGitHubActions(t *testing.T) {
+	d, _, stderr := testDeps(t)
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: "https://fixture.test", Token: "avr_fixture", Org: inspectionOrg}, nil
+	}
+	code := Execute(t.Context(), []string{"workflow", "run", "ci.yml", "--repo", "rep-fixture", "--ref", "main", "--idempotency-key", "019a0000-0000-7000-8000-000000000008"}, d)
+	if code != 1 || !strings.Contains(stderr.String(), "only for Avrea CI") {
+		t.Fatalf("code %d stderr %q", code, stderr)
+	}
+}
+
+// Avrea CI converts each input from its JSON spelling, so a boolean must
+// arrive as true and a number with every digit it was given. GitHub inputs
+// keep the spelling the CLI has always sent.
+func TestWorkflowRunJSONInputsKeepTheirSpellingForAvreaCI(t *testing.T) {
+	const input = `{"flag":true,"exact":1.00000000000000001,"big":1e400,"text":"a b","nothing":null,"list":[1,"x"]}`
+	server, dispatched := avreaDispatchServer(t, avreaDispatchAccepted)
+	for _, test := range []struct {
+		workflow string
+		want     map[string]any
+	}{
+		{avreaWorkflowFixture, map[string]any{"flag": "true", "exact": "1.00000000000000001", "big": "1e400", "text": "a b", "nothing": "null", "list": `[1,"x"]`}},
+		{"ci.yml", map[string]any{"flag": "True", "exact": "1.0", "big": "inf", "text": "a b", "nothing": "None", "list": "[1, 'x']"}},
+	} {
+		d, _, stderr := avreaDispatchDeps(t, server)
+		d.In = strings.NewReader(input)
+		d.IsInputTerminal = func() bool { return false }
+		code := Execute(t.Context(), []string{"workflow", "run", test.workflow, "--repo", "rep-fixture", "--ref", "main", "--json", "--no-watch"}, d)
+		body, _ := dispatched.Load().(map[string]any)
+		if inputs, _ := body["inputs"].(map[string]any); code != 0 || !reflect.DeepEqual(inputs, test.want) {
+			t.Fatalf("%s: code %d inputs %v stderr %q", test.workflow, code, body["inputs"], stderr)
+		}
+	}
+}
+
+// The recovery command is the only way to repeat a dispatch that was accepted
+// but never answered, so it is printed before the request.
+func TestWorkflowRunPrintsTheRecoveryCommandWhateverTheDispatchReturns(t *testing.T) {
+	server, _ := avreaDispatchServer(t, `{"data":{}}`)
+	d, _, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main", "--no-watch"}, d)
+	if printed, _, _ := strings.Cut(stderr.String(), "invalid Avrea CI dispatch receipt"); code != 1 || !strings.Contains(printed, "--idempotency-key") {
+		t.Fatalf("code %d stderr %q", code, stderr)
+	}
+}
+
+func TestAvreaCIDispatchCommandRoundTripsControlCharacters(t *testing.T) {
+	command := avreaCIDispatchCommand(config.Config{Host: "https://api.example.test"}, "org-fixture", "rep-fixture", avreaWorkflowFixture, "main", "key-fixture",
+		map[string]string{"notes": "it's\r\n\x1b[31mred", "plain": "a b"})
+	if strings.ContainsAny(command, "\r\n\x1b") {
+		t.Fatalf("raw control characters in %q", command)
+	}
+	for _, argument := range []string{`$'notes=it\'s\r\n\x1b[31mred'`, `'plain=a b'`} {
+		if !strings.Contains(command, argument) {
+			t.Fatalf("%q lacks %s", command, argument)
+		}
+	}
+}
+
+func TestWorkflowRunQualifiesTheDefaultBranchForAvreaCI(t *testing.T) {
+	server, dispatched := avreaDispatchServer(t, avreaDispatchAccepted)
+	d, _, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--no-watch"}, d)
+	if body, _ := dispatched.Load().(map[string]any); code != 0 || body["ref"] != "refs/heads/main" {
+		t.Fatalf("code %d body %v stderr %q", code, body, stderr)
+	}
+}
+
+func TestWorkflowRunReportsAnUnreadableDispatchReceipt(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, "")
+	d, _, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, d)
+	if code != 1 || !strings.Contains(stderr.String(), "Could not read the dispatch receipt") || strings.Contains(stderr.String(), "has not started the run") {
+		t.Fatalf("code %d stderr %q", code, stderr)
 	}
 }

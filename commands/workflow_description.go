@@ -36,22 +36,23 @@ func workflowDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Trigger a workflow_dispatch event.\n" +
 				"\n" +
-				"WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub\n" +
-				"numeric workflow ID, a workflow path, or the workflow's display name.\n" +
-				"Bare filenames (build.yml) select GitHub Actions; use the full\n" +
+				"WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric\n" +
+				"workflow ID, a workflow path, or the workflow's display name. Bare\n" +
+				"filenames (build.yml) select GitHub Actions; use the full\n" +
 				".avrea/workflows/build.yml path for Avrea CI.\n" +
 				"\n" +
-				"Native -f inputs use the workflow's declared types. JSON preserves\n" +
-				"booleans and numbers. A receipt identifies the exact native run. If a\n" +
-				"response is lost, use the printed retry command to recover the same\n" +
-				"invocation with its resolved ref, inputs and --idempotency-key.\n" +
-				"--no-watch prints the accepted ref and commit plus a command to resume\n" +
-				"following a pending native dispatch.\n" +
+				"Inputs are sent as strings. Avrea CI converts each value to the type\n" +
+				"the workflow declares.\n" +
 				"\n" +
-				"For GitHub Actions, --watch follows the run GitHub returned for the\n" +
-				"dispatch, or else the newest workflow_dispatch run of the workflow on\n" +
-				"the dispatched ref. With --exit-status, a run that does not appear\n" +
+				"--watch follows the run the dispatch started. When GitHub returns no\n" +
+				"run ID, it follows the newest workflow_dispatch run of the workflow\n" +
+				"on the dispatched ref. With --exit-status, a run that does not appear\n" +
 				"within 90 seconds exits 1.\n" +
+				"\n" +
+				"An Avrea CI dispatch prints a command that repeats it with its\n" +
+				"--idempotency-key. Repeating a dispatch never starts a second run:\n" +
+				"use the command to retry after a lost response or to resume\n" +
+				"following the run.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -69,10 +70,10 @@ func workflowDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "ref", Kind: "option", Opts: []string{"-r", "--ref"}, Type: "text", Nargs: 1, Help: descriptionText("Branch or tag to run at. Defaults to the repository's default branch.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "raw_fields", Kind: "option", Opts: []string{"-f", "--raw-field"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Workflow input: key=value (repeatable).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "json_inputs", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Read a JSON object of inputs from stdin.")}, CompletionKind: "Bool"},
-				{Param: docgen.Param{Name: "idempotency_key", Kind: "option", Opts: []string{"--idempotency-key"}, Type: "uuid", Nargs: 1, Help: descriptionText("For Avrea CI, reuse this key to retry the same invocation.")}, CompletionKind: "UUID"},
 				{Param: docgen.Param{Name: "watch", Kind: "option", Opts: []string{"-w", "--watch"}, Secondary: []string{"-W", "--no-watch"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately."), ShowDefault: true, Default: true}, Suffix: "  [default: w]", CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "exit_status", Kind: "option", Opts: []string{"--exit-status"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("With --watch, exit non-zero if the run failed.")}, CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "interval", Kind: "option", Opts: []string{"--interval"}, Type: "integer", Nargs: 1, Help: descriptionText("With --watch, refresh interval in seconds."), ShowDefault: true, Default: 3}, Suffix: "  [default: 3]", CompletionKind: "Int"},
+				{Param: docgen.Param{Name: "idempotency_key", Kind: "option", Opts: []string{"--idempotency-key"}, Type: "uuid", Nargs: 1, Help: descriptionText("For Avrea CI, reuse this key to retry or resume the same dispatch.")}, CompletionKind: "UUID"},
 			},
 		}
 	case "avr workflow view":

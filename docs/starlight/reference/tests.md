@@ -64,7 +64,7 @@ avr tests list [OPTIONS] RUN_OR_JOB
 ```
 
 RUN_OR_JOB accepts the same run references as avr run view, or an Avrea
-job ID (job- or awj-). A run selects one job, never combines all jobs.
+job ID (job-). A run selects one job, never combines all jobs.
 --job NAME must match exactly one job; without it a run must have one job.
 A GitHub job URL selects that job first; --job must also match it.
 

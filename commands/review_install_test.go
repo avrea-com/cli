@@ -132,21 +132,7 @@ func TestArtifactPublicationWithoutHardLinks(t *testing.T) {
 	}
 }
 
-func TestReplayDisplayPreservesJSONAndLabelsEscapedArguments(t *testing.T) {
-	inputs, err := nativeInputs(nil, []string{"text=line\r\x1b\u0085"}, map[string]string{"text": "string"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	retry := "printf '%s' " + shellQuotePython(inputs) + " | avr workflow run build --idempotency-key fixture"
-	if got := dispatchRetryMessage("Retry the exact request:", retry); got != "Retry the exact request:\n"+retry {
-		t.Fatal(got)
-	}
-	unsafe := retry + " --ref 'bad\x1b[31mref'"
-	for _, got := range []string{dispatchRetryMessage("Retry the exact request:", unsafe), (nativeReceipt{id: "fixture", retry: unsafe}).pendingMessage()} {
-		if strings.Contains(got, "\x1b") || !strings.Contains(got, "escaped control characters") {
-			t.Fatal(got)
-		}
-	}
+func TestMetricRateEscapesUntrustedUnit(t *testing.T) {
 	if got := metricRate(1, "ops\x1b[31m"); strings.Contains(got, "\x1b") {
 		t.Fatal(got)
 	}

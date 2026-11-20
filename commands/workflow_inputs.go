@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -129,7 +130,10 @@ func readWorkflowInput(decoder *json.Decoder, depth int) (workflowInput, error) 
 	return value, nil
 }
 
-func parseWorkflowInputs(ctx context.Context, input io.Reader) (map[string]string, error) {
+// parseWorkflowInputs reads a JSON object of inputs and returns each value
+// twice: as Python's str() spells it, which GitHub dispatches have always
+// sent, and as JSON spells it, which Avrea CI converts to the declared type.
+func parseWorkflowInputs(ctx context.Context, input io.Reader) (map[string]string, map[string]string, error) {
 	type result struct {
 		data []byte
 		err  error
@@ -139,30 +143,49 @@ func parseWorkflowInputs(ctx context.Context, input io.Reader) (map[string]strin
 	var raw []byte
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, nil, ctx.Err()
 	case got := <-done:
 		if got.err != nil {
-			return nil, got.err
+			return nil, nil, got.err
 		}
 		raw = got.data
 	}
 	if len(raw) > 16<<20 {
-		return nil, fmt.Errorf("workflow inputs exceed 16 MiB")
+		return nil, nil, fmt.Errorf("workflow inputs exceed 16 MiB")
 	}
 	if strings.TrimSpace(string(raw)) == "" {
-		return map[string]string{}, nil
+		return map[string]string{}, map[string]string{}, nil
 	}
 	decoder := json.NewDecoder(strings.NewReader(string(raw)))
 	decoder.UseNumber()
 	value, err := readWorkflowInput(decoder, 0)
 	if err != nil {
-		return nil, &ExitError{1, "Error: Invalid JSON on stdin: " + err.Error()}
+		return nil, nil, &ExitError{1, "Error: Invalid JSON on stdin: " + err.Error()}
 	}
 	if _, err := decoder.Token(); err != io.EOF {
-		return nil, &ExitError{1, "Error: Invalid JSON on stdin: trailing input"}
+		return nil, nil, &ExitError{1, "Error: Invalid JSON on stdin: trailing input"}
 	}
 	if value.fields == nil {
-		return nil, &ExitError{1, "Error: JSON inputs must be an object."}
+		return nil, nil, &ExitError{1, "Error: JSON inputs must be an object."}
 	}
-	return value.fields, nil
+	var members map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &members); err != nil {
+		return nil, nil, &ExitError{1, "Error: Invalid JSON on stdin: " + err.Error()}
+	}
+	spelled := make(map[string]string, len(members))
+	for name, member := range members {
+		// A string is sent as its content. Everything else, null included,
+		// keeps its JSON spelling.
+		var text string
+		if member[0] == '"' && json.Unmarshal(member, &text) == nil {
+			spelled[name] = text
+			continue
+		}
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, member); err != nil {
+			return nil, nil, &ExitError{1, "Error: Invalid JSON on stdin: " + err.Error()}
+		}
+		spelled[name] = compact.String()
+	}
+	return value.fields, spelled, nil
 }

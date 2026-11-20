@@ -12,16 +12,17 @@ import (
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
-var nativeJobID = lazyRegexp(`^awj-[0-9a-f]{32}$`)
-var nativeAttemptString = lazyRegexp(`^[+-]?[0-9](?:_?[0-9])*(?:\.0+)?$`)
+var attemptDecimalPattern = lazyRegexp(`^([+-]?)([0-9]*)(?:\.([0-9]*))?(?:[eE]([+-]?[0-9]+))?$`)
+var jobIDPattern = lazyRegexp(`^job-[0-9a-f]{32}$`)
+var rerunRunID = lazyRegexp(`^run-[0-9a-f]{32}$`)
+var attemptStringPattern = lazyRegexp(`^[+-]?[0-9](?:_?[0-9])*(?:\.0+)?$`)
 
-type nativeRerunReceipt struct{ runID, attempt string }
+type avreaCIRerunReceipt struct{ runID, attempt string }
 
-func resolveNativeRerunJobs(cmd *cobra.Command, cfg config.Config, api *client.Client, org, runID string, run map[string]any, selectors []string, key string) ([]string, error) {
+func resolveAvreaCIRerunJobs(cmd *cobra.Command, cfg config.Config, api *client.Client, org, runID string, run map[string]any, selectors []string, key string) ([]string, error) {
 	response, err := api.Get(cmd.Context(), "/orgs/"+org+"/workflow-runs/"+runID+"/rerun", nil)
 	if err != nil {
 		return nil, apiError(cfg, err, "check Avrea rerun availability")
@@ -36,7 +37,7 @@ func resolveNativeRerunJobs(cmd *cobra.Command, cfg config.Config, api *client.C
 	seen := map[string]bool{}
 	for _, selector := range selectors {
 		id := selector
-		if !nativeJobID().MatchString(id) {
+		if !jobIDPattern().MatchString(id) {
 			matched := []map[string]any{}
 			for _, job := range jobs {
 				if fieldText(job, "job_name") == selector {
@@ -67,13 +68,13 @@ func resolveNativeRerunJobs(cmd *cobra.Command, cfg config.Config, api *client.C
 	return selected, nil
 }
 
-func parseNativeRerunReceipt(response map[string]any) (*nativeRerunReceipt, bool) {
+func parseAvreaCIRerunReceipt(response map[string]any) (*avreaCIRerunReceipt, bool) {
 	data, ok := response["data"].(map[string]any)
 	if !ok {
 		return nil, false
 	}
 	id, ok := data["run_id"].(string)
-	if !ok || !nativeRunID().MatchString(id) || data["status"] != "rerun_requested" {
+	if !ok || !rerunRunID().MatchString(id) || data["status"] != "rerun_requested" {
 		return nil, false
 	}
 	var value string
@@ -84,14 +85,14 @@ func parseNativeRerunReceipt(response map[string]any) (*nativeRerunReceipt, bool
 		value = strings.TrimSpace(v)
 		// Pydantic accepts integer strings and an all-zero fractional part,
 		// but an exponent in a string isn't an integer receipt field.
-		if !nativeAttemptString().MatchString(value) {
+		if !attemptStringPattern().MatchString(value) {
 			return nil, false
 		}
 		value = strings.ReplaceAll(value, "_", "")
 	default:
 		return nil, false
 	}
-	if !nativeDecimalPattern().MatchString(value) || len(value) > 128 {
+	if !attemptDecimalPattern().MatchString(value) || len(value) > 128 {
 		return nil, false
 	}
 	if index := strings.IndexAny(value, "eE"); index >= 0 {
@@ -105,16 +106,15 @@ func parseNativeRerunReceipt(response map[string]any) (*nativeRerunReceipt, bool
 	if !ok || !attempt.IsInt() || attempt.Cmp(big.NewRat(2, 1)) < 0 {
 		return nil, false
 	}
-	return &nativeRerunReceipt{id, attempt.Num().String()}, true
+	return &avreaCIRerunReceipt{id, attempt.Num().String()}, true
 }
 
-func submitNativeRerun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, runID, key string, failed bool, jobs []string) (*nativeRerunReceipt, error) {
+func submitAvreaCIRerun(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, runID, key string, failed bool, jobs []string) (*avreaCIRerunReceipt, error) {
 	if key == "" {
-		id, err := uuid.NewRandom()
-		if err != nil {
+		var err error
+		if key, err = newInvocationKey(); err != nil {
 			return nil, err
 		}
-		key = strings.ReplaceAll(id.String(), "-", "")
 	}
 	args := []string{"env", "AVR_HOST=" + cfg.Host, "avr", "run", "rerun", runID, "--org", org, "--idempotency-key", key, "--yes"}
 	if failed {
@@ -133,15 +133,15 @@ func submitNativeRerun(ctx context.Context, d Dependencies, cfg config.Config, a
 		body["job_ids"] = jobs
 	}
 	for attempt := range 2 {
-		response, err := api.SubmitNativeRerun(ctx, "/orgs/"+org+"/workflow-runs/"+runID+"/rerun", body)
+		response, err := api.SubmitAvreaCIRerun(ctx, "/orgs/"+org+"/workflow-runs/"+runID+"/rerun", body)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		if err == nil {
-			if receipt, valid := parseNativeRerunReceipt(response); valid {
+			if receipt, valid := parseAvreaCIRerunReceipt(response); valid {
 				return receipt, nil
 			}
-			return nil, nativeDispatchError("The API returned an invalid Avrea CI rerun receipt. Recover the same attempt:\n" + retry)
+			return nil, rerunError("The API returned an invalid Avrea CI rerun receipt. Recover the same attempt:\n" + retry)
 		}
 		var httpErr *client.HTTPError
 		if errors.As(err, &httpErr) {
@@ -155,9 +155,11 @@ func submitNativeRerun(ctx context.Context, d Dependencies, cfg config.Config, a
 			if attempt == 0 {
 				continue
 			}
-			return nil, nativeDispatchError("Could not confirm the rerun. Recover the same attempt:\n" + retry)
+			return nil, rerunError("Could not confirm the rerun. Recover the same attempt:\n" + retry)
 		}
 		return nil, err
 	}
-	return nil, nativeDispatchError("Could not confirm the rerun. Recover the same attempt:\n" + retry)
+	return nil, rerunError("Could not confirm the rerun. Recover the same attempt:\n" + retry)
 }
+
+func rerunError(message string) error { return &ExitError{1, "Error: " + message} }

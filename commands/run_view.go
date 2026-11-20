@@ -89,12 +89,8 @@ func newRunView(d Dependencies) *cobra.Command {
 				return err
 			}
 			repo, _ := fields["repository"].(map[string]any)
-			if name, platform := fieldText(repo, "full_name"), fieldText(fields, "platform_run_id"); name != "" && platform != "" {
-				github := "https://github.com/" + name + "/actions/runs/" + platform
-				if attempt := fieldText(fields, "run_attempt"); attempt != "" && attempt != "1" && attempt != "0" {
-					github += "/attempts/" + attempt
-				}
-				if _, err = fmt.Fprintln(d.Out, "GitHub: "+output.CellText(github)); err != nil {
+			if label, target := platformRunLink(fieldText(fields, "ci_provider"), fieldText(repo, "full_name"), fieldText(fields, "platform_run_id"), fieldText(fields, "run_attempt")); target != "" {
+				if _, err = fmt.Fprintln(d.Out, label+": "+output.CellText(target)); err != nil {
 					return err
 				}
 			}
@@ -220,14 +216,10 @@ func renderRunMetadata(d Dependencies, fields map[string]any, host, slug string)
 				if id := fieldText(repo, "id"); id != "" {
 					target = base + "/activity?repositories=" + url.QueryEscape(id)
 				}
-			case "Branch", "Commit":
-				if name := fieldText(repo, "full_name"); strings.Contains(name, "/") && fields["ci_provider"] != "avrea_ci" {
-					if row[0] == "Branch" {
-						target = "https://github.com/" + name + "/tree/" + url.PathEscape(fieldText(fields, "head_branch"))
-					} else {
-						target = "https://github.com/" + name + "/commit/" + url.PathEscape(fieldText(fields, "head_sha"))
-					}
-				}
+			case "Branch":
+				target = repositoryRefLink(base, fieldText(fields, "ci_provider"), repo, "tree", fieldText(fields, "head_branch"))
+			case "Commit":
+				target = repositoryRefLink(base, fieldText(fields, "ci_provider"), repo, "commit", fieldText(fields, "head_sha"))
 			}
 		}
 		if target != "" {

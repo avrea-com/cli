@@ -144,7 +144,7 @@ func lookupWorkflow(ctx context.Context, cfg config.Config, api *client.Client, 
 		query.Set("cursor", page.NextCursor)
 	}
 	safe := output.CellText(identifier)
-	if strings.HasPrefix(identifier, "wfl-") || strings.HasPrefix(identifier, "awf-") {
+	if strings.HasPrefix(identifier, "wfl-") {
 		for _, wf := range rows {
 			if fieldText(wf, "workflow_id") == identifier {
 				return wf, nil
@@ -229,7 +229,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 			return err
 		}
 		workflow := args[0]
-		if !strings.HasPrefix(workflow, "wfl-") && !strings.HasPrefix(workflow, "awf-") {
+		if !strings.HasPrefix(workflow, "wfl-") {
 			repository, err := requiredWorkflowRepo(cmd.Context(), d, cfg, api, id, repo)
 			if err != nil {
 				return err
@@ -293,7 +293,7 @@ func newWorkflowView(d Dependencies) *cobra.Command {
 				return err
 			}
 			_, _ = fmt.Fprintln(d.Err, d.hint(fmt.Sprintf("(could not load recent runs: HTTP %d)", httpErr.Status)))
-		} else if err := renderWorkflowRecent(d, rawRecords(recent), bucket, host, slug); err != nil {
+		} else if err := renderWorkflowRecent(d, rawRecords(recent), host, slug); err != nil {
 			return err
 		}
 		if _, err = fmt.Fprintln(d.Out, "\n"+d.paint("Stats for the last "+output.CellText(since)+".", "2")+"\n"); err != nil {

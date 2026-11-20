@@ -7,11 +7,13 @@ avr-workflow-run \- Trigger a workflow_dispatch event.
 .SH DESCRIPTION
 Trigger a workflow_dispatch event.
 .PP
-WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub numeric workflow ID, a workflow path, or the workflow's display name. Bare filenames (build.yml) select GitHub Actions; use the full .avrea/workflows/build.yml path for Avrea CI.
+WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric workflow ID, a workflow path, or the workflow's display name. Bare filenames (build.yml) select GitHub Actions; use the full .avrea/workflows/build.yml path for Avrea CI.
 .PP
-Native -f inputs use the workflow's declared types. JSON preserves booleans and numbers. A receipt identifies the exact native run. If a response is lost, use the printed retry command to recover the same invocation with its resolved ref, inputs and --idempotency-key. --no-watch prints the accepted ref and commit plus a command to resume following a pending native dispatch.
+Inputs are sent as strings. Avrea CI converts each value to the type the workflow declares.
 .PP
-For GitHub Actions, --watch follows the run GitHub returned for the dispatch, or else the newest workflow_dispatch run of the workflow on the dispatched ref. With --exit-status, a run that does not appear within 90 seconds exits 1.
+--watch follows the run the dispatch started. When GitHub returns no run ID, it follows the newest workflow_dispatch run of the workflow on the dispatched ref. With --exit-status, a run that does not appear within 90 seconds exits 1.
+.PP
+An Avrea CI dispatch prints a command that repeats it with its --idempotency-key. Repeating a dispatch never starts a second run: use the command to retry after a lost response or to resume following the run.
 .PP
 .RS 4
 .nf
@@ -44,9 +46,6 @@ Workflow input: key=value (repeatable). (repeatable)
 \fB\-\-json\fR
 Read a JSON object of inputs from stdin.
 .TP
-\fB\-\-idempotency\-key\fR \fIUUID\fR
-For Avrea CI, reuse this key to retry the same invocation.
-.TP
 \fB\-w\fR, \fB\-\-watch\fR / \fB\-W\fR, \fB\-\-no\-watch\fR
 Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately. (default: True)
 .TP
@@ -55,6 +54,9 @@ With --watch, exit non-zero if the run failed.
 .TP
 \fB\-\-interval\fR \fIINTEGER\fR
 With --watch, refresh interval in seconds. (default: 3)
+.TP
+\fB\-\-idempotency\-key\fR \fIUUID\fR
+For Avrea CI, reuse this key to retry or resume the same dispatch.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-workflow (1),

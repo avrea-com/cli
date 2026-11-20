@@ -56,26 +56,6 @@ func TestMapRequestsPreserveOmissionNullEmptyAndFalse(t *testing.T) {
 	}
 }
 
-func TestNativeReceiptRejectsWrongTypesBeforeFollowing(t *testing.T) {
-	base := `{"data":{"dispatch_id":"wap-019a0000000070008000000000000001","state":"pending","ref":"main","commit_sha":"abc","run_ids":[],"reason":null}}`
-	for _, tc := range []struct {
-		key   string
-		value any
-	}{
-		{"dispatch_id", true}, {"state", 1}, {"ref", nil}, {"commit_sha", []any{}},
-		{"run_ids", nil}, {"run_ids", []any{true}}, {"reason", map[string]any{}},
-	} {
-		var body map[string]any
-		if err := json.Unmarshal([]byte(base), &body); err != nil {
-			t.Fatal(err)
-		}
-		body["data"].(map[string]any)[tc.key] = tc.value
-		if _, err := parseNativeReceipt(body); err == nil {
-			t.Fatalf("accepted %s: %#v", tc.key, tc.value)
-		}
-	}
-}
-
 func TestEmptyMutationResponsesRemainNull(t *testing.T) {
 	for _, tc := range []struct {
 		args     []string
