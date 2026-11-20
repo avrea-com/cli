@@ -89,11 +89,12 @@ def test_partial_github_and_pypi_upload_resume(tmp_path, monkeypatch):
 
 
 def test_new_draft_is_filled_while_the_release_list_lags(tmp_path, monkeypatch):
-    (tmp_path / "avr-version.txt").write_text("0.9.0\n")
+    version_file = tmp_path / "avr-version.txt"
+    version_file.write_text("0.9.0\n")
     state = fake_github(monkeypatch, "v0.9.0", listed=[])
     publish.prepare(tmp_path, "v0.9.0")
     assert state["created"] == 1
-    assert state["assets"] == {"avr-version.txt": b"0.9.0\n"}
+    assert state["assets"] == {version_file.name: version_file.read_bytes()}
 
 
 def test_several_releases_for_the_tag_stop_before_any_change(tmp_path, monkeypatch):
