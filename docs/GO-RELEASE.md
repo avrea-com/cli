@@ -106,4 +106,5 @@ platforms have no 0.7 wheel; the release has no fallback sdist.
 Publication is resumable: stage GitHub assets in a draft, verify existing asset
 and PyPI wheel digests, upload missing wheels, then publish the GitHub release.
 A mismatch stops recovery; reruns never replace existing release bytes.
-`--verify-tag` checks tag existence, not its cryptographic signature.
+Two releases for one tag also stop it. The publish job checks that the tag
+exists on GitHub before creating the draft, not its cryptographic signature.
