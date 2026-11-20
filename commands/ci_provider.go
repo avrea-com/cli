@@ -1,10 +1,5 @@
 package commands
 
-import (
-	"fmt"
-	"github.com/avrea-com/cli/output"
-)
-
 func runCIValue(row map[string]any) any {
 	if value, ok := row["ci_provider"]; ok {
 		return value
@@ -47,16 +42,6 @@ func runLabel(row map[string]any, id string) string {
 		return id
 	}
 	return "#" + fieldText(row, "run_number")
-}
-func requireExternalCI(row map[string]any, feature string) error {
-	switch row["ci_provider"] {
-	case nil, "github_actions", "gitlab_ci":
-		return nil
-	case "avrea_ci":
-		return &ExitError{1, "Error: " + feature + " are not available for Avrea CI yet."}
-	default:
-		return &ExitError{1, "Error: Unsupported CI provider: " + output.CellText(fmt.Sprint(row["ci_provider"]))}
-	}
 }
 func validateCIProvider(value string) error {
 	switch value {

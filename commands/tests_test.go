@@ -18,7 +18,6 @@ func TestTestsShorthandOnComposedRoots(t *testing.T) {
 		for _, args := range [][]string{
 			{"tests", resultTestJob, "--json", "?"},
 			{"--no-color", "tests", resultTestJob, "--json", "?"},
-			{"tests", "awj-019a0000000070008000000000000007", "--json", "?"},
 		} {
 			t.Run(name+"/"+strings.Join(args, " "), func(t *testing.T) {
 				d, out, stderr := testDeps(t)

@@ -139,7 +139,7 @@ func renderWorkflowSummary(d Dependencies, bucket map[string]any, host, slug str
 	return err
 }
 
-func renderWorkflowRecent(d Dependencies, rows []map[string]any, bucket map[string]any, host, slug string) error {
+func renderWorkflowRecent(d Dependencies, rows []map[string]any, host, slug string) error {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -149,9 +149,6 @@ func renderWorkflowRecent(d Dependencies, rows []map[string]any, bucket map[stri
 		branchWidth = max(branchWidth, utf8.RuneCountInString(fieldText(row, "head_branch")))
 	}
 	titleWidth, branchWidth = min(titleWidth, 50), min(branchWidth, 32)
-	wf, _ := bucket["workflow"].(map[string]any)
-	repo := fieldText(wf, "repository_full_name")
-	platform := fieldText(wf, "platform")
 	var b strings.Builder
 	fmt.Fprintln(&b, "\n"+d.paint("RECENT RUNS", "97;1")+"\n")
 	fmt.Fprintln(&b, workflowHeaders(d, []string{"TITLE", "BRANCH", "EVENT", "ID", "ELAPSED", "AGE"}, []int{titleWidth, branchWidth, 18, 36, 10, 12}, 4, "  "))
@@ -164,9 +161,7 @@ func renderWorkflowRecent(d Dependencies, rows []map[string]any, bucket map[stri
 				target := host + "/org/" + slug + "/runs/" + fieldText(row, "run_id")
 				title, id = linkCell(title, target), linkCell(id, target)
 			}
-			if (platform == "" || platform == "github") && strings.Contains(repo, "/") && fieldText(row, "head_branch") != "" {
-				branch = linkCell(branch, "https://github.com/"+repo+"/tree/"+fieldText(row, "head_branch"))
-			}
+			branch = linkCell(branch, repositoryRefLink(host+"/org/"+slug, fieldText(row, "ci_provider"), diagnosticObject(row["repository"]), "tree", fieldText(row, "head_branch")))
 		}
 		cells := []string{title, branch, padded(fieldText(row, "event"), 18, false), id, padded(formatDuration(row["duration_seconds"]), 10, true), d.paint(padded(relativeAge(fieldText(row, "created_at"), d.Now()), 12, true), "2")}
 		fmt.Fprintln(&b, d.indicator(row, "status")+" "+strings.Join(cells, "  "))

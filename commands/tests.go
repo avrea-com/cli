@@ -23,7 +23,7 @@ var testSummaryFields = []string{"organization_id", "repository_id", "job_id", "
 var testSnapshotFields = append(slices.Clone(testSummaryFields[2:]), "filters")
 var testResultFields = append(slices.Clone(testSummaryFields), "filters", "data", "pagination")
 var testOutcomes = []string{"passed", "failed", "skipped", "errored"}
-var testJobID = lazyRegexp("^(job|awj)-[0-9a-f]{32}$")
+var testJobID = lazyRegexp("^job-[0-9a-f]{32}$")
 
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
@@ -183,7 +183,7 @@ func expandTestsShorthand(root *cobra.Command, args []string) []string {
 		case "-v", "--verbose", "--no-color", "--links", "--no-links":
 			continue
 		}
-		if !strings.HasPrefix(arg, "job-") && !strings.HasPrefix(arg, "awj-") && !strings.HasPrefix(arg, "run-") && !strings.HasPrefix(arg, "awr-") && !strings.HasPrefix(arg, "https://") && !decimalPattern().MatchString(arg) {
+		if !strings.HasPrefix(arg, "job-") && !strings.HasPrefix(arg, "run-") && !strings.HasPrefix(arg, "https://") && !decimalPattern().MatchString(arg) {
 			return args
 		}
 		for i, original := range args {
@@ -496,9 +496,9 @@ func showTestResults(w io.Writer, response map[string]any, summary bool) error {
 
 func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api *client.Client, target, org, name string, hasName bool) (string, string, error) {
 	ctx := cmd.Context()
-	if strings.HasPrefix(target, "job-") || strings.HasPrefix(target, "awj-") {
+	if strings.HasPrefix(target, "job-") {
 		if !testJobID().MatchString(target) {
-			return "", "", usageError(cmd, "Invalid value for RUN_OR_JOB: use job- or awj- followed by 32 lowercase hex characters")
+			return "", "", usageError(cmd, "Invalid value for RUN_OR_JOB: use job- followed by 32 lowercase hex characters")
 		}
 		if hasName {
 			return "", "", usageError(cmd, "--job selects a job within a run. Omit it when passing a job ID.")
@@ -513,7 +513,7 @@ func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api 
 	if err != nil {
 		var exit *ExitError
 		if errors.Is(err, errInvalidRunReference) || (errors.As(err, &exit) && exit.Code == 2) {
-			err = usageError(cmd, "Invalid value for RUN_OR_JOB: Use an Avrea run or job ID, a positive GitHub run ID, a GitHub Actions run or job URL or an Avrea console run URL. For GitLab jobs, use their Avrea job ID (job- or awj-).")
+			err = usageError(cmd, "Invalid value for RUN_OR_JOB: Use an Avrea run or job ID, a positive GitHub run ID, a GitHub Actions run or job URL or an Avrea console run URL. For GitLab jobs, use their Avrea job ID (job-).")
 		}
 		return "", "", err
 	}

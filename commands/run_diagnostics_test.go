@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -95,5 +96,45 @@ func TestDiagnosticsTimingUsesCompletionSourceAndRejectsRegression(t *testing.T)
 	timing, skew = diagnosticTiming(nil, "2026-01-01T00:00:05Z", nil, nil, now, false, "completed_at")
 	if skew || timing["execution_seconds"] != json.Number("25.0") || timing["execution_end_source"] != "generated_at" {
 		t.Fatal(timing, skew)
+	}
+}
+
+func TestDiagnosticsAvreaCIRunUsesWorkflowIDBaseline(t *testing.T) {
+	d, stdout, stderr := testDeps(t)
+	const workflow = "wfl-019a0000000070008000000000000003"
+	var aggregate atomic.Value
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]any{"data": []any{}}
+		switch {
+		case strings.HasSuffix(r.URL.Path, inspectionRun):
+			response["data"] = map[string]any{
+				"run_id": inspectionRun, "ci_provider": "avrea_ci", "created_at": "2026-01-01T00:00:00Z", "status": "completed",
+				"repository_id": "rep-019a0000000070008000000000000002", "platform_workflow_id": nil,
+				"workflow": map[string]any{"workflow_id": workflow, "platform_id": nil},
+			}
+		case strings.HasSuffix(r.URL.Path, "/aggregate"):
+			aggregate.Store(r.URL.Query())
+			response["data"] = []any{map[string]any{"success_count": 4, "success_median_duration_seconds": 60.0, "success_p95_duration_seconds": 90.0}}
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+	d.LoadConfig = func() (config.Config, error) {
+		return config.Config{Host: server.URL, Token: "avr_fixture", Org: inspectionOrg}, nil
+	}
+	if code := Execute(t.Context(), []string{"run", "diagnose", inspectionRun, "--json"}, d); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	query, _ := aggregate.Load().(url.Values)
+	if query.Get("workflow_ids") != workflow || query.Has("workflow_platform_ids") {
+		t.Fatal(query)
+	}
+	var report map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	baseline := diagnosticObject(report["baseline"])
+	if baseline["status"] != "complete" || baseline["sample_count"] != float64(4) || report["complete"] != true {
+		t.Fatal(baseline, report["warnings"])
 	}
 }

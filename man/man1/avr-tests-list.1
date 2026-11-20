@@ -7,7 +7,7 @@ avr-tests-list \- Read one job's latest confirmed execution, including repeated 
 .SH DESCRIPTION
 Read one job's latest confirmed execution, including repeated tests.
 .PP
-RUN_OR_JOB accepts the same run references as avr run view, or an Avrea job ID (job- or awj-). A run selects one job, never combines all jobs. --job NAME must match exactly one job; without it a run must have one job. A GitHub job URL selects that job first; --job must also match it.
+RUN_OR_JOB accepts the same run references as avr run view, or an Avrea job ID (job-). A run selects one job, never combines all jobs. --job NAME must match exactly one job; without it a run must have one job. A GitHub job URL selects that job first; --job must also match it.
 .PP
 Names, outcomes, recorded durations and available failure messages are shown together. A failed test is data, not a command error. Missing, pending, partial and expired evidence are reported explicitly; an older execution is never substituted. Complete describes collected reports.
 .PP

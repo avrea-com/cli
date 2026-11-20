@@ -6,7 +6,7 @@ There is no generated model package or second typed copy of each response.
 
 The client checks response envelopes and important field types in
 `client/records.go`. Commands retain semantic checks where they act on a value:
-resource selection, SSH endpoints/host keys, native dispatch receipts, download
+resource selection, SSH endpoints/host keys, Avrea CI dispatch and rerun receipts, download
 integrity and user input. Unknown fields and opaque settings/summary payloads
 remain untouched. These focused checks are not a complete OpenAPI validator.
 Request maps explicitly distinguish omitted keys, null, empty values and false.

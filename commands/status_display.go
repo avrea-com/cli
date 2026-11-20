@@ -34,9 +34,8 @@ func renderStatus(d Dependencies, report, repoInfo map[string]any, repoID, host 
 				target := base + "/runs/" + url.PathEscape(id)
 				title, workflow, idCell = linkCell(title, target), linkCell(workflow, target), linkCell(idCell, target)
 			}
-			repo := fieldText(diagnosticObject(row["repository"]), "full_name")
-			if links && branchName != "" && strings.Contains(repo, "/") {
-				branch = linkCell(branch, "https://github.com/"+repo+"/tree/"+branchName)
+			if links {
+				branch = linkCell(branch, repositoryRefLink(base, fieldText(row, "ci_provider"), diagnosticObject(row["repository"]), "tree", branchName))
 			}
 			cells := []string{title, workflow, branch, padded(fieldText(row, "event"), 18, false), idCell, padded(formatDuration(row["duration_seconds"]), 12, true), d.paint(padded(relativeAge(fieldText(row, "created_at"), d.Now()), 12, true), "2")}
 			b.WriteString(d.indicator(row, "status") + " " + strings.Join(cells, " ") + "\n")

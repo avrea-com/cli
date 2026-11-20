@@ -76,7 +76,7 @@ func runDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "status_values", Kind: "option", Opts: []string{"--status"}, Type: "choice", Multiple: true, Nargs: 1, Help: descriptionText("Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable."), Choices: []string{"action_required", "cancelled", "completed", "failure", "in_progress", "neutral", "queued", "skipped", "stale", "startup_failure", "success", "timed_out"}}, CompletionKind: "Choice"},
 				{Param: docgen.Param{Name: "head_branches", Kind: "option", Opts: []string{"--branch"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Filter by head branch (repeatable).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "ci_provider", Kind: "option", Opts: []string{"--ci-provider"}, Type: "choice", Nargs: 1, Help: descriptionText("Filter by CI engine."), Choices: []string{"github_actions", "gitlab_ci", "avrea_ci"}}, CompletionKind: "Choice", CaseSensitive: true},
-				{Param: docgen.Param{Name: "workflow_ids", Kind: "option", Opts: []string{"-w", "--workflow"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Filter by workflow ID (wfl- or awf-, repeatable).")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "workflow_ids", Kind: "option", Opts: []string{"-w", "--workflow"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Filter by workflow ID (wfl-, repeatable).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "since", Kind: "option", Opts: []string{"--since"}, Type: "text", Nargs: 1, Help: descriptionText("Relative time window: '7d', '24h', etc. Sugar for --created-after.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "created_after", Kind: "option", Opts: []string{"--from", "--created-after"}, Type: "text", Nargs: 1, Help: descriptionText("Only runs created after this ISO timestamp.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "created_before", Kind: "option", Opts: []string{"--to", "--created-before"}, Type: "text", Nargs: 1, Help: descriptionText("Only runs created before this ISO timestamp.")}, CompletionKind: "String"},
@@ -134,7 +134,7 @@ func runDescription(path string) docgen.Description {
 				"    avr run rerun run-019e5a2e474e71c297e452279d4bcdea\n" +
 				"    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed\n" +
 				"    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes\n" +
-				"    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
+				"    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test\n",
 			Short: "Re-run a completed workflow run.",
 			Usage: []string{"[OPTIONS]", "RUN"},
 			Parameters: []docgen.Parameter{
@@ -199,7 +199,7 @@ func runDescription(path string) docgen.Description {
 				"Pass --repo (repeatable) to scope the auto-select to specific repositories.\n" +
 				"\n" +
 				"NDJSON job and run completion events include ci_provider\n" +
-				"(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null\n" +
+				"(github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null\n" +
 				"platform_job_id; correlate events using run_id and avrea_job_id.\n" +
 				"\n" +
 				"\b\n" +

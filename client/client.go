@@ -191,8 +191,8 @@ func (c *Client) exchange(ctx context.Context, method, path string, body any, he
 	if err != nil {
 		return nil, errors.New("could not construct API request")
 	}
-	// Native dispatch owns its bounded retry loop. Idempotency-Key otherwise
-	// lets net/http silently replay a POST on a reused connection as well.
+	// Avrea CI reruns and dispatches must reach the API at most once per
+	// attempt; net/http otherwise replays a POST on a reused connection.
 	if content, ok := body.(rawRequestContent); ok && content.noTransportRetry {
 		req.GetBody = nil
 	}

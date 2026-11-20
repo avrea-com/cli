@@ -379,13 +379,23 @@ func buildRunDiagnostics(ctx context.Context, d Dependencies, api *client.Client
 		r, e := api.RunMetrics(ctx, org, id, url.Values{"source": diagnosticSources})
 		return r, e
 	})
+	// Avrea CI workflows have no platform workflow ID, so their baseline is
+	// selected by the Avrea workflow ID.
+	baselineQuery := url.Values{
+		"repository_ids": {repo}, "conclusions": {"success"},
+		"created_after": {diagnosticISO(start)}, "created_before": {diagnosticISO(target.Add(-time.Microsecond))}, "time_bucket": {"total"},
+	}
+	if workflow, _ := diagnosticObject(run["workflow"])["workflow_id"].(string); platformOK && platformErr == nil {
+		baselineQuery.Set("workflow_platform_ids", string(platform))
+	} else if workflow != "" {
+		baselineQuery.Set("workflow_ids", workflow)
+	} else {
+		baselineQuery = nil
+	}
 	var baselineFuture <-chan diagnosticResult
-	if repo != "" && platformOK && platformErr == nil {
+	if repo != "" && baselineQuery != nil {
 		baselineFuture = diagnosticAsync(func() (map[string]any, error) {
-			page, e := api.WorkflowAggregates(ctx, org, url.Values{
-				"repository_ids": {repo}, "conclusions": {"success"}, "workflow_platform_ids": {string(platform)},
-				"created_after": {diagnosticISO(start)}, "created_before": {diagnosticISO(target.Add(-time.Microsecond))}, "time_bucket": {"total"},
-			})
+			page, e := api.WorkflowAggregates(ctx, org, baselineQuery)
 			return page.Fields, e
 		})
 	} else {

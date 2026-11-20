@@ -12,7 +12,7 @@ import (
 	"github.com/avrea-com/cli/config"
 )
 
-var runIDPattern = lazyRegexp(`^(?:run|awr)-[0-9a-f]{32}$`)
+var runIDPattern = lazyRegexp(`^run-[0-9a-f]{32}$`)
 var decimalPattern = lazyRegexp(`^[0-9]+$`)
 var githubNamePattern = lazyRegexp(`^[A-Za-z0-9_.-]+$`)
 var githubStepFragmentPattern = lazyRegexp(`^step:[0-9]+:[0-9]+$`)

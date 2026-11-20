@@ -57,7 +57,7 @@ func artifactDescription(path string) docgen.Description {
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "repo", Kind: "argument", Opts: []string{"repo"}, Type: "text", Required: true, Nargs: 1}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "org", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug.")}, CompletionKind: "String"},
-				{Param: docgen.Param{Name: "run_id", Kind: "option", Opts: []string{"--run-id"}, Type: "text", Nargs: 1, Help: descriptionText("Numeric GitHub run ID, run- ID, or native awr- ID.")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "run_id", Kind: "option", Opts: []string{"--run-id"}, Type: "text", Nargs: 1, Help: descriptionText("Numeric GitHub run ID or run- ID.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "limit", Kind: "option", Opts: []string{"--limit"}, Type: "integer range", Nargs: 1, Help: descriptionText("Maximum artifacts per page."), ShowDefault: true, Default: 50}, Suffix: "  [default: 50; 1<=x<=1000]", CompletionKind: "IntRange"},
 				{Param: docgen.Param{Name: "cursor", Kind: "option", Opts: []string{"--cursor"}, Type: "text", Nargs: 1, Help: descriptionText("Continue from a previous page's cursor.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},

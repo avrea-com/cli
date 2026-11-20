@@ -157,7 +157,7 @@ avr artifact list [OPTIONS] REPO
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID or slug.
-- `--run-id <TEXT>` — Numeric GitHub run ID, run- ID, or native awr- ID.
+- `--run-id <TEXT>` — Numeric GitHub run ID or run- ID.
 - `--limit <INTEGER RANGE>` — Maximum artifacts per page. _(default: `50`)_
 - `--cursor <TEXT>` — Continue from a previous page's cursor.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -277,7 +277,7 @@ JSON FIELDS
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--branch <TEXT>` — Filter by head branch (repeatable). _(repeatable)_
 - `--ci-provider <CHOICE>` — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
-- `-w, --workflow <TEXT>` — Filter by workflow ID (wfl- or awf-, repeatable). _(repeatable)_
+- `-w, --workflow <TEXT>` — Filter by workflow ID (wfl-, repeatable). _(repeatable)_
 - `--since <TEXT>` — Relative time window: '7d', '24h', etc. Sugar for --created-after.
 - `--from, --created-after <TEXT>` — Only runs created after this ISO timestamp.
 - `--to, --created-before <TEXT>` — Only runs created before this ISO timestamp.
@@ -345,7 +345,7 @@ Examples:
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
     avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
-    avr run rerun awr-019e5a2e474e71c297e452279d4bcdea --job build --job test
+    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test
 ```
 
 **Arguments**
@@ -427,7 +427,7 @@ Pass --repo (repeatable) to scope the auto-select to specific repositories.
 ```
 
 NDJSON job and run completion events include ci_provider
-(github_actions, gitlab_ci, or avrea_ci). Native jobs have a null
+(github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null
 platform_job_id; correlate events using run_id and avrea_job_id.
 
 ```sh
@@ -590,7 +590,7 @@ JSON FIELDS
 - `--status <CHOICE>` — Filter by state (queued, in_progress, completed) or conclusion (success, failure, ...). Repeatable. _(choices: `action_required`, `cancelled`, `completed`, `failure`, `in_progress`, `neutral`, `queued`, `skipped`, `stale`, `startup_failure`, `success`, `timed_out` · repeatable)_
 - `--on-avrea / --shadowing` — Filter by Avrea-run vs shadowing jobs.
 - `--ci-provider <CHOICE>` — Filter by CI engine. _(choices: `github_actions`, `gitlab_ci`, `avrea_ci`)_
-- `-w, --workflow <TEXT>` — Filter by workflow ID (wfl- or awf-, repeatable). _(repeatable)_
+- `-w, --workflow <TEXT>` — Filter by workflow ID (wfl-, repeatable). _(repeatable)_
 - `--since <TEXT>` — Relative time window: '7d', '24h', etc.
 - `-L, --limit <INTEGER RANGE>` — Max jobs to return. _(default: `20`)_
 - `--cursor <TEXT>` — Pagination cursor from a previous response.
@@ -1259,22 +1259,23 @@ Trigger a workflow_dispatch event.
 avr workflow run [OPTIONS] WORKFLOW
 ```
 
-WORKFLOW can be an Avrea workflow ID (wfl-... or awf-...), a GitHub
-numeric workflow ID, a workflow path, or the workflow's display name.
-Bare filenames (build.yml) select GitHub Actions; use the full
+WORKFLOW can be an Avrea workflow ID (wfl-...), a GitHub numeric
+workflow ID, a workflow path, or the workflow's display name. Bare
+filenames (build.yml) select GitHub Actions; use the full
 .avrea/workflows/build.yml path for Avrea CI.
 
-Native -f inputs use the workflow's declared types. JSON preserves
-booleans and numbers. A receipt identifies the exact native run. If a
-response is lost, use the printed retry command to recover the same
-invocation with its resolved ref, inputs and --idempotency-key.
---no-watch prints the accepted ref and commit plus a command to resume
-following a pending native dispatch.
+Inputs are sent as strings. Avrea CI converts each value to the type
+the workflow declares.
 
-For GitHub Actions, --watch follows the run GitHub returned for the
-dispatch, or else the newest workflow_dispatch run of the workflow on
-the dispatched ref. With --exit-status, a run that does not appear
+--watch follows the run the dispatch started. When GitHub returns no
+run ID, it follows the newest workflow_dispatch run of the workflow
+on the dispatched ref. With --exit-status, a run that does not appear
 within 90 seconds exits 1.
+
+An Avrea CI dispatch prints a command that repeats it with its
+--idempotency-key. Repeating a dispatch never starts a second run:
+use the command to retry after a lost response or to resume
+following the run.
 
 ```sh
 Examples:
@@ -1296,10 +1297,10 @@ Examples:
 - `-r, --ref <TEXT>` — Branch or tag to run at. Defaults to the repository's default branch.
 - `-f, --raw-field <TEXT>` — Workflow input: key=value (repeatable). _(repeatable)_
 - `--json` — Read a JSON object of inputs from stdin.
-- `--idempotency-key <UUID>` — For Avrea CI, reuse this key to retry the same invocation.
 - `-w, --watch / -W, --no-watch` — Poll for the new run and watch it until completion. Pass --no-watch / -W to return immediately. _(default: `True`)_
 - `--exit-status` — With --watch, exit non-zero if the run failed.
 - `--interval <INTEGER>` — With --watch, refresh interval in seconds. _(default: `3`)_
+- `--idempotency-key <UUID>` — For Avrea CI, reuse this key to retry or resume the same dispatch.
 
 #### `avr workflow view`
 
@@ -1508,7 +1509,7 @@ avr tests list [OPTIONS] RUN_OR_JOB
 ```
 
 RUN_OR_JOB accepts the same run references as avr run view, or an Avrea
-job ID (job- or awj-). A run selects one job, never combines all jobs.
+job ID (job-). A run selects one job, never combines all jobs.
 --job NAME must match exactly one job; without it a run must have one job.
 A GitHub job URL selects that job first; --job must also match it.
 

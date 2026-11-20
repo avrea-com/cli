@@ -114,16 +114,16 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			}
 			existing, id = record, fieldText(record, "run_id")
 		}
-		native := rerun && (fieldText(existing, "ci_provider") == "avrea_ci" || strings.HasPrefix(id, "awr-"))
+		avreaCI := rerun && fieldText(existing, "ci_provider") == "avrea_ci"
 		if rerun {
-			if !native && len(jobs) > 0 {
+			if !avreaCI && len(jobs) > 0 {
 				return usageError(cmd, "--job applies to Avrea CI reruns.")
 			}
-			if !native && invocationKey != "" {
+			if !avreaCI && invocationKey != "" {
 				return usageError(cmd, "--idempotency-key applies to Avrea CI reruns.")
 			}
-			if native && (failed || len(jobs) > 0) {
-				jobs, err = resolveNativeRerunJobs(cmd, cfg, api, orgID, id, existing, jobs, invocationKey)
+			if avreaCI && (failed || len(jobs) > 0) {
+				jobs, err = resolveAvreaCIRerunJobs(cmd, cfg, api, orgID, id, existing, jobs, invocationKey)
 				if err != nil {
 					return err
 				}
@@ -146,9 +146,9 @@ func newRunMutation(d Dependencies, rerun bool) *cobra.Command {
 			}
 		}
 		var cancelFields map[string]any
-		var receipt *nativeRerunReceipt
-		if native {
-			receipt, err = submitNativeRerun(cmd.Context(), d, cfg, api, orgID, id, invocationKey, failed, jobs)
+		var receipt *avreaCIRerunReceipt
+		if avreaCI {
+			receipt, err = submitAvreaCIRerun(cmd.Context(), d, cfg, api, orgID, id, invocationKey, failed, jobs)
 			if err != nil {
 				return err
 			}

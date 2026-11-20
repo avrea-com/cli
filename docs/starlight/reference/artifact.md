@@ -85,7 +85,7 @@ avr artifact list [OPTIONS] REPO
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
-- <code class="cli-flag">&#x2D;&#x2D;run-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Numeric GitHub run ID, run- ID, or native awr- ID.
+- <code class="cli-flag">&#x2D;&#x2D;run-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — Numeric GitHub run ID or run- ID.
 - <code class="cli-flag">&#x2D;&#x2D;limit</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Maximum artifacts per page. _(default: `50`)_
 - <code class="cli-flag">&#x2D;&#x2D;cursor</code> <code class="cli-value">&lt;TEXT&gt;</code> — Continue from a previous page's cursor.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
