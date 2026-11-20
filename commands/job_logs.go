@@ -122,7 +122,8 @@ func renderLogEntries(d Dependencies, w io.Writer, entries []map[string]any, cur
 	}
 	return nil
 }
-func jobLogContent(ctx context.Context, d Dependencies, api *client.Client, id string, steps []map[string]any, o logOptions, target string) (string, error) {
+func jobLogContent(ctx context.Context, d Dependencies, api *client.Client, id string, job map[string]any, o logOptions, target string) (string, error) {
+	steps := objectList(job["steps"])
 	var b strings.Builder
 	if o.failed {
 		o.step = ""
@@ -137,7 +138,7 @@ func jobLogContent(ctx context.Context, d Dependencies, api *client.Client, id s
 			}
 		}
 		if len(failedSteps) == 0 {
-			return noFailedSteps(id, steps), nil
+			return noFailedSteps(id, fieldText(job, "conclusion"), steps), nil
 		}
 	}
 	entries, err := fetchJobLogs(ctx, api, id, o)
@@ -224,7 +225,7 @@ func newJobLogs(d Dependencies) *cobra.Command {
 		if o.follow {
 			return followJobLogs(cmd.Context(), d, cfg, api, orgID, args[0], fieldText(rec, "job_name"), o.all, target)
 		}
-		content, err := jobLogContent(cmd.Context(), d, api, args[0], objectList(rec["steps"]), o, target)
+		content, err := jobLogContent(cmd.Context(), d, api, args[0], rec, o, target)
 		if err != nil {
 			return apiError(cfg, err, "fetch logs")
 		}
@@ -389,7 +390,13 @@ func followJobLogs(ctx context.Context, d Dependencies, cfg config.Config, api *
 	}
 }
 
-func noFailedSteps(id string, steps []map[string]any) string {
+// noFailedSteps explains why --failed has nothing to print for a job. Only a
+// job that concluded unsuccessfully should have left a failed step behind.
+func noFailedSteps(id, conclusion string, steps []map[string]any) string {
+	switch conclusion {
+	case "", "success", "skipped":
+		return "No failed steps."
+	}
 	missing := len(steps) == 0
 	for _, step := range steps {
 		missing = missing || fieldText(step, "conclusion") == ""

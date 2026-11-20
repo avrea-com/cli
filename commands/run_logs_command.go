@@ -96,9 +96,8 @@ func newRunLogs(d Dependencies) *cobra.Command {
 			}
 			fmt.Fprintln(&b, "\n"+header(j))
 			opts := o
-			steps := objectList(j["steps"])
-			opts.failed = o.failed && len(steps) > 0
-			content, e := jobLogContent(cmd.Context(), d, api, id, steps, opts, jobTarget(cfg.Host, slug, id))
+			opts.failed = o.failed && len(objectList(j["steps"])) > 0
+			content, e := jobLogContent(cmd.Context(), d, api, id, j, opts, jobTarget(cfg.Host, slug, id))
 			if e != nil {
 				return apiError(cfg, e, "fetch logs")
 			}

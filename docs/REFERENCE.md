@@ -1270,12 +1270,14 @@ the workflow declares.
 --watch follows the run the dispatch started. When GitHub returns no
 run ID, it follows the newest workflow_dispatch run of the workflow
 on the dispatched ref. With --exit-status, a run that does not appear
-within 90 seconds exits 1.
+within 90 seconds exits 1. An Avrea CI dispatch that is rejected, or
+whose receipt cannot be read, exits 1 with or without --exit-status.
 
 An Avrea CI dispatch prints a command that repeats it with its
 --idempotency-key. Repeating a dispatch never starts a second run:
 use the command to retry after a lost response or to resume
-following the run.
+following the run. The command is written to stderr and includes
+the input values.
 
 ```sh
 Examples:

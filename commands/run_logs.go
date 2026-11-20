@@ -18,7 +18,8 @@ func runLogs(ctx context.Context, d Dependencies, api *client.Client, jobs []map
 	var b strings.Builder
 	for _, job := range jobs {
 		id := fieldText(job, "job_id")
-		if id == "" || failed && fieldText(job, "conclusion") == "success" {
+		conclusion := fieldText(job, "conclusion")
+		if id == "" || failed && (conclusion == "success" || conclusion == "skipped") {
 			continue
 		}
 		target := ""
@@ -30,13 +31,13 @@ func runLogs(ctx context.Context, d Dependencies, api *client.Client, jobs []map
 		failedSteps := []map[string]any{}
 		if failed {
 			for _, step := range objectList(job["steps"]) {
-				conclusion := fieldText(step, "conclusion")
-				if conclusion != "" && conclusion != "success" && conclusion != "skipped" {
+				outcome := fieldText(step, "conclusion")
+				if outcome != "" && outcome != "success" && outcome != "skipped" {
 					failedSteps = append(failedSteps, step)
 				}
 			}
 			if len(failedSteps) == 0 {
-				b.WriteString(noFailedSteps(id, objectList(job["steps"])) + "\n")
+				b.WriteString(noFailedSteps(id, conclusion, objectList(job["steps"])) + "\n")
 				continue
 			}
 		}
