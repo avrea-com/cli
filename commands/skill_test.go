@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -66,7 +67,11 @@ func skillGuideCommands(document string) []string {
 // so a renamed command or removed flag fails here instead of in an agent.
 func TestSkillGuideCommandsParse(t *testing.T) {
 	checked := 0
-	for _, document := range []string{skillGuide, skillStub} {
+	documents := []string{skillGuide(""), skillStub}
+	for _, topic := range skillTopicNames() {
+		documents = append(documents, skillGuide(topic))
+	}
+	for _, document := range documents {
 		for _, line := range skillGuideCommands(document) {
 			words, err := shellquote.Split(line)
 			if err != nil {
@@ -119,8 +124,44 @@ func TestSkillGuideCommandsParse(t *testing.T) {
 
 func TestSkillShowNeedsNoCredentials(t *testing.T) {
 	code, out, stderr := skillTestRun(t, nil, "show")
+	if code != 0 || stderr != "" || !strings.Contains(out, "avr skill show diagnose") {
+		t.Fatal(code, stderr, out)
+	}
+	code, out, stderr = skillTestRun(t, nil, "show", "diagnose")
 	if code != 0 || stderr != "" || !strings.Contains(out, "avr run diagnose") {
 		t.Fatal(code, stderr, out)
+	}
+}
+
+// The index and the embedded files must agree: a listed topic without a file
+// would print nothing, and a file without a topic could never be read.
+func TestSkillTopicsMatchTheGuideFiles(t *testing.T) {
+	entries, err := skillGuideFiles.ReadDir("skill/guide")
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []string{}
+	for _, entry := range entries {
+		files = append(files, strings.TrimSuffix(entry.Name(), ".md"))
+	}
+	want := append([]string{"shared"}, skillTopicNames()...)
+	slices.Sort(files)
+	slices.Sort(want)
+	if !slices.Equal(files, want) {
+		t.Fatalf("guide files %v, topics %v", files, want)
+	}
+	shared := skillGuide("")
+	for _, topic := range skillTopicNames() {
+		if !strings.Contains(shared, "`avr skill show "+topic+"`") || !strings.HasPrefix(skillGuide(topic), "# ") {
+			t.Fatal(topic)
+		}
+	}
+}
+
+func TestSkillShowRejectsAnUnknownTopic(t *testing.T) {
+	code, out, stderr := skillTestRun(t, nil, "show", "bogus")
+	if code != 2 || out != "" || !strings.Contains(stderr, "'bogus' is not one of 'test', 'diagnose'") {
+		t.Fatal(code, out, stderr)
 	}
 }
 

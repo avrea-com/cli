@@ -1,0 +1,13 @@
+{
+  "name": "avrea",
+  "owner": { "name": "Avrea" },
+  "metadata": { "description": "Avrea plugins for Cursor" },
+  "plugins": [
+    {
+      "name": "avrea-cli",
+      "source": "plugins/avrea-cli",
+      "category": "developer-tools",
+      "tags": ["ci", "github-actions", "avrea"]
+    }
+  ]
+}

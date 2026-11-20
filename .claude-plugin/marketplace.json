@@ -1,0 +1,14 @@
+{
+  "name": "avrea",
+  "owner": {
+    "name": "Avrea",
+    "url": "https://avrea.com"
+  },
+  "description": "Avrea plugins for Claude Code",
+  "plugins": [
+    {
+      "name": "avrea-cli",
+      "source": "./plugins/avrea-cli"
+    }
+  ]
+}

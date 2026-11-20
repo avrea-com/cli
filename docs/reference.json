@@ -17368,12 +17368,37 @@
             "full": "avr skill show",
             "is_group": false,
             "short_help": "Print the avr guide for coding agents.",
-            "help": "Print the avr guide for coding agents.\n\nThe guide covers testing a change in CI, diagnosing failed or slow runs,\nstructured output and on-demand VMs for the installed avr version.\n",
+            "help": "Print the avr guide for coding agents.\n\nWithout a topic, prints the rules every task follows and the list of\ntopics. With a topic, prints that part of the guide. The guide belongs\nto the installed avr version.\n\n\b\nTopics:\n  test      Push a change and follow its CI run, or dispatch a workflow\n  diagnose  Find why a run failed\n  speed     Find why CI is slow, caches and right-sized runners\n  vms       On-demand Linux, macOS and Windows VMs\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr skill show [OPTIONS]",
-            "params": [],
+            "usage": "avr skill show [OPTIONS] [TOPIC]",
+            "params": [
+              {
+                "name": "topic",
+                "kind": "argument",
+                "opts": [
+                  "topic"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "test",
+                  "diagnose",
+                  "speed",
+                  "vms"
+                ]
+              }
+            ],
             "subcommands": []
           },
           {

@@ -58,11 +58,24 @@ Examples:
 Print the avr guide for coding agents.
 
 ```sh
-avr skill show [OPTIONS]
+avr skill show [OPTIONS] [TOPIC]
 ```
 
-The guide covers testing a change in CI, diagnosing failed or slow runs,
-structured output and on-demand VMs for the installed avr version.
+Without a topic, prints the rules every task follows and the list of
+topics. With a topic, prints that part of the guide. The guide belongs
+to the installed avr version.
+
+```sh
+Topics:
+  test      Push a change and follow its CI run, or dispatch a workflow
+  diagnose  Find why a run failed
+  speed     Find why CI is slow, caches and right-sized runners
+  vms       On-demand Linux, macOS and Windows VMs
+```
+
+**Arguments**
+
+- <code class="cli-arg">[TOPIC]</code> _(choices: `test`, `diagnose`, `speed`, `vms`)_
 
 ### `avr skill uninstall`
 
