@@ -134,16 +134,14 @@ def channels(directory, version, commit=None):
     formula = f'''class Avr < Formula
   desc "Avrea command-line client"
   homepage "https://avrea.com/"
+  url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_darwin_arm64.tar.gz"
   version "{version}"
+  sha256 "{reports["darwin_arm64"]}"
   license "Apache-2.0"
 
   on_macos do
     depends_on arch: :arm64
     depends_on macos: :ventura
-    on_arm do
-      url "https://github.com/avrea-com/cli/releases/download/v{version}/avr_{version}_darwin_arm64.tar.gz"
-      sha256 "{reports["darwin_arm64"]}"
-    end
   end
 
   on_linux do
