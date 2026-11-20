@@ -1,0 +1,9 @@
+interface:
+  display_name: "Avrea CI"
+  short_description: "Watch, diagnose and speed up CI on Avrea"
+  icon_small: "./assets/avrea-icon-64.png"
+  icon_large: "./assets/avrea-icon-256.png"
+  brand_color: "#5560A5"
+  default_prompt: "Use $avrea-cli to find the CI run for my latest commit and explain any failure."
+policy:
+  allow_implicit_invocation: true

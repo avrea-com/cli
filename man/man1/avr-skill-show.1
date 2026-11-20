@@ -3,11 +3,25 @@
 avr-skill-show \- Print the avr guide for coding agents.
 .SH SYNOPSIS
 .B avr skill show
-[OPTIONS]
+[OPTIONS] [TOPIC]
 .SH DESCRIPTION
 Print the avr guide for coding agents.
 .PP
-The guide covers testing a change in CI, diagnosing failed or slow runs, structured output and on-demand VMs for the installed avr version.
+Without a topic, prints the rules every task follows and the list of topics. With a topic, prints that part of the guide. The guide belongs to the installed avr version.
+.PP
+.RS 4
+.nf
+Topics:
+  test      Push a change and follow its CI run, or dispatch a workflow
+  diagnose  Find why a run failed
+  speed     Find why CI is slow, caches and right-sized runners
+  vms       On-demand Linux, macOS and Windows VMs
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fITOPIC\fR]
+(choices: test, diagnose, speed, vms)
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-skill (1),

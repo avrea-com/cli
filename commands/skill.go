@@ -2,7 +2,7 @@ package commands
 
 import (
 	"context"
-	_ "embed"
+	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -13,17 +13,51 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avrea-com/cli/output"
+	"github.com/avrea-com/cli/plugins"
 	"github.com/spf13/cobra"
 )
 
-// The installed skill only points at `avr skill show`, so the guide an agent
-// reads always belongs to the avr version it is about to run.
-//
-//go:embed skill/SKILL.md
-var skillStub string
+var skillStub = plugins.AvreaSkill
 
-//go:embed skill/guide.md
-var skillGuide string
+// The installed skill only points at `avr skill show`, so the guide an agent
+// reads always belongs to the avr version it is about to run. The stub names
+// no topic, so a stub newer than the installed avr still works.
+//
+//go:embed skill/guide
+var skillGuideFiles embed.FS
+
+// skillTopics are the guide sections an agent reads one at a time, in the
+// order `avr skill show` lists them. Each has skill/guide/<name>.md.
+var skillTopics = []struct{ name, summary string }{
+	{"test", "push a change and follow its CI run, or dispatch a workflow"},
+	{"diagnose", "find why a run failed: diagnosis, logs, tests, metrics and reruns"},
+	{"speed", "find why CI is slow: timings, caches and right-sized runners"},
+	{"vms", "create, use and delete on-demand Linux, macOS and Windows VMs"},
+}
+
+func skillTopicNames() []string {
+	names := []string{}
+	for _, topic := range skillTopics {
+		names = append(names, topic.name)
+	}
+	return names
+}
+
+// skillGuide returns one topic, or without one the shared rules and the
+// topic index.
+func skillGuide(topic string) string {
+	if topic != "" {
+		data, _ := skillGuideFiles.ReadFile("skill/guide/" + topic + ".md")
+		return string(data)
+	}
+	data, _ := skillGuideFiles.ReadFile("skill/guide/shared.md")
+	index := "\n## Topics\n\nRead the topic for your task:\n\n"
+	for _, topic := range skillTopics {
+		index += "- `avr skill show " + topic.name + "`: " + topic.summary + "\n"
+	}
+	return string(data) + index
+}
 
 const skillName = "avrea-cli"
 
@@ -278,9 +312,16 @@ func (o *skillOptions) apply(ctx context.Context, d Dependencies, act func(skill
 func NewSkill(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "skill", Short: "Teach coding agents to use avr."}
-	show := &cobra.Command{Use: "show", Short: "Print the avr guide for coding agents.", Args: cobra.NoArgs}
-	show.RunE = run(func(*cobra.Command, []string) error {
-		_, err := fmt.Fprint(d.Out, skillGuide)
+	show := &cobra.Command{Use: "show [TOPIC]", Short: "Print the avr guide for coding agents.", Args: cobra.MaximumNArgs(1), ValidArgs: skillTopicNames()}
+	show.RunE = run(func(_ *cobra.Command, args []string) error {
+		topic := ""
+		if len(args) == 1 {
+			topic = args[0]
+			if !slices.Contains(skillTopicNames(), topic) {
+				return &ExitError{2, "Error: Invalid value for '[TOPIC]': " + pythonQuote(output.CellText(topic)) + " is not one of '" + strings.Join(skillTopicNames(), "', '") + "'."}
+			}
+		}
+		_, err := fmt.Fprint(d.Out, skillGuide(topic))
 		return err
 	})
 

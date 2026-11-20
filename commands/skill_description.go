@@ -66,10 +66,21 @@ func skillDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Print the avr guide for coding agents.\n" +
 				"\n" +
-				"The guide covers testing a change in CI, diagnosing failed or slow runs,\n" +
-				"structured output and on-demand VMs for the installed avr version.\n",
+				"Without a topic, prints the rules every task follows and the list of\n" +
+				"topics. With a topic, prints that part of the guide. The guide belongs\n" +
+				"to the installed avr version.\n" +
+				"\n" +
+				"\b\n" +
+				"Topics:\n" +
+				"  test      Push a change and follow its CI run, or dispatch a workflow\n" +
+				"  diagnose  Find why a run failed\n" +
+				"  speed     Find why CI is slow, caches and right-sized runners\n" +
+				"  vms       On-demand Linux, macOS and Windows VMs\n",
 			Short: "Print the avr guide for coding agents.",
-			Usage: []string{"[OPTIONS]"},
+			Usage: []string{"[OPTIONS]", "[TOPIC]"},
+			Parameters: []docgen.Parameter{
+				{Param: docgen.Param{Name: "topic", Kind: "argument", Opts: []string{"topic"}, Type: "choice", Nargs: 1, Choices: skillTopicNames()}, CompletionKind: "Choice", CaseSensitive: true},
+			},
 		}
 	case "avr skill uninstall":
 		return docgen.Description{

@@ -69,6 +69,16 @@ avr skill install --project          # commit it to the repository for cloud age
 avr skill show                       # print the guide the skill points to
 ```
 
+The same skill also installs without `avr`, from [skills.sh](https://skills.sh) or as a Claude Code plugin. It then tells the agent how to install `avr`:
+
+```sh
+npx skills add avrea-com/cli                  # skills.sh: Claude Code, Codex, Cursor and other agents
+claude plugin marketplace add avrea-com/cli   # Claude Code plugin: add the marketplace,
+claude plugin install avrea-cli@avrea         # then install the plugin
+```
+
+Pick one route per machine. With both the plugin and a skills directory install, Claude Code loads the skill twice.
+
 The skill uses the open [Agent Skills](https://agentskills.io/) format. Claude Code reads it from `~/.claude/skills`, and Codex, OpenCode, Pi, Devin CLI and other tools read it from `~/.agents/skills`. It tells the agent when `avr` is relevant and to read `avr skill show`, a guide to testing a change in CI, diagnosing failed or slow runs, reading tests and logs, and using on-demand VMs. The guide ships with `avr`, so it always matches the installed version. `avr skill uninstall` removes the skill.
 
 Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills`. Their environment also needs `avr` installed and `AVR_TOKEN` set to a [scoped or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."

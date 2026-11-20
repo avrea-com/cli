@@ -1,0 +1,23 @@
+{
+  "name": "avrea-cli",
+  "displayName": "Avrea CI",
+  "description": "Teaches Claude to use the Avrea CLI (avr) with GitHub Actions on Avrea runners and with Avrea CI: watch and diagnose runs, read logs, tests and runner metrics, inspect caches, right-size runners and create on-demand VMs.",
+  "author": {
+    "name": "Avrea",
+    "url": "https://avrea.com"
+  },
+  "homepage": "https://docs.avrea.com/cli",
+  "repository": "https://github.com/avrea-com/cli",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ci",
+    "github-actions",
+    "avrea",
+    "avr"
+  ],
+  "documentationUrl": "https://docs.avrea.com/cli/",
+  "supportUrl": "https://avrea.com/contact",
+  "privacyPolicyUrl": "https://avrea.com/privacy",
+  "termsOfServiceUrl": "https://avrea.com/terms",
+  "icon": "./assets/icon.png"
+}
