@@ -18998,7 +18998,7 @@
                 "full": "avr billing payment-methods add",
                 "is_group": false,
                 "short_help": "Add a credit card as a payment method.",
-                "help": "Add a credit card as a payment method.\n\nCard details are sent directly to Stripe and never touch Avrea servers.\n",
+                "help": "Add a credit card as a payment method.\n\nOpens the billing page of the Avrea console, where you enter the card and complete any 3D Secure authentication your card issuer requires. Card details go directly to Stripe and never pass through the CLI or Avrea servers.\n\nThe command waits until the new card appears.\n",
                 "epilog": null,
                 "deprecated": false,
                 "hidden": false,
@@ -19019,78 +19019,6 @@
                     "is_flag": false,
                     "envvar": null,
                     "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "number",
-                    "kind": "option",
-                    "opts": [
-                      "--number"
-                    ],
-                    "secondary_opts": [],
-                    "type": "text",
-                    "required": true,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Credit card number. Prefer prompting over --number to avoid shell history.",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "exp_month",
-                    "kind": "option",
-                    "opts": [
-                      "--exp-month"
-                    ],
-                    "secondary_opts": [],
-                    "type": "integer range",
-                    "required": true,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Card expiration month.",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "exp_year",
-                    "kind": "option",
-                    "opts": [
-                      "--exp-year"
-                    ],
-                    "secondary_opts": [],
-                    "type": "integer",
-                    "required": true,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Card expiration year.",
-                    "hidden": false,
-                    "show_default": false,
-                    "default": null
-                  },
-                  {
-                    "name": "cvc",
-                    "kind": "option",
-                    "opts": [
-                      "--cvc"
-                    ],
-                    "secondary_opts": [],
-                    "type": "text",
-                    "required": true,
-                    "multiple": false,
-                    "nargs": 1,
-                    "is_flag": false,
-                    "envvar": null,
-                    "help": "Card CVC/CVV code. Prefer prompting over --cvc to avoid shell history.",
                     "hidden": false,
                     "show_default": false,
                     "default": null

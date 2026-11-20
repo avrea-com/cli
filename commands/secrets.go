@@ -347,7 +347,7 @@ func (o configurationOptions) selectVariant(c *cobra.Command, d Dependencies, va
 		_, _ = fmt.Fprintf(d.Err, "%d. %s (%s)\n", i+1, output.CellText(label), output.CellText(v.ID()))
 	}
 	prompt := configurationPrompt(d)
-	answer, err := cardPrompt(c.Context(), prompt, bufio.NewReader(d.In), "Select scoped value number", false)
+	answer, err := terminalPrompt(c.Context(), prompt, bufio.NewReader(d.In), "Select scoped value number", false)
 	if err != nil {
 		return client.ScopedValue{}, err
 	}

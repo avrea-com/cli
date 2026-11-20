@@ -65,14 +65,12 @@ func billingDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Add a credit card as a payment method.\n" +
 				"\n" +
-				"Card details are sent directly to Stripe and never touch Avrea servers.\n",
+				"Opens the billing page of the Avrea console, where you enter the card and complete any 3D Secure authentication your card issuer requires. Card details go directly to Stripe and never pass through the CLI or Avrea servers.\n" +
+				"\n" +
+				"The command waits until the new card appears.\n",
 			Short: "Add a credit card as a payment method.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
-				{Param: docgen.Param{Name: "number", Kind: "option", Opts: []string{"--number"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("Credit card number. Prefer prompting over --number to avoid shell history.")}, Suffix: "  [required]", CompletionKind: "String"},
-				{Param: docgen.Param{Name: "exp_month", Kind: "option", Opts: []string{"--exp-month"}, Type: "integer range", Required: true, Nargs: 1, Help: descriptionText("Card expiration month.")}, Suffix: "  [1<=x<=12; required]", CompletionKind: "IntRange"},
-				{Param: docgen.Param{Name: "exp_year", Kind: "option", Opts: []string{"--exp-year"}, Type: "integer", Required: true, Nargs: 1, Help: descriptionText("Card expiration year.")}, Suffix: "  [required]", CompletionKind: "Int"},
-				{Param: docgen.Param{Name: "cvc", Kind: "option", Opts: []string{"--cvc"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("Card CVC/CVV code. Prefer prompting over --cvc to avoid shell history.")}, Suffix: "  [required]", CompletionKind: "String"},
 			},
 		}
 	case "avr billing payment-methods list":

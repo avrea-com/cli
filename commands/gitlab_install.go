@@ -99,7 +99,7 @@ func gitLabSecret(cmd *cobra.Command, d Dependencies, stdin bool, label, hint st
 			return "", &ExitError{1, "Error: " + hint + ", but AVR_PROMPT_DISABLED is set.\nAborted!"}
 		}
 		for value == "" {
-			v, e := cardPrompt(cmd.Context(), d, reader, label, true)
+			v, e := terminalPrompt(cmd.Context(), d, reader, label, true)
 			if e != nil {
 				return "", e
 			}

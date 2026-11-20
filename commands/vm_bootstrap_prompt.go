@@ -17,7 +17,7 @@ func bootstrapClaudePrompt(ctx context.Context, d Dependencies, env *bootstrapEn
 	reader := bufio.NewReader(d.In)
 	setup := false
 	for {
-		answer, err := cardPrompt(ctx, d, reader, "Run `claude setup-token` now to create a 1-year subscription token? [y/N]", false)
+		answer, err := terminalPrompt(ctx, d, reader, "Run `claude setup-token` now to create a 1-year subscription token? [y/N]", false)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func bootstrapClaudePrompt(ctx context.Context, d Dependencies, env *bootstrapEn
 			}
 		}
 	}
-	token, err := cardPrompt(ctx, d, reader, "Paste the token (sk-ant-...), or leave blank to skip", true)
+	token, err := terminalPrompt(ctx, d, reader, "Paste the token (sk-ant-...), or leave blank to skip", true)
 	if err != nil {
 		return err
 	}
