@@ -13,10 +13,6 @@ import argparse
 import json
 import subprocess
 import tempfile
-import time
-
-DRAFT_LOOKUP_ATTEMPTS = 7
-DRAFT_LOOKUP_DELAY_SECONDS = 5
 
 
 def gh(*args):
@@ -30,29 +26,39 @@ def verify_pypi(files, published):
             raise ValueError("PyPI already contains different artifacts for this version; refusing to resume")
 
 
-def prepare(directory, tag, sleep=time.sleep):
+def prepare(directory, tag):
     version = (directory / "avr-version.txt").read_text().strip()
     if tag != "v" + version:
         raise ValueError("Release tag must match tested artifact version")
 
-    # GitHub list distinguishes a missing release from a failed API request.
-    def find_release():
-        releases = json.loads(gh("api", "--paginate", "--slurp", "repos/{owner}/{repo}/releases?per_page=100"))
-        return next((r for page in releases for r in page if r["tag_name"] == tag), None)
-
-    release = find_release()
-    if release is None:
-        gh("release", "create", tag, "--draft", "--verify-tag", "--title", tag, "--generate-notes")
-        # The release list can lag behind a draft that was just created.
-        for attempt in range(DRAFT_LOOKUP_ATTEMPTS):
-            if attempt:
-                sleep(DRAFT_LOOKUP_DELAY_SECONDS)
-            release = find_release()
-            if release is not None:
-                break
-    if release is None:
-        raise ValueError("Created release draft could not be found")
-    existing = json.loads(gh("api", "repos/{owner}/{repo}/releases/" + str(release["id"])))["assets"]
+    # Drafts are not found by tag, and listing distinguishes a missing release
+    # from a failed API request.
+    pages = json.loads(gh("api", "--paginate", "--slurp", "repos/{owner}/{repo}/releases?per_page=100"))
+    matches = [release for page in pages for release in page if release["tag_name"] == tag]
+    if len(matches) > 1:
+        raise ValueError("Several GitHub releases exist for this tag; refusing to choose one")
+    if matches:
+        existing = json.loads(gh("api", "repos/{owner}/{repo}/releases/" + str(matches[0]["id"])))["assets"]
+    else:
+        # Publishing a draft creates a missing tag, so require the pushed one.
+        gh("api", "repos/{owner}/{repo}/git/ref/tags/" + tag)
+        # The list can lag behind a new draft; the create response is authoritative.
+        existing = json.loads(
+            gh(
+                "api",
+                "--method",
+                "POST",
+                "repos/{owner}/{repo}/releases",
+                "-f",
+                f"tag_name={tag}",
+                "-f",
+                f"name={tag}",
+                "-F",
+                "draft=true",
+                "-F",
+                "generate_release_notes=true",
+            )
+        )["assets"]
     files = sorted(path for path in directory.iterdir() if path.is_file())
     by_name = {path.name: path for path in files}
     incomplete = []
