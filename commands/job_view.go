@@ -85,7 +85,7 @@ func newJobView(d Dependencies) *cobra.Command {
 			if linksEnabled(cmd, d) {
 				logTarget = jobTarget(cfg.Host, orgSlug(cmd.Context(), cfg, api, orgID), args[0])
 			}
-			content, e := jobLogContent(cmd.Context(), d, api, args[0], objectList(j["steps"]), logOptions{failed: failed}, logTarget)
+			content, e := jobLogContent(cmd.Context(), d, api, args[0], j, logOptions{failed: failed}, logTarget)
 			if e != nil {
 				return apiError(cfg, e, "fetch logs")
 			}

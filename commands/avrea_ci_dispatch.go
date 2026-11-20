@@ -17,8 +17,9 @@ var admissionIDPattern = lazyRegexp(`^wap-[0-9a-f]{32}$`)
 
 // avreaCIDispatchCommand repeats a dispatch with its invocation key. The API
 // answers a repeat with the first request's receipt, so one command both
-// retries a lost response and resumes following the run.
-func avreaCIDispatchCommand(cfg config.Config, org, repo, workflow, ref, key string, inputs map[string]string) string {
+// retries a lost response and resumes following the run. flags are the watch
+// options to repeat with it.
+func avreaCIDispatchCommand(cfg config.Config, org, repo, workflow, ref, key string, inputs map[string]string, flags ...string) string {
 	args := []string{"env", "AVR_HOST=" + cfg.Host, "avr", "workflow", "run", workflow, "--org", org, "--repo", repo, "--ref", ref, "--idempotency-key", key}
 	names := make([]string, 0, len(inputs))
 	for name := range inputs {
@@ -28,6 +29,7 @@ func avreaCIDispatchCommand(cfg config.Config, org, repo, workflow, ref, key str
 	for _, name := range names {
 		args = append(args, "-f", name+"="+inputs[name])
 	}
+	args = append(args, flags...)
 	for i := range args {
 		args[i] = shellQuoteControls(args[i])
 	}
@@ -36,7 +38,9 @@ func avreaCIDispatchCommand(cfg config.Config, org, repo, workflow, ref, key str
 
 // shellQuoteControls quotes an argument so that pasting it reproduces every
 // byte. Control characters go inside $'...', which bash and zsh expand, since
-// a display escape would repeat the dispatch with different inputs.
+// a display escape would repeat the dispatch with different inputs. Those
+// outside ASCII are written as their UTF-8 bytes: bash 3.2, the macOS
+// /bin/bash, has no \u escape.
 func shellQuoteControls(value string) string {
 	if !strings.ContainsFunc(value, output.UnsafeControl) {
 		return shellQuotePython(value)
@@ -54,10 +58,10 @@ func shellQuoteControls(value string) string {
 			b.WriteString(`\r`)
 		case r == '\t':
 			b.WriteString(`\t`)
-		case r < 0x80 && output.UnsafeControl(r):
-			fmt.Fprintf(&b, `\x%02x`, r)
 		case output.UnsafeControl(r):
-			fmt.Fprintf(&b, `\u%04x`, r)
+			for _, octet := range []byte(string(r)) {
+				fmt.Fprintf(&b, `\x%02x`, octet)
+			}
 		default:
 			b.WriteRune(r)
 		}
@@ -75,7 +79,7 @@ func submitAvreaCIDispatch(ctx context.Context, d Dependencies, api *client.Clie
 			return nil, ctx.Err()
 		}
 		if err == nil {
-			if !admissionIDPattern().MatchString(fieldText(response, "admission_id")) {
+			if run := fieldText(response, "run_id"); !admissionIDPattern().MatchString(fieldText(response, "admission_id")) || run != "" && !runIDPattern().MatchString(run) {
 				return nil, &ExitError{1, "Error: The API returned an invalid Avrea CI dispatch receipt. Recover the same dispatch:\n" + retry}
 			}
 			return response, nil
@@ -114,7 +118,10 @@ func awaitAvreaCIRun(ctx context.Context, d Dependencies, cfg config.Config, api
 				return "", true, &ExitError{1, "Error: The API returned an invalid run ID for the dispatch."}
 			}
 			if fieldText(receipt, "state") == "rejected" {
-				return "", true, &ExitError{1, "Error: Avrea CI rejected the dispatch: " + output.CellText(fieldText(receipt, "reason"))}
+				if reason := fieldText(receipt, "reason"); reason != "" {
+					return "", true, &ExitError{1, "Error: Avrea CI rejected the dispatch: " + output.CellText(reason)}
+				}
+				return "", true, &ExitError{1, "Error: Avrea CI rejected the dispatch without giving a reason."}
 			}
 		} else {
 			if ctx.Err() != nil {

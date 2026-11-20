@@ -47,12 +47,14 @@ func workflowDescription(path string) docgen.Description {
 				"--watch follows the run the dispatch started. When GitHub returns no\n" +
 				"run ID, it follows the newest workflow_dispatch run of the workflow\n" +
 				"on the dispatched ref. With --exit-status, a run that does not appear\n" +
-				"within 90 seconds exits 1.\n" +
+				"within 90 seconds exits 1. An Avrea CI dispatch that is rejected, or\n" +
+				"whose receipt cannot be read, exits 1 with or without --exit-status.\n" +
 				"\n" +
 				"An Avrea CI dispatch prints a command that repeats it with its\n" +
 				"--idempotency-key. Repeating a dispatch never starts a second run:\n" +
 				"use the command to retry after a lost response or to resume\n" +
-				"following the run.\n" +
+				"following the run. The command is written to stderr and includes\n" +
+				"the input values.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +

@@ -124,6 +124,7 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 		if invocationKey != "" && !avreaCI {
 			return &ExitError{1, "Error: --idempotency-key is supported only for Avrea CI workflows."}
 		}
+		shownRef := ref
 		if !f.Changed("ref") {
 			record, err := api.Repository(cmd.Context(), orgID, repoID)
 			if err != nil {
@@ -133,6 +134,7 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 				return &ExitError{1, "Error: Could not determine the repository's default branch (not synced yet). Pass --ref <branch> explicitly."}
 			}
 			ref = fieldText(record, "default_branch")
+			shownRef = ref
 			_, _ = fmt.Fprintln(d.Err, d.errorPaint("(using default branch: "+output.CellText(ref)+")", "2"))
 			if avreaCI {
 				// Avrea CI refuses a short name that a tag shares.
@@ -141,7 +143,7 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 		}
 		dispatched := d.Now()
 		var response map[string]any
-		resume := ""
+		resume, follow := "", ""
 		if avreaCI {
 			if invocationKey == "" {
 				if invocationKey, err = newInvocationKey(); err != nil {
@@ -151,7 +153,18 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 			if spelled != nil {
 				inputs = spelled
 			}
-			resume = avreaCIDispatchCommand(cfg, orgID, repoID, workflow, ref, invocationKey, inputs)
+			var flags []string
+			if exitStatus {
+				flags = append(flags, "--exit-status")
+			}
+			if f.Changed("interval") {
+				flags = append(flags, "--interval", strconv.Itoa(interval))
+			}
+			follow = avreaCIDispatchCommand(cfg, orgID, repoID, workflow, ref, invocationKey, inputs, flags...)
+			resume = follow
+			if !watch {
+				resume += " --no-watch"
+			}
 			// Printed first: an interrupted dispatch may already be accepted,
 			// and only this command repeats it without starting another run.
 			_, _ = fmt.Fprintln(d.Err, d.errorPaint("Retry or resume this dispatch with:\n  "+resume, "2"))
@@ -187,7 +200,7 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 		if name != "" && name != file {
 			label = d.paint(output.CellText(name), "35;1") + " (" + d.paint(output.CellText(file), "35") + ")"
 		}
-		if _, err := fmt.Fprintf(d.Out, "%s Triggered %s at %s.\n", d.paint("✓", "32"), label, d.paint(output.CellText(ref), "1")); err != nil {
+		if _, err := fmt.Fprintf(d.Out, "%s Triggered %s at %s.\n", d.paint("✓", "32"), label, d.paint(output.CellText(shownRef), "1")); err != nil {
 			return err
 		}
 		links := linksEnabled(cmd, d)
@@ -212,6 +225,13 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 		hintRepo := repo
 		if hintRepo == "" {
 			hintRepo = repoID
+		}
+		if !watch && avreaCI {
+			if run := fieldText(response, "run_id"); run != "" {
+				return printDispatchedRun(d, cfg, orgSlug(cmd.Context(), cfg, api, orgID), run)
+			}
+			_, err = fmt.Fprintln(d.Err, d.errorPaint("  The run has not started yet. Follow the run with:\n  "+follow, "2"))
+			return err
 		}
 		if !watch {
 			_, err = fmt.Fprintln(d.Err, d.errorPaint("  → avr run list --repo "+output.CellText(hintRepo)+"    # avrea sync lands shortly", "2"))
@@ -268,10 +288,15 @@ func newWorkflowRun(d Dependencies) *cobra.Command {
 	return c
 }
 
+func printDispatchedRun(d Dependencies, cfg config.Config, slug, runID string) error {
+	_, err := fmt.Fprintln(d.Out, "  Run: "+d.paint(output.CellText(runID), "96;1")+"\n  "+consoleURL(cfg.Host)+"/org/"+output.CellText(slug)+"/runs/"+output.CellText(runID))
+	return err
+}
+
 func watchDispatchedWorkflow(cmd *cobra.Command, d Dependencies, cfg config.Config, api *client.Client, orgID, runID string, interval int, exitStatus bool) error {
 	slug := orgSlug(cmd.Context(), cfg, api, orgID)
 	if runID != "" {
-		if _, err := fmt.Fprintln(d.Out, "  Run: "+d.paint(output.CellText(runID), "96;1")+"\n  "+consoleURL(cfg.Host)+"/org/"+output.CellText(slug)+"/runs/"+output.CellText(runID)); err != nil {
+		if err := printDispatchedRun(d, cfg, slug, runID); err != nil {
 			return err
 		}
 	}

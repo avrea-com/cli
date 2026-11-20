@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -469,10 +470,92 @@ func TestAvreaCIDispatchCommandRoundTripsControlCharacters(t *testing.T) {
 
 func TestWorkflowRunQualifiesTheDefaultBranchForAvreaCI(t *testing.T) {
 	server, dispatched := avreaDispatchServer(t, avreaDispatchAccepted)
-	d, _, stderr := avreaDispatchDeps(t, server)
+	d, stdout, stderr := avreaDispatchDeps(t, server)
 	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--no-watch"}, d)
 	if body, _ := dispatched.Load().(map[string]any); code != 0 || body["ref"] != "refs/heads/main" {
 		t.Fatalf("code %d body %v stderr %q", code, body, stderr)
+	}
+	// The user sees the branch as the repository names it.
+	if !strings.Contains(stdout.String(), " at main.\n") {
+		t.Fatalf("out %q", stdout)
+	}
+}
+
+// --no-watch reports the run the dispatch started, or the command that
+// follows it once it starts, never the GitHub run-list hint.
+func TestWorkflowRunNoWatchIdentifiesTheAvreaCIRun(t *testing.T) {
+	started := `{"data":{"workflow":"` + avreaWorkflowFixture + `","ref":"main","run_id":"` + avreaRunFixture + `","admission_id":"` + avreaAdmissionFixture + `"}}`
+	for _, test := range []struct {
+		dispatch string
+		started  bool
+	}{{started, true}, {avreaDispatchAccepted, false}} {
+		server, _ := avreaDispatchServer(t, test.dispatch)
+		d, stdout, stderr := avreaDispatchDeps(t, server)
+		code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main", "--no-watch"}, d)
+		_, hint, _ := strings.Cut(stderr.String(), "Follow the run with:")
+		if code != 0 || strings.Contains(stderr.String(), "avr run list") || strings.Contains(stdout.String(), avreaRunFixture) != test.started ||
+			strings.Contains(hint, "--idempotency-key") == test.started || strings.Contains(hint, "--no-watch") {
+			t.Fatalf("started %v: code %d out %q stderr %q", test.started, code, stdout, stderr)
+		}
+	}
+}
+
+// The printed command repeats the dispatch as it was asked for, so a script
+// that retries it keeps its exit code and its pace.
+func TestWorkflowRunRecoveryCommandKeepsTheWatchFlags(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, avreaAdmission("pending", ""))
+	for _, test := range []struct{ args, want []string }{
+		{[]string{"--exit-status", "--interval", "7"}, []string{" --exit-status", " --interval 7"}},
+		{[]string{"--no-watch"}, []string{" --no-watch"}},
+		{nil, nil},
+	} {
+		d, _, stderr := avreaDispatchDeps(t, server)
+		Execute(t.Context(), append([]string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, test.args...), d)
+		_, rest, _ := strings.Cut(stderr.String(), "Retry or resume this dispatch with:\n")
+		command, _, _ := strings.Cut(rest, "\n")
+		for _, flag := range []string{" --exit-status", " --interval 7", " --no-watch"} {
+			wanted := false
+			for _, want := range test.want {
+				wanted = wanted || want == flag
+			}
+			if command == "" || strings.Contains(command, flag) != wanted {
+				t.Fatalf("%v: %q", test.args, command)
+			}
+		}
+	}
+}
+
+func TestWorkflowRunRejectsAnInvalidRunIDInTheDispatchReceipt(t *testing.T) {
+	server, _ := avreaDispatchServer(t, `{"data":{"workflow":"`+avreaWorkflowFixture+`","ref":"main","run_id":"../orgs","admission_id":"`+avreaAdmissionFixture+`"}}`)
+	d, stdout, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, d)
+	if code != 1 || !strings.Contains(stderr.String(), "invalid Avrea CI dispatch receipt") || strings.Contains(stdout.String(), "Triggered") {
+		t.Fatalf("code %d out %q stderr %q", code, stdout, stderr)
+	}
+}
+
+func TestWorkflowRunReportsARejectionWithoutAReason(t *testing.T) {
+	server, _ := avreaDispatchServer(t, avreaDispatchAccepted, `{"data":{"admission_id":"`+avreaAdmissionFixture+`","state":"rejected","reason":null,"run_ids":[]}}`)
+	d, _, stderr := avreaDispatchDeps(t, server)
+	code := Execute(t.Context(), []string{"workflow", "run", avreaWorkflowFixture, "--repo", "rep-fixture", "--ref", "main"}, d)
+	if code != 1 || !strings.Contains(stderr.String(), "rejected the dispatch without giving a reason.") {
+		t.Fatalf("code %d stderr %q", code, stderr)
+	}
+}
+
+// The command is pasted into whichever shell the user has; macOS ships
+// bash 3.2 as /bin/bash.
+func TestAvreaCIDispatchCommandSurvivesTheShell(t *testing.T) {
+	const value = "it's\r\n\x1b[31mred \u0085\u202e\u2066 a\\b é"
+	for _, shell := range []string{"/bin/bash", "zsh"} {
+		path, err := exec.LookPath(shell)
+		if err != nil {
+			continue
+		}
+		got, err := exec.CommandContext(t.Context(), path, "-c", "printf %s "+shellQuoteControls(value)).Output()
+		if err != nil || string(got) != value {
+			t.Errorf("%s: %q, %v", path, got, err)
+		}
 	}
 }
 
