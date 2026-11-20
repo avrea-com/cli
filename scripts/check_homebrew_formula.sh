@@ -14,8 +14,14 @@ validation_directory=$(brew --repository "$validation_tap")
 cleanup() {
   # Removing our copy first avoids loading untrusted formula code during untap.
   rm -f "$validation_directory/Formula/avr.rb"
+  brew untrust --formula "$validation_tap/avr" >/dev/null 2>&1 || true
   brew untap "$validation_tap" >/dev/null
 }
 trap cleanup EXIT
 cp "$1" "$validation_directory/Formula/avr.rb"
 brew style "$validation_tap/avr"
+# `brew tap` loads trusted formulae on every OS and architecture and refuses
+# the tap if one fails. `readall` runs the same check but skips untrusted
+# formulae, so trust ours first.
+brew trust --formula "$validation_tap/avr" >/dev/null
+brew readall --os=all --arch=all "$validation_tap"
