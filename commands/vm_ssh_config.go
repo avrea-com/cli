@@ -105,6 +105,9 @@ func vmSSHConfigBlock(alias, host, user string, port int, identity, known string
 			lines = append(lines, "    "+item.label+" "+value)
 		}
 	}
+	if identity != "" {
+		lines = append(lines, "    IdentitiesOnly yes")
+	}
 	strict := "accept-new"
 	if known != "" {
 		strict = "yes"
@@ -160,15 +163,18 @@ func vmUpsertSSHBlock(path, alias, block string) (string, error) {
 	}
 	return action, writeTextAtomic(path, strings.Join(kept, "\n")+"\n", 0o600)
 }
-func vmPinningOverrides(path string) ([]string, error) {
+
+// vmCatchallSettings returns, in file order, the first value each keyword
+// takes inside a 'Host *' block. ssh keeps the first value it obtains, so
+// these win over a block appended after them.
+func vmCatchallSettings(path string) ([][2]string, error) {
 	text, err := readTextFile(path, "SSH file")
 	if err != nil {
 		return nil, err
 	}
-	found := []string{}
+	found := [][2]string{}
 	seen := map[string]bool{}
 	catchall := false
-	watched := map[string]string{"userknownhostsfile": "UserKnownHostsFile", "stricthostkeychecking": "StrictHostKeyChecking"}
 	for _, raw := range strings.Split(text, "\n") {
 		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -190,12 +196,45 @@ func vmPinningOverrides(path string) ([]string, error) {
 			}
 			continue
 		}
-		if label, ok := watched[keyword]; ok && catchall && !seen[label] {
-			found = append(found, label)
-			seen[label] = true
+		if catchall && !seen[keyword] {
+			value := ""
+			if len(tokens) > 1 {
+				value = tokens[1]
+			}
+			found = append(found, [2]string{keyword, value})
+			seen[keyword] = true
 		}
 	}
 	return found, nil
+}
+func vmPinningOverrides(path string) ([]string, error) {
+	settings, err := vmCatchallSettings(path)
+	if err != nil {
+		return nil, err
+	}
+	watched := map[string]string{"userknownhostsfile": "UserKnownHostsFile", "stricthostkeychecking": "StrictHostKeyChecking"}
+	found := []string{}
+	for _, setting := range settings {
+		if label, ok := watched[setting[0]]; ok {
+			found = append(found, label)
+		}
+	}
+	return found, nil
+}
+
+// vmIdentitiesOnlyOverridden reports an earlier 'Host *' that turns
+// IdentitiesOnly off, which would win over the block's IdentitiesOnly yes.
+func vmIdentitiesOnlyOverridden(path string) (bool, error) {
+	settings, err := vmCatchallSettings(path)
+	if err != nil {
+		return false, err
+	}
+	for _, setting := range settings {
+		if setting[0] == "identitiesonly" {
+			return strings.EqualFold(setting[1], "no"), nil
+		}
+	}
+	return false, nil
 }
 func newVMSSHConfig(d Dependencies) *cobra.Command {
 	var org, identity, alias, known, configPath string
@@ -203,7 +242,7 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "ssh-config VM_ID_OR_NAME", Short: "Print or append an SSH config block for a running VM.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
 	f := c.Flags()
-	f.StringVarP(&identity, "identity", "i", "", "IdentityFile to write into the block.")
+	f.StringVarP(&identity, "identity", "i", "", "IdentityFile to write into the block, with IdentitiesOnly yes.")
 	f.StringVar(&alias, "host-alias", "", "Host alias; defaults to avr-<vm-id>.")
 	f.StringVar(&known, "known-hosts-file", "", "Host-key file; defaults to ~/.ssh/avr_known_hosts.")
 	f.BoolVar(&appendBlock, "append", false, "Add or replace the managed block in your SSH config.")
@@ -282,14 +321,29 @@ func newVMSSHConfig(d Dependencies) *cobra.Command {
 		if _, err = fmt.Fprintf(d.Err, "%s host %s in %s. Connect with: ssh %s\n", strings.ToUpper(action[:1])+action[1:], output.CellText(alias), output.CellText(path), output.CellText(alias)); err != nil {
 			return err
 		}
-		if action == "added" && knownPath != "" {
+		if action != "added" {
+			return nil
+		}
+		if knownPath != "" {
 			overrides, err := vmPinningOverrides(path)
 			if err != nil {
 				return err
 			}
 			if len(overrides) > 0 {
-				_, err = fmt.Fprintf(d.Err, "Warning: an earlier 'Host *' block sets %s; ssh uses the first match, so it may override the pinning appended for %s.\n", strings.Join(overrides, " and "), output.CellText(alias))
+				if _, err = fmt.Fprintf(d.Err, "Warning: an earlier 'Host *' block sets %s; ssh uses the first match, so it may override the pinning appended for %s.\n", strings.Join(overrides, " and "), output.CellText(alias)); err != nil {
+					return err
+				}
+			}
+		}
+		if identity != "" {
+			overridden, err := vmIdentitiesOnlyOverridden(path)
+			if err != nil {
 				return err
+			}
+			if overridden {
+				if _, err = fmt.Fprintf(d.Err, "Warning: an earlier 'Host *' block sets IdentitiesOnly no; ssh uses the first match, so it may offer other keys before the identity appended for %s.\n", output.CellText(alias)); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

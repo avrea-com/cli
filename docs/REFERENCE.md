@@ -763,7 +763,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--setup-github / --no-setup-github` — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
 - `--install <TEXT>` — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
 - `--forward-agent-creds` — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
@@ -971,7 +971,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--port <TEXT>` — Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable. _(repeatable · required)_
 - `--local-port <INTEGER RANGE>` — Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
-- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--print` — Print the ssh command and exit, without opening the tunnel.
 
 #### `avr vm rdp`
@@ -994,7 +994,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
-- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--launch / --no-launch` — Also start a local RDP client, instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
 
@@ -1101,7 +1101,7 @@ port-forwarding use `avr vm port-forward`.
 **Options**
 
 - `--org <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--session <TEXT>` — Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.
 - `--login` — Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.
 - `--print` — Print the ssh command instead of running it.
@@ -1136,7 +1136,7 @@ warning is printed.
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
-- `-i, --identity <PATH>` — IdentityFile to write into the block.
+- `-i, --identity <PATH>` — IdentityFile to write into the block, with IdentitiesOnly yes.
 - `--host-alias <TEXT>` — Host alias for the block (default: avr-&lt;vm-id&gt;).
 - `--known-hosts-file <PATH>` — Where to pin the host key (default: ~/.ssh/avr_known_hosts).
 - `--append` — Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, replacing any prior block for the same alias in place.
@@ -1206,7 +1206,7 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
 - `--local-port <INTEGER RANGE>` — Local port to bind (default: an unused port).
-- `-i, --identity <PATH>` — Private key file to pass to ssh as -i.
+- `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--launch / --no-launch` — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
 

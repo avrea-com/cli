@@ -14,7 +14,7 @@ func newVMBootstrap(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "bootstrap VM_ID_OR_NAME", Short: "Set up a running VM with development tools over SSH.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &o.org)
 	f := c.Flags()
-	f.StringVarP(&o.identity, "identity", "i", "", "SSH private key file.")
+	f.StringVarP(&o.identity, "identity", "i", "", "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.")
 	f.BoolVar(&o.github, "setup-github", false, "Forward your local GitHub CLI token to the VM over SSH stdin.")
 	f.Var(inverseBool{&o.github}, "no-setup-github", "Skip GitHub authentication setup.")
 	f.Lookup("no-setup-github").NoOptDefVal = "true"
