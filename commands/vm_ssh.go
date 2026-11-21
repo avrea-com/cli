@@ -34,7 +34,7 @@ func vmLoginCommand(args []string) string { return "bash -lc " + shellQuotePytho
 func vmSSHArgv(host, user string, port int, identity, known string, extra []string) []string {
 	args := []string{"ssh"}
 	if identity != "" {
-		args = append(args, "-i", identity)
+		args = append(args, "-i", identity, "-o", "IdentitiesOnly=yes")
 	}
 	args = append(args, "-p", strconv.Itoa(port))
 	if known != "" {
@@ -147,7 +147,7 @@ func newVMSSH(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "ssh VM_ID_OR_NAME [SSH_ARGS...]", Short: "Open an SSH session or run a command on a VM.", DisableFlagParsing: true}
 	c.Flags().StringVar(&org, "org", "", "Organization ID or slug; defaults to the configured organization.")
 	f := c.Flags()
-	f.StringVarP(&identity, "identity", "i", "", "SSH private key file.")
+	f.StringVarP(&identity, "identity", "i", "", "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.")
 	f.StringVar(&session, "session", "", "Attach to or create a persistent tmux session.")
 	f.BoolVar(&login, "login", false, "Run the remote command in a login shell.")
 	f.BoolVar(&printOnly, "print", false, "Print the SSH command instead of executing it.")

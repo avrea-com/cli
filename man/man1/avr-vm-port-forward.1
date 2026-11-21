@@ -31,7 +31,7 @@ Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:
 Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
 .TP
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
-Private key file to pass to ssh as -i.
+SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 .TP
 \fB\-\-print\fR
 Print the ssh command and exit, without opening the tunnel.

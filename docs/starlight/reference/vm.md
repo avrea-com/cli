@@ -40,7 +40,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - <code class="cli-flag">&#x2D;&#x2D;setup-github / &#x2D;&#x2D;no-setup-github</code> — Forward your local `gh auth token` into the VM (gh auth login --with-token + gh auth setup-git).
 - <code class="cli-flag">&#x2D;&#x2D;install</code> <code class="cli-value">&lt;TEXT&gt;</code> — Install an agent CLI (repeatable or comma-separated): claude, codex. _(repeatable)_
 - <code class="cli-flag">&#x2D;&#x2D;forward-agent-creds</code> — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
@@ -248,7 +248,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;port</code> <code class="cli-value">&lt;TEXT&gt;</code> — Guest TCP port to forward, optionally with a local bind port (e.g. 8080 or 9000:8080). Repeatable. _(repeatable · required)_
 - <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind for a single bare --port (with multiple ports, use --port LOCAL:GUEST instead).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ssh command and exit, without opening the tunnel.
 
 ### `avr vm rdp`
@@ -271,7 +271,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local RDP client, instead of just printing the connect command.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.
 
@@ -378,7 +378,7 @@ port-forwarding use `avr vm port-forward`.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - <code class="cli-flag">&#x2D;&#x2D;session</code> <code class="cli-value">&lt;TEXT&gt;</code> — Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.
 - <code class="cli-flag">&#x2D;&#x2D;login</code> — Run the `-- <cmd>` in a login shell (bash -lc) so it sees bootstrap-forwarded env like CLAUDE_CODE_OAUTH_TOKEN. Needed for a non-interactive command; a plain `ssh host cmd` shell sources nothing.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the ssh command instead of running it.
@@ -413,7 +413,7 @@ warning is printed.
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — IdentityFile to write into the block.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — IdentityFile to write into the block, with IdentitiesOnly yes.
 - <code class="cli-flag">&#x2D;&#x2D;host-alias</code> <code class="cli-value">&lt;TEXT&gt;</code> — Host alias for the block (default: avr-&lt;vm-id&gt;).
 - <code class="cli-flag">&#x2D;&#x2D;known-hosts-file</code> <code class="cli-value">&lt;PATH&gt;</code> — Where to pin the host key (default: ~/.ssh/avr_known_hosts).
 - <code class="cli-flag">&#x2D;&#x2D;append</code> — Write the block into your SSH config (default: ~/.ssh/config) instead of printing it, replacing any prior block for the same alias in place.
@@ -483,6 +483,6 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 - <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID. Uses default org if not specified (see: avr config set org).
 - <code class="cli-flag">&#x2D;&#x2D;local-port</code> <code class="cli-value">&lt;INTEGER RANGE&gt;</code> — Local port to bind (default: an unused port).
-- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — Private key file to pass to ssh as -i.
+- <code class="cli-flag">-i, &#x2D;&#x2D;identity</code> <code class="cli-value">&lt;PATH&gt;</code> — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - <code class="cli-flag">&#x2D;&#x2D;launch / &#x2D;&#x2D;no-launch</code> — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
 - <code class="cli-flag">&#x2D;&#x2D;print</code> — Print the tunnel and client commands and exit, without opening the tunnel.
