@@ -127,8 +127,7 @@ func billingDescription(path string) docgen.Description {
 				"\n" +
 				"\b\n" +
 				"JSON FIELDS\n" +
-				"    billing_address, billing_emails, metronome_customer_id,\n" +
-				"    stripe_customer_id, tax_id\n",
+				"    billing_address, billing_emails, tax_id\n",
 			Short: "Show billing settings.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
@@ -162,8 +161,7 @@ func billingDescription(path string) docgen.Description {
 				"\n" +
 				"\b\n" +
 				"JSON FIELDS\n" +
-				"    billing_address, billing_emails, metronome_customer_id,\n" +
-				"    stripe_customer_id, tax_id\n",
+				"    billing_address, billing_emails, tax_id\n",
 			Short: "Update billing settings.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
