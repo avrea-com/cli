@@ -2599,8 +2599,9 @@ avr skill [OPTIONS] COMMAND [ARGS]...
 The skill follows the open Agent Skills format. It tells an agent when
 avr is relevant and points it at avr skill show, so the guidance always
 matches the installed avr. Claude Code reads it from .claude/skills;
-Codex, OpenCode, Pi, Devin and other Agent Skills tools read it from
-.agents/skills. For an agent that reads neither, add a line to its
+Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and
+other Agent Skills tools read it from .agents/skills, and Kiro from
+.kiro/skills. For an agent that reads none of them, add a line to its
 instructions that says to run avr skill show before working with
 Avrea CI.
 
@@ -2614,13 +2615,16 @@ avr skill install [OPTIONS]
 
 Writes one SKILL.md per location: ~/.claude/skills/avrea-cli for
 Claude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli
-for Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without
---agent, both are installed; codex is accepted for agents. Running it
-again updates the file. A SKILL.md that avr did not install is left
-alone unless --force is given.
+for Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and
+other Agent Skills tools; codex is accepted for agents. Without
+--agent, both are installed. kiro writes ~/.kiro/skills/avrea-cli for
+Kiro, which reads only its own folder. Running it again updates the
+file. A SKILL.md that avr did not install is left alone unless --force
+is given.
 
 With --project, the skill goes into .claude/skills and .agents/skills
-at the top of the current git repository instead. Commit it so cloud
+(or .kiro/skills) at the top of the current git repository instead.
+Commit it so cloud
 agents working on the repository, such as Devin or Codex cloud, find it.
 Those environments also need avr installed and AVR_TOKEN set to a scoped
 or service token.
@@ -2634,7 +2638,7 @@ Examples:
 
 **Options**
 
-- `--agent <CHOICE>` — Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- `--agent <CHOICE>` — Location to install for (repeatable): claude; agents for Codex, Cursor, Copilot, Gemini CLI, Devin and others; or kiro. Defaults to claude and agents. _(choices: `claude`, `agents`, `codex`, `kiro` · repeatable)_
 - `--project` — Use the current git repository instead of your home directory.
 - `--force` — Replace a skill that avr did not install.
 
@@ -2670,13 +2674,14 @@ Remove the installed avr skill.
 avr skill uninstall [OPTIONS]
 ```
 
-Without --agent, the skill is removed from both locations. With
+Without --agent, the skill is removed from the claude and agents
+locations. With
 --project, it is removed from the current git repository. Other files
 in the skill directory are kept.
 
 **Options**
 
-- `--agent <CHOICE>` — Location to uninstall from (repeatable): claude or agents. Defaults to both. _(choices: `claude`, `agents`, `codex` · repeatable)_
+- `--agent <CHOICE>` — Location to uninstall from (repeatable): claude, agents or kiro. Defaults to claude and agents. _(choices: `claude`, `agents`, `codex`, `kiro` · repeatable)_
 - `--project` — Use the current git repository instead of your home directory.
 - `--force` — Remove a skill that avr did not install.
 

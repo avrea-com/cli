@@ -19,8 +19,9 @@ func skillDescription(path string) docgen.Description {
 				"The skill follows the open Agent Skills format. It tells an agent when\n" +
 				"avr is relevant and points it at avr skill show, so the guidance always\n" +
 				"matches the installed avr. Claude Code reads it from .claude/skills;\n" +
-				"Codex, OpenCode, Pi, Devin and other Agent Skills tools read it from\n" +
-				".agents/skills. For an agent that reads neither, add a line to its\n" +
+				"Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and\n" +
+				"other Agent Skills tools read it from .agents/skills, and Kiro from\n" +
+				".kiro/skills. For an agent that reads none of them, add a line to its\n" +
 				"instructions that says to run avr skill show before working with\n" +
 				"Avrea CI.\n",
 			Short:    "Teach coding agents to use avr.",
@@ -38,13 +39,16 @@ func skillDescription(path string) docgen.Description {
 				"\n" +
 				"Writes one SKILL.md per location: ~/.claude/skills/avrea-cli for\n" +
 				"Claude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli\n" +
-				"for Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without\n" +
-				"--agent, both are installed; codex is accepted for agents. Running it\n" +
-				"again updates the file. A SKILL.md that avr did not install is left\n" +
-				"alone unless --force is given.\n" +
+				"for Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and\n" +
+				"other Agent Skills tools; codex is accepted for agents. Without\n" +
+				"--agent, both are installed. kiro writes ~/.kiro/skills/avrea-cli for\n" +
+				"Kiro, which reads only its own folder. Running it again updates the\n" +
+				"file. A SKILL.md that avr did not install is left alone unless --force\n" +
+				"is given.\n" +
 				"\n" +
 				"With --project, the skill goes into .claude/skills and .agents/skills\n" +
-				"at the top of the current git repository instead. Commit it so cloud\n" +
+				"(or .kiro/skills) at the top of the current git repository instead.\n" +
+				"Commit it so cloud\n" +
 				"agents working on the repository, such as Devin or Codex cloud, find it.\n" +
 				"Those environments also need avr installed and AVR_TOKEN set to a scoped\n" +
 				"or service token.\n" +
@@ -57,7 +61,7 @@ func skillDescription(path string) docgen.Description {
 			Short: "Install the avr skill for coding agents.",
 			Usage: []string{"[OPTIONS]"},
 			Parameters: []docgen.Parameter{
-				agent("Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both."),
+				agent("Location to install for (repeatable): claude; agents for Codex, Cursor, Copilot, Gemini CLI, Devin and others; or kiro. Defaults to claude and agents."),
 				project,
 				force("Replace a skill that avr did not install."),
 			},
@@ -86,13 +90,14 @@ func skillDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Remove the installed avr skill.\n" +
 				"\n" +
-				"Without --agent, the skill is removed from both locations. With\n" +
+				"Without --agent, the skill is removed from the claude and agents\n" +
+				"locations. With\n" +
 				"--project, it is removed from the current git repository. Other files\n" +
 				"in the skill directory are kept.\n",
 			Short: "Remove the installed avr skill.",
 			Usage: []string{"[OPTIONS]"},
 			Parameters: []docgen.Parameter{
-				agent("Location to uninstall from (repeatable): claude or agents. Defaults to both."),
+				agent("Location to uninstall from (repeatable): claude, agents or kiro. Defaults to claude and agents."),
 				project,
 				force("Remove a skill that avr did not install."),
 			},

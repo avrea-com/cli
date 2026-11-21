@@ -1,0 +1,12 @@
+{
+  "name": "avrea",
+  "interface": { "displayName": "Avrea" },
+  "plugins": [
+    {
+      "name": "avrea-cli",
+      "source": { "source": "local", "path": "./plugins/avrea-cli" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    }
+  ]
+}

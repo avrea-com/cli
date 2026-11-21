@@ -169,7 +169,7 @@ func TestSkillInstallAndUninstall(t *testing.T) {
 	claude, codex := skillTestHome(t)
 
 	code, out, stderr := skillTestRun(t, nil, "install")
-	if code != 0 || stderr != "" || !strings.Contains(out, "Installed for Claude Code: "+claude) || !strings.Contains(out, "Installed for Agent Skills tools (Codex, OpenCode, Pi, Devin): "+codex) {
+	if code != 0 || stderr != "" || !strings.Contains(out, "Installed for Claude Code: "+claude) || !strings.Contains(out, "Installed for Agent Skills tools (Codex, Cursor, Copilot, Gemini CLI, Devin and others): "+codex) {
 		t.Fatal(code, out, stderr)
 	}
 	if runtime.GOOS != "windows" {
@@ -261,8 +261,32 @@ func TestSkillAgentSelection(t *testing.T) {
 			t.Fatal(path, err)
 		}
 	}
-	if code, _, stderr = skillTestRun(t, nil, "install", "--agent", "cursor"); code != 2 || !strings.Contains(stderr, "claude, agents, codex") {
+	if code, _, stderr = skillTestRun(t, nil, "install", "--agent", "cursor"); code != 2 || !strings.Contains(stderr, "claude, agents, codex, kiro") {
 		t.Fatal(code, stderr)
+	}
+}
+
+// Kiro reads only its own folder, so it gets a copy when named, and the
+// defaults leave it alone.
+func TestSkillKiroIsInstalledWhenNamed(t *testing.T) {
+	claude, _ := skillTestHome(t)
+	home := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(claude))))
+	if err := os.MkdirAll(filepath.Join(home, ".kiro"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	kiro := filepath.Join(home, ".kiro", "skills", "avrea-cli", "SKILL.md")
+	if code, out, stderr := skillTestRun(t, nil, "install"); code != 0 || strings.Contains(out, "for Kiro") {
+		t.Fatal(code, out, stderr)
+	}
+	if _, err := os.Stat(kiro); !os.IsNotExist(err) {
+		t.Fatal("default install wrote for Kiro", err)
+	}
+	code, out, stderr := skillTestRun(t, nil, "install", "--agent", "kiro")
+	if code != 0 || out != "Installed for Kiro: "+kiro+"\n" || skillTestRead(t, kiro) != skillStub {
+		t.Fatal(code, out, stderr)
+	}
+	if code, out, _ = skillTestRun(t, nil, "uninstall", "--agent", "kiro"); code != 0 || out != "Uninstalled for Kiro: "+kiro+"\n" {
+		t.Fatal(code, out)
 	}
 }
 
@@ -308,7 +332,7 @@ func TestSkillRepeatedAgentIsHandledOnce(t *testing.T) {
 func TestSkillCodexIsTheSharedLocation(t *testing.T) {
 	_, shared := skillTestHome(t)
 	code, out, stderr := skillTestRun(t, nil, "install", "--agent", "codex", "--agent", "agents")
-	if code != 0 || out != "Installed for Agent Skills tools (Codex, OpenCode, Pi, Devin): "+shared+"\n" {
+	if code != 0 || out != "Installed for Agent Skills tools (Codex, Cursor, Copilot, Gemini CLI, Devin and others): "+shared+"\n" {
 		t.Fatal(code, out, stderr)
 	}
 }

@@ -1,4 +1,4 @@
-# Avrea CI plugin for Claude Code
+# Avrea CLI plugin for Claude Code, Codex, Copilot and Cursor
 
 This plugin adds one skill, `avrea-cli`, that teaches Claude to work with
 GitHub Actions workflows on [Avrea](https://avrea.com) runners and with Avrea
@@ -10,23 +10,30 @@ on-demand Linux, macOS or Windows VMs.
 ## Install
 
 ```sh
-claude plugin marketplace add avrea-com/cli
+claude plugin marketplace add avrea-com/cli   # Claude Code
 claude plugin install avrea-cli@avrea
+codex plugin marketplace add avrea-com/cli    # Codex
+codex plugin add avrea-cli@avrea
+copilot plugin marketplace add avrea-com/cli  # GitHub Copilot CLI
+copilot plugin install avrea-cli@avrea
 ```
+
+The [CLI README](https://github.com/avrea-com/cli#for-coding-agents) says how
+each one updates.
 
 Other agents:
 
-- Codex, OpenCode, Cursor and other Agent Skills tools: `npx skills add avrea-com/cli`.
-  In Codex, `agents/openai.yaml` gives the skill its name, icon and a starter
-  prompt.
 - Cursor: this folder is also a Cursor plugin (`.cursor-plugin/plugin.json`),
   listed by `.cursor-plugin/marketplace.json` at the repository root.
+- Gemini CLI: `gemini skills install https://github.com/avrea-com/cli.git --path plugins/avrea-cli/skills`.
+- OpenCode and other Agent Skills tools: `npx skills add avrea-com/cli`. In Codex, `agents/openai.yaml` gives the
+  skill its name, icon and a starter prompt.
 
 The skill needs the `avr` command. If it is missing, the skill tells Claude
 to install it with Homebrew, mise, `go install` or `uv tool install`. See the [CLI documentation](https://docs.avrea.com/cli/).
 
 Install the skill one way per machine. If `avr skill install` or
-`npx skills add avrea-com/cli` already installed it, Claude Code loads it twice;
+`npx skills add avrea-com/cli` already installed it, the agent loads it twice;
 remove the other copy with `avr skill uninstall`.
 
 ## What it runs, sends and fetches

@@ -3,6 +3,7 @@ package docgen
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 	"strings"
 )
 
@@ -66,6 +67,18 @@ func indexPage(tree *Tree) string {
 }
 func overviewPage(readme string, tree *Tree) string {
 	lines := strings.Split(strings.TrimLeft(readme, " \t\r\n"), "\n")
+	// The README opens with HTML paragraphs for GitHub (banner, badges, links
+	// to the docs). The site has its own header, so they stop at the title.
+	for len(lines) > 0 && strings.HasPrefix(lines[0], "<p") {
+		end := slices.IndexFunc(lines, func(line string) bool { return strings.Contains(line, "</p>") })
+		if end < 0 {
+			break
+		}
+		lines = lines[end+1:]
+		for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+			lines = lines[1:]
+		}
+	}
 	if len(lines) > 0 && strings.HasPrefix(lines[0], "# ") {
 		lines = lines[1:]
 		for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {

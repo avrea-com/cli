@@ -184,3 +184,22 @@ func TestReferenceShowsLiveScopeAliases(t *testing.T) {
 		t.Fatal("no organization options inspected")
 	}
 }
+
+// The README's GitHub header (banner, badges, links back to the docs) is not
+// part of the docs site's overview page; the text after the title is.
+func TestStarlightOverviewSkipsTheReadmeHeader(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme := "<p align=\"center\">\n  <img src=\"banner.png\" />\n</p>\n" +
+		"<p align=\"center\">\n  <a href=\"https://docs.example\">Documentation</a>\n</p>\n\n" +
+		"# Avrea CLI\n\nOfficial command-line client.\n\n<p>Inline HTML later stays.</p>\n"
+	page := docgen.Starlight(tree, &readme)["index.md"]
+	if strings.Contains(page, "banner.png") || strings.Contains(page, "Documentation</a>") || strings.Contains(page, "# Avrea CLI") {
+		t.Fatal(page)
+	}
+	if !strings.Contains(page, "Official command-line client.") || !strings.Contains(page, "<p>Inline HTML later stays.</p>") {
+		t.Fatal(page)
+	}
+}
