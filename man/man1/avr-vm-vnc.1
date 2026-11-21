@@ -21,7 +21,7 @@ Organization ID. Uses default org if not specified (see: avr config set org).
 Local port to bind (default: an unused port).
 .TP
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
-Private key file to pass to ssh as -i.
+SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 .TP
 \fB\-\-launch\fR / \fB\-\-no\-launch\fR
 Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.

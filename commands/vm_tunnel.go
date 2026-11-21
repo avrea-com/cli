@@ -110,7 +110,7 @@ func vmTunnelArgv(host, user string, port int, forwards []vmForward, identity, k
 		args = append(args, "-o", "StrictHostKeyChecking=accept-new")
 	}
 	if identity != "" {
-		args = append(args, "-i", identity)
+		args = append(args, "-i", identity, "-o", "IdentitiesOnly=yes")
 	}
 	return append(args, user+"@"+host)
 }
@@ -144,7 +144,7 @@ func newVMPortForward(d Dependencies) *cobra.Command {
 		return nil
 	}
 	f.IntVar(&local, "local-port", 0, "Local port for one bare --port; otherwise choose an unused port.")
-	f.StringVarP(&identity, "identity", "i", "", "SSH private key file.")
+	f.StringVarP(&identity, "identity", "i", "", "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.")
 	f.BoolVar(&printOnly, "print", false, "Print the SSH tunnel command without connecting.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if err := vmLocalPortFlag(cmd, local); err != nil {
@@ -227,7 +227,7 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 	orgFlag(c, &org)
 	f := c.Flags()
 	f.IntVar(&local, "local-port", 0, "Local port to bind; defaults to an unused port.")
-	f.StringVarP(&identity, "identity", "i", "", "SSH private key file.")
+	f.StringVarP(&identity, "identity", "i", "", "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.")
 	f.BoolVar(&launch, "launch", false, "Launch a local desktop client.")
 	f.Var(inverseBool{&launch}, "no-launch", "Print connection instructions without launching a client.")
 	f.Lookup("no-launch").NoOptDefVal = "true"

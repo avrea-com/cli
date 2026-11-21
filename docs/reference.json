@@ -9929,7 +9929,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Private key file to pass to ssh as -i.",
+                "help": "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -11410,7 +11410,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Private key file to pass to ssh as -i.",
+                "help": "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -11521,7 +11521,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Private key file to pass to ssh as -i.",
+                "help": "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -11927,7 +11927,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Private key file to pass to ssh as -i.",
+                "help": "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -12056,7 +12056,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "IdentityFile to write into the block.",
+                "help": "IdentityFile to write into the block, with IdentitiesOnly yes.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -12513,7 +12513,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Private key file to pass to ssh as -i.",
+                "help": "SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

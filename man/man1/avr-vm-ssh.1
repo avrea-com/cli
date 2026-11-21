@@ -31,7 +31,7 @@ When the VM's endpoint publishes a host key it is pinned, so the first connect n
 Organization ID. Uses default org if not specified (see: avr config set org).
 .TP
 \fB\-i\fR, \fB\-\-identity\fR \fIPATH\fR
-Private key file to pass to ssh as -i.
+SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 .TP
 \fB\-\-session\fR \fITEXT\fR
 Attach to (or create) a persistent tmux session by this name, so the shell and any long-running process in it survive a dropped connection. Reconnect with the same --session. A `-- <cmd>` runs only when the session is created, not on reattach.
