@@ -65,12 +65,25 @@ const skillName = "avrea-cli"
 // text; a SKILL.md without that last line is not ours.
 const skillMarker = "Managed by `avr skill install`"
 
-// "agents" is the shared Agent Skills location (.agents/skills) that Codex,
-// OpenCode, Pi, Devin and other tools read. "codex" names it for
-// compatibility with earlier documentation.
-var skillAgents = []string{"claude", "agents", "codex"}
+// skillAgentDir names the directory holding an agent's skills folder, under
+// the home directory and in a repository, as the skills CLI lists them:
+// https://github.com/vercel-labs/skills/blob/main/docs/agents.md
+type skillAgentDir struct {
+	label, home, project string
+}
+
+// "agents" is the shared Agent Skills location (.agents/skills). Codex,
+// Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and other tools read
+// it besides their own folder, so one copy serves them all. "codex" names it
+// for compatibility with earlier documentation. Kiro documents only its own
+// folder, so it is installed when named.
+var skillAgentDirs = map[string]skillAgentDir{
+	"claude": {"Claude Code", ".claude", ".claude"},
+	"agents": {"Agent Skills tools (Codex, Cursor, Copilot, Gemini CLI, Devin and others)", ".agents", ".agents"},
+	"kiro":   {"Kiro", ".kiro", ".kiro"},
+}
+var skillAgents = []string{"claude", "agents", "codex", "kiro"}
 var skillDefaultAgents = []string{"claude", "agents"}
-var skillAgentLabels = map[string]string{"claude": "Claude Code", "agents": "Agent Skills tools (Codex, OpenCode, Pi, Devin)"}
 
 func skillAgent(agent string) string {
 	if agent == "codex" {
@@ -136,18 +149,24 @@ func skillWithin(root, resolved string) bool {
 // skillRoots holds each agent's configuration directory: in the project when
 // one is given, otherwise in the home directory.
 func skillRoots(d Dependencies, project string) (map[string]string, error) {
+	roots := map[string]string{}
 	if project != "" {
-		return map[string]string{"claude": filepath.Join(project, ".claude"), "agents": filepath.Join(project, ".agents")}, nil
+		for agent, dir := range skillAgentDirs {
+			roots[agent] = filepath.Join(project, dir.project)
+		}
+		return roots, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
-	claude := d.Getenv("CLAUDE_CONFIG_DIR")
-	if claude == "" {
-		claude = filepath.Join(home, ".claude")
+	for agent, dir := range skillAgentDirs {
+		roots[agent] = filepath.Join(home, dir.home)
 	}
-	return map[string]string{"claude": claude, "agents": filepath.Join(home, ".agents")}, nil
+	if claude := d.Getenv("CLAUDE_CONFIG_DIR"); claude != "" {
+		roots["claude"] = claude
+	}
+	return roots, nil
 }
 
 // A target is one SKILL.md. Agents whose locations share a directory through
@@ -190,12 +209,12 @@ func readSkill(target *skillTarget, force bool) error {
 }
 
 func skillTargets(d Dependencies, agents []string, project string, force bool) ([]skillTarget, error) {
-	if len(agents) == 0 {
-		agents = skillDefaultAgents
-	}
 	roots, err := skillRoots(d, project)
 	if err != nil {
 		return nil, err
+	}
+	if len(agents) == 0 {
+		agents = skillDefaultAgents
 	}
 	targets := []skillTarget{}
 	byFile := map[string]int{}
@@ -221,13 +240,13 @@ func skillTargets(d Dependencies, agents []string, project string, force bool) (
 		}
 		key := filepath.Join(dir, "SKILL.md")
 		if i, ok := byFile[key]; ok {
-			if label := skillAgentLabels[agent]; !slices.Contains(targets[i].labels, label) {
+			if label := skillAgentDirs[agent].label; !slices.Contains(targets[i].labels, label) {
 				targets[i].labels = append(targets[i].labels, label)
 			}
 			continue
 		}
 		byFile[key] = len(targets)
-		target := skillTarget{labels: []string{skillAgentLabels[agent]}, path: path}
+		target := skillTarget{labels: []string{skillAgentDirs[agent].label}, path: path}
 		if err := readSkill(&target, force); err != nil {
 			return nil, err
 		}
@@ -271,7 +290,7 @@ type skillOptions struct {
 }
 
 func (o *skillOptions) bind(c *cobra.Command, verb string) {
-	c.Flags().StringArrayVar(&o.agents, "agent", nil, "Agent to "+verb+" (repeatable): claude, agents.")
+	c.Flags().StringArrayVar(&o.agents, "agent", nil, "Agent to "+verb+" (repeatable): claude, agents, kiro.")
 	c.Flags().BoolVar(&o.project, "project", false, "Use the current git repository instead of your home directory.")
 	c.Flags().BoolVar(&o.force, "force", false, "Replace or remove a skill that avr did not install.")
 }

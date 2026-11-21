@@ -1,6 +1,18 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/avrea-com/cli/main/.github/banner.png" alt="Avrea CLI" width="640" />
 </p>
+<p align="center">
+  <a href="https://www.skills.sh/avrea-com/cli/avrea-cli"><img src="https://www.skills.sh/b/avrea-com/cli" alt="skills.sh" /></a>
+  <a href="https://github.com/avrea-com/cli/actions/workflows/ci.yml"><img src="https://github.com/avrea-com/cli/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://github.com/avrea-com/cli/releases/latest"><img src="https://img.shields.io/github/v/release/avrea-com/cli" alt="Release" /></a>
+  <a href="https://github.com/avrea-com/cli/releases"><img src="https://img.shields.io/github/downloads/avrea-com/cli/total" alt="Downloads" /></a>
+  <a href="https://github.com/avrea-com/cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/avrea-com/cli" alt="License" /></a>
+</p>
+<p align="center">
+  <a href="https://console.avrea.com">Console</a> ·
+  <a href="https://docs.avrea.com/cli/">Documentation</a> ·
+  <a href="https://avrea.com">Website</a>
+</p>
 
 # Avrea CLI
 
@@ -58,25 +70,49 @@ In CI and scripts, set `AVR_TOKEN` instead: a [scoped token or service token](#t
 Install the skill once on each machine:
 
 ```sh
-avr skill install                    # Claude Code, plus Codex, OpenCode, Pi, Devin and other Agent Skills tools
-avr skill install --agent claude     # one location only: claude or agents
+avr skill install                    # Claude Code, plus Codex, Cursor, Copilot, Gemini CLI, Devin and other Agent Skills tools
+avr skill install --agent kiro       # one location only: claude, agents or kiro
 avr skill install --project          # commit it to the repository for cloud agents
 avr skill show                       # print the guide the skill points to
 ```
 
-The same skill also installs without `avr`, from [skills.sh](https://skills.sh) or as a Claude Code plugin. It then tells the agent how to install `avr`:
+The same skill also installs without `avr`, from [skills.sh](https://www.skills.sh/avrea-com/cli) as a plugin for Claude Code, Codex or GitHub Copilot, or with Gemini CLI. It then tells the agent how to install `avr`:
 
 ```sh
 npx skills add avrea-com/cli                  # skills.sh: Claude Code, Codex, Cursor and other agents
 claude plugin marketplace add avrea-com/cli   # Claude Code plugin: add the marketplace,
 claude plugin install avrea-cli@avrea         # then install the plugin
+codex plugin marketplace add avrea-com/cli    # Codex plugin
+codex plugin add avrea-cli@avrea
+copilot plugin marketplace add avrea-com/cli  # GitHub Copilot CLI plugin
+copilot plugin install avrea-cli@avrea
+gemini skills install https://github.com/avrea-com/cli.git --path plugins/avrea-cli/skills
 ```
 
-Pick one route per machine. With both the plugin and a skills directory install, Claude Code loads the skill twice.
+How each route updates:
 
-The skill uses the open [Agent Skills](https://agentskills.io/) format. Claude Code reads it from `~/.claude/skills`, and Codex, OpenCode, Pi, Devin CLI and other tools read it from `~/.agents/skills`. It tells the agent when `avr` is relevant and to read `avr skill show`, a guide to testing a change in CI, diagnosing failed or slow runs, reading tests and logs, and using on-demand VMs. The guide ships with `avr`, so it always matches the installed version. `avr skill uninstall` removes the skill.
+- Codex updates the plugin at startup, after each `avr` release.
+- Claude Code updates it at startup once auto-update is on: run `/plugin`, open **Marketplaces**, select `avrea` and turn it on. Otherwise run `claude plugin update avrea-cli@avrea`.
+- Copilot CLI updates it after a one-time entry in `~/.copilot/settings.json`:
 
-Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills`. Their environment also needs `avr` installed and `AVR_TOKEN` set to a [scoped or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."
+  ```json
+  {
+    "extraKnownMarketplaces": {
+      "avrea": { "source": { "source": "github", "repo": "avrea-com/cli" }, "autoUpdate": true }
+    }
+  }
+  ```
+
+  In VS Code, run **Chat: Install Plugin From Source** with `https://github.com/avrea-com/cli`. It updates daily.
+- skills.sh and Gemini CLI copy the files: run `npx skills update`, or the `gemini skills install` command again.
+
+The guide itself ships with `avr`, so it updates with `avr` whichever route installed the skill.
+
+Pick one route per machine. With both a plugin and a skills directory install, the agent loads the skill twice.
+
+The skill uses the open [Agent Skills](https://agentskills.io/) format. Claude Code reads it from `~/.claude/skills`, and Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and other tools read it from `~/.agents/skills`. Kiro reads only `~/.kiro/skills`: use `--agent kiro`. It tells the agent when `avr` is relevant and to read `avr skill show`, a guide to testing a change in CI, diagnosing failed or slow runs, reading tests and logs, and using on-demand VMs. The guide ships with `avr`, so it always matches the installed version. `avr skill uninstall` removes the skill.
+
+Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills` (and `.kiro/skills` with `--agent kiro`). Their environment also needs `avr` installed and `AVR_TOKEN` set to a [scoped or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."
 
 What the agent needs to know:
 

@@ -17273,7 +17273,7 @@
         "full": "avr skill",
         "is_group": true,
         "short_help": "Teach coding agents to use avr.",
-        "help": "Teach coding agents to use avr.\n\nThe skill follows the open Agent Skills format. It tells an agent when\navr is relevant and points it at avr skill show, so the guidance always\nmatches the installed avr. Claude Code reads it from .claude/skills;\nCodex, OpenCode, Pi, Devin and other Agent Skills tools read it from\n.agents/skills. For an agent that reads neither, add a line to its\ninstructions that says to run avr skill show before working with\nAvrea CI.\n",
+        "help": "Teach coding agents to use avr.\n\nThe skill follows the open Agent Skills format. It tells an agent when\navr is relevant and points it at avr skill show, so the guidance always\nmatches the installed avr. Claude Code reads it from .claude/skills;\nCodex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and\nother Agent Skills tools read it from .agents/skills, and Kiro from\n.kiro/skills. For an agent that reads none of them, add a line to its\ninstructions that says to run avr skill show before working with\nAvrea CI.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -17290,7 +17290,7 @@
             "full": "avr skill install",
             "is_group": false,
             "short_help": "Install the avr skill for coding agents.",
-            "help": "Install the avr skill for coding agents.\n\nWrites one SKILL.md per location: ~/.claude/skills/avrea-cli for\nClaude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli\nfor Codex, OpenCode, Pi, Devin and other Agent Skills tools. Without\n--agent, both are installed; codex is accepted for agents. Running it\nagain updates the file. A SKILL.md that avr did not install is left\nalone unless --force is given.\n\nWith --project, the skill goes into .claude/skills and .agents/skills\nat the top of the current git repository instead. Commit it so cloud\nagents working on the repository, such as Devin or Codex cloud, find it.\nThose environments also need avr installed and AVR_TOKEN set to a scoped\nor service token.\n\n\b\nExamples:\n    avr skill install\n    avr skill install --agent claude\n    avr skill install --project --agent agents\n",
+            "help": "Install the avr skill for coding agents.\n\nWrites one SKILL.md per location: ~/.claude/skills/avrea-cli for\nClaude Code (or under CLAUDE_CONFIG_DIR) and ~/.agents/skills/avrea-cli\nfor Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and\nother Agent Skills tools; codex is accepted for agents. Without\n--agent, both are installed. kiro writes ~/.kiro/skills/avrea-cli for\nKiro, which reads only its own folder. Running it again updates the\nfile. A SKILL.md that avr did not install is left alone unless --force\nis given.\n\nWith --project, the skill goes into .claude/skills and .agents/skills\n(or .kiro/skills) at the top of the current git repository instead.\nCommit it so cloud\nagents working on the repository, such as Devin or Codex cloud, find it.\nThose environments also need avr installed and AVR_TOKEN set to a scoped\nor service token.\n\n\b\nExamples:\n    avr skill install\n    avr skill install --agent claude\n    avr skill install --project --agent agents\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -17309,14 +17309,15 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Location to install for (repeatable): claude, or agents for Codex, OpenCode, Pi, Devin and others. Defaults to both.",
+                "help": "Location to install for (repeatable): claude; agents for Codex, Cursor, Copilot, Gemini CLI, Devin and others; or kiro. Defaults to claude and agents.",
                 "hidden": false,
                 "show_default": false,
                 "default": null,
                 "choices": [
                   "claude",
                   "agents",
-                  "codex"
+                  "codex",
+                  "kiro"
                 ]
               },
               {
@@ -17411,7 +17412,7 @@
             "full": "avr skill uninstall",
             "is_group": false,
             "short_help": "Remove the installed avr skill.",
-            "help": "Remove the installed avr skill.\n\nWithout --agent, the skill is removed from both locations. With\n--project, it is removed from the current git repository. Other files\nin the skill directory are kept.\n",
+            "help": "Remove the installed avr skill.\n\nWithout --agent, the skill is removed from the claude and agents\nlocations. With\n--project, it is removed from the current git repository. Other files\nin the skill directory are kept.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -17430,14 +17431,15 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Location to uninstall from (repeatable): claude or agents. Defaults to both.",
+                "help": "Location to uninstall from (repeatable): claude, agents or kiro. Defaults to claude and agents.",
                 "hidden": false,
                 "show_default": false,
                 "default": null,
                 "choices": [
                   "claude",
                   "agents",
-                  "codex"
+                  "codex",
+                  "kiro"
                 ]
               },
               {

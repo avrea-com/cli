@@ -1,5 +1,6 @@
-// Package plugins holds the Claude Code plugins this repository publishes
-// through .claude-plugin/marketplace.json. Each plugins/<name> folder is what
+// Package plugins holds the plugins this repository publishes for Claude Code
+// (.claude-plugin/marketplace.json), Codex (.agents/plugins/marketplace.json)
+// and Cursor (.cursor-plugin/marketplace.json). Each plugins/<name> folder is what
 // a plugin install or a directory submission ships, so Go code stays here,
 // outside it.
 package plugins
