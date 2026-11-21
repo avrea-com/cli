@@ -1,0 +1,29 @@
+{
+  "name": "avrea-cli",
+  "version": "0.10.0",
+  "description": "Teaches the agent to use the Avrea CLI (avr) with GitHub Actions on Avrea runners and with Avrea CI: watch and diagnose runs, read logs, tests and runner metrics, inspect caches, right-size runners and create on-demand VMs.",
+  "author": {
+    "name": "Avrea",
+    "url": "https://avrea.com"
+  },
+  "homepage": "https://docs.avrea.com/cli",
+  "repository": "https://github.com/avrea-com/cli",
+  "license": "Apache-2.0",
+  "keywords": ["ci", "github-actions", "avrea", "avr"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Avrea CLI",
+    "shortDescription": "Watch and fix CI on Avrea",
+    "longDescription": "Teaches the agent to use the Avrea CLI (avr) with GitHub Actions on Avrea runners and with Avrea CI: watch and diagnose runs, read logs, tests and runner metrics, inspect caches, right-size runners and create on-demand VMs.",
+    "developerName": "Avrea",
+    "category": "Developer Tools",
+    "capabilities": ["Run monitoring", "Failure diagnosis", "Runner metrics", "On-demand VMs"],
+    "websiteURL": "https://docs.avrea.com/cli/",
+    "privacyPolicyURL": "https://avrea.com/privacy",
+    "termsOfServiceURL": "https://avrea.com/terms",
+    "defaultPrompt": "Find the CI run for my latest commit and explain any failure.",
+    "brandColor": "#5560A5",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png"
+  }
+}

@@ -200,11 +200,11 @@ def verify(archive, go="go"):
                 raise ValueError(f"{shell} completion source: packaged bytes differ from LF source")
         build_settings = validate_build_info(json.loads(run([go, "version", "-m", "-json", str(binary)])), manifest)
         check("bundled README lookup", ["internal", "docs", "--format", "starlight", "--out", str(home / "docs")])
-        if (
-            not (home / "docs" / "index.md")
-            .read_text(encoding="utf-8")
-            .endswith((package / "README.md").read_text(encoding="utf-8"))
-        ):
+        # The overview page drops the README's GitHub header and title, so
+        # compare the README from its first section on.
+        readme = (package / "README.md").read_text(encoding="utf-8")
+        sections = readme[readme.index("\n## ") + 1 :]
+        if not (home / "docs" / "index.md").read_text(encoding="utf-8").endswith(sections):
             raise ValueError("Bundled README was not used")
 
         class Fixture(http.server.BaseHTTPRequestHandler):

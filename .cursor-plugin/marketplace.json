@@ -5,9 +5,7 @@
   "plugins": [
     {
       "name": "avrea-cli",
-      "source": "plugins/avrea-cli",
-      "category": "developer-tools",
-      "tags": ["ci", "github-actions", "avrea"]
+      "source": "plugins/avrea-cli"
     }
   ]
 }

@@ -1,5 +1,5 @@
 interface:
-  display_name: "Avrea CI"
+  display_name: "Avrea CLI"
   short_description: "Watch, diagnose and speed up CI on Avrea"
   icon_small: "./assets/avrea-icon-64.png"
   icon_large: "./assets/avrea-icon-256.png"

@@ -7,11 +7,11 @@ avr-skill-uninstall \- Remove the installed avr skill.
 .SH DESCRIPTION
 Remove the installed avr skill.
 .PP
-Without --agent, the skill is removed from both locations. With --project, it is removed from the current git repository. Other files in the skill directory are kept.
+Without --agent, the skill is removed from the claude and agents locations. With --project, it is removed from the current git repository. Other files in the skill directory are kept.
 .SH OPTIONS
 .TP
 \fB\-\-agent\fR \fICHOICE\fR
-Location to uninstall from (repeatable): claude or agents. Defaults to both. (choices: claude, agents, codex; repeatable)
+Location to uninstall from (repeatable): claude, agents or kiro. Defaults to claude and agents. (choices: claude, agents, codex, kiro; repeatable)
 .TP
 \fB\-\-project\fR
 Use the current git repository instead of your home directory.
