@@ -25,6 +25,34 @@ example, as Claude Code's spawn-runner hook:
     exec avr vm create --from-spawn-script claude-code --org <org-id>
 .fi
 .RE
+.PP
+Organization admins can pass --egress-rules inline or as @path to a JSON file. Scoped tokens cannot set these rules. Use an array of up to 100 rule objects. Every rule requires action ("allow" or "deny"). A non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR). Protocol is "any" by default and also accepts "tcp", "udp" and "icmp". TCP and UDP rules may set port_start and port_end to integers from 0 to 65535. One endpoint matches one port. Two form an inclusive range with start at or below end. Omitting both matches all ports.
+.PP
+An optional is_default boolean defaults to false. At most one rule can set it to true, with protocol "any" and no destination or ports. Agent sandboxes always deny unmatched traffic. The first matching non-default rule in array order wins. An optional nonnegative integer position is ignored.
+.PP
+Save these HTTPS rules as meteor-egress.json.
+.PP
+.RS 4
+.nf
+cat > meteor-egress.json <<'JSON'
+[
+  {"action":"allow","fqdn":"install.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"static.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"packages.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"warehouse.meteor.com","protocol":"tcp","port_start":443}
+]
+JSON
+.fi
+.RE
+.PP
+Apply the file when creating or updating a VM.
+.PP
+.RS 4
+.nf
+avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json
+avr vm update meteor --egress-rules @meteor-egress.json
+.fi
+.RE
 .SH OPTIONS
 .TP
 \fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
@@ -92,6 +120,7 @@ Run as a coding-agent vendor controller's spawn script: read the work order the 
 .BR avr-vm-bootstrap (1),
 .BR avr-vm-capabilities (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-firewall (1),
 .BR avr-vm-fork (1),
 .BR avr-vm-list (1),
 .BR avr-vm-metrics (1),

@@ -8,6 +8,8 @@ avr-vm-update \- Update a VM's name, TTL, or SSH keys, or rotate its password.
 Update a VM's name, TTL, or SSH keys, or rotate its password.
 .PP
 Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
+.PP
+--egress-rules replaces the entire VM rule list. Pass [] to clear it. See avr vm create --help for the JSON format and an example.
 .SH ARGUMENTS
 .TP
 \fIVM_ID\fR
@@ -47,6 +49,7 @@ Publish no HTTPS ports. Applies live on a RUNNING VM, otherwise at next start or
 .BR avr-vm-capabilities (1),
 .BR avr-vm-create (1),
 .BR avr-vm-delete (1),
+.BR avr-vm-firewall (1),
 .BR avr-vm-fork (1),
 .BR avr-vm-list (1),
 .BR avr-vm-metrics (1),

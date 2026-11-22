@@ -10186,7 +10186,7 @@
             "full": "avr vm create",
             "is_group": false,
             "short_help": "Create a long-running VM.",
-            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show \u003cid\u003e` until the state is\nRUNNING and endpoints are populated, or pass --wait to block until then and\nprint a ready-to-paste connect command with the password baked in. The\nresponse carries a one-time password for the VM's local account; save it\nnow, it is never stored.\n\n\b\nWith --from-spawn-script it creates an agent sandbox for a coding-agent\nvendor's work order instead, for that vendor's controller to run. For\nexample, as Claude Code's spawn-runner hook:\n    exec avr vm create --from-spawn-script claude-code --org \u003corg-id\u003e\n",
+            "help": "Create a long-running VM.\n\n\b\nProvisioning is asynchronous: poll `avr vm show \u003cid\u003e` until the state is\nRUNNING and endpoints are populated, or pass --wait to block until then and\nprint a ready-to-paste connect command with the password baked in. The\nresponse carries a one-time password for the VM's local account; save it\nnow, it is never stored.\n\n\b\nWith --from-spawn-script it creates an agent sandbox for a coding-agent\nvendor's work order instead, for that vendor's controller to run. For\nexample, as Claude Code's spawn-runner hook:\n    exec avr vm create --from-spawn-script claude-code --org \u003corg-id\u003e\n\nOrganization admins can pass --egress-rules inline or as @path to a JSON\nfile. Scoped tokens cannot set these rules. Use an array of up to 100\nrule objects. Every rule requires action (\"allow\" or \"deny\"). A\nnon-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).\nProtocol is \"any\" by default and also accepts \"tcp\", \"udp\" and \"icmp\".\nTCP and UDP rules may set port_start and port_end to integers from 0 to\n65535. One endpoint matches one port. Two form an inclusive range with\nstart at or below end. Omitting both matches all ports.\n\nAn optional is_default boolean defaults to false. At most one rule can\nset it to true, with protocol \"any\" and no destination or ports. Agent\nsandboxes always deny unmatched traffic. The first matching non-default\nrule in array order wins. An optional nonnegative integer position is\nignored.\n\nSave these HTTPS rules as meteor-egress.json.\n\n\b\n    cat \u003e meteor-egress.json \u003c\u003c'JSON'\n    [\n      {\"action\":\"allow\",\"fqdn\":\"install.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n      {\"action\":\"allow\",\"fqdn\":\"static.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n      {\"action\":\"allow\",\"fqdn\":\"packages.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n      {\"action\":\"allow\",\"fqdn\":\"warehouse.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443}\n    ]\n    JSON\n\nApply the file when creating or updating a VM.\n\n\b\n    avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json\n    avr vm update meteor --egress-rules @meteor-egress.json\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -10707,6 +10707,80 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Emit the raw API response as JSON.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "firewall",
+            "path": [
+              "avr",
+              "vm",
+              "firewall"
+            ],
+            "full": "avr vm firewall",
+            "is_group": false,
+            "short_help": "Watch firewall blocks on a running VM or agent sandbox.",
+            "help": "Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm firewall [OPTIONS] VM_ID_OR_NAME",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "VM ID or display name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the full live snapshot, including top destinations, as one JSON object per line.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -12146,7 +12220,7 @@
             "full": "avr vm update",
             "is_group": false,
             "short_help": "Update a VM's name, TTL, or SSH keys, or rotate its password.",
-            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nUse avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n",
+            "help": "Update a VM's name, TTL, or SSH keys, or rotate its password.\n\nUse avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n\n--egress-rules replaces the entire VM rule list. Pass [] to clear it.\nSee avr vm create --help for the JSON format and an example.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,

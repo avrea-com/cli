@@ -811,6 +811,41 @@ example, as Claude Code's spawn-runner hook:
     exec avr vm create --from-spawn-script claude-code --org <org-id>
 ```
 
+Organization admins can pass --egress-rules inline or as @path to a JSON
+file. Scoped tokens cannot set these rules. Use an array of up to 100
+rule objects. Every rule requires action ("allow" or "deny"). A
+non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).
+Protocol is "any" by default and also accepts "tcp", "udp" and "icmp".
+TCP and UDP rules may set port_start and port_end to integers from 0 to
+65535. One endpoint matches one port. Two form an inclusive range with
+start at or below end. Omitting both matches all ports.
+
+An optional is_default boolean defaults to false. At most one rule can
+set it to true, with protocol "any" and no destination or ports. Agent
+sandboxes always deny unmatched traffic. The first matching non-default
+rule in array order wins. An optional nonnegative integer position is
+ignored.
+
+Save these HTTPS rules as meteor-egress.json.
+
+```sh
+cat > meteor-egress.json <<'JSON'
+[
+  {"action":"allow","fqdn":"install.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"static.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"packages.meteor.com","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"warehouse.meteor.com","protocol":"tcp","port_start":443}
+]
+JSON
+```
+
+Apply the file when creating or updating a VM.
+
+```sh
+avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json
+avr vm update meteor --egress-rules @meteor-egress.json
+```
+
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID. Uses default org if not specified (see: avr config set org).
@@ -855,6 +890,25 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 - `--wait` — Wait until the VM is fully deleted before returning.
 - `--wait-timeout <INTEGER>` — Seconds to wait when --wait is set. _(default: `300`)_
 - `--json` — Emit the raw API response as JSON.
+
+#### `avr vm firewall`
+
+Watch firewall blocks on a running VM or agent sandbox.
+
+```sh
+avr vm firewall [OPTIONS] VM_ID_OR_NAME
+```
+
+Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.
+
+**Arguments**
+
+- `VM_ID` — VM ID or display name.
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug.
+- `--json` — Emit the full live snapshot, including top destinations, as one JSON object per line.
 
 #### `avr vm fork`
 
@@ -1151,6 +1205,9 @@ avr vm update [OPTIONS] VM_ID_OR_NAME
 ```
 
 Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.
+
+--egress-rules replaces the entire VM rule list. Pass [] to clear it.
+See avr vm create --help for the JSON format and an example.
 
 **Arguments**
 

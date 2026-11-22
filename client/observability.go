@@ -46,7 +46,7 @@ func (c *Client) OpenObservability(ctx context.Context, path, signal string, tim
 	if err := config.ValidateHost(c.Config.Host); err != nil {
 		return nil, err
 	}
-	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#") || (signal != "metrics" && signal != "status") {
+	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#") || (signal != "metrics" && signal != "status" && signal != "flows") {
 		return nil, errors.New("invalid observability stream path or signal")
 	}
 	h := *c.HTTP

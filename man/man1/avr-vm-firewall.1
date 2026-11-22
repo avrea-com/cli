@@ -1,0 +1,42 @@
+.TH AVR\-VM\-FIREWALL 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-vm-firewall \- Watch firewall blocks on a running VM or agent sandbox.
+.SH SYNOPSIS
+.B avr vm firewall
+[OPTIONS] VM_ID_OR_NAME
+.SH DESCRIPTION
+Watch firewall blocks on a running VM or agent sandbox.
+.PP
+Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.
+.SH ARGUMENTS
+.TP
+\fIVM_ID\fR
+VM ID or display name.
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug.
+.TP
+\fB\-\-json\fR
+Emit the full live snapshot, including top destinations, as one JSON object per line.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-vm (1),
+.BR avr-vm-bootstrap (1),
+.BR avr-vm-capabilities (1),
+.BR avr-vm-create (1),
+.BR avr-vm-delete (1),
+.BR avr-vm-fork (1),
+.BR avr-vm-list (1),
+.BR avr-vm-metrics (1),
+.BR avr-vm-pause (1),
+.BR avr-vm-port-forward (1),
+.BR avr-vm-rdp (1),
+.BR avr-vm-resume (1),
+.BR avr-vm-rotate-https-label (1),
+.BR avr-vm-show (1),
+.BR avr-vm-ssh (1),
+.BR avr-vm-ssh-config (1),
+.BR avr-vm-update (1),
+.BR avr-vm-usage (1),
+.BR avr-vm-vnc (1)
