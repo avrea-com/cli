@@ -140,6 +140,17 @@ func vmDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "as_json", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Emit the VM list as JSON.")}, CompletionKind: "Bool"},
 			},
 		}
+	case "avr vm firewall":
+		return docgen.Description{
+			Help:  "Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.",
+			Short: "Watch firewall blocks on a running VM or agent sandbox.",
+			Usage: []string{"[OPTIONS]", "VM_ID_OR_NAME"},
+			Parameters: []docgen.Parameter{
+				{Param: docgen.Param{Name: "vm_id", Kind: "argument", Opts: []string{"vm_id"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("VM ID or display name.")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug.")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "as_json", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Emit one live flow snapshot per line.")}, CompletionKind: "Bool"},
+			},
+		}
 	case "avr vm metrics":
 		return docgen.Description{
 			Help:           "Show CPU/memory/IO metrics for a VM's current or last run.",

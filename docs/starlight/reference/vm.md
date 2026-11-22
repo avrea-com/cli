@@ -133,6 +133,25 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 - <code class="cli-flag">&#x2D;&#x2D;wait-timeout</code> <code class="cli-value">&lt;INTEGER&gt;</code> — Seconds to wait when --wait is set. _(default: `300`)_
 - <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit the raw API response as JSON.
 
+### `avr vm firewall`
+
+Watch firewall blocks on a running VM or agent sandbox.
+
+```sh
+avr vm firewall [OPTIONS] VM_ID_OR_NAME
+```
+
+Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.
+
+**Arguments**
+
+- <code class="cli-arg">VM_ID</code> — VM ID or display name.
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug.
+- <code class="cli-flag">&#x2D;&#x2D;json</code> — Emit one live flow snapshot per line.
+
 ### `avr vm fork`
 
 Boot a copy of a PAUSED VM's disk; the source remains paused.

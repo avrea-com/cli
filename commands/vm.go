@@ -18,7 +18,7 @@ import (
 func NewVM(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
 	c := &cobra.Command{Use: "vm", Aliases: []string{"vms"}, Short: "Manage long-running customer VMs."}
-	c.AddCommand(newVMMetrics(d), newVMCapabilities(d), newVMFork(d), newVMRotateHTTPSLabel(d), newVMList(d), newVMShow(d), newVMUsage(d), newVMUpdate(d), newVMCreate(d), newVMSSHConfig(d), newVMSSH(d), newVMPortForward(d), newVMDesktop(d, "rdp"), newVMDesktop(d, "vnc"), newVMBootstrap(d))
+	c.AddCommand(newVMFirewall(d), newVMMetrics(d), newVMCapabilities(d), newVMFork(d), newVMRotateHTTPSLabel(d), newVMList(d), newVMShow(d), newVMUsage(d), newVMUpdate(d), newVMCreate(d), newVMSSHConfig(d), newVMSSH(d), newVMPortForward(d), newVMDesktop(d, "rdp"), newVMDesktop(d, "vnc"), newVMBootstrap(d))
 	for _, operation := range []string{"pause", "resume", "delete"} {
 		c.AddCommand(newVMLifecycle(d, operation))
 	}

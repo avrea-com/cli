@@ -74,7 +74,7 @@ func watchMetrics(ctx context.Context, d Dependencies, api *client.Client, path 
 		}
 	}()
 	u := metricUpdate{metrics: map[string]map[string]any{}, running: true}
-	return metricsFrames(ctx, d, api, path, func(frame map[string]any) error {
+	return observabilityFrames(ctx, d, api, path, "metrics", "Metrics", "bundle", func(frame map[string]any) error {
 		u.changed, u.complete = false, false
 		switch frame["type"] {
 		case "window":
@@ -115,11 +115,11 @@ func watchMetrics(ctx context.Context, d Dependencies, api *client.Client, path 
 	})
 }
 
-func metricsFrames(ctx context.Context, d Dependencies, api *client.Client, path string, yield func(map[string]any) error) error {
+func observabilityFrames(ctx context.Context, d Dependencies, api *client.Client, path, signal, label, dataFrame string, yield func(map[string]any) error) error {
 	failures := 0
 	lastError := ""
 	for {
-		stream, err := api.OpenObservability(ctx, path, "metrics", 10*time.Second)
+		stream, err := api.OpenObservability(ctx, path, signal, 10*time.Second)
 		if err == nil {
 			complete := false
 			err = func() error {
@@ -132,24 +132,24 @@ func metricsFrames(ctx context.Context, d Dependencies, api *client.Client, path
 					var frame map[string]any
 					if raw != nil {
 						if !utf8.Valid(raw) || !json.Valid(raw) {
-							return &ExitError{1, "Error: Invalid JSON in metrics stream."}
+							return &ExitError{1, "Error: Invalid JSON in " + signal + " stream."}
 						}
 						decoder := json.NewDecoder(bytes.NewReader(raw))
 						decoder.UseNumber()
 						if decoder.Decode(&frame) != nil || frame == nil {
-							return &ExitError{1, "Error: Invalid metrics stream frame."}
+							return &ExitError{1, "Error: Invalid " + signal + " stream frame."}
 						}
-						if frame["signal"] != nil && frame["signal"] != "metrics" {
+						if frame["signal"] != nil && frame["signal"] != signal {
 							continue
 						}
 						switch frame["type"] {
 						case "error":
-							message := output.CellText(pythonValue(fallback(frame["message"], "Metrics stream error")))
+							message := output.CellText(pythonValue(fallback(frame["message"], label+" stream error")))
 							if frame["signal"] == nil {
 								return errors.New(message)
 							}
 							lastError = message
-						case "bundle":
+						case dataFrame:
 							lastError, failures = "", 0
 						case "complete":
 							if lastError != "" {
@@ -178,24 +178,24 @@ func metricsFrames(ctx context.Context, d Dependencies, api *client.Client, path
 			return err
 		}
 		if failure.HTTPStatus >= 300 && failure.HTTPStatus < 400 {
-			return &ExitError{1, "Error: Refusing metrics stream redirect."}
+			return &ExitError{1, "Error: Refusing " + signal + " stream redirect."}
 		}
 		if failure.HTTPStatus != 0 && failure.HTTPStatus != 429 && failure.HTTPStatus < 500 {
-			return &ExitError{1, fmt.Sprintf("Error: Metrics stream refused: HTTP %d.", failure.HTTPStatus)}
+			return &ExitError{1, fmt.Sprintf("Error: "+label+" stream refused: HTTP %d.", failure.HTTPStatus)}
 		}
 		if slices.Contains([]int{1008, 4001, 4003, 4401, 4403}, failure.CloseCode) {
 			reason := failure.Reason
 			if reason == "connection closed" {
 				reason = "access denied"
 			}
-			return &ExitError{1, fmt.Sprintf("Error: Metrics stream refused: %s.", output.CellText(reason))}
+			return &ExitError{1, fmt.Sprintf("Error: "+label+" stream refused: %s.", output.CellText(reason))}
 		}
 		failures++
 		if failures == 4 {
-			return &ExitError{1, fmt.Sprintf("Error: Metrics stream disconnected; reconnect attempts exhausted (last error: %s).", output.CellText(failure.Error()))}
+			return &ExitError{1, fmt.Sprintf("Error: "+label+" stream disconnected; reconnect attempts exhausted (last error: %s).", output.CellText(failure.Error()))}
 		}
 		delay := time.Duration(1<<(failures-1)) * time.Second
-		if _, err := fmt.Fprintf(d.Err, "Metrics stream disconnected; reconnecting in %ds...\n", int(delay/time.Second)); err != nil {
+		if _, err := fmt.Fprintf(d.Err, label+" stream disconnected; reconnecting in %ds...\n", int(delay/time.Second)); err != nil {
 			return err
 		}
 		if err := d.Wait(ctx, delay); err != nil {

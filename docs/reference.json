@@ -10715,6 +10715,80 @@
             "subcommands": []
           },
           {
+            "name": "firewall",
+            "path": [
+              "avr",
+              "vm",
+              "firewall"
+            ],
+            "full": "avr vm firewall",
+            "is_group": false,
+            "short_help": "Watch firewall blocks on a running VM or agent sandbox.",
+            "help": "Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass the VM ID or display name. Each snapshot shows recent denied DNS names and cumulative packet and byte counts by IP firewall rule. Destination IPs of dropped packets are unavailable.",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr vm firewall [OPTIONS] VM_ID_OR_NAME",
+            "params": [
+              {
+                "name": "vm_id",
+                "kind": "argument",
+                "opts": [
+                  "vm_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "VM ID or display name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit one live flow snapshot per line.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
             "name": "fork",
             "path": [
               "avr",
