@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,12 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const vmFirewallJSONHelp = "Emit the full live snapshot, including top destinations, as one JSON object per line."
+
 func newVMFirewall(d Dependencies) *cobra.Command {
 	var org string
 	var asJSON bool
 	c := &cobra.Command{Use: "firewall VM_ID_OR_NAME", Short: "Watch firewall blocks on a running VM or agent sandbox.", Args: positionalArguments("VM_ID_OR_NAME")}
 	orgFlag(c, &org)
-	c.Flags().BoolVar(&asJSON, "json", false, "Emit one live flow snapshot per line.")
+	c.Flags().BoolVar(&asJSON, "json", false, vmFirewallJSONHelp)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		cfg, api, orgID, err := organizationContext(cmd.Context(), d, org)
 		if err != nil {
@@ -32,8 +35,15 @@ func newVMFirewall(d Dependencies) *cobra.Command {
 		}
 		path := base + "/" + url.PathEscape(id) + "/observability/stream"
 		seen := false
+		showWaiting := !asJSON && d.IsTerminal()
 		err = observabilityFrames(cmd.Context(), d, api, path, "flows", "Firewall", "snapshot", func(frame map[string]any) error {
 			switch frame["type"] {
+			case nil:
+				if frame == nil && showWaiting {
+					showWaiting = false
+					_, err := fmt.Fprintln(d.Out, "Waiting for firewall data...")
+					return err
+				}
 			case "snapshot":
 				snapshot, ok := frame["snapshot"].(map[string]any)
 				if !ok {
@@ -44,6 +54,7 @@ func newVMFirewall(d Dependencies) *cobra.Command {
 					return errors.New("invalid firewall summary")
 				}
 				seen = true
+				showWaiting = false
 				if asJSON {
 					return json.NewEncoder(d.Out).Encode(snapshot)
 				}
@@ -52,17 +63,22 @@ func newVMFirewall(d Dependencies) *cobra.Command {
 				_, err := fmt.Fprintln(d.Err, "Firewall telemetry interrupted. Waiting for a fresh snapshot.")
 				return err
 			case "error":
-				return fmt.Errorf("firewall telemetry unavailable: %s", output.CellText(fieldText(frame, "message")))
+				message := output.CellText(pythonValue(fallback(frame["message"], "Firewall stream error")))
+				_, err := fmt.Fprintln(d.Err, "Firewall: "+message)
+				return err
 			case "complete":
 				note := "Firewall stream ended."
 				if !seen {
-					note = "Firewall stream ended without a live snapshot. Repository-free sandboxes have no saved flow summary."
+					note = "Firewall stream ended without a live snapshot."
 				}
 				_, err := fmt.Fprintln(d.Err, note)
 				return err
 			}
 			return nil
 		})
+		if errors.Is(err, context.Canceled) {
+			return &ExitError{Code: 130}
+		}
 		return err
 	})
 	return c
@@ -83,7 +99,7 @@ func renderFirewallSnapshot(d Dependencies, snapshot, summary map[string]any) er
 	drops := objectList(summary["drops"])
 	rows := [][]string{}
 	for _, q := range dns {
-		rows = append(rows, []string{fieldText(q, "qname"), billingText(q, "count", "1"), fieldText(q, "ts")})
+		rows = append(rows, []string{fieldText(q, "qname"), pythonValue(fallback(q["count"], "1")), fieldText(q, "ts")})
 	}
 	if len(rows) > 0 {
 		if err := output.Grid(d.Out, []string{"Denied DNS name", "Queries", "Last seen"}, rows); err != nil {
@@ -92,7 +108,7 @@ func renderFirewallSnapshot(d Dependencies, snapshot, summary map[string]any) er
 	}
 	rows = nil
 	for _, drop := range drops {
-		if billingText(drop, "packets", "0") != "0" {
+		if metricNumber(drop["packets"]) > 0 {
 			rows = append(rows, []string{fieldText(drop, "label"), fieldText(drop, "packets"), fieldText(drop, "bytes")})
 		}
 	}

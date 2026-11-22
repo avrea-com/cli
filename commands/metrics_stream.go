@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -116,6 +117,7 @@ func watchMetrics(ctx context.Context, d Dependencies, api *client.Client, path 
 }
 
 func observabilityFrames(ctx context.Context, d Dependencies, api *client.Client, path, signal, label, dataFrame string, yield func(map[string]any) error) error {
+	streamName := strings.ToLower(label)
 	failures := 0
 	lastError := ""
 	for {
@@ -132,12 +134,12 @@ func observabilityFrames(ctx context.Context, d Dependencies, api *client.Client
 					var frame map[string]any
 					if raw != nil {
 						if !utf8.Valid(raw) || !json.Valid(raw) {
-							return &ExitError{1, "Error: Invalid JSON in " + signal + " stream."}
+							return &ExitError{1, "Error: Invalid JSON in " + streamName + " stream."}
 						}
 						decoder := json.NewDecoder(bytes.NewReader(raw))
 						decoder.UseNumber()
 						if decoder.Decode(&frame) != nil || frame == nil {
-							return &ExitError{1, "Error: Invalid " + signal + " stream frame."}
+							return &ExitError{1, "Error: Invalid " + streamName + " stream frame."}
 						}
 						if frame["signal"] != nil && frame["signal"] != signal {
 							continue
@@ -178,7 +180,7 @@ func observabilityFrames(ctx context.Context, d Dependencies, api *client.Client
 			return err
 		}
 		if failure.HTTPStatus >= 300 && failure.HTTPStatus < 400 {
-			return &ExitError{1, "Error: Refusing " + signal + " stream redirect."}
+			return &ExitError{1, "Error: Refusing " + streamName + " stream redirect."}
 		}
 		if failure.HTTPStatus != 0 && failure.HTTPStatus != 429 && failure.HTTPStatus < 500 {
 			return &ExitError{1, fmt.Sprintf("Error: "+label+" stream refused: HTTP %d.", failure.HTTPStatus)}

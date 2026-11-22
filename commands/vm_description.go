@@ -64,7 +64,40 @@ func vmDescription(path string) docgen.Description {
 				"With --from-spawn-script it creates an agent sandbox for a coding-agent\n" +
 				"vendor's work order instead, for that vendor's controller to run. For\n" +
 				"example, as Claude Code's spawn-runner hook:\n" +
-				"    exec avr vm create --from-spawn-script claude-code --org <org-id>\n",
+				"    exec avr vm create --from-spawn-script claude-code --org <org-id>\n" +
+				"\n" +
+				"Organization admins can pass --egress-rules inline or as @path to a JSON\n" +
+				"file. Scoped tokens cannot set these rules. Use an array of up to 100\n" +
+				"rule objects. Every rule requires action (\"allow\" or \"deny\"). A\n" +
+				"non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).\n" +
+				"Protocol is \"any\" by default and also accepts \"tcp\", \"udp\" and \"icmp\".\n" +
+				"TCP and UDP rules may set port_start and port_end to integers from 0 to\n" +
+				"65535. One endpoint matches one port. Two form an inclusive range with\n" +
+				"start at or below end. Omitting both matches all ports.\n" +
+				"\n" +
+				"An optional is_default boolean defaults to false. At most one rule can\n" +
+				"set it to true, with protocol \"any\" and no destination or ports. Agent\n" +
+				"sandboxes always deny unmatched traffic. The first matching non-default\n" +
+				"rule in array order wins. An optional nonnegative integer position is\n" +
+				"ignored.\n" +
+				"\n" +
+				"Save these HTTPS rules as meteor-egress.json.\n" +
+				"\n" +
+				"\b\n" +
+				"    cat > meteor-egress.json <<'JSON'\n" +
+				"    [\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"install.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"static.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"packages.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"warehouse.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443}\n" +
+				"    ]\n" +
+				"    JSON\n" +
+				"\n" +
+				"Apply the file when creating or updating a VM.\n" +
+				"\n" +
+				"\b\n" +
+				"    avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json\n" +
+				"    avr vm update meteor --egress-rules @meteor-egress.json\n",
 			Short: "Create a long-running VM.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
@@ -148,7 +181,7 @@ func vmDescription(path string) docgen.Description {
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "vm_id", Kind: "argument", Opts: []string{"vm_id"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("VM ID or display name.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug.")}, CompletionKind: "String"},
-				{Param: docgen.Param{Name: "as_json", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Emit one live flow snapshot per line.")}, CompletionKind: "Bool"},
+				{Param: docgen.Param{Name: "as_json", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText(vmFirewallJSONHelp)}, CompletionKind: "Bool"},
 			},
 		}
 	case "avr vm metrics":
@@ -351,7 +384,10 @@ func vmDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Update a VM's name, TTL, or SSH keys, or rotate its password.\n" +
 				"\n" +
-				"Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n",
+				"Use avr vm pause, avr vm resume, or avr vm delete for lifecycle changes.\n" +
+				"\n" +
+				"--egress-rules replaces the entire VM rule list. Pass [] to clear it.\n" +
+				"See avr vm create --help for the JSON format and an example.\n",
 			Short:          "Update a VM's name, TTL, or SSH keys, or rotate its password.",
 			CompletionHelp: "Update a VM's name, TTL, or SSH keys, or...",
 			Usage:          []string{"[OPTIONS]", "VM_ID_OR_NAME"},
