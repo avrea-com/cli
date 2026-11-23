@@ -18,18 +18,21 @@ git -C "$dest" checkout --detach refs/avr/checkout
 {{- else}}
 # Check out only a branch: git resolves a bare name to a same-named tag or a
 # path unless the local branch exists, and switch never takes a path. A
-# missing branch fails instead of leaving the default checked out.
+# missing branch fails instead of leaving the default checked out. The branch
+# comes from the URL, however the clone's remote spells it; it tracks the
+# remote branch that matches.
 if [ -n "$ref" ]; then
   if ! git -C "$dest" show-ref --verify --quiet "refs/heads/$ref"; then
-    remote=""
-    for candidate in $(git -C "$dest" remote); do
-      if [ "$(git -C "$dest" remote get-url "$candidate")" = "$url" ]; then remote=$candidate; break; fi
-    done
-    if [ -z "$remote" ] || ! git -C "$dest" show-ref --verify --quiet "refs/remotes/$remote/$ref"; then
+    if ! git -C "$dest" fetch "$url" "refs/heads/$ref:refs/heads/$ref"; then
       echo "branch $ref not found in $url" >&2
       exit 1
     fi
-    git -C "$dest" branch --track "$ref" "refs/remotes/$remote/$ref"
+    for remote in $(git -C "$dest" remote); do
+      if [ "$(git -C "$dest" rev-parse -q --verify "refs/remotes/$remote/$ref")" = "$(git -C "$dest" rev-parse "refs/heads/$ref")" ]; then
+        git -C "$dest" branch -q --set-upstream-to "refs/remotes/$remote/$ref" "$ref"
+        break
+      fi
+    done
   fi
   git -C "$dest" switch "$ref"
 fi

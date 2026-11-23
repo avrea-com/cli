@@ -182,9 +182,37 @@ func TestBootstrapRepoStepChecksOutEachRefForm(t *testing.T) {
 				if branch != tc.branch[run] {
 					t.Fatalf("run %d: branch %q; want %q", run, branch, tc.branch[run])
 				}
+				if branch != "" {
+					if upstream := git(dest, "rev-parse", "--symbolic-full-name", branch+"@{upstream}"); !strings.HasSuffix(upstream, "/"+branch) {
+						t.Fatalf("run %d: upstream %s", run, upstream)
+					}
+				}
 			}
 		})
 	}
+
+	// An existing clone whose remote spells the URL differently from --repo
+	// still gets the branch, tracking that remote.
+	t.Run("remote spelled differently", func(t *testing.T) {
+		home := t.TempDir()
+		dest := filepath.Join(home, "repo")
+		git(root, "clone", "-q", origin, dest)
+		steps, err := bootstrapSteps(bootstrapOptions{repo: "file://" + origin, ref: "feature"}, bootstrapEnvironment{}, nil, "", nil)
+		if err != nil || len(steps) != 1 {
+			t.Fatal(err, len(steps))
+		}
+		cmd := exec.CommandContext(t.Context(), "bash", "-c", steps[0].script)
+		cmd.Env = append(os.Environ(), "HOME="+home, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+		if raw, err := cmd.CombinedOutput(); err != nil {
+			t.Fatal(err, string(raw))
+		}
+		if got := git(dest, "symbolic-ref", "HEAD"); got != "refs/heads/feature" {
+			t.Fatalf("HEAD %s", got)
+		}
+		if got := git(dest, "rev-parse", "--symbolic-full-name", "feature@{upstream}"); got != "refs/remotes/origin/feature" {
+			t.Fatalf("upstream %s", got)
+		}
+	})
 
 	t.Run("missing branch", func(t *testing.T) {
 		home := t.TempDir()
