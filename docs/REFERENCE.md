@@ -3111,8 +3111,7 @@ avr billing settings [OPTIONS]
 
 ```sh
 JSON FIELDS
-    billing_address, billing_emails, metronome_customer_id,
-    stripe_customer_id, tax_id
+    billing_address, billing_emails, tax_id
 ```
 
 **Options**
@@ -3157,8 +3156,7 @@ Examples:
 
 ```sh
 JSON FIELDS
-    billing_address, billing_emails, metronome_customer_id,
-    stripe_customer_id, tax_id
+    billing_address, billing_emails, tax_id
 ```
 
 **Options**

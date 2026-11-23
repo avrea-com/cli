@@ -16,7 +16,7 @@ var billingSummaryFields = []string{"has_billing", "billing_emails", "default_pa
 var invoiceFields = []string{"invoice_id", "period_start", "period_end", "subtotal_cents", "tax_cents", "total_cents", "currency", "status", "has_pdf", "created_at"}
 var invoiceViewFields = append(append([]string{}, invoiceFields...), "line_items")
 var paymentMethodFields = []string{"payment_method_id", "card_brand", "card_last4", "card_exp_month", "card_exp_year", "is_default"}
-var billingSettingsFields = []string{"billing_emails", "tax_id", "billing_address", "stripe_customer_id", "metronome_customer_id"}
+var billingSettingsFields = []string{"billing_emails", "tax_id", "billing_address"}
 
 // NewBilling exposes billing records for the selected organization.
 func NewBilling(deps Dependencies) *cobra.Command {
@@ -85,7 +85,7 @@ func renderBillingSettings(d Dependencies, row map[string]any) error {
 		location = "-"
 	}
 	optional := func(key string) string { return pythonValue(fallback(row[key], "-")) }
-	return output.KeyValues(d.Out, [][2]string{{"Email", billingEmails(row)}, {"Tax ID", optional("tax_id")}, {"Address", location}, {"Stripe Customer", optional("stripe_customer_id")}, {"Metronome Customer", optional("metronome_customer_id")}})
+	return output.KeyValues(d.Out, [][2]string{{"Email", billingEmails(row)}, {"Tax ID", optional("tax_id")}, {"Address", location}})
 }
 func newBillingSummary(d Dependencies) *cobra.Command {
 	var org string
