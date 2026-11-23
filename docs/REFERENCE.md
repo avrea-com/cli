@@ -769,7 +769,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 - `--forward-agent-creds` — Forward the installed agents' credentials from your environment (ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN / OPENAI_API_KEY). If claude has none, offers to run `claude setup-token`.
 - `--install-avr` — Install the native avr release matching this CLI in ~/.local/bin (requires curl, tar and SHA-256 tooling).
 - `--repo, -R <TEXT>` — Clone this git repo into the VM's home directory.
-- `--ref <TEXT>` — Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
+- `--ref <TEXT>` — Branch, refs/pull/&lt;number&gt;/head or 40-character commit SHA to check out after cloning (requires --repo). A pull request or commit is checked out detached. Tags are not supported.
 - `--dotfiles <TEXT>` — Clone this dotfiles repo and run its installer.
 - `--env <TEXT>` — Set an env var in the VM: KEY=VALUE, or a bare KEY to forward it from your environment. Repeatable. _(repeatable)_
 - `--run <TEXT>` — Run a custom script last: an inline script, or @path to a file.
@@ -861,7 +861,7 @@ avr vm update meteor --egress-rules @meteor-egress.json
 - `--ttl <TEXT>` — TTL before pause, or deletion when pause is unavailable (e.g. 8h, 7d, 1800s). Default 8h, max 7d.
 - `--egress-rules <TEXT>` — Per-VM egress firewall rules as a JSON array, or @path to a JSON file.
 - `--repo, -R <TEXT>` — Git repository (owner/repo) to preload into the VM at boot. Best-effort; the checkout is warmed from Avrea's mirror when available.
-- `--ref <TEXT>` — Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.
+- `--ref <TEXT>` — Branch, refs/pull/&lt;number&gt;/head or 40-character commit SHA to preload (default: the repository's default branch). Requires --repo. Tags are not supported.
 - `--fetch-depth <INTEGER RANGE>` — Git history to preload with --repo, like actions/checkout fetch-depth: 1 (default) = branch tip, N = N commits, 0 = all branches and tags.
 - `--disable-cache <TEXT>` — Disable a build/CI cache on this VM (repeatable, or comma-separated). Narrowing only: a VM can turn off an inherited cache but not turn one on. e.g. gha, packages, bazel, gradle, maven, turbo, nx, go-build (or a raw cache.&lt;name&gt;.enabled key). Repository-scoped caches require --repo. _(repeatable)_
 - `--wait` — Wait until the VM is RUNNING, then print a ready-to-paste connect command with the password baked in.

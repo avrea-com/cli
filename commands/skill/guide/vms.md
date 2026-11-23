@@ -25,7 +25,8 @@ avr vm list
   the task, against the same host and organization.
 - `avr vm metrics <unique-name> --watch` shows the VM's CPU, memory and IO.
 - `--repo` preloads the checkout and gives the VM that repository's caches.
-  `--ref` takes a branch, not a tag or a commit.
+  `--ref` takes a branch name, `refs/pull/<number>/head` or a 40-character
+  commit SHA, not a tag.
 - Choose the smallest sufficient `--size` and a short `--ttl` as a backstop.
   When the TTL expires the VM is paused, or deleted where pausing is
   unavailable.

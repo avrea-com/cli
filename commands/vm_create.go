@@ -14,15 +14,33 @@ import (
 
 var vmBranchName = lazyRegexp(`^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$`)
 var vmCommitSHA = lazyRegexp(`^[0-9a-fA-F]{40}$`)
+var vmPullRequestHeadRef = lazyRegexp(`^refs/pull/[1-9][0-9]{0,9}/head$`)
 var vmCacheAlias = lazyRegexp(`^[a-z0-9][a-z0-9-]*$`)
 var vmCacheKey = lazyRegexp(`^cache\.[a-z0-9][a-z0-9-]*\.enabled$`)
 
-func validateVMBranch(value string) (string, error) {
+// validateVMRef accepts the refs the API preloads and returns the form it
+// stores: a branch name without refs/heads/, refs/pull/<number>/head, or a
+// lowercase commit SHA.
+func validateVMRef(value string) (string, error) {
 	value = strings.TrimSpace(value)
-	if value == "" || len(value) > 255 || vmCommitSHA().MatchString(value) || strings.HasPrefix(value, "refs/") || strings.Contains(value, "..") || !vmBranchName().MatchString(value) {
-		return "", &ExitError{2, "Error: --ref '" + output.CellText(value) + "' is not a branch name; tags, pull-request refs, and raw commit SHAs are not supported."}
+	if vmCommitSHA().MatchString(value) {
+		return strings.ToLower(value), nil
 	}
-	return value, nil
+	if vmPullRequestHeadRef().MatchString(value) {
+		return value, nil
+	}
+	// A branch named like a SHA would be preloaded as the commit it spells.
+	name := strings.TrimPrefix(value, "refs/heads/")
+	if name == "" || len(name) > 255 || vmCommitSHA().MatchString(name) || strings.HasPrefix(name, "refs/") || strings.Contains(name, "..") || !vmBranchName().MatchString(name) {
+		return "", &ExitError{2, "Error: --ref '" + output.CellText(value) + "' is not a branch name, refs/pull/<number>/head or a 40-character commit SHA; tags are not supported."}
+	}
+	return name, nil
+}
+
+// vmRefDetaches reports whether a validated ref is checked out detached: a
+// pull request head or a commit, as opposed to a branch.
+func vmRefDetaches(ref string) bool {
+	return vmCommitSHA().MatchString(ref) || vmPullRequestHeadRef().MatchString(ref)
 }
 func vmCacheName(key string) string {
 	if strings.HasPrefix(key, "cache.") && strings.HasSuffix(key, ".enabled") {
@@ -79,7 +97,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 	f.StringVar(&o.ttl, "ttl", "", "Auto-stop duration, e.g. 8h, 7d, or 1800s. Defaults to 8h.")
 	f.StringVar(&o.egress, "egress-rules", "", "Per-VM egress rules as a JSON array or @path.")
 	f.StringVarP(&o.repo, "repo", "R", "", "Git repository to preload (owner/repo).")
-	f.StringVar(&o.ref, "ref", "", "Branch to preload; requires --repo.")
+	f.StringVar(&o.ref, "ref", "", "Branch, refs/pull/<number>/head or commit SHA to preload; requires --repo.")
 	f.IntVar(&o.depth, "fetch-depth", 0, "History to preload; 0 means all branches and tags.")
 	f.StringArrayVar(&o.caches, "disable-cache", nil, "Disable caches; repeatable or comma-separated.")
 	f.BoolVar(&o.ephemeral, "ephemeral", false, "Ignored compatibility flag.")
@@ -130,7 +148,7 @@ func newVMCreate(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --fetch-depth requires --repo."}
 		}
 		if o.ref != "" {
-			ref, err := validateVMBranch(o.ref)
+			ref, err := validateVMRef(o.ref)
 			if err != nil {
 				return err
 			}
