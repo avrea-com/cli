@@ -15,9 +15,9 @@ func quotedJSON(value string) string {
 	return strings.TrimSuffix(data.String(), "\n")
 }
 
-// frontmatter starts a page. Starlight renders title as the heading and
-// sidebar label; a non-empty metaTitle sets the browser and og:title that
-// search results and link previews show instead.
+// frontmatter starts a page. Starlight renders title as the heading; a
+// non-empty metaTitle sets the browser and og:title that search results and
+// link previews show instead.
 func frontmatter(title, description, metaTitle string) []string {
 	out := []string{"---", "title: " + title, "description: " + quotedJSON(description)}
 	if metaTitle != "" {
@@ -79,8 +79,8 @@ func indexPage(tree *Tree) string {
 	return finish(out)
 }
 
-// overviewDescription is the overview's search snippet. Keep it within 155
-// characters so results do not truncate it.
+// overviewDescription is the overview's search snippet. Search results tend
+// to cut descriptions past about 155 characters, so keep it within that.
 const overviewDescription = "Install avr, sign in and manage runs, jobs, logs, tests, caches and VMs from the terminal, with JSON output for scripts and coding agents."
 
 func overviewPage(readme string) string {

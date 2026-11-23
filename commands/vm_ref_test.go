@@ -22,6 +22,9 @@ func TestVMCreateSendsEachPreloadRefForm(t *testing.T) {
 		{"main", "main"},
 		{"feature/x-1", "feature/x-1"},
 		{"refs/heads/feature/x-1", "feature/x-1"},
+		// Names git and the API accept that need more than [A-Za-z0-9._/-].
+		{"dependabot/npm_and_yarn/@babel/core-7.22.5", "dependabot/npm_and_yarn/@babel/core-7.22.5"},
+		{"fix+1", "fix+1"},
 		{"refs/pull/12/head", "refs/pull/12/head"},
 		{" refs/pull/1/head ", "refs/pull/1/head"},
 		{strings.ToUpper(vmRefCommit), vmRefCommit},
@@ -58,6 +61,17 @@ func TestVMRefRefusesWhatTheAPIDoesNotPreload(t *testing.T) {
 		"refs/pull/12345678901/head",
 		"refs/heads/" + vmRefCommit,
 		"a..b",
+		"a//b",
+		"feat.lock",
+		"a/.hidden",
+		"trailing/",
+		"trailing.",
+		"a@{1}",
+		"HEAD",
+		"@",
+		"with space",
+		"feat\xff",
+		"a\u202eb",
 		"-main",
 		"refs/heads/",
 	} {
@@ -182,6 +196,71 @@ func TestBootstrapRepoStepChecksOutEachRefForm(t *testing.T) {
 				if branch != tc.branch[run] {
 					t.Fatalf("run %d: branch %q; want %q", run, branch, tc.branch[run])
 				}
+				if branch != "" {
+					remote := "origin"
+					if tc.config == renamed {
+						remote = "upstream"
+					}
+					if upstream := git(dest, "rev-parse", "--symbolic-full-name", branch+"@{upstream}"); upstream != "refs/remotes/"+remote+"/"+branch {
+						t.Fatalf("run %d: upstream %s", run, upstream)
+					}
+				}
+			}
+		})
+	}
+
+	// A fork whose feature branch is at another commit than --repo's.
+	fork := filepath.Join(root, "fork.git")
+	git(root, "clone", "-q", "--bare", origin, fork)
+	git(fork, "update-ref", "refs/heads/feature", head)
+	// A fork whose feature branch is at the same commit.
+	mirror := filepath.Join(root, "mirror.git")
+	git(root, "clone", "-q", "--bare", origin, mirror)
+
+	// An existing clone gets the branch at --repo's commit, tracking the
+	// remote that is --repo, or no remote when none is.
+	for _, tc := range []struct {
+		name     string
+		clone    []string
+		setup    func(dest string)
+		upstream string
+	}{
+		{"remote spelled differently", []string{"clone", "-q", origin}, func(string) {}, "refs/remotes/origin/feature"},
+		// A fork with the branch at the same commit, listed before origin.
+		{"second remote", []string{"clone", "-q", "file://" + origin}, func(dest string) {
+			git(dest, "remote", "add", "fork", mirror)
+			git(dest, "fetch", "-q", "fork")
+		}, "refs/remotes/origin/feature"},
+		// The remote's fetch refspec covers only the default branch.
+		{"single-branch clone", []string{"clone", "-q", "--single-branch", "file://" + origin}, func(string) {}, "refs/remotes/origin/feature"},
+		{"only another fork", []string{"clone", "-q", fork}, func(string) {}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			dest := filepath.Join(home, "repo")
+			git(root, append(tc.clone, dest)...)
+			tc.setup(dest)
+			steps, err := bootstrapSteps(bootstrapOptions{repo: "file://" + origin, ref: "feature"}, bootstrapEnvironment{}, nil, "", nil)
+			if err != nil || len(steps) != 1 {
+				t.Fatal(err, len(steps))
+			}
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", steps[0].script)
+			cmd.Env = append(os.Environ(), "HOME="+home, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+			if raw, err := cmd.CombinedOutput(); err != nil {
+				t.Fatal(err, string(raw))
+			}
+			if got := git(dest, "symbolic-ref", "HEAD"); got != "refs/heads/feature" {
+				t.Fatalf("HEAD %s", got)
+			}
+			if got := git(dest, "rev-parse", "HEAD"); got != base {
+				t.Fatalf("feature at %s; want %s", got, base)
+			}
+			upstream := ""
+			if out, err := exec.CommandContext(t.Context(), "git", "-C", dest, "rev-parse", "--symbolic-full-name", "feature@{upstream}").Output(); err == nil {
+				upstream = strings.TrimSpace(string(out))
+			}
+			if upstream != tc.upstream {
+				t.Fatalf("upstream %q; want %q", upstream, tc.upstream)
 			}
 		})
 	}

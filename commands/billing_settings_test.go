@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,7 +31,7 @@ func TestBillingSettingsPublicOutput(t *testing.T) {
 					if asJSON {
 						args = append(args, "--json", "*")
 					}
-					public := map[string]any{"billing_emails": []any{"billing@example.com"}, "tax_id": "FI123", "billing_address": nil}
+					public := map[string]any{"billing_emails": []any{"billing@example.com"}, "tax_id": "FI123", "billing_address": map[string]any{"line1": "1 Main St", "city": "Helsinki", "country": "FI"}}
 					calls := 0
 					d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 						calls++
@@ -67,7 +68,7 @@ func TestBillingSettingsPublicOutput(t *testing.T) {
 						}
 					} else {
 						text := out.String()
-						if !strings.Contains(text, "billing@example.com") || !strings.Contains(text, "FI123") {
+						if !strings.Contains(text, "billing@example.com") || !strings.Contains(text, "FI123") || !strings.Contains(text, "1 Main St, Helsinki, FI") {
 							t.Fatal(text)
 						}
 						for _, private := range []string{"Stripe", "Metronome", "cus_private", "private-customer"} {
@@ -92,8 +93,23 @@ func TestBillingSettingsFieldDiscovery(t *testing.T) {
 					t.Fatal(code, stderr.String())
 				}
 				text := out.String() + stderr.String()
-				if !strings.Contains(text, "billing_emails") || strings.Contains(text, "stripe_customer_id") || strings.Contains(text, "metronome_customer_id") {
-					t.Fatal(text)
+				// Help's JSON FIELDS line and "--json ?" list exactly the fields
+				// the command outputs.
+				var listed []string
+				if flags[0] == "--help" {
+					_, after, _ := strings.Cut(text, "JSON FIELDS\n")
+					line, _, _ := strings.Cut(after, "\n")
+					listed = strings.Split(strings.TrimSpace(line), ", ")
+				} else {
+					for _, line := range strings.Split(text, "\n")[1:] {
+						if field := strings.TrimSpace(line); field != "" {
+							listed = append(listed, field)
+						}
+					}
+				}
+				want := slices.Sorted(slices.Values(billingSettingsFields))
+				if !slices.Equal(listed, want) {
+					t.Fatalf("listed %v; want %v in\n%s", listed, want, text)
 				}
 			})
 		}
