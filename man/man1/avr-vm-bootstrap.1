@@ -52,7 +52,7 @@ Install the native avr release matching this CLI in ~/.local/bin (requires curl,
 Clone this git repo into the VM's home directory.
 .TP
 \fB\-\-ref\fR \fITEXT\fR
-Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.
+Branch, refs/pull/<number>/head or 40-character commit SHA to check out after cloning (requires --repo). A pull request or commit is checked out detached. Tags are not supported.
 .TP
 \fB\-\-dotfiles\fR \fITEXT\fR
 Clone this dotfiles repo and run its installer.

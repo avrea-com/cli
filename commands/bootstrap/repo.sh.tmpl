@@ -9,5 +9,11 @@ if [ -d "$dest/.git" ]; then
 else
   git clone "$url" "$dest"
 fi
+{{- if .Detach}}
+# A clone fetches no pull request refs and maybe not the commit.
+git -C "$dest" fetch origin "$ref"
+git -C "$dest" checkout --detach FETCH_HEAD
+{{- else}}
 if [ -n "$ref" ]; then git -C "$dest" checkout "$ref"; fi
+{{- end}}
 echo "repo ready at $dest"

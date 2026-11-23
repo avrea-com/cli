@@ -10040,7 +10040,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Branch to check out after cloning (requires --repo). Tags, PR refs, and raw SHAs are unsupported.",
+                "help": "Branch, refs/pull/\u003cnumber\u003e/head or 40-character commit SHA to check out after cloning (requires --repo). A pull request or commit is checked out detached. Tags are not supported.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -10448,7 +10448,7 @@
                 "nargs": 1,
                 "is_flag": false,
                 "envvar": null,
-                "help": "Branch to preload (default: the repository's default branch). Requires --repo. Tags, pull-request refs, and raw commit SHAs are not supported.",
+                "help": "Branch, refs/pull/\u003cnumber\u003e/head or 40-character commit SHA to preload (default: the repository's default branch). Requires --repo. Tags are not supported.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

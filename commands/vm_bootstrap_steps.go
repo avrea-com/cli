@@ -168,7 +168,7 @@ func bootstrapSteps(o bootstrapOptions, env bootstrapEnvironment, agents []strin
 		if o.ref != "" {
 			label += " @ " + o.ref
 		}
-		if err := add("repo", label, "repo", map[string]any{"URL": shellQuotePython(o.repo), "Ref": shellQuotePython(o.ref)}, "", false); err != nil {
+		if err := add("repo", label, "repo", map[string]any{"URL": shellQuotePython(o.repo), "Ref": shellQuotePython(o.ref), "Detach": vmRefDetaches(o.ref)}, "", false); err != nil {
 			return nil, err
 		}
 	}
