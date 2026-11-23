@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/avrea-com/cli/commands"
 	"github.com/avrea-com/cli/docgen"
@@ -233,11 +234,12 @@ func TestStarlightLandingPagesSetSearchMetadata(t *testing.T) {
 				}
 			}
 		}
-		for key, limit := range map[string]int{"title": 60 + 2, "og:title": 0, "description": 155 + 2} {
-			if meta[key] == "" {
+		for key, limit := range map[string]int{"title": 60, "og:title": 0, "description": 155} {
+			var value string
+			if err := json.Unmarshal([]byte(meta[key]), &value); err != nil || strings.TrimSpace(value) == "" {
 				t.Errorf("%s: no %s in\n%s", path, key, front)
-			} else if limit > 0 && len(meta[key]) > limit {
-				t.Errorf("%s: %s %s is longer than %d characters", path, key, meta[key], limit-2)
+			} else if n := utf8.RuneCountInString(value); limit > 0 && n > limit {
+				t.Errorf("%s: %s %q is %d characters, over %d", path, key, value, n, limit)
 			}
 		}
 	}

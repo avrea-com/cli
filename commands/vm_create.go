@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
 )
 
-var vmBranchName = lazyRegexp(`^[A-Za-z0-9_](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$`)
 var vmCommitSHA = lazyRegexp(`^[0-9a-fA-F]{40}$`)
 var vmPullRequestHeadRef = lazyRegexp(`^refs/pull/[1-9][0-9]{0,9}/head$`)
 var vmCacheAlias = lazyRegexp(`^[a-z0-9][a-z0-9-]*$`)
@@ -31,10 +31,30 @@ func validateVMRef(value string) (string, error) {
 	}
 	// A branch named like a SHA would be preloaded as the commit it spells.
 	name := strings.TrimPrefix(value, "refs/heads/")
-	if name == "" || len(name) > 255 || vmCommitSHA().MatchString(name) || strings.HasPrefix(name, "refs/") || strings.Contains(name, "..") || !vmBranchName().MatchString(name) {
+	if vmCommitSHA().MatchString(name) || !vmBranchName(name) {
 		return "", &ExitError{2, "Error: --ref '" + output.CellText(value) + "' is not a branch name, refs/pull/<number>/head or a 40-character commit SHA; tags are not supported."}
 	}
 	return name, nil
+}
+
+// vmBranchName applies the API's branch-name rule (validate_branch_name in
+// avrea-core), the shapes of `git check-ref-format --branch` that matter here.
+func vmBranchName(name string) bool {
+	if name == "HEAD" || name == "@" || strings.HasPrefix(name, "-") || strings.HasPrefix(name, "refs/") {
+		return false
+	}
+	if n := utf8.RuneCountInString(name); n == 0 || n > 255 || strings.HasSuffix(name, "/") || strings.HasSuffix(name, ".") || strings.Contains(name, "..") || strings.Contains(name, "@{") {
+		return false
+	}
+	if strings.ContainsFunc(name, func(r rune) bool { return r < 32 || r == 127 || strings.ContainsRune(" ~^:?*[\\", r) }) {
+		return false
+	}
+	for part := range strings.SplitSeq(name, "/") {
+		if part == "" || strings.HasPrefix(part, ".") || strings.HasSuffix(part, ".lock") {
+			return false
+		}
+	}
+	return true
 }
 
 // vmRefDetaches reports whether a validated ref is checked out detached: a

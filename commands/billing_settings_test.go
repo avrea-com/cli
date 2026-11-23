@@ -30,7 +30,7 @@ func TestBillingSettingsPublicOutput(t *testing.T) {
 					if asJSON {
 						args = append(args, "--json", "*")
 					}
-					public := map[string]any{"billing_emails": []any{"billing@example.com"}, "tax_id": "FI123", "billing_address": nil}
+					public := map[string]any{"billing_emails": []any{"billing@example.com"}, "tax_id": "FI123", "billing_address": map[string]any{"line1": "1 Main St", "city": "Helsinki", "country": "FI"}}
 					calls := 0
 					d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 						calls++
@@ -67,7 +67,7 @@ func TestBillingSettingsPublicOutput(t *testing.T) {
 						}
 					} else {
 						text := out.String()
-						if !strings.Contains(text, "billing@example.com") || !strings.Contains(text, "FI123") {
+						if !strings.Contains(text, "billing@example.com") || !strings.Contains(text, "FI123") || !strings.Contains(text, "1 Main St, Helsinki, FI") {
 							t.Fatal(text)
 						}
 						for _, private := range []string{"Stripe", "Metronome", "cus_private", "private-customer"} {
@@ -92,7 +92,13 @@ func TestBillingSettingsFieldDiscovery(t *testing.T) {
 					t.Fatal(code, stderr.String())
 				}
 				text := out.String() + stderr.String()
-				if !strings.Contains(text, "billing_emails") || strings.Contains(text, "stripe_customer_id") || strings.Contains(text, "metronome_customer_id") {
+				// Help and "--json ?" list exactly the fields the command outputs.
+				for _, field := range billingSettingsFields {
+					if !strings.Contains(text, field) {
+						t.Fatalf("%s missing from\n%s", field, text)
+					}
+				}
+				if strings.Contains(text, "stripe_customer_id") || strings.Contains(text, "metronome_customer_id") {
 					t.Fatal(text)
 				}
 			})
