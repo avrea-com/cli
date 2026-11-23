@@ -1,6 +1,13 @@
 ---
 title: Avrea CLI
-description: "Avrea on the command line."
+description: "Install avr, sign in and manage runs, jobs, logs, tests, caches and VMs from the terminal, with JSON output for scripts and coding agents."
+head:
+  - tag: title
+    content: "avr, the Avrea command-line client | Avrea Docs"
+  - tag: meta
+    attrs:
+      property: og:title
+      content: "avr, the Avrea command-line client"
 ---
 
 Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs, jobs, logs, tests, caches and on-demand VMs into your terminal and into your coding agent.

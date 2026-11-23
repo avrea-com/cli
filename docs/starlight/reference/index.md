@@ -1,6 +1,13 @@
 ---
 title: CLI Reference
 description: "Reference for the avr command-line client."
+head:
+  - tag: title
+    content: "avr command reference | Avrea Docs"
+  - tag: meta
+    attrs:
+      property: og:title
+      content: "avr command reference"
 ---
 
 `avr` is the Avrea command-line client. Avrea on the command line.

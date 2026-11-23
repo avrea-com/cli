@@ -203,3 +203,42 @@ func TestStarlightOverviewSkipsTheReadmeHeader(t *testing.T) {
 		t.Fatal(page)
 	}
 }
+
+// The overview and reference index carry the docs site's search metadata:
+// a browser title within 60 characters, an og:title and a description within
+// 155, so results and link previews do not truncate them.
+func TestStarlightLandingPagesSetSearchMetadata(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme := "# Avrea CLI\n\nOfficial command-line client.\n"
+	files := docgen.Starlight(tree, &readme)
+	for _, path := range []string{"index.md", "reference/index.md"} {
+		meta := map[string]string{}
+		front, _, _ := strings.Cut(strings.TrimPrefix(files[path], "---\n"), "\n---\n")
+		lines := strings.Split(front, "\n")
+		for i, line := range lines {
+			key, value, _ := strings.Cut(strings.TrimSpace(line), ": ")
+			switch key {
+			case "description":
+				meta[key] = value
+			case "- tag":
+				if i+1 < len(lines) && value == "title" {
+					meta["title"] = strings.TrimPrefix(strings.TrimSpace(lines[i+1]), "content: ")
+				}
+			case "property":
+				if value == "og:title" && i+1 < len(lines) {
+					meta["og:title"] = strings.TrimPrefix(strings.TrimSpace(lines[i+1]), "content: ")
+				}
+			}
+		}
+		for key, limit := range map[string]int{"title": 60 + 2, "og:title": 0, "description": 155 + 2} {
+			if meta[key] == "" {
+				t.Errorf("%s: no %s in\n%s", path, key, front)
+			} else if limit > 0 && len(meta[key]) > limit {
+				t.Errorf("%s: %s %s is longer than %d characters", path, key, meta[key], limit-2)
+			}
+		}
+	}
+}

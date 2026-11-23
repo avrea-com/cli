@@ -14,9 +14,22 @@ func quotedJSON(value string) string {
 	_ = encoder.Encode(value)
 	return strings.TrimSuffix(data.String(), "\n")
 }
+
+// frontmatter starts a page. Starlight renders title as the heading and
+// sidebar label; a non-empty metaTitle sets the browser and og:title that
+// search results and link previews show instead.
+func frontmatter(title, description, metaTitle string) []string {
+	out := []string{"---", "title: " + title, "description: " + quotedJSON(description)}
+	if metaTitle != "" {
+		out = append(out, "head:",
+			"  - tag: title", "    content: "+quotedJSON(metaTitle+" | Avrea Docs"),
+			"  - tag: meta", "    attrs:", "      property: og:title", "      content: "+quotedJSON(metaTitle))
+	}
+	return append(out, "---", "")
+}
 func commandPage(node *Node) string {
 	short := strings.TrimSpace(node.ShortHelp)
-	out := []string{"---", "title: " + node.Full, "description: \"" + strings.ReplaceAll(short, "\"", "\\\"") + "\"", "---", ""}
+	out := frontmatter(node.Full, short, "")
 	if short != "" {
 		out = append(out, short, "")
 	}
@@ -39,9 +52,9 @@ func commandPage(node *Node) string {
 	return finish(out)
 }
 func indexPage(tree *Tree) string {
-	out := []string{"---", "title: CLI Reference", "description: \"Reference for the avr command-line client.\"", "---", "",
-		"`" + tree.Program + "` is the Avrea command-line client. " + tree.Summary, "", "## Synopsis", "",
-		"```sh\n" + tree.Program + " [GLOBAL OPTIONS] COMMAND [ARGS]...\n```", ""}
+	out := frontmatter("CLI Reference", "Reference for the avr command-line client.", "avr command reference")
+	out = append(out, "`"+tree.Program+"` is the Avrea command-line client. "+tree.Summary, "", "## Synopsis", "",
+		"```sh\n"+tree.Program+" [GLOBAL OPTIONS] COMMAND [ARGS]...\n```", "")
 	out = append(out, paramList("Global options", tree.GlobalOptions, true)...)
 	out = append(out, "## Commands", "")
 	for _, section := range tree.SectionOrder {
@@ -65,7 +78,12 @@ func indexPage(tree *Tree) string {
 	}
 	return finish(out)
 }
-func overviewPage(readme string, tree *Tree) string {
+
+// overviewDescription is the overview's search snippet. Keep it within 155
+// characters so results do not truncate it.
+const overviewDescription = "Install avr, sign in and manage runs, jobs, logs, tests, caches and VMs from the terminal, with JSON output for scripts and coding agents."
+
+func overviewPage(readme string) string {
 	lines := strings.Split(strings.TrimLeft(readme, " \t\r\n"), "\n")
 	// The README opens with HTML paragraphs for GitHub (banner, badges, links
 	// to the docs). The site has its own header, so they stop at the title.
@@ -85,11 +103,8 @@ func overviewPage(readme string, tree *Tree) string {
 			lines = lines[1:]
 		}
 	}
-	summary := tree.Summary
-	if summary == "" {
-		summary = "Avrea command-line client."
-	}
-	return "---\ntitle: Avrea CLI\ndescription: \"" + strings.ReplaceAll(summary, "\"", "\\\"") + "\"\n---\n\n" + finish(lines)
+	head := frontmatter("Avrea CLI", overviewDescription, "avr, the Avrea command-line client")
+	return finish(append(head, lines...))
 }
 func sidebar(tree *Tree, overview bool) string {
 	out := []string{
@@ -120,7 +135,7 @@ func sidebar(tree *Tree, overview bool) string {
 func Starlight(tree *Tree, readme *string) map[string]string {
 	files := map[string]string{"reference/index.md": indexPage(tree), "_cli-sidebar.mjs": sidebar(tree, readme != nil)}
 	if readme != nil && *readme != "" {
-		files["index.md"] = overviewPage(*readme, tree)
+		files["index.md"] = overviewPage(*readme)
 	}
 	for _, node := range tree.top() {
 		files["reference/"+node.Name+".md"] = commandPage(node)
