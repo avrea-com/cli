@@ -19,13 +19,28 @@ git -C "$dest" checkout --detach refs/avr/checkout
 # Check out only a branch: git resolves a bare name to a same-named tag or a
 # path unless the local branch exists, and switch never takes a path. An
 # existing local branch is switched to as it is. A new one tracks the remote
-# whose URL is --repo; when no remote has that spelling, it is fetched from
-# the URL and tracks the remote that has the branch at that commit.
+# whose URL is --repo; when no remote is, it is fetched from the URL and
+# tracks only a remote that has it at the fetched commit.
 if [ -n "$ref" ]; then
   if ! git -C "$dest" show-ref --verify --quiet "refs/heads/$ref"; then
+    # Spellings of one URL: file:// or not, a trailing slash or .git.
+    same_url() {
+      local a=${1#file://} b=${2#file://}
+      a=${a%/} b=${b%/}
+      [ "${a%.git}" = "${b%.git}" ]
+    }
+    # A single-branch clone's fetch refspec leaves the branch out; add it so
+    # later fetches update the upstream and $ref@{upstream} resolves.
+    track() {
+      git -C "$dest" config "branch.$ref.remote" "$1"
+      git -C "$dest" config "branch.$ref.merge" "refs/heads/$ref"
+      if ! git -C "$dest" rev-parse -q --verify "$ref@{upstream}" >/dev/null; then
+        git -C "$dest" remote set-branches --add "$1" "$ref"
+      fi
+    }
     remote=""
     for candidate in $(git -C "$dest" remote); do
-      if [ "$(git -C "$dest" remote get-url "$candidate")" = "$url" ]; then remote=$candidate; break; fi
+      if same_url "$(git -C "$dest" remote get-url "$candidate")" "$url"; then remote=$candidate; break; fi
     done
     if [ -n "$remote" ]; then
       if ! git -C "$dest" show-ref --verify --quiet "refs/remotes/$remote/$ref" &&
@@ -33,30 +48,24 @@ if [ -n "$ref" ]; then
         echo "could not fetch branch $ref from $url" >&2
         exit 1
       fi
-      # Set the upstream as config: --track refuses a remote-tracking ref that
-      # the remote's fetch refspec does not cover, as in a single-branch clone.
       git -C "$dest" branch -q --no-track "$ref" "refs/remotes/$remote/$ref"
-      git -C "$dest" config "branch.$ref.remote" "$remote"
-      git -C "$dest" config "branch.$ref.merge" "refs/heads/$ref"
+      track "$remote"
     else
       if ! git -C "$dest" fetch "$url" "refs/heads/$ref:refs/heads/$ref"; then
         echo "could not fetch branch $ref from $url" >&2
         exit 1
       fi
       commit=$(git -C "$dest" rev-parse "refs/heads/$ref")
-      having=0 only="" same=0 matching=""
+      same=0 matching=""
       for candidate in $(git -C "$dest" remote); do
-        if tip=$(git -C "$dest" rev-parse -q --verify "refs/remotes/$candidate/$ref"); then
-          having=$((having + 1)) only=$candidate
-          if [ "$tip" = "$commit" ]; then same=$((same + 1)) matching=$candidate; fi
+        if [ "$(git -C "$dest" rev-parse -q --verify "refs/remotes/$candidate/$ref")" = "$commit" ]; then
+          same=$((same + 1)) matching=$candidate
         fi
       done
-      upstream=""
-      if [ "$having" -eq 1 ]; then upstream=$only; elif [ "$same" -eq 1 ]; then upstream=$matching; fi
-      if [ -n "$upstream" ]; then
-        git -C "$dest" branch -q --set-upstream-to "refs/remotes/$upstream/$ref" "$ref"
+      if [ "$same" -eq 1 ]; then
+        track "$matching"
       else
-        echo "branch $ref has no upstream: no single remote has it" >&2
+        echo "branch $ref has no upstream: no remote is $url" >&2
       fi
     fi
   fi

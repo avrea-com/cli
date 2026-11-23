@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/avrea-com/cli/output"
@@ -37,8 +38,10 @@ func validateVMRef(value string) (string, error) {
 	return name, nil
 }
 
-// vmBranchName applies the API's branch-name rule (validate_branch_name in
-// avrea-core), the shapes of `git check-ref-format --branch` that matter here.
+// vmBranchName applies the API's branch-name rule, the shapes of
+// `git check-ref-format --branch` that matter here. It also refuses invalid
+// UTF-8 and unprintable runes, which would reach the API altered and could
+// disguise the ref in the bootstrap step's label.
 func vmBranchName(name string) bool {
 	if name == "HEAD" || name == "@" || strings.HasPrefix(name, "-") || strings.HasPrefix(name, "refs/") {
 		return false
@@ -46,7 +49,7 @@ func vmBranchName(name string) bool {
 	if n := utf8.RuneCountInString(name); n == 0 || n > 255 || strings.HasSuffix(name, "/") || strings.HasSuffix(name, ".") || strings.Contains(name, "..") || strings.Contains(name, "@{") {
 		return false
 	}
-	if strings.ContainsFunc(name, func(r rune) bool { return r < 32 || r == 127 || strings.ContainsRune(" ~^:?*[\\", r) }) {
+	if !utf8.ValidString(name) || strings.ContainsFunc(name, func(r rune) bool { return !unicode.IsPrint(r) || strings.ContainsRune(" ~^:?*[\\", r) }) {
 		return false
 	}
 	for part := range strings.SplitSeq(name, "/") {

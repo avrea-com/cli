@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -92,14 +93,23 @@ func TestBillingSettingsFieldDiscovery(t *testing.T) {
 					t.Fatal(code, stderr.String())
 				}
 				text := out.String() + stderr.String()
-				// Help and "--json ?" list exactly the fields the command outputs.
-				for _, field := range billingSettingsFields {
-					if !strings.Contains(text, field) {
-						t.Fatalf("%s missing from\n%s", field, text)
+				// Help's JSON FIELDS line and "--json ?" list exactly the fields
+				// the command outputs.
+				var listed []string
+				if flags[0] == "--help" {
+					_, after, _ := strings.Cut(text, "JSON FIELDS\n")
+					line, _, _ := strings.Cut(after, "\n")
+					listed = strings.Split(strings.TrimSpace(line), ", ")
+				} else {
+					for _, line := range strings.Split(text, "\n")[1:] {
+						if field := strings.TrimSpace(line); field != "" {
+							listed = append(listed, field)
+						}
 					}
 				}
-				if strings.Contains(text, "stripe_customer_id") || strings.Contains(text, "metronome_customer_id") {
-					t.Fatal(text)
+				want := slices.Sorted(slices.Values(billingSettingsFields))
+				if !slices.Equal(listed, want) {
+					t.Fatalf("listed %v; want %v in\n%s", listed, want, text)
 				}
 			})
 		}
