@@ -183,7 +183,11 @@ func TestBootstrapRepoStepChecksOutEachRefForm(t *testing.T) {
 					t.Fatalf("run %d: branch %q; want %q", run, branch, tc.branch[run])
 				}
 				if branch != "" {
-					if upstream := git(dest, "rev-parse", "--symbolic-full-name", branch+"@{upstream}"); !strings.HasSuffix(upstream, "/"+branch) {
+					remote := "origin"
+					if tc.config == renamed {
+						remote = "upstream"
+					}
+					if upstream := git(dest, "rev-parse", "--symbolic-full-name", branch+"@{upstream}"); upstream != "refs/remotes/"+remote+"/"+branch {
 						t.Fatalf("run %d: upstream %s", run, upstream)
 					}
 				}
@@ -213,6 +217,43 @@ func TestBootstrapRepoStepChecksOutEachRefForm(t *testing.T) {
 			t.Fatalf("upstream %s", got)
 		}
 	})
+
+	// Each existing clone gets the branch tracking the remote that is --repo.
+	for _, tc := range []struct {
+		name  string
+		clone []string
+		setup func(dest string)
+	}{
+		// A fork with the branch at the same commit, listed before origin.
+		{"second remote", []string{"clone", "-q"}, func(dest string) {
+			git(dest, "remote", "add", "fork", origin)
+			git(dest, "fetch", "-q", "fork")
+		}},
+		// The remote's fetch refspec covers only the default branch.
+		{"single-branch clone", []string{"clone", "-q", "--single-branch"}, func(string) {}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			dest := filepath.Join(home, "repo")
+			git(root, append(tc.clone, "file://"+origin, dest)...)
+			tc.setup(dest)
+			steps, err := bootstrapSteps(bootstrapOptions{repo: "file://" + origin, ref: "feature"}, bootstrapEnvironment{}, nil, "", nil)
+			if err != nil || len(steps) != 1 {
+				t.Fatal(err, len(steps))
+			}
+			cmd := exec.CommandContext(t.Context(), "bash", "-c", steps[0].script)
+			cmd.Env = append(os.Environ(), "HOME="+home, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
+			if raw, err := cmd.CombinedOutput(); err != nil {
+				t.Fatal(err, string(raw))
+			}
+			if got := git(dest, "symbolic-ref", "HEAD"); got != "refs/heads/feature" {
+				t.Fatalf("HEAD %s", got)
+			}
+			if remote, merge := git(dest, "config", "branch.feature.remote"), git(dest, "config", "branch.feature.merge"); remote != "origin" || merge != "refs/heads/feature" {
+				t.Fatalf("upstream %s %s", remote, merge)
+			}
+		})
+	}
 
 	t.Run("missing branch", func(t *testing.T) {
 		home := t.TempDir()
