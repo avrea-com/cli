@@ -10,10 +10,28 @@ else
   git clone "$url" "$dest"
 fi
 {{- if .Detach}}
-# A clone fetches no pull request refs and maybe not the commit.
-git -C "$dest" fetch origin "$ref"
-git -C "$dest" checkout --detach FETCH_HEAD
+# A clone fetches no pull request refs and maybe not the commit. Fetch from
+# the URL, whatever the guest named its remote, into a ref of our own that
+# another fetch cannot replace before the checkout.
+git -C "$dest" fetch "$url" "+$ref:refs/avr/checkout"
+git -C "$dest" checkout --detach refs/avr/checkout
 {{- else}}
-if [ -n "$ref" ]; then git -C "$dest" checkout "$ref"; fi
+# Check out only a branch: git resolves a bare name to a same-named tag or a
+# path unless the local branch exists, and switch never takes a path. A
+# missing branch fails instead of leaving the default checked out.
+if [ -n "$ref" ]; then
+  if ! git -C "$dest" show-ref --verify --quiet "refs/heads/$ref"; then
+    remote=""
+    for candidate in $(git -C "$dest" remote); do
+      if [ "$(git -C "$dest" remote get-url "$candidate")" = "$url" ]; then remote=$candidate; break; fi
+    done
+    if [ -z "$remote" ] || ! git -C "$dest" show-ref --verify --quiet "refs/remotes/$remote/$ref"; then
+      echo "branch $ref not found in $url" >&2
+      exit 1
+    fi
+    git -C "$dest" branch --track "$ref" "refs/remotes/$remote/$ref"
+  fi
+  git -C "$dest" switch "$ref"
+fi
 {{- end}}
 echo "repo ready at $dest"
