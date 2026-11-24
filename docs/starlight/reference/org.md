@@ -154,6 +154,36 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 
+### `avr org governance`
+
+Show what you may manage in the organization.
+
+```sh
+avr org governance [OPTIONS]
+```
+
+Shows whether groups, resource access and delegation are on, which
+organization capabilities you hold, and for each group listed for you
+what you may and may not do there.
+
+```sh
+Examples:
+    avr org governance
+    avr org governance --json groups --jq '.groups[].display_name'
+```
+
+```sh
+JSON FIELDS
+    delegation_enabled, eligible_root_admin, groups, groups_enabled,
+    manual_root_capabilities, resource_access_enabled, root_capabilities
+```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
 ### `avr org install`
 
 Manage GitHub and GitLab installations.
@@ -470,8 +500,10 @@ JSON FIELDS
 List organization members.
 
 ```sh
-avr org members [OPTIONS]
+avr org members [OPTIONS] [COMMAND [ARGS]...]
 ```
+
+`avr org members access MEMBER` explains what one member can reach.
 
 ```sh
 Examples:
@@ -484,6 +516,42 @@ Examples:
 JSON FIELDS
     joined_at, name, role, user_id
 ```
+
+**Options**
+
+- <code class="cli-flag">&#x2D;&#x2D;org, -o</code> <code class="cli-value">&lt;TEXT&gt;</code> — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
+
+#### `avr org members access`
+
+Explain a member's effective access and where it comes from.
+
+```sh
+avr org members access [OPTIONS] MEMBER
+```
+
+MEMBER is a user ID (usr-...), @me, an email address the member
+verified, or a display name that only one active member has. The
+answer lists the member's groups, what each grant reaches and why, and
+their organization capabilities. A partial answer says so.
+
+```sh
+Examples:
+    avr org members access @me
+    avr org members access usr-0123456789abcdef0123456789abcdef --json groups
+```
+
+```sh
+JSON FIELDS
+    governance, groups, notes, org_role, org_role_source, resource_access,
+    resource_access_complete, resource_access_truncated, root_capabilities,
+    user_id
+```
+
+**Arguments**
+
+- <code class="cli-arg">MEMBER</code>
 
 **Options**
 

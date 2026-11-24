@@ -1,0 +1,52 @@
+.TH AVR\-GROUP\-LIMIT\-SET 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-limit-set \- Set a group's own vCPU limit.
+.SH SYNOPSIS
+.B avr group limit set
+[OPTIONS] GROUP
+.SH DESCRIPTION
+Set a group's own vCPU limit.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+Asks first unless --yes is passed or the change raises or keeps the group's own limit: a first limit or a lower one can make new jobs wait. Running jobs keep running.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group limit set Platform/CI --max-vcpu 64
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    group_id, inherited, kind, limit_key, limit_type, period, previous_value,
+    timezone, value
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-max\-vcpu\fR \fIINTEGER\fR
+The most vCPU the group and its subgroups may use at once. (required)
+.TP
+\fB\-y\fR, \fB\-\-yes\fR
+Set the limit without asking.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group-limit (1),
+.BR avr-group-limit-clear (1),
+.BR avr-group-limit-list (1)

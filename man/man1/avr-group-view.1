@@ -1,0 +1,50 @@
+.TH AVR\-GROUP\-VIEW 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-view \- Show a group's details and path.
+.SH SYNOPSIS
+.B avr group view
+[OPTIONS] GROUP
+.SH DESCRIPTION
+Show a group's details and path.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group view Organization/Platform
+    avr group view Platform/CI --json group_id,member_count
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    created_at, display_name, group_id, label, member_count, ownership,
+    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group (1),
+.BR avr-group-create (1),
+.BR avr-group-delete (1),
+.BR avr-group-edit (1),
+.BR avr-group-limit (1),
+.BR avr-group-list (1),
+.BR avr-group-member (1),
+.BR avr-group-usage (1)

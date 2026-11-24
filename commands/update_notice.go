@@ -15,7 +15,7 @@ func updateNoticeAllowed(cmd *cobra.Command, d Dependencies) bool {
 		return false
 	}
 	for c := cmd; c != nil; c = c.Parent() {
-		if c.Hidden || c.Name() == "help" || c.Name() == "completion" || c.Name() == "version" {
+		if c.Hidden || c.Name() == "help" || c.Name() == "completion" || c.Name() == "version" || c.Name() == "reference" {
 			return false
 		}
 	}

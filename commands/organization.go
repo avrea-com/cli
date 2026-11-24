@@ -81,11 +81,10 @@ func newOrgMembers(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		page, err := api.OrganizationMembers(cmd.Context(), id)
+		rows, err := listOrganizationMembers(cmd.Context(), cfg, api, id)
 		if err != nil {
-			return apiError(cfg, err, "list members")
+			return err
 		}
-		rows := rawRecords(page)
 		if cmd.Flags().Changed("json") {
 			return o.list(cmd, d, rows, memberFields)
 		}
@@ -99,6 +98,7 @@ func newOrgMembers(d Dependencies) *cobra.Command {
 		}
 		return output.Grid(d.Out, []string{"User ID", "Name", "Role", "Joined"}, cells)
 	})
+	c.AddCommand(newOrgMembersAccess(d))
 	return c
 }
 func emailDomainBase(org string) string { return "/orgs/" + url.PathEscape(org) + "/email-domains" }

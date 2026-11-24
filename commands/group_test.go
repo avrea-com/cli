@@ -299,8 +299,21 @@ func TestGroupsNotAvailable(t *testing.T) {
 	}
 }
 
+// The list reads every group to build paths, so no limit is too high to
+// honor: past the former 1,000 cap it still lists everything without a hint.
+func TestGroupListHasNoUpperLimit(t *testing.T) {
+	h := newManageHarness(t, managePersonal, groupPages(t, groupTree()))
+	if code := h.run(t, "group", "list", "-L", "1001", "--json", "group_id"); code != 0 || h.stderr.Len() != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(h.out.Bytes(), &rows); err != nil || len(rows) != len(groupTree()) {
+		t.Fatal(err, h.out)
+	}
+}
+
 func TestGroupListRejectsBeforeRequests(t *testing.T) {
-	for _, args := range [][]string{{"-L", "0"}, {"-L", "1001"}, {"--jq", ".[]"}} {
+	for _, args := range [][]string{{"-L", "0"}, {"-L", "-1"}, {"--jq", ".[]"}} {
 		h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
 		if code := h.run(t, append([]string{"group", "list"}, args...)...); code != 2 || len(h.requests) != 0 {
 			t.Fatal(args, code, h.stderr)

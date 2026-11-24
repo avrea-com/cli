@@ -1,0 +1,49 @@
+.TH AVR\-GROUP\-MEMBER\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-member-list \- List a group's direct members.
+.SH SYNOPSIS
+.B avr group member list
+[OPTIONS] GROUP
+.SH DESCRIPTION
+List a group's direct members.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+Members of subgroups are listed with the subgroup.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group member list Platform/CI
+    avr group member list Platform/CI -L 1000 --json user_id,email
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    added_at, email, name, source, stale_sources, user_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max members to return. (default: 100)
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group-member (1),
+.BR avr-group-member-add (1),
+.BR avr-group-member-remove (1)

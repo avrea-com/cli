@@ -1,0 +1,44 @@
+.TH AVR\-GROUP\-LIMIT\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-limit-list \- Show the limits that apply to a group, its own and inherited.
+.SH SYNOPSIS
+.B avr group limit list
+[OPTIONS] GROUP
+.SH DESCRIPTION
+Show the limits that apply to a group, its own and inherited.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group limit list Platform/CI
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    group_id, inherited, kind, limit_key, limit_type, period, timezone,
+    value
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group-limit (1),
+.BR avr-group-limit-clear (1),
+.BR avr-group-limit-set (1)

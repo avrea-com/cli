@@ -259,7 +259,9 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
 		"avr builder list", "avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics", "avr vm firewall",
-		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr group list", "avr settings list", "avr cache list",
+		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr settings list", "avr cache list",
+		"avr group list", "avr group view", "avr group member list", "avr group limit list", "avr group usage",
+		"avr org members", "avr org members access", "avr org governance", "avr reference",
 		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
 		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
 		"avr audit events list", "avr org install list", "avr org saml show",
@@ -309,7 +311,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	login.Hidden = true
 	logout := NewLogout(d)
 	logout.Hidden = true
-	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d), NewSkill(d))
+	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d), NewSkill(d), NewReference(d))
 	configureHelp(root, d)
 	return root
 }

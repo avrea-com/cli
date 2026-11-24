@@ -319,6 +319,12 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "full_name",
+              "platform",
+              "platform_repository_id",
+              "repository_id"
+            ],
             "subcommands": []
           },
           {
@@ -470,6 +476,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
+                ],
                 "subcommands": []
               },
               {
@@ -606,6 +618,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
+                ],
                 "subcommands": []
               },
               {
@@ -723,6 +741,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
+                ],
                 "subcommands": []
               },
               {
@@ -798,6 +822,11 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "cluster_id",
+                  "datacenter_id",
+                  "name"
                 ],
                 "subcommands": []
               },
@@ -934,6 +963,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
+                ],
                 "subcommands": []
               },
               {
@@ -1050,6 +1085,12 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
                 ],
                 "subcommands": []
               },
@@ -1205,6 +1246,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "enabled",
+                  "full_name",
+                  "placements",
+                  "repository_id"
+                ],
                 "subcommands": []
               }
             ]
@@ -1337,6 +1384,23 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "approval_state",
+                  "created_at",
+                  "github_snapshot",
+                  "public_access_expires_at",
+                  "reason",
+                  "repository_full_name",
+                  "repository_id",
+                  "request_id",
+                  "requester_organization_id",
+                  "requester_user_id",
+                  "review_note",
+                  "reviewed_at",
+                  "reviewed_by_user_id",
+                  "status",
+                  "updated_at"
+                ],
                 "subcommands": []
               },
               {
@@ -1411,6 +1475,27 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "approval_state",
+                  "available",
+                  "default_branch",
+                  "https_clone_url",
+                  "installation_kind",
+                  "is_archived",
+                  "is_disabled",
+                  "is_fork",
+                  "mirror_enabled",
+                  "platform_owner_id",
+                  "platform_owner_login",
+                  "platform_owner_type",
+                  "platform_pushed_at",
+                  "platform_repository_id",
+                  "platform_size_kb",
+                  "public_access_expires_at",
+                  "public_metadata_verified_at",
+                  "repository_full_name",
+                  "repository_id"
                 ],
                 "subcommands": []
               },
@@ -1524,6 +1609,23 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "approval_state",
+                  "created_at",
+                  "github_snapshot",
+                  "public_access_expires_at",
+                  "reason",
+                  "repository_full_name",
+                  "repository_id",
+                  "request_id",
+                  "requester_organization_id",
+                  "requester_user_id",
+                  "review_note",
+                  "reviewed_at",
+                  "reviewed_by_user_id",
+                  "status",
+                  "updated_at"
+                ],
                 "subcommands": []
               },
               {
@@ -1599,6 +1701,23 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "approval_state",
+                  "created_at",
+                  "github_snapshot",
+                  "public_access_expires_at",
+                  "reason",
+                  "repository_full_name",
+                  "repository_id",
+                  "request_id",
+                  "requester_organization_id",
+                  "requester_user_id",
+                  "review_note",
+                  "reviewed_at",
+                  "reviewed_by_user_id",
+                  "status",
+                  "updated_at"
                 ],
                 "subcommands": []
               },
@@ -1694,6 +1813,23 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "approval_state",
+                  "created_at",
+                  "github_snapshot",
+                  "public_access_expires_at",
+                  "reason",
+                  "repository_full_name",
+                  "repository_id",
+                  "request_id",
+                  "requester_organization_id",
+                  "requester_user_id",
+                  "review_note",
+                  "reviewed_at",
+                  "reviewed_by_user_id",
+                  "status",
+                  "updated_at"
+                ],
                 "subcommands": []
               }
             ]
@@ -1787,6 +1923,12 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "name",
+              "organization_id",
+              "role",
+              "slug"
             ],
             "subcommands": []
           },
@@ -1899,6 +2041,15 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "created_at",
+                  "dns_record_name",
+                  "dns_record_value",
+                  "domain",
+                  "organization_email_domain_id",
+                  "verified",
+                  "verified_at"
+                ],
                 "subcommands": []
               },
               {
@@ -1974,6 +2125,15 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "created_at",
+                  "dns_record_name",
+                  "dns_record_value",
+                  "domain",
+                  "organization_email_domain_id",
+                  "verified",
+                  "verified_at"
                 ],
                 "subcommands": []
               },
@@ -2145,9 +2305,102 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "created_at",
+                  "dns_record_name",
+                  "dns_record_value",
+                  "domain",
+                  "organization_email_domain_id",
+                  "verified",
+                  "verified_at"
+                ],
                 "subcommands": []
               }
             ]
+          },
+          {
+            "name": "governance",
+            "path": [
+              "avr",
+              "org",
+              "governance"
+            ],
+            "full": "avr org governance",
+            "is_group": false,
+            "short_help": "Show what you may manage in the organization.",
+            "help": "Show what you may manage in the organization.\n\nShows whether groups, resource access and delegation are on, which\norganization capabilities you hold, and for each group listed for you\nwhat you may and may not do there.\n\n\b\nExamples:\n    avr org governance\n    avr org governance --json groups --jq '.groups[].display_name'\n\n\b\nJSON FIELDS\n    delegation_enabled, eligible_root_admin, groups, groups_enabled,\n    manual_root_capabilities, resource_access_enabled, root_capabilities\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr org governance [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "delegation_enabled",
+              "eligible_root_admin",
+              "groups",
+              "groups_enabled",
+              "manual_root_capabilities",
+              "resource_access_enabled",
+              "root_capabilities"
+            ],
+            "subcommands": []
           },
           {
             "name": "install",
@@ -2431,6 +2684,21 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "created_at",
+                  "installation_id",
+                  "organization_name",
+                  "organization_slug",
+                  "platform",
+                  "platform_installation_id",
+                  "platform_settings_url",
+                  "state",
+                  "target_id",
+                  "target_name",
+                  "target_type",
+                  "configured_runner_count",
+                  "degraded_runner_count"
+                ],
                 "subcommands": []
               },
               {
@@ -2544,6 +2812,12 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "action",
+                  "installation_id",
+                  "organization_id",
+                  "platform"
+                ],
                 "subcommands": []
               },
               {
@@ -2655,6 +2929,27 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "access_token_expires_on",
+                  "access_token_invalid_at",
+                  "access_token_last_validated_at",
+                  "created_at",
+                  "credential_kind",
+                  "gitlab_namespace_full_path",
+                  "gitlab_namespace_id",
+                  "gitlab_project_ids",
+                  "installation_id",
+                  "organization_id",
+                  "project_selection_mode",
+                  "configured_runner_count",
+                  "degraded_runner_count",
+                  "selected_project_count",
+                  "state",
+                  "target_type",
+                  "updated_at",
+                  "webhook_secret_rotated_at",
+                  "webhook_setup"
                 ],
                 "subcommands": []
               },
@@ -2823,6 +3118,10 @@
                         "default": null
                       }
                     ],
+                    "json_fields": [
+                      "data",
+                      "setup"
+                    ],
                     "subcommands": []
                   },
                   {
@@ -2955,6 +3254,11 @@
                         "default": null
                       }
                     ],
+                    "json_fields": [
+                      "deleted",
+                      "installation_id",
+                      "machine_type"
+                    ],
                     "subcommands": []
                   },
                   {
@@ -3049,6 +3353,10 @@
                         "show_default": false,
                         "default": null
                       }
+                    ],
+                    "json_fields": [
+                      "data",
+                      "setup"
                     ],
                     "subcommands": []
                   },
@@ -3180,6 +3488,23 @@
                         "show_default": false,
                         "default": null
                       }
+                    ],
+                    "json_fields": [
+                      "architecture",
+                      "configured",
+                      "cpu_count",
+                      "description",
+                      "disk_gb",
+                      "invalid_at",
+                      "machine_type",
+                      "memory_mb",
+                      "paused",
+                      "run_untagged",
+                      "runner_id",
+                      "status",
+                      "tag",
+                      "token_expires_at",
+                      "verified_at"
                     ],
                     "subcommands": []
                   }
@@ -3317,6 +3642,26 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "access_token_expires_on",
+                  "access_token_invalid_at",
+                  "access_token_last_validated_at",
+                  "created_at",
+                  "credential_kind",
+                  "gitlab_namespace_full_path",
+                  "gitlab_namespace_id",
+                  "gitlab_project_ids",
+                  "installation_id",
+                  "organization_id",
+                  "project_selection_mode",
+                  "configured_runner_count",
+                  "degraded_runner_count",
+                  "selected_project_count",
+                  "state",
+                  "target_type",
+                  "updated_at",
+                  "webhook_secret_rotated_at"
+                ],
                 "subcommands": []
               }
             ]
@@ -3375,6 +3720,12 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "name",
+              "organization_id",
+              "role",
+              "slug"
+            ],
             "subcommands": []
           },
           {
@@ -3385,13 +3736,13 @@
               "members"
             ],
             "full": "avr org members",
-            "is_group": false,
+            "is_group": true,
             "short_help": "List organization members.",
-            "help": "List organization members.\n\n\b\nExamples:\n    avr org members\n    avr org members --org org-abc123\n    avr org members --json name,role\n\n\b\nJSON FIELDS\n    joined_at, name, role, user_id\n",
+            "help": "List organization members.\n\n`avr org members access MEMBER` explains what one member can reach.\n\n\b\nExamples:\n    avr org members\n    avr org members --org org-abc123\n    avr org members --json name,role\n\n\b\nJSON FIELDS\n    joined_at, name, role, user_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
-            "usage": "avr org members [OPTIONS]",
+            "usage": "avr org members [OPTIONS] [COMMAND [ARGS]...]",
             "params": [
               {
                 "name": "org_id",
@@ -3450,7 +3801,120 @@
                 "default": null
               }
             ],
-            "subcommands": []
+            "json_fields": [
+              "joined_at",
+              "name",
+              "role",
+              "user_id"
+            ],
+            "subcommands": [
+              {
+                "name": "access",
+                "path": [
+                  "avr",
+                  "org",
+                  "members",
+                  "access"
+                ],
+                "full": "avr org members access",
+                "is_group": false,
+                "short_help": "Explain a member's effective access and where it comes from.",
+                "help": "Explain a member's effective access and where it comes from.\n\nMEMBER is a user ID (usr-...), @me, an email address the member\nverified, or a display name that only one active member has. The\nanswer lists the member's groups, what each grant reaches and why, and\ntheir organization capabilities. A partial answer says so.\n\n\b\nExamples:\n    avr org members access @me\n    avr org members access usr-0123456789abcdef0123456789abcdef --json groups\n\n\b\nJSON FIELDS\n    governance, groups, notes, org_role, org_role_source, resource_access,\n    resource_access_complete, resource_access_truncated, root_capabilities,\n    user_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr org members access [OPTIONS] MEMBER",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "member",
+                    "kind": "argument",
+                    "opts": [
+                      "member"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "governance",
+                  "groups",
+                  "notes",
+                  "org_role",
+                  "org_role_source",
+                  "resource_access",
+                  "resource_access_complete",
+                  "resource_access_truncated",
+                  "root_capabilities",
+                  "user_id"
+                ],
+                "subcommands": []
+              }
+            ]
           },
           {
             "name": "saml",
@@ -3700,6 +4164,24 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "allow_idp_initiated",
+                  "attr_email",
+                  "attr_family_name",
+                  "attr_given_name",
+                  "attr_groups",
+                  "created_at",
+                  "default_role",
+                  "idp_entity_id",
+                  "idp_slo_url",
+                  "idp_sso_url",
+                  "is_enforced",
+                  "jit_provisioning",
+                  "name_id_format",
+                  "organization_id",
+                  "organization_saml_config_id",
+                  "updated_at"
+                ],
                 "subcommands": []
               },
               {
@@ -3797,6 +4279,24 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "allow_idp_initiated",
+                  "attr_email",
+                  "attr_family_name",
+                  "attr_given_name",
+                  "attr_groups",
+                  "created_at",
+                  "default_role",
+                  "idp_entity_id",
+                  "idp_slo_url",
+                  "idp_sso_url",
+                  "is_enforced",
+                  "jit_provisioning",
+                  "name_id_format",
+                  "organization_id",
+                  "organization_saml_config_id",
+                  "updated_at"
                 ],
                 "subcommands": []
               },
@@ -3931,6 +4431,24 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "allow_idp_initiated",
+                  "attr_email",
+                  "attr_family_name",
+                  "attr_given_name",
+                  "attr_groups",
+                  "created_at",
+                  "default_role",
+                  "idp_entity_id",
+                  "idp_slo_url",
+                  "idp_sso_url",
+                  "is_enforced",
+                  "jit_provisioning",
+                  "name_id_format",
+                  "organization_id",
+                  "organization_saml_config_id",
+                  "updated_at"
                 ],
                 "subcommands": []
               },
@@ -4086,6 +4604,9 @@
             "show_default": false,
             "default": null
           }
+        ],
+        "json_fields": [
+          "status"
         ],
         "subcommands": []
       },
@@ -4401,6 +4922,12 @@
             "default": ""
           }
         ],
+        "json_fields": [
+          "created_at",
+          "id",
+          "idempotency_key",
+          "status"
+        ],
         "subcommands": [
           {
             "name": "status",
@@ -4473,6 +5000,11 @@
                 "show_default": false,
                 "default": ""
               }
+            ],
+            "json_fields": [
+              "created_at",
+              "id",
+              "status"
             ],
             "subcommands": []
           }
@@ -4676,6 +5208,17 @@
                 "show_default": false,
                 "default": false
               }
+            ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
             ],
             "subcommands": []
           },
@@ -5024,6 +5567,17 @@
                 "default": []
               }
             ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
+            ],
             "subcommands": []
           },
           {
@@ -5190,6 +5744,14 @@
                 "default": ""
               }
             ],
+            "json_fields": [
+              "as_file",
+              "description",
+              "name",
+              "secret_id",
+              "updated_at",
+              "variants"
+            ],
             "subcommands": []
           },
           {
@@ -5283,6 +5845,14 @@
                 "show_default": false,
                 "default": ""
               }
+            ],
+            "json_fields": [
+              "as_file",
+              "description",
+              "name",
+              "secret_id",
+              "updated_at",
+              "variants"
             ],
             "subcommands": []
           },
@@ -5614,6 +6184,17 @@
                 "default": []
               }
             ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
+            ],
             "subcommands": []
           }
         ]
@@ -5816,6 +6397,17 @@
                 "show_default": false,
                 "default": false
               }
+            ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
             ],
             "subcommands": []
           },
@@ -6164,6 +6756,17 @@
                 "default": []
               }
             ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
+            ],
             "subcommands": []
           },
           {
@@ -6312,6 +6915,17 @@
                 "default": ""
               }
             ],
+            "json_fields": [
+              "availability",
+              "current_version",
+              "current_version_created_at",
+              "current_version_id",
+              "has_value",
+              "label",
+              "updated_at",
+              "value",
+              "variable_variant_id"
+            ],
             "subcommands": []
           },
           {
@@ -6405,6 +7019,13 @@
                 "show_default": false,
                 "default": ""
               }
+            ],
+            "json_fields": [
+              "description",
+              "name",
+              "updated_at",
+              "variable_id",
+              "variants"
             ],
             "subcommands": []
           },
@@ -6719,6 +7340,17 @@
                 "default": []
               }
             ],
+            "json_fields": [
+              "availability",
+              "label",
+              "message",
+              "name",
+              "resource_id",
+              "stage",
+              "status",
+              "variant_id",
+              "version_id"
+            ],
             "subcommands": []
           }
         ]
@@ -6871,6 +7503,10 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "deleted",
+              "id"
+            ],
             "subcommands": []
           },
           {
@@ -7002,6 +7638,12 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "digest_sha256",
+              "id",
+              "path",
+              "size_bytes"
+            ],
             "subcommands": []
           },
           {
@@ -7114,6 +7756,23 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "archived",
+              "completed_at",
+              "created_at",
+              "digest_sha256",
+              "expires_at",
+              "file_count",
+              "file_name",
+              "id",
+              "name",
+              "repository_id",
+              "run_attempt",
+              "run_kind",
+              "size_bytes",
+              "state",
+              "workflow_run_id"
             ],
             "subcommands": []
           },
@@ -7261,6 +7920,23 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "archived",
+              "completed_at",
+              "created_at",
+              "digest_sha256",
+              "expires_at",
+              "file_count",
+              "file_name",
+              "id",
+              "name",
+              "repository_id",
+              "run_attempt",
+              "run_kind",
+              "size_bytes",
+              "state",
+              "workflow_run_id"
             ],
             "subcommands": []
           }
@@ -7859,6 +8535,28 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "ci_provider",
+              "workflow_name",
+              "workflow_path",
+              "conclusion",
+              "created_at",
+              "display_title",
+              "duration_seconds",
+              "event",
+              "head_branch",
+              "head_sha",
+              "platform_run_id",
+              "repository",
+              "run_attempt",
+              "run_id",
+              "run_number",
+              "status",
+              "triggering_actor",
+              "updated_at",
+              "workflow",
+              "workflow_id"
+            ],
             "subcommands": []
           },
           {
@@ -8355,6 +9053,29 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "ci_provider",
+              "workflow_name",
+              "workflow_path",
+              "conclusion",
+              "created_at",
+              "display_title",
+              "duration_seconds",
+              "event",
+              "head_branch",
+              "head_sha",
+              "jobs",
+              "platform_run_id",
+              "repository",
+              "run_attempt",
+              "run_id",
+              "run_number",
+              "status",
+              "triggering_actor",
+              "updated_at",
+              "workflow",
+              "workflow_id"
+            ],
             "subcommands": []
           },
           {
@@ -8726,6 +9447,21 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "base_sha",
+              "body",
+              "commit_sha",
+              "created_at",
+              "end_line",
+              "id",
+              "path",
+              "publication",
+              "pull_number",
+              "repository_id",
+              "side",
+              "start_line",
+              "thread_id"
+            ],
             "subcommands": []
           },
           {
@@ -8905,6 +9641,26 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "author_login",
+              "base_ref",
+              "base_sha",
+              "check_status",
+              "comment_count",
+              "created_at",
+              "draft",
+              "head_ref",
+              "head_sha",
+              "mergeability",
+              "merged",
+              "number",
+              "repository_full_name",
+              "repository_id",
+              "state",
+              "title",
+              "unresolved_thread_count",
+              "updated_at"
             ],
             "subcommands": []
           }
@@ -9206,6 +9962,25 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "ci_provider",
+              "run_id",
+              "completed_at",
+              "conclusion",
+              "created_at",
+              "duration_seconds",
+              "platform_job_id",
+              "platform_run_id",
+              "platform",
+              "job_id",
+              "job_name",
+              "labels",
+              "repository",
+              "repository_id",
+              "running_on_avrea",
+              "started_at",
+              "state"
             ],
             "subcommands": []
           },
@@ -9772,6 +10547,27 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "ci_provider",
+              "run_id",
+              "completed_at",
+              "conclusion",
+              "created_at",
+              "duration_seconds",
+              "platform_job_id",
+              "platform_run_id",
+              "platform",
+              "job_id",
+              "job_name",
+              "labels",
+              "repository",
+              "repository_id",
+              "running_on_avrea",
+              "started_at",
+              "state",
+              "steps",
+              "workflow_run"
             ],
             "subcommands": []
           },
@@ -13038,6 +13834,19 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "builder_session_id",
+              "cpu_count",
+              "created_at",
+              "disk_gb",
+              "memory_mb",
+              "platform",
+              "repository_full_name",
+              "state",
+              "state_reason",
+              "stop_at",
+              "updated_at"
+            ],
             "subcommands": []
           },
           {
@@ -13279,6 +14088,19 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "ci_provider",
+              "completed_runs",
+              "failure_count",
+              "flaked_count",
+              "median_duration_seconds",
+              "name",
+              "path",
+              "platform_workflow_id",
+              "repository",
+              "runs",
+              "workflow_id"
             ],
             "subcommands": []
           },
@@ -13636,6 +14458,21 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "ci_provider",
+              "completed_runs",
+              "failure_count",
+              "flaked_count",
+              "jobs",
+              "median_duration_seconds",
+              "name",
+              "p95_duration_seconds",
+              "path",
+              "platform_workflow_id",
+              "repository",
+              "runs",
+              "workflow_id"
             ],
             "subcommands": []
           }
@@ -14046,6 +14883,16 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "cache_type",
+              "created_at",
+              "hit_count",
+              "key",
+              "last_accessed_at",
+              "ref",
+              "size_bytes",
+              "version"
+            ],
             "subcommands": []
           },
           {
@@ -14139,6 +14986,12 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "by_type",
+              "over_quota",
+              "quota_bytes",
+              "total_size_bytes"
             ],
             "subcommands": []
           }
@@ -14324,6 +15177,17 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "configuration_digest",
+              "data",
+              "identity",
+              "organization_id",
+              "pagination",
+              "repository_id",
+              "scope",
+              "status",
+              "test_id"
             ],
             "subcommands": []
           },
@@ -14589,6 +15453,22 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "commit_sha",
+              "counts",
+              "data",
+              "execution_id",
+              "filters",
+              "job_id",
+              "observed_at",
+              "organization_id",
+              "pagination",
+              "reason",
+              "reporting_state",
+              "repository_id",
+              "status",
+              "total_count"
+            ],
             "subcommands": []
           },
           {
@@ -14761,6 +15641,16 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "data",
+              "filters",
+              "organization_id",
+              "pagination",
+              "repository_id",
+              "scope",
+              "status",
+              "truncated"
             ],
             "subcommands": []
           }
@@ -15080,6 +15970,14 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "ai_task_id",
+              "commit_sha",
+              "error_code",
+              "recorded_at",
+              "status",
+              "task_status"
+            ],
             "subcommands": []
           },
           {
@@ -15210,6 +16108,18 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "artifacts",
+              "branch",
+              "commit_sha",
+              "copyleft_count",
+              "generated_at",
+              "is_release",
+              "recorded_at",
+              "schema_version",
+              "total_dependencies",
+              "unresolved"
             ],
             "subcommands": []
           },
@@ -15358,6 +16268,16 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "artifacts",
+              "branch",
+              "commit_sha",
+              "generated_at",
+              "is_release",
+              "recorded_at",
+              "schema_version",
+              "summary"
             ],
             "subcommands": []
           }
@@ -15571,6 +16491,20 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "content",
+              "group_name",
+              "id",
+              "level",
+              "line_number",
+              "repository_id",
+              "score",
+              "step_name",
+              "step_record_id",
+              "stream",
+              "timestamp",
+              "vm_id"
             ],
             "subcommands": []
           }
@@ -16020,6 +16954,22 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "allow_vm_create",
+              "created_at",
+              "expires_at",
+              "grants",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "revoked_at",
+              "revoked_reason",
+              "token",
+              "user_id",
+              "vm_create_count",
+              "vm_create_limit"
+            ],
             "subcommands": []
           },
           {
@@ -16113,6 +17063,21 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "allow_vm_create",
+              "created_at",
+              "expires_at",
+              "grants",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "revoked_at",
+              "revoked_reason",
+              "user_id",
+              "vm_create_count",
+              "vm_create_limit"
             ],
             "subcommands": []
           },
@@ -16281,6 +17246,21 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "allow_vm_create",
+              "created_at",
+              "expires_at",
+              "grants",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "revoked_at",
+              "revoked_reason",
+              "user_id",
+              "vm_create_count",
+              "vm_create_limit"
             ],
             "subcommands": []
           }
@@ -16560,6 +17540,29 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "blocked_by",
+              "created_at",
+              "created_by",
+              "expires_at",
+              "expiring_soon",
+              "grants",
+              "grants_version",
+              "group_id",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "previous_valid_until",
+              "revoked_at",
+              "revoked_reason",
+              "rotated_at",
+              "rotation_version",
+              "status",
+              "vm_cap",
+              "vm_count",
+              "token"
+            ],
             "subcommands": []
           },
           {
@@ -16694,6 +17697,28 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "blocked_by",
+              "created_at",
+              "created_by",
+              "expires_at",
+              "expiring_soon",
+              "grants",
+              "grants_version",
+              "group_id",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "previous_valid_until",
+              "revoked_at",
+              "revoked_reason",
+              "rotated_at",
+              "rotation_version",
+              "status",
+              "vm_cap",
+              "vm_count"
             ],
             "subcommands": []
           },
@@ -16992,6 +18017,29 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "blocked_by",
+              "created_at",
+              "created_by",
+              "expires_at",
+              "expiring_soon",
+              "grants",
+              "grants_version",
+              "group_id",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "previous_valid_until",
+              "revoked_at",
+              "revoked_reason",
+              "rotated_at",
+              "rotation_version",
+              "status",
+              "vm_cap",
+              "vm_count",
+              "token"
             ],
             "subcommands": []
           },
@@ -17310,6 +18358,28 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "blocked_by",
+              "created_at",
+              "created_by",
+              "expires_at",
+              "expiring_soon",
+              "grants",
+              "grants_version",
+              "group_id",
+              "id",
+              "last_used_at",
+              "name",
+              "organization_id",
+              "previous_valid_until",
+              "revoked_at",
+              "revoked_reason",
+              "rotated_at",
+              "rotation_version",
+              "status",
+              "vm_cap",
+              "vm_count"
+            ],
             "subcommands": []
           }
         ]
@@ -17322,14 +18392,817 @@
         ],
         "full": "avr group",
         "is_group": true,
-        "short_help": "View the organization's groups.",
-        "help": "View the organization's groups.\n\nEach service token belongs to one of these groups. Organization members\nlist them while signed in (avr auth device-login or avr auth login); a scoped or service\ntoken cannot.\n",
+        "short_help": "Build and manage the organization's group tree.",
+        "help": "Build and manage the organization's group tree.\n\nGroups hold members, service tokens and vCPU limits. Organization\nmembers manage them while signed in (avr auth device-login or avr auth\nlogin); a scoped or service token cannot. What you may change depends\non the groups you administer: `avr org governance` shows it.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
         "usage": "avr group [OPTIONS] COMMAND [ARGS]...",
         "params": [],
         "subcommands": [
+          {
+            "name": "create",
+            "path": [
+              "avr",
+              "group",
+              "create"
+            ],
+            "full": "avr group create",
+            "is_group": false,
+            "short_help": "Create a group below a parent group.",
+            "help": "Create a group below a parent group.\n\nNAME is the new group's name, unique below its parent. --parent names\nthe parent like GROUP in other group commands; the root group,\nOrganization unless renamed, takes groups at the top of the tree.\n\nEach create sends an idempotency key, printed to standard error before\nthe request. If the response is lost, rerun the same command with\n--idempotency-key KEY: it returns the group that create made instead of\nmaking a second one. A key belongs to one parent, name and label.\n\n\b\nExamples:\n    avr group create Platform --parent Organization\n    avr group create CI --parent Organization/Platform --label runners\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, idempotency_key, label, member_count,\n    ownership, parent_id, soft_deleted_at, state, suspension_reason,\n    updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group create [OPTIONS] NAME",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "parent",
+                "kind": "option",
+                "opts": [
+                  "--parent"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "The group to create it below.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "A short label shown with the group.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "idempotency_key",
+                "kind": "option",
+                "opts": [
+                  "--idempotency-key"
+                ],
+                "secondary_opts": [],
+                "type": "uuid",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Resume an earlier create with the key it printed.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "name",
+                "kind": "argument",
+                "opts": [
+                  "name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "created_at",
+              "display_name",
+              "group_id",
+              "idempotency_key",
+              "label",
+              "member_count",
+              "ownership",
+              "parent_id",
+              "soft_deleted_at",
+              "state",
+              "suspension_reason",
+              "updated_at"
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "delete",
+            "path": [
+              "avr",
+              "group",
+              "delete"
+            ],
+            "full": "avr group delete",
+            "is_group": false,
+            "short_help": "Delete an empty group.",
+            "help": "Delete an empty group.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nAsks first unless --yes is passed. A group that still has subgroups,\nmembers, a service token that is not revoked or expired, VMs its\nservice tokens created, a vCPU limit, suspended members or workflows\nwhose jobs are charged to it is not deleted; the error names what to\nclear, at most 100 workflows at a time.\n\nDeleting a group also removes the resource access it grants, and stops\ncharging it for workflows of repositories that are no longer installed.\n\n\b\nExamples:\n    avr group delete Platform/CI\n    avr group delete grp-0123456789abcdef0123456789abcdef --yes\n\n\b\nJSON FIELDS\n    deleted, group_id, path\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group delete [OPTIONS] GROUP",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "-y",
+                  "--yes"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Delete without asking.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "group",
+                "kind": "argument",
+                "opts": [
+                  "group"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "deleted",
+              "group_id",
+              "path"
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "edit",
+            "path": [
+              "avr",
+              "group",
+              "edit"
+            ],
+            "full": "avr group edit",
+            "is_group": false,
+            "short_help": "Rename a group or change its label.",
+            "help": "Rename a group or change its label.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nOnly the options you pass change; --label '' clears the label.\n\n\b\nExamples:\n    avr group edit Platform/CI --name Builds\n    avr group edit Platform/CI --label ''\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, label, member_count, ownership,\n    parent_id, soft_deleted_at, state, suspension_reason, updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group edit [OPTIONS] GROUP",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "name",
+                "kind": "option",
+                "opts": [
+                  "--name"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "The group's new name.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "label",
+                "kind": "option",
+                "opts": [
+                  "--label"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "The group's new label; an empty value clears it.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "group",
+                "kind": "argument",
+                "opts": [
+                  "group"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "created_at",
+              "display_name",
+              "group_id",
+              "label",
+              "member_count",
+              "ownership",
+              "parent_id",
+              "soft_deleted_at",
+              "state",
+              "suspension_reason",
+              "updated_at"
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "limit",
+            "path": [
+              "avr",
+              "group",
+              "limit"
+            ],
+            "full": "avr group limit",
+            "is_group": true,
+            "short_help": "Show, set and clear a group's vCPU limit.",
+            "help": "Show, set and clear a group's vCPU limit.\n\nA group's vCPU limit caps the vCPU that the group and its subgroups use\nat once. Limits on parent groups apply too: a job starts only when it\nfits under every limit on its group's path, counting what the other\ngroups below each one already use.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group limit [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "clear",
+                "path": [
+                  "avr",
+                  "group",
+                  "limit",
+                  "clear"
+                ],
+                "full": "avr group limit clear",
+                "is_group": false,
+                "short_help": "Remove a group's own vCPU limit.",
+                "help": "Remove a group's own vCPU limit.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nAsks first unless --yes is passed. Limits on parent groups still apply.\n\n\b\nExamples:\n    avr group limit clear Platform/CI --yes\n\n\b\nJSON FIELDS\n    cleared, group_id, limit_key\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group limit clear [OPTIONS] GROUP",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "-y",
+                      "--yes"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Clear without asking.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "cleared",
+                  "group_id",
+                  "limit_key"
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "list",
+                "path": [
+                  "avr",
+                  "group",
+                  "limit",
+                  "list"
+                ],
+                "full": "avr group limit list",
+                "is_group": false,
+                "short_help": "Show the limits that apply to a group, its own and inherited.",
+                "help": "Show the limits that apply to a group, its own and inherited.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\n\b\nExamples:\n    avr group limit list Platform/CI\n\n\b\nJSON FIELDS\n    group_id, inherited, kind, limit_key, limit_type, period, timezone,\n    value\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group limit list [OPTIONS] GROUP",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "group_id",
+                  "inherited",
+                  "kind",
+                  "limit_key",
+                  "limit_type",
+                  "period",
+                  "timezone",
+                  "value"
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "set",
+                "path": [
+                  "avr",
+                  "group",
+                  "limit",
+                  "set"
+                ],
+                "full": "avr group limit set",
+                "is_group": false,
+                "short_help": "Set a group's own vCPU limit.",
+                "help": "Set a group's own vCPU limit.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nAsks first unless --yes is passed or the change raises or keeps the\ngroup's own limit: a first limit or a lower one can make new jobs wait.\nRunning jobs keep running.\n\n\b\nExamples:\n    avr group limit set Platform/CI --max-vcpu 64\n\n\b\nJSON FIELDS\n    group_id, inherited, kind, limit_key, limit_type, period, previous_value,\n    timezone, value\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group limit set [OPTIONS] GROUP",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "max_vcpu",
+                    "kind": "option",
+                    "opts": [
+                      "--max-vcpu"
+                    ],
+                    "secondary_opts": [],
+                    "type": "integer",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "The most vCPU the group and its subgroups may use at once.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "-y",
+                      "--yes"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Set the limit without asking.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "group_id",
+                  "inherited",
+                  "kind",
+                  "limit_key",
+                  "limit_type",
+                  "period",
+                  "previous_value",
+                  "timezone",
+                  "value"
+                ],
+                "subcommands": []
+              }
+            ]
+          },
           {
             "name": "list",
             "path": [
@@ -17421,6 +19294,660 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "created_at",
+              "display_name",
+              "group_id",
+              "label",
+              "member_count",
+              "ownership",
+              "parent_id",
+              "path",
+              "soft_deleted_at",
+              "state",
+              "suspension_reason",
+              "updated_at"
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "member",
+            "path": [
+              "avr",
+              "group",
+              "member"
+            ],
+            "full": "avr group member",
+            "is_group": true,
+            "short_help": "List, add and remove a group's members.",
+            "help": "List, add and remove a group's members.\n\nA change names each MEMBER by user ID (usr-...), @me for yourself, or an\nemail address the member verified. Display names are not accepted:\nmembers choose them, so one can match the wrong person. `avr auth\nstatus` shows your user ID.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group member [OPTIONS] COMMAND [ARGS]...",
+            "params": [],
+            "subcommands": [
+              {
+                "name": "add",
+                "path": [
+                  "avr",
+                  "group",
+                  "member",
+                  "add"
+                ],
+                "full": "avr group member add",
+                "is_group": false,
+                "short_help": "Add members to a group.",
+                "help": "Add members to a group.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nName each MEMBER by user ID (usr-...), @me or a verified email address,\nas arguments or one per line with --file, where a line starting with #\nis a comment unless it is an email address, such as #ops@example.com.\nThe command adds them all in one change, up to 250, and reports\neach member's result; a member already in the state asked for counts\nas done, so a rerun is safe.\n\n\b\nExamples:\n    avr group member add Platform/CI @me\n    avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef\n    avr group member add Platform/CI --file members.txt\n\n\b\nJSON FIELDS\n    action, detail, member, status, user_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group member add [OPTIONS] GROUP [MEMBER]...",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "file",
+                    "kind": "option",
+                    "opts": [
+                      "--file"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Read members from a file, one per line; - reads standard input.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "member",
+                    "kind": "argument",
+                    "opts": [
+                      "member"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": -1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "action",
+                  "detail",
+                  "member",
+                  "status",
+                  "user_id"
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "list",
+                "path": [
+                  "avr",
+                  "group",
+                  "member",
+                  "list"
+                ],
+                "full": "avr group member list",
+                "is_group": false,
+                "short_help": "List a group's direct members.",
+                "help": "List a group's direct members.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nMembers of subgroups are listed with the subgroup.\n\n\b\nExamples:\n    avr group member list Platform/CI\n    avr group member list Platform/CI -L 1000 --json user_id,email\n\n\b\nJSON FIELDS\n    added_at, email, name, source, stale_sources, user_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group member list [OPTIONS] GROUP",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "limit",
+                    "kind": "option",
+                    "opts": [
+                      "-L",
+                      "--limit"
+                    ],
+                    "secondary_opts": [],
+                    "type": "integer range",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Max members to return.",
+                    "hidden": false,
+                    "show_default": true,
+                    "default": 100
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "added_at",
+                  "email",
+                  "name",
+                  "source",
+                  "stale_sources",
+                  "user_id"
+                ],
+                "subcommands": []
+              },
+              {
+                "name": "remove",
+                "path": [
+                  "avr",
+                  "group",
+                  "member",
+                  "remove"
+                ],
+                "full": "avr group member remove",
+                "is_group": false,
+                "short_help": "Remove members from a group.",
+                "help": "Remove members from a group.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nName each MEMBER by user ID (usr-...), @me or a verified email address,\nas arguments or one per line with --file, where a line starting with #\nis a comment unless it is an email address, such as #ops@example.com.\nThe command removes them all in one change, up to 250, and reports\neach member's result; a member already in the state asked for counts\nas done, so a rerun is safe.\nLists the members and asks first unless --yes is passed; reading\nmembers from standard input (--file -) needs --yes.\n\n\b\nExamples:\n    avr group member remove Platform/CI @me\n    avr group member remove Platform/CI usr-0123456789abcdef0123456789abcdef\n    avr group member remove Platform/CI --file members.txt\n\n\b\nJSON FIELDS\n    action, detail, member, status, user_id\n",
+                "epilog": null,
+                "deprecated": false,
+                "hidden": false,
+                "usage": "avr group member remove [OPTIONS] GROUP [MEMBER]...",
+                "params": [
+                  {
+                    "name": "org_id",
+                    "kind": "option",
+                    "opts": [
+                      "--org",
+                      "-o"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "file",
+                    "kind": "option",
+                    "opts": [
+                      "--file"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Read members from a file, one per line; - reads standard input.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "yes",
+                    "kind": "option",
+                    "opts": [
+                      "-y",
+                      "--yes"
+                    ],
+                    "secondary_opts": [],
+                    "type": "boolean",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": true,
+                    "envvar": null,
+                    "help": "Remove without asking.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "json_fields",
+                    "kind": "option",
+                    "opts": [
+                      "--json"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "jq_expr",
+                    "kind": "option",
+                    "opts": [
+                      "-q",
+                      "--jq"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": "Filter --json output through a jq expression.",
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "group",
+                    "kind": "argument",
+                    "opts": [
+                      "group"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": true,
+                    "multiple": false,
+                    "nargs": 1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  },
+                  {
+                    "name": "member",
+                    "kind": "argument",
+                    "opts": [
+                      "member"
+                    ],
+                    "secondary_opts": [],
+                    "type": "text",
+                    "required": false,
+                    "multiple": false,
+                    "nargs": -1,
+                    "is_flag": false,
+                    "envvar": null,
+                    "help": null,
+                    "hidden": false,
+                    "show_default": false,
+                    "default": null
+                  }
+                ],
+                "json_fields": [
+                  "action",
+                  "detail",
+                  "member",
+                  "status",
+                  "user_id"
+                ],
+                "subcommands": []
+              }
+            ]
+          },
+          {
+            "name": "usage",
+            "path": [
+              "avr",
+              "group",
+              "usage"
+            ],
+            "full": "avr group usage",
+            "is_group": false,
+            "short_help": "Show the vCPU a group uses and the limits on its path.",
+            "help": "Show the vCPU a group uses and the limits on its path.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\nUsage counts the group and its subgroups.\n\n\b\nExamples:\n    avr group usage Platform\n    avr group usage Platform --json used_vcpu,pools\n\n\b\nJSON FIELDS\n    group_id, group_state, measured_at, pools, used_vcpu\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group usage [OPTIONS] GROUP",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "group",
+                "kind": "argument",
+                "opts": [
+                  "group"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "group_id",
+              "group_state",
+              "measured_at",
+              "pools",
+              "used_vcpu"
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "view",
+            "path": [
+              "avr",
+              "group",
+              "view"
+            ],
+            "full": "avr group view",
+            "is_group": false,
+            "short_help": "Show a group's details and path.",
+            "help": "Show a group's details and path.\n\nGROUP is a group ID (grp-...), the group's path from the root group,\nsuch as Organization/Platform/CI, or the end of a path when only one\ngroup has it, such as Platform/CI.\n\n\b\nExamples:\n    avr group view Organization/Platform\n    avr group view Platform/CI --json group_id,member_count\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, label, member_count, ownership,\n    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr group view [OPTIONS] GROUP",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "group",
+                "kind": "argument",
+                "opts": [
+                  "group"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "json_fields": [
+              "created_at",
+              "display_name",
+              "group_id",
+              "label",
+              "member_count",
+              "ownership",
+              "parent_id",
+              "path",
+              "soft_deleted_at",
+              "state",
+              "suspension_reason",
+              "updated_at"
             ],
             "subcommands": []
           }
@@ -17744,6 +20271,11 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "key",
+              "source",
+              "value"
+            ],
             "subcommands": []
           },
           {
@@ -17914,6 +20446,17 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "choices",
+              "default",
+              "description",
+              "inherits",
+              "key",
+              "max_value",
+              "min_value",
+              "scopes",
+              "value_type"
             ],
             "subcommands": []
           },
@@ -18230,6 +20773,89 @@
             "subcommands": []
           }
         ]
+      },
+      {
+        "name": "reference",
+        "path": [
+          "avr",
+          "reference"
+        ],
+        "full": "avr reference",
+        "is_group": false,
+        "short_help": "List avr's commands, options and JSON fields.",
+        "help": "List avr's commands, options and JSON fields.\n\nLists every command, or those below the COMMAND words given, from the\nsame data as the reference documentation. The words may be aliases,\nsuch as groups. With --json each row holds a command's help, its\noptions and arguments, and the fields its --json accepts, so a script\nor coding agent can learn avr without reading help text. It needs no\nsign-in and makes no requests.\n\nWithout COMMAND words the first row is avr itself, with its own\noptions. Each is marked inherited when every command takes it too.\n\njson_fields lists a command's default fields. It is empty where the\nfields depend on the credential or platform, as for auth status and\norg install add, and an option such as tests list --summary or secret\nget --version-id selects others. The command with --json ? lists the\nfields of that invocation.\n\n\b\nExamples:\n    avr reference\n    avr reference group member\n    avr reference --json command,json_fields --jq '.[] | select(.json_fields | length \u003e 0)'\n\n\b\nJSON FIELDS\n    command, deprecated, help, is_group, json_fields, params, short_help,\n    usage\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr reference [OPTIONS] [COMMAND]...",
+        "params": [
+          {
+            "name": "json_fields",
+            "kind": "option",
+            "opts": [
+              "--json"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "jq_expr",
+            "kind": "option",
+            "opts": [
+              "-q",
+              "--jq"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Filter --json output through a jq expression.",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "command",
+            "kind": "argument",
+            "opts": [
+              "command"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": -1,
+            "is_flag": false,
+            "envvar": null,
+            "help": null,
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          }
+        ],
+        "json_fields": [
+          "command",
+          "deprecated",
+          "help",
+          "is_group",
+          "json_fields",
+          "params",
+          "short_help",
+          "usage"
+        ],
+        "subcommands": []
       },
       {
         "name": "firewall",
@@ -19647,6 +22273,18 @@
                     "default": null
                   }
                 ],
+                "json_fields": [
+                  "created_at",
+                  "currency",
+                  "has_pdf",
+                  "invoice_id",
+                  "period_end",
+                  "period_start",
+                  "status",
+                  "subtotal_cents",
+                  "tax_cents",
+                  "total_cents"
+                ],
                 "subcommands": []
               },
               {
@@ -19740,6 +22378,19 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "created_at",
+                  "currency",
+                  "has_pdf",
+                  "invoice_id",
+                  "line_items",
+                  "period_end",
+                  "period_start",
+                  "status",
+                  "subtotal_cents",
+                  "tax_cents",
+                  "total_cents"
                 ],
                 "subcommands": []
               }
@@ -19874,6 +22525,14 @@
                     "show_default": false,
                     "default": null
                   }
+                ],
+                "json_fields": [
+                  "card_brand",
+                  "card_exp_month",
+                  "card_exp_year",
+                  "card_last4",
+                  "is_default",
+                  "payment_method_id"
                 ],
                 "subcommands": []
               },
@@ -20084,6 +22743,11 @@
                 "default": null
               }
             ],
+            "json_fields": [
+              "billing_address",
+              "billing_emails",
+              "tax_id"
+            ],
             "subcommands": []
           },
           {
@@ -20158,6 +22822,11 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "billing_emails",
+              "default_payment_method",
+              "has_billing"
             ],
             "subcommands": []
           },
@@ -20269,6 +22938,11 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "billing_address",
+              "billing_emails",
+              "tax_id"
             ],
             "subcommands": []
           }
@@ -20491,6 +23165,18 @@
                 "show_default": false,
                 "default": null
               }
+            ],
+            "json_fields": [
+              "acting_api_key_id",
+              "action",
+              "actor_type",
+              "actor_user_id",
+              "client_ip",
+              "created_at",
+              "event_data",
+              "event_id",
+              "resource_id",
+              "resource_type"
             ],
             "subcommands": []
           }

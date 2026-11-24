@@ -1,0 +1,33 @@
+.TH AVR\-GROUP\-MEMBER 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-member \- List, add and remove a group's members.
+.SH SYNOPSIS
+.B avr group member
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+List, add and remove a group's members.
+.PP
+A change names each MEMBER by user ID (usr-...), @me for yourself, or an email address the member verified. Display names are not accepted: members choose them, so one can match the wrong person. `avr auth status` shows your user ID.
+.SH COMMANDS
+.TP
+add
+Add members to a group.
+.TP
+list
+List a group's direct members.
+.TP
+remove
+Remove members from a group.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group (1),
+.BR avr-group-create (1),
+.BR avr-group-delete (1),
+.BR avr-group-edit (1),
+.BR avr-group-limit (1),
+.BR avr-group-list (1),
+.BR avr-group-usage (1),
+.BR avr-group-view (1),
+.BR avr-group-member-add (1),
+.BR avr-group-member-list (1),
+.BR avr-group-member-remove (1)

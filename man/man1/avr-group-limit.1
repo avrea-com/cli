@@ -1,0 +1,33 @@
+.TH AVR\-GROUP\-LIMIT 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-limit \- Show, set and clear a group's vCPU limit.
+.SH SYNOPSIS
+.B avr group limit
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Show, set and clear a group's vCPU limit.
+.PP
+A group's vCPU limit caps the vCPU that the group and its subgroups use at once. Limits on parent groups apply too: a job starts only when it fits under every limit on its group's path, counting what the other groups below each one already use.
+.SH COMMANDS
+.TP
+clear
+Remove a group's own vCPU limit.
+.TP
+list
+Show the limits that apply to a group, its own and inherited.
+.TP
+set
+Set a group's own vCPU limit.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group (1),
+.BR avr-group-create (1),
+.BR avr-group-delete (1),
+.BR avr-group-edit (1),
+.BR avr-group-list (1),
+.BR avr-group-member (1),
+.BR avr-group-usage (1),
+.BR avr-group-view (1),
+.BR avr-group-limit-clear (1),
+.BR avr-group-limit-list (1),
+.BR avr-group-limit-set (1)
