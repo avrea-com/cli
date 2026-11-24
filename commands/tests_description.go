@@ -94,11 +94,11 @@ func testsDescription(path string) docgen.Description {
 				"If some reports were not searched, only an exact name can be selected.\n" +
 				"\n" +
 				"Each row is one report: how often the test passed, failed, errored or\n" +
-				"was skipped in it, the mean recorded duration and the job that ran it.\n" +
-				"A duration that cannot be shown names the reason. Open a row's job with\n" +
+				"was skipped in it, the mean recorded duration (none when the test\n" +
+				"recorded no duration) and the job that ran it. Open a row's job with\n" +
 				"avr tests JOB --test NAME to read its failure message.\n" +
 				"\n" +
-				"History that is still being updated is marked; unavailable history does\n" +
+				"Reports still being prepared are marked; a read that stops early does\n" +
 				"not mean the test never ran. Continue with --cursor for older runs.\n",
 			Short:          "Read one test's recorded runs in a repository, newest first.",
 			CompletionHelp: "Read one test's recorded runs in a repository,...",
