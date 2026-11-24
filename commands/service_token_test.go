@@ -181,6 +181,7 @@ func TestServiceTokenAuthStatusText(t *testing.T) {
 		{"current secret in an overlap", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","presented_secret":"current","secret_valid_until":"2026-12-16T10:00:00Z","expiring_soon"`, 1), []string{"Secret        current\n"}, []string{"replaced", "was rotated"}},
 		{"previous secret", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","presented_secret":"previous","secret_valid_until":"2026-11-17T10:00:00Z","expiring_soon"`, 1), []string{"Secret        previous, works until 2026-11-17T10:00:00.00Z", "AVR_TOKEN holds the secret a rotation replaced. It stops working at 2026-11-17T10:00:00.00Z"}, []string{"was rotated"}},
 		{"creates VMs", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"vm_cap":4,"vm_count":1,"expiring_soon"`, 1), []string{"Grants        1 repo, all firewall rules, VM create 1/4"}, nil},
+		{"VM creation withdrawn", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"vm_cap":null,"vm_count":1,"expiring_soon"`, 1), []string{"1 VM still owned", "its grants and the VMs it created"}, nil},
 		{"old API", serviceTokenSelfOld, []string{"Name          -", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         -", "Expires       -", "Grants        -"}, []string{"expires soon"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -286,8 +287,8 @@ func TestServiceTokenAPIErrors(t *testing.T) {
 		want, avoid []string
 	}{
 		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "avr service-token view <token-id>", "revoked or expired token cannot be rotated: create a new one with \x60avr service-token create\x60", "A live token was rotated", "avr service-token rotate <token-id>", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
-		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "a service token reaches only what its access names", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "scoped token"}},
-		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "a service token reaches only what its access names"}, []string{"avr org list", "avr auth login", "scoped token"}},
+		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "its grants and the VMs it created", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "scoped token"}},
+		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "its grants and the VMs it created"}, []string{"avr org list", "avr auth login", "scoped token"}},
 	} {
 		detail := "refused"
 		if tc.status == 401 {

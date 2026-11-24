@@ -198,7 +198,7 @@ func TestServiceTokenFirewallShowNeedsResolvedRoute(t *testing.T) {
 			h := newServiceTokenHarness(t, "", serviceTokenOpenAPI(&violations))
 			code := h.run(t, "firewall", "show", "--repo", tc.repo)
 			message := h.stderr.String()
-			if code != 1 || !strings.Contains(message, "(HTTP 404)") || !strings.Contains(message, "a service token reaches only what its access names") {
+			if code != 1 || !strings.Contains(message, "(HTTP 404)") || !strings.Contains(message, "its grants and the VMs it created") {
 				t.Fatal(code, message)
 			}
 			if !slices.Equal(violations, []string{resolved}) || !slices.Equal(h.requests, tc.want) {

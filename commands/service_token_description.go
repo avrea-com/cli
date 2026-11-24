@@ -169,12 +169,12 @@ func serviceTokenDescription(path string) docgen.Description {
 				"leave out is removed, so repeat the ones to keep. The VM create limit\n" +
 				"stays unless --vm-create-limit or --no-vm-create changes it. When the\n" +
 				"change removes or lowers a grant or the limit, the command lists what\n" +
-				"goes and asks first; without a terminal it then refuses unless --yes is\n" +
-				"given. It reads the token first and the change fails if the token\n" +
+				"goes and asks first; without a terminal it then refuses unless --yes\n" +
+				"is given. It reads the token first and the change fails if its access\n" +
 				"changes in between. A grant that widens its access must be within your\n" +
-				"own access now. The API may ask for a\n" +
-				"recent sign-in; the command then exits 4 and says to sign in again. The\n" +
-				"change applies to the token's next request.\n" +
+				"own access now. The API may ask for a recent sign-in; the command then\n" +
+				"exits 4 and says to sign in again. The change applies to the token's\n" +
+				"next request.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -257,21 +257,22 @@ func serviceTokenDescription(path string) docgen.Description {
 				"Organization admins manage service tokens while signed in (avr auth\n" +
 				"device-login or avr auth login); a scoped or service token cannot.\n" +
 				"\n" +
-				"A service token reaches the VMs its VM grants name and, with a VM\n" +
-				"create limit, creates VMs and administers the ones it created. It runs\n" +
-				"avr vm create without --repo or --egress-rules, list, show, ssh,\n" +
-				"ssh-config, metrics without --watch, update with --name or --ttl,\n" +
-				"rotate-https-label, pause and delete; resume and fork are refused. avr\n" +
-				"vm capabilities needs a VM create limit or a VM grant. Revoking the\n" +
-				"token deletes the VMs it created.\n" +
+				"A service token reaches the VMs its grants name. A VM create limit\n" +
+				"lets it create VMs. It administers those VMs even after the limit is\n" +
+				"withdrawn. It runs avr vm create without --repo or --egress-rules,\n" +
+				"list, show, ssh, ssh-config, metrics without --watch, update with\n" +
+				"--name or --ttl, rotate-https-label, pause and delete; resume and fork\n" +
+				"are refused. avr vm capabilities needs a VM create limit or a VM\n" +
+				"grant. Revoking the token deletes the VMs it created.\n" +
 				"\n" +
 				"To use a service token, set AVR_TOKEN to its secret. Its organization\n" +
-				"applies automatically; set AVR_ORG to the org-... ID in loops to save a\n" +
-				"request per command. A service token has 60 requests per minute, or 31\n" +
-				"per VM of its VM create limit when that is more, up to 600. Commands\n" +
-				"that need a person, such as avr feedback, refuse it, and avr auth\n" +
-				"logout does not revoke it: unset AVR_TOKEN instead. After a suspected\n" +
-				"leak, revoke-all revokes every service token of the organization.\n",
+				"applies automatically; set AVR_ORG to the org-... ID in loops to save\n" +
+				"a request per command. By default, a service token has 60 requests per\n" +
+				"minute, or 31 per VM of its VM create limit when that is more, up to\n" +
+				"600. Commands that need a person, such as avr feedback, refuse it, and\n" +
+				"avr auth logout does not revoke it: unset AVR_TOKEN instead. After a\n" +
+				"suspected leak, revoke-all revokes every service token of the\n" +
+				"organization.\n",
 			Short:    "Create and manage the organization's service tokens.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,

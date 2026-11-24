@@ -16,6 +16,8 @@ import (
 
 var statusFields = []string{"email", "name", "created_at", "user_id", "host", "default_org", "token", "credential_type"}
 
+const serviceTokenScope = "A service token can access resources covered by its grants and the VMs it created in its organization."
+
 // serviceStatusFields extends statusFields with a service token's identity;
 // the other credential kinds keep their field set.
 var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants", "presented_secret", "secret_valid_until", "vm_cap", "vm_count")
@@ -165,7 +167,7 @@ func newStatus(d Dependencies) *cobra.Command {
 				// is already refused and the advice no longer applies.
 				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
-			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")
+			b.WriteString(d.paint("  "+serviceTokenScope, "2") + "\n")
 		case config.PersonalKey:
 			row("User ID", fallback(result["id"], "-"))
 			row("Email", fallback(result["email"], "-"))
@@ -378,7 +380,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		case config.ScopedToken:
 			message += "\n  Hint: a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
 		case config.ServiceToken:
-			message += "\n  Hint: a service token reaches only what its access names, and only the operations open to service tokens."
+			message += "\n  Hint: " + serviceTokenScope + " Check that this is one of the operations open to service tokens."
 		case config.PersonalKey:
 		}
 	}

@@ -15,21 +15,22 @@ only the repositories and egress firewall rules its access names.
 Organization admins manage service tokens while signed in (avr auth
 device-login or avr auth login); a scoped or service token cannot.
 
-A service token reaches the VMs its VM grants name and, with a VM
-create limit, creates VMs and administers the ones it created. It runs
-avr vm create without --repo or --egress-rules, list, show, ssh,
-ssh-config, metrics without --watch, update with --name or --ttl,
-rotate-https-label, pause and delete; resume and fork are refused. avr
-vm capabilities needs a VM create limit or a VM grant. Revoking the
-token deletes the VMs it created.
+A service token reaches the VMs its grants name. A VM create limit
+lets it create VMs. It administers those VMs even after the limit is
+withdrawn. It runs avr vm create without --repo or --egress-rules,
+list, show, ssh, ssh-config, metrics without --watch, update with
+--name or --ttl, rotate-https-label, pause and delete; resume and fork
+are refused. avr vm capabilities needs a VM create limit or a VM
+grant. Revoking the token deletes the VMs it created.
 
 To use a service token, set AVR_TOKEN to its secret. Its organization
-applies automatically; set AVR_ORG to the org-... ID in loops to save a
-request per command. A service token has 60 requests per minute, or 31
-per VM of its VM create limit when that is more, up to 600. Commands
-that need a person, such as avr feedback, refuse it, and avr auth
-logout does not revoke it: unset AVR_TOKEN instead. After a suspected
-leak, revoke-all revokes every service token of the organization.
+applies automatically; set AVR_ORG to the org-... ID in loops to save
+a request per command. By default, a service token has 60 requests per
+minute, or 31 per VM of its VM create limit when that is more, up to
+600. Commands that need a person, such as avr feedback, refuse it, and
+avr auth logout does not revoke it: unset AVR_TOKEN instead. After a
+suspected leak, revoke-all revokes every service token of the
+organization.
 
 ## Subcommands
 
@@ -248,12 +249,12 @@ The grants given here replace every grant the token holds: a grant you
 leave out is removed, so repeat the ones to keep. The VM create limit
 stays unless --vm-create-limit or --no-vm-create changes it. When the
 change removes or lowers a grant or the limit, the command lists what
-goes and asks first; without a terminal it then refuses unless --yes is
-given. It reads the token first and the change fails if the token
+goes and asks first; without a terminal it then refuses unless --yes
+is given. It reads the token first and the change fails if its access
 changes in between. A grant that widens its access must be within your
-own access now. The API may ask for a
-recent sign-in; the command then exits 4 and says to sign in again. The
-change applies to the token's next request.
+own access now. The API may ask for a recent sign-in; the command then
+exits 4 and says to sign in again. The change applies to the token's
+next request.
 
 ```sh
 Examples:

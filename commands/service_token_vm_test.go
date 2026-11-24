@@ -313,16 +313,16 @@ func TestSplitTokenLevel(t *testing.T) {
 // deployment that admits service-token VM access, by method, with bodies the
 // vm commands parse to completion.
 var serviceTokenVMRoutes = func() map[string]string {
-	vm := `{"customer_vm_id":"` + manageVMA + `","display_name":"box","state":"RUNNING","os_type":"linux","size":"small","architecture":"x86_64","created_at":"2026-11-16T10:00:00Z"}`
+	vm := `{"customer_vm_id":"` + manageVMA + `","display_name":"box","state":"RUNNING","os_type":"linux","size":"2-vcpu","architecture":"x86_64","created_at":"2026-11-16T10:00:00Z"}`
 	return map[string]string{
 		"GET /service-tokens/self":                              serviceTokenSelf,
 		"POST /orgs/{org_id}/vms":                               `{"data":{"vm":` + vm + `,"password":"one-time-fixture"}}`,
 		"GET /orgs/{org_id}/vms":                                `{"data":[` + vm + `],"pagination":{"next_cursor":null}}`,
-		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{"max_active_per_user":4,"active_count":1,"os_types":[{"os_type":"linux","architectures":[{"architecture":"x86_64","versions":["42"],"default_version":"42","size_specs":[{"size":"2-vcpu","cpu_count":2,"memory_mb":4096,"disk_gb":40}]}]}]}}`,
+		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{"max_active_per_user":4,"active_count":1,"os_types":[{"os_type":"linux","architectures":[{"architecture":"x86_64","versions":["ubuntu-24.04"],"default_version":"ubuntu-24.04","size_specs":[{"size":"2-vcpu","cpu_count":2,"memory_mb":4096,"disk_gb":40}]}]}]}}`,
 		"GET /orgs/{org_id}/vms/{vm_id}":                        `{"data":` + vm + `}`,
 		"GET /orgs/{org_id}/vms/{vm_id}/metrics":                `{"data":{"running":true,"metrics":{"cpu":{"series":[]}}}}`,
 		"PATCH /orgs/{org_id}/vms/{vm_id}":                      `{"data":{"vm":` + vm + `}}`,
-		"POST /orgs/{org_id}/vms/{vm_id}/pause":                 `{"data":` + vm + `}`,
+		"POST /orgs/{org_id}/vms/{vm_id}/pause":                 `{"data":` + strings.Replace(vm, `"RUNNING"`, `"PAUSING"`, 1) + `}`,
 		"POST /orgs/{org_id}/vms/{vm_id}/https-label-rotations": `{"data":` + strings.TrimSuffix(vm, "}") + `,"https_ports":[8080],"endpoints":{"https":[{"port":8080,"url":"https://rotated.example"}]}}}`,
 		"DELETE /orgs/{org_id}/vms/{vm_id}":                     `{"data":{"customer_vm_id":"` + manageVMA + `","state":"DELETING"}}`,
 	}
@@ -344,7 +344,7 @@ func TestServiceTokenVMCommands(t *testing.T) {
 		args      []string
 		sent, out string
 	}{
-		{[]string{"vm", "create", "--os", "linux", "--size", "small"}, "POST " + vms, manageVMA},
+		{[]string{"vm", "create", "--os", "linux", "--size", "2-vcpu"}, "POST " + vms, manageVMA},
 		{[]string{"vm", "list"}, "GET " + vms, "box"},
 		{[]string{"vm", "capabilities"}, "GET " + vms + "/capabilities", "2-vcpu"},
 		{[]string{"vm", "show", manageVMA}, "GET " + vm, "box"},
@@ -352,7 +352,7 @@ func TestServiceTokenVMCommands(t *testing.T) {
 		{[]string{"vm", "show", "box"}, "GET " + vms + "/box", manageVMA},
 		{[]string{"vm", "metrics", manageVMA, "--json"}, "GET " + vm + "/metrics", `"cpu"`},
 		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, "PATCH " + vm, "box"},
-		{[]string{"vm", "pause", manageVMA}, "POST " + vm + "/pause", "box"},
+		{[]string{"vm", "pause", manageVMA}, "POST " + vm + "/pause", "PAUSING"},
 		{[]string{"vm", "rotate-https-label", manageVMA}, "POST " + vm + "/https-label-rotations", "https://rotated.example"},
 		{[]string{"vm", "delete", manageVMA, "--yes"}, "DELETE " + vm, "is now DELETING"},
 		{[]string{"vm", "delete", manageVMA, "--yes", "--json"}, "DELETE " + vm, `"customer_vm_id": "` + manageVMA + `"`},
@@ -381,7 +381,7 @@ func TestServiceTokenVMResumeAndForkClosed(t *testing.T) {
 			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
 			code := h.run(t, "vm", operation, manageVMA)
 			want := "POST /orgs/" + inspectionOrg + "/vms/" + manageVMA + "/" + operation
-			if code != 1 || !slices.Equal(violations, []string{want}) || !strings.Contains(h.stderr.String(), "a service token reaches only what its access names") {
+			if code != 1 || !slices.Equal(violations, []string{want}) || !strings.Contains(h.stderr.String(), "its grants and the VMs it created") {
 				t.Fatal(code, violations, h.stderr)
 			}
 		})
