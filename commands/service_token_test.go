@@ -180,7 +180,7 @@ func TestServiceTokenAuthStatusText(t *testing.T) {
 		// one is warned.
 		{"current secret in an overlap", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","presented_secret":"current","secret_valid_until":"2026-12-16T10:00:00Z","expiring_soon"`, 1), []string{"Secret        current\n"}, []string{"replaced", "was rotated"}},
 		{"previous secret", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"previous_valid_until":"2026-11-17T10:00:00Z","presented_secret":"previous","secret_valid_until":"2026-11-17T10:00:00Z","expiring_soon"`, 1), []string{"Secret        previous, works until 2026-11-17T10:00:00.00Z", "AVR_TOKEN holds the secret a rotation replaced. It stops working at 2026-11-17T10:00:00.00Z"}, []string{"was rotated"}},
-		{"creates VMs", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"vm_cap":4,"vm_count":1,"expiring_soon"`, 1), []string{"Grants        1 repo, all firewall rules, VM create 1/4"}, nil},
+		{"creates VMs", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"vm_cap":4,"vm_count":1,"expiring_soon"`, 1), []string{"Grants        1 repo, all firewall rules, VM create 1/4 owned"}, nil},
 		{"VM creation withdrawn", strings.Replace(serviceTokenSelf, `"expiring_soon"`, `"vm_cap":null,"vm_count":1,"expiring_soon"`, 1), []string{"1 VM still owned", "its grants and the VMs it created"}, nil},
 		{"old API", serviceTokenSelfOld, []string{"Name          -", "Token ID      " + serviceTokenKeyID, "Organization  " + inspectionOrg, "Group         -", "Expires       -", "Grants        -"}, []string{"expires soon"}},
 	} {

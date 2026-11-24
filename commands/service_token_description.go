@@ -44,9 +44,9 @@ func serviceTokenIDParameter() docgen.Parameter {
 // serviceTokenGrantParameters describes the selection options; replace adds
 // the ones only set-access takes.
 func serviceTokenGrantParameters(replace bool) []docgen.Parameter {
-	limit := "Let the token create VMs while it owns fewer than this many. A token of the root group cannot have a limit."
+	limit := "Let the token create VMs and own up to this many at once; deleting a VM frees a place. A token of the root group cannot create VMs."
 	if replace {
-		limit += " Lowering it keeps the VMs the token owns. Omit to keep the current limit."
+		limit += " Lowering it keeps the VMs the token owns. Omit to keep the current maximum."
 	}
 	parameters := []docgen.Parameter{
 		{Param: docgen.Param{Name: "repos", Kind: "option", Opts: []string{"--repo"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Grant read access to a repository (org/repo or rep-xxx). Repeatable.")}, CompletionKind: "String"},
@@ -54,10 +54,10 @@ func serviceTokenGrantParameters(replace bool) []docgen.Parameter {
 		{Param: docgen.Param{Name: "all_firewall_rules", Kind: "option", Opts: []string{"--all-firewall-rules"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Grant read access to every egress firewall rule, including rules added later.")}, CompletionKind: "Bool"},
 		{Param: docgen.Param{Name: "vms", Kind: "option", Opts: []string{"--vm"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable.")}, CompletionKind: "String"},
 		{Param: docgen.Param{Name: "all_vms", Kind: "option", Opts: []string{"--all-vms"}, Type: "choice", Nargs: 1, Help: descriptionText("Grant read or write access to every VM of the organization, including VMs created later."), Choices: serviceTokenLevels}, CompletionKind: "Choice", CaseSensitive: true},
-		{Param: docgen.Param{Name: "vm_cap", Kind: "option", Opts: []string{"--vm-create-limit"}, Type: "integer range", Nargs: 1, Help: descriptionText(limit)}, Suffix: fmt.Sprintf("  [1<=x<=%d]", serviceTokenMaxVMCap), CompletionKind: "IntRange"},
+		{Param: docgen.Param{Name: "max_owned_vms", Kind: "option", Opts: []string{"--max-owned-vms"}, Type: "integer range", Nargs: 1, Help: descriptionText(limit)}, Suffix: fmt.Sprintf("  [1<=x<=%d]", serviceTokenMaxVMCap), CompletionKind: "IntRange"},
 	}
 	if replace {
-		parameters = append(parameters, docgen.Parameter{Param: docgen.Param{Name: "no_vm_create", Kind: "option", Opts: []string{"--no-vm-create"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Withdraw the token's permission to create VMs. It keeps administering the VMs it created.")}, CompletionKind: "Bool"})
+		parameters = append(parameters, docgen.Parameter{Param: docgen.Param{Name: "no_vm_create", Kind: "option", Opts: []string{"--no-vm-create"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Stop the token creating VMs; its grants stay unless grant options are given. It keeps administering the VMs it created.")}, CompletionKind: "Bool"})
 	}
 	return parameters
 }
@@ -81,10 +81,10 @@ func serviceTokenDescription(path string) docgen.Description {
 				"\n" +
 				"The token belongs to the group --group names, not to you, and keeps\n" +
 				"working when you leave the organization. It needs at least one grant\n" +
-				"or a VM create limit. Repository and firewall-rule grants are reads; a\n" +
+				"or --max-owned-vms. Repository and firewall-rule grants are reads; a\n" +
 				"VM grant is read or write. Each grant must be within your own access\n" +
-				"now. A token with a VM create limit creates VMs and administers the\n" +
-				"ones it created; a token of the root group cannot have one. The\n" +
+				"now. With --max-owned-vms the token creates VMs and administers the\n" +
+				"ones it created; a token of the root group cannot create VMs. The\n" +
 				"secret is shown once and cannot be retrieved later: store it, for\n" +
 				"example as a CI secret, and set it as AVR_TOKEN where the token is used.\n" +
 				"The API may ask for a recent sign-in; the command then exits 4 and says\n" +
@@ -98,7 +98,7 @@ func serviceTokenDescription(path string) docgen.Description {
 				"Examples:\n" +
 				"    avr service-token create --name ci --group Platform/CI --repo acme/api\n" +
 				"    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n" +
-				"    avr service-token create --name agents --group Platform/CI --repo acme/api --vm-create-limit 5\n" +
+				"    avr service-token create --name agents --group Platform/CI --repo acme/api --max-owned-vms 5\n" +
 				"    avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token\n" +
 				"\n" +
 				"\b\n" +
@@ -163,14 +163,15 @@ func serviceTokenDescription(path string) docgen.Description {
 		}
 	case "avr service-token set-access":
 		return docgen.Description{
-			Help: "Replace a service token's whole access selection.\n" +
+			Help: "Replace a service token's grants or change its VM creation.\n" +
 				"\n" +
-				"The grants given here replace every grant the token holds: a grant you\n" +
-				"leave out is removed, so repeat the ones to keep. The VM create limit\n" +
-				"stays unless --vm-create-limit or --no-vm-create changes it. When the\n" +
-				"change removes or lowers a grant or the limit, the command lists what\n" +
-				"goes and asks first; without a terminal it then refuses unless --yes\n" +
-				"is given. It reads the token first and the change fails if its access\n" +
+				"Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and\n" +
+				"--all-vms) replace every grant the token holds: a grant you leave out\n" +
+				"is removed, so repeat the ones to keep. Without grant options the\n" +
+				"grants stay. The maximum of owned VMs stays unless --max-owned-vms or\n" +
+				"--no-vm-create changes it. When the change removes or lowers a grant\n" +
+				"or VM creation, the command lists what goes and asks first; without a\n" +
+				"terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access\n" +
 				"changes in between. A grant that widens its access must be within your\n" +
 				"own access now. The API may ask for a recent sign-in; the command then\n" +
 				"exits 4 and says to sign in again. The change applies to the token's\n" +
@@ -180,9 +181,10 @@ func serviceTokenDescription(path string) docgen.Description {
 				"Examples:\n" +
 				"    avr service-token set-access <token-id> --repo acme/api --repo acme/web\n" +
 				"    avr service-token set-access <token-id> --all-firewall-rules --yes\n" +
-				"    avr service-token set-access <token-id> --repo acme/api --vm-create-limit 10\n",
-			Short:          "Replace a service token's whole access selection.",
-			CompletionHelp: "Replace a service token's whole access...",
+				"    avr service-token set-access <token-id> --max-owned-vms 10\n" +
+				"    avr service-token set-access <token-id> --no-vm-create\n",
+			Short:          "Replace a service token's grants or change its VM creation.",
+			CompletionHelp: "Replace a service token's grants or...",
 			Usage:          []string{"[OPTIONS]", "TOKEN_ID"},
 			Parameters: append(append([]docgen.Parameter{serviceTokenIDParameter()}, serviceTokenGrantParameters(true)...), serviceTokenOrgParameter(),
 				serviceTokenYesParameter("Apply the change without asking, even when it removes or lowers access.")),
@@ -257,22 +259,21 @@ func serviceTokenDescription(path string) docgen.Description {
 				"Organization admins manage service tokens while signed in (avr auth\n" +
 				"device-login or avr auth login); a scoped or service token cannot.\n" +
 				"\n" +
-				"A service token reaches the VMs its grants name. A VM create limit\n" +
-				"lets it create VMs. It administers those VMs even after the limit is\n" +
-				"withdrawn. It runs avr vm create without --repo or --egress-rules,\n" +
-				"list, show, ssh, ssh-config, metrics without --watch, update with\n" +
-				"--name or --ttl, rotate-https-label, pause and delete; resume and fork\n" +
-				"are refused. avr vm capabilities needs a VM create limit or a VM\n" +
-				"grant. Revoking the token deletes the VMs it created.\n" +
+				"A service token reaches the VMs its grants name. With --max-owned-vms it\n" +
+				"creates VMs, and it administers those VMs even after VM creation is\n" +
+				"stopped. It runs avr vm create without --repo or --egress-rules, list,\n" +
+				"show, ssh, ssh-config, metrics without --watch, update with --name or\n" +
+				"--ttl, rotate-https-label, pause and delete; resume and fork are\n" +
+				"refused. avr vm capabilities needs a VM grant or --max-owned-vms.\n" +
+				"Revoking the token deletes the VMs it created.\n" +
 				"\n" +
 				"To use a service token, set AVR_TOKEN to its secret. Its organization\n" +
-				"applies automatically; set AVR_ORG to the org-... ID in loops to save\n" +
-				"a request per command. By default, a service token has 60 requests per\n" +
-				"minute, or 31 per VM of its VM create limit when that is more, up to\n" +
-				"600. Commands that need a person, such as avr feedback, refuse it, and\n" +
-				"avr auth logout does not revoke it: unset AVR_TOKEN instead. After a\n" +
-				"suspected leak, revoke-all revokes every service token of the\n" +
-				"organization.\n",
+				"applies automatically; set AVR_ORG to the org-... ID in loops to save a\n" +
+				"request per command. By default, a service token has 60 requests per\n" +
+				"minute, or 31 per VM it may own when that is more, up to 600. Commands\n" +
+				"that need a person, such as avr feedback, refuse it, and avr auth logout\n" +
+				"does not revoke it: unset AVR_TOKEN instead. After a suspected leak,\n" +
+				"revoke-all revokes every service token of the organization.\n",
 			Short:    "Create and manage the organization's service tokens.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,

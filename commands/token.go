@@ -186,31 +186,34 @@ func newTokenRevoke(d Dependencies) *cobra.Command {
 }
 
 // tokenVMCreate reads whether a token may create VMs, the count against its
-// limit and the limit, nil when there is none. A scoped token states this
-// with allow_vm_create, vm_create_count and vm_create_limit; a service token
-// with vm_cap, the VMs it may own at once, and vm_count, the VMs it owns.
-func tokenVMCreate(row map[string]any) (bool, string, any) {
-	allowed, count, limit := row["vm_cap"] != nil, row["vm_count"], row["vm_cap"]
+// limit, the limit (nil when there is none) and what the count counts. A
+// scoped token states this with allow_vm_create, vm_create_count and
+// vm_create_limit, and counts the VMs it ever created ("used"). A service
+// token states it with vm_cap and vm_count, and counts the VMs it owns now
+// ("owned"): deleting one frees a place.
+func tokenVMCreate(row map[string]any) (allowed bool, count string, limit any, counts string) {
+	allowed, value, limit, counts := row["vm_cap"] != nil, row["vm_count"], row["vm_cap"], "owned"
 	if _, scoped := row["allow_vm_create"]; scoped {
-		allowed, count, limit = row["allow_vm_create"] == true, row["vm_create_count"], row["vm_create_limit"]
+		allowed, value, limit, counts = row["allow_vm_create"] == true, row["vm_create_count"], row["vm_create_limit"], "used"
 	}
-	if count == nil {
-		return allowed, "0", limit
+	count = "0"
+	if value != nil {
+		count = pythonValue(value)
 	}
-	return allowed, pythonValue(count), limit
+	return allowed, count, limit, counts
 }
 
 // tokenVMCreateText describes tokenVMCreate's answer for a token view.
 func tokenVMCreateText(row map[string]any) string {
-	allowed, used, limit := tokenVMCreate(row)
+	allowed, count, limit, counts := tokenVMCreate(row)
 	if !allowed {
 		return "not allowed"
 	}
-	text := "allowed, " + used
+	text := "allowed, " + count
 	if limit != nil {
 		text += " of " + pythonValue(limit)
 	}
-	return text + " used"
+	return text + " " + counts
 }
 func tokenGrantsSummary(row map[string]any) string {
 	repos, vms, allVMs, rules, allRules := 0, 0, false, 0, false
@@ -256,10 +259,10 @@ func tokenGrantsSummary(row map[string]any) string {
 		}
 		parts = append(parts, fmt.Sprintf("%d %s", rules, label))
 	}
-	if allowed, used, limit := tokenVMCreate(row); allowed {
+	if allowed, count, limit, counts := tokenVMCreate(row); allowed {
 		label := "VM create"
 		if limit != nil {
-			label += " " + used + "/" + pythonValue(limit)
+			label += " " + count + "/" + pythonValue(limit) + " " + counts
 		}
 		parts = append(parts, label)
 	} else if owned := serviceTokenOwnedVMs(row); owned != "" {

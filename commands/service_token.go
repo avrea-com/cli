@@ -29,7 +29,7 @@ var serviceTokenVMPattern = lazyRegexp("^cvm-[0-9a-f]{32}$")
 var serviceTokenLevels = []string{"read", "write"}
 
 // Bounds the service-token API sets on lifetimes, overlaps, versions, grants
-// and the VM cap.
+// and the maximum of owned VMs (vm_cap).
 const (
 	serviceTokenMaxLifetime = 90 * 24 * 60 * 60
 	serviceTokenMinOverlap  = 60 * 60
@@ -73,7 +73,7 @@ type serviceTokenRefusal struct {
 	grants    bool   // the request carried grants, so a refusal may name one
 	notFound  string // 404
 	stale     string // 409 without Retry-After
-	rootOwned string // 422 refusing a VM cap to a token of the root group
+	rootOwned string // 422 refusing --max-owned-vms to a token of the root group
 	unchanged string // 503 the API answers before it writes
 	unknown   string // another 5xx: the write may have happened
 }
@@ -170,7 +170,7 @@ func serviceTokenViewHint(token, org string) string {
 }
 
 // serviceTokenGrantOptions selects what a service token reaches: the grants
-// and, through the VM cap, whether it creates VMs. Only set-access registers
+// and, through --max-owned-vms, whether it creates VMs. Only set-access registers
 // noVMCreate, since a new token starts without the VM permission anyway.
 type serviceTokenGrantOptions struct {
 	repos, rules, vms []string
@@ -182,7 +182,7 @@ type serviceTokenGrantOptions struct {
 
 // serviceTokenSelection is what validate accepted: the repositories still to
 // resolve, the other grants in the order the grant-order hint describes, and
-// the VM cap change, if any. An explicit null resource_id grants every object
+// the vm_cap change, if any. An explicit null resource_id grants every object
 // of the type in the organization, including later ones.
 type serviceTokenSelection struct {
 	repos  []string
@@ -198,7 +198,7 @@ func (g *serviceTokenGrantOptions) flags(c *cobra.Command) {
 	f.BoolVar(&g.allRules, "all-firewall-rules", false, "Read every egress firewall rule, including later ones.")
 	f.StringArrayVar(&g.vms, "vm", nil, "VM grant (cvm-...), read unless :write follows, repeatable.")
 	f.StringVar(&g.allVMs, "all-vms", "", "Grant every VM, including later ones: read or write.")
-	f.IntVar(&g.vmCap, "vm-create-limit", 0, "Let the token create VMs, holding at most this many at once.")
+	f.IntVar(&g.vmCap, "max-owned-vms", 0, "Let the token create VMs and own up to this many at once.")
 }
 
 // serviceTokenLevelCovers reports whether a grant at have also allows need.
@@ -214,22 +214,19 @@ func serviceTokenIDError(flag, spec, noun, prefix string) error {
 // validate checks the selection before any request.
 func (g serviceTokenGrantOptions) validate(cmd *cobra.Command) (serviceTokenSelection, error) {
 	var s serviceTokenSelection
-	limited := cmd.Flags().Changed("vm-create-limit")
+	limited := cmd.Flags().Changed("max-owned-vms")
 	allVMs := cmd.Flags().Changed("all-vms")
 	if limited && g.noVMCreate {
-		return s, &ExitError{2, "Error: --vm-create-limit and --no-vm-create are mutually exclusive."}
+		return s, &ExitError{2, "Error: --max-owned-vms and --no-vm-create are mutually exclusive."}
 	}
 	if limited && (g.vmCap < 1 || g.vmCap > serviceTokenMaxVMCap) {
-		return s, &ExitError{2, fmt.Sprintf("Error: --vm-create-limit must be between 1 and %d.", serviceTokenMaxVMCap)}
+		return s, &ExitError{2, fmt.Sprintf("Error: --max-owned-vms must be between 1 and %d.", serviceTokenMaxVMCap)}
 	}
-	// --no-vm-create alone leaves a token only the VMs it created, which the
-	// API accepts; with nothing selected at all, set-access would remove
-	// every grant by accident.
 	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules && len(g.vms) == 0 && !allVMs && !limited && !g.noVMCreate {
 		if cmd.Flags().Lookup("no-vm-create") != nil {
-			return s, &ExitError{2, "Error: Pass the access the token keeps (--repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit), or --no-vm-create to withdraw VM creation: set-access replaces the whole selection."}
+			return s, &ExitError{2, "Error: Pass grant options (--repo, --firewall-rule, --all-firewall-rules, --vm or --all-vms) to replace the token's grants, or --max-owned-vms or --no-vm-create to change only its VM creation."}
 		}
-		return s, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit: a service token needs a grant or permission to create VMs."}
+		return s, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --max-owned-vms: a service token needs a grant or permission to create VMs."}
 	}
 	if g.allRules && len(g.rules) > 0 {
 		return s, &ExitError{2, "Error: --all-firewall-rules already grants every firewall rule; drop --firewall-rule."}
@@ -309,8 +306,26 @@ func (s serviceTokenSelection) build(ctx context.Context, d Dependencies, cfg co
 	return append(grants, s.grants...), nil
 }
 
-// applyVMCap writes the VM cap change into a create or set-access body. An
-// absent key keeps a token's current cap, and null withdraws it.
+// grantsGiven reports whether the selection names grants. set-access keeps
+// the token's grants when it does not, so changing only VM creation never
+// removes a grant.
+func (s serviceTokenSelection) grantsGiven() bool {
+	return len(s.repos) > 0 || len(s.grants) > 0
+}
+
+// serviceTokenHeldGrants is the token's selection as read, in the form a
+// set-access body takes; a null resource_id grants every object of its type.
+func serviceTokenHeldGrants(current map[string]any) []map[string]any {
+	grants := []map[string]any{}
+	for _, held := range objectList(current["grants"]) {
+		grants = append(grants, map[string]any{"resource_type": held["resource_type"], "resource_id": held["resource_id"], "access_level": held["access_level"]})
+	}
+	return grants
+}
+
+// applyVMCap writes the --max-owned-vms change into a create or set-access
+// body. An absent key keeps a token's current maximum, and null stops VM
+// creation.
 func (s serviceTokenSelection) applyVMCap(body map[string]any) {
 	if s.capSet {
 		body["vm_cap"] = s.vmCap
@@ -329,8 +344,8 @@ func distinct(values []string) []string {
 
 // serviceTokenRemovals lists what a set-access body takes away from the
 // token as read: each grant the new grants neither repeat nor cover at its
-// level or above, and a withdrawn or lowered VM cap. A grant of every object
-// of a type covers a grant of one at the same level.
+// level or above, and stopped VM creation or a lower maximum of owned VMs.
+// A grant of every object of a type covers a grant of one at the same level.
 func serviceTokenRemovals(current, body map[string]any) []string {
 	grants, _ := body["grants"].([]map[string]any)
 	var removed []string
@@ -360,9 +375,9 @@ func serviceTokenRemovals(current, body map[string]any) []string {
 	if value, set := body["vm_cap"]; set && capped {
 		switch wanted, _ := value.(int); {
 		case value == nil:
-			removed = append(removed, fmt.Sprintf("permission to create VMs (up to %d)", held))
+			removed = append(removed, fmt.Sprintf("VM creation (up to %d owned VMs)", held))
 		case int64(wanted) < held:
-			removed = append(removed, fmt.Sprintf("VM cap lowered from %d to %d", held, wanted))
+			removed = append(removed, fmt.Sprintf("maximum owned VMs lowered from %d to %d", held, wanted))
 		}
 	}
 	return removed
@@ -372,7 +387,7 @@ func serviceTokenRemovals(current, body map[string]any) []string {
 // permission to create them was withdrawn, or "" when there are none. It
 // administers them until they are deleted.
 func serviceTokenOwnedVMs(row map[string]any) string {
-	allowed, owned, _ := tokenVMCreate(row)
+	allowed, owned, _, _ := tokenVMCreate(row)
 	if allowed || row["vm_count"] == nil || owned == "0" {
 		return ""
 	}
@@ -680,10 +695,10 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 	var org string
 	var yes bool
 	var g serviceTokenGrantOptions
-	c := &cobra.Command{Use: "set-access TOKEN_ID", Short: "Replace a service token's whole access selection.", Args: tokenIDArgs}
+	c := &cobra.Command{Use: "set-access TOKEN_ID", Short: "Replace a service token's grants or change its VM creation.", Args: tokenIDArgs}
 	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	g.flags(c)
-	c.Flags().BoolVar(&g.noVMCreate, "no-vm-create", false, "Withdraw the token's permission to create VMs.")
+	c.Flags().BoolVar(&g.noVMCreate, "no-vm-create", false, "Stop the token creating VMs.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Apply the change without asking, even when it removes or lowers access.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		selection, err := g.validate(cmd)
@@ -706,16 +721,22 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		// The API replaces grants and VM creation together. Resending the
+		// grants as read keeps them; the version check refuses the write if
+		// they changed since.
+		if !selection.grantsGiven() {
+			grants = serviceTokenHeldGrants(current)
+		}
 		body := map[string]any{"grants": grants, "expected_grants_version": version}
 		selection.applyVMCap(body)
-		// Leaving a grant out removes it, which is easy to do by accident, for
-		// example when only the VM cap was meant to change. A terminal run is
-		// asked on stderr; any other run must confirm with --yes rather than
-		// block on a question nobody sees, and is told what it would remove.
+		// Leaving a grant out removes it, which is easy to do by accident. A
+		// terminal run is asked on stderr; any other run must confirm with
+		// --yes rather than block on a question nobody sees, and is told what
+		// it would remove.
 		if removed := serviceTokenRemovals(current, body); len(removed) > 0 && !yes {
 			summary := "This replacement removes access service token " + args[0] + " holds:\n    " + strings.Join(removed, "\n    ")
 			if !d.IsInputTerminal() || !d.IsErrorTerminal() || d.Getenv("AVR_PROMPT_DISABLED") != "" {
-				return &ExitError{1, "Error: " + summary + "\n  Hint: Pass each grant to keep at its level, or pass --yes to apply the change."}
+				return &ExitError{1, "Error: " + summary + "\n  Hint: Pass the options that keep this access, or pass --yes to apply the change."}
 			}
 			if err = confirmMutation(cmd.Context(), configurationPrompt(d), "replacing the access removes access the token holds", summary+"\nReplace its access?"); err != nil {
 				return err
@@ -735,7 +756,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 				grants:    true,
 				notFound:  serviceTokenWriteNotFound(current, id),
 				stale:     serviceTokenWriteStale(current, stale),
-				rootOwned: "A token of the root group cannot create VMs. Leave out --vm-create-limit, or create a token in a group below the root group with \x60avr service-token create\x60.",
+				rootOwned: "A token of the root group cannot create VMs. Leave out --max-owned-vms, or create a token in a group below the root group with \x60avr service-token create\x60.",
 				unchanged: "The token's access was not changed.",
 				unknown:   "The access may have been replaced; check " + view + " before retrying.",
 			}, "the access change")

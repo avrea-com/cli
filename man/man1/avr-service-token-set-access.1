@@ -1,20 +1,21 @@
 .TH AVR\-SERVICE\-TOKEN\-SET\-ACCESS 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-service-token-set-access \- Replace a service token's whole access selection.
+avr-service-token-set-access \- Replace a service token's grants or change its VM creation.
 .SH SYNOPSIS
 .B avr service-token set-access
 [OPTIONS] TOKEN_ID
 .SH DESCRIPTION
-Replace a service token's whole access selection.
+Replace a service token's grants or change its VM creation.
 .PP
-The grants given here replace every grant the token holds: a grant you leave out is removed, so repeat the ones to keep. The VM create limit stays unless --vm-create-limit or --no-vm-create changes it. When the change removes or lowers a grant or the limit, the command lists what goes and asks first; without a terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
+Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and --all-vms) replace every grant the token holds: a grant you leave out is removed, so repeat the ones to keep. Without grant options the grants stay. The maximum of owned VMs stays unless --max-owned-vms or --no-vm-create changes it. When the change removes or lowers a grant or VM creation, the command lists what goes and asks first; without a terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
 .PP
 .RS 4
 .nf
 Examples:
     avr service-token set-access <token-id> --repo acme/api --repo acme/web
     avr service-token set-access <token-id> --all-firewall-rules --yes
-    avr service-token set-access <token-id> --repo acme/api --vm-create-limit 10
+    avr service-token set-access <token-id> --max-owned-vms 10
+    avr service-token set-access <token-id> --no-vm-create
 .fi
 .RE
 .SH ARGUMENTS
@@ -38,11 +39,11 @@ Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Rep
 \fB\-\-all\-vms\fR \fICHOICE\fR
 Grant read or write access to every VM of the organization, including VMs created later. (choices: read, write)
 .TP
-\fB\-\-vm\-create\-limit\fR \fIINTEGER RANGE\fR
-Let the token create VMs while it owns fewer than this many. A token of the root group cannot have a limit. Lowering it keeps the VMs the token owns. Omit to keep the current limit.
+\fB\-\-max\-owned\-vms\fR \fIINTEGER RANGE\fR
+Let the token create VMs and own up to this many at once; deleting a VM frees a place. A token of the root group cannot create VMs. Lowering it keeps the VMs the token owns. Omit to keep the current maximum.
 .TP
 \fB\-\-no\-vm\-create\fR
-Withdraw the token's permission to create VMs. It keeps administering the VMs it created.
+Stop the token creating VMs; its grants stay unless grant options are given. It keeps administering the VMs it created.
 .TP
 \fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified (see: avr config set org).

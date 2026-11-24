@@ -360,7 +360,7 @@ func TestServiceTokenCreateRejectsInvalidOptionsBeforeRequests(t *testing.T) {
 		{[]string{"--group", manageGroupID, "--repo", manageRepoA}, "Missing option '--name'"},
 		{[]string{"--name", "ci", "--repo", manageRepoA}, "Missing option '--group'"},
 		{[]string{"--name", "ci", "--group", "", "--repo", manageRepoA}, "expected a group name, path or ID"},
-		{base, "at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit"},
+		{base, "at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --max-owned-vms"},
 		{append(slices.Clone(base), "--all-firewall-rules", "--firewall-rule", manageRuleA), "already grants every firewall rule"},
 		{append(slices.Clone(base), "--firewall-rule", "rule-1"), "expected a rule ID"},
 		{append(slices.Clone(base), "--repo", "acme/api:admin"), "read level"},
@@ -447,7 +447,7 @@ func TestServiceTokenSetAccessNeedsGrants(t *testing.T) {
 	h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
 	// Replacing with nothing would strip every grant; the hint names the
 	// explicit withdrawal set-access offers instead.
-	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "--vm-create-limit), or --no-vm-create to withdraw") {
+	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "or --max-owned-vms or --no-vm-create to change only its VM creation") {
 		t.Fatal(code, h.stderr)
 	}
 }

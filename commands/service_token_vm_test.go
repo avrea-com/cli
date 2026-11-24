@@ -34,12 +34,12 @@ func TestServiceTokenCreateSendsVMAccess(t *testing.T) {
 		args []string
 		want map[string]any
 	}{
-		{"grants in flag order after rules", []string{"--repo", manageRepoA, "--vm", manageVMA + ":WRITE", "--firewall-rule", manageRuleA, "--vm", manageVMB, "--vm-create-limit", "5"},
+		{"grants in flag order after rules", []string{"--repo", manageRepoA, "--vm", manageVMA + ":WRITE", "--firewall-rule", manageRuleA, "--vm", manageVMB, "--max-owned-vms", "5"},
 			map[string]any{"vm_cap": float64(5), "grants": []any{manageGrant("repository", manageRepoA), manageGrant("egress_firewall_rule", manageRuleA), manageVMGrant(manageVMA, "write"), manageVMGrant(manageVMB, "read")}}},
 		// A repeated grant at the same level is one grant.
 		{"every VM after named ones", []string{"--vm", manageVMA + ":write", "--vm", manageVMA + ":write", "--all-vms", "read"},
 			map[string]any{"grants": []any{manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")}}},
-		{"only the VM limit", []string{"--vm-create-limit", "3"}, map[string]any{"vm_cap": float64(3), "grants": []any{}}},
+		{"only the VM limit", []string{"--max-owned-vms", "3"}, map[string]any{"vm_cap": float64(3), "grants": []any{}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, nil))
@@ -74,11 +74,11 @@ func TestServiceTokenVMOptionsRejectedBeforeRequests(t *testing.T) {
 		{append(slices.Clone(create), "--all-vms", "admin"), "Invalid value for '--all-vms': 'admin' is not one of read, write"},
 		{append(slices.Clone(create), "--all-vms", "read", "--vm", manageVMA), "--all-vms read already grants every VM at read; drop --vm " + manageVMA},
 		{append(slices.Clone(create), "--all-vms", "write", "--vm", manageVMB+":write"), "--all-vms write already grants every VM at write"},
-		{append(slices.Clone(create), "--vm-create-limit", "0"), "--vm-create-limit must be between 1 and 2147483647"},
-		{append(slices.Clone(create), "--vm-create-limit", "2147483648"), "--vm-create-limit must be between 1 and 2147483647"},
+		{append(slices.Clone(create), "--max-owned-vms", "0"), "--max-owned-vms must be between 1 and 2147483647"},
+		{append(slices.Clone(create), "--max-owned-vms", "2147483648"), "--max-owned-vms must be between 1 and 2147483647"},
 		{append(slices.Clone(create), tooMany...), "at most 100 grants (got 101)"},
 		{append(slices.Clone(create), "--no-vm-create", "--repo", manageRepoA), "unknown flag: --no-vm-create"},
-		{append(slices.Clone(replace), "--vm-create-limit", "2", "--no-vm-create"), "--vm-create-limit and --no-vm-create are mutually exclusive"},
+		{append(slices.Clone(replace), "--max-owned-vms", "2", "--no-vm-create"), "--max-owned-vms and --no-vm-create are mutually exclusive"},
 	} {
 		h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
 		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
@@ -99,8 +99,8 @@ func TestServiceTokenRootOwnedVMLimit(t *testing.T) {
 		otherwise  string
 		refusedFor string
 	}{
-		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--vm-create-limit", "2"}, "Pass a group below it to --group", "Leave out --vm-create-limit", "POST"},
-		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--vm-create-limit", "2"}, "Leave out --vm-create-limit, or create a token in a group below the root group", "--group", "PUT"},
+		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--max-owned-vms", "2"}, "Pass a group below it to --group", "Leave out --max-owned-vms", "POST"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--max-owned-vms", "2"}, "Leave out --max-owned-vms, or create a token in a group below the root group", "--group", "PUT"},
 	} {
 		t.Run(tc.args[0], func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
@@ -119,7 +119,8 @@ func TestServiceTokenRootOwnedVMLimit(t *testing.T) {
 }
 
 func TestServiceTokenSetAccessVMLimit(t *testing.T) {
-	current := manageRecord(map[string]any{"vm_cap": 3})
+	held := []any{manageGrant("repository", manageRepoA), manageVMGrant(nil, "write")}
+	current := manageRecord(map[string]any{"vm_cap": 3, "grants": held})
 	repoA := []any{manageGrant("repository", manageRepoA)}
 	for _, tc := range []struct {
 		name   string
@@ -128,12 +129,14 @@ func TestServiceTokenSetAccessVMLimit(t *testing.T) {
 		cap    any
 		set    bool
 	}{
-		{"omitted keeps the limit", []string{"--repo", manageRepoA}, repoA, nil, false},
-		{"a new limit", []string{"--repo", manageRepoA, "--vm-create-limit", "4"}, repoA, float64(4), true},
+		{"omitted keeps the limit", []string{"--repo", manageRepoA, "--yes"}, repoA, nil, false},
+		{"a new limit", []string{"--repo", manageRepoA, "--max-owned-vms", "4", "--yes"}, repoA, float64(4), true},
 		{"withdrawn", []string{"--repo", manageRepoA, "--no-vm-create", "--yes"}, repoA, nil, true},
-		// A token holding only its VMs is a valid replacement.
-		{"withdrawn alone", []string{"--no-vm-create", "--yes"}, []any{}, nil, true},
-		{"with VM grants and a limit", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read", "--vm-create-limit", "5"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), float64(5), true},
+		// Without grant options only VM creation changes: the grants go back
+		// as read, every-VM grant included.
+		{"a new limit alone keeps the grants", []string{"--max-owned-vms", "4"}, held, float64(4), true},
+		{"withdrawn alone keeps the grants", []string{"--no-vm-create", "--yes"}, held, nil, true},
+		{"with VM grants and a limit", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read", "--max-owned-vms", "5", "--yes"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), float64(5), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
@@ -161,12 +164,16 @@ func TestServiceTokenSetAccessListsRemovals(t *testing.T) {
 	}{
 		{"everything kept", append(slices.Clone(keep), "--vm", manageVMA+":write"), nil},
 		{"covered by every VM", append(slices.Clone(keep), "--all-vms", "write"), nil},
-		{"a higher limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--vm-create-limit", "9"), nil},
+		{"a higher limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--max-owned-vms", "9"), nil},
 		{"a lowered VM", append(slices.Clone(keep), "--vm", manageVMA), []string{"VM " + manageVMA + " lowered from write to read"}},
 		{"every VM at read lowers write", append(slices.Clone(keep), "--all-vms", "read"), []string{"VM " + manageVMA + " lowered from write to read"}},
 		{"a dropped repository and rule", []string{"--vm", manageVMA + ":write"}, []string{"repository " + manageRepoA + " at read", "every firewall rule at read"}},
-		{"a lowered limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--vm-create-limit", "2"), []string{"VM cap lowered from 5 to 2"}},
-		{"a withdrawn limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--no-vm-create"), []string{"permission to create VMs (up to 5)"}},
+		{"a lowered limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--max-owned-vms", "2"), []string{"maximum owned VMs lowered from 5 to 2"}},
+		{"a withdrawn limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--no-vm-create"), []string{"VM creation (up to 5 owned VMs)"}},
+		// Without grant options the grants stay, so only the limit is listed.
+		{"only a higher limit", []string{"--max-owned-vms", "9"}, nil},
+		{"only a lowered limit", []string{"--max-owned-vms", "2"}, []string{"maximum owned VMs lowered from 5 to 2"}},
+		{"only creation stopped", []string{"--no-vm-create"}, []string{"VM creation (up to 5 owned VMs)"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
@@ -180,7 +187,7 @@ func TestServiceTokenSetAccessListsRemovals(t *testing.T) {
 				return
 			}
 			// Without a terminal nobody can answer, so the command refuses.
-			if code != 1 || replaced || h.out.Len() != 0 || !strings.Contains(message, "or pass --yes to apply the change") {
+			if code != 1 || replaced || h.out.Len() != 0 || !strings.Contains(message, "or pass --yes to apply the change") || strings.Count(message, "\n    ") != len(tc.removed) {
 				t.Fatal(code, h.operations(), message)
 			}
 			for _, want := range tc.removed {
@@ -244,7 +251,7 @@ func TestServiceTokenViewShowsVMAccess(t *testing.T) {
 		want   []string
 	}{
 		{"creates VMs", manageRecord(map[string]any{"vm_cap": 5, "vm_count": 2, "grants": grants}),
-			[]string{"VM create         allowed, 2 of 5 used", "| VM   | " + manageVMA + " | write |", "| VM   | every VM                             | read  |"}},
+			[]string{"VM create         allowed, 2 of 5 owned", "| VM   | " + manageVMA + " | write |", "| VM   | every VM                             | read  |"}},
 		{"limit withdrawn", manageRecord(map[string]any{"vm_cap": nil, "vm_count": 1}), []string{"VM create         not allowed, 1 still owned"}},
 		{"never created", manageRecord(nil), []string{"VM create         not allowed\n"}},
 	} {
@@ -275,8 +282,11 @@ func TestTokenGrantsSummaryCountsServiceTokenVMs(t *testing.T) {
 		row  map[string]any
 		want string
 	}{
-		{map[string]any{"vm_cap": float64(5), "vm_count": float64(2)}, "VM create 2/5"},
-		{map[string]any{"vm_cap": float64(5)}, "VM create 0/5"},
+		// A service token counts the VMs it owns now, a scoped token the VMs
+		// it ever created; the same numbers must not read alike.
+		{map[string]any{"vm_cap": float64(5), "vm_count": float64(2)}, "VM create 2/5 owned"},
+		{map[string]any{"vm_cap": float64(5)}, "VM create 0/5 owned"},
+		{map[string]any{"allow_vm_create": true, "vm_create_count": float64(2), "vm_create_limit": float64(5)}, "VM create 2/5 used"},
 		// The token administers the VMs it created after its limit is gone.
 		{map[string]any{"grants": []any{manageVMGrant(manageVMA, "write")}, "vm_cap": nil, "vm_count": float64(1)}, "1 VM, 1 VM still owned"},
 		{map[string]any{"vm_cap": nil, "vm_count": float64(2)}, "2 VMs still owned"},
