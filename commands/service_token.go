@@ -226,6 +226,9 @@ func (g serviceTokenGrantOptions) validate(cmd *cobra.Command) (serviceTokenSele
 	// API accepts; with nothing selected at all, set-access would remove
 	// every grant by accident.
 	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules && len(g.vms) == 0 && !allVMs && !limited && !g.noVMCreate {
+		if cmd.Flags().Lookup("no-vm-create") != nil {
+			return s, &ExitError{2, "Error: Pass the access the token keeps (--repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit), or --no-vm-create to withdraw VM creation: set-access replaces the whole selection."}
+		}
 		return s, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit: a service token needs a grant or permission to create VMs."}
 	}
 	if g.allRules && len(g.rules) > 0 {

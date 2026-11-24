@@ -259,10 +259,11 @@ func serviceTokenDescription(path string) docgen.Description {
 				"\n" +
 				"A service token reaches the VMs its VM grants name and, with a VM\n" +
 				"create limit, creates VMs and administers the ones it created. It runs\n" +
-				"avr vm create without --repo or --egress-rules, list, capabilities,\n" +
-				"show, metrics without --watch, update with --name or --ttl,\n" +
-				"rotate-https-label, pause and delete; resume and fork are refused.\n" +
-				"Revoking the token deletes the VMs it created.\n" +
+				"avr vm create without --repo or --egress-rules, list, show, ssh,\n" +
+				"ssh-config, metrics without --watch, update with --name or --ttl,\n" +
+				"rotate-https-label, pause and delete; resume and fork are refused. avr\n" +
+				"vm capabilities needs a VM create limit or a VM grant. Revoking the\n" +
+				"token deletes the VMs it created.\n" +
 				"\n" +
 				"To use a service token, set AVR_TOKEN to its secret. Its organization\n" +
 				"applies automatically; set AVR_ORG to the org-... ID in loops to save a\n" +

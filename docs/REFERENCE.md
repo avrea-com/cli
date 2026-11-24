@@ -2120,10 +2120,11 @@ device-login or avr auth login); a scoped or service token cannot.
 
 A service token reaches the VMs its VM grants name and, with a VM
 create limit, creates VMs and administers the ones it created. It runs
-avr vm create without --repo or --egress-rules, list, capabilities,
-show, metrics without --watch, update with --name or --ttl,
-rotate-https-label, pause and delete; resume and fork are refused.
-Revoking the token deletes the VMs it created.
+avr vm create without --repo or --egress-rules, list, show, ssh,
+ssh-config, metrics without --watch, update with --name or --ttl,
+rotate-https-label, pause and delete; resume and fork are refused. avr
+vm capabilities needs a VM create limit or a VM grant. Revoking the
+token deletes the VMs it created.
 
 To use a service token, set AVR_TOKEN to its secret. Its organization
 applies automatically; set AVR_ORG to the org-... ID in loops to save a

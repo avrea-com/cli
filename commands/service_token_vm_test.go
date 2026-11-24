@@ -133,7 +133,7 @@ func TestServiceTokenSetAccessVMLimit(t *testing.T) {
 		{"withdrawn", []string{"--repo", manageRepoA, "--no-vm-create", "--yes"}, repoA, nil, true},
 		// A token holding only its VMs is a valid replacement.
 		{"withdrawn alone", []string{"--no-vm-create", "--yes"}, []any{}, nil, true},
-		{"with VM grants", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), nil, false},
+		{"with VM grants and a limit", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read", "--vm-create-limit", "5"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), float64(5), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
@@ -318,12 +318,12 @@ var serviceTokenVMRoutes = func() map[string]string {
 		"GET /service-tokens/self":                              serviceTokenSelf,
 		"POST /orgs/{org_id}/vms":                               `{"data":{"vm":` + vm + `,"password":"one-time-fixture"}}`,
 		"GET /orgs/{org_id}/vms":                                `{"data":[` + vm + `],"pagination":{"next_cursor":null}}`,
-		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{}}`,
+		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{"max_active_per_user":4,"active_count":1,"os_types":[{"os_type":"linux","architectures":[{"architecture":"x86_64","versions":["42"],"default_version":"42","size_specs":[{"size":"2-vcpu","cpu_count":2,"memory_mb":4096,"disk_gb":40}]}]}]}}`,
 		"GET /orgs/{org_id}/vms/{vm_id}":                        `{"data":` + vm + `}`,
 		"GET /orgs/{org_id}/vms/{vm_id}/metrics":                `{"data":{"running":true,"metrics":{"cpu":{"series":[]}}}}`,
 		"PATCH /orgs/{org_id}/vms/{vm_id}":                      `{"data":{"vm":` + vm + `}}`,
 		"POST /orgs/{org_id}/vms/{vm_id}/pause":                 `{"data":` + vm + `}`,
-		"POST /orgs/{org_id}/vms/{vm_id}/https-label-rotations": `{"data":` + vm + `}`,
+		"POST /orgs/{org_id}/vms/{vm_id}/https-label-rotations": `{"data":` + strings.TrimSuffix(vm, "}") + `,"https_ports":[8080],"endpoints":{"https":[{"port":8080,"url":"https://rotated.example"}]}}}`,
 		"DELETE /orgs/{org_id}/vms/{vm_id}":                     `{"data":{"customer_vm_id":"` + manageVMA + `","state":"DELETING"}}`,
 	}
 }()
@@ -346,20 +346,26 @@ func TestServiceTokenVMCommands(t *testing.T) {
 	}{
 		{[]string{"vm", "create", "--os", "linux", "--size", "small"}, "POST " + vms, manageVMA},
 		{[]string{"vm", "list"}, "GET " + vms, "box"},
-		{[]string{"vm", "capabilities"}, "GET " + vms + "/capabilities", ""},
+		{[]string{"vm", "capabilities"}, "GET " + vms + "/capabilities", "2-vcpu"},
 		{[]string{"vm", "show", manageVMA}, "GET " + vm, "box"},
 		// The API resolves a name in the VM's place in the path.
 		{[]string{"vm", "show", "box"}, "GET " + vms + "/box", manageVMA},
 		{[]string{"vm", "metrics", manageVMA, "--json"}, "GET " + vm + "/metrics", `"cpu"`},
 		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, "PATCH " + vm, "box"},
 		{[]string{"vm", "pause", manageVMA}, "POST " + vm + "/pause", "box"},
-		{[]string{"vm", "rotate-https-label", manageVMA}, "POST " + vm + "/https-label-rotations", ""},
+		{[]string{"vm", "rotate-https-label", manageVMA}, "POST " + vm + "/https-label-rotations", "https://rotated.example"},
 		{[]string{"vm", "delete", manageVMA, "--yes"}, "DELETE " + vm, "is now DELETING"},
+		{[]string{"vm", "delete", manageVMA, "--yes", "--json"}, "DELETE " + vm, `"customer_vm_id": "` + manageVMA + `"`},
 	} {
 		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
 			var violations []string
 			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
-			if code := h.run(t, tc.args...); code != 0 || len(violations) != 0 || !slices.Contains(h.requests, tc.sent) || !strings.Contains(h.out.String(), tc.out) {
+			code := h.run(t, tc.args...)
+			writes := slices.DeleteFunc(slices.Clone(h.requests), func(r string) bool { return strings.HasPrefix(r, "GET ") })
+			if !strings.HasPrefix(tc.sent, "GET ") && !slices.Equal(writes, []string{tc.sent}) || strings.HasPrefix(tc.sent, "GET ") && len(writes) != 0 {
+				t.Fatal("writes", h.requests)
+			}
+			if code != 0 || len(violations) != 0 || !slices.Contains(h.requests, tc.sent) || !strings.Contains(h.out.String(), tc.out) {
 				t.Fatal(code, violations, h.requests, h.out, h.stderr)
 			}
 		})

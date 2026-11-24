@@ -445,7 +445,9 @@ func TestServiceTokenSetAccessReadsVersionThenReplaces(t *testing.T) {
 
 func TestServiceTokenSetAccessNeedsGrants(t *testing.T) {
 	h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
-	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "at least one of --repo") {
+	// Replacing with nothing would strip every grant; the hint names the
+	// explicit withdrawal set-access offers instead.
+	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "--vm-create-limit), or --no-vm-create to withdraw") {
 		t.Fatal(code, h.stderr)
 	}
 }
@@ -564,8 +566,9 @@ func TestServiceTokenRevokeConfirmation(t *testing.T) {
 			h.d.Getenv = func(key string) string { return tc.env[key] }
 			code := h.run(t, append([]string{"service-token", "revoke", manageTokenID}, tc.args...)...)
 			// Revoking deletes the VMs the token created, so the question says so.
-			if asked := strings.Contains(h.out.String(), "Revoke service token "+manageTokenID+"?"); asked && !strings.Contains(h.out.String(), "the VMs it created are deleted") {
-				t.Fatal(h.out)
+			asked := strings.Contains(h.out.String(), "Revoke service token "+manageTokenID+"?")
+			if asked != (tc.args == nil && tc.env == nil) || asked && !strings.Contains(h.out.String(), "the VMs it created are deleted") {
+				t.Fatal("prompt", h.out)
 			}
 			if tc.revoked {
 				if code != 0 || !slices.Equal(h.operations(), []string{"DELETE " + manageBase + "/" + manageTokenID}) || !strings.Contains(h.out.String(), "Service token "+manageTokenID+" revoked.") {
