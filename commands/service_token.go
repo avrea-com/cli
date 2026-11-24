@@ -222,7 +222,10 @@ func (g serviceTokenGrantOptions) validate(cmd *cobra.Command) (serviceTokenSele
 	if limited && (g.vmCap < 1 || g.vmCap > serviceTokenMaxVMCap) {
 		return s, &ExitError{2, fmt.Sprintf("Error: --vm-create-limit must be between 1 and %d.", serviceTokenMaxVMCap)}
 	}
-	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules && len(g.vms) == 0 && !allVMs && !limited {
+	// --no-vm-create alone leaves a token only the VMs it created, which the
+	// API accepts; with nothing selected at all, set-access would remove
+	// every grant by accident.
+	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules && len(g.vms) == 0 && !allVMs && !limited && !g.noVMCreate {
 		return s, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit: a service token needs a grant or permission to create VMs."}
 	}
 	if g.allRules && len(g.rules) > 0 {
@@ -330,18 +333,12 @@ func serviceTokenRemovals(current, body map[string]any) []string {
 	var removed []string
 	for _, held := range objectList(current["grants"]) {
 		kind, id, level := fieldText(held, "resource_type"), fieldText(held, "resource_id"), fieldText(held, "access_level")
-		kept, lowered := false, ""
+		// The strongest new grant on the same object, named or every object.
+		best := ""
 		for _, grant := range grants {
 			wanted, at := fieldText(grant, "resource_id"), fieldText(grant, "access_level")
-			if fieldText(grant, "resource_type") != kind || wanted != id && wanted != "" {
-				continue
-			}
-			if serviceTokenLevelCovers(at, level) {
-				kept = true
-				break
-			}
-			if wanted == id {
-				lowered = at
+			if fieldText(grant, "resource_type") == kind && (wanted == id || wanted == "") && (best == "" || serviceTokenLevelCovers(at, best)) {
+				best = at
 			}
 		}
 		label, resource := serviceTokenGrantLabel(held)
@@ -349,9 +346,9 @@ func serviceTokenRemovals(current, body map[string]any) []string {
 			resource = label + " " + resource
 		}
 		switch {
-		case kept:
-		case lowered != "":
-			removed = append(removed, fmt.Sprintf("%s lowered from %s to %s", resource, level, lowered))
+		case best != "" && serviceTokenLevelCovers(best, level):
+		case best != "":
+			removed = append(removed, fmt.Sprintf("%s lowered from %s to %s", resource, level, best))
 		default:
 			removed = append(removed, fmt.Sprintf("%s at %s", resource, level))
 		}
@@ -368,14 +365,23 @@ func serviceTokenRemovals(current, body map[string]any) []string {
 	return removed
 }
 
-// serviceTokenVMs adds to tokenVMCreateText the VMs a token still owns after
-// its permission to create them was withdrawn.
-func serviceTokenVMs(row map[string]any) string {
-	text := tokenVMCreateText(row)
-	if allowed, owned, _ := tokenVMCreate(row); !allowed && owned != "0" {
-		text += ", " + owned + " still owned"
+// serviceTokenOwnedVMs counts the VMs a service token still owns after its
+// permission to create them was withdrawn, or "" when there are none. It
+// administers them until they are deleted.
+func serviceTokenOwnedVMs(row map[string]any) string {
+	allowed, owned, _ := tokenVMCreate(row)
+	if allowed || row["vm_count"] == nil || owned == "0" {
+		return ""
 	}
-	return text
+	return owned
+}
+
+// serviceTokenVMs adds serviceTokenOwnedVMs to tokenVMCreateText.
+func serviceTokenVMs(row map[string]any) string {
+	if owned := serviceTokenOwnedVMs(row); owned != "" {
+		return tokenVMCreateText(row) + ", " + owned + " still owned"
+	}
+	return tokenVMCreateText(row)
 }
 
 // serviceTokenGrantLabel names a grant's type and object for people.
@@ -855,7 +861,7 @@ func newServiceTokenRevoke(d Dependencies) *cobra.Command {
 			return err
 		}
 		if !yes {
-			if err = confirmMutation(cmd.Context(), d, "revoking a service token", "Revoke service token "+args[0]+"? Everything using it stops working, including a secret still in its rotation overlap."); err != nil {
+			if err = confirmMutation(cmd.Context(), d, "revoking a service token", "Revoke service token "+args[0]+"? Everything using it stops working, including a secret still in its rotation overlap, and the VMs it created are deleted."); err != nil {
 				return err
 			}
 		}
@@ -893,7 +899,7 @@ func newServiceTokenRevokeAll(d Dependencies) *cobra.Command {
 		}
 		label = output.CellText(label)
 		if !yes {
-			if err = confirmMutation(cmd.Context(), d, "revoking every service token", "Revoke every service token of organization "+label+"? Everything using them stops working."); err != nil {
+			if err = confirmMutation(cmd.Context(), d, "revoking every service token", "Revoke every service token of organization "+label+"? Everything using them stops working, and the VMs they created are deleted."); err != nil {
 				return err
 			}
 		}

@@ -120,22 +120,31 @@ func TestServiceTokenRootOwnedVMLimit(t *testing.T) {
 
 func TestServiceTokenSetAccessVMLimit(t *testing.T) {
 	current := manageRecord(map[string]any{"vm_cap": 3})
+	repoA := []any{manageGrant("repository", manageRepoA)}
 	for _, tc := range []struct {
-		name string
-		args []string
-		cap  any
-		set  bool
+		name   string
+		args   []string
+		grants []any
+		cap    any
+		set    bool
 	}{
-		{"omitted keeps the limit", nil, nil, false},
-		{"a new limit", []string{"--vm-create-limit", "4"}, float64(4), true},
-		{"withdrawn", []string{"--no-vm-create", "--yes"}, nil, true},
+		{"omitted keeps the limit", []string{"--repo", manageRepoA}, repoA, nil, false},
+		{"a new limit", []string{"--repo", manageRepoA, "--vm-create-limit", "4"}, repoA, float64(4), true},
+		{"withdrawn", []string{"--repo", manageRepoA, "--no-vm-create", "--yes"}, repoA, nil, true},
+		// A token holding only its VMs is a valid replacement.
+		{"withdrawn alone", []string{"--no-vm-create", "--yes"}, []any{}, nil, true},
+		{"with VM grants", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), nil, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
-			if code := h.run(t, append([]string{"service-token", "set-access", manageTokenID, "--repo", manageRepoA}, tc.args...)...); code != 0 {
+			if code := h.run(t, append([]string{"service-token", "set-access", manageTokenID}, tc.args...)...); code != 0 {
 				t.Fatal(code, h.stderr)
 			}
-			checkVMCap(t, h.requests[len(h.requests)-1].body, tc.cap, tc.set)
+			body := h.requests[len(h.requests)-1].body
+			checkVMCap(t, body, tc.cap, tc.set)
+			if manageJSON(t, body["grants"]) != manageJSON(t, tc.grants) || body["expected_grants_version"] != float64(7) {
+				t.Fatal(body)
+			}
 		})
 	}
 }
@@ -154,7 +163,7 @@ func TestServiceTokenSetAccessListsRemovals(t *testing.T) {
 		{"covered by every VM", append(slices.Clone(keep), "--all-vms", "write"), nil},
 		{"a higher limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--vm-create-limit", "9"), nil},
 		{"a lowered VM", append(slices.Clone(keep), "--vm", manageVMA), []string{"VM " + manageVMA + " lowered from write to read"}},
-		{"every VM at read does not cover write", append(slices.Clone(keep), "--all-vms", "read"), []string{"VM " + manageVMA + " at write"}},
+		{"every VM at read lowers write", append(slices.Clone(keep), "--all-vms", "read"), []string{"VM " + manageVMA + " lowered from write to read"}},
 		{"a dropped repository and rule", []string{"--vm", manageVMA + ":write"}, []string{"repository " + manageRepoA + " at read", "every firewall rule at read"}},
 		{"a lowered limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--vm-create-limit", "2"), []string{"VM cap lowered from 5 to 2"}},
 		{"a withdrawn limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--no-vm-create"), []string{"permission to create VMs (up to 5)"}},
@@ -268,7 +277,12 @@ func TestTokenGrantsSummaryCountsServiceTokenVMs(t *testing.T) {
 	}{
 		{map[string]any{"vm_cap": float64(5), "vm_count": float64(2)}, "VM create 2/5"},
 		{map[string]any{"vm_cap": float64(5)}, "VM create 0/5"},
-		{map[string]any{"grants": []any{manageVMGrant(manageVMA, "write")}, "vm_cap": nil, "vm_count": float64(1)}, "1 VM"},
+		// The token administers the VMs it created after its limit is gone.
+		{map[string]any{"grants": []any{manageVMGrant(manageVMA, "write")}, "vm_cap": nil, "vm_count": float64(1)}, "1 VM, 1 VM still owned"},
+		{map[string]any{"vm_cap": nil, "vm_count": float64(2)}, "2 VMs still owned"},
+		{map[string]any{"vm_cap": nil, "vm_count": float64(0)}, "-"},
+		// A scoped token's create count is not VMs it owns.
+		{map[string]any{"allow_vm_create": false, "vm_create_count": float64(2)}, "-"},
 	} {
 		if got := tokenGrantsSummary(tc.row); got != tc.want {
 			t.Errorf("%v: %q != %q", tc.row, got, tc.want)
@@ -306,11 +320,11 @@ var serviceTokenVMRoutes = func() map[string]string {
 		"GET /orgs/{org_id}/vms":                                `{"data":[` + vm + `],"pagination":{"next_cursor":null}}`,
 		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{}}`,
 		"GET /orgs/{org_id}/vms/{vm_id}":                        `{"data":` + vm + `}`,
-		"GET /orgs/{org_id}/vms/{vm_id}/metrics":                `{"data":{"samples":[]}}`,
-		"PATCH /orgs/{org_id}/vms/{vm_id}":                      `{"data":` + vm + `}`,
+		"GET /orgs/{org_id}/vms/{vm_id}/metrics":                `{"data":{"running":true,"metrics":{"cpu":{"series":[]}}}}`,
+		"PATCH /orgs/{org_id}/vms/{vm_id}":                      `{"data":{"vm":` + vm + `}}`,
 		"POST /orgs/{org_id}/vms/{vm_id}/pause":                 `{"data":` + vm + `}`,
 		"POST /orgs/{org_id}/vms/{vm_id}/https-label-rotations": `{"data":` + vm + `}`,
-		"DELETE /orgs/{org_id}/vms/{vm_id}":                     `{"data":` + vm + `}`,
+		"DELETE /orgs/{org_id}/vms/{vm_id}":                     `{"data":{"customer_vm_id":"` + manageVMA + `","state":"DELETING"}}`,
 	}
 }()
 
@@ -321,25 +335,32 @@ func serviceTokenVMRoute(method, path string) string {
 }
 
 // The service-token help names the avr vm commands a service token runs.
-// Each must reach only the routes open to it, including name lookups.
+// Each must send its own request, reach only the routes open to it,
+// including name lookups, and show the answer.
 func TestServiceTokenVMCommands(t *testing.T) {
-	for _, args := range [][]string{
-		{"vm", "create", "--os", "linux", "--size", "small"},
-		{"vm", "list"},
-		{"vm", "capabilities"},
-		{"vm", "show", manageVMA},
-		{"vm", "show", "box"},
-		{"vm", "metrics", manageVMA},
-		{"vm", "update", manageVMA, "--ttl", "2h"},
-		{"vm", "pause", manageVMA},
-		{"vm", "rotate-https-label", manageVMA},
-		{"vm", "delete", manageVMA, "--yes"},
+	vms := "/orgs/" + inspectionOrg + "/vms"
+	vm := vms + "/" + manageVMA
+	for _, tc := range []struct {
+		args      []string
+		sent, out string
+	}{
+		{[]string{"vm", "create", "--os", "linux", "--size", "small"}, "POST " + vms, manageVMA},
+		{[]string{"vm", "list"}, "GET " + vms, "box"},
+		{[]string{"vm", "capabilities"}, "GET " + vms + "/capabilities", ""},
+		{[]string{"vm", "show", manageVMA}, "GET " + vm, "box"},
+		// The API resolves a name in the VM's place in the path.
+		{[]string{"vm", "show", "box"}, "GET " + vms + "/box", manageVMA},
+		{[]string{"vm", "metrics", manageVMA, "--json"}, "GET " + vm + "/metrics", `"cpu"`},
+		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, "PATCH " + vm, "box"},
+		{[]string{"vm", "pause", manageVMA}, "POST " + vm + "/pause", "box"},
+		{[]string{"vm", "rotate-https-label", manageVMA}, "POST " + vm + "/https-label-rotations", ""},
+		{[]string{"vm", "delete", manageVMA, "--yes"}, "DELETE " + vm, "is now DELETING"},
 	} {
-		t.Run(strings.Join(args, " "), func(t *testing.T) {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
 			var violations []string
 			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
-			if code := h.run(t, args...); code != 0 || len(violations) != 0 {
-				t.Fatal(code, violations, h.requests, h.stderr)
+			if code := h.run(t, tc.args...); code != 0 || len(violations) != 0 || !slices.Contains(h.requests, tc.sent) || !strings.Contains(h.out.String(), tc.out) {
+				t.Fatal(code, violations, h.requests, h.out, h.stderr)
 			}
 		})
 	}

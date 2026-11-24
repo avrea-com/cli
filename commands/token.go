@@ -262,6 +262,12 @@ func tokenGrantsSummary(row map[string]any) string {
 			label += " " + used + "/" + pythonValue(limit)
 		}
 		parts = append(parts, label)
+	} else if owned := serviceTokenOwnedVMs(row); owned != "" {
+		label := "VM"
+		if owned != "1" {
+			label += "s"
+		}
+		parts = append(parts, owned+" "+label+" still owned")
 	}
 	if len(parts) == 0 {
 		return "-"

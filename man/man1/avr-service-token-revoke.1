@@ -7,7 +7,7 @@ avr-service-token-revoke \- Revoke a service token.
 .SH DESCRIPTION
 Revoke a service token.
 .PP
-Its current secret and any old secret still in its rotation overlap stop working on their next request, and its grants are removed. Revoking a token that is already revoked succeeds.
+Its current secret and any old secret still in its rotation overlap stop working on their next request, its grants are removed, and the VMs it created are deleted. Revoking a token that is already revoked succeeds.
 .PP
 .RS 4
 .nf

@@ -563,6 +563,10 @@ func TestServiceTokenRevokeConfirmation(t *testing.T) {
 			h.d.In = strings.NewReader(tc.input)
 			h.d.Getenv = func(key string) string { return tc.env[key] }
 			code := h.run(t, append([]string{"service-token", "revoke", manageTokenID}, tc.args...)...)
+			// Revoking deletes the VMs the token created, so the question says so.
+			if asked := strings.Contains(h.out.String(), "Revoke service token "+manageTokenID+"?"); asked && !strings.Contains(h.out.String(), "the VMs it created are deleted") {
+				t.Fatal(h.out)
+			}
 			if tc.revoked {
 				if code != 0 || !slices.Equal(h.operations(), []string{"DELETE " + manageBase + "/" + manageTokenID}) || !strings.Contains(h.out.String(), "Service token "+manageTokenID+" revoked.") {
 					t.Fatal(code, h.operations(), h.out, h.stderr)
@@ -592,7 +596,7 @@ func TestServiceTokenRevokeAllConfirmationNamesOrganization(t *testing.T) {
 			h.d.In = strings.NewReader(tc.input)
 			code := h.run(t, append([]string{"service-token", "revoke-all"}, tc.args...)...)
 			prompted := strings.Contains(h.out.String(), "Revoke every service token of organization acme ("+inspectionOrg+")?")
-			if prompted == slices.Contains(tc.args, "--yes") {
+			if prompted == slices.Contains(tc.args, "--yes") || prompted && !strings.Contains(h.out.String(), "the VMs they created are deleted") {
 				t.Fatal("prompt", h.out)
 			}
 			writes := slices.DeleteFunc(h.operations(), func(op string) bool { return strings.HasPrefix(op, "GET ") })
