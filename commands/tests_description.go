@@ -32,7 +32,9 @@ func testsDescription(path string) docgen.Description {
 				"Unknown counts stay unknown. Use --summary for counts and collection state\n" +
 				"without downloading results; it cannot combine with test filters, --cursor\n" +
 				"or an explicit --limit. Indexing, unavailable and limited listings do not\n" +
-				"mean no tests were reported.\n",
+				"mean no tests were reported.\n" +
+				"\n" +
+				jsonFieldsHelp(testResultFields),
 			Short:          "Read one job's latest confirmed execution, including repeated tests.",
 			CompletionHelp: "Read one job's latest confirmed execution,...",
 			Usage:          []string{"[OPTIONS]", "RUN_OR_JOB"},
@@ -69,7 +71,9 @@ func testsDescription(path string) docgen.Description {
 				"\n" +
 				"Read a row's failure message with avr tests JOB --status failed, and\n" +
 				"its earlier runs with avr tests history. Use --json '*' for test IDs,\n" +
-				"configuration digests and result IDs.\n",
+				"configuration digests and result IDs.\n" +
+				"\n" +
+				jsonFieldsHelp(testSearchFields),
 			Short:          "Search the tests recorded for a repository.",
 			CompletionHelp: "Search the tests recorded for a repository.",
 			Usage:          []string{"[OPTIONS]", "[QUERY]"},
@@ -99,7 +103,9 @@ func testsDescription(path string) docgen.Description {
 				"avr tests JOB --test NAME to read its failure message.\n" +
 				"\n" +
 				"Reports still being prepared are marked; a read that stops early does\n" +
-				"not mean the test never ran. Continue with --cursor for older runs.\n",
+				"not mean the test never ran. Continue with --cursor for older runs.\n" +
+				"\n" +
+				jsonFieldsHelp(testHistoryFields),
 			Short:          "Read one test's recorded runs in a repository, newest first.",
 			CompletionHelp: "Read one test's recorded runs in a repository,...",
 			Usage:          []string{"[OPTIONS]", "TEST"},

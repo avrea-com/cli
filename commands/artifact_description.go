@@ -7,7 +7,9 @@ func artifactDescription(path string) docgen.Description {
 	switch path {
 	case "avr artifact delete":
 		return docgen.Description{
-			Help:  "Delete ART_ID from the selected repository.",
+			Help: "Delete ART_ID from the selected repository.\n" +
+				"\n" +
+				jsonFieldsHelp(artifactDeleteFields),
 			Short: "Delete ART_ID from the selected repository.",
 			Usage: []string{"[OPTIONS]", "ART_ID"},
 			Parameters: []docgen.Parameter{
@@ -21,7 +23,9 @@ func artifactDescription(path string) docgen.Description {
 		}
 	case "avr artifact download":
 		return docgen.Description{
-			Help:           "Download ART_ID and verify its size and SHA-256 before replacing the destination.",
+			Help: "Download ART_ID and verify its size and SHA-256 before replacing the destination.\n" +
+				"\n" +
+				jsonFieldsHelp(artifactDownloadFields),
 			Short:          "Download ART_ID and verify its size and SHA-256 before replacing the destination.",
 			CompletionHelp: "Download ART_ID and verify its size and...",
 			Usage:          []string{"[OPTIONS]", "ART_ID"},
@@ -36,7 +40,9 @@ func artifactDescription(path string) docgen.Description {
 		}
 	case "avr artifact get":
 		return docgen.Description{
-			Help:           "Get metadata for ART_ID in the selected repository.",
+			Help: "Get metadata for ART_ID in the selected repository.\n" +
+				"\n" +
+				jsonFieldsHelp(artifactFields),
 			Short:          "Get metadata for ART_ID in the selected repository.",
 			CompletionHelp: "Get metadata for ART_ID in the selected...",
 			Usage:          []string{"[OPTIONS]", "ART_ID"},
@@ -50,7 +56,9 @@ func artifactDescription(path string) docgen.Description {
 		}
 	case "avr artifact list":
 		return docgen.Description{
-			Help:           "List artifacts in REPO, optionally restricted to one run.",
+			Help: "List artifacts in REPO, optionally restricted to one run.\n" +
+				"\n" +
+				jsonFieldsHelp(artifactFields),
 			Short:          "List artifacts in REPO, optionally restricted to one run.",
 			CompletionHelp: "List artifacts in REPO, optionally...",
 			Usage:          []string{"[OPTIONS]", "REPO"},

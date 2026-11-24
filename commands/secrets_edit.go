@@ -13,6 +13,7 @@ func newConfigurationEdit(d Dependencies, kind string) *cobra.Command {
 	o := configurationOptions{}
 	var description string
 	c := &cobra.Command{Use: "edit NAME", Short: "Edit description, label, or availability without replacing a value.", Args: positionalArguments("NAME")}
+	c.Long = c.Short + "\n\n" + jsonFieldsHelp(configurationResultFields)
 	o.contextFlags(c)
 	o.selectionFlags(c)
 	o.availabilityFlags(c, true)
@@ -130,6 +131,7 @@ func newConfigurationDelete(d Dependencies, kind string) *cobra.Command {
 	o := configurationOptions{}
 	var all, yes bool
 	c := &cobra.Command{Use: "delete NAME", Short: "Delete one scoped value, or the whole name with --all.", Args: positionalArguments("NAME")}
+	c.Long = c.Short + "\n\n" + jsonFieldsHelp(configurationResultFields)
 	o.contextFlags(c)
 	o.selectionFlags(c)
 	c.Flags().BoolVar(&all, "all", false, "Delete the name and all of its scoped values.")

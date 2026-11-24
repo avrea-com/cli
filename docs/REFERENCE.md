@@ -94,6 +94,11 @@ Delete ART_ID from the selected repository.
 avr artifact delete [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    deleted, id
+```
+
 **Arguments**
 
 - `ART_ID`
@@ -112,6 +117,11 @@ Download ART_ID and verify its size and SHA-256 before replacing the destination
 
 ```sh
 avr artifact download [OPTIONS] ART_ID
+```
+
+```sh
+JSON FIELDS
+    digest_sha256, id, path, size_bytes
 ```
 
 **Arguments**
@@ -134,6 +144,13 @@ Get metadata for ART_ID in the selected repository.
 avr artifact get [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
+```
+
 **Arguments**
 
 - `ART_ID`
@@ -151,6 +168,13 @@ List artifacts in REPO, optionally restricted to one run.
 
 ```sh
 avr artifact list [OPTIONS] REPO
+```
+
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
 ```
 
 **Arguments**
@@ -1445,8 +1469,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, median_duration_seconds, name,
-    path, platform_workflow_id, repository, runs, workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count,
+    median_duration_seconds, name, path, platform_workflow_id, repository,
+    runs, workflow_id
 ```
 
 **Options**
@@ -1537,9 +1562,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, jobs, median_duration_seconds,
-    name, p95_duration_seconds, path, platform_workflow_id, repository, runs,
-    workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count, jobs,
+    median_duration_seconds, name, p95_duration_seconds, path,
+    platform_workflow_id, repository, runs, workflow_id
 ```
 
 **Arguments**
@@ -1695,6 +1720,12 @@ avr tests JOB --test NAME to read its failure message.
 Reports still being prepared are marked; a read that stops early does
 not mean the test never ran. Continue with --cursor for older runs.
 
+```sh
+JSON FIELDS
+    configuration_digest, data, identity, organization_id, pagination,
+    repository_id, scope, status, test_id
+```
+
 **Arguments**
 
 - `TEST`
@@ -1742,6 +1773,13 @@ without downloading results; it cannot combine with test filters, --cursor
 or an explicit --limit. Indexing, unavailable and limited listings do not
 mean no tests were reported.
 
+```sh
+JSON FIELDS
+    commit_sha, counts, data, execution_id, filters, job_id, observed_at,
+    organization_id, pagination, reason, reporting_state, repository_id,
+    status, total_count
+```
+
 **Arguments**
 
 - `RUN_OR_JOB`
@@ -1785,6 +1823,12 @@ test absent from an incomplete search may still be recorded.
 Read a row's failure message with avr tests JOB --status failed, and
 its earlier runs with avr tests history. Use --json '*' for test IDs,
 configuration digests and result IDs.
+
+```sh
+JSON FIELDS
+    data, filters, organization_id, pagination, repository_id, scope, status,
+    truncated
+```
 
 **Arguments**
 
@@ -4429,6 +4473,14 @@ Examples:
     avr org saml enforcement off --org acme
 ```
 
+```sh
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+```
+
 **Arguments**
 
 - `STATE` _(choices: `on`, `off`)_
@@ -4534,6 +4586,11 @@ Examples:
     avr health --json '*' -q '.status'
 ```
 
+```sh
+JSON FIELDS
+    status
+```
+
 **Options**
 
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -4599,6 +4656,11 @@ Examples:
     avr feedback --bug "Run logs are missing"
     avr feedback status FEEDBACK_ID
 
+```sh
+JSON FIELDS
+    created_at, id, idempotency_key, status
+```
+
 **Arguments**
 
 - `[MESSAGE]`
@@ -4617,6 +4679,11 @@ Read the delivery status of your feedback.
 
 ```sh
 avr feedback status [OPTIONS] FEEDBACK_ID
+```
+
+```sh
+JSON FIELDS
+    created_at, id, status
 ```
 
 **Arguments**
@@ -4644,6 +4711,12 @@ Delete one scoped value, or the whole name with --all.
 avr secret delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4665,6 +4738,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr secret edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4699,6 +4778,11 @@ Inspect a secret.
 avr secret get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Arguments**
 
 - `NAME`
@@ -4721,6 +4805,11 @@ List names, scoped-value counts, and update times.
 avr secret list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Options**
 
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
@@ -4734,6 +4823,12 @@ Create or replace a scoped value.
 
 ```sh
 avr secret set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4775,6 +4870,12 @@ Delete one scoped value, or the whole name with --all.
 avr variable delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4796,6 +4897,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr variable edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4830,6 +4937,13 @@ Inspect a variable.
 avr variable get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, current_version, current_version_created_at,
+    current_version_id, has_value, label, updated_at, value,
+    variable_variant_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4851,6 +4965,11 @@ List names, scoped-value counts, and update times.
 avr variable list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    description, name, updated_at, variable_id, variants
+```
+
 **Options**
 
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
@@ -4864,6 +4983,12 @@ Create or replace a scoped value.
 
 ```sh
 avr variable set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**

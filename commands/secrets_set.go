@@ -88,6 +88,7 @@ func newConfigurationSet(d Dependencies, kind string) *cobra.Command {
 	var body, envFile, description, valueType string
 	wait := 30 * time.Second
 	c := &cobra.Command{Use: "set [NAME]", Short: "Create or replace a scoped value.", Args: cobra.MaximumNArgs(1)}
+	c.Long = c.Short + "\n\n" + jsonFieldsHelp(configurationResultFields)
 	o.contextFlags(c)
 	o.selectionFlags(c)
 	o.availabilityFlags(c, false)

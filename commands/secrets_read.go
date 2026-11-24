@@ -83,6 +83,7 @@ func newConfigurationRead(d Dependencies, kind string, get bool) *cobra.Command 
 			fields = variableValueFields
 		}
 	}
+	c.Long = c.Short + "\n\n" + jsonFieldsHelp(fields)
 	o.contextFlags(c)
 	c.RunE = run(func(c *cobra.Command, args []string) error {
 		available := fields

@@ -1,12 +1,33 @@
 package commands
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/avrea-com/cli/docgen"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func descriptionText(value string) *string { return &value }
+
+// jsonFieldsHelp is the JSON FIELDS section of a command's help: the fields
+// --json accepts, sorted and wrapped.
+func jsonFieldsHelp(fields []string) string {
+	var lines []string
+	line := ""
+	for _, field := range slices.Sorted(slices.Values(fields)) {
+		switch {
+		case line == "":
+			line = field
+		case len(line)+2+len(field) > 72:
+			lines = append(lines, line+",")
+			line = field
+		default:
+			line += ", " + field
+		}
+	}
+	return "\b\nJSON FIELDS\n    " + strings.Join(append(lines, line), "\n    ") + "\n"
+}
 
 // Description supplies Go-owned prose and semantic metadata lazily. Command
 // membership, executable flags, defaults and aliases come from the live tree.

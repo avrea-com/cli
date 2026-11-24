@@ -40,7 +40,8 @@ func NewFeedback(deps Dependencies) *cobra.Command {
 			"Examples:\n" +
 			"    avr feedback \"Please support Lambda Cloud\"\n" +
 			"    avr feedback --bug \"Run logs are missing\"\n" +
-			"    avr feedback status FEEDBACK_ID",
+			"    avr feedback status FEEDBACK_ID\n\n" +
+			jsonFieldsHelp(feedbackSubmitFields),
 	}
 	c.Flags().BoolVar(&bug, "bug", false, "Mark the feedback as a bug report.")
 	c.Flags().StringVarP(&org, "org", "o", "", "Attribute feedback to this organization slug or ID.")
@@ -128,7 +129,7 @@ func feedbackSubmissionError(cfg config.Config, err error, key string) error {
 
 func newFeedbackStatus(d Dependencies) *cobra.Command {
 	var o jsonOptions
-	c := &cobra.Command{Use: "status FEEDBACK_ID", Short: "Read the delivery status of your feedback.", Args: positionalArguments("FEEDBACK_ID")}
+	c := &cobra.Command{Use: "status FEEDBACK_ID", Short: "Read the delivery status of your feedback.", Args: positionalArguments("FEEDBACK_ID"), Long: "Read the delivery status of your feedback.\n\n" + jsonFieldsHelp(feedbackFields)}
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if done, err := o.prepare(cmd, d, feedbackFields); done || err != nil {

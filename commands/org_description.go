@@ -464,7 +464,9 @@ func orgDescription(path string) docgen.Description {
 				"\b\n" +
 				"Examples:\n" +
 				"    avr org saml enforcement on\n" +
-				"    avr org saml enforcement off --org acme\n",
+				"    avr org saml enforcement off --org acme\n" +
+				"\n" +
+				jsonFieldsHelp(samlFields),
 			Short:          "Enable or disable mandatory SAML sign-in (admin only).",
 			CompletionHelp: "Enable or disable mandatory SAML sign-in...",
 			Usage:          []string{"[OPTIONS]", "{on|off}"},

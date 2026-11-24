@@ -19,6 +19,12 @@ Delete one scoped value, or the whole name with --all.
 avr variable delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - <code class="cli-arg">NAME</code>
@@ -40,6 +46,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr variable edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -74,6 +86,13 @@ Inspect a variable.
 avr variable get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, current_version, current_version_created_at,
+    current_version_id, has_value, label, updated_at, value,
+    variable_variant_id
+```
+
 **Arguments**
 
 - <code class="cli-arg">NAME</code>
@@ -95,6 +114,11 @@ List names, scoped-value counts, and update times.
 avr variable list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    description, name, updated_at, variable_id, variants
+```
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;jq, -q</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter JSON with an embedded jq expression.
@@ -108,6 +132,12 @@ Create or replace a scoped value.
 
 ```sh
 avr variable set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**

@@ -13,7 +13,9 @@ func healthDescription(path string) docgen.Description {
 				"Examples:\n" +
 				"    avr health\n" +
 				"    avr health --json status\n" +
-				"    avr health --json '*' -q '.status'\n",
+				"    avr health --json '*' -q '.status'\n" +
+				"\n" +
+				jsonFieldsHelp(healthFields),
 			Short: "Check Avrea platform status.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},

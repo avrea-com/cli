@@ -560,6 +560,14 @@ Examples:
     avr org saml enforcement off --org acme
 ```
 
+```sh
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
+```
+
 **Arguments**
 
 - <code class="cli-arg">STATE</code> _(choices: `on`, `off`)_

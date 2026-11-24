@@ -12,6 +12,14 @@ TEST is a test name. An exact name is preferred over tests that only contain it.
 Each row is one report: how often the test passed, failed, errored or was skipped in it, the mean recorded duration (none when the test recorded no duration) and the job that ran it. Open a row's job with avr tests JOB --test NAME to read its failure message.
 .PP
 Reports still being prepared are marked; a read that stops early does not mean the test never ran. Continue with --cursor for older runs.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    configuration_digest, data, identity, organization_id, pagination,
+    repository_id, scope, status, test_id
+.fi
+.RE
 .SH ARGUMENTS
 .TP
 \fITEST\fR
