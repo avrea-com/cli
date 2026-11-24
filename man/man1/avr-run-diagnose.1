@@ -7,7 +7,7 @@ avr-run-diagnose \- Explain a failed or unexpectedly slow workflow run.
 .SH DESCRIPTION
 Explain a failed or unexpectedly slow workflow run.
 .PP
-RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`. A job URL selects that job's attempt; the report still covers the whole attempt. The report combines jobs and failed steps, bounded failed-job log tails, queue/execution timings, runner metrics, and a prior-success workflow baseline.
+RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as `avr run view`. A job URL selects that job's attempt; the report still covers the whole attempt. The report combines jobs and failed steps, bounded failed-job log tails, queue/execution timings, runner metrics, and a prior-success workflow baseline. RUN already selects the run; --repo only checks that the run belongs to that repository.
 .PP
 .RS 4
 .nf
@@ -26,6 +26,9 @@ Examples:
 .TP
 \fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository (org/repo or rep-xxx) the run must belong to.
 .TP
 \fB\-\-json\fR
 Output the diagnostic report as JSON.

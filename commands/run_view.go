@@ -15,12 +15,13 @@ var runViewFields = append(append([]string{}, runFields...), "jobs")
 
 func newRunView(d Dependencies) *cobra.Command {
 	var options jsonOptions
-	var org, jobFilter string
+	var org, repo, jobFilter string
 	var steps, logs, failed, web, noPager bool
 	cmd := &cobra.Command{Use: "view [RUN]", Short: "View a workflow run and its jobs.", Args: cobra.MaximumNArgs(1)}
 	options.flags(cmd)
 	f := cmd.Flags()
 	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	f.StringVarP(&repo, "repo", "R", "", "Repository name or ID the run must belong to; without RUN, list its runs.")
 	f.StringVar(&jobFilter, "job", "", "Restrict jobs and logs to names containing this text.")
 	f.BoolVar(&steps, "steps", false, "Show individual job steps.")
 	f.BoolVar(&logs, "log", false, "Print full logs for the selected jobs.")
@@ -32,6 +33,9 @@ func newRunView(d Dependencies) *cobra.Command {
 			return &ExitError{2, "Error: --web cannot be combined with --json."}
 		}
 		if done, err := options.prepare(cmd, d, runViewFields); done || err != nil {
+			return err
+		}
+		if err := validateRunRepository(repo); err != nil {
 			return err
 		}
 		cfg, _, api, err := d.load()
@@ -46,7 +50,15 @@ func newRunView(d Dependencies) *cobra.Command {
 			if e != nil {
 				return e
 			}
-			page, e := api.Runs(cmd.Context(), id, url.Values{"limit": {"10"}, "order": {"created_at.desc"}, "include": {"jobs"}})
+			query := url.Values{"limit": {"10"}, "order": {"created_at.desc"}, "include": {"jobs"}}
+			if repo != "" {
+				repositoryID, e := resolveRepository(cmd.Context(), d, cfg, api, id, repo, "")
+				if e != nil {
+					return e
+				}
+				query.Set("repository_ids", repositoryID)
+			}
+			page, e := api.Runs(cmd.Context(), id, query)
 			if e != nil {
 				return apiError(cfg, e, "list workflow runs")
 			}
@@ -72,6 +84,9 @@ func newRunView(d Dependencies) *cobra.Command {
 		}
 		record, err := resolveRun(cmd.Context(), cfg, api, id, ref, []string{"jobs", "workflow"}, "get workflow run")
 		if err != nil {
+			return err
+		}
+		if err = requireRunRepository(record, repo); err != nil {
 			return err
 		}
 		fields := record

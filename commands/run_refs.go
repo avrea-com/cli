@@ -10,6 +10,7 @@ import (
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
+	"github.com/avrea-com/cli/output"
 )
 
 var runIDPattern = lazyRegexp(`^run-[0-9a-f]{32}$`)
@@ -207,6 +208,42 @@ func resolveRun(ctx context.Context, cfg config.Config, api *client.Client, org 
 		}
 	}
 	return record, nil
+}
+
+// validateRunRepository checks the shape of --repo before any run is fetched.
+func validateRunRepository(repo string) error {
+	if repo == "" || repositoryIDPattern().MatchString(repo) {
+		return nil
+	}
+	parts := strings.Split(repo, "/")
+	if len(parts) < 2 {
+		return invalidRepositoryFormat(repo)
+	}
+	for _, part := range parts {
+		if part == "." || part == ".." || !repoPart().MatchString(part) {
+			return invalidRepositoryFormat(repo)
+		}
+	}
+	return nil
+}
+
+// requireRunRepository rejects a run outside the repository named by a
+// validated --repo. A run reference already selects one run, so the flag only
+// confirms it.
+func requireRunRepository(record map[string]any, repo string) error {
+	if repo == "" {
+		return nil
+	}
+	repository, _ := record["repository"].(map[string]any)
+	id, name := fieldText(record, "repository_id"), fieldText(repository, "full_name")
+	matches := id == repo
+	if strings.Contains(repo, "/") {
+		matches = strings.EqualFold(name, repo)
+	}
+	if matches {
+		return nil
+	}
+	return &ExitError{1, fmt.Sprintf("Error: Run %s belongs to repository %s, not --repo %s.", output.CellText(fieldText(record, "run_id")), pythonQuote(name), pythonQuote(repo))}
 }
 
 // A job URL identifies an attempt by its jobs, never by the latest-run fallback.

@@ -32,7 +32,8 @@ Once per session, before any other command:
   `run list` shows organization-wide runs when the detected repository is not
   in the organization.
 - A run argument accepts an Avrea run ID, a GitHub run ID, or a GitHub Actions
-  run or job URL.
+  run or job URL. It already selects the run: `--repo` on `run view` and
+  `run diagnose` only checks that the run belongs to that repository.
 - Status 4 means authentication is required or the credential was rejected;
   follow Start here. Status 2 is a usage error, 1 a general failure and 130 an
   interrupt.

@@ -32,7 +32,8 @@ func runDescription(path string) docgen.Description {
 				"`avr run view`. A job URL selects that job's attempt; the report still\n" +
 				"covers the whole attempt. The report combines jobs and failed steps, bounded\n" +
 				"failed-job log tails, queue/execution timings, runner metrics, and a\n" +
-				"prior-success workflow baseline.\n" +
+				"prior-success workflow baseline. RUN already selects the run; --repo only\n" +
+				"checks that the run belongs to that repository.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -46,6 +47,7 @@ func runDescription(path string) docgen.Description {
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "run", Kind: "argument", Opts: []string{"run"}, Type: "text", Required: true, Nargs: 1}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug.")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "repo", Kind: "option", Opts: []string{"--repo"}, Type: "text", Nargs: 1, Help: descriptionText("Repository (org/repo or rep-xxx) the run must belong to.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "json_output", Kind: "option", Opts: []string{"--json"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Output the diagnostic report as JSON.")}, CompletionKind: "Bool"},
 			},
 		}
@@ -154,6 +156,8 @@ func runDescription(path string) docgen.Description {
 				"RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions\n" +
 				"run or job URL, or an Avrea console run URL. A job URL opens the attempt\n" +
 				"that job belongs to. Without RUN, shows 10 most recent runs.\n" +
+				"RUN already selects the run; --repo only checks that the run belongs to\n" +
+				"that repository, and narrows the recent runs when RUN is omitted.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -179,6 +183,7 @@ func runDescription(path string) docgen.Description {
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "run", Kind: "argument", Opts: []string{"run"}, Type: "text", Nargs: 1}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug.")}, CompletionKind: "String"},
+				{Param: docgen.Param{Name: "repo", Kind: "option", Opts: []string{"--repo"}, Type: "text", Nargs: 1, Help: descriptionText("Repository (org/repo or rep-xxx) the run must belong to. Without RUN, show its recent runs.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "show_steps", Kind: "option", Opts: []string{"--steps"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Expand each job to show its individual steps.")}, CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "show_log", Kind: "option", Opts: []string{"--log"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Print full logs for all jobs.")}, CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "log_failed", Kind: "option", Opts: []string{"--log-failed"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Print logs only for failed steps.")}, CompletionKind: "Bool"},
