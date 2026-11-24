@@ -18,22 +18,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var serviceTokenFields = []string{"id", "organization_id", "group_id", "created_by", "name", "created_at", "expires_at", "expiring_soon", "status", "rotated_at", "rotation_version", "grants_version", "previous_valid_until", "last_used_at", "revoked_at", "revoked_reason", "grants", "blocked_by"}
+var serviceTokenFields = []string{"id", "organization_id", "group_id", "created_by", "name", "created_at", "expires_at", "expiring_soon", "status", "rotated_at", "rotation_version", "grants_version", "previous_valid_until", "last_used_at", "revoked_at", "revoked_reason", "grants", "vm_cap", "vm_count", "blocked_by"}
 var serviceTokenSecretFields = append(slices.Clone(serviceTokenFields), "token")
 var serviceTokenGroupPattern = lazyRegexp("^grp-[0-9a-f]{32}$")
 var serviceTokenRulePattern = lazyRegexp("^efr-[0-9a-f]{32}$")
+var serviceTokenVMPattern = lazyRegexp("^cvm-[0-9a-f]{32}$")
 
-// Bounds the service-token API sets on lifetimes, overlaps, versions and
-// grants.
+// serviceTokenLevels are the levels a grant takes, lowest first. Only a VM
+// takes write; admin on a VM follows its creator and is never granted.
+var serviceTokenLevels = []string{"read", "write"}
+
+// Bounds the service-token API sets on lifetimes, overlaps, versions, grants
+// and the VM cap.
 const (
 	serviceTokenMaxLifetime = 90 * 24 * 60 * 60
 	serviceTokenMinOverlap  = 60 * 60
 	serviceTokenMaxOverlap  = 7 * 24 * 60 * 60
 	serviceTokenMaxVersion  = 1<<31 - 1
 	serviceTokenMaxGrants   = 100
+	serviceTokenMaxVMCap    = 1<<31 - 1
 )
 
-const serviceTokenGrantOrderHint = "grants[N] counts from 0 after repositories are resolved and duplicates removed: the --repo values first, then the --firewall-rule values in the order given, or --all-firewall-rules."
+const serviceTokenGrantOrderHint = "grants[N] counts from 0 after repositories are resolved and duplicates removed: the --repo values first, then the --firewall-rule values in the order given or --all-firewall-rules, then the --vm values in the order given and --all-vms last."
 
 // NewServiceToken exposes the management of an organization's group-owned
 // service tokens to a signed-in organization admin.
@@ -67,6 +73,7 @@ type serviceTokenRefusal struct {
 	grants    bool   // the request carried grants, so a refusal may name one
 	notFound  string // 404
 	stale     string // 409 without Retry-After
+	rootOwned string // 422 refusing a VM cap to a token of the root group
 	unchanged string // 503 the API answers before it writes
 	unknown   string // another 5xx: the write may have happened
 }
@@ -82,21 +89,29 @@ var serviceTokenUnwritten = []string{
 	"Delegation authorization is not ready",
 }
 
-// refusalNamesGrant reports whether the API's answer points at one grant: a
-// validation error located in grants, or a refusal that starts with grants[N].
-func refusalNamesGrant(he *client.HTTPError) bool {
-	if strings.HasPrefix(he.Detail, "grants[") {
-		return true
-	}
+// refusalAt returns the first validation error the API located in field of
+// the request body, or nil.
+func refusalAt(he *client.HTTPError, field string) map[string]any {
 	details, _ := he.Payload["detail"].([]any)
 	for _, detail := range details {
 		entry, _ := detail.(map[string]any)
 		loc, _ := entry["loc"].([]any)
-		if len(loc) > 1 && loc[1] == "grants" {
-			return true
+		if len(loc) > 1 && loc[1] == field {
+			return entry
 		}
 	}
-	return false
+	return nil
+}
+
+// refusalType is the type of the validation error located in field, or "".
+func refusalType(he *client.HTTPError, field string) string {
+	return fieldText(refusalAt(he, field), "type")
+}
+
+// refusalNamesGrant reports whether the API's answer points at one grant: a
+// validation error located in grants, or a refusal that starts with grants[N].
+func refusalNamesGrant(he *client.HTTPError) bool {
+	return refusalAt(he, "grants") != nil || strings.HasPrefix(he.Detail, "grants[")
 }
 
 // timestampAfter reports whether an API timestamp lies after now. An absent
@@ -121,6 +136,8 @@ func serviceTokenError(cfg config.Config, err error, r serviceTokenRefusal) erro
 	case he.Status == 401, reauthenticationRequired(he):
 	case r.grants && (he.Status == 403 || he.Status == 422) && refusalNamesGrant(he):
 		hint = serviceTokenGrantOrderHint
+	case he.Status == 422 && r.rootOwned != "" && refusalType(he, "vm_cap") == "root_owned":
+		hint = r.rootOwned
 	case he.Status == 404:
 		hint = r.notFound
 	case he.Status == 409 && he.RetryAfter != "":
@@ -152,54 +169,146 @@ func serviceTokenViewHint(token, org string) string {
 	return "\x60avr service-token view " + token + " --org " + shellQuotePython(org) + "\x60"
 }
 
-// serviceTokenGrantOptions selects what a service token reads.
+// serviceTokenGrantOptions selects what a service token reaches: the grants
+// and, through the VM cap, whether it creates VMs. Only set-access registers
+// noVMCreate, since a new token starts without the VM permission anyway.
 type serviceTokenGrantOptions struct {
-	repos, rules []string
-	allRules     bool
+	repos, rules, vms []string
+	allRules          bool
+	allVMs            string
+	vmCap             int
+	noVMCreate        bool
+}
+
+// serviceTokenSelection is what validate accepted: the repositories still to
+// resolve, the other grants in the order the grant-order hint describes, and
+// the VM cap change, if any. An explicit null resource_id grants every object
+// of the type in the organization, including later ones.
+type serviceTokenSelection struct {
+	repos  []string
+	grants []map[string]any
+	capSet bool
+	vmCap  any // a positive cap, or nil to withdraw it
 }
 
 func (g *serviceTokenGrantOptions) flags(c *cobra.Command) {
-	c.Flags().StringArrayVarP(&g.repos, "repo", "R", nil, "Repository read grant (owner/name or rep-...), repeatable.")
-	c.Flags().StringArrayVar(&g.rules, "firewall-rule", nil, "Egress firewall rule read grant (efr-...), repeatable.")
-	c.Flags().BoolVar(&g.allRules, "all-firewall-rules", false, "Read every egress firewall rule, including later ones.")
+	f := c.Flags()
+	f.StringArrayVarP(&g.repos, "repo", "R", nil, "Repository read grant (owner/name or rep-...), repeatable.")
+	f.StringArrayVar(&g.rules, "firewall-rule", nil, "Egress firewall rule read grant (efr-...), repeatable.")
+	f.BoolVar(&g.allRules, "all-firewall-rules", false, "Read every egress firewall rule, including later ones.")
+	f.StringArrayVar(&g.vms, "vm", nil, "VM grant (cvm-...), read unless :write follows, repeatable.")
+	f.StringVar(&g.allVMs, "all-vms", "", "Grant every VM, including later ones: read or write.")
+	f.IntVar(&g.vmCap, "vm-create-limit", 0, "Let the token create VMs, holding at most this many at once.")
 }
 
-// validate checks the selection before any request and returns the repository
-// names and rule IDs without their optional :read suffix.
-func (g serviceTokenGrantOptions) validate() ([]string, []string, error) {
-	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules {
-		return nil, nil, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule or --all-firewall-rules: a service token needs at least one grant."}
+// serviceTokenLevelCovers reports whether a grant at have also allows need.
+func serviceTokenLevelCovers(have, need string) bool {
+	return slices.Index(serviceTokenLevels, have) >= slices.Index(serviceTokenLevels, need)
+}
+
+// serviceTokenIDError refuses a grant value that is not an object ID.
+func serviceTokenIDError(flag, spec, noun, prefix string) error {
+	return &ExitError{2, fmt.Sprintf("Error: Invalid %s value %s: expected a %s ID, %s followed by 32 lowercase hexadecimal characters.", flag, pythonQuote(output.CellText(spec)), noun, prefix)}
+}
+
+// validate checks the selection before any request.
+func (g serviceTokenGrantOptions) validate(cmd *cobra.Command) (serviceTokenSelection, error) {
+	var s serviceTokenSelection
+	limited := cmd.Flags().Changed("vm-create-limit")
+	allVMs := cmd.Flags().Changed("all-vms")
+	if limited && g.noVMCreate {
+		return s, &ExitError{2, "Error: --vm-create-limit and --no-vm-create are mutually exclusive."}
+	}
+	if limited && (g.vmCap < 1 || g.vmCap > serviceTokenMaxVMCap) {
+		return s, &ExitError{2, fmt.Sprintf("Error: --vm-create-limit must be between 1 and %d.", serviceTokenMaxVMCap)}
+	}
+	if len(g.repos) == 0 && len(g.rules) == 0 && !g.allRules && len(g.vms) == 0 && !allVMs && !limited {
+		return s, &ExitError{2, "Error: Pass at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit: a service token needs a grant or permission to create VMs."}
 	}
 	if g.allRules && len(g.rules) > 0 {
-		return nil, nil, &ExitError{2, "Error: --all-firewall-rules already grants every firewall rule; drop --firewall-rule."}
+		return s, &ExitError{2, "Error: --all-firewall-rules already grants every firewall rule; drop --firewall-rule."}
 	}
-	repos := make([]string, len(g.repos))
-	rules := make([]string, len(g.rules))
-	var err error
-	for i, spec := range g.repos {
-		if repos[i], err = stripTokenLevel(spec, "repository", "--repo", "read"); err != nil {
-			return nil, nil, err
+	if allVMs {
+		if err := validateChoice("all-vms", g.allVMs, serviceTokenLevels); err != nil {
+			return s, err
 		}
 	}
-	for i, spec := range g.rules {
-		if rules[i], err = stripTokenLevel(spec, "firewall rule", "--firewall-rule", "read"); err != nil {
-			return nil, nil, err
+	s.capSet, s.vmCap = limited || g.noVMCreate, nil
+	if limited {
+		s.vmCap = g.vmCap
+	}
+	for _, spec := range g.repos {
+		repo, err := stripTokenLevel(spec, "repository", "--repo", "read")
+		if err != nil {
+			return s, err
 		}
-		if !serviceTokenRulePattern().MatchString(rules[i]) {
-			return nil, nil, &ExitError{2, fmt.Sprintf("Error: Invalid --firewall-rule value %s: expected a rule ID, efr- followed by 32 lowercase hexadecimal characters.", pythonQuote(output.CellText(spec)))}
-		}
+		s.repos = append(s.repos, repo)
 	}
 	// Repeats are one grant, so they neither count toward the limit nor
 	// resolve twice.
-	repos, rules = distinct(repos), distinct(rules)
-	count := len(repos) + len(rules)
+	s.repos = distinct(s.repos)
+	add := func(kind string, id any, level string) {
+		s.grants = append(s.grants, map[string]any{"resource_type": kind, "resource_id": id, "access_level": level})
+	}
+	for _, spec := range g.rules {
+		rule, err := stripTokenLevel(spec, "firewall rule", "--firewall-rule", "read")
+		if err != nil {
+			return s, err
+		}
+		if !serviceTokenRulePattern().MatchString(rule) {
+			return s, serviceTokenIDError("--firewall-rule", spec, "rule", "efr-")
+		}
+		if !slices.ContainsFunc(s.grants, func(grant map[string]any) bool { return grant["resource_id"] == rule }) {
+			add("egress_firewall_rule", rule, "read")
+		}
+	}
 	if g.allRules {
-		count++
+		add("egress_firewall_rule", nil, "read")
 	}
-	if count > serviceTokenMaxGrants {
-		return nil, nil, &ExitError{2, fmt.Sprintf("Error: A service token takes at most %d grants (got %d).", serviceTokenMaxGrants, count)}
+	for _, spec := range g.vms {
+		id, level, err := splitTokenLevel(spec, "VM", "--vm", serviceTokenLevels...)
+		if err != nil {
+			return s, err
+		}
+		if !serviceTokenVMPattern().MatchString(id) {
+			return s, serviceTokenIDError("--vm", spec, "VM", "cvm-")
+		}
+		if allVMs && serviceTokenLevelCovers(g.allVMs, level) {
+			return s, &ExitError{2, fmt.Sprintf("Error: --all-vms %s already grants every VM at %s; drop --vm %s.", g.allVMs, g.allVMs, output.CellText(spec))}
+		}
+		i := slices.IndexFunc(s.grants, func(grant map[string]any) bool { return grant["resource_id"] == id })
+		switch {
+		case i < 0:
+			add("customer_vm", id, level)
+		case s.grants[i]["access_level"] != level:
+			return s, &ExitError{2, fmt.Sprintf("Error: --vm names %s at both %s and %s; pass it once at the level it needs.", id, s.grants[i]["access_level"], level)}
+		}
 	}
-	return repos, rules, nil
+	if allVMs {
+		add("customer_vm", nil, g.allVMs)
+	}
+	if count := len(s.repos) + len(s.grants); count > serviceTokenMaxGrants {
+		return s, &ExitError{2, fmt.Sprintf("Error: A service token takes at most %d grants (got %d).", serviceTokenMaxGrants, count)}
+	}
+	return s, nil
+}
+
+// build resolves the repositories and puts their grants first. Two names of
+// one repository still become one grant.
+func (s serviceTokenSelection) build(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string) ([]map[string]any, error) {
+	grants, err := repositoryReadGrants(ctx, d, cfg, api, org, s.repos)
+	if err != nil {
+		return nil, err
+	}
+	return append(grants, s.grants...), nil
+}
+
+// applyVMCap writes the VM cap change into a create or set-access body. An
+// absent key keeps a token's current cap, and null withdraws it.
+func (s serviceTokenSelection) applyVMCap(body map[string]any) {
+	if s.capSet {
+		body["vm_cap"] = s.vmCap
+	}
 }
 
 // distinct keeps the first of each repeated value, in order.
@@ -212,22 +321,80 @@ func distinct(values []string) []string {
 	})
 }
 
-// build resolves the repositories validate returned and gives the grants in
-// the order the grant-order hint describes. Two names of one repository
-// still become one grant.
-func (g serviceTokenGrantOptions) build(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, repos, rules []string) ([]map[string]any, error) {
-	grants, err := repositoryReadGrants(ctx, d, cfg, api, org, repos)
-	if err != nil {
-		return nil, err
+// serviceTokenRemovals lists what a set-access body takes away from the
+// token as read: each grant the new grants neither repeat nor cover at its
+// level or above, and a withdrawn or lowered VM cap. A grant of every object
+// of a type covers a grant of one at the same level.
+func serviceTokenRemovals(current, body map[string]any) []string {
+	grants, _ := body["grants"].([]map[string]any)
+	var removed []string
+	for _, held := range objectList(current["grants"]) {
+		kind, id, level := fieldText(held, "resource_type"), fieldText(held, "resource_id"), fieldText(held, "access_level")
+		kept, lowered := false, ""
+		for _, grant := range grants {
+			wanted, at := fieldText(grant, "resource_id"), fieldText(grant, "access_level")
+			if fieldText(grant, "resource_type") != kind || wanted != id && wanted != "" {
+				continue
+			}
+			if serviceTokenLevelCovers(at, level) {
+				kept = true
+				break
+			}
+			if wanted == id {
+				lowered = at
+			}
+		}
+		label, resource := serviceTokenGrantLabel(held)
+		if id != "" {
+			resource = label + " " + resource
+		}
+		switch {
+		case kept:
+		case lowered != "":
+			removed = append(removed, fmt.Sprintf("%s lowered from %s to %s", resource, level, lowered))
+		default:
+			removed = append(removed, fmt.Sprintf("%s at %s", resource, level))
+		}
 	}
-	for _, rule := range rules {
-		grants = append(grants, map[string]any{"resource_type": "egress_firewall_rule", "resource_id": rule, "access_level": "read"})
+	held, capped := devicePositiveInt(current["vm_cap"], serviceTokenMaxVMCap)
+	if value, set := body["vm_cap"]; set && capped {
+		switch wanted, _ := value.(int); {
+		case value == nil:
+			removed = append(removed, fmt.Sprintf("permission to create VMs (up to %d)", held))
+		case int64(wanted) < held:
+			removed = append(removed, fmt.Sprintf("VM cap lowered from %d to %d", held, wanted))
+		}
 	}
-	if g.allRules {
-		// An explicit null resource_id grants every rule of the organization.
-		grants = append(grants, map[string]any{"resource_type": "egress_firewall_rule", "resource_id": nil, "access_level": "read"})
+	return removed
+}
+
+// serviceTokenVMs adds to tokenVMCreateText the VMs a token still owns after
+// its permission to create them was withdrawn.
+func serviceTokenVMs(row map[string]any) string {
+	text := tokenVMCreateText(row)
+	if allowed, owned, _ := tokenVMCreate(row); !allowed && owned != "0" {
+		text += ", " + owned + " still owned"
 	}
-	return grants, nil
+	return text
+}
+
+// serviceTokenGrantLabel names a grant's type and object for people.
+func serviceTokenGrantLabel(grant map[string]any) (string, string) {
+	kind, resource := fieldText(grant, "resource_type"), fieldText(grant, "resource_id")
+	switch kind {
+	case "repository":
+	case "egress_firewall_rule":
+		kind = "firewall rule"
+		if resource == "" {
+			resource = "every firewall rule"
+		}
+	case "customer_vm":
+		kind = "VM"
+		if resource == "" {
+			resource = "every VM"
+		}
+	}
+	return kind, output.CellText(resource)
 }
 
 // serviceTokenLifetime chooses a new secret's lifetime.
@@ -447,10 +614,11 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		if err := l.apply(cmd, body); err != nil {
 			return err
 		}
-		repos, rules, err := g.validate()
+		selection, err := g.validate(cmd)
 		if err != nil {
 			return err
 		}
+		selection.applyVMCap(body)
 		if done, err := o.prepare(cmd, d, serviceTokenSecretFields); done || err != nil {
 			return err
 		}
@@ -465,11 +633,9 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 		if body["group_id"], err = resolveGroup(cmd.Context(), cfg, api, id, group); err != nil {
 			return err
 		}
-		grants, err := g.build(cmd.Context(), d, cfg, api, id, repos, rules)
-		if err != nil {
+		if body["grants"], err = selection.build(cmd.Context(), d, cfg, api, id); err != nil {
 			return err
 		}
-		body["grants"] = grants
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
@@ -479,6 +645,7 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 				action:    "create a service token",
 				grants:    true,
 				notFound:  "Check the organization and API host. If service tokens are unavailable for this organization, contact support@avrea.com.",
+				rootOwned: "A token of the root group cannot create VMs. Pass a group below it to --group: \x60avr group list\x60 shows them.",
 				unchanged: "No service token was created.",
 				unknown:   "A service token may have been created; check \x60avr service-token list --org " + shellQuotePython(id) + "\x60 before retrying.",
 			}, "the creation")
@@ -502,12 +669,15 @@ func newServiceTokenCreate(d Dependencies) *cobra.Command {
 
 func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 	var org string
+	var yes bool
 	var g serviceTokenGrantOptions
 	c := &cobra.Command{Use: "set-access TOKEN_ID", Short: "Replace a service token's whole access selection.", Args: tokenIDArgs}
 	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	g.flags(c)
+	c.Flags().BoolVar(&g.noVMCreate, "no-vm-create", false, "Withdraw the token's permission to create VMs.")
+	c.Flags().BoolVarP(&yes, "yes", "y", false, "Apply the change without asking, even when it removes or lowers access.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
-		repos, rules, err := g.validate()
+		selection, err := g.validate(cmd)
 		if err != nil {
 			return err
 		}
@@ -516,8 +686,9 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 			return err
 		}
 		// Repositories resolve before the token is read, so the version the
-		// write echoes is as fresh as it can be.
-		grants, err := g.build(cmd.Context(), d, cfg, api, id, repos, rules)
+		// write echoes is as fresh as the requests allow; a question about
+		// removed access then stands between the read and the write.
+		grants, err := selection.build(cmd.Context(), d, cfg, api, id)
 		if err != nil {
 			return err
 		}
@@ -526,6 +697,21 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		body := map[string]any{"grants": grants, "expected_grants_version": version}
+		selection.applyVMCap(body)
+		// Leaving a grant out removes it, which is easy to do by accident, for
+		// example when only the VM cap was meant to change. A terminal run is
+		// asked on stderr; any other run must confirm with --yes rather than
+		// block on a question nobody sees, and is told what it would remove.
+		if removed := serviceTokenRemovals(current, body); len(removed) > 0 && !yes {
+			summary := "This replacement removes access service token " + args[0] + " holds:\n    " + strings.Join(removed, "\n    ")
+			if !d.IsInputTerminal() || !d.IsErrorTerminal() || d.Getenv("AVR_PROMPT_DISABLED") != "" {
+				return &ExitError{1, "Error: " + summary + "\n  Hint: Pass each grant to keep at its level, or pass --yes to apply the change."}
+			}
+			if err = confirmMutation(cmd.Context(), configurationPrompt(d), "replacing the access removes access the token holds", summary+"\nReplace its access?"); err != nil {
+				return err
+			}
+		}
 		if err = cmd.Context().Err(); err != nil {
 			return err
 		}
@@ -533,13 +719,14 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		// A rerun sends the same whole selection, which would undo a change
 		// another admin made in between.
 		stale := "The token changed after this command read it. Check " + view + ", then run set-access again with the full selection you want."
-		record, err := api.Do(cmd.Context(), http.MethodPut, path+"/grants", map[string]any{"grants": grants, "expected_grants_version": version})
+		record, err := api.Do(cmd.Context(), http.MethodPut, path+"/grants", body)
 		if err != nil {
 			return serviceTokenWriteError(cfg, err, serviceTokenRefusal{
 				action:    "replace the service token's access",
 				grants:    true,
 				notFound:  serviceTokenWriteNotFound(current, id),
 				stale:     serviceTokenWriteStale(current, stale),
+				rootOwned: "A token of the root group cannot create VMs. Leave out --vm-create-limit, or create a token in a group below the root group with \x60avr service-token create\x60.",
 				unchanged: "The token's access was not changed.",
 				unknown:   "The access may have been replaced; check " + view + " before retrying.",
 			}, "the access change")
@@ -600,9 +787,7 @@ func newServiceTokenRotate(d Dependencies) *cobra.Command {
 		// stderr to keep stdout for the secret. A revoked or expired token
 		// keeps previous_valid_until, but the API refuses to rotate it.
 		if until := fieldText(current, "previous_valid_until"); !yes && d.IsInputTerminal() && d.IsErrorTerminal() && fieldText(current, "status") == "live" && timestampAfter(until, d.Now()) {
-			prompting := d
-			prompting.Out = d.Err
-			if err = confirmMutation(cmd.Context(), prompting, "rotating would retire the secret an earlier rotation replaced", "An earlier rotation of service token "+args[0]+" is still in its overlap until "+formatTimestamp(until)+". Rotating now retires the secret it replaced at once. Rotate?"); err != nil {
+			if err = confirmMutation(cmd.Context(), configurationPrompt(d), "rotating would retire the secret an earlier rotation replaced", "An earlier rotation of service token "+args[0]+" is still in its overlap until "+formatTimestamp(until)+". Rotating now retires the secret it replaced at once. Rotate?"); err != nil {
 				return err
 			}
 		}
@@ -808,6 +993,7 @@ func renderServiceToken(d Dependencies, row map[string]any) error {
 		{"Created by", cmp.Or(fieldText(row, "created_by"), "-")}, {"Expires", serviceTokenExpiry(row)},
 		{"Secret issued", optional("rotated_at", "unknown")}, {"Old secret until", optional("previous_valid_until", "-")},
 		{"Last used", optional("last_used_at", "never")},
+		{"VM create", serviceTokenVMs(row)},
 		{"Versions", "rotation " + cmp.Or(pythonValue(row["rotation_version"]), "-") + ", grants " + cmp.Or(pythonValue(row["grants_version"]), "-")},
 	}
 	if err := output.KeyValues(d.Out, pairs); err != nil {
@@ -822,14 +1008,7 @@ func renderServiceToken(d Dependencies, row map[string]any) error {
 	}
 	var cells [][]string
 	for _, grant := range grants {
-		kind := fieldText(grant, "resource_type")
-		resource := fieldText(grant, "resource_id")
-		if kind == "egress_firewall_rule" {
-			kind = "firewall rule"
-			if resource == "" {
-				resource = "every firewall rule"
-			}
-		}
+		kind, resource := serviceTokenGrantLabel(grant)
 		cells = append(cells, []string{kind, resource, fieldText(grant, "access_level")})
 	}
 	return output.Grid(d.Out, []string{"Type", "Resource", "Level"}, cells)

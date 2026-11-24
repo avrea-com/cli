@@ -9,7 +9,7 @@ List the organization's service tokens, soonest expiry first.
 .PP
 Lists live, expired and revoked tokens; tokens that never expire come last. A live token whose requests are refused all the same, for example while its group is suspended, shows as blocked with the reason.
 .PP
---group takes a group ID or a group's path as `avr group list` shows it, such as Acme/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
+--group takes a group ID or a group's path as `avr group list` shows it, such as Organization/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
 .PP
 .RS 4
 .nf
@@ -26,7 +26,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status
+    rotation_version, status, vm_cap, vm_count
 .fi
 .RE
 .SH OPTIONS

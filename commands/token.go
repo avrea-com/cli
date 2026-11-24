@@ -184,11 +184,33 @@ func newTokenRevoke(d Dependencies) *cobra.Command {
 	})
 	return c
 }
-func tokenVMUsage(row map[string]any) string {
-	if row["vm_create_count"] == nil {
-		return "0"
+
+// tokenVMCreate reads whether a token may create VMs, the count against its
+// limit and the limit, nil when there is none. A scoped token states this
+// with allow_vm_create, vm_create_count and vm_create_limit; a service token
+// with vm_cap, the VMs it may own at once, and vm_count, the VMs it owns.
+func tokenVMCreate(row map[string]any) (bool, string, any) {
+	allowed, count, limit := row["vm_cap"] != nil, row["vm_count"], row["vm_cap"]
+	if _, scoped := row["allow_vm_create"]; scoped {
+		allowed, count, limit = row["allow_vm_create"] == true, row["vm_create_count"], row["vm_create_limit"]
 	}
-	return pythonValue(row["vm_create_count"])
+	if count == nil {
+		return allowed, "0", limit
+	}
+	return allowed, pythonValue(count), limit
+}
+
+// tokenVMCreateText describes tokenVMCreate's answer for a token view.
+func tokenVMCreateText(row map[string]any) string {
+	allowed, used, limit := tokenVMCreate(row)
+	if !allowed {
+		return "not allowed"
+	}
+	text := "allowed, " + used
+	if limit != nil {
+		text += " of " + pythonValue(limit)
+	}
+	return text + " used"
 }
 func tokenGrantsSummary(row map[string]any) string {
 	repos, vms, allVMs, rules, allRules := 0, 0, false, 0, false
@@ -234,10 +256,10 @@ func tokenGrantsSummary(row map[string]any) string {
 		}
 		parts = append(parts, fmt.Sprintf("%d %s", rules, label))
 	}
-	if row["allow_vm_create"] == true {
+	if allowed, used, limit := tokenVMCreate(row); allowed {
 		label := "VM create"
-		if row["vm_create_limit"] != nil {
-			label += " " + tokenVMUsage(row) + "/" + pythonValue(row["vm_create_limit"])
+		if limit != nil {
+			label += " " + used + "/" + pythonValue(limit)
 		}
 		parts = append(parts, label)
 	}
@@ -319,18 +341,10 @@ func renderToken(d Dependencies, row map[string]any) error {
 	if value := fieldText(row, "last_used_at"); value != "" {
 		used = formatTimestamp(value)
 	}
-	vm := "not allowed"
-	if row["allow_vm_create"] == true {
-		vm = "allowed, " + tokenVMUsage(row)
-		if row["vm_create_limit"] != nil {
-			vm += " of " + pythonValue(row["vm_create_limit"])
-		}
-		vm += " used"
-	}
 	values := [][2]string{
 		{"Token ID", pythonValue(row["id"])}, {"Name", fieldText(row, "name")}, {"Owner", pythonValue(row["user_id"])},
 		{"Status", tokenStatus(row, d.Now())}, {"Created", formatTimestamp(fieldText(row, "created_at"))},
-		{"Expires", formatTimestamp(fieldText(row, "expires_at"))}, {"Last used", used}, {"VM create", vm},
+		{"Expires", formatTimestamp(fieldText(row, "expires_at"))}, {"Last used", used}, {"VM create", tokenVMCreateText(row)},
 	}
 	for _, pair := range values {
 		if _, err := fmt.Fprintf(d.Out, "%-11s%s\n", pair[0], output.CellText(pair[1])); err != nil {

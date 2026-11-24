@@ -467,7 +467,7 @@ JSON FIELDS
 
 ### `avr org members`
 
-List organization members (admin only).
+List organization members.
 
 ```sh
 avr org members [OPTIONS]

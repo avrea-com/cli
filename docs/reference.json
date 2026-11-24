@@ -3385,8 +3385,8 @@
             ],
             "full": "avr org members",
             "is_group": false,
-            "short_help": "List organization members (admin only).",
-            "help": "List organization members (admin only).\n\n\b\nExamples:\n    avr org members\n    avr org members --org org-abc123\n    avr org members --json name,role\n\n\b\nJSON FIELDS\n    joined_at, name, role, user_id\n",
+            "short_help": "List organization members.",
+            "help": "List organization members.\n\n\b\nExamples:\n    avr org members\n    avr org members --org org-abc123\n    avr org members --json name,role\n\n\b\nJSON FIELDS\n    joined_at, name, role, user_id\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -15792,7 +15792,7 @@
         "full": "avr service-token",
         "is_group": true,
         "short_help": "Create and manage the organization's service tokens.",
-        "help": "Create and manage the organization's service tokens.\n\nA service token (avt_...) belongs to a group of one organization rather\nthan to a person, and keeps working when its creator leaves. It reads\nonly the repositories and egress firewall rules its access names.\nOrganization admins manage service tokens while signed in (avr auth\ndevice-login or avr auth login); a scoped or service token cannot.\n\nTo use a service token, set AVR_TOKEN to its secret. Its organization\napplies automatically; set AVR_ORG to the org-... ID in loops to save a\nrequest per command, since a service token has 60 requests per minute.\nCommands that need a person, such as avr feedback, refuse it, and avr\nauth logout does not revoke it: unset AVR_TOKEN instead. After a\nsuspected leak, revoke-all revokes every service token of the\norganization.\n",
+        "help": "Create and manage the organization's service tokens.\n\nA service token (avt_...) belongs to a group of one organization rather\nthan to a person, and keeps working when its creator leaves. It reads\nonly the repositories and egress firewall rules its access names. It\nreaches the VMs its VM grants name and, with a VM create limit, the VMs\nit creates: avr vm create, list, show, metrics, update,\nrotate-https-label, pause and delete work with it; resume and fork do\nnot. Organization admins manage service tokens while signed in (avr\nauth device-login or avr auth login); a scoped or service token cannot.\n\nTo use a service token, set AVR_TOKEN to its secret. Its organization\napplies automatically; set AVR_ORG to the org-... ID in loops to save a\nrequest per command. A service token has 60 requests per minute, or 31\nper VM of its VM create limit when that is more, up to 600. Commands\nthat need a person, such as avr feedback, refuse it, and avr auth\nlogout does not revoke it: unset AVR_TOKEN instead. After a suspected\nleak, revoke-all revokes every service token of the organization.\n",
         "epilog": null,
         "deprecated": false,
         "hidden": false,
@@ -15809,7 +15809,7 @@
             "full": "avr service-token create",
             "is_group": false,
             "short_help": "Create a service token and print its secret once.",
-            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant;\nevery grant is a read and must be within your own access now. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nThe API may ask for a recent sign-in; the command then exits 4 and says\nto sign in again.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group Platform/CI --repo acme/api\n    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Create a service token and print its secret once.\n\nThe token belongs to the group --group names, not to you, and keeps\nworking when you leave the organization. It needs at least one grant\nor a VM create limit. Repository and firewall-rule grants are reads,\nand each repository must be one you can read now; a VM grant is read\nor write. A token with a VM create limit creates VMs and administers\nthe ones it created; a token of the root group cannot have one. The\nsecret is shown once and cannot be retrieved later: store it, for\nexample as a CI secret, and set it as AVR_TOKEN where the token is used.\nThe API may ask for a recent sign-in; the command then exits 4 and says\nto sign in again.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Organization/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token create --name ci --group Platform/CI --repo acme/api\n    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d\n    avr service-token create --name agents --group Platform/CI --repo acme/api --vm-create-limit 5\n    avr service-token create --name ci --group \u003cgroup-id\u003e --repo acme/api --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, vm_cap, vm_count, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -15902,6 +15902,64 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Grant read access to every egress firewall rule, including rules added later.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "vms",
+                "kind": "option",
+                "opts": [
+                  "--vm"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "all_vms",
+                "kind": "option",
+                "opts": [
+                  "--all-vms"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant read or write access to every VM of the organization, including VMs created later.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "read",
+                  "write"
+                ]
+              },
+              {
+                "name": "vm_cap",
+                "kind": "option",
+                "opts": [
+                  "--vm-create-limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Let the token create VMs and own at most this many at once. A token of the root group cannot.",
                 "hidden": false,
                 "show_default": false,
                 "default": null
@@ -16011,7 +16069,7 @@
             "full": "avr service-token list",
             "is_group": false,
             "short_help": "List the organization's service tokens, soonest expiry first.",
-            "help": "List the organization's service tokens, soonest expiry first.\n\nLists live, expired and revoked tokens; tokens that never expire come\nlast. A live token whose requests are refused all the same, for example\nwhile its group is suspended, shows as blocked with the reason.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Acme/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\n\b\nExamples:\n    avr service-token list\n    avr service-token list --status live --group Platform/CI\n    avr service-token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status\n",
+            "help": "List the organization's service tokens, soonest expiry first.\n\nLists live, expired and revoked tokens; tokens that never expire come\nlast. A live token whose requests are refused all the same, for example\nwhile its group is suspended, shows as blocked with the reason.\n\n--group takes a group ID or a group's path as `avr group list` shows it,\nsuch as Organization/Platform/CI. Names compare without case. A value equal to\none group's whole path selects that group; otherwise the end of a path,\nsuch as Platform/CI or a group name like CI, must select exactly one\ngroup.\n\n\b\nExamples:\n    avr service-token list\n    avr service-token list --status live --group Platform/CI\n    avr service-token list --json id,name,expires_at\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, vm_cap, vm_count\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -16278,7 +16336,7 @@
             "full": "avr service-token rotate",
             "is_group": false,
             "short_help": "Issue a service token a new secret and print it once.",
-            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once; run from a terminal, the command asks first unless --yes\nis given. The API may ask for a recent sign-in; the command then exits 4\nand says to sign in again.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, token\n",
+            "help": "Issue a service token a new secret and print it once.\n\nThe new secret gets its own lifetime. The old secret keeps working for\nthe overlap, never past the expiry of either secret, so pipelines can\nswitch without a gap. Rotating again inside the overlap retires the old\nsecret at once; run from a terminal, the command asks first unless --yes\nis given. The API may ask for a recent sign-in; the command then exits 4\nand says to sign in again.\n\nWith --json, the selection must include the token field, because the\nsecret cannot be read again. If a --jq filter fails or drops the\nsecret, the command prints the unfiltered JSON instead and exits\nnonzero, so the secret is not lost.\n\n\b\nExamples:\n    avr service-token rotate \u003ctoken-id\u003e\n    avr service-token rotate \u003ctoken-id\u003e --ttl 30d --overlap 2h\n    avr service-token rotate \u003ctoken-id\u003e --json token --jq .token\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, vm_cap, vm_count, token\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -16444,7 +16502,7 @@
             "full": "avr service-token set-access",
             "is_group": false,
             "short_help": "Replace a service token's whole access selection.",
-            "help": "Replace a service token's whole access selection.\n\nThe grants given here replace everything the token reaches: a grant you\nleave out is removed, so repeat the ones to keep. The command reads the\ntoken first and the change fails if the token changes in between. A\ngrant that widens its access must be within your own access now. The\nAPI may ask for a recent sign-in; the command then exits 4 and says to\nsign in again. The change applies to the token's next\nrequest.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules\n",
+            "help": "Replace a service token's whole access selection.\n\nThe grants given here replace every grant the token holds: a grant you\nleave out is removed, so repeat the ones to keep. The VM create limit\nstays unless --vm-create-limit or --no-vm-create changes it. Before the\nchange, the command lists the grants it removes or lowers and asks;\nwithout a terminal it refuses unless --yes is given. It reads the token\nfirst and the change fails if the token changes in between. A\nrepository it adds must be one you can read now. The API may ask for a\nrecent sign-in; the command then exits 4 and says to sign in again. The\nchange applies to the token's next request.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules --yes\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --vm-create-limit 10\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -16524,6 +16582,82 @@
                 "default": null
               },
               {
+                "name": "vms",
+                "kind": "option",
+                "opts": [
+                  "--vm"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": true,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "all_vms",
+                "kind": "option",
+                "opts": [
+                  "--all-vms"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Grant read or write access to every VM of the organization, including VMs created later.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "read",
+                  "write"
+                ]
+              },
+              {
+                "name": "vm_cap",
+                "kind": "option",
+                "opts": [
+                  "--vm-create-limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Let the token create VMs and own at most this many at once. A token of the root group cannot. Omit to keep the current limit.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "no_vm_create",
+                "kind": "option",
+                "opts": [
+                  "--no-vm-create"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Withdraw the token's permission to create VMs. The VMs it created stay.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
                 "name": "org_id",
                 "kind": "option",
                 "opts": [
@@ -16541,6 +16675,25 @@
                 "hidden": false,
                 "show_default": false,
                 "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Apply the change without asking, even when it removes or lowers access.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
               }
             ],
             "subcommands": []
@@ -16555,7 +16708,7 @@
             "full": "avr service-token view",
             "is_group": false,
             "short_help": "Show a service token's details, versions and grants.",
-            "help": "Show a service token's details, versions and grants.\n\nReads a revoked or expired token as well. Its grants are removed when it\nis revoked and 30 days after it expires. The secret itself is never\nshown again after `avr service-token create` or `rotate`.\n\n\b\nExamples:\n    avr service-token view \u003ctoken-id\u003e\n    avr service-token view \u003ctoken-id\u003e --json grants\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status\n",
+            "help": "Show a service token's details, versions and grants.\n\nReads a revoked or expired token as well. Its grants are removed when it\nis revoked and 30 days after it expires. The secret itself is never\nshown again after `avr service-token create` or `rotate`.\n\n\b\nExamples:\n    avr service-token view \u003ctoken-id\u003e\n    avr service-token view \u003ctoken-id\u003e --json grants\n\n\b\nJSON FIELDS\n    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,\n    grants_version, group_id, id, last_used_at, name, organization_id,\n    previous_valid_until, revoked_at, revoked_reason, rotated_at,\n    rotation_version, status, vm_cap, vm_count\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -16666,7 +16819,7 @@
             "full": "avr group list",
             "is_group": false,
             "short_help": "List the organization's groups by path.",
-            "help": "List the organization's groups by path.\n\nA group's path is the display names from the root group down, joined\nwith /, such as Acme/Platform/CI; a parent is listed before its\nchildren. Pass a group's ID or path to --group when you create or list\nservice tokens.\n\n\b\nExamples:\n    avr group list\n    avr group list --json group_id,path --jq '.[].path'\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, label, member_count, ownership,\n    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at\n",
+            "help": "List the organization's groups by path.\n\nA group's path is the display names from the root group down, joined\nwith /, such as Organization/Platform/CI; a parent is listed before its\nchildren. Pass a group's ID or path to --group when you create or list\nservice tokens.\n\n\b\nExamples:\n    avr group list\n    avr group list --json group_id,path --jq '.[].path'\n\n\b\nJSON FIELDS\n    created_at, display_name, group_id, label, member_count, ownership,\n    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,

@@ -399,7 +399,7 @@ func orgDescription(path string) docgen.Description {
 		}
 	case "avr org members":
 		return docgen.Description{
-			Help: "List organization members (admin only).\n" +
+			Help: "List organization members.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -410,7 +410,7 @@ func orgDescription(path string) docgen.Description {
 				"\b\n" +
 				"JSON FIELDS\n" +
 				"    joined_at, name, role, user_id\n",
-			Short: "List organization members (admin only).",
+			Short: "List organization members.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},
@@ -567,7 +567,7 @@ func orgDescription(path string) docgen.Description {
 				{Name: "email-domain", Description: "Claim and verify organization email domains.", AutoShort: true},
 				{Name: "install", Description: "Manage GitHub and GitLab installations.", AutoShort: true},
 				{Name: "list", Description: "List organizations you belong to.", AutoShort: true},
-				{Name: "members", Description: "List organization members (admin only).", AutoShort: true},
+				{Name: "members", Description: "List organization members.", AutoShort: true},
 				{Name: "saml", Description: "Configure SAML single sign-on for an organization.", AutoShort: true},
 			},
 		}

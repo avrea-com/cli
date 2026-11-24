@@ -10,7 +10,7 @@ func groupDescription(path string) docgen.Description {
 			Help: "List the organization's groups by path.\n" +
 				"\n" +
 				"A group's path is the display names from the root group down, joined\n" +
-				"with /, such as Acme/Platform/CI; a parent is listed before its\n" +
+				"with /, such as Organization/Platform/CI; a parent is listed before its\n" +
 				"children. Pass a group's ID or path to --group when you create or list\n" +
 				"service tokens.\n" +
 				"\n" +

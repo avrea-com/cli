@@ -7,13 +7,14 @@ avr-service-token-set-access \- Replace a service token's whole access selection
 .SH DESCRIPTION
 Replace a service token's whole access selection.
 .PP
-The grants given here replace everything the token reaches: a grant you leave out is removed, so repeat the ones to keep. The command reads the token first and the change fails if the token changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
+The grants given here replace every grant the token holds: a grant you leave out is removed, so repeat the ones to keep. The VM create limit stays unless --vm-create-limit or --no-vm-create changes it. Before the change, the command lists the grants it removes or lowers and asks; without a terminal it refuses unless --yes is given. It reads the token first and the change fails if the token changes in between. A repository it adds must be one you can read now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
 .PP
 .RS 4
 .nf
 Examples:
     avr service-token set-access <token-id> --repo acme/api --repo acme/web
-    avr service-token set-access <token-id> --all-firewall-rules
+    avr service-token set-access <token-id> --all-firewall-rules --yes
+    avr service-token set-access <token-id> --repo acme/api --vm-create-limit 10
 .fi
 .RE
 .SH ARGUMENTS
@@ -31,8 +32,23 @@ Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. 
 \fB\-\-all\-firewall\-rules\fR
 Grant read access to every egress firewall rule, including rules added later.
 .TP
+\fB\-\-vm\fR \fITEXT\fR
+Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable. (repeatable)
+.TP
+\fB\-\-all\-vms\fR \fICHOICE\fR
+Grant read or write access to every VM of the organization, including VMs created later. (choices: read, write)
+.TP
+\fB\-\-vm\-create\-limit\fR \fIINTEGER RANGE\fR
+Let the token create VMs and own at most this many at once. A token of the root group cannot. Omit to keep the current limit.
+.TP
+\fB\-\-no\-vm\-create\fR
+Withdraw the token's permission to create VMs. The VMs it created stay.
+.TP
 \fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Apply the change without asking, even when it removes or lowers access.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-service-token (1),

@@ -7,9 +7,9 @@ avr-service-token-create \- Create a service token and print its secret once.
 .SH DESCRIPTION
 Create a service token and print its secret once.
 .PP
-The token belongs to the group --group names, not to you, and keeps working when you leave the organization. It needs at least one grant; every grant is a read and must be within your own access now. The secret is shown once and cannot be retrieved later: store it, for example as a CI secret, and set it as AVR_TOKEN where the token is used. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again.
+The token belongs to the group --group names, not to you, and keeps working when you leave the organization. It needs at least one grant or a VM create limit. Repository and firewall-rule grants are reads, and each repository must be one you can read now; a VM grant is read or write. A token with a VM create limit creates VMs and administers the ones it created; a token of the root group cannot have one. The secret is shown once and cannot be retrieved later: store it, for example as a CI secret, and set it as AVR_TOKEN where the token is used. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again.
 .PP
---group takes a group ID or a group's path as `avr group list` shows it, such as Acme/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
+--group takes a group ID or a group's path as `avr group list` shows it, such as Organization/Platform/CI. Names compare without case. A value equal to one group's whole path selects that group; otherwise the end of a path, such as Platform/CI or a group name like CI, must select exactly one group.
 .PP
 With --json, the selection must include the token field, because the secret cannot be read again. If a --jq filter fails or drops the secret, the command prints the unfiltered JSON instead and exits nonzero, so the secret is not lost.
 .PP
@@ -18,6 +18,7 @@ With --json, the selection must include the token field, because the secret cann
 Examples:
     avr service-token create --name ci --group Platform/CI --repo acme/api
     avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
+    avr service-token create --name agents --group Platform/CI --repo acme/api --vm-create-limit 5
     avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 .fi
 .RE
@@ -28,7 +29,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, token
+    rotation_version, status, vm_cap, vm_count, token
 .fi
 .RE
 .SH OPTIONS
@@ -47,6 +48,15 @@ Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. 
 .TP
 \fB\-\-all\-firewall\-rules\fR
 Grant read access to every egress firewall rule, including rules added later.
+.TP
+\fB\-\-vm\fR \fITEXT\fR
+Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable. (repeatable)
+.TP
+\fB\-\-all\-vms\fR \fICHOICE\fR
+Grant read or write access to every VM of the organization, including VMs created later. (choices: read, write)
+.TP
+\fB\-\-vm\-create\-limit\fR \fIINTEGER RANGE\fR
+Let the token create VMs and own at most this many at once. A token of the root group cannot.
 .TP
 \fB\-\-ttl\fR \fITEXT\fR
 Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.

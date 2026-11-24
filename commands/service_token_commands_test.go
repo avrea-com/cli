@@ -360,7 +360,7 @@ func TestServiceTokenCreateRejectsInvalidOptionsBeforeRequests(t *testing.T) {
 		{[]string{"--group", manageGroupID, "--repo", manageRepoA}, "Missing option '--name'"},
 		{[]string{"--name", "ci", "--repo", manageRepoA}, "Missing option '--group'"},
 		{[]string{"--name", "ci", "--group", "", "--repo", manageRepoA}, "expected a group name, path or ID"},
-		{base, "at least one of --repo, --firewall-rule or --all-firewall-rules"},
+		{base, "at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --vm-create-limit"},
 		{append(slices.Clone(base), "--all-firewall-rules", "--firewall-rule", manageRuleA), "already grants every firewall rule"},
 		{append(slices.Clone(base), "--firewall-rule", "rule-1"), "expected a rule ID"},
 		{append(slices.Clone(base), "--repo", "acme/api:admin"), "read level"},
@@ -426,7 +426,8 @@ func TestServiceTokenCreateRefusals(t *testing.T) {
 
 func TestServiceTokenSetAccessReadsVersionThenReplaces(t *testing.T) {
 	h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
-	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB, "--all-firewall-rules"); code != 0 {
+	// The new selection drops repository A, which --yes accepts.
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB, "--all-firewall-rules", "--yes"); code != 0 {
 		t.Fatal(code, h.stderr)
 	}
 	if want := []string{"GET " + manageBase + "/" + manageTokenID, "PUT " + manageBase + "/" + manageTokenID + "/grants"}; !slices.Equal(h.operations(), want) {

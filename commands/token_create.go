@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -25,19 +26,41 @@ const tokenGrantOrderHint = "grants[N] counts from 0 after resources are resolve
 const tokenFilterRetain = "The output filter must retain the one-time credential."
 
 func stripTokenLevel(spec, kind, flag, level string) (string, error) {
-	target, suffix, found := strings.Cut(spec, ":")
+	target, _, err := splitTokenLevel(spec, kind, flag, level)
+	return target, err
+}
+
+// splitTokenLevel separates a grant value from its optional :level suffix and
+// checks the level against the ones the grant takes. Without a suffix the
+// grant gets the first level.
+func splitTokenLevel(spec, kind, flag string, levels ...string) (string, string, error) {
+	target, level := spec, levels[0]
 	// Python rpartition treats only the last colon as the optional level.
 	if index := strings.LastIndex(spec, ":"); index >= 0 {
-		target, suffix, found = spec[:index], spec[index+1:], true
+		target, level = spec[:index], strings.ToLower(spec[index+1:])
 	}
-	if target == "" || found && strings.ToLower(suffix) != level {
-		example := target
-		if example == "" {
-			example = "ID"
-		}
-		return "", &ExitError{2, fmt.Sprintf("Error: Invalid %s value %s: %s grants are created at the %s level. Use %s %s or %s %s:%s.", flag, pythonQuote(output.CellText(spec)), kind, level, flag, output.CellText(example), flag, output.CellText(example), level)}
+	if target != "" && slices.Contains(levels, level) {
+		return target, level, nil
 	}
-	return target, nil
+	example := output.CellText(cmp.Or(target, "ID"))
+	takes := kind + " grants are created at the " + levels[0] + " level"
+	if len(levels) > 1 {
+		takes = kind + " grants take " + joinOr(levels)
+	}
+	uses := []string{flag + " " + example}
+	for _, l := range levels {
+		uses = append(uses, flag+" "+example+":"+l)
+	}
+	return "", "", &ExitError{2, fmt.Sprintf("Error: Invalid %s value %s: %s. Use %s.", flag, pythonQuote(output.CellText(spec)), takes, joinOr(uses))}
+}
+
+// joinOr joins values as "a, b or c".
+func joinOr(values []string) string {
+	last := len(values) - 1
+	if last == 0 {
+		return values[0]
+	}
+	return strings.Join(values[:last], ", ") + " or " + values[last]
 }
 func tokenTTL(value string) (int, error) { return tokenDuration("--ttl", value, 60, 604800) }
 

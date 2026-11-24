@@ -2114,17 +2114,20 @@ avr service-token [OPTIONS] COMMAND [ARGS]...
 
 A service token (avt_...) belongs to a group of one organization rather
 than to a person, and keeps working when its creator leaves. It reads
-only the repositories and egress firewall rules its access names.
-Organization admins manage service tokens while signed in (avr auth
-device-login or avr auth login); a scoped or service token cannot.
+only the repositories and egress firewall rules its access names. It
+reaches the VMs its VM grants name and, with a VM create limit, the VMs
+it creates: avr vm create, list, show, metrics, update,
+rotate-https-label, pause and delete work with it; resume and fork do
+not. Organization admins manage service tokens while signed in (avr
+auth device-login or avr auth login); a scoped or service token cannot.
 
 To use a service token, set AVR_TOKEN to its secret. Its organization
 applies automatically; set AVR_ORG to the org-... ID in loops to save a
-request per command, since a service token has 60 requests per minute.
-Commands that need a person, such as avr feedback, refuse it, and avr
-auth logout does not revoke it: unset AVR_TOKEN instead. After a
-suspected leak, revoke-all revokes every service token of the
-organization.
+request per command. A service token has 60 requests per minute, or 31
+per VM of its VM create limit when that is more, up to 600. Commands
+that need a person, such as avr feedback, refuse it, and avr auth
+logout does not revoke it: unset AVR_TOKEN instead. After a suspected
+leak, revoke-all revokes every service token of the organization.
 
 #### `avr service-token create`
 
@@ -2135,15 +2138,18 @@ avr service-token create [OPTIONS]
 ```
 
 The token belongs to the group --group names, not to you, and keeps
-working when you leave the organization. It needs at least one grant;
-every grant is a read and must be within your own access now. The
+working when you leave the organization. It needs at least one grant
+or a VM create limit. Repository and firewall-rule grants are reads,
+and each repository must be one you can read now; a VM grant is read
+or write. A token with a VM create limit creates VMs and administers
+the ones it created; a token of the root group cannot have one. The
 secret is shown once and cannot be retrieved later: store it, for
 example as a CI secret, and set it as AVR_TOKEN where the token is used.
 The API may ask for a recent sign-in; the command then exits 4 and says
 to sign in again.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
-such as Acme/Platform/CI. Names compare without case. A value equal to
+such as Organization/Platform/CI. Names compare without case. A value equal to
 one group's whole path selects that group; otherwise the end of a path,
 such as Platform/CI or a group name like CI, must select exactly one
 group.
@@ -2157,6 +2163,7 @@ nonzero, so the secret is not lost.
 Examples:
     avr service-token create --name ci --group Platform/CI --repo acme/api
     avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
+    avr service-token create --name agents --group Platform/CI --repo acme/api --vm-create-limit 5
     avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 ```
 
@@ -2165,7 +2172,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, token
+    rotation_version, status, vm_cap, vm_count, token
 ```
 
 **Options**
@@ -2175,6 +2182,9 @@ JSON FIELDS
 - `--repo, -R <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--firewall-rule <TEXT>` — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - `--all-firewall-rules` — Grant read access to every egress firewall rule, including rules added later.
+- `--vm <TEXT>` — Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable. _(repeatable)_
+- `--all-vms <CHOICE>` — Grant read or write access to every VM of the organization, including VMs created later. _(choices: `read`, `write`)_
+- `--vm-create-limit <INTEGER RANGE>` — Let the token create VMs and own at most this many at once. A token of the root group cannot.
 - `--ttl <TEXT>` — Lifetime: e.g. 30m, 8h, 7d, or a number of seconds. 60 seconds to 90 days; the server default is 30 days.
 - `--never-expires` — The secret never expires: anyone holding it keeps its access until it is revoked. Cannot be combined with --ttl.
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
@@ -2194,7 +2204,7 @@ last. A live token whose requests are refused all the same, for example
 while its group is suspended, shows as blocked with the reason.
 
 --group takes a group ID or a group's path as `avr group list` shows it,
-such as Acme/Platform/CI. Names compare without case. A value equal to
+such as Organization/Platform/CI. Names compare without case. A value equal to
 one group's whole path selects that group; otherwise the end of a path,
 such as Platform/CI or a group name like CI, must select exactly one
 group.
@@ -2211,7 +2221,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status
+    rotation_version, status, vm_cap, vm_count
 ```
 
 **Options**
@@ -2304,7 +2314,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, token
+    rotation_version, status, vm_cap, vm_count, token
 ```
 
 **Arguments**
@@ -2329,18 +2339,21 @@ Replace a service token's whole access selection.
 avr service-token set-access [OPTIONS] TOKEN_ID
 ```
 
-The grants given here replace everything the token reaches: a grant you
-leave out is removed, so repeat the ones to keep. The command reads the
-token first and the change fails if the token changes in between. A
-grant that widens its access must be within your own access now. The
-API may ask for a recent sign-in; the command then exits 4 and says to
-sign in again. The change applies to the token's next
-request.
+The grants given here replace every grant the token holds: a grant you
+leave out is removed, so repeat the ones to keep. The VM create limit
+stays unless --vm-create-limit or --no-vm-create changes it. Before the
+change, the command lists the grants it removes or lowers and asks;
+without a terminal it refuses unless --yes is given. It reads the token
+first and the change fails if the token changes in between. A
+repository it adds must be one you can read now. The API may ask for a
+recent sign-in; the command then exits 4 and says to sign in again. The
+change applies to the token's next request.
 
 ```sh
 Examples:
     avr service-token set-access <token-id> --repo acme/api --repo acme/web
-    avr service-token set-access <token-id> --all-firewall-rules
+    avr service-token set-access <token-id> --all-firewall-rules --yes
+    avr service-token set-access <token-id> --repo acme/api --vm-create-limit 10
 ```
 
 **Arguments**
@@ -2352,7 +2365,12 @@ Examples:
 - `--repo, -R <TEXT>` — Grant read access to a repository (org/repo or rep-xxx). Repeatable. _(repeatable)_
 - `--firewall-rule <TEXT>` — Grant read access to an egress firewall rule, by rule ID (efr-xxx). Repeatable. _(repeatable)_
 - `--all-firewall-rules` — Grant read access to every egress firewall rule, including rules added later.
+- `--vm <TEXT>` — Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable. _(repeatable)_
+- `--all-vms <CHOICE>` — Grant read or write access to every VM of the organization, including VMs created later. _(choices: `read`, `write`)_
+- `--vm-create-limit <INTEGER RANGE>` — Let the token create VMs and own at most this many at once. A token of the root group cannot. Omit to keep the current limit.
+- `--no-vm-create` — Withdraw the token's permission to create VMs. The VMs it created stay.
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Apply the change without asking, even when it removes or lowers access.
 
 #### `avr service-token view`
 
@@ -2377,7 +2395,7 @@ JSON FIELDS
     blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
     grants_version, group_id, id, last_used_at, name, organization_id,
     previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status
+    rotation_version, status, vm_cap, vm_count
 ```
 
 **Arguments**
@@ -2411,7 +2429,7 @@ avr group list [OPTIONS]
 ```
 
 A group's path is the display names from the root group down, joined
-with /, such as Acme/Platform/CI; a parent is listed before its
+with /, such as Organization/Platform/CI; a parent is listed before its
 children. Pass a group's ID or path to --group when you create or list
 service tokens.
 
@@ -4157,7 +4175,7 @@ JSON FIELDS
 
 #### `avr org members`
 
-List organization members (admin only).
+List organization members.
 
 ```sh
 avr org members [OPTIONS]

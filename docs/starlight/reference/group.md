@@ -24,7 +24,7 @@ avr group list [OPTIONS]
 ```
 
 A group's path is the display names from the root group down, joined
-with /, such as Acme/Platform/CI; a parent is listed before its
+with /, such as Organization/Platform/CI; a parent is listed before its
 children. Pass a group's ID or path to --group when you create or list
 service tokens.
 

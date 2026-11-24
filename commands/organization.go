@@ -70,7 +70,7 @@ func organizationCell(row map[string]any, key string) string {
 func newOrgMembers(d Dependencies) *cobra.Command {
 	var org string
 	var o jsonOptions
-	c := &cobra.Command{Use: "members", Short: "List organization members (admin only).", Args: cobra.NoArgs}
+	c := &cobra.Command{Use: "members", Short: "List organization members.", Args: cobra.NoArgs}
 	orgFlag(c, &org)
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
