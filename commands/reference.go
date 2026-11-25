@@ -45,7 +45,9 @@ func NewReference(deps Dependencies) *cobra.Command {
 		if len(args) == 0 {
 			nodes = append(nodes, referenceRoot(tree, Description(root).Usage))
 		} else if found, rest, err := root.Find(args); err == nil && len(rest) == 0 && found != root {
-			prefix = strings.Fields(found.CommandPath())
+			// The reference names the program avr whatever an embedder calls
+			// its root.
+			prefix = append(prefix, strings.Fields(found.CommandPath())[1:]...)
 		} else {
 			prefix = append(prefix, args...)
 		}

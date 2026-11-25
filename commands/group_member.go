@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -226,8 +227,8 @@ func memberValues(ctx context.Context, d Dependencies, args []string, file strin
 			for _, value := range read {
 				seen[value] = true
 			}
-			scanner := bufio.NewScanner(reader)
-			for len(read) <= groupMemberBatchLimit && ctx.Err() == nil && scanner.Scan() {
+			scanner := bufio.NewScanner(untilDone{ctx, reader})
+			for len(read) <= groupMemberBatchLimit && scanner.Scan() {
 				if line := strings.TrimSpace(scanner.Text()); line != "" && !memberFileComment(line) && !seen[line] {
 					seen[line] = true
 					read = append(read, line)
@@ -243,6 +244,20 @@ func memberValues(ctx context.Context, d Dependencies, args []string, file strin
 		return nil, &ExitError{2, fmt.Sprintf("Error: One change takes at most %d members; more were given.\n  Hint: Split the list and run the command once per part.", groupMemberBatchLimit)}
 	}
 	return values, nil
+}
+
+// untilDone starts no read once its context is done. A scanner reads again
+// inside one Scan while a line is incomplete, so the check sits here.
+type untilDone struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (u untilDone) Read(p []byte) (int, error) {
+	if err := u.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return u.reader.Read(p)
 }
 
 // memberFileComment reports whether a --file line is a comment: one starting

@@ -786,9 +786,9 @@ func TestGroupMemberFileReadStopsReadingAfterInterrupt(t *testing.T) {
 		if code := <-done; code != 130 {
 			t.Fatal(code, h.stderr)
 		}
-		// The read pending at the interrupt still takes this line; nothing
-		// asks for more after it.
-		if _, err := writer.Write([]byte(memberBob + "\n")); err != nil {
+		// The read pending at the interrupt still takes these bytes; nothing
+		// asks for more after it, not even for the rest of the line.
+		if _, err := writer.Write([]byte(memberBob)); err != nil {
 			t.Fatal(err)
 		}
 		synctest.Wait()
@@ -963,8 +963,8 @@ func TestGroupLimitSetAsksUnlessItRaisesTheLimit(t *testing.T) {
 		{"unreadable limit", []map[string]any{unreadable}, "128", "", false, "Replace the vCPU limit lots of group"},
 		{"below past float precision", []map[string]any{huge}, "9007199254740992", "", false, "from 9007199254740993 to 9007199254740992?"},
 		{"above past float precision", []map[string]any{huge}, "9007199254740994", "", true, ""},
-		{"below a decimal past float precision", []map[string]any{hugeDecimal}, "9007199254740992", "", false, " to 9007199254740992?"},
-		{"below an exponent past float precision", []map[string]any{hugeExponent}, "9007199254740992", "", false, " to 9007199254740992?"},
+		{"below a decimal past float precision", []map[string]any{hugeDecimal}, "9007199254740992", "", false, "from 9007199254740993.0 to 9007199254740992?"},
+		{"below an exponent past float precision", []map[string]any{hugeExponent}, "9007199254740992", "", false, "from 9.007199254740993e15 to 9007199254740992?"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, groupLimitAPI(t, tt.limits))
@@ -1338,6 +1338,12 @@ func TestReferenceDescribesTheComposedRegistry(t *testing.T) {
 	stderr.Reset()
 	if code := ExecuteRoot(t.Context(), root, []string{"reference", "repo"}, stderr, d); code != 2 || !strings.Contains(stderr.String(), "No such command: avr repo") {
 		t.Fatal(code, stderr)
+	}
+	// An embedder may rename the root; the reference still calls it avr.
+	root.Use = "custom-cli"
+	out.Reset()
+	if code := ExecuteRoot(t.Context(), root, []string{"reference", "ext", "--json", "command"}, stderr, d); code != 0 || !strings.Contains(out.String(), `"avr extension"`) {
+		t.Fatal(code, out, stderr)
 	}
 }
 

@@ -139,7 +139,7 @@ func newGroupLimitSet(d Dependencies) *cobra.Command {
 		case !readable:
 			prompt = fmt.Sprintf("Replace the vCPU limit %s of group %s with %d?", output.CellText(pythonValue(previous)), name, vcpu)
 		case big.NewRat(vcpu, 1).Cmp(current) < 0:
-			prompt = fmt.Sprintf("Lower the vCPU limit of group %s from %s to %d?", name, pythonValue(previous), vcpu)
+			prompt = fmt.Sprintf("Lower the vCPU limit of group %s from %s to %d?", name, output.CellText(text), vcpu)
 		}
 		if prompt != "" {
 			if err = confirmChange(cmd, d, yes, "setting this group limit needs confirmation", "", prompt+" Running jobs keep running; new jobs that do not fit wait."); err != nil {
@@ -161,7 +161,7 @@ func newGroupLimitSet(d Dependencies) *cobra.Command {
 		}
 		change := fmt.Sprintf("Set the vCPU limit of group %s to %s", output.CellText(group.display()), output.CellText(pythonValue(record["value"])))
 		if previous != nil {
-			change += " (was " + output.CellText(pythonValue(previous)) + ")"
+			change += " (was " + output.CellText(text) + ")"
 		}
 		_, err = fmt.Fprintln(d.Out, change+".")
 		return err
