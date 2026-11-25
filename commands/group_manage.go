@@ -248,11 +248,13 @@ func newGroupCreate(d Dependencies) *cobra.Command {
 		// that resumes this create and no other. The retry names the parent
 		// and organization by the IDs resolved now: a name can belong to
 		// another group by the time it is rerun.
-		retry := "avr group create " + shellQuotePython(name) + " --parent " + under.id + " --org " + shellQuotePython(id)
+		retry := "avr group create --parent " + under.id + " --org " + shellQuotePython(id)
 		if f.Changed("label") && label != "" {
 			retry += " --label " + shellQuotePython(label)
 		}
-		retry += " --idempotency-key " + key
+		// The name goes last, after --, so one that starts with a dash is
+		// still read as the name.
+		retry += " --idempotency-key " + key + " -- " + shellQuotePython(name)
 		if _, err = fmt.Fprintln(d.Err, "Idempotency key: "+key+"\nParent: "+under.id+"\nOrganization: "+output.CellText(id)); err != nil {
 			return err
 		}

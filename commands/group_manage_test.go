@@ -245,6 +245,37 @@ func TestKeepFlagValuesRestoresEachKindOfFlag(t *testing.T) {
 			t.Fatal("after", text, list, ids, on, key)
 		}
 	}
+	// A value the command wrote itself, as a generated key is, goes back too,
+	// and a flag the embedder set beforehand stays set.
+	if err := root.PersistentFlags().Set("text", "preset"); err != nil {
+		t.Fatal(err)
+	}
+	sub.RunE = func(*cobra.Command, []string) error { key = "generated"; return nil }
+	restore := keepFlagValues(root)
+	root.SetArgs([]string{"sub"})
+	if err := root.Execute(); err != nil || key != "generated" {
+		t.Fatal(err, key)
+	}
+	restore()
+	if key != "" || text != "preset" || !root.PersistentFlags().Changed("text") {
+		t.Fatal(key, text)
+	}
+}
+
+// A subcommand keeps the context Cobra gave it; the next run must get its own.
+func TestExecuteRootGivesEachRunItsOwnContext(t *testing.T) {
+	d, _, stderr := testDeps(t)
+	root := NewRoot(d)
+	var seen context.Context
+	root.AddCommand(&cobra.Command{Use: "probe", RunE: func(cmd *cobra.Command, _ []string) error { seen = cmd.Context(); return nil }})
+	first, cancel := context.WithCancel(t.Context())
+	if code := ExecuteRoot(first, root, []string{"probe"}, stderr, d); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	cancel()
+	if code := ExecuteRoot(t.Context(), root, []string{"probe"}, stderr, d); code != 0 || seen.Err() != nil {
+		t.Fatal(code, seen.Err(), stderr)
+	}
 }
 
 func TestGroupCreateRefusesBeforeRequests(t *testing.T) {
@@ -274,8 +305,8 @@ func TestGroupCreateExplainsEachFailure(t *testing.T) {
 		{"parent missing", manageReply{422, nil, `{"detail":"Parent group not found or deleted"}`}, []string{"Nothing changed."}, []string{"unknown"}},
 		{"busy", manageReply{409, http.Header{"Retry-After": {"2"}}, `{"detail":"busy"}`}, []string{"Nothing changed. Another change holds the group; the request is safe to retry. Retry in 2s."}, nil},
 		{"not ready", manageReply{503, nil, `{"detail":"Delegation authorization is not ready"}`}, []string{"Nothing changed."}, nil},
-		{"proxy unavailable", manageReply{503, nil, `{"detail":"Service temporarily unavailable"}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create Builds --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
-		{"proxy error", manageReply{502, nil, `{}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create Builds --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
+		{"proxy unavailable", manageReply{503, nil, `{"detail":"Service temporarily unavailable"}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key ", " -- Builds`"}, []string{"Nothing changed", "Try again shortly"}},
+		{"proxy error", manageReply{502, nil, `{}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key ", " -- Builds`"}, []string{"Nothing changed", "Try again shortly"}},
 		{"unreadable answer", manageReply{201, nil, `not json`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
 		{"receipt without a group", manageReply{201, nil, `{"data":{}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
 		{"receipt with a malformed group ID", manageReply{201, nil, `{"data":{"group_id":"grp-1"}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},

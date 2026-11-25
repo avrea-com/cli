@@ -388,6 +388,13 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 	defer func() { root.PersistentPreRunE = previousPreRun }()
 	defer keepFlagValues(root)()
 	executed, err := root.ExecuteContextC(ctx)
+	// Cobra hands a subcommand the root's context only when it has none, so
+	// one left in place would be the context of this run in the next.
+	defer func() { //nolint:contextcheck // It clears a context; it has none to pass on.
+		if executed != nil && executed != root {
+			executed.SetContext(nil) //nolint:staticcheck // Clearing it is the point.
+		}
+	}()
 	if err == nil && ctx.Err() != nil {
 		err = &ExitError{130, "Interrupted."}
 	}
@@ -438,13 +445,15 @@ func (v projectIDArray) state() func() {
 }
 
 // keepFlagValues records every flag of the tree and returns a function that
-// puts back the ones a run changed. An embedder may run one tree many times,
+// puts them back, whether the run set one or the command wrote to its
+// variable, as a generated idempotency key is. An embedder may run one tree many times,
 // and an approval such as --yes, a key or an organization given to one run
 // must not carry into the next. A repeatable flag goes back to its values
 // from before the run; pflag appends to them from then on, which is the
 // same thing for the empty defaults every such flag here has.
 func keepFlagValues(root *cobra.Command) func() {
 	restores := map[*pflag.Flag]func(){}
+	changed := map[*pflag.Flag]bool{}
 	each := func(visit func(*pflag.Flag)) {
 		var walk func(*cobra.Command)
 		walk = func(c *cobra.Command) {
@@ -460,6 +469,7 @@ func keepFlagValues(root *cobra.Command) func() {
 		if _, seen := restores[flag]; seen {
 			return
 		}
+		changed[flag] = flag.Changed
 		switch value := flag.Value.(type) {
 		case flagState:
 			restores[flag] = value.state()
@@ -473,16 +483,13 @@ func keepFlagValues(root *cobra.Command) func() {
 	})
 	return func() {
 		each(func(flag *pflag.Flag) {
-			if !flag.Changed {
-				return
-			}
-			flag.Changed = false
 			if restore, ok := restores[flag]; ok {
 				restore()
-			} else {
+			} else if flag.Changed {
 				// Added while running, as Cobra adds --help.
 				_ = flag.Value.Set(flag.DefValue)
 			}
+			flag.Changed = changed[flag]
 		})
 	}
 }
