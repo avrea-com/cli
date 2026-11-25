@@ -727,7 +727,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 	c := &cobra.Command{Use: "set-access TOKEN_ID", Short: "Replace a service token's grants or change its VM creation.", Args: tokenIDArgs}
 	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	g.flags(c)
-	c.Flags().BoolVar(&g.noGrants, "no-grants", false, "Remove every grant, leaving only VM creation.")
+	c.Flags().BoolVar(&g.noGrants, "no-grants", false, "Remove every grant; VM creation stays as it is.")
 	c.Flags().BoolVar(&g.noVMCreate, "no-vm-create", false, "Stop the token creating VMs.")
 	c.Flags().BoolVarP(&yes, "yes", "y", false, "Apply the change without asking, even when it removes or lowers access.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
@@ -756,10 +756,14 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		// they changed since.
 		view := serviceTokenViewHint(args[0], id)
 		held := ""
+		// Read in full whatever the selection: the grants are resent when it
+		// names none, and otherwise decide what the change removes.
+		stored, err := serviceTokenHeldGrants(current)
+		if err != nil {
+			return &ExitError{1, "Error: Could not read the grants of service token " + args[0] + ": " + err.Error() + " in the API's answer. The token's access was not changed.\n  Hint: Check " + view + ", then run set-access again."}
+		}
 		if !selection.grantsGiven() {
-			if grants, err = serviceTokenHeldGrants(current); err != nil {
-				return &ExitError{1, "Error: Could not keep the grants of service token " + args[0] + ": " + err.Error() + " in the API's answer. The token's access was not changed.\n  Hint: Check " + view + ", then pass the grant options for the full selection you want."}
-			}
+			grants = stored
 			held = "grants[N] counts from 0 in the grants the token holds, in the order " + strings.TrimSuffix(view, "\x60") + " --json grants\x60 lists them; this command resent them unchanged."
 		}
 		body := map[string]any{"grants": grants, "expected_grants_version": version}
@@ -787,7 +791,7 @@ func newServiceTokenSetAccess(d Dependencies) *cobra.Command {
 		if err != nil {
 			return serviceTokenWriteError(cfg, err, serviceTokenRefusal{
 				action:    "replace the service token's access",
-				grants:    true,
+				grants:    len(grants) > 0, // an empty list has no grants[N] to explain
 				held:      held,
 				notFound:  serviceTokenWriteNotFound(current, id),
 				stale:     serviceTokenWriteStale(current, stale),

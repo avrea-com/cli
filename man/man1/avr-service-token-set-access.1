@@ -7,7 +7,7 @@ avr-service-token-set-access \- Replace a service token's grants or change its V
 .SH DESCRIPTION
 Replace a service token's grants or change its VM creation.
 .PP
-Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and --all-vms) replace every grant the token holds: a grant you leave out is removed, so repeat the ones to keep. Without grant options the grants stay; --no-grants removes them all, for a token that should only create VMs. The maximum of owned VMs stays unless --max-owned-vms or --no-vm-create changes it. When the change removes or lowers a grant or VM creation, the command lists what goes and asks first; without a terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
+Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and --all-vms) replace every grant the token holds: a grant you leave out is removed, so repeat the ones to keep. Without grant options the grants stay; --no-grants removes them all and leaves VM creation as it is. The maximum of owned VMs stays unless --max-owned-vms or --no-vm-create changes it. When the change removes or lowers a grant or VM creation, the command lists what goes and asks first; without a terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access changes in between. A grant that widens its access must be within your own access now. The API may ask for a recent sign-in; the command then exits 4 and says to sign in again. The change applies to the token's next request.
 .PP
 .RS 4
 .nf
@@ -43,7 +43,7 @@ Grant read or write access to every VM of the organization, including VMs create
 Let the token create VMs and own up to this many at once; deleting a VM frees a place. A token of the root group cannot create VMs. Lowering it keeps the VMs the token owns. Omit to keep the current maximum.
 .TP
 \fB\-\-no\-grants\fR
-Remove every grant, leaving the token only its VM creation. Cannot be combined with grant options.
+Remove every grant; whether the token creates VMs stays as it is. Cannot be combined with grant options.
 .TP
 \fB\-\-no\-vm\-create\fR
 Stop the token creating VMs; its grants stay unless grant options are given. It keeps administering the VMs it created.

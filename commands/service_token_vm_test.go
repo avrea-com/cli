@@ -265,15 +265,19 @@ func TestServiceTokenSetAccessRefusesToResendUnreadableGrants(t *testing.T) {
 			} else {
 				current["grants"] = grants
 			}
-			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
-			code := h.run(t, "service-token", "set-access", manageTokenID, "--max-owned-vms", "4", "--yes")
-			message := h.stderr.String()
-			if code != 1 || slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants") {
-				t.Fatal(code, h.operations(), message)
-			}
-			for _, want := range []string{"Could not keep the grants", "The token's access was not changed.", "service-token view " + manageTokenID} {
-				if !strings.Contains(message, want) {
-					t.Errorf("missing %q in %q", want, message)
+			// A replacement reads the same list to say what it removes, so
+			// it stops too: with nothing readable it would ask about nothing.
+			for _, args := range [][]string{{"--max-owned-vms", "4", "--yes"}, {"--no-grants"}, {"--repo", manageRepoA}} {
+				h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+				code := h.run(t, append([]string{"service-token", "set-access", manageTokenID}, args...)...)
+				message := h.stderr.String()
+				if code != 1 || slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants") {
+					t.Fatal(args, code, h.operations(), message)
+				}
+				for _, want := range []string{"Could not read the grants", "The token's access was not changed.", "service-token view " + manageTokenID} {
+					if !strings.Contains(message, want) {
+						t.Errorf("%v: missing %q in %q", args, want, message)
+					}
 				}
 			}
 		})
@@ -350,6 +354,11 @@ func TestServiceTokenSetAccessExplainsARefusedStoredGrant(t *testing.T) {
 	// An explicit replacement is still explained by the order of its flags.
 	h = newManageHarness(t, managePersonal, refuse(t))
 	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoA, "--yes"); code != 1 || !strings.Contains(h.stderr.String(), "--firewall-rule values") {
+		t.Fatal(code, h.stderr)
+	}
+	// An empty list has no entry to count to.
+	h = newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants", "--yes"); code != 1 || strings.Contains(h.stderr.String(), "grants[N] counts from 0") {
 		t.Fatal(code, h.stderr)
 	}
 }
