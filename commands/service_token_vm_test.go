@@ -1,0 +1,531 @@
+package commands
+
+import (
+	"encoding/json"
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
+	"testing"
+)
+
+const (
+	manageVMA = "cvm-" + "019a0000000070008000000000000021"
+	manageVMB = "cvm-" + "019a0000000070008000000000000022"
+)
+
+func manageVMGrant(id any, level string) map[string]any {
+	grant := manageGrant("customer_vm", id)
+	grant["access_level"] = level
+	return grant
+}
+
+// checkVMCap fails unless body carries vm_cap exactly when set, with want.
+func checkVMCap(t *testing.T, body map[string]any, want any, set bool) {
+	t.Helper()
+	if got, present := body["vm_cap"]; present != set || got != want {
+		t.Fatalf("vm_cap %#v (present %v)", got, present)
+	}
+}
+
+func TestServiceTokenCreateSendsVMAccess(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want map[string]any
+	}{
+		{"grants in flag order after rules", []string{"--repo", manageRepoA, "--vm", manageVMA + ":WRITE", "--firewall-rule", manageRuleA, "--vm", manageVMB, "--max-owned-vms", "5"},
+			map[string]any{"vm_cap": float64(5), "grants": []any{manageGrant("repository", manageRepoA), manageGrant("egress_firewall_rule", manageRuleA), manageVMGrant(manageVMA, "write"), manageVMGrant(manageVMB, "read")}}},
+		// A repeated grant at the same level is one grant.
+		{"every VM after named ones", []string{"--vm", manageVMA + ":write", "--vm", manageVMA + ":write", "--all-vms", "read"},
+			map[string]any{"grants": []any{manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")}}},
+		{"only the VM limit", []string{"--max-owned-vms", "3"}, map[string]any{"vm_cap": float64(3), "grants": []any{}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, nil))
+			if code := h.run(t, append([]string{"service-token", "create", "--name", "ci", "--group", manageGroupID}, tc.args...)...); code != 0 {
+				t.Fatal(code, h.stderr)
+			}
+			body := h.requests[len(h.requests)-1].body
+			cap, set := tc.want["vm_cap"]
+			checkVMCap(t, body, cap, set)
+			if manageJSON(t, body["grants"]) != manageJSON(t, tc.want["grants"]) {
+				t.Fatal(body["grants"])
+			}
+		})
+	}
+}
+
+func TestServiceTokenVMOptionsRejectedBeforeRequests(t *testing.T) {
+	tooMany := []string{"--all-vms", "read"}
+	for i := range 100 {
+		tooMany = append(tooMany, "--firewall-rule", fmt.Sprintf("efr-"+"019a0000000070008000%012x", i))
+	}
+	create := []string{"create", "--name", "ci", "--group", manageGroupID}
+	replace := []string{"set-access", manageTokenID}
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{append(slices.Clone(create), "--vm", "vm-1"), "Invalid --vm value 'vm-1': expected a VM ID, cvm- followed by 32"},
+		{append(slices.Clone(create), "--vm", manageVMA+":admin"), "VM grants take read or write. Use --vm " + manageVMA + ", --vm " + manageVMA + ":read or --vm " + manageVMA + ":write."},
+		{append(slices.Clone(create), "--vm", ":write"), "Use --vm ID, --vm ID:read or --vm ID:write."},
+		{append(slices.Clone(create), "--vm", manageVMA, "--vm", manageVMA+":write"), "--vm names " + manageVMA + " at both read and write"},
+		{append(slices.Clone(create), "--all-vms", "admin"), "Invalid value for '--all-vms': 'admin' is not one of read, write"},
+		{append(slices.Clone(create), "--all-vms", "read", "--vm", manageVMA), "--all-vms read already grants every VM at read; drop --vm " + manageVMA},
+		{append(slices.Clone(create), "--all-vms", "write", "--vm", manageVMB+":write"), "--all-vms write already grants every VM at write"},
+		{append(slices.Clone(create), "--max-owned-vms", "0"), "--max-owned-vms must be between 1 and 2147483647"},
+		{append(slices.Clone(create), "--max-owned-vms", "2147483648"), "--max-owned-vms must be between 1 and 2147483647"},
+		{append(slices.Clone(create), tooMany...), "at most 100 grants (got 101)"},
+		{append(slices.Clone(create), "--no-vm-create", "--repo", manageRepoA), "unknown flag: --no-vm-create"},
+		{append(slices.Clone(replace), "--max-owned-vms", "2", "--no-vm-create"), "--max-owned-vms and --no-vm-create are mutually exclusive"},
+	} {
+		h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
+		code := h.run(t, append([]string{"service-token"}, tc.args...)...)
+		if code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), tc.want) {
+			t.Fatal(tc.args, code, h.stderr)
+		}
+	}
+}
+
+// A token of the root group cannot create VMs; the API says so about vm_cap,
+// which no grants[N] hint explains. Each command says what it can change.
+func TestServiceTokenRootOwnedVMLimit(t *testing.T) {
+	refusal := manageReply{422, nil, `{"detail":[{"type":"root_owned","loc":["body","vm_cap"],"msg":"A root-owned token cannot create VMs"}]}`}
+	routes := manageRoutes(t, manageRecord(nil))
+	for _, tc := range []struct {
+		args       []string
+		hint       string
+		otherwise  string
+		refusedFor string
+	}{
+		{[]string{"create", "--name", "ci", "--group", manageGroupID, "--max-owned-vms", "2"}, "Pass a group below it to --group", "Leave out --max-owned-vms", "POST"},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--max-owned-vms", "2"}, "Leave out --max-owned-vms, or create a token in a group below the root group", "--group", "PUT"},
+	} {
+		t.Run(tc.args[0], func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, func(r manageRequest) manageReply {
+				if r.method == tc.refusedFor {
+					return refusal
+				}
+				return routes(r)
+			})
+			code := h.run(t, append([]string{"service-token"}, tc.args...)...)
+			message := h.stderr.String()
+			if code != 1 || !strings.Contains(message, "A root-owned token cannot create VMs") || !strings.Contains(message, tc.hint) || strings.Contains(message, tc.otherwise) || strings.Contains(message, "grants[N]") {
+				t.Fatal(code, message)
+			}
+		})
+	}
+}
+
+func TestServiceTokenSetAccessVMLimit(t *testing.T) {
+	held := []any{manageGrant("repository", manageRepoA), manageVMGrant(nil, "write")}
+	current := manageRecord(map[string]any{"vm_cap": 3, "grants": held})
+	repoA := []any{manageGrant("repository", manageRepoA)}
+	for _, tc := range []struct {
+		name   string
+		args   []string
+		grants []any
+		cap    any
+		set    bool
+	}{
+		{"omitted keeps the limit", []string{"--repo", manageRepoA, "--yes"}, repoA, nil, false},
+		{"a new limit", []string{"--repo", manageRepoA, "--max-owned-vms", "4", "--yes"}, repoA, float64(4), true},
+		{"withdrawn", []string{"--repo", manageRepoA, "--no-vm-create", "--yes"}, repoA, nil, true},
+		// Without grant options only VM creation changes: the grants go back
+		// as read, every-VM grant included.
+		{"a new limit alone keeps the grants", []string{"--max-owned-vms", "4"}, held, float64(4), true},
+		{"withdrawn alone keeps the grants", []string{"--no-vm-create", "--yes"}, held, nil, true},
+		{"with VM grants and a limit", []string{"--repo", manageRepoA, "--vm", manageVMA + ":write", "--all-vms", "read", "--max-owned-vms", "5", "--yes"}, append(slices.Clone(repoA), manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")), float64(5), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+			if code := h.run(t, append([]string{"service-token", "set-access", manageTokenID}, tc.args...)...); code != 0 {
+				t.Fatal(code, h.stderr)
+			}
+			body := h.requests[len(h.requests)-1].body
+			checkVMCap(t, body, tc.cap, tc.set)
+			if manageJSON(t, body["grants"]) != manageJSON(t, tc.grants) || body["expected_grants_version"] != float64(7) {
+				t.Fatal(body)
+			}
+		})
+	}
+}
+
+func TestServiceTokenSetAccessListsRemovals(t *testing.T) {
+	current := manageRecord(map[string]any{"vm_cap": 5, "grants": []any{
+		manageGrant("repository", manageRepoA), manageVMGrant(manageVMA, "write"), manageGrant("egress_firewall_rule", nil),
+	}})
+	keep := []string{"--repo", manageRepoA, "--all-firewall-rules"}
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		removed []string
+	}{
+		{"everything kept", append(slices.Clone(keep), "--vm", manageVMA+":write"), nil},
+		{"covered by every VM", append(slices.Clone(keep), "--all-vms", "write"), nil},
+		{"a higher limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--max-owned-vms", "9"), nil},
+		{"a lowered VM", append(slices.Clone(keep), "--vm", manageVMA), []string{"VM " + manageVMA + " lowered from write to read"}},
+		{"every VM at read lowers write", append(slices.Clone(keep), "--all-vms", "read"), []string{"VM " + manageVMA + " lowered from write to read"}},
+		{"a dropped repository and rule", []string{"--vm", manageVMA + ":write"}, []string{"repository " + manageRepoA + " at read", "every firewall rule at read"}},
+		{"a lowered limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--max-owned-vms", "2"), []string{"maximum owned VMs lowered from 5 to 2"}},
+		{"a withdrawn limit", append(slices.Clone(keep), "--vm", manageVMA+":write", "--no-vm-create"), []string{"VM creation (up to 5 owned VMs)"}},
+		// Without grant options the grants stay, so only the limit is listed.
+		{"only a higher limit", []string{"--max-owned-vms", "9"}, nil},
+		{"only a lowered limit", []string{"--max-owned-vms", "2"}, []string{"maximum owned VMs lowered from 5 to 2"}},
+		{"only creation stopped", []string{"--no-vm-create"}, []string{"VM creation (up to 5 owned VMs)"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+			code := h.run(t, append([]string{"service-token", "set-access", manageTokenID}, tc.args...)...)
+			message := h.stderr.String()
+			replaced := slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants")
+			if len(tc.removed) == 0 {
+				if code != 0 || !replaced {
+					t.Fatal(code, message)
+				}
+				return
+			}
+			// Without a terminal nobody can answer, so the command refuses.
+			if code != 1 || replaced || h.out.Len() != 0 || !strings.Contains(message, "or pass --yes to apply the change") || strings.Count(message, "\n    ") != len(tc.removed) {
+				t.Fatal(code, h.operations(), message)
+			}
+			for _, want := range tc.removed {
+				if !strings.Contains(message, "\n    "+want+"\n") {
+					t.Errorf("missing %q in %q", want, message)
+				}
+			}
+		})
+	}
+}
+
+func TestServiceTokenSetAccessConfirmsRemovals(t *testing.T) {
+	const question = "This replacement removes access service token " + manageTokenID + " holds:\n    repository " + manageRepoA + " at read\nReplace its access? [y/N]"
+	for _, tc := range []struct {
+		name, input        string
+		terminal, stderrOK bool
+		args               []string
+		env                map[string]string
+		prompted, replaced bool
+	}{
+		{"declined", "n\n", true, true, nil, nil, true, false},
+		{"no answer", "", true, true, nil, nil, true, false},
+		{"accepted", "y\n", true, true, nil, nil, true, true},
+		{"--yes", "", true, true, []string{"--yes"}, nil, false, true},
+		{"-y without a terminal", "", false, false, []string{"-y"}, nil, false, true},
+		{"not a terminal", "y\n", false, true, nil, nil, false, false},
+		// A question in a redirected log would block the run unseen.
+		{"stderr redirected", "y\n", true, false, nil, nil, false, false},
+		{"prompts disabled", "y\n", true, true, nil, map[string]string{"AVR_PROMPT_DISABLED": "1"}, false, false},
+		{"prompts disabled with --yes", "", true, true, []string{"--yes"}, map[string]string{"AVR_PROMPT_DISABLED": "1"}, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
+			h.d.In = strings.NewReader(tc.input)
+			h.d.IsInputTerminal = func() bool { return tc.terminal }
+			h.d.IsErrorTerminal = func() bool { return tc.stderrOK }
+			h.d.Getenv = func(key string) string { return tc.env[key] }
+			code := h.run(t, append([]string{"service-token", "set-access", manageTokenID, "--repo", manageRepoB}, tc.args...)...)
+			message := h.stderr.String()
+			// The question goes to stderr so stdout stays the record.
+			if strings.Contains(message, question) != tc.prompted || strings.Contains(h.out.String(), "Replace its access?") {
+				t.Fatalf("prompted: stdout %q stderr %q", h.out, message)
+			}
+			replaced := slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants")
+			if replaced != tc.replaced || (code == 0) != tc.replaced {
+				t.Fatal(code, h.operations(), message)
+			}
+			// A refusal without a question still names what would go.
+			if !tc.replaced && (h.out.Len() != 0 || !strings.Contains(message, "\n    repository "+manageRepoA+" at read\n")) {
+				t.Fatal(h.out, message)
+			}
+		})
+	}
+}
+
+// A change of VM creation alone resends the grants as read. A list that
+// cannot be read in full is not resent: a dropped entry would remove a grant
+// and an absent resource_id would widen one to every object of its type.
+func TestServiceTokenSetAccessRefusesToResendUnreadableGrants(t *testing.T) {
+	whole := manageGrant("repository", manageRepoA)
+	for name, grants := range map[string]any{
+		"no grants field":       nil,
+		"grants not a list":     map[string]any{},
+		"an entry not a grant":  []any{whole, "repository"},
+		"resource_id absent":    []any{whole, map[string]any{"resource_type": "customer_vm", "access_level": "write"}},
+		"resource_id not text":  []any{map[string]any{"resource_type": "customer_vm", "resource_id": 7, "access_level": "write"}},
+		"resource_id empty":     []any{map[string]any{"resource_type": "customer_vm", "resource_id": "", "access_level": "write"}},
+		"resource_type absent":  []any{map[string]any{"resource_id": manageVMA, "access_level": "write"}},
+		"access_level not text": []any{map[string]any{"resource_type": "customer_vm", "resource_id": manageVMA, "access_level": true}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			current := manageRecord(map[string]any{"vm_cap": 3})
+			if grants == nil {
+				delete(current, "grants")
+			} else {
+				current["grants"] = grants
+			}
+			// A replacement reads the same list to say what it removes, so
+			// it stops too: with nothing readable it would ask about nothing.
+			for _, args := range [][]string{{"--max-owned-vms", "4", "--yes"}, {"--no-grants"}, {"--repo", manageRepoA}} {
+				h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+				code := h.run(t, append([]string{"service-token", "set-access", manageTokenID}, args...)...)
+				message := h.stderr.String()
+				if code != 1 || slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants") {
+					t.Fatal(args, code, h.operations(), message)
+				}
+				for _, want := range []string{"Could not read the grants", "The token's access was not changed.", "service-token view " + manageTokenID} {
+					if !strings.Contains(message, want) {
+						t.Errorf("%v: missing %q in %q", args, want, message)
+					}
+				}
+			}
+		})
+	}
+}
+
+// --no-grants is the only way to leave a token VM creation alone: omitting
+// the grant options keeps the grants, and each grant option adds one.
+func TestServiceTokenSetAccessNoGrantsClearsThemThroughTheConfirmation(t *testing.T) {
+	current := manageRecord(map[string]any{"vm_cap": 3, "grants": []any{manageGrant("repository", manageRepoA)}})
+	put := "PUT " + manageBase + "/" + manageTokenID + "/grants"
+
+	h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants"); code != 1 || slices.Contains(h.operations(), put) || !strings.Contains(h.stderr.String(), "\n    repository "+manageRepoA+" at read\n") {
+		t.Fatal(code, h.operations(), h.stderr)
+	}
+
+	h = newManageHarness(t, managePersonal, manageRoutes(t, current))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants", "--yes"); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	body := h.requests[len(h.requests)-1].body
+	// An empty list, not null, and the maximum of owned VMs left as it is.
+	checkVMCap(t, body, nil, false)
+	if manageJSON(t, body["grants"]) != "[]" || body["expected_grants_version"] != float64(7) {
+		t.Fatal(body)
+	}
+
+	for _, grant := range [][]string{{"--repo", manageRepoA}, {"--firewall-rule", manageRuleA}, {"--all-firewall-rules"}, {"--vm", manageVMA}, {"--all-vms", "read"}} {
+		h = newManageHarness(t, managePersonal, manageRoutes(t, current))
+		if code := h.run(t, append([]string{"service-token", "set-access", manageTokenID, "--no-grants"}, grant...)...); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "--no-grants removes every grant") {
+			t.Fatal(grant, code, h.operations(), h.stderr)
+		}
+	}
+}
+
+// The summary is read before the write is approved, so nothing the API
+// stored may add a line to it or move the cursor.
+func TestServiceTokenSetAccessEscapesStoredGrantFieldsInTheSummary(t *testing.T) {
+	current := manageRecord(map[string]any{"grants": []any{
+		map[string]any{"resource_type": "cache\n    nothing else", "resource_id": "obj-1", "access_level": "read\x1b[2K\nReplace"},
+	}})
+	h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+	code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB)
+	message := h.stderr.String()
+	if code != 1 || strings.Contains(message, "\x1b") || strings.Count(message, "\n    ") != 1 {
+		t.Fatalf("%d %q", code, message)
+	}
+	if want := `cache\n    nothing else obj-1 at read\x1b[2K\nReplace`; !strings.Contains(message, want) {
+		t.Fatalf("missing %q in %q", want, message)
+	}
+}
+
+// When only VM creation changes, the grants in the request are the token's
+// own, so a refusal of grants[N] is explained by them and not by flags the
+// caller never passed.
+func TestServiceTokenSetAccessExplainsARefusedStoredGrant(t *testing.T) {
+	refuse := func(t *testing.T) func(manageRequest) manageReply {
+		routes := manageRoutes(t, manageRecord(map[string]any{"vm_cap": 3}))
+		return func(r manageRequest) manageReply {
+			if r.method == "PUT" {
+				return manageReply{403, nil, `{"detail":"grants[1] names an object you cannot reach at that level"}`}
+			}
+			return routes(r)
+		}
+	}
+	h := newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--max-owned-vms", "4"); code != 1 {
+		t.Fatal(code, h.stderr)
+	}
+	if message := h.stderr.String(); !strings.Contains(message, "the grants the token holds") || !strings.Contains(message, "service-token view "+manageTokenID) || !strings.Contains(message, "--json grants") || strings.Contains(message, "--firewall-rule values") {
+		t.Fatal(message)
+	}
+	// An explicit replacement is still explained by the order of its flags.
+	h = newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoA, "--yes"); code != 1 || !strings.Contains(h.stderr.String(), "--firewall-rule values") {
+		t.Fatal(code, h.stderr)
+	}
+	// An empty list has no entry to count to.
+	h = newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants", "--yes"); code != 1 || strings.Contains(h.stderr.String(), "grants[N] counts from 0") {
+		t.Fatal(code, h.stderr)
+	}
+}
+
+func TestServiceTokenViewShowsVMAccess(t *testing.T) {
+	grants := []any{manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")}
+	for _, tc := range []struct {
+		name   string
+		record map[string]any
+		want   []string
+	}{
+		{"creates VMs", manageRecord(map[string]any{"vm_cap": 5, "vm_count": 2, "grants": grants}),
+			[]string{"VM create         allowed, 2 of 5 owned", "| VM   | " + manageVMA + " | write |", "| VM   | every VM                             | read  |"}},
+		{"limit withdrawn", manageRecord(map[string]any{"vm_cap": nil, "vm_count": 1}), []string{"VM create         not allowed, 1 still owned"}},
+		{"never created", manageRecord(nil), []string{"VM create         not allowed\n"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, manageRoutes(t, tc.record))
+			if code := h.run(t, "service-token", "view", manageTokenID); code != 0 {
+				t.Fatal(code, h.stderr)
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(h.out.String(), want) {
+					t.Errorf("missing %q in:\n%s", want, h.out)
+				}
+			}
+		})
+	}
+	h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(map[string]any{"vm_cap": 5, "vm_count": 2})))
+	if code := h.run(t, "service-token", "view", manageTokenID, "--json", "vm_cap,vm_count"); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	var record map[string]any
+	if err := json.Unmarshal(h.out.Bytes(), &record); err != nil || record["vm_cap"] != float64(5) || record["vm_count"] != float64(2) {
+		t.Fatal(err, h.out)
+	}
+}
+
+func TestTokenGrantsSummaryCountsServiceTokenVMs(t *testing.T) {
+	for _, tc := range []struct {
+		row  map[string]any
+		want string
+	}{
+		// A service token counts the VMs it owns now, a scoped token the VMs
+		// it ever created; the same numbers must not read alike.
+		{map[string]any{"vm_cap": float64(5), "vm_count": float64(2)}, "VM create 2/5 owned"},
+		{map[string]any{"vm_cap": float64(5)}, "VM create 0/5 owned"},
+		{map[string]any{"allow_vm_create": true, "vm_create_count": float64(2), "vm_create_limit": float64(5)}, "VM create 2/5 used"},
+		// The token administers the VMs it created after its limit is gone.
+		{map[string]any{"grants": []any{manageVMGrant(manageVMA, "write")}, "vm_cap": nil, "vm_count": float64(1)}, "1 VM, 1 VM still owned"},
+		{map[string]any{"vm_cap": nil, "vm_count": float64(2)}, "2 VMs still owned"},
+		{map[string]any{"vm_cap": nil, "vm_count": float64(0)}, "-"},
+		// A scoped token's create count is not VMs it owns.
+		{map[string]any{"allow_vm_create": false, "vm_create_count": float64(2)}, "-"},
+	} {
+		if got := tokenGrantsSummary(tc.row); got != tc.want {
+			t.Errorf("%v: %q != %q", tc.row, got, tc.want)
+		}
+	}
+}
+
+func TestSplitTokenLevel(t *testing.T) {
+	for _, tc := range []struct {
+		spec, id, level string
+	}{
+		{manageVMA, manageVMA, "read"},
+		{manageVMA + ":read", manageVMA, "read"},
+		{manageVMA + ":Write", manageVMA, "write"},
+	} {
+		id, level, err := splitTokenLevel(tc.spec, "VM", "--vm", serviceTokenLevels...)
+		if err != nil || id != tc.id || level != tc.level {
+			t.Errorf("%s: %q %q %v", tc.spec, id, level, err)
+		}
+	}
+	// A repository keeps its one-level message.
+	if _, err := stripTokenLevel("acme/api:write", "repository", "--repo", "read"); err == nil || !strings.Contains(err.Error(), "repository grants are created at the read level. Use --repo acme/api or --repo acme/api:read.") {
+		t.Fatal(err)
+	}
+}
+
+// serviceTokenVMRoutes are the routes the API opens to a service token on a
+// deployment that admits service-token VM access, by method, with bodies the
+// vm commands parse to completion.
+var serviceTokenVMRoutes = func() map[string]string {
+	vm := `{"customer_vm_id":"` + manageVMA + `","display_name":"box","state":"RUNNING","os_type":"linux","size":"2-vcpu","architecture":"x86_64","created_at":"2026-11-16T10:00:00Z"}`
+	return map[string]string{
+		"GET /service-tokens/self":                              serviceTokenSelf,
+		"POST /orgs/{org_id}/vms":                               `{"data":{"vm":` + vm + `,"password":"one-time-fixture"}}`,
+		"GET /orgs/{org_id}/vms":                                `{"data":[` + vm + `],"pagination":{"next_cursor":null}}`,
+		"GET /orgs/{org_id}/vms/capabilities":                   `{"data":{"max_active_per_user":4,"active_count":1,"os_types":[{"os_type":"linux","architectures":[{"architecture":"x86_64","versions":["ubuntu-24.04"],"default_version":"ubuntu-24.04","size_specs":[{"size":"2-vcpu","cpu_count":2,"memory_mb":4096,"disk_gb":40}]}]}]}}`,
+		"GET /orgs/{org_id}/vms/{vm_id}":                        `{"data":` + vm + `}`,
+		"GET /orgs/{org_id}/vms/{vm_id}/metrics":                `{"data":{"running":true,"metrics":{"cpu":{"series":[]}}}}`,
+		"PATCH /orgs/{org_id}/vms/{vm_id}":                      `{"data":{"vm":` + vm + `}}`,
+		"POST /orgs/{org_id}/vms/{vm_id}/pause":                 `{"data":` + strings.Replace(vm, `"RUNNING"`, `"PAUSING"`, 1) + `}`,
+		"POST /orgs/{org_id}/vms/{vm_id}/https-label-rotations": `{"data":` + strings.TrimSuffix(vm, "}") + `,"https_ports":[8080],"endpoints":{"https":[{"port":8080,"url":"https://rotated.example"}]}}}`,
+		"DELETE /orgs/{org_id}/vms/{vm_id}":                     `{"data":{"customer_vm_id":"` + manageVMA + `","state":"DELETING"}}`,
+	}
+}()
+
+// serviceTokenVMRoute returns the open route a request matches, or "". A
+// placeholder never matches the literal "capabilities".
+func serviceTokenVMRoute(method, path string) string {
+	return matchRoutePattern(slices.Collect(maps.Keys(serviceTokenVMRoutes)), method+" "+path, "capabilities")
+}
+
+// serviceTokenVMSequence is every request a VM command may send as a service
+// token: the lookup of the token itself, then the command's own.
+func serviceTokenVMSequence(own ...string) []string {
+	return append([]string{"GET /service-tokens/self"}, own...)
+}
+
+// The service-token help names the avr vm commands a service token runs.
+// Each must send exactly its own requests, reach only the routes open to it,
+// including name lookups, and show the answer.
+func TestServiceTokenVMCommands(t *testing.T) {
+	vms := "/orgs/" + inspectionOrg + "/vms"
+	vm := vms + "/" + manageVMA
+	for _, tc := range []struct {
+		args []string
+		sent []string
+		out  string
+	}{
+		{[]string{"vm", "create", "--os", "linux", "--size", "2-vcpu"}, []string{"POST " + vms}, manageVMA},
+		{[]string{"vm", "list"}, []string{"GET " + vms}, "box"},
+		{[]string{"vm", "capabilities"}, []string{"GET " + vms + "/capabilities"}, "2-vcpu"},
+		{[]string{"vm", "show", manageVMA}, []string{"GET " + vm}, "box"},
+		// The API resolves a name in the VM's place in the path.
+		{[]string{"vm", "show", "box"}, []string{"GET " + vms + "/box"}, manageVMA},
+		// Metrics reads the VM first, to say whether it is running.
+		{[]string{"vm", "metrics", manageVMA, "--json"}, []string{"GET " + vm, "GET " + vm + "/metrics"}, `"cpu"`},
+		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, []string{"PATCH " + vm}, "box"},
+		{[]string{"vm", "pause", manageVMA}, []string{"POST " + vm + "/pause"}, "PAUSING"},
+		{[]string{"vm", "rotate-https-label", manageVMA}, []string{"POST " + vm + "/https-label-rotations"}, "https://rotated.example"},
+		{[]string{"vm", "delete", manageVMA, "--yes"}, []string{"DELETE " + vm}, "is now DELETING"},
+		{[]string{"vm", "delete", manageVMA, "--yes", "--json"}, []string{"DELETE " + vm}, `"customer_vm_id": "` + manageVMA + `"`},
+	} {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
+			var violations []string
+			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
+			code := h.run(t, tc.args...)
+			if !slices.Equal(h.requests, serviceTokenVMSequence(tc.sent...)) {
+				t.Fatal("requests", h.requests)
+			}
+			if code != 0 || len(violations) != 0 || !strings.Contains(h.out.String(), tc.out) {
+				t.Fatal(code, violations, h.requests, h.out, h.stderr)
+			}
+		})
+	}
+}
+
+// Resume and fork are closed to service tokens, as the help says; the API
+// answers 404 and the command explains what a service token reaches.
+func TestServiceTokenVMResumeAndForkClosed(t *testing.T) {
+	for _, operation := range []string{"resume", "fork"} {
+		t.Run(operation, func(t *testing.T) {
+			var violations []string
+			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
+			code := h.run(t, "vm", operation, manageVMA)
+			want := "POST /orgs/" + inspectionOrg + "/vms/" + manageVMA + "/" + operation
+			// The refused request is the only one the command sends: a pause
+			// before a fork, say, would be admitted and so not be a violation.
+			if !slices.Equal(h.requests, serviceTokenVMSequence(want)) {
+				t.Fatal("requests", h.requests)
+			}
+			if code != 1 || !slices.Equal(violations, []string{want}) || !strings.Contains(h.stderr.String(), "its grants and the VMs it created") {
+				t.Fatal(code, violations, h.stderr)
+			}
+		})
+	}
+}

@@ -390,6 +390,7 @@ func TestAPIContractServiceTokenWriteChains(t *testing.T) {
 		operations []string
 	}{
 		{[]string{"set-access", manageTokenID, "--repo", manageRepoA}, []string{"GET " + token, "PUT " + token + "/grants"}},
+		{[]string{"set-access", manageTokenID, "--repo", manageRepoA, "--vm", manageVMA + ":write", "--max-owned-vms", "2"}, []string{"GET " + token, "PUT " + token + "/grants"}},
 		{[]string{"rotate", manageTokenID, "--overlap", "2h"}, []string{"GET " + token, "POST " + token + "/rotate"}},
 	} {
 		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {

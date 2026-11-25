@@ -7,7 +7,7 @@ avr-service-token-revoke-all \- Revoke every service token of the organization.
 .SH DESCRIPTION
 Revoke every service token of the organization.
 .PP
-For a suspected leak: every unrevoked service token of the organization, expired ones included, stops working on its next request.
+For a suspected leak: every unrevoked service token of the organization, expired ones included, stops working on its next request, and the VMs those tokens created are deleted.
 .PP
 .RS 4
 .nf

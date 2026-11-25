@@ -35,8 +35,15 @@ func serviceTokenOpenRoute(method, path string) string {
 	if method != http.MethodGet {
 		return ""
 	}
+	return matchRoutePattern(serviceTokenOpenRoutes, path, "resolve")
+}
+
+// matchRoutePattern returns the pattern path matches, or "". A {placeholder}
+// matches any one segment except literal, the name of a route that sits where
+// an ID would.
+func matchRoutePattern(patterns []string, path, literal string) string {
 	parts := strings.Split(path, "/")
-	for _, pattern := range serviceTokenOpenRoutes {
+	for _, pattern := range patterns {
 		want := strings.Split(pattern, "/")
 		if len(want) != len(parts) {
 			continue
@@ -44,7 +51,7 @@ func serviceTokenOpenRoute(method, path string) string {
 		matched := true
 		for i, segment := range want {
 			if strings.HasPrefix(segment, "{") {
-				matched = parts[i] != "" && parts[i] != "resolve"
+				matched = parts[i] != "" && parts[i] != literal
 			} else {
 				matched = parts[i] == segment
 			}
@@ -75,8 +82,14 @@ func serviceTokenOpenAPI(violations *[]string) func(*http.Request) (int, string)
 		"/orgs/{org_id}/repos/{repo_id}/analysis/sbom/commits/{commit_sha}":                      sbom,
 		"/orgs/{org_id}/repos/{repo_id}/analysis/sbom/commits/{commit_sha}/artifacts/{filename}": serviceTokenArtifact,
 	}
+	return routeModelAPI(serviceTokenOpenRoute, bodies, violations)
+}
+
+// routeModelAPI answers each request match admits with that route's body,
+// and every other request with 404 while recording it in violations.
+func routeModelAPI(match func(method, path string) string, bodies map[string]string, violations *[]string) func(*http.Request) (int, string) {
 	return func(r *http.Request) (int, string) {
-		route := serviceTokenOpenRoute(r.Method, r.URL.Path)
+		route := match(r.Method, r.URL.Path)
 		if route == "" {
 			*violations = append(*violations, r.Method+" "+r.URL.Path)
 			return 404, `{"detail":"Not Found"}`
@@ -185,7 +198,7 @@ func TestServiceTokenFirewallShowNeedsResolvedRoute(t *testing.T) {
 			h := newServiceTokenHarness(t, "", serviceTokenOpenAPI(&violations))
 			code := h.run(t, "firewall", "show", "--repo", tc.repo)
 			message := h.stderr.String()
-			if code != 1 || !strings.Contains(message, "(HTTP 404)") || !strings.Contains(message, "a service token reaches only what its access names") {
+			if code != 1 || !strings.Contains(message, "(HTTP 404)") || !strings.Contains(message, "its grants and the VMs it created") {
 				t.Fatal(code, message)
 			}
 			if !slices.Equal(violations, []string{resolved}) || !slices.Equal(h.requests, tc.want) {

@@ -16,9 +16,11 @@ import (
 
 var statusFields = []string{"email", "name", "created_at", "user_id", "host", "default_org", "token", "credential_type"}
 
+const serviceTokenScope = "A service token can access resources covered by its grants and the VMs it created in its organization."
+
 // serviceStatusFields extends statusFields with a service token's identity;
 // the other credential kinds keep their field set.
-var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants")
+var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants", "presented_secret", "secret_valid_until", "vm_cap", "vm_count")
 
 func newStatus(d Dependencies) *cobra.Command {
 	var show bool
@@ -142,6 +144,13 @@ func newStatus(d Dependencies) *cobra.Command {
 			row("Organization", fallback(result["organization_id"], "-"))
 			row("Group", fallback(result["group_id"], "-"))
 			row("Expires", expires)
+			presented, stops := fieldText(result, "presented_secret"), formatTimestamp(fieldText(result, "secret_valid_until"))
+			switch presented {
+			case "current":
+				row("Secret", "current")
+			case "previous":
+				row("Secret", "previous, works until "+stops)
+			}
 			row("Grants", tokenGrantsSummary(result))
 			row("Host", cfg.Host)
 			row("Token", maskToken(cfg.Token, show))
@@ -149,12 +158,16 @@ func newStatus(d Dependencies) *cobra.Command {
 			if result["expiring_soon"] == true {
 				b.WriteString(d.paint("  ! This service token expires soon: an organization admin can rotate it with \x60avr service-token rotate\x60; then update AVR_TOKEN.", "33") + "\n")
 			}
-			// The field stays set after the overlap ends; by then the replaced
-			// secret is already refused and the advice no longer applies.
-			if until := fieldText(result, "previous_valid_until"); timestampAfter(until, d.Now()) {
+			switch until := fieldText(result, "previous_valid_until"); {
+			case presented == "previous":
+				b.WriteString(d.paint("  ! AVR_TOKEN holds the secret a rotation replaced. It stops working at "+stops+": switch to the new secret.", "33") + "\n")
+			case presented == "" && timestampAfter(until, d.Now()):
+				// An API that does not say which secret was presented. The field
+				// stays set after the overlap ends; by then the replaced secret
+				// is already refused and the advice no longer applies.
 				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
-			b.WriteString(d.paint("  A service token reaches only what its access names, in its own organization.", "2") + "\n")
+			b.WriteString(d.paint("  "+serviceTokenScope, "2") + "\n")
 		case config.PersonalKey:
 			row("User ID", fallback(result["id"], "-"))
 			row("Email", fallback(result["email"], "-"))
@@ -367,7 +380,7 @@ func apiError(cfg config.Config, err error, action string) error {
 		case config.ScopedToken:
 			message += "\n  Hint: a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
 		case config.ServiceToken:
-			message += "\n  Hint: a service token reaches only what its access names, and only the operations open to service tokens."
+			message += "\n  Hint: " + serviceTokenScope + " Check that this is one of the operations open to service tokens."
 		case config.PersonalKey:
 		}
 	}

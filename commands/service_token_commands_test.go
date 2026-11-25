@@ -360,7 +360,7 @@ func TestServiceTokenCreateRejectsInvalidOptionsBeforeRequests(t *testing.T) {
 		{[]string{"--group", manageGroupID, "--repo", manageRepoA}, "Missing option '--name'"},
 		{[]string{"--name", "ci", "--repo", manageRepoA}, "Missing option '--group'"},
 		{[]string{"--name", "ci", "--group", "", "--repo", manageRepoA}, "expected a group name, path or ID"},
-		{base, "at least one of --repo, --firewall-rule or --all-firewall-rules"},
+		{base, "at least one of --repo, --firewall-rule, --all-firewall-rules, --vm, --all-vms or --max-owned-vms"},
 		{append(slices.Clone(base), "--all-firewall-rules", "--firewall-rule", manageRuleA), "already grants every firewall rule"},
 		{append(slices.Clone(base), "--firewall-rule", "rule-1"), "expected a rule ID"},
 		{append(slices.Clone(base), "--repo", "acme/api:admin"), "read level"},
@@ -426,7 +426,8 @@ func TestServiceTokenCreateRefusals(t *testing.T) {
 
 func TestServiceTokenSetAccessReadsVersionThenReplaces(t *testing.T) {
 	h := newManageHarness(t, managePersonal, manageRoutes(t, manageRecord(nil)))
-	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB, "--all-firewall-rules"); code != 0 {
+	// The new selection drops repository A, which --yes accepts.
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB, "--all-firewall-rules", "--yes"); code != 0 {
 		t.Fatal(code, h.stderr)
 	}
 	if want := []string{"GET " + manageBase + "/" + manageTokenID, "PUT " + manageBase + "/" + manageTokenID + "/grants"}; !slices.Equal(h.operations(), want) {
@@ -444,7 +445,9 @@ func TestServiceTokenSetAccessReadsVersionThenReplaces(t *testing.T) {
 
 func TestServiceTokenSetAccessNeedsGrants(t *testing.T) {
 	h := newManageHarness(t, managePersonal, func(manageRequest) manageReply { t.Error("request sent"); return manageReply{599, nil, "{}"} })
-	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "at least one of --repo") {
+	// Replacing with nothing would strip every grant; the hint names the
+	// explicit withdrawal set-access offers instead.
+	if code := h.run(t, "service-token", "set-access", manageTokenID); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "or --max-owned-vms or --no-vm-create to change only its VM creation") {
 		t.Fatal(code, h.stderr)
 	}
 }
@@ -562,6 +565,11 @@ func TestServiceTokenRevokeConfirmation(t *testing.T) {
 			h.d.In = strings.NewReader(tc.input)
 			h.d.Getenv = func(key string) string { return tc.env[key] }
 			code := h.run(t, append([]string{"service-token", "revoke", manageTokenID}, tc.args...)...)
+			// Revoking deletes the VMs the token created, so the question says so.
+			asked := strings.Contains(h.out.String(), "Revoke service token "+manageTokenID+"?")
+			if asked != (tc.args == nil && tc.env == nil) || asked && !strings.Contains(h.out.String(), "the VMs it created are deleted") {
+				t.Fatal("prompt", h.out)
+			}
 			if tc.revoked {
 				if code != 0 || !slices.Equal(h.operations(), []string{"DELETE " + manageBase + "/" + manageTokenID}) || !strings.Contains(h.out.String(), "Service token "+manageTokenID+" revoked.") {
 					t.Fatal(code, h.operations(), h.out, h.stderr)
@@ -591,7 +599,7 @@ func TestServiceTokenRevokeAllConfirmationNamesOrganization(t *testing.T) {
 			h.d.In = strings.NewReader(tc.input)
 			code := h.run(t, append([]string{"service-token", "revoke-all"}, tc.args...)...)
 			prompted := strings.Contains(h.out.String(), "Revoke every service token of organization acme ("+inspectionOrg+")?")
-			if prompted == slices.Contains(tc.args, "--yes") {
+			if prompted == slices.Contains(tc.args, "--yes") || prompted && !strings.Contains(h.out.String(), "the VMs they created are deleted") {
 				t.Fatal("prompt", h.out)
 			}
 			writes := slices.DeleteFunc(h.operations(), func(op string) bool { return strings.HasPrefix(op, "GET ") })
