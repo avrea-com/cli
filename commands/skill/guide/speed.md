@@ -13,6 +13,10 @@ then split its time: queue wait or execution (`run diagnose`), which steps
 (`avr job view <job-id>`), and whether the runner was saturated
 (`job metrics`). Check caches before blaming the runner, and right-size last.
 
+Inside a test job, `avr tests rank --repo owner/name` ranks tests by mean
+duration over the repository's most recent reports. Durations are test time,
+not job time, and the header says which reports were searched.
+
 Do not delete cache entries to experiment. Caches are shared by every run of
 the repository.
 

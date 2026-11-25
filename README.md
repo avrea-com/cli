@@ -186,7 +186,7 @@ What the agent needs to know:
 ```sh
 avr run diagnose <run> --json                         # start here for a failed or slow run
 avr run view <run> --log-failed                       # failed steps only
-avr tests <run> --job unit --status failed            # failed tests of one job
+avr tests <run> --all-jobs --status failed            # failed tests across the run's jobs
 avr run watch <run> --exit-status                     # wait for a run; its result becomes the exit code
 ```
 
@@ -216,11 +216,15 @@ avr job ssh <job>                      # while the job is still running
 **Read test results**
 
 ```sh
-avr tests <run> --job unit             # one job's tests, outcomes, timings and failures
+avr tests <run> --job unit                  # one job's tests, outcomes, timings and failures
+avr tests <run> --all-jobs --status failed  # failed tests across every job of the run
 avr tests <job> --status failed --status errored
-avr tests <run> --job unit --summary   # counts only
-avr tests search login                 # latest result of each matching test in the repository
-avr tests history test_login           # one test's recorded runs, newest first
+avr tests <run> --job unit --summary        # counts only
+avr tests search login                      # latest result of each matching test in the repository
+avr tests view <result-id>                  # one result's failure and when it started failing
+avr tests history test_login                # one test's recorded runs, newest first
+avr tests rank                              # slowest tests in the repository's recent reports
+avr tests rank --order failed_reports.desc  # tests that failed in the most reports
 ```
 
 **Rerun, cancel and dispatch**
