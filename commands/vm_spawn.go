@@ -120,7 +120,9 @@ func createVMFromSpawn(cmd *cobra.Command, d Dependencies, o vmCreateOptions) er
 		var he *client.HTTPError
 		if errors.As(err, &he) {
 			code := 2
-			if he.Status == 408 || he.Status == 409 || he.Status == 429 || he.Status >= 500 {
+			// A reused order key names a VM this caller cannot use, and retrying
+			// the same request with the same access does not change that.
+			if he.Status == 408 || (he.Status == 409 && he.Payload["code"] != "idempotency_key_reused") || he.Status == 429 || he.Status >= 500 {
 				code = 1
 			}
 			detail := he.Detail
