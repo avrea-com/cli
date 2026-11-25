@@ -10,12 +10,16 @@ import (
 )
 
 func newRunDiagnose(d Dependencies) *cobra.Command {
-	var org string
+	var org, repo string
 	var raw bool
 	c := &cobra.Command{Use: "diagnose RUN", Short: "Explain a failed or unexpectedly slow workflow run.", Args: cobra.ExactArgs(1)}
 	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
+	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository name or ID the run must belong to.")
 	c.Flags().BoolVar(&raw, "json", false, "Output the diagnostic report as JSON.")
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
+		if err := validateRunRepository(repo); err != nil {
+			return err
+		}
 		cfg, _, api, err := d.load()
 		if err != nil {
 			return err
@@ -29,6 +33,9 @@ func newRunDiagnose(d Dependencies) *cobra.Command {
 		}
 		record, err := resolveRun(cmd.Context(), cfg, api, id, ref, []string{"workflow"}, "resolve workflow run")
 		if err != nil {
+			return err
+		}
+		if err = requireRunRepository(record, repo); err != nil {
 			return err
 		}
 		report, err := buildRunDiagnostics(cmd.Context(), d, api, id, record)

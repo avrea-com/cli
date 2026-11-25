@@ -224,7 +224,8 @@ RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`. A job URL selects that job's attempt; the report still
 covers the whole attempt. The report combines jobs and failed steps, bounded
 failed-job log tails, queue/execution timings, runner metrics, and a
-prior-success workflow baseline.
+prior-success workflow baseline. RUN already selects the run; --repo only
+checks that the run belongs to that repository.
 
 ```sh
 Examples:
@@ -241,6 +242,7 @@ Examples:
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx) the run must belong to.
 - `--json` — Output the diagnostic report as JSON.
 
 #### `avr run list`
@@ -372,6 +374,8 @@ avr run view [OPTIONS] [RUN]
 RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
 run or job URL, or an Avrea console run URL. A job URL opens the attempt
 that job belongs to. Without RUN, shows 10 most recent runs.
+RUN already selects the run; --repo only checks that the run belongs to
+that repository, and narrows the recent runs when RUN is omitted.
 ```
 
 ```sh
@@ -403,6 +407,7 @@ JSON FIELDS
 **Options**
 
 - `--org, -o <TEXT>` — Organization ID or slug.
+- `--repo, -R <TEXT>` — Repository (org/repo or rep-xxx) the run must belong to. Without RUN, show its recent runs.
 - `--steps` — Expand each job to show its individual steps.
 - `--log` — Print full logs for all jobs.
 - `--log-failed` — Print logs only for failed steps.

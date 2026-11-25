@@ -66,12 +66,16 @@ type missingRepository struct{ message string }
 
 func (e *missingRepository) Error() string { return e.message }
 
+func invalidRepositoryFormat(repo string) error {
+	return fmt.Errorf("invalid repository format: %q\nUse org/repo (e.g. acme/web) or a repo ID (rep-...)", output.CellText(repo))
+}
+
 func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org, repo, platform string) (string, error) {
 	if strings.HasPrefix(repo, "rep-") && !strings.Contains(repo, "/") {
 		return repo, nil
 	}
 	if !strings.Contains(repo, "/") {
-		return "", fmt.Errorf("invalid repository format: %q\nUse org/repo (e.g. acme/web) or a repo ID (rep-...)", output.CellText(repo))
+		return "", invalidRepositoryFormat(repo)
 	}
 	warnCase := func(actual string) {
 		if actual != "" && actual != repo && strings.EqualFold(actual, repo) && d.IsErrorTerminal() {

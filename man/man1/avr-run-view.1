@@ -12,6 +12,8 @@ View a workflow run with its jobs.
 RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
 run or job URL, or an Avrea console run URL. A job URL opens the attempt
 that job belongs to. Without RUN, shows 10 most recent runs.
+RUN already selects the run; --repo only checks that the run belongs to
+that repository, and narrows the recent runs when RUN is omitted.
 .fi
 .RE
 .PP
@@ -48,6 +50,9 @@ JSON FIELDS
 .TP
 \fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
 Organization ID or slug.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository (org/repo or rep-xxx) the run must belong to. Without RUN, show its recent runs.
 .TP
 \fB\-\-steps\fR
 Expand each job to show its individual steps.
