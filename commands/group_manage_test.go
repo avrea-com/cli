@@ -182,6 +182,71 @@ func TestGroupCreateGeneratesAKeyPerRun(t *testing.T) {
 	}
 }
 
+// An embedder may run one command tree many times. What one run was given,
+// an approval or a key above all, must not reach the next.
+func TestGroupCommandsForgetTheFlagsOfAnEarlierRun(t *testing.T) {
+	const given = "0123456789abcdef0123456789abcdef"
+	h := newManageHarness(t, managePersonal, governanceAPI(t, func(r manageRequest) (manageReply, bool) {
+		switch {
+		case r.method == "POST" && r.path == groupsPath:
+			return manageReply{201, nil, manageJSON(t, map[string]any{"data": groupRecord("grp-"+"019a0000000070008000000000000027", groupPlatform, fmt.Sprint(r.body["display_name"]))})}, true
+		case r.method == "DELETE" && r.path == platformRoute:
+			return manageReply{204, nil, ""}, true
+		}
+		return manageReply{}, false
+	}))
+	root := NewRoot(h.d)
+	run := func(args ...string) int { return ExecuteRoot(t.Context(), root, args, h.d.Err, h.d) }
+	if code := run("group", "create", "Builds", "--parent", groupPlatform, "--label", "ci", "--idempotency-key", given); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	if code := run("group", "create", "Tests", "--parent", groupPlatform); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	posts := requestsTo(h, "POST", groupsPath)
+	if len(posts) != 2 || posts[0].body["idempotency_key"] != given || posts[1].body["idempotency_key"] == given || posts[1].body["label"] != nil {
+		t.Fatal(posts)
+	}
+	if code := run("group", "delete", "Acme/Platform", "--yes"); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	h.d.In = strings.NewReader("n\n")
+	if code := run("group", "delete", "Acme/Platform"); code == 0 || len(requestsTo(h, "DELETE", platformRoute)) != 1 {
+		t.Fatal(code, h.operations(), h.stderr)
+	}
+}
+
+// Every kind of flag value goes back to what it held before the run.
+func TestKeepFlagValuesRestoresEachKindOfFlag(t *testing.T) {
+	var text, key string
+	var list []string
+	var ids []int
+	on := true
+	root := &cobra.Command{Use: "avr"}
+	sub := &cobra.Command{Use: "sub", RunE: func(*cobra.Command, []string) error { return nil }}
+	root.AddCommand(sub)
+	root.PersistentFlags().StringVar(&text, "text", "start", "")
+	sub.Flags().StringArrayVar(&list, "item", nil, "")
+	sub.Flags().Var(projectIDArray{&ids}, "project-id", "")
+	sub.Flags().Var(inverseBool{&on}, "off", "")
+	sub.Flags().Lookup("off").NoOptDefVal = "true"
+	invocationKeyFlag(sub, &key, "")
+	for range 2 {
+		restore := keepFlagValues(root)
+		root.SetArgs([]string{"sub", "--text", "other", "--item", "second", "--project-id", "7", "--off", "--idempotency-key", "0123456789abcdef0123456789abcdef"})
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if text != "other" || len(list) != 1 || list[0] != "second" || len(ids) != 1 || on || key == "" {
+			t.Fatal("during", text, list, ids, on, key)
+		}
+		restore()
+		if text != "start" || len(list) != 0 || len(ids) != 0 || !on || key != "" || sub.Flags().Changed("item") || root.PersistentFlags().Changed("text") {
+			t.Fatal("after", text, list, ids, on, key)
+		}
+	}
+}
+
 func TestGroupCreateRefusesBeforeRequests(t *testing.T) {
 	for _, args := range [][]string{
 		{"group", "create", "Builds"},
@@ -209,8 +274,8 @@ func TestGroupCreateExplainsEachFailure(t *testing.T) {
 		{"parent missing", manageReply{422, nil, `{"detail":"Parent group not found or deleted"}`}, []string{"Nothing changed."}, []string{"unknown"}},
 		{"busy", manageReply{409, http.Header{"Retry-After": {"2"}}, `{"detail":"busy"}`}, []string{"Nothing changed. Another change holds the group; the request is safe to retry. Retry in 2s."}, nil},
 		{"not ready", manageReply{503, nil, `{"detail":"Delegation authorization is not ready"}`}, []string{"Nothing changed."}, nil},
-		{"proxy unavailable", manageReply{503, nil, `{"detail":"Service temporarily unavailable"}`}, []string{"may have taken effect", "The outcome is unknown. Rerun this command with --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
-		{"proxy error", manageReply{502, nil, `{}`}, []string{"may have taken effect", "The outcome is unknown. Rerun this command with --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
+		{"proxy unavailable", manageReply{503, nil, `{"detail":"Service temporarily unavailable"}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create Builds --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
+		{"proxy error", manageReply{502, nil, `{}`}, []string{"may have taken effect", "The outcome is unknown. Run `avr group create Builds --parent " + groupPlatform + " --org " + inspectionOrg + " --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
 		{"unreadable answer", manageReply{201, nil, `not json`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
 		{"receipt without a group", manageReply{201, nil, `{"data":{}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
 		{"receipt with a malformed group ID", manageReply{201, nil, `{"data":{"group_id":"grp-1"}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
@@ -387,6 +452,34 @@ func TestGroupEditSendsOnlyTheFieldsGiven(t *testing.T) {
 		if code := h.run(t, append([]string{"group", "edit", "Acme/Platform"}, args...)...); code != 2 || len(h.requests) != 0 {
 			t.Fatal(args, code, h.operations())
 		}
+	}
+}
+
+// A 2xx answer that does not hold what was written cannot say it was
+// written, so the command reports an unknown outcome instead of success.
+func TestGroupWritesNeedTheirRecordInTheAnswer(t *testing.T) {
+	for _, tt := range []struct {
+		name, method, path, data string
+		args                     []string
+	}{
+		{"edit, empty", "PATCH", platformRoute, `{}`, []string{"group", "edit", "Acme/Platform", "--name", "Builds", "--json", "group_id"}},
+		{"edit, another group", "PATCH", platformRoute, `{"group_id":"` + groupAcme + `"}`, []string{"group", "edit", "Acme/Platform", "--name", "Builds"}},
+		{"limit, empty", "PUT", platformRoute + "/limits/max_vcpu", `{}`, []string{"group", "limit", "set", "Acme/Platform", "--max-vcpu", "8", "--yes", "--json", "value"}},
+		{"limit, no value", "PUT", platformRoute + "/limits/max_vcpu", `{"limit_key":"max_vcpu"}`, []string{"group", "limit", "set", "Acme/Platform", "--max-vcpu", "8", "--yes"}},
+		{"limit, another key", "PUT", platformRoute + "/limits/max_vcpu", `{"limit_key":"max_jobs","value":8}`, []string{"group", "limit", "set", "Acme/Platform", "--max-vcpu", "8", "--yes"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newManageHarness(t, managePersonal, groupWriteAPI(t, nil, func(r manageRequest) (manageReply, bool) {
+				if r.method == tt.method && r.path == tt.path {
+					return manageReply{200, nil, `{"data":` + tt.data + `}`}, true
+				}
+				return manageReply{}, false
+			}))
+			code := h.run(t, tt.args...)
+			if message := h.stderr.String(); code != 1 || h.out.Len() != 0 || !strings.Contains(message, "The outcome is unknown.") || !strings.Contains(message, "before retrying") {
+				t.Fatal(code, h.out, message)
+			}
+		})
 	}
 }
 
@@ -1098,6 +1191,24 @@ func TestOrgMembersAccessResolvesANameOnReads(t *testing.T) {
 		if !strings.Contains(h.out.String(), want) {
 			t.Errorf("missing %q in %s", want, h.out)
 		}
+	}
+}
+
+// A display name may contain @. A read takes it as a name unless it is an
+// email address and nothing else; a change still reads any @ as an address.
+func TestMemberNamesContainingAnAtSign(t *testing.T) {
+	members := []map[string]any{orgMember(memberAda, "Ada @ Avrea", "active")}
+	h := newManageHarness(t, managePersonal, accessAPI(t, members, nil))
+	if code := h.run(t, "org", "members", "access", "Ada @ Avrea"); code != 0 || len(requestsTo(h, "GET", orgMembers+"/"+memberAda+"/effective-access")) != 1 {
+		t.Fatal(code, h.operations(), h.stderr)
+	}
+	for value, want := range map[string]memberKind{"Ada @ Avrea": memberName, "ada@example.com": memberEmail, "@ada": memberName, "#ada@example.com": memberEmail} {
+		if kind, err := classifyMember(value, "MEMBER", true); err != nil || kind != want {
+			t.Errorf("read %q: %v %v", value, kind, err)
+		}
+	}
+	if kind, err := classifyMember("Ada @ Avrea", "MEMBER", false); err != nil || kind != memberEmail {
+		t.Error("write", kind, err)
 	}
 }
 

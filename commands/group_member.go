@@ -78,7 +78,9 @@ func classifyMember(value, label string, names bool) (memberKind, error) {
 		return memberSelf, nil
 	case userIDPattern().MatchString(value):
 		return memberID, nil
-	case strings.Contains(strings.TrimPrefix(value, "@"), "@"):
+	case strings.Contains(strings.TrimPrefix(value, "@"), "@") && (!names || wholeAddress(value)):
+		// A read also takes a display name, which may contain @; a change
+		// never does, so there any @ means an address.
 		return memberEmail, nil
 	case strings.HasPrefix(value, "usr-"):
 		return 0, &ExitError{2, "Error: Invalid value for '" + label + "': " + pythonQuote(output.CellText(value)) + " is not a user ID. A user ID is usr- followed by 32 lowercase hexadecimal characters."}
@@ -268,8 +270,13 @@ func memberFileComment(line string) bool {
 	if !strings.HasPrefix(line, "#") {
 		return false
 	}
-	address, err := mail.ParseAddress(line)
-	return err != nil || address.Address != line
+	return !wholeAddress(line)
+}
+
+// wholeAddress reports whether value is an email address and nothing else.
+func wholeAddress(value string) bool {
+	address, err := mail.ParseAddress(value)
+	return err == nil && address.Address == value
 }
 
 func newGroupMember(d Dependencies) *cobra.Command {

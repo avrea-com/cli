@@ -245,8 +245,15 @@ func newGroupCreate(d Dependencies) *cobra.Command {
 			}
 		}
 		// Printed before the request, so a lost response still leaves the key
-		// that resumes this create and no other.
-		if _, err = fmt.Fprintln(d.Err, "Idempotency key: "+key); err != nil {
+		// that resumes this create and no other. The retry names the parent
+		// and organization by the IDs resolved now: a name can belong to
+		// another group by the time it is rerun.
+		retry := "avr group create " + shellQuotePython(name) + " --parent " + under.id + " --org " + shellQuotePython(id)
+		if f.Changed("label") && label != "" {
+			retry += " --label " + shellQuotePython(label)
+		}
+		retry += " --idempotency-key " + key
+		if _, err = fmt.Fprintln(d.Err, "Idempotency key: "+key+"\nParent: "+under.id+"\nOrganization: "+output.CellText(id)); err != nil {
 			return err
 		}
 		body := map[string]any{"parent_id": under.id, "display_name": name, "idempotency_key": key}
@@ -263,7 +270,7 @@ func newGroupCreate(d Dependencies) *cobra.Command {
 				action:   "create the group",
 				notFound: "The parent group may have been deleted or be hidden from you. If groups are unavailable with this credential, organization or server, `avr group list` fails the same way.",
 				conflict: groupCreateConflict(err, key),
-				unknown:  "Rerun this command with --idempotency-key " + key + ": it returns the group if this create made one, and creates it if not.",
+				unknown:  "Run `" + retry + "`: it returns the group if this create made one, and creates it if not.",
 			})
 		}
 		record["idempotency_key"] = key
@@ -342,6 +349,10 @@ func newGroupEdit(d Dependencies) *cobra.Command {
 			return err
 		}
 		record, err := api.DataRecord(cmd.Context(), http.MethodPatch, groupRoute(id, group.id), body)
+		if err == nil && fieldText(record, "group_id") != group.id {
+			// An answer that is not this group cannot say the edit applied.
+			err = errors.New("unexpected API response: the edited group is not in the answer")
+		}
 		if err != nil {
 			return groupFailure(cfg, err, groupRefusal{
 				action:   "edit the group",

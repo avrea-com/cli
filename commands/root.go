@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )
 
@@ -384,6 +386,7 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 		return nil
 	}
 	defer func() { root.PersistentPreRunE = previousPreRun }()
+	defer keepFlagValues(root)()
 	executed, err := root.ExecuteContextC(ctx)
 	if err == nil && ctx.Err() != nil {
 		err = &ExitError{130, "Interrupted."}
@@ -421,4 +424,65 @@ func (d Dependencies) timingEnabled() bool {
 		}
 	}
 	return false
+}
+
+// flagState is implemented by a flag value that cannot be put back by
+// setting its own text, because Set validates or appends.
+type flagState interface{ state() (restore func()) }
+
+func (v invocationKeyValue) state() func() { saved := *v.target; return func() { *v.target = saved } }
+func (v inverseBool) state() func()        { saved := *v.target; return func() { *v.target = saved } }
+func (v projectIDArray) state() func() {
+	saved := slices.Clone(*v.ids)
+	return func() { *v.ids = saved }
+}
+
+// keepFlagValues records every flag of the tree and returns a function that
+// puts back the ones a run changed. An embedder may run one tree many times,
+// and an approval such as --yes, a key or an organization given to one run
+// must not carry into the next. A repeatable flag goes back to its values
+// from before the run; pflag appends to them from then on, which is the
+// same thing for the empty defaults every such flag here has.
+func keepFlagValues(root *cobra.Command) func() {
+	restores := map[*pflag.Flag]func(){}
+	each := func(visit func(*pflag.Flag)) {
+		var walk func(*cobra.Command)
+		walk = func(c *cobra.Command) {
+			c.Flags().VisitAll(visit)
+			c.PersistentFlags().VisitAll(visit)
+			for _, sub := range c.Commands() {
+				walk(sub)
+			}
+		}
+		walk(root)
+	}
+	each(func(flag *pflag.Flag) {
+		if _, seen := restores[flag]; seen {
+			return
+		}
+		switch value := flag.Value.(type) {
+		case flagState:
+			restores[flag] = value.state()
+		case pflag.SliceValue:
+			saved := slices.Clone(value.GetSlice())
+			restores[flag] = func() { _ = value.Replace(saved) }
+		default:
+			saved := flag.Value.String()
+			restores[flag] = func() { _ = flag.Value.Set(saved) }
+		}
+	})
+	return func() {
+		each(func(flag *pflag.Flag) {
+			if !flag.Changed {
+				return
+			}
+			flag.Changed = false
+			if restore, ok := restores[flag]; ok {
+				restore()
+			} else {
+				// Added while running, as Cobra adds --help.
+				_ = flag.Value.Set(flag.DefValue)
+			}
+		})
+	}
 }

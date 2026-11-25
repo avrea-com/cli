@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -148,6 +149,10 @@ func newGroupLimitSet(d Dependencies) *cobra.Command {
 		}
 		body := map[string]any{"kind": "shared_pool", "limit_type": "concurrent", "value": vcpu}
 		record, err := api.DataRecord(cmd.Context(), http.MethodPut, groupRoute(id, group.id, "limits", groupVCPULimit), body)
+		if err == nil && (fieldText(record, "limit_key") != groupVCPULimit || record["value"] == nil) {
+			// An answer without the limit cannot say it was set.
+			err = errors.New("unexpected API response: the limit that was set is not in the answer")
+		}
 		if err != nil {
 			return groupFailure(cfg, err, groupRefusal{
 				action:   "set the group's limit",
