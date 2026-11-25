@@ -1,0 +1,94 @@
+.TH AVR\-BUILD 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-build \- Build container images remotely with docker buildx on Avrea builders.
+.SH SYNOPSIS
+.B avr build
+[OPTIONS] [BUILDX_ARGS]...
+.SH DESCRIPTION
+Build container images remotely with docker buildx on Avrea builders.
+.PP
+Mirrors `docker build`: every flag not listed below is forwarded verbatim to `docker buildx build` running against buildkitd in an ephemeral Avrea builder VM, so `-t`, `--push`, `--build-arg`, `-f`, `--output` etc. all behave as they do locally. Registry credentials come from your local `docker login` and are forwarded per build; Avrea never stores them.
+.PP
+Requires either a local docker CLI with buildx, or podman plus the standalone docker-buildx binary; with both installed podman is used unless --engine docker (or AVR_BUILD_ENGINE=docker) is given. With podman, `--load` goes into podman's image store and `podman login` credentials are used for --push. Also requires an authenticated `avr` client and the OpenSSH client.
+.PP
+Without --platform the image is built for this machine's CPU architecture, as `docker build` does: linux/arm64 on Apple silicon and other ARM machines, linux/amd64 on x86. Pass --platform to build for another architecture, such as linux/amd64 for an x86 server.
+.PP
+The repository (--repo, AVR_REPO, or auto-detected from the git remote) only scopes the build cache. It is optional: without one, or when the auto-detected repository isn't connected to the org, the build runs without a repo-scoped cache.
+.PP
+With a repository, layers are cached in Avrea's GHA cache (BuildKit's type=gha backend, mode=max), scoped per Dockerfile path, --target and platform. The first build reads the default branch's CI cache; writes go to a builder-only scope that CI never reads. Passing any --cache-from or --cache-to replaces these defaults.
+.PP
+.RS 4
+.nf
+Examples:
+    avr build -t myimage .
+    avr build --push -t registry.avrea.com/acme/app:latest .
+    avr build --platform linux/amd64,linux/arm64 --push -t acme/app .
+    avr build --size 8-vcpu --build-arg VERSION=1.2 -t app .
+.fi
+.RE
+.PP
+Like `docker build`, a single-platform build without --push or --output is loaded into the local image store (docker, or podman through its API socket); pass `--output type=cacheonly` to skip that. A `Containerfile` in the build context is used when there is no `Dockerfile`. Like `podman build`, the build context defaults to the current directory.
+.PP
+Multi-platform builds create one builder session per architecture and require --push or --output (a manifest list cannot be loaded into the local docker daemon).
+.PP
+The builder sessions are deleted when the build exits, also on Ctrl-C. `avr builder list` shows sessions a killed client left behind.
+.SH ARGUMENTS
+.TP
+[\fIBUILDX_ARGS...\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-platform\fR \fITEXT\fR
+Target platform(s): linux/amd64 and/or linux/arm64, comma-separated or repeated. Each platform builds natively on its own builder VM. Defaults to this machine's architecture. (repeatable)
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository the build belongs to (org/repo or rep-...); scopes the build cache. Optional — auto-detected from the git remote if omitted.
+.TP
+\fB\-\-org\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-size\fR \fICHOICE\fR
+Builder VM size (per platform). (choices: 1-vcpu, 2-vcpu, 4-vcpu, 8-vcpu, 16-vcpu, 32-vcpu; default: 4-vcpu)
+.TP
+\fB\-\-ttl\fR \fITEXT\fR
+Builder session TTL, e.g. 30m or 2h. Default 1h, max 8h.
+.TP
+\fB\-\-keep\-sessions\fR
+Debug: leave the builder sessions running after the build instead of deleting them.
+.TP
+\fB\-\-provision\-timeout\fR \fIINTEGER\fR
+Seconds to wait for builder VMs to become reachable. (default: 300)
+.TP
+\fB\-\-engine\fR \fICHOICE\fR
+Local container tooling: docker (docker CLI + buildx plugin) or podman (podman + standalone docker-buildx). auto prefers podman when both are available. Env: AVR_BUILD_ENGINE. (choices: auto, docker, podman; default: auto; env: AVR_BUILD_ENGINE)
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-builder (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-tests (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-service-token (1),
+.BR avr-group (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-skill (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-api (1),
+.BR avr-feedback (1),
+.BR avr-secret (1),
+.BR avr-variable (1)

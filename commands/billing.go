@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
@@ -207,8 +206,8 @@ func newInvoiceList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if cmd.Flags().Changed("cursor") && (cursor == "" || strings.TrimSpace(cursor) != cursor || utf8.RuneCountInString(cursor) > 512) {
-			return &ExitError{2, "Error: --cursor must be 1..512 chars and not surrounded by whitespace"}
+		if err := validateCursor(cmd, cursor); err != nil {
+			return err
 		}
 		query := url.Values{"limit": {strconv.Itoa(limit)}}
 		if cursor != "" {

@@ -1,0 +1,50 @@
+.TH AVR\-BUILDER 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-builder \- Manage remote builder sessions.
+.SH SYNOPSIS
+.B avr builder
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Manage remote builder sessions.
+.PP
+Builder sessions are the ephemeral VMs behind `avr build`. `avr build` normally creates and deletes its own, but a crashed client leaves its session running until the TTL expires — `list` finds those, `stop` reclaims them (and their quota) immediately.
+.SH COMMANDS
+.TP
+list
+List builder sessions, newest first.
+.TP
+stop
+Stop a builder session, reclaiming its VM and quota slot.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-artifact (1),
+.BR avr-status (1),
+.BR avr-run (1),
+.BR avr-pr (1),
+.BR avr-job (1),
+.BR avr-vm (1),
+.BR avr-build (1),
+.BR avr-workflow (1),
+.BR avr-cache (1),
+.BR avr-tests (1),
+.BR avr-sbom (1),
+.BR avr-log (1),
+.BR avr-auth (1),
+.BR avr-token (1),
+.BR avr-service-token (1),
+.BR avr-group (1),
+.BR avr-config (1),
+.BR avr-settings (1),
+.BR avr-skill (1),
+.BR avr-firewall (1),
+.BR avr-billing (1),
+.BR avr-audit-events (1),
+.BR avr-repo (1),
+.BR avr-org (1),
+.BR avr-health (1),
+.BR avr-api (1),
+.BR avr-feedback (1),
+.BR avr-secret (1),
+.BR avr-variable (1),
+.BR avr-builder-list (1),
+.BR avr-builder-stop (1)

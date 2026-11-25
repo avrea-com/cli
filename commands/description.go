@@ -26,6 +26,10 @@ func Description(c *cobra.Command) docgen.Description {
 		return authDescription(path)
 	case "billing":
 		return billingDescription(path)
+	case "build":
+		return buildDescription(path)
+	case "builder":
+		return builderDescription(path)
 	case "cache":
 		return cacheDescription(path)
 	case "config":
@@ -86,5 +90,5 @@ func commandHelp(c *cobra.Command) (docgen.HelpSpec, bool, error) {
 
 // Documentation renders the public tree, including composed live extensions.
 func Documentation(root *cobra.Command) (*docgen.Tree, error) {
-	return docgen.Build(root, Description, []docgen.Section{{Name: "Core Commands", Commands: []string{"artifact", "status", "run", "pr", "job", "vm", "workflow", "cache", "tests", "sbom", "log"}}, {Name: "Setup & Config", Commands: []string{"auth", "token", "service-token", "group", "config", "settings", "skill", "firewall", "billing", "audit-events"}}, {Name: "Additional Commands", Commands: []string{"repo", "org", "health"}}})
+	return docgen.Build(root, Description, []docgen.Section{{Name: "Core Commands", Commands: []string{"artifact", "status", "run", "pr", "job", "vm", "build", "builder", "workflow", "cache", "tests", "sbom", "log"}}, {Name: "Setup & Config", Commands: []string{"auth", "token", "service-token", "group", "config", "settings", "skill", "firewall", "billing", "audit-events"}}, {Name: "Additional Commands", Commands: []string{"repo", "org", "health"}}})
 }

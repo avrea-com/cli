@@ -67,11 +67,7 @@ func tokenError(cfg config.Config, err error, action string) error {
 	if !errors.As(err, &he) || he.Status != 404 && he.Status != 422 {
 		return result
 	}
-	first, rest, found := strings.Cut(result.Error(), "\n")
-	if found {
-		rest = "\n" + rest
-	}
-	return errors.New(first + "\n  Hint: " + noTokenHint + rest)
+	return withHint(result, noTokenHint)
 }
 func newTokenList(d Dependencies) *cobra.Command {
 	var org string

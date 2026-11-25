@@ -16,6 +16,8 @@ export default {
         { label: "avr pr", slug: "cli/reference/pr" },
         { label: "avr job", slug: "cli/reference/job" },
         { label: "avr vm", slug: "cli/reference/vm" },
+        { label: "avr build", slug: "cli/reference/build" },
+        { label: "avr builder", slug: "cli/reference/builder" },
         { label: "avr workflow", slug: "cli/reference/workflow" },
         { label: "avr cache", slug: "cli/reference/cache" },
         { label: "avr tests", slug: "cli/reference/tests" },

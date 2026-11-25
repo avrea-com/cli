@@ -35,6 +35,8 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr pr`](./pr/) — View and comment on pull requests.
 - [`avr job`](./job/) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](./vm/) — Manage long-running VMs (SSH/RDP/VNC).
+- [`avr build`](./build/) — Build container images remotely with docker buildx on Avrea builders.
+- [`avr builder`](./builder/) — Manage remote builder sessions.
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
 - [`avr cache`](./cache/) — Inspect and manage the Avrea build cache.
 - [`avr tests`](./tests/) — Read recorded tests: a job's results, a repository search and one test's history.
@@ -66,6 +68,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ## Aliases
 
+- `builders` → [`builder`](./builder/)
 - `groups` → [`group`](./group/)
 - `jobs` → [`job`](./job/)
 - `logs` → [`log`](./log/)

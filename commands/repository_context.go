@@ -158,28 +158,35 @@ func resolveRepository(ctx context.Context, d Dependencies, cfg config.Config, a
 	return "", &missingRepository{message.String()}
 }
 
+// detectRepository names the repository of a command given none: AVR_REPO,
+// then the git remote. fromRemote reports a name taken from the git remote,
+// which a command may drop when the organization does not have it. No
+// repository at all is "" without an error.
+func detectRepository(ctx context.Context, d Dependencies, cfg config.Config) (name, platform string, fromRemote bool, err error) {
+	name = cfg.Repo
+	if name == "" {
+		remote, err := d.GitRemote(ctx)
+		if err != nil {
+			return "", "", false, ctx.Err()
+		}
+		name, platform = parseGitRemote(remote)
+		fromRemote = true
+	}
+	if name != "" && d.IsErrorTerminal() && d.Getenv("AVR_REPO") != name {
+		_, _ = fmt.Fprintln(d.Err, d.errorPaint("(using repo: "+output.CellText(name)+")", "2"))
+	}
+	return name, platform, fromRemote, nil
+}
+
 func resolveRepositories(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, org string, repos []string, soft bool) ([]string, error) {
 	platform := ""
 	detected := false
 	if len(repos) == 0 {
-		name := cfg.Repo
-		if name == "" {
-			remote, err := d.GitRemote(ctx)
-			if err != nil {
-				if ctx.Err() != nil {
-					return nil, ctx.Err()
-				}
-				return nil, nil
-			}
-			name, platform = parseGitRemote(remote)
-			detected = true
+		name, detectedPlatform, fromRemote, err := detectRepository(ctx, d, cfg)
+		if err != nil || name == "" {
+			return nil, err
 		}
-		if name == "" {
-			return nil, nil
-		}
-		if d.IsErrorTerminal() && d.Getenv("AVR_REPO") != name {
-			_, _ = fmt.Fprintln(d.Err, d.errorPaint("(using repo: "+output.CellText(name)+")", "2"))
-		}
+		platform, detected = detectedPlatform, fromRemote
 		repos = []string{name}
 	}
 	result := make([]string, 0, len(repos))

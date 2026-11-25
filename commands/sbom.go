@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -83,8 +82,8 @@ func newSBOMList(d Dependencies) *cobra.Command {
 		if done, err := o.prepare(cmd, d, sbomListFields); done || err != nil {
 			return err
 		}
-		if f.Changed("cursor") && (cursor == "" || strings.TrimSpace(cursor) != cursor || utf8.RuneCountInString(cursor) > 512) {
-			return &ExitError{2, "Error: --cursor must be 1..512 chars and not surrounded by whitespace"}
+		if err := validateCursor(cmd, cursor); err != nil {
+			return err
 		}
 		cfg, api, id, rid, err := sbomContext(cmd.Context(), d, org, repo)
 		if err != nil {

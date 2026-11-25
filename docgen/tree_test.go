@@ -165,7 +165,7 @@ func TestReferenceShowsLiveScopeAliases(t *testing.T) {
 	var visit func(*docgen.Node)
 	visit = func(node *docgen.Node) {
 		for _, p := range node.Params {
-			if p.Name == "org" && node.Full != "avr vm ssh" {
+			if p.Name == "org" && node.Full != "avr vm ssh" && node.Full != "avr build" {
 				checked++
 				if !strings.Contains(strings.Join(p.Opts, ","), "-o,") && !strings.HasSuffix(strings.Join(p.Opts, ","), ",-o") {
 					t.Fatal(node.Full, p.Opts)

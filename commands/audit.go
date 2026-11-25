@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
-	"unicode/utf8"
 
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
@@ -47,8 +46,8 @@ func NewAudit(deps Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if f.Changed("cursor") && (cursor == "" || strings.TrimSpace(cursor) != cursor || utf8.RuneCountInString(cursor) > 512) {
-			return &ExitError{2, "Error: --cursor must be 1..512 chars and not surrounded by whitespace"}
+		if err := validateCursor(cmd, cursor); err != nil {
+			return err
 		}
 		query := url.Values{"limit": {strconv.Itoa(limit)}}
 		for key, value := range map[string]string{"resource_type": resource, "action": action, "actor_user_id": actor, "created_after": after, "created_before": before, "cursor": cursor} {

@@ -37,7 +37,7 @@ func TestVMForwardsReserveExplicitPortsBeforeAutoSelection(t *testing.T) {
 		return listener, nil
 	}
 	forwards, err := vmForwards(t.Context(), d, []string{"8080", "48080:3000", "5432"}, 0)
-	if err != nil || !slices.Equal(forwards, []vmForward{{45000, 8080}, {48080, 3000}, {45001, 5432}}) {
+	if err != nil || !slices.Equal(forwards, []vmForward{{local: 45000, guest: 8080}, {local: 48080, guest: 3000}, {local: 45001, guest: 5432}}) {
 		t.Fatal(forwards, err)
 	}
 	for _, listener := range listeners {
@@ -56,7 +56,7 @@ func TestVMTunnelReadinessChecksAllPortsAndDeadline(t *testing.T) {
 	d, _, _ := testDeps(t)
 	d = d.defaults()
 	proc := &vmTunnelProcess{done: make(chan struct{})}
-	ready, err := vmTunnelListening(t.Context(), proc, []vmForward{{port, 8080}}, time.Second, d)
+	ready, err := vmTunnelListening(t.Context(), proc, []vmForward{{local: port, guest: 8080}}, time.Second, d)
 	if err != nil || !ready {
 		t.Fatal(ready, err)
 	}
@@ -71,12 +71,12 @@ func TestVMTunnelReadinessChecksAllPortsAndDeadline(t *testing.T) {
 	}
 	closedPort := second.Addr().(*net.TCPAddr).Port
 	_ = second.Close()
-	ready, err = vmTunnelListening(t.Context(), proc, []vmForward{{port, 8080}, {closedPort, 5432}}, time.Second, d)
+	ready, err = vmTunnelListening(t.Context(), proc, []vmForward{{local: port, guest: 8080}, {local: closedPort, guest: 5432}}, time.Second, d)
 	if err != nil || ready || waits != 4 {
 		t.Fatal(ready, waits, err)
 	}
 	close(proc.done)
-	ready, err = vmTunnelListening(t.Context(), proc, []vmForward{{port, 8080}}, time.Second, d)
+	ready, err = vmTunnelListening(t.Context(), proc, []vmForward{{local: port, guest: 8080}}, time.Second, d)
 	if err != nil || ready {
 		t.Fatal("exited process reported ready", err)
 	}

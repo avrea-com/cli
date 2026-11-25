@@ -37,6 +37,35 @@ func vmRetryDelay(header string) time.Duration {
 	}
 	return time.Duration(value) * time.Second
 }
+
+// pollFailure classifies a failed status poll. Transport errors, 5xx, 408 and
+// 429 are transient: it returns how long to wait before polling again. Any
+// other refusal is permanent and must not hide behind the wait, so it comes
+// back as the error to stop with.
+func pollFailure(cfg config.Config, err error, action string) (time.Duration, error) {
+	if he, ok := errors.AsType[*client.HTTPError](err); ok {
+		if he.Status < 500 && he.Status != 408 && he.Status != 429 {
+			return 0, apiError(cfg, err, action)
+		}
+		if he.Status == 429 {
+			return vmRetryDelay(he.RetryAfter), nil
+		}
+		return 3 * time.Second, nil
+	}
+	if _, ok := errors.AsType[*client.TransportError](err); ok {
+		return 3 * time.Second, nil
+	}
+	return 0, err
+}
+
+// stateLabel is a polled state as shown in progress lines.
+func stateLabel(state string) string {
+	if state == "" {
+		return "UNKNOWN"
+	}
+	return state
+}
+
 func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *client.Client, path string, timeout int, ready func(map[string]any) bool, goneReady bool, failed func(map[string]any) bool, notifications ...func(context.Context, time.Duration) error) (map[string]any, string, error) {
 	deadline := d.Now().Add(time.Duration(timeout) * time.Second)
 	var row map[string]any
@@ -48,22 +77,11 @@ func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 			if ctx.Err() != nil {
 				return row, "", ctx.Err()
 			}
-			var he *client.HTTPError
-			var transport *client.TransportError
-			delay := 3 * time.Second
-			switch {
-			case errors.As(err, &he):
-				if goneReady && he.Status == 404 {
-					return nil, "ready", nil
-				}
-				if he.Status < 500 && he.Status != 408 && he.Status != 429 {
-					return row, "", apiError(cfg, err, "check VM status")
-				}
-				if he.Status == 429 {
-					delay = vmRetryDelay(he.RetryAfter)
-				}
-			case errors.As(err, &transport):
-			default:
+			if he, ok := errors.AsType[*client.HTTPError](err); ok && goneReady && he.Status == 404 {
+				return nil, "ready", nil
+			}
+			delay, err := pollFailure(cfg, err, "check VM status")
+			if err != nil {
 				return row, "", err
 			}
 			remaining := deadline.Sub(d.Now())
@@ -78,11 +96,7 @@ func waitForVM(ctx context.Context, d Dependencies, cfg config.Config, api *clie
 		row = record
 		state := strings.ToUpper(fieldText(row, "state"))
 		if !seen || state != last {
-			shown := state
-			if shown == "" {
-				shown = "UNKNOWN"
-			}
-			if _, err = fmt.Fprintln(d.Err, "  "+output.CellText(shown)); err != nil {
+			if _, err = fmt.Fprintln(d.Err, "  "+output.CellText(stateLabel(state))); err != nil {
 				return row, "", err
 			}
 			last = state
