@@ -128,7 +128,7 @@ func (r *memberResolver) byEmail(ctx context.Context, email string) (memberRef, 
 			return memberRef{}, &ExitError{1, "Error: Looking up members by email is not available with this credential, organization or server (HTTP 404).\n  Hint: Name the member by user ID instead."}
 		}
 		result := apiError(r.cfg, err, "look up members by email")
-		if errors.As(err, &he) && he.Status == 403 {
+		if errors.As(err, &he) && he.Status == 403 && !reauthenticationRequired(he) {
 			result = insertTokenHint(result, "Only administrators who manage members can look them up by email.")
 		}
 		return memberRef{}, result
@@ -137,7 +137,11 @@ func (r *memberResolver) byEmail(ctx context.Context, email string) (memberRef, 
 	case 0:
 		return memberRef{}, &ExitError{1, "Error: No member you can manage has verified " + quoted + ".\n  Hint: Ask the person for their user ID (avr auth status shows it), or an organization administrator. Never take one from a name in the member list: members set their names themselves."}
 	case 1:
-		return memberRef{input: email, userID: fieldText(page.Items[0], "user_id"), name: fieldText(page.Items[0], "name")}, nil
+		id := fieldText(page.Items[0], "user_id")
+		if !userIDPattern().MatchString(id) {
+			return memberRef{}, fmt.Errorf("unexpected API response: the member who verified %s has no user ID", quoted)
+		}
+		return memberRef{input: email, userID: id, name: fieldText(page.Items[0], "name")}, nil
 	}
 	return memberRef{}, fmt.Errorf("unexpected API response: %d members verified %s", len(page.Items), quoted)
 }
@@ -211,7 +215,9 @@ func memberValues(ctx context.Context, d Dependencies, args []string, file strin
 		}
 		// Reading stops at the first member past the batch limit, and an
 		// interrupt ends a read that standard input keeps open. The read owns
-		// its own slice, since it can outlive an interrupted command.
+		// its own slice, since it can outlive an interrupted command, and
+		// starts no read after the interrupt: the rest of the input belongs
+		// to whatever reads it next.
 		given := values
 		var err error
 		values, err = configurationRead(ctx, func() ([]string, error) {
@@ -221,7 +227,7 @@ func memberValues(ctx context.Context, d Dependencies, args []string, file strin
 				seen[value] = true
 			}
 			scanner := bufio.NewScanner(reader)
-			for len(read) <= groupMemberBatchLimit && scanner.Scan() {
+			for len(read) <= groupMemberBatchLimit && ctx.Err() == nil && scanner.Scan() {
 				if line := strings.TrimSpace(scanner.Text()); line != "" && !memberFileComment(line) && !seen[line] {
 					seen[line] = true
 					read = append(read, line)
@@ -355,6 +361,11 @@ func newGroupMemberChange(d Dependencies, action string) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		// Output options are checked, and fields listed, before any member is
+		// read, so neither waits on standard input.
+		if done, err := o.prepare(cmd, d, groupMemberResultFields); done || err != nil {
+			return err
+		}
 		if action == "remove" && file == "-" && !yes {
 			return &ExitError{2, "Error: Removing members read from standard input needs --yes: the confirmation prompt cannot read the same input."}
 		}
@@ -369,9 +380,6 @@ func newGroupMemberChange(d Dependencies, action string) *cobra.Command {
 			if _, err := classifyMember(value, "MEMBER", false); err != nil {
 				return err
 			}
-		}
-		if done, err := o.prepare(cmd, d, groupMemberResultFields); done || err != nil {
-			return err
 		}
 		cfg, api, id, err := personContext(cmd.Context(), d, org, "Changing group members", "change group members")
 		if err != nil {

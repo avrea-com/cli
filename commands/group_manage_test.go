@@ -14,7 +14,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 )
 
 const (
@@ -687,6 +689,122 @@ func TestGroupMemberChangeRefusesBeforeWriting(t *testing.T) {
 			}
 		})
 	}
+}
+
+// An email lookup that matches one member without a valid user ID resolves
+// no one, and the change is not sent for the other members either.
+func TestGroupMemberEmailLookupNeedsAUserID(t *testing.T) {
+	for _, id := range []any{nil, "", "usr-ADA", 42} {
+		h := newManageHarness(t, managePersonal, groupWriteAPI(t, nil, func(r manageRequest) (manageReply, bool) {
+			row := orgMember(memberAda, "Ada", "active")
+			if id == nil {
+				delete(row, "user_id")
+			} else {
+				row["user_id"] = id
+			}
+			return manageReply{200, nil, manageJSON(t, map[string]any{"data": []any{row}, "pagination": map[string]any{"next_cursor": nil}})}, r.path == memberLookups
+		}))
+		if code := h.run(t, "group", "member", "add", "Acme/Platform", memberBob, "ada@example.test"); code != 1 || len(writes(h)) != 0 {
+			t.Fatal(id, code, h.operations(), h.stderr)
+		}
+		if !strings.Contains(h.stderr.String(), "unexpected API response") {
+			t.Fatal(id, h.stderr)
+		}
+	}
+}
+
+// A lookup refused for an old sign-in keeps the sign-in exit status and
+// advice, not the advice for a caller who lacks the privilege.
+func TestGroupMemberEmailLookupKeepsTheSignInRefusal(t *testing.T) {
+	h := newManageHarness(t, managePersonal, governanceAPI(t, func(r manageRequest) (manageReply, bool) {
+		return manageReply{403, http.Header{"X-Reauthentication-Required": {"true"}}, `{"detail":"Recent authentication required"}`}, r.path == memberLookups
+	}))
+	if code := h.run(t, "group", "member", "add", "Acme/Platform", "ada@example.test"); code != 4 || len(writes(h)) != 0 {
+		t.Fatal(code, h.operations(), h.stderr)
+	}
+	if got := h.stderr.String(); !strings.Contains(got, "needs a recent sign-in") || strings.Contains(got, "Only administrators") {
+		t.Fatal(got)
+	}
+}
+
+// Listing the JSON fields, or refusing an output option, reads no members:
+// standard input stays unread, and remove asks for no --yes.
+func TestGroupMemberChangeChecksOutputOptionsBeforeReadingMembers(t *testing.T) {
+	for _, tt := range []struct {
+		args []string
+		ok   bool
+	}{
+		{[]string{"add", "Acme/Platform", "--file", "-", "--json", "?"}, true},
+		{[]string{"remove", "Acme/Platform", "--file", "-", "--json", "?"}, true},
+		{[]string{"add", "Acme/Platform", "--file", "-", "--json", "nope"}, false},
+		{[]string{"remove", "Acme/Platform", "--file", "-", "--jq", "."}, false},
+	} {
+		h := newManageHarness(t, managePersonal, governanceAPI(t, nil))
+		h.d.In = unreadInput{t}
+		if code := h.run(t, append([]string{"group", "member"}, tt.args...)...); (code == 0) != tt.ok || len(h.requests) != 0 {
+			t.Fatal(tt.args, code, h.operations(), h.stderr)
+		}
+		if tt.ok && !strings.Contains(h.out.String(), "user_id") {
+			t.Fatal(tt.args, h.out)
+		}
+		if !tt.ok && strings.Contains(h.stderr.String(), "needs --yes") {
+			t.Fatal(tt.args, h.stderr)
+		}
+	}
+}
+
+// unreadInput fails a test that reads it.
+type unreadInput struct{ t *testing.T }
+
+func (u unreadInput) Read([]byte) (int, error) {
+	u.t.Error("standard input was read")
+	return 0, io.EOF
+}
+
+// A member list abandoned by an interrupt stops reading: the rest of standard
+// input belongs to whatever reads it next.
+func TestGroupMemberFileReadStopsReadingAfterInterrupt(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		reader, writer := io.Pipe()
+		defer func() { _ = writer.Close() }()
+		input := &countingReader{reader: reader}
+		h := newManageHarness(t, managePersonal, groupMemberAPI(t, nil))
+		h.d.In = input
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		done := make(chan int, 1)
+		go func() { done <- Execute(ctx, []string{"group", "member", "add", "Acme/Platform", "--file", "-"}, h.d) }()
+		// Each write returns once the command has read it.
+		if _, err := writer.Write([]byte(memberAda + "\n")); err != nil {
+			t.Fatal(err)
+		}
+		// The command waits in its next read when the interrupt comes.
+		synctest.Wait()
+		cancel()
+		if code := <-done; code != 130 {
+			t.Fatal(code, h.stderr)
+		}
+		// The read pending at the interrupt still takes this line; nothing
+		// asks for more after it.
+		if _, err := writer.Write([]byte(memberBob + "\n")); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		if reads := input.reads.Load(); reads != 2 {
+			t.Fatalf("%d reads", reads)
+		}
+	})
+}
+
+// countingReader counts the reads that reach reader.
+type countingReader struct {
+	reader io.Reader
+	reads  atomic.Int32
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	c.reads.Add(1)
+	return c.reader.Read(p)
 }
 
 // An interrupt ends a member list that standard input keeps open.
