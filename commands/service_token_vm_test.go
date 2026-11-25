@@ -243,6 +243,117 @@ func TestServiceTokenSetAccessConfirmsRemovals(t *testing.T) {
 	}
 }
 
+// A change of VM creation alone resends the grants as read. A list that
+// cannot be read in full is not resent: a dropped entry would remove a grant
+// and an absent resource_id would widen one to every object of its type.
+func TestServiceTokenSetAccessRefusesToResendUnreadableGrants(t *testing.T) {
+	whole := manageGrant("repository", manageRepoA)
+	for name, grants := range map[string]any{
+		"no grants field":       nil,
+		"grants not a list":     map[string]any{},
+		"an entry not a grant":  []any{whole, "repository"},
+		"resource_id absent":    []any{whole, map[string]any{"resource_type": "customer_vm", "access_level": "write"}},
+		"resource_id not text":  []any{map[string]any{"resource_type": "customer_vm", "resource_id": 7, "access_level": "write"}},
+		"resource_id empty":     []any{map[string]any{"resource_type": "customer_vm", "resource_id": "", "access_level": "write"}},
+		"resource_type absent":  []any{map[string]any{"resource_id": manageVMA, "access_level": "write"}},
+		"access_level not text": []any{map[string]any{"resource_type": "customer_vm", "resource_id": manageVMA, "access_level": true}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			current := manageRecord(map[string]any{"vm_cap": 3})
+			if grants == nil {
+				delete(current, "grants")
+			} else {
+				current["grants"] = grants
+			}
+			h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+			code := h.run(t, "service-token", "set-access", manageTokenID, "--max-owned-vms", "4", "--yes")
+			message := h.stderr.String()
+			if code != 1 || slices.Contains(h.operations(), "PUT "+manageBase+"/"+manageTokenID+"/grants") {
+				t.Fatal(code, h.operations(), message)
+			}
+			for _, want := range []string{"Could not keep the grants", "The token's access was not changed.", "service-token view " + manageTokenID} {
+				if !strings.Contains(message, want) {
+					t.Errorf("missing %q in %q", want, message)
+				}
+			}
+		})
+	}
+}
+
+// --no-grants is the only way to leave a token VM creation alone: omitting
+// the grant options keeps the grants, and each grant option adds one.
+func TestServiceTokenSetAccessNoGrantsClearsThemThroughTheConfirmation(t *testing.T) {
+	current := manageRecord(map[string]any{"vm_cap": 3, "grants": []any{manageGrant("repository", manageRepoA)}})
+	put := "PUT " + manageBase + "/" + manageTokenID + "/grants"
+
+	h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants"); code != 1 || slices.Contains(h.operations(), put) || !strings.Contains(h.stderr.String(), "\n    repository "+manageRepoA+" at read\n") {
+		t.Fatal(code, h.operations(), h.stderr)
+	}
+
+	h = newManageHarness(t, managePersonal, manageRoutes(t, current))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--no-grants", "--yes"); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	body := h.requests[len(h.requests)-1].body
+	// An empty list, not null, and the maximum of owned VMs left as it is.
+	checkVMCap(t, body, nil, false)
+	if manageJSON(t, body["grants"]) != "[]" || body["expected_grants_version"] != float64(7) {
+		t.Fatal(body)
+	}
+
+	for _, grant := range [][]string{{"--repo", manageRepoA}, {"--firewall-rule", manageRuleA}, {"--all-firewall-rules"}, {"--vm", manageVMA}, {"--all-vms", "read"}} {
+		h = newManageHarness(t, managePersonal, manageRoutes(t, current))
+		if code := h.run(t, append([]string{"service-token", "set-access", manageTokenID, "--no-grants"}, grant...)...); code != 2 || len(h.requests) != 0 || !strings.Contains(h.stderr.String(), "--no-grants removes every grant") {
+			t.Fatal(grant, code, h.operations(), h.stderr)
+		}
+	}
+}
+
+// The summary is read before the write is approved, so nothing the API
+// stored may add a line to it or move the cursor.
+func TestServiceTokenSetAccessEscapesStoredGrantFieldsInTheSummary(t *testing.T) {
+	current := manageRecord(map[string]any{"grants": []any{
+		map[string]any{"resource_type": "cache\n    nothing else", "resource_id": "obj-1", "access_level": "read\x1b[2K\nReplace"},
+	}})
+	h := newManageHarness(t, managePersonal, manageRoutes(t, current))
+	code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoB)
+	message := h.stderr.String()
+	if code != 1 || strings.Contains(message, "\x1b") || strings.Count(message, "\n    ") != 1 {
+		t.Fatalf("%d %q", code, message)
+	}
+	if want := `cache\n    nothing else obj-1 at read\x1b[2K\nReplace`; !strings.Contains(message, want) {
+		t.Fatalf("missing %q in %q", want, message)
+	}
+}
+
+// When only VM creation changes, the grants in the request are the token's
+// own, so a refusal of grants[N] is explained by them and not by flags the
+// caller never passed.
+func TestServiceTokenSetAccessExplainsARefusedStoredGrant(t *testing.T) {
+	refuse := func(t *testing.T) func(manageRequest) manageReply {
+		routes := manageRoutes(t, manageRecord(map[string]any{"vm_cap": 3}))
+		return func(r manageRequest) manageReply {
+			if r.method == "PUT" {
+				return manageReply{403, nil, `{"detail":"grants[1] names an object you cannot reach at that level"}`}
+			}
+			return routes(r)
+		}
+	}
+	h := newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--max-owned-vms", "4"); code != 1 {
+		t.Fatal(code, h.stderr)
+	}
+	if message := h.stderr.String(); !strings.Contains(message, "the grants the token holds") || !strings.Contains(message, "service-token view "+manageTokenID) || !strings.Contains(message, "--json grants") || strings.Contains(message, "--firewall-rule values") {
+		t.Fatal(message)
+	}
+	// An explicit replacement is still explained by the order of its flags.
+	h = newManageHarness(t, managePersonal, refuse(t))
+	if code := h.run(t, "service-token", "set-access", manageTokenID, "--repo", manageRepoA, "--yes"); code != 1 || !strings.Contains(h.stderr.String(), "--firewall-rule values") {
+		t.Fatal(code, h.stderr)
+	}
+}
+
 func TestServiceTokenViewShowsVMAccess(t *testing.T) {
 	grants := []any{manageVMGrant(manageVMA, "write"), manageVMGrant(nil, "read")}
 	for _, tc := range []struct {
@@ -344,38 +455,45 @@ func serviceTokenVMRoute(method, path string) string {
 	return matchRoutePattern(slices.Collect(maps.Keys(serviceTokenVMRoutes)), method+" "+path, "capabilities")
 }
 
+// serviceTokenVMSequence is every request a VM command may send as a service
+// token: the lookup of the token itself, then the command's own.
+func serviceTokenVMSequence(own ...string) []string {
+	return append([]string{"GET /service-tokens/self"}, own...)
+}
+
 // The service-token help names the avr vm commands a service token runs.
-// Each must send its own request, reach only the routes open to it,
+// Each must send exactly its own requests, reach only the routes open to it,
 // including name lookups, and show the answer.
 func TestServiceTokenVMCommands(t *testing.T) {
 	vms := "/orgs/" + inspectionOrg + "/vms"
 	vm := vms + "/" + manageVMA
 	for _, tc := range []struct {
-		args      []string
-		sent, out string
+		args []string
+		sent []string
+		out  string
 	}{
-		{[]string{"vm", "create", "--os", "linux", "--size", "2-vcpu"}, "POST " + vms, manageVMA},
-		{[]string{"vm", "list"}, "GET " + vms, "box"},
-		{[]string{"vm", "capabilities"}, "GET " + vms + "/capabilities", "2-vcpu"},
-		{[]string{"vm", "show", manageVMA}, "GET " + vm, "box"},
+		{[]string{"vm", "create", "--os", "linux", "--size", "2-vcpu"}, []string{"POST " + vms}, manageVMA},
+		{[]string{"vm", "list"}, []string{"GET " + vms}, "box"},
+		{[]string{"vm", "capabilities"}, []string{"GET " + vms + "/capabilities"}, "2-vcpu"},
+		{[]string{"vm", "show", manageVMA}, []string{"GET " + vm}, "box"},
 		// The API resolves a name in the VM's place in the path.
-		{[]string{"vm", "show", "box"}, "GET " + vms + "/box", manageVMA},
-		{[]string{"vm", "metrics", manageVMA, "--json"}, "GET " + vm + "/metrics", `"cpu"`},
-		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, "PATCH " + vm, "box"},
-		{[]string{"vm", "pause", manageVMA}, "POST " + vm + "/pause", "PAUSING"},
-		{[]string{"vm", "rotate-https-label", manageVMA}, "POST " + vm + "/https-label-rotations", "https://rotated.example"},
-		{[]string{"vm", "delete", manageVMA, "--yes"}, "DELETE " + vm, "is now DELETING"},
-		{[]string{"vm", "delete", manageVMA, "--yes", "--json"}, "DELETE " + vm, `"customer_vm_id": "` + manageVMA + `"`},
+		{[]string{"vm", "show", "box"}, []string{"GET " + vms + "/box"}, manageVMA},
+		// Metrics reads the VM first, to say whether it is running.
+		{[]string{"vm", "metrics", manageVMA, "--json"}, []string{"GET " + vm, "GET " + vm + "/metrics"}, `"cpu"`},
+		{[]string{"vm", "update", manageVMA, "--ttl", "2h"}, []string{"PATCH " + vm}, "box"},
+		{[]string{"vm", "pause", manageVMA}, []string{"POST " + vm + "/pause"}, "PAUSING"},
+		{[]string{"vm", "rotate-https-label", manageVMA}, []string{"POST " + vm + "/https-label-rotations"}, "https://rotated.example"},
+		{[]string{"vm", "delete", manageVMA, "--yes"}, []string{"DELETE " + vm}, "is now DELETING"},
+		{[]string{"vm", "delete", manageVMA, "--yes", "--json"}, []string{"DELETE " + vm}, `"customer_vm_id": "` + manageVMA + `"`},
 	} {
 		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
 			var violations []string
 			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
 			code := h.run(t, tc.args...)
-			writes := slices.DeleteFunc(slices.Clone(h.requests), func(r string) bool { return strings.HasPrefix(r, "GET ") })
-			if !strings.HasPrefix(tc.sent, "GET ") && !slices.Equal(writes, []string{tc.sent}) || strings.HasPrefix(tc.sent, "GET ") && len(writes) != 0 {
-				t.Fatal("writes", h.requests)
+			if !slices.Equal(h.requests, serviceTokenVMSequence(tc.sent...)) {
+				t.Fatal("requests", h.requests)
 			}
-			if code != 0 || len(violations) != 0 || !slices.Contains(h.requests, tc.sent) || !strings.Contains(h.out.String(), tc.out) {
+			if code != 0 || len(violations) != 0 || !strings.Contains(h.out.String(), tc.out) {
 				t.Fatal(code, violations, h.requests, h.out, h.stderr)
 			}
 		})
@@ -391,6 +509,11 @@ func TestServiceTokenVMResumeAndForkClosed(t *testing.T) {
 			h := newServiceTokenHarness(t, "", routeModelAPI(serviceTokenVMRoute, serviceTokenVMRoutes, &violations))
 			code := h.run(t, "vm", operation, manageVMA)
 			want := "POST /orgs/" + inspectionOrg + "/vms/" + manageVMA + "/" + operation
+			// The refused request is the only one the command sends: a pause
+			// before a fork, say, would be admitted and so not be a violation.
+			if !slices.Equal(h.requests, serviceTokenVMSequence(want)) {
+				t.Fatal("requests", h.requests)
+			}
 			if code != 1 || !slices.Equal(violations, []string{want}) || !strings.Contains(h.stderr.String(), "its grants and the VMs it created") {
 				t.Fatal(code, violations, h.stderr)
 			}

@@ -16502,7 +16502,7 @@
             "full": "avr service-token set-access",
             "is_group": false,
             "short_help": "Replace a service token's grants or change its VM creation.",
-            "help": "Replace a service token's grants or change its VM creation.\n\nGrant options (--repo, --firewall-rule, --all-firewall-rules, --vm and\n--all-vms) replace every grant the token holds: a grant you leave out\nis removed, so repeat the ones to keep. Without grant options the\ngrants stay. The maximum of owned VMs stays unless --max-owned-vms or\n--no-vm-create changes it. When the change removes or lowers a grant\nor VM creation, the command lists what goes and asks first; without a\nterminal it then refuses unless --yes is given. It reads the token first and the change fails if its access\nchanges in between. A grant that widens its access must be within your\nown access now. The API may ask for a recent sign-in; the command then\nexits 4 and says to sign in again. The change applies to the token's\nnext request.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules --yes\n    avr service-token set-access \u003ctoken-id\u003e --max-owned-vms 10\n    avr service-token set-access \u003ctoken-id\u003e --no-vm-create\n",
+            "help": "Replace a service token's grants or change its VM creation.\n\nGrant options (--repo, --firewall-rule, --all-firewall-rules, --vm and\n--all-vms) replace every grant the token holds: a grant you leave out\nis removed, so repeat the ones to keep. Without grant options the\ngrants stay; --no-grants removes them all, for a token that should\nonly create VMs. The maximum of owned VMs stays unless --max-owned-vms or\n--no-vm-create changes it. When the change removes or lowers a grant\nor VM creation, the command lists what goes and asks first; without a\nterminal it then refuses unless --yes is given. It reads the token first and the change fails if its access\nchanges in between. A grant that widens its access must be within your\nown access now. The API may ask for a recent sign-in; the command then\nexits 4 and says to sign in again. The change applies to the token's\nnext request.\n\n\b\nExamples:\n    avr service-token set-access \u003ctoken-id\u003e --repo acme/api --repo acme/web\n    avr service-token set-access \u003ctoken-id\u003e --all-firewall-rules --yes\n    avr service-token set-access \u003ctoken-id\u003e --max-owned-vms 10\n    avr service-token set-access \u003ctoken-id\u003e --no-vm-create\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,
@@ -16635,6 +16635,24 @@
                 "is_flag": false,
                 "envvar": null,
                 "help": "Let the token create VMs and own up to this many at once; deleting a VM frees a place. A token of the root group cannot create VMs. Lowering it keeps the VMs the token owns. Omit to keep the current maximum.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "no_grants",
+                "kind": "option",
+                "opts": [
+                  "--no-grants"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Remove every grant, leaving the token only its VM creation. Cannot be combined with grant options.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

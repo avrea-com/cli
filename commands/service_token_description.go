@@ -57,6 +57,7 @@ func serviceTokenGrantParameters(replace bool) []docgen.Parameter {
 		{Param: docgen.Param{Name: "max_owned_vms", Kind: "option", Opts: []string{"--max-owned-vms"}, Type: "integer range", Nargs: 1, Help: descriptionText(limit)}, Suffix: fmt.Sprintf("  [1<=x<=%d]", serviceTokenMaxVMCap), CompletionKind: "IntRange"},
 	}
 	if replace {
+		parameters = append(parameters, docgen.Parameter{Param: docgen.Param{Name: "no_grants", Kind: "option", Opts: []string{"--no-grants"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Remove every grant, leaving the token only its VM creation. Cannot be combined with grant options.")}, CompletionKind: "Bool"})
 		parameters = append(parameters, docgen.Parameter{Param: docgen.Param{Name: "no_vm_create", Kind: "option", Opts: []string{"--no-vm-create"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Stop the token creating VMs; its grants stay unless grant options are given. It keeps administering the VMs it created.")}, CompletionKind: "Bool"})
 	}
 	return parameters
@@ -168,7 +169,8 @@ func serviceTokenDescription(path string) docgen.Description {
 				"Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and\n" +
 				"--all-vms) replace every grant the token holds: a grant you leave out\n" +
 				"is removed, so repeat the ones to keep. Without grant options the\n" +
-				"grants stay. The maximum of owned VMs stays unless --max-owned-vms or\n" +
+				"grants stay; --no-grants removes them all, for a token that should\n" +
+				"only create VMs. The maximum of owned VMs stays unless --max-owned-vms or\n" +
 				"--no-vm-create changes it. When the change removes or lowers a grant\n" +
 				"or VM creation, the command lists what goes and asks first; without a\n" +
 				"terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access\n" +

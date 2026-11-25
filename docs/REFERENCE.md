@@ -2348,7 +2348,8 @@ avr service-token set-access [OPTIONS] TOKEN_ID
 Grant options (--repo, --firewall-rule, --all-firewall-rules, --vm and
 --all-vms) replace every grant the token holds: a grant you leave out
 is removed, so repeat the ones to keep. Without grant options the
-grants stay. The maximum of owned VMs stays unless --max-owned-vms or
+grants stay; --no-grants removes them all, for a token that should
+only create VMs. The maximum of owned VMs stays unless --max-owned-vms or
 --no-vm-create changes it. When the change removes or lowers a grant
 or VM creation, the command lists what goes and asks first; without a
 terminal it then refuses unless --yes is given. It reads the token first and the change fails if its access
@@ -2377,6 +2378,7 @@ Examples:
 - `--vm <TEXT>` — Grant access to a VM, by VM ID (cvm-xxx): read, or write with cvm-xxx:write. Repeatable. _(repeatable)_
 - `--all-vms <CHOICE>` — Grant read or write access to every VM of the organization, including VMs created later. _(choices: `read`, `write`)_
 - `--max-owned-vms <INTEGER RANGE>` — Let the token create VMs and own up to this many at once; deleting a VM frees a place. A token of the root group cannot create VMs. Lowering it keeps the VMs the token owns. Omit to keep the current maximum.
+- `--no-grants` — Remove every grant, leaving the token only its VM creation. Cannot be combined with grant options.
 - `--no-vm-create` — Stop the token creating VMs; its grants stay unless grant options are given. It keeps administering the VMs it created.
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--yes, -y` — Apply the change without asking, even when it removes or lowers access.
