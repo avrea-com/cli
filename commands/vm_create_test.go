@@ -15,7 +15,7 @@ import (
 )
 
 func TestVMSpawnCredentialBoundaryAndNoRetries(t *testing.T) {
-	for _, scenario := range []string{"success", "echoed credential", "transport failure"} {
+	for _, scenario := range []string{"success", "echoed credential", "transport failure", "reused order", "reused order, server without codes", "cap reached"} {
 		t.Run(scenario, func(t *testing.T) {
 			d, out, stderr := testDeps(t)
 			credential := "synthetic-per-session-secret"
@@ -54,14 +54,26 @@ func TestVMSpawnCredentialBoundaryAndNoRetries(t *testing.T) {
 					raw, _ := json.Marshal(map[string]string{"detail": "invalid credential " + credential})
 					response = string(raw)
 				}
+				if scenario == "reused order" {
+					status = 409
+					response = `{"detail":"This idempotency key was already used in the organization","code":"idempotency_key_reused"}`
+				}
+				if scenario == "reused order, server without codes" {
+					status = 409
+					response = `{"detail":"This idempotency key was already used in the organization"}`
+				}
+				if scenario == "cap reached" {
+					status = 409
+					response = `{"detail":"This service token reached its cap of 2 VMs"}`
+				}
 				return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(response)), Request: r}, nil
 			})}
 			code := Execute(t.Context(), []string{"vm", "create", "--from-spawn-script", "claude-code", "--verbose"}, d)
 			want := 0
-			if scenario == "echoed credential" {
+			if scenario == "echoed credential" || scenario == "reused order" {
 				want = 2
 			}
-			if scenario == "transport failure" {
+			if scenario == "transport failure" || scenario == "cap reached" || scenario == "reused order, server without codes" {
 				want = 1
 			}
 			combined := out.String() + stderr.String()
