@@ -158,6 +158,31 @@ func TestTestsHistoryResolvesAnExactNameThenReadsItsRuns(t *testing.T) {
 	}
 }
 
+// The wildcard is the field list scripts see: it carries scope and none of the
+// keys the history response retired.
+func TestTestsHistoryWildcardJSONCarriesScopeAndNoRetiredKeys(t *testing.T) {
+	execute := repositoryTestsDeps(t, func(*http.Request) (int, string) { return 200, historyPage })
+	code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo, "--json", "*")
+	if code != 0 {
+		t.Fatal(code, out, stderr)
+	}
+	var record map[string]any
+	if err := json.Unmarshal([]byte(out), &record); err != nil {
+		t.Fatal(err, out)
+	}
+	scope, _ := record["scope"].(map[string]any)
+	for key, want := range map[string]float64{"reports_searched": 12, "reports_indexing": 1, "reports_unavailable": 2} {
+		if scope[key] != want {
+			t.Errorf("scope.%s = %v, want %v in:\n%s", key, scope[key], want, out)
+		}
+	}
+	for _, retired := range []string{"pending", "reason", "as_of_revision", "current_revision"} {
+		if _, present := record[retired]; present {
+			t.Errorf("retired key %q in:\n%s", retired, out)
+		}
+	}
+}
+
 func TestTestsHistoryNeverPicksAmongSeveralTests(t *testing.T) {
 	requests := 0
 	execute := repositoryTestsDeps(t, func(r *http.Request) (int, string) {
@@ -185,7 +210,7 @@ func TestTestsHistoryByIDSkipsResolutionAndReportsNoMatch(t *testing.T) {
 		return 200, `{"status":"available","scope":{"reports_searched":3,"reports_indexing":0,"reports_unavailable":0},"data":[],"pagination":{"next_cursor":null}}`
 	})
 	code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo, "--cursor", "older")
-	if code != 0 || requests != 1 || !strings.Contains(out, "No recorded runs for this test and configuration.") {
+	if code != 0 || requests != 1 || !strings.Contains(out, "No runs found in the reports searched on this page.") {
 		t.Fatal(code, requests, out, stderr)
 	}
 	if code, _, stderr := execute("history", "absent", "--repo", resultTestRepo); code != 1 || !strings.Contains(stderr, "Not every recorded report was searched") {

@@ -400,7 +400,7 @@ func showTestHistory(w io.Writer, response map[string]any) error {
 	rows := response["data"].([]any)
 	if len(rows) == 0 {
 		if response["status"] == "available" {
-			b.WriteString("No recorded runs for this test and configuration.\n")
+			b.WriteString("No runs found in the reports searched on this page.\n")
 		}
 		_, err := io.WriteString(w, b.String())
 		return err
