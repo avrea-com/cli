@@ -155,7 +155,9 @@ def test_zsh_generated_setup_handles_first_tab(tmp_path, package, autoload):
         for args, expected in CASES:
             capture.unlink(missing_ok=True)
             os.write(master, (shlex.join([program, *args]) + "\t\x18").encode())
-            until(capture.exists)
+            # The redirect creates the file before print writes the line, so
+            # wait for the newline that ends it.
+            until(lambda: capture.exists() and capture.read_text().endswith("\n"))
             assert shlex.split(capture.read_text()) == [program, *expected], bytes(chunks)
         os.write(master, b"exit\n")
         until(lambda: process.poll() is not None)
