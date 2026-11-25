@@ -21,7 +21,7 @@ avr artifact delete [OPTIONS] ART_ID
 
 **Arguments**
 
-- <code class="cli-arg">ARTIFACT_ID</code>
+- <code class="cli-arg">ART_ID</code>
 
 **Options**
 
@@ -41,7 +41,7 @@ avr artifact download [OPTIONS] ART_ID
 
 **Arguments**
 
-- <code class="cli-arg">ARTIFACT_ID</code>
+- <code class="cli-arg">ART_ID</code>
 
 **Options**
 
@@ -61,7 +61,7 @@ avr artifact get [OPTIONS] ART_ID
 
 **Arguments**
 
-- <code class="cli-arg">ARTIFACT_ID</code>
+- <code class="cli-arg">ART_ID</code>
 
 **Options**
 

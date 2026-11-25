@@ -109,7 +109,7 @@ func helpBlock(value, language string) string {
 }
 func paramSignature(p Param, html bool) string {
 	if p.Kind == "argument" {
-		name := strings.ToUpper(p.Name)
+		name := argumentLabel(p)
 		if p.Nargs == -1 {
 			name += "..."
 		}

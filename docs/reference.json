@@ -6772,7 +6772,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "ART_ID"
               },
               {
                 "name": "org",
@@ -6903,7 +6904,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "ART_ID"
               },
               {
                 "name": "org",
@@ -7033,7 +7035,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "ART_ID"
               },
               {
                 "name": "org",
@@ -9894,7 +9897,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -10617,7 +10621,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -10746,7 +10751,8 @@
                 "help": "VM ID or display name.",
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -10820,7 +10826,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "display_name",
@@ -11129,7 +11136,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11285,7 +11293,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11413,7 +11422,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11542,7 +11552,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11673,7 +11684,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11801,7 +11813,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11875,7 +11888,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -11949,7 +11963,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "ssh_args",
@@ -12095,7 +12110,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -12242,7 +12258,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -12534,7 +12551,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "VM_ID_OR_NAME"
               },
               {
                 "name": "org_id",
@@ -12814,7 +12832,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "WORKFLOW"
               },
               {
                 "name": "org_id",
@@ -13021,7 +13040,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "WORKFLOW"
               },
               {
                 "name": "org_id",
@@ -13857,7 +13877,8 @@
                 "help": null,
                 "hidden": false,
                 "show_default": false,
-                "default": null
+                "default": null,
+                "metavar": "RUN_OR_JOB"
               },
               {
                 "name": "job_name",

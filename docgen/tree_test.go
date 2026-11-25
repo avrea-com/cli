@@ -3,6 +3,7 @@ package docgen_test
 import (
 	"encoding/json"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -241,6 +242,131 @@ func TestStarlightLandingPagesSetSearchMetadata(t *testing.T) {
 			} else if n := utf8.RuneCountInString(value); limit > 0 && n > limit {
 				t.Errorf("%s: %s %q is %d characters, over %d", path, key, value, n, limit)
 			}
+		}
+	}
+}
+
+// A reference page lists each positional argument under the name its usage
+// line gives it, so `avr vm show [OPTIONS] VM_ID_OR_NAME` is followed by
+// VM_ID_OR_NAME, not by the name of the parameter behind it.
+var (
+	commandHeading = regexp.MustCompile("(?m)^#+ ")
+	plainArgument  = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
+)
+
+// argumentName drops the optional brackets and repetition dots that usage
+// lines and argument lists place differently.
+func argumentName(token string) string {
+	return strings.Trim(token, "[].")
+}
+
+func TestStarlightArgumentsMatchTheUsageLine(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := docgen.Starlight(tree, nil)
+	checked := 0
+	var visit func(*docgen.Node)
+	visit = func(node *docgen.Node) {
+		for _, child := range node.Subcommands {
+			visit(child)
+		}
+		if node.IsGroup {
+			return
+		}
+		usage := []string{}
+		for _, token := range strings.Fields(strings.TrimPrefix(node.Usage, node.Full)) {
+			if token != "[OPTIONS]" {
+				usage = append(usage, argumentName(token))
+			}
+		}
+		page := files["reference/"+node.Path[1]+".md"]
+		_, section, _ := strings.Cut(page, "```sh\n"+node.Usage+"\n```")
+		if next := commandHeading.FindStringIndex(section); next != nil {
+			section = section[:next[0]]
+		}
+		listed := []string{}
+		if _, arguments, ok := strings.Cut(section, "**Arguments**"); ok {
+			arguments, _, _ = strings.Cut(arguments, "**Options**")
+			for _, line := range strings.Split(arguments, "\n") {
+				if _, rest, ok := strings.Cut(line, `<code class="cli-arg">`); ok {
+					name, _, _ := strings.Cut(rest, "</code>")
+					listed = append(listed, argumentName(name))
+				}
+			}
+		}
+		if len(listed) == 0 && len(usage) == 0 {
+			return
+		}
+		checked++
+		if len(listed) != len(usage) {
+			t.Errorf("%s: usage arguments %v, listed %v", node.Full, usage, listed)
+			return
+		}
+		for i := range usage {
+			// A usage token that spells out choices, such as {on|off} or
+			// <endpoint>, is listed under the parameter's name instead.
+			if !plainArgument.MatchString(usage[i]) {
+				listed[i], usage[i] = "", ""
+			}
+		}
+		if !reflect.DeepEqual(listed, usage) {
+			t.Errorf("%s: usage arguments %v, listed %v", node.Full, usage, listed)
+		}
+	}
+	for _, nodes := range tree.Sections {
+		for _, node := range nodes {
+			visit(node)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no argument lists inspected")
+	}
+}
+
+func TestArgumentNamesComeFromTheRenderedUsage(t *testing.T) {
+	root := &cobra.Command{Use: "avr"}
+	describe := map[string]docgen.Description{}
+	add := func(use string, usage ...string) {
+		c := &cobra.Command{Use: use, Run: func(*cobra.Command, []string) {}}
+		root.AddCommand(c)
+		describe[c.Name()] = docgen.Description{Usage: usage, Parameters: []docgen.Parameter{
+			{Param: docgen.Param{Name: "value", Kind: "argument"}},
+		}}
+	}
+	add("described ID", "[OPTIONS]", "JOB_ID")
+	add("mismatched ID", "[OPTIONS] MESSAGE | status FEEDBACK_ID")
+	add("literal {ON}")
+	add("choices {on|off}")
+	add("placeholder <endpoint>")
+	add("repeated [ALIASES]...")
+	add("variadic [TAGS...]")
+	add("required NAMES...")
+	tree, err := docgen.Build(root, func(c *cobra.Command) docgen.Description { return describe[c.Name()] }, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		command, metavar string
+		required         bool
+		nargs            int
+	}{
+		{"described", "JOB_ID", true, 1},
+		{"mismatched", "ID", true, 1},
+		{"literal", "", true, 1},
+		{"choices", "", true, 1},
+		{"placeholder", "", true, 1},
+		{"repeated", "ALIASES", false, -1},
+		{"variadic", "TAGS", false, -1},
+		{"required", "NAMES", true, -1},
+	} {
+		params := findNode(tree, tt.command).Params
+		if len(params) != 1 {
+			t.Fatal(tt.command, params)
+		}
+		if p := params[0]; p.Name != "value" || p.Metavar != tt.metavar || p.Required != tt.required || p.Nargs != tt.nargs {
+			t.Errorf("%s: %+v", tt.command, p)
 		}
 	}
 }

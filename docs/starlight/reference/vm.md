@@ -35,7 +35,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -158,7 +158,7 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -180,7 +180,7 @@ Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass 
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code> — VM ID or display name.
+- <code class="cli-arg">VM_ID_OR_NAME</code> — VM ID or display name.
 
 **Options**
 
@@ -202,7 +202,7 @@ update --rotate-password if needed. Requires admin access to the source.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -241,7 +241,7 @@ avr vm metrics [OPTIONS] VM_ID_OR_NAME
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -266,7 +266,7 @@ preserve guest memory and continue processes from where they stopped.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -295,7 +295,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -319,7 +319,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -345,7 +345,7 @@ running processes.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -369,7 +369,7 @@ a paused VM picks up the new URLs at resume.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -386,7 +386,7 @@ avr vm show [OPTIONS] VM_ID_OR_NAME
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -426,7 +426,7 @@ port-forwarding use `avr vm port-forward`.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 - <code class="cli-arg">[SSH_ARGS...]</code>
 
 **Options**
@@ -462,7 +462,7 @@ warning is printed.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -488,7 +488,7 @@ See avr vm create --help for the JSON format and an example.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 
@@ -534,7 +534,7 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 **Arguments**
 
-- <code class="cli-arg">VM_ID</code>
+- <code class="cli-arg">VM_ID_OR_NAME</code>
 
 **Options**
 

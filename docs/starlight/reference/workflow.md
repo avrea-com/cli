@@ -83,7 +83,7 @@ Examples:
 
 **Arguments**
 
-- <code class="cli-arg">WORKFLOW_IDENTIFIER</code>
+- <code class="cli-arg">WORKFLOW</code>
 
 **Options**
 
@@ -130,7 +130,7 @@ JSON FIELDS
 
 **Arguments**
 
-- <code class="cli-arg">WORKFLOW_IDENTIFIER</code>
+- <code class="cli-arg">WORKFLOW</code>
 
 **Options**
 

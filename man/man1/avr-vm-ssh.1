@@ -20,7 +20,7 @@ Pass `--session <name>` to attach to (or create) a persistent tmux session, so t
 When the VM's endpoint publishes a host key it is pinned, so the first connect neither prompts nor is spoofable. If the endpoint has no host key, `avr` prints a warning and falls back to trust-on-first-use, so this spoofing protection is conditional rather than guaranteed. For port-forwarding use `avr vm port-forward`.
 .SH ARGUMENTS
 .TP
-\fIVM_ID\fR
+\fIVM_ID_OR_NAME\fR
 \&
 .TP
 [\fISSH_ARGS...\fR]

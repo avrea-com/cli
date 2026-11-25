@@ -93,7 +93,7 @@ avr artifact delete [OPTIONS] ART_ID
 
 **Arguments**
 
-- `ARTIFACT_ID`
+- `ART_ID`
 
 **Options**
 
@@ -113,7 +113,7 @@ avr artifact download [OPTIONS] ART_ID
 
 **Arguments**
 
-- `ARTIFACT_ID`
+- `ART_ID`
 
 **Options**
 
@@ -133,7 +133,7 @@ avr artifact get [OPTIONS] ART_ID
 
 **Arguments**
 
-- `ARTIFACT_ID`
+- `ART_ID`
 
 **Options**
 
@@ -758,7 +758,7 @@ avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -881,7 +881,7 @@ Delete a VM. Asynchronous while live: shows DELETING until the node confirms the
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -903,7 +903,7 @@ Watch firewall blocks on a running VM or agent sandbox until its run ends. Pass 
 
 **Arguments**
 
-- `VM_ID` — VM ID or display name.
+- `VM_ID_OR_NAME` — VM ID or display name.
 
 **Options**
 
@@ -925,7 +925,7 @@ update --rotate-password if needed. Requires admin access to the source.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -964,7 +964,7 @@ avr vm metrics [OPTIONS] VM_ID_OR_NAME
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -989,7 +989,7 @@ preserve guest memory and continue processes from where they stopped.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1018,7 +1018,7 @@ avr vm port-forward cvm-abc123 --port 8080 --port 5432 --port 9000:3000
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1042,7 +1042,7 @@ open until Ctrl-C; pass --launch to also start a local RDP client.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1068,7 +1068,7 @@ running processes.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1092,7 +1092,7 @@ a paused VM picks up the new URLs at resume.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1109,7 +1109,7 @@ avr vm show [OPTIONS] VM_ID_OR_NAME
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1149,7 +1149,7 @@ port-forwarding use `avr vm port-forward`.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 - `[SSH_ARGS...]`
 
 **Options**
@@ -1185,7 +1185,7 @@ warning is printed.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1211,7 +1211,7 @@ See avr vm create --help for the JSON format and an example.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1257,7 +1257,7 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 
 **Arguments**
 
-- `VM_ID`
+- `VM_ID_OR_NAME`
 
 **Options**
 
@@ -1347,7 +1347,7 @@ Examples:
 
 **Arguments**
 
-- `WORKFLOW_IDENTIFIER`
+- `WORKFLOW`
 
 **Options**
 
@@ -1394,7 +1394,7 @@ JSON FIELDS
 
 **Arguments**
 
-- `WORKFLOW_IDENTIFIER`
+- `WORKFLOW`
 
 **Options**
 
@@ -1594,7 +1594,7 @@ mean no tests were reported.
 
 **Arguments**
 
-- `TARGET`
+- `RUN_OR_JOB`
 
 **Options**
 
