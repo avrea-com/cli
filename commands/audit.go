@@ -80,8 +80,7 @@ func NewAudit(deps Dependencies) *cobra.Command {
 						return err
 					}
 				}
-				actorLabel := pythonValue(fallback(row["actor_user_id"], pythonValue(fallback(row["actor_type"], "-"))))
-				cells = append(cells, []string{formatTimestamp(fieldText(row, "created_at")), actorLabel, organizationCell(row, "actor_type"), organizationCell(row, "resource_type"), pythonValue(fallback(row["resource_id"], "-")), organizationCell(row, "action"), data})
+				cells = append(cells, []string{formatTimestamp(fieldText(row, "created_at")), auditActor(row), organizationCell(row, "actor_type"), organizationCell(row, "resource_type"), pythonValue(fallback(row["resource_id"], "-")), organizationCell(row, "action"), data})
 			}
 			if err = output.Grid(d.Out, []string{"Time", "Actor", "Type", "Resource", "Target", "Action", "Data"}, cells); err != nil {
 				return err
@@ -94,6 +93,17 @@ func NewAudit(deps Dependencies) *cobra.Command {
 	})
 	group.AddCommand(c)
 	return group
+}
+
+// auditActor names who wrote: the user, else the key that acted without one
+// (a service token), else the actor type.
+func auditActor(row map[string]any) string {
+	for _, key := range []string{"actor_user_id", "acting_api_key_id", "actor_type"} {
+		if value := row[key]; value != nil && value != "" {
+			return pythonValue(value)
+		}
+	}
+	return "-"
 }
 
 // Keep API member order and Python's ASCII JSON strings in the table's Data
