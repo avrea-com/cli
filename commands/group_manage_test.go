@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -1261,7 +1263,7 @@ func TestReferenceListsCommandsBelowAPrefix(t *testing.T) {
 	if code := h.run(t, "reference", "groups", "members", "--json", "command"); code != 0 || !strings.HasPrefix(strings.Join(strings.Fields(h.out.String()), ""), `[{"command":"avrgroupmember"},`) {
 		t.Fatal(code, h.out, h.stderr)
 	}
-	for _, args := range [][]string{{"group", "nope"}, {"groups", "nope"}, {"nope"}, {"internal"}} {
+	for _, args := range [][]string{{"group", "nope"}, {"groups", "nope"}, {"nope"}, {"internal"}, {"help"}} {
 		h = newManageHarness(t, managePersonal, governanceAPI(t, nil))
 		if code := h.run(t, append([]string{"reference"}, args...)...); code != 2 || !strings.Contains(h.stderr.String(), "No such command: avr "+strings.Join(args, " ")) {
 			t.Fatal(args, code, h.stderr)
@@ -1308,6 +1310,57 @@ func TestReferenceListsGlobalOptions(t *testing.T) {
 	h = newManageHarness(t, managePersonal, governanceAPI(t, nil))
 	if code := h.run(t, "reference", "group", "--json", "command"); code != 0 || strings.Contains(h.out.String(), `"command": "avr"`) {
 		t.Fatal(code, h.out)
+	}
+}
+
+// The reference describes the command tree that runs it, as help does, so an
+// embedder's changes show and removed commands do not.
+func TestReferenceDescribesTheComposedRegistry(t *testing.T) {
+	d, out, stderr := testDeps(t)
+	root := NewRoot(d)
+	repo, _, _ := root.Find([]string{"repo"})
+	root.RemoveCommand(repo)
+	root.AddCommand(&cobra.Command{Use: "extension", Aliases: []string{"ext"}, Short: "Inspect the extension."})
+	root.PersistentFlags().String("extra", "", "Extra composition setting.")
+	if code := ExecuteRoot(t.Context(), root, []string{"reference", "ext", "--json", "command"}, stderr, d); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	if got := strings.Join(strings.Fields(out.String()), ""); got != `[{"command":"avrextension"}]` {
+		t.Fatal(got)
+	}
+	out.Reset()
+	if code := ExecuteRoot(t.Context(), root, []string{"reference", "--json", "command,params"}, stderr, d); code != 0 {
+		t.Fatal(code, stderr)
+	}
+	if !strings.Contains(out.String(), `"--extra"`) || strings.Contains(out.String(), `"avr repo`) || strings.Contains(out.String(), `"avr help"`) {
+		t.Fatal(out)
+	}
+	stderr.Reset()
+	if code := ExecuteRoot(t.Context(), root, []string{"reference", "repo"}, stderr, d); code != 2 || !strings.Contains(stderr.String(), "No such command: avr repo") {
+		t.Fatal(code, stderr)
+	}
+}
+
+// Defaults in the reference are the public CLI's, as in the generated docs,
+// whatever this invocation's environment sets.
+func TestReferenceDefaultsIgnoreTheEnvironment(t *testing.T) {
+	rootParams := func(env map[string]string) []map[string]any {
+		d, out, stderr := testDeps(t)
+		d.Getenv = func(key string) string { return env[key] }
+		if code := Execute(t.Context(), []string{"reference", "--json", "command,params"}, d); code != 0 {
+			t.Fatal(code, stderr)
+		}
+		var rows []struct {
+			Params []map[string]any `json:"params"`
+		}
+		if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) == 0 {
+			t.Fatal(err, out)
+		}
+		return rows[0].Params
+	}
+	public, set := rootParams(nil), rootParams(map[string]string{"AVR_LINKS": "0"})
+	if fmt.Sprint(public) != fmt.Sprint(set) {
+		t.Fatalf("with AVR_LINKS=0: %v\nwithout: %v", set, public)
 	}
 }
 

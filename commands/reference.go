@@ -24,14 +24,20 @@ func NewReference(deps Dependencies) *cobra.Command {
 		if done, err := o.prepare(cmd, d, referenceFields); done || err != nil {
 			return err
 		}
-		// Defaults describe the public CLI, not this invocation's environment.
-		reference := d
-		reference.Getenv = func(string) string { return "" }
-		reference.LookupEnv = func(string) (string, bool) { return "", false }
-		root := NewRoot(reference)
+		// The tree that runs this command is the one described, with what an
+		// embedder added or removed.
+		root := cmd.Root()
 		tree, err := Documentation(root)
 		if err != nil {
 			return err
+		}
+		// Defaults describe the public CLI, not this invocation's
+		// environment: AVR_LINKS, the only variable that sets one, can turn
+		// the default of --links off.
+		for i := range tree.GlobalOptions {
+			if tree.GlobalOptions[i].Envvar == "AVR_LINKS" {
+				tree.GlobalOptions[i].Default = true
+			}
 		}
 		// Arguments name a command as the CLI reads them, aliases included.
 		prefix := []string{tree.Program}
@@ -44,7 +50,10 @@ func NewReference(deps Dependencies) *cobra.Command {
 			prefix = append(prefix, args...)
 		}
 		for _, node := range tree.Commands() {
-			if !node.Hidden && len(node.Path) >= len(prefix) && slices.Equal(node.Path[:len(prefix)], prefix) {
+			// Cobra adds its own help command to a tree it runs; help and
+			// completion leave it out, as the generated docs do.
+			cobraHelp := slices.Equal(node.Path, []string{tree.Program, "help"}) && node.ShortHelp == "Help about any command"
+			if !node.Hidden && !cobraHelp && len(node.Path) >= len(prefix) && slices.Equal(node.Path[:len(prefix)], prefix) {
 				nodes = append(nodes, node)
 			}
 		}
