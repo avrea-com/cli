@@ -58,10 +58,11 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr auth`](#avr-auth) — Authenticate and manage credentials.
 - [`avr token`](#avr-token) — Create and manage scoped access tokens.
 - [`avr service-token`](#avr-service-token) — Create and manage the organization's service tokens.
-- [`avr group`](#avr-group) — View the organization's groups.
+- [`avr group`](#avr-group) — Build and manage the organization's group tree.
 - [`avr config`](#avr-config) — View and manage CLI configuration.
 - [`avr settings`](#avr-settings) — View and toggle cache and runner settings.
 - [`avr skill`](#avr-skill) — Teach coding agents to use avr.
+- [`avr reference`](#avr-reference) — List avr's commands, options and JSON fields.
 - [`avr firewall`](#avr-firewall) — Manage the egress firewall rule list for orgs and repositories.
 - [`avr billing`](#avr-billing) — Manage billing, invoices, and payment methods.
 - [`avr audit-events`](#avr-audit-events) — View audit events for organization writes.
@@ -94,6 +95,11 @@ Delete ART_ID from the selected repository.
 avr artifact delete [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    deleted, id
+```
+
 **Arguments**
 
 - `ART_ID`
@@ -112,6 +118,11 @@ Download ART_ID and verify its size and SHA-256 before replacing the destination
 
 ```sh
 avr artifact download [OPTIONS] ART_ID
+```
+
+```sh
+JSON FIELDS
+    digest_sha256, id, path, size_bytes
 ```
 
 **Arguments**
@@ -134,6 +145,13 @@ Get metadata for ART_ID in the selected repository.
 avr artifact get [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
+```
+
 **Arguments**
 
 - `ART_ID`
@@ -151,6 +169,13 @@ List artifacts in REPO, optionally restricted to one run.
 
 ```sh
 avr artifact list [OPTIONS] REPO
+```
+
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
 ```
 
 **Arguments**
@@ -1445,8 +1470,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, median_duration_seconds, name,
-    path, platform_workflow_id, repository, runs, workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count,
+    median_duration_seconds, name, path, platform_workflow_id, repository,
+    runs, workflow_id
 ```
 
 **Options**
@@ -1537,9 +1563,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, jobs, median_duration_seconds,
-    name, p95_duration_seconds, path, platform_workflow_id, repository, runs,
-    workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count, jobs,
+    median_duration_seconds, name, p95_duration_seconds, path,
+    platform_workflow_id, repository, runs, workflow_id
 ```
 
 **Arguments**
@@ -1695,6 +1721,12 @@ avr tests JOB --test NAME to read its failure message.
 Reports still being prepared are marked; a read that stops early does
 not mean the test never ran. Continue with --cursor for older runs.
 
+```sh
+JSON FIELDS
+    configuration_digest, data, identity, organization_id, pagination,
+    repository_id, scope, status, test_id
+```
+
 **Arguments**
 
 - `TEST`
@@ -1742,6 +1774,13 @@ without downloading results; it cannot combine with test filters, --cursor
 or an explicit --limit. Indexing, unavailable and limited listings do not
 mean no tests were reported.
 
+```sh
+JSON FIELDS
+    commit_sha, counts, data, execution_id, filters, job_id, observed_at,
+    organization_id, pagination, reason, reporting_state, repository_id,
+    status, total_count
+```
+
 **Arguments**
 
 - `RUN_OR_JOB`
@@ -1785,6 +1824,12 @@ test absent from an incomplete search may still be recorded.
 Read a row's failure message with avr tests JOB --status failed, and
 its earlier runs with avr tests history. Use --json '*' for test IDs,
 configuration digests and result IDs.
+
+```sh
+JSON FIELDS
+    data, filters, organization_id, pagination, repository_id, scope, status,
+    truncated
+```
 
 **Arguments**
 
@@ -2571,15 +2616,260 @@ JSON FIELDS
 
 ### `avr group`
 
-View the organization's groups.
+Build and manage the organization's group tree.
 
 ```sh
 avr group [OPTIONS] COMMAND [ARGS]...
 ```
 
-Each service token belongs to one of these groups. Organization members
-list them while signed in (avr auth device-login or avr auth login); a scoped or service
-token cannot.
+Groups hold members, service tokens and vCPU limits. Organization
+members manage them while signed in (avr auth device-login or avr auth
+login); a scoped or service token cannot. What you may change depends
+on the groups you administer: `avr org governance` shows it.
+
+#### `avr group create`
+
+Create a group below a parent group.
+
+```sh
+avr group create [OPTIONS] NAME
+```
+
+NAME is the new group's name, unique below its parent. --parent names
+the parent like GROUP in other group commands; the root group,
+Organization unless renamed, takes groups at the top of the tree.
+
+Each create sends an idempotency key, printed to standard error before
+the request. If the response is lost, rerun the same command with
+--idempotency-key KEY: it returns the group that create made instead of
+making a second one. A key belongs to one parent, name and label.
+
+```sh
+Examples:
+    avr group create Platform --parent Organization
+    avr group create CI --parent Organization/Platform --label runners
+```
+
+```sh
+JSON FIELDS
+    created_at, display_name, group_id, idempotency_key, label, member_count,
+    ownership, parent_id, soft_deleted_at, state, suspension_reason,
+    updated_at
+```
+
+**Arguments**
+
+- `NAME`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--parent <TEXT>` — The group to create it below. _(required)_
+- `--label <TEXT>` — A short label shown with the group.
+- `--idempotency-key <UUID>` — Resume an earlier create with the key it printed.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group delete`
+
+Delete an empty group.
+
+```sh
+avr group delete [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Asks first unless --yes is passed. A group that still has subgroups,
+members, a service token that is not revoked or expired, VMs its
+service tokens created, a vCPU limit, suspended members or workflows
+whose jobs are charged to it is not deleted; the error names what to
+clear, at most 100 workflows at a time.
+
+Deleting a group also removes the resource access it grants, and stops
+charging it for workflows of repositories that are no longer installed.
+
+```sh
+Examples:
+    avr group delete Platform/CI
+    avr group delete grp-0123456789abcdef0123456789abcdef --yes
+```
+
+```sh
+JSON FIELDS
+    deleted, group_id, path
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-y, --yes` — Delete without asking.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group edit`
+
+Rename a group or change its label.
+
+```sh
+avr group edit [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Only the options you pass change; --label '' clears the label.
+
+```sh
+Examples:
+    avr group edit Platform/CI --name Builds
+    avr group edit Platform/CI --label ''
+```
+
+```sh
+JSON FIELDS
+    created_at, display_name, group_id, label, member_count, ownership,
+    parent_id, soft_deleted_at, state, suspension_reason, updated_at
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--name <TEXT>` — The group's new name.
+- `--label <TEXT>` — The group's new label; an empty value clears it.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group limit`
+
+Show, set and clear a group's vCPU limit.
+
+```sh
+avr group limit [OPTIONS] COMMAND [ARGS]...
+```
+
+A group's vCPU limit caps the vCPU that the group and its subgroups use
+at once. Limits on parent groups apply too: a job starts only when it
+fits under every limit on its group's path, counting what the other
+groups below each one already use.
+
+##### `avr group limit clear`
+
+Remove a group's own vCPU limit.
+
+```sh
+avr group limit clear [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Asks first unless --yes is passed. Limits on parent groups still apply.
+
+```sh
+Examples:
+    avr group limit clear Platform/CI --yes
+```
+
+```sh
+JSON FIELDS
+    cleared, group_id, limit_key
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-y, --yes` — Clear without asking.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr group limit list`
+
+Show the limits that apply to a group, its own and inherited.
+
+```sh
+avr group limit list [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+```sh
+Examples:
+    avr group limit list Platform/CI
+```
+
+```sh
+JSON FIELDS
+    group_id, inherited, kind, limit_key, limit_type, period, timezone,
+    value
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr group limit set`
+
+Set a group's own vCPU limit.
+
+```sh
+avr group limit set [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Asks first unless --yes is passed or the change raises or keeps the
+group's own limit: a first limit or a lower one can make new jobs wait.
+Running jobs keep running.
+
+```sh
+Examples:
+    avr group limit set Platform/CI --max-vcpu 64
+```
+
+```sh
+JSON FIELDS
+    group_id, inherited, kind, limit_key, limit_type, period, previous_value,
+    timezone, value
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--max-vcpu <INTEGER>` — The most vCPU the group and its subgroups may use at once. _(required)_
+- `-y, --yes` — Set the limit without asking.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 #### `avr group list`
 
@@ -2610,6 +2900,213 @@ JSON FIELDS
 
 - `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `-L, --limit <INTEGER RANGE>` — Max groups to return. _(default: `50`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group member`
+
+List, add and remove a group's members.
+
+```sh
+avr group member [OPTIONS] COMMAND [ARGS]...
+```
+
+A change names each MEMBER by user ID (usr-...), @me for yourself, or an
+email address the member verified. Display names are not accepted:
+members choose them, so one can match the wrong person. `avr auth
+status` shows your user ID.
+
+##### `avr group member add`
+
+Add members to a group.
+
+```sh
+avr group member add [OPTIONS] GROUP [MEMBER]...
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Name each MEMBER by user ID (usr-...), @me or a verified email address,
+as arguments or one per line with --file, where a line starting with #
+is a comment unless it is an email address, such as #ops@example.com.
+The command adds them all in one change, up to 250, and reports
+each member's result; a member already in the state asked for counts
+as done, so a rerun is safe.
+
+```sh
+Examples:
+    avr group member add Platform/CI @me
+    avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef
+    avr group member add Platform/CI --file members.txt
+```
+
+```sh
+JSON FIELDS
+    action, detail, member, status, user_id
+```
+
+**Arguments**
+
+- `GROUP`
+- `[MEMBER...]`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--file <TEXT>` — Read members from a file, one per line; - reads standard input.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr group member list`
+
+List a group's direct members.
+
+```sh
+avr group member list [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Members of subgroups are listed with the subgroup.
+
+```sh
+Examples:
+    avr group member list Platform/CI
+    avr group member list Platform/CI -L 1000 --json user_id,email
+```
+
+```sh
+JSON FIELDS
+    added_at, email, name, source, stale_sources, user_id
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `-L, --limit <INTEGER RANGE>` — Max members to return. _(default: `100`)_
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr group member remove`
+
+Remove members from a group.
+
+```sh
+avr group member remove [OPTIONS] GROUP [MEMBER]...
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Name each MEMBER by user ID (usr-...), @me or a verified email address,
+as arguments or one per line with --file, where a line starting with #
+is a comment unless it is an email address, such as #ops@example.com.
+The command removes them all in one change, up to 250, and reports
+each member's result; a member already in the state asked for counts
+as done, so a rerun is safe.
+Lists the members and asks first unless --yes is passed; reading
+members from standard input (--file -) needs --yes.
+
+```sh
+Examples:
+    avr group member remove Platform/CI @me
+    avr group member remove Platform/CI usr-0123456789abcdef0123456789abcdef
+    avr group member remove Platform/CI --file members.txt
+```
+
+```sh
+JSON FIELDS
+    action, detail, member, status, user_id
+```
+
+**Arguments**
+
+- `GROUP`
+- `[MEMBER...]`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--file <TEXT>` — Read members from a file, one per line; - reads standard input.
+- `-y, --yes` — Remove without asking.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group usage`
+
+Show the vCPU a group uses and the limits on its path.
+
+```sh
+avr group usage [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+Usage counts the group and its subgroups.
+
+```sh
+Examples:
+    avr group usage Platform
+    avr group usage Platform --json used_vcpu,pools
+```
+
+```sh
+JSON FIELDS
+    group_id, group_state, measured_at, pools, used_vcpu
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr group view`
+
+Show a group's details and path.
+
+```sh
+avr group view [OPTIONS] GROUP
+```
+
+GROUP is a group ID (grp-...), the group's path from the root group,
+such as Organization/Platform/CI, or the end of a path when only one
+group has it, such as Platform/CI.
+
+```sh
+Examples:
+    avr group view Organization/Platform
+    avr group view Platform/CI --json group_id,member_count
+```
+
+```sh
+JSON FIELDS
+    created_at, display_name, group_id, label, member_count, ownership,
+    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+```
+
+**Arguments**
+
+- `GROUP`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
@@ -2920,6 +3417,52 @@ in the skill directory are kept.
 - `--agent <CHOICE>` — Location to uninstall from (repeatable): claude, agents or kiro. Defaults to claude and agents. _(choices: `claude`, `agents`, `codex`, `kiro` · repeatable)_
 - `--project` — Use the current git repository instead of your home directory.
 - `--force` — Remove a skill that avr did not install.
+
+### `avr reference`
+
+List avr's commands, options and JSON fields.
+
+```sh
+avr reference [OPTIONS] [COMMAND]...
+```
+
+Lists every command, or those below the COMMAND words given, from the
+same data as the reference documentation. The words may be aliases,
+such as groups. With --json each row holds a command's help, its
+options and arguments, and the fields its --json accepts, so a script
+or coding agent can learn avr without reading help text. It needs no
+sign-in and makes no requests.
+
+Without COMMAND words the first row is avr itself, with its own
+options. Each is marked inherited when every command takes it too.
+
+json_fields lists a command's default fields. It is empty where the
+fields depend on the credential or platform, as for auth status and
+org install add, and an option such as tests list --summary or secret
+get --version-id selects others. The command with --json ? lists the
+fields of that invocation.
+
+```sh
+Examples:
+    avr reference
+    avr reference group member
+    avr reference --json command,json_fields --jq '.[] | select(.json_fields | length > 0)'
+```
+
+```sh
+JSON FIELDS
+    command, deprecated, help, is_group, json_fields, params, short_help,
+    usage
+```
+
+**Arguments**
+
+- `[COMMAND...]`
+
+**Options**
+
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
 ### `avr firewall`
 
@@ -4023,6 +4566,36 @@ JSON FIELDS
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 
+#### `avr org governance`
+
+Show what you may manage in the organization.
+
+```sh
+avr org governance [OPTIONS]
+```
+
+Shows whether groups, resource access and delegation are on, which
+organization capabilities you hold, and for each group listed for you
+what you may and may not do there.
+
+```sh
+Examples:
+    avr org governance
+    avr org governance --json groups --jq '.groups[].display_name'
+```
+
+```sh
+JSON FIELDS
+    delegation_enabled, eligible_root_admin, groups, groups_enabled,
+    manual_root_capabilities, resource_access_enabled, root_capabilities
+```
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
 #### `avr org install`
 
 Manage GitHub and GitLab installations.
@@ -4339,8 +4912,10 @@ JSON FIELDS
 List organization members.
 
 ```sh
-avr org members [OPTIONS]
+avr org members [OPTIONS] [COMMAND [ARGS]...]
 ```
+
+`avr org members access MEMBER` explains what one member can reach.
 
 ```sh
 Examples:
@@ -4353,6 +4928,42 @@ Examples:
 JSON FIELDS
     joined_at, name, role, user_id
 ```
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+##### `avr org members access`
+
+Explain a member's effective access and where it comes from.
+
+```sh
+avr org members access [OPTIONS] MEMBER
+```
+
+MEMBER is a user ID (usr-...), @me, an email address the member
+verified, or a display name that only one active member has. The
+answer lists the member's groups, what each grant reaches and why, and
+their organization capabilities. A partial answer says so.
+
+```sh
+Examples:
+    avr org members access @me
+    avr org members access usr-0123456789abcdef0123456789abcdef --json groups
+```
+
+```sh
+JSON FIELDS
+    governance, groups, notes, org_role, org_role_source, resource_access,
+    resource_access_complete, resource_access_truncated, root_capabilities,
+    user_id
+```
+
+**Arguments**
+
+- `MEMBER`
 
 **Options**
 
@@ -4427,6 +5038,14 @@ company domain.
 Examples:
     avr org saml enforcement on
     avr org saml enforcement off --org acme
+```
+
+```sh
+JSON FIELDS
+    allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
+    attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
+    idp_sso_url, is_enforced, jit_provisioning, name_id_format,
+    organization_id, organization_saml_config_id, updated_at
 ```
 
 **Arguments**
@@ -4534,6 +5153,11 @@ Examples:
     avr health --json '*' -q '.status'
 ```
 
+```sh
+JSON FIELDS
+    status
+```
+
 **Options**
 
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
@@ -4599,6 +5223,11 @@ Examples:
     avr feedback --bug "Run logs are missing"
     avr feedback status FEEDBACK_ID
 
+```sh
+JSON FIELDS
+    created_at, id, idempotency_key, status
+```
+
 **Arguments**
 
 - `[MESSAGE]`
@@ -4617,6 +5246,11 @@ Read the delivery status of your feedback.
 
 ```sh
 avr feedback status [OPTIONS] FEEDBACK_ID
+```
+
+```sh
+JSON FIELDS
+    created_at, id, status
 ```
 
 **Arguments**
@@ -4644,6 +5278,12 @@ Delete one scoped value, or the whole name with --all.
 avr secret delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4665,6 +5305,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr secret edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4699,6 +5345,11 @@ Inspect a secret.
 avr secret get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Arguments**
 
 - `NAME`
@@ -4721,6 +5372,11 @@ List names, scoped-value counts, and update times.
 avr secret list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Options**
 
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
@@ -4734,6 +5390,12 @@ Create or replace a scoped value.
 
 ```sh
 avr secret set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4775,6 +5437,12 @@ Delete one scoped value, or the whole name with --all.
 avr variable delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4796,6 +5464,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr variable edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -4830,6 +5504,13 @@ Inspect a variable.
 avr variable get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, current_version, current_version_created_at,
+    current_version_id, has_value, label, updated_at, value,
+    variable_variant_id
+```
+
 **Arguments**
 
 - `NAME`
@@ -4851,6 +5532,11 @@ List names, scoped-value counts, and update times.
 avr variable list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    description, name, updated_at, variable_id, variants
+```
+
 **Options**
 
 - `--jq, -q <TEXT>` — Filter JSON with an embedded jq expression.
@@ -4864,6 +5550,12 @@ Create or replace a scoped value.
 
 ```sh
 avr variable set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**

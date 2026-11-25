@@ -71,7 +71,7 @@ func TestNotifierOnlyUsesReadyNoticesForSuccessfulInteractiveCommands(t *testing
 }
 
 func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
-	for _, mode := range []string{"interactive", "help", "version", "json", "ndjson", "pipe", "ci", "opt-out"} {
+	for _, mode := range []string{"interactive", "help", "version", "json", "ndjson", "pipe", "ci", "opt-out", "reference"} {
 		t.Run(mode, func(t *testing.T) {
 			d, _, stderr := testDeps(t)
 			started := false
@@ -100,6 +100,10 @@ func TestNotifierStartsOnlyForEligibleCommands(t *testing.T) {
 			}
 			if mode == "version" {
 				args = []string{"--version"}
+			}
+			// The reference is offline, so it starts no release check either.
+			if mode == "reference" {
+				args = []string{"reference", "group"}
 			}
 			if mode == "json" || mode == "ndjson" {
 				args = append(args, "--"+mode)

@@ -31,8 +31,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, median_duration_seconds, name,
-    path, platform_workflow_id, repository, runs, workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count,
+    median_duration_seconds, name, path, platform_workflow_id, repository,
+    runs, workflow_id
 ```
 
 **Options**
@@ -123,9 +124,9 @@ Examples:
 
 ```sh
 JSON FIELDS
-    completed_runs, failure_count, flaked_count, jobs, median_duration_seconds,
-    name, p95_duration_seconds, path, platform_workflow_id, repository, runs,
-    workflow_id
+    ci_provider, completed_runs, failure_count, flaked_count, jobs,
+    median_duration_seconds, name, p95_duration_seconds, path,
+    platform_workflow_id, repository, runs, workflow_id
 ```
 
 **Arguments**

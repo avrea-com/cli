@@ -1,0 +1,56 @@
+.TH AVR\-GROUP\-DELETE 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-delete \- Delete an empty group.
+.SH SYNOPSIS
+.B avr group delete
+[OPTIONS] GROUP
+.SH DESCRIPTION
+Delete an empty group.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+Asks first unless --yes is passed. A group that still has subgroups, members, a service token that is not revoked or expired, VMs its service tokens created, a vCPU limit, suspended members or workflows whose jobs are charged to it is not deleted; the error names what to clear, at most 100 workflows at a time.
+.PP
+Deleting a group also removes the resource access it grants, and stops charging it for workflows of repositories that are no longer installed.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group delete Platform/CI
+    avr group delete grp-0123456789abcdef0123456789abcdef --yes
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    deleted, group_id, path
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-y\fR, \fB\-\-yes\fR
+Delete without asking.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group (1),
+.BR avr-group-create (1),
+.BR avr-group-edit (1),
+.BR avr-group-limit (1),
+.BR avr-group-list (1),
+.BR avr-group-member (1),
+.BR avr-group-usage (1),
+.BR avr-group-view (1)

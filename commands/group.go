@@ -26,13 +26,13 @@ const groupPageLimit = 250
 // the --group options of other commands can be given a group's path.
 func NewGroup(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	c := &cobra.Command{Use: "group", Aliases: []string{"groups"}, Short: "View the organization's groups."}
-	c.AddCommand(newGroupList(d))
+	c := &cobra.Command{Use: "group", Aliases: []string{"groups"}, Short: "Build and manage the organization's group tree."}
+	c.AddCommand(newGroupList(d), newGroupView(d), newGroupCreate(d), newGroupEdit(d), newGroupDelete(d), newGroupMember(d), newGroupLimit(d), newGroupUsage(d))
 	return c
 }
 
 func groupListHint(org string) string {
-	return "Run \x60avr group list --org " + shellQuotePython(org) + "\x60 to see the organization's groups."
+	return "Run " + groupCommand("list", "", org) + " to see the organization's groups."
 }
 
 func groupError(cfg config.Config, err error) error {
@@ -114,15 +114,38 @@ func groupPaths(rows []map[string]any) [][]string {
 	return paths
 }
 
-// groupOption returns a --group value as resolveGroup compares it, without
-// surrounding spaces or slashes, and rejects one no group can match before any
-// request.
-func groupOption(value string) (string, error) {
-	value = strings.TrimFunc(value, func(r rune) bool { return r == '/' || unicode.IsSpace(r) })
-	if value == "" {
-		return "", &ExitError{2, "Error: Invalid value for '--group': expected a group name, path or ID (grp-...)."}
+// groupOption returns a --group value as resolveGroup compares it, and
+// rejects one no group can match before any request.
+func groupOption(value string) (string, error) { return groupReference(value, "--group") }
+
+// groupReference reads a group name, path or ID given as label, the option or
+// argument named in errors. Surrounding spaces go, as the API drops them from
+// names. Slashes stay, since a name may hold one; matchGroup also tries the
+// value without them.
+func groupReference(value, label string) (string, error) {
+	value = strings.TrimSpace(value)
+	if bareGroupValue(value) == "" {
+		return "", &ExitError{2, "Error: Invalid value for '" + label + "': expected a group name, path or ID (grp-...)."}
 	}
 	return value, nil
+}
+
+// bareGroupValue is value without the slashes and spaces around it, as a
+// path is often copied.
+func bareGroupValue(value string) string { return strings.TrimFunc(value, aroundGroupValue) }
+
+func aroundGroupValue(r rune) bool { return r == '/' || unicode.IsSpace(r) }
+
+// groupRef is a resolved group. path is empty when the group was named by ID,
+// which needs no listing.
+type groupRef struct{ id, path string }
+
+// display names the group as a person would look for it.
+func (g groupRef) display() string {
+	if g.path == "" {
+		return g.id
+	}
+	return g.path + " (" + g.id + ")"
 }
 
 // resolveGroup returns the ID of the group value names. A group ID is used as
@@ -131,22 +154,98 @@ func groupOption(value string) (string, error) {
 // the API keeps sibling names unique that way, and deleted groups are left
 // out: they cannot own a token and would only make a name ambiguous.
 func resolveGroup(ctx context.Context, cfg config.Config, api *client.Client, org, value string) (string, error) {
+	group, err := findGroup(ctx, cfg, api, org, value, "--group")
+	return group.id, err
+}
+
+// findGroup resolves value as resolveGroup does; label names the option or
+// argument in errors.
+func findGroup(ctx context.Context, cfg config.Config, api *client.Client, org, value, label string) (groupRef, error) {
 	if serviceTokenGroupPattern().MatchString(value) {
-		return value, nil
+		return groupRef{id: value}, nil
 	}
 	rows, err := listGroups(ctx, cfg, api, org)
 	if err != nil {
-		return "", err
+		return groupRef{}, err
 	}
-	type match struct{ path, id string }
-	var whole, matches []match
+	return matchGroup(rows, value, label, org)
+}
+
+// matchGroup resolves value against an organization's listed groups. A bare
+// group ID is used as is, with its path when the listing holds it.
+func matchGroup(rows []map[string]any, value, label, org string) (groupRef, error) {
+	paths := groupPaths(rows)
+	byID := func(id string) groupRef {
+		for i, row := range rows {
+			if fieldText(row, "group_id") == id {
+				return groupRef{id: id, path: strings.Join(paths[i], "/")}
+			}
+		}
+		return groupRef{id: id}
+	}
+	if serviceTokenGroupPattern().MatchString(value) {
+		return byID(value), nil
+	}
+	// A value copied with slashes or spaces around it may name a group, or a
+	// group ID, without some of them. It is read as typed and without those
+	// at its start, its end or both. When readings name different groups,
+	// only the ID tells which one was meant: Acme/Ops/ is a group of its own
+	// when one is named Ops/, and so is grp-.../ when a name is that.
+	var readings [][]groupRef
+	for _, reading := range []string{value, strings.TrimLeftFunc(value, aroundGroupValue), strings.TrimRightFunc(value, aroundGroupValue), bareGroupValue(value)} {
+		found := groupCandidates(rows, paths, reading)
+		if serviceTokenGroupPattern().MatchString(reading) {
+			found = []groupRef{byID(reading)}
+		}
+		if len(found) > 0 && !slices.ContainsFunc(readings, func(other []groupRef) bool { return slices.Equal(other, found) }) {
+			readings = append(readings, found)
+		}
+	}
+	var matches []groupRef
+	for _, found := range readings {
+		for _, group := range found {
+			if !slices.Contains(matches, group) {
+				matches = append(matches, group)
+			}
+		}
+	}
+	hint := "Pass a longer path or the group ID."
+	if len(readings) > 1 {
+		hint = "Pass the group ID: the value names different groups with and without the slashes around it."
+	}
+	quoted := pythonQuote(output.CellText(value))
+	switch len(matches) {
+	case 0:
+		message := "Error: Invalid value for '" + label + "': no group is named " + quoted + " or has that path."
+		if strings.HasPrefix(value, "grp-") {
+			message += " A group ID is grp- followed by 32 lowercase hexadecimal characters."
+		}
+		return groupRef{}, &ExitError{2, message + "\n  Hint: " + groupListHint(org)}
+	case 1:
+		return matches[0], nil
+	}
+	slices.SortFunc(matches, func(a, b groupRef) int { return strings.Compare(a.path+"\x00"+a.id, b.path+"\x00"+b.id) })
+	var message strings.Builder
+	fmt.Fprintf(&message, "Error: Invalid value for '%s': %s matches %d groups:", label, quoted, len(matches))
+	for _, m := range matches {
+		fmt.Fprintf(&message, "\n    %s  (%s)", output.CellText(m.path), output.CellText(m.id))
+	}
+	message.WriteString("\n  Hint: " + hint)
+	return groupRef{}, &ExitError{2, message.String()}
+}
+
+// groupCandidates returns the live group whose whole path is value, or else
+// every live group whose path ends with value after a /. A whole path cannot
+// be made longer, so it wins over paths that end with the same names.
+func groupCandidates(rows []map[string]any, paths [][]string, value string) []groupRef {
+	var whole, matches []groupRef
 	wanted := strings.ToLower(value)
-	for i, names := range groupPaths(rows) {
+	for i, names := range paths {
 		if rows[i]["soft_deleted_at"] != nil {
 			continue
 		}
 		path := strings.Join(names, "/")
-		found := match{path, fieldText(rows[i], "group_id")}
+		found := groupRef{id: fieldText(rows[i], "group_id"), path: path}
 		switch folded := strings.ToLower(path); {
 		case folded == wanted:
 			whole = append(whole, found)
@@ -155,30 +254,10 @@ func resolveGroup(ctx context.Context, cfg config.Config, api *client.Client, or
 			matches = append(matches, found)
 		}
 	}
-	// A whole path cannot be made longer, so it wins over paths that end
-	// with the same names.
 	if len(whole) == 1 {
-		return whole[0].id, nil
+		return whole
 	}
-	quoted := pythonQuote(output.CellText(value))
-	switch len(matches) {
-	case 0:
-		message := "Error: Invalid value for '--group': no group is named " + quoted + " or has that path."
-		if strings.HasPrefix(value, "grp-") {
-			message += " A group ID is grp- followed by 32 lowercase hexadecimal characters."
-		}
-		return "", &ExitError{2, message + "\n  Hint: " + groupListHint(org)}
-	case 1:
-		return matches[0].id, nil
-	}
-	slices.SortFunc(matches, func(a, b match) int { return strings.Compare(a.path+"\x00"+a.id, b.path+"\x00"+b.id) })
-	var message strings.Builder
-	fmt.Fprintf(&message, "Error: Invalid value for '--group': %s matches %d groups:", quoted, len(matches))
-	for _, m := range matches {
-		fmt.Fprintf(&message, "\n    %s  (%s)", output.CellText(m.path), output.CellText(m.id))
-	}
-	message.WriteString("\n  Hint: Pass a longer path or the group ID.")
-	return "", &ExitError{2, message.String()}
+	return matches
 }
 
 func newGroupList(d Dependencies) *cobra.Command {
@@ -187,11 +266,11 @@ func newGroupList(d Dependencies) *cobra.Command {
 	var o jsonOptions
 	c := &cobra.Command{Use: "list", Short: "List the organization's groups by path.", Args: cobra.NoArgs}
 	c.Flags().StringVarP(&org, "org", "o", "", "Organization ID or slug.")
-	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum groups (1–1000).")
+	c.Flags().IntVarP(&limit, "limit", "L", 50, "Maximum groups.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, _ []string) error {
-		if limit < 1 || limit > 1000 {
-			return &ExitError{2, "Error: --limit must be between 1 and 1000."}
+		if limit < 1 {
+			return &ExitError{2, "Error: --limit must be at least 1."}
 		}
 		if done, err := o.prepare(cmd, d, groupFields); done || err != nil {
 			return err
@@ -228,11 +307,7 @@ func newGroupList(d Dependencies) *cobra.Command {
 			return err
 		}
 		if len(rows) < len(records) {
-			advice := " Raise --limit to see the rest."
-			if limit == 1000 {
-				advice = ""
-			}
-			_, err = fmt.Fprintf(d.Err, "\nShowing the first %d of %d groups.%s\n", len(rows), len(records), advice)
+			_, err = fmt.Fprintf(d.Err, "\nShowing the first %d of %d groups. Raise --limit to see the rest.\n", len(rows), len(records))
 		}
 		return err
 	})

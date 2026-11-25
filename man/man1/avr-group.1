@@ -1,17 +1,38 @@
 .TH AVR\-GROUP 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-group \- View the organization's groups.
+avr-group \- Build and manage the organization's group tree.
 .SH SYNOPSIS
 .B avr group
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-View the organization's groups.
+Build and manage the organization's group tree.
 .PP
-Each service token belongs to one of these groups. Organization members list them while signed in (avr auth device-login or avr auth login); a scoped or service token cannot.
+Groups hold members, service tokens and vCPU limits. Organization members manage them while signed in (avr auth device-login or avr auth login); a scoped or service token cannot. What you may change depends on the groups you administer: `avr org governance` shows it.
 .SH COMMANDS
+.TP
+create
+Create a group below a parent group.
+.TP
+delete
+Delete an empty group.
+.TP
+edit
+Rename a group or change its label.
+.TP
+limit
+Show, set and clear a group's vCPU limit.
 .TP
 list
 List the organization's groups by path.
+.TP
+member
+List, add and remove a group's members.
+.TP
+usage
+Show the vCPU a group uses and the limits on its path.
+.TP
+view
+Show a group's details and path.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-artifact (1),
@@ -33,6 +54,7 @@ List the organization's groups by path.
 .BR avr-config (1),
 .BR avr-settings (1),
 .BR avr-skill (1),
+.BR avr-reference (1),
 .BR avr-firewall (1),
 .BR avr-billing (1),
 .BR avr-audit-events (1),
@@ -43,4 +65,11 @@ List the organization's groups by path.
 .BR avr-feedback (1),
 .BR avr-secret (1),
 .BR avr-variable (1),
-.BR avr-group-list (1)
+.BR avr-group-create (1),
+.BR avr-group-delete (1),
+.BR avr-group-edit (1),
+.BR avr-group-limit (1),
+.BR avr-group-list (1),
+.BR avr-group-member (1),
+.BR avr-group-usage (1),
+.BR avr-group-view (1)

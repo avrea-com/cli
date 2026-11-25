@@ -20,8 +20,9 @@ func workflowDescription(path string) docgen.Description {
 				"\n" +
 				"\b\n" +
 				"JSON FIELDS\n" +
-				"    completed_runs, failure_count, flaked_count, median_duration_seconds, name,\n" +
-				"    path, platform_workflow_id, repository, runs, workflow_id\n",
+				"    ci_provider, completed_runs, failure_count, flaked_count,\n" +
+				"    median_duration_seconds, name, path, platform_workflow_id, repository,\n" +
+				"    runs, workflow_id\n",
 			Short: "List workflows with aggregate run stats.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
@@ -99,9 +100,9 @@ func workflowDescription(path string) docgen.Description {
 				"\n" +
 				"\b\n" +
 				"JSON FIELDS\n" +
-				"    completed_runs, failure_count, flaked_count, jobs, median_duration_seconds,\n" +
-				"    name, p95_duration_seconds, path, platform_workflow_id, repository, runs,\n" +
-				"    workflow_id\n",
+				"    ci_provider, completed_runs, failure_count, flaked_count, jobs,\n" +
+				"    median_duration_seconds, name, p95_duration_seconds, path,\n" +
+				"    platform_workflow_id, repository, runs, workflow_id\n",
 			Short:          "View a workflow with aggregate stats and per-job breakdown.",
 			CompletionHelp: "View a workflow with aggregate stats and...",
 			Usage:          []string{"[OPTIONS]", "WORKFLOW"},

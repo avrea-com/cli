@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/avrea-com/cli/config"
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )
 
@@ -259,7 +261,9 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
 		"avr builder list", "avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics", "avr vm firewall",
-		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr group list", "avr settings list", "avr cache list",
+		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr settings list", "avr cache list",
+		"avr group list", "avr group view", "avr group member list", "avr group limit list", "avr group usage",
+		"avr org members", "avr org members access", "avr org governance", "avr reference",
 		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
 		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
 		"avr audit events list", "avr org install list", "avr org saml show",
@@ -309,7 +313,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 	login.Hidden = true
 	logout := NewLogout(d)
 	logout.Hidden = true
-	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d), NewSkill(d))
+	root.AddCommand(login, logout, NewInternal(d), NewFeedback(d), NewSkill(d), NewReference(d))
 	configureHelp(root, d)
 	return root
 }
@@ -382,7 +386,15 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string, stderr
 		return nil
 	}
 	defer func() { root.PersistentPreRunE = previousPreRun }()
+	defer keepFlagValues(root)()
 	executed, err := root.ExecuteContextC(ctx)
+	// Cobra hands a subcommand the root's context only when it has none, so
+	// one left in place would be the context of this run in the next.
+	defer func() { //nolint:contextcheck // It clears a context; it has none to pass on.
+		if executed != nil && executed != root {
+			executed.SetContext(nil) //nolint:staticcheck // Clearing it is the point.
+		}
+	}()
 	if err == nil && ctx.Err() != nil {
 		err = &ExitError{130, "Interrupted."}
 	}
@@ -419,4 +431,65 @@ func (d Dependencies) timingEnabled() bool {
 		}
 	}
 	return false
+}
+
+// flagState is implemented by a flag value that cannot be put back by
+// setting its own text, because Set validates or appends.
+type flagState interface{ state() (restore func()) }
+
+func (v invocationKeyValue) state() func() { saved := *v.target; return func() { *v.target = saved } }
+func (v inverseBool) state() func()        { saved := *v.target; return func() { *v.target = saved } }
+func (v projectIDArray) state() func() {
+	saved := slices.Clone(*v.ids)
+	return func() { *v.ids = saved }
+}
+
+// keepFlagValues records every flag of the tree and returns a function that
+// puts them back, whether the run set one or the command wrote to its
+// variable, as a generated idempotency key is. An embedder may run one tree many times,
+// and an approval such as --yes, a key or an organization given to one run
+// must not carry into the next. A repeatable flag goes back to its values
+// from before the run; pflag appends to them from then on, which is the
+// same thing for the empty defaults every such flag here has.
+func keepFlagValues(root *cobra.Command) func() {
+	restores := map[*pflag.Flag]func(){}
+	changed := map[*pflag.Flag]bool{}
+	each := func(visit func(*pflag.Flag)) {
+		var walk func(*cobra.Command)
+		walk = func(c *cobra.Command) {
+			c.Flags().VisitAll(visit)
+			c.PersistentFlags().VisitAll(visit)
+			for _, sub := range c.Commands() {
+				walk(sub)
+			}
+		}
+		walk(root)
+	}
+	each(func(flag *pflag.Flag) {
+		if _, seen := restores[flag]; seen {
+			return
+		}
+		changed[flag] = flag.Changed
+		switch value := flag.Value.(type) {
+		case flagState:
+			restores[flag] = value.state()
+		case pflag.SliceValue:
+			saved := slices.Clone(value.GetSlice())
+			restores[flag] = func() { _ = value.Replace(saved) }
+		default:
+			saved := flag.Value.String()
+			restores[flag] = func() { _ = flag.Value.Set(saved) }
+		}
+	})
+	return func() {
+		each(func(flag *pflag.Flag) {
+			if restore, ok := restores[flag]; ok {
+				restore()
+			} else if flag.Changed {
+				// Added while running, as Cobra adds --help.
+				_ = flag.Value.Set(flag.DefValue)
+			}
+			flag.Changed = changed[flag]
+		})
+	}
 }

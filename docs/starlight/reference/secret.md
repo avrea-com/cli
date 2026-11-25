@@ -19,6 +19,12 @@ Delete one scoped value, or the whole name with --all.
 avr secret delete [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
+```
+
 **Arguments**
 
 - <code class="cli-arg">NAME</code>
@@ -40,6 +46,12 @@ Edit description, label, or availability without replacing a value.
 
 ```sh
 avr secret edit [OPTIONS] NAME
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**
@@ -74,6 +86,11 @@ Inspect a secret.
 avr secret get [OPTIONS] NAME
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Arguments**
 
 - <code class="cli-arg">NAME</code>
@@ -96,6 +113,11 @@ List names, scoped-value counts, and update times.
 avr secret list [OPTIONS]
 ```
 
+```sh
+JSON FIELDS
+    as_file, description, name, secret_id, updated_at, variants
+```
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;jq, -q</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter JSON with an embedded jq expression.
@@ -109,6 +131,12 @@ Create or replace a scoped value.
 
 ```sh
 avr secret set [OPTIONS] [NAME]
+```
+
+```sh
+JSON FIELDS
+    availability, label, message, name, resource_id, stage, status,
+    variant_id, version_id
 ```
 
 **Arguments**

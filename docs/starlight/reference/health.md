@@ -16,6 +16,11 @@ Examples:
     avr health --json '*' -q '.status'
 ```
 
+```sh
+JSON FIELDS
+    status
+```
+
 **Options**
 
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.

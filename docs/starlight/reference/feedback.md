@@ -28,6 +28,11 @@ Examples:
     avr feedback --bug "Run logs are missing"
     avr feedback status FEEDBACK_ID
 
+```sh
+JSON FIELDS
+    created_at, id, idempotency_key, status
+```
+
 **Arguments**
 
 - <code class="cli-arg">[MESSAGE]</code>
@@ -48,6 +53,11 @@ Read the delivery status of your feedback.
 
 ```sh
 avr feedback status [OPTIONS] FEEDBACK_ID
+```
+
+```sh
+JSON FIELDS
+    created_at, id, status
 ```
 
 **Arguments**

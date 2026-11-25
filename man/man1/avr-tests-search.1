@@ -14,6 +14,14 @@ Each row is a test's latest recorded result across the repository's retained rep
 The header reports how many reports were searched and their time range. Reports still being indexed or unavailable are counted, not hidden; a test absent from an incomplete search may still be recorded.
 .PP
 Read a row's failure message with avr tests JOB --status failed, and its earlier runs with avr tests history. Use --json '*' for test IDs, configuration digests and result IDs.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    data, filters, organization_id, pagination, repository_id, scope, status,
+    truncated
+.fi
+.RE
 .SH ARGUMENTS
 .TP
 [\fIQUERY\fR]

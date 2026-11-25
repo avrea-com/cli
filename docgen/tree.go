@@ -46,6 +46,7 @@ type Node struct {
 	Hidden      bool     `json:"hidden"`
 	Usage       string   `json:"usage"`
 	Params      []Param  `json:"params"`
+	JSONFields  []string `json:"json_fields,omitempty"`
 	Subcommands []*Node  `json:"subcommands"`
 }
 type Tree struct {
@@ -316,6 +317,7 @@ func buildNode(c *cobra.Command, path []string, describe Describer) *Node {
 	if node.Help == nil || text(node.Help) == "" {
 		node.Help = str(c.Short)
 	}
+	node.JSONFields = jsonFields(text(node.Help))
 	if c.Deprecated != "" {
 		node.Deprecated = c.Deprecated
 	}
@@ -370,6 +372,40 @@ func Build(root *cobra.Command, describe Describer, sections []Section) (*Tree, 
 	}
 	return &tree, nil
 }
+
+// jsonFields reads the field names a command's help lists under JSON FIELDS:
+// comma-separated, on the indented lines that follow the heading. A command
+// whose fields depend on its target lists them under headings such as
+// "JSON FIELDS (GitHub)" instead, and gets none here.
+func jsonFields(help string) []string {
+	_, after, found := strings.Cut(help, "\nJSON FIELDS\n")
+	if !found {
+		return nil
+	}
+	var fields []string
+	for _, line := range strings.Split(after, "\n") {
+		if strings.TrimSpace(line) == "" || strings.TrimLeft(line, " \t") == line {
+			break
+		}
+		for _, field := range strings.Split(line, ",") {
+			if field = strings.TrimSpace(field); field != "" {
+				fields = append(fields, field)
+			}
+		}
+	}
+	return fields
+}
+
+// Commands returns every command of the tree, each group before its
+// subcommands, in section order.
+func (tree *Tree) Commands() []*Node {
+	var nodes []*Node
+	for _, node := range tree.top() {
+		nodes = append(nodes, flatten(node)...)
+	}
+	return nodes
+}
+
 func (tree *Tree) top() []*Node {
 	nodes := []*Node{}
 	for _, section := range tree.SectionOrder {

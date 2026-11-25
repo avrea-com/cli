@@ -48,10 +48,11 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr auth`](./auth/) — Authenticate and manage credentials.
 - [`avr token`](./token/) — Create and manage scoped access tokens.
 - [`avr service-token`](./service-token/) — Create and manage the organization's service tokens.
-- [`avr group`](./group/) — View the organization's groups.
+- [`avr group`](./group/) — Build and manage the organization's group tree.
 - [`avr config`](./config/) — View and manage CLI configuration.
 - [`avr settings`](./settings/) — View and toggle cache and runner settings.
 - [`avr skill`](./skill/) — Teach coding agents to use avr.
+- [`avr reference`](./reference/) — List avr's commands, options and JSON fields.
 - [`avr firewall`](./firewall/) — Manage the egress firewall rule list for orgs and repositories.
 - [`avr billing`](./billing/) — Manage billing, invoices, and payment methods.
 - [`avr audit-events`](./audit-events/) — View audit events for organization writes.

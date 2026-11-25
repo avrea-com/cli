@@ -1,0 +1,53 @@
+.TH AVR\-GROUP\-MEMBER\-ADD 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-group-member-add \- Add members to a group.
+.SH SYNOPSIS
+.B avr group member add
+[OPTIONS] GROUP [MEMBER]...
+.SH DESCRIPTION
+Add members to a group.
+.PP
+GROUP is a group ID (grp-...), the group's path from the root group, such as Organization/Platform/CI, or the end of a path when only one group has it, such as Platform/CI.
+.PP
+Name each MEMBER by user ID (usr-...), @me or a verified email address, as arguments or one per line with --file, where a line starting with # is a comment unless it is an email address, such as #ops@example.com. The command adds them all in one change, up to 250, and reports each member's result; a member already in the state asked for counts as done, so a rerun is safe.
+.PP
+.RS 4
+.nf
+Examples:
+    avr group member add Platform/CI @me
+    avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef
+    avr group member add Platform/CI --file members.txt
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    action, detail, member, status, user_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIGROUP\fR
+\&
+.TP
+[\fIMEMBER...\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-file\fR \fITEXT\fR
+Read members from a file, one per line; - reads standard input.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-group-member (1),
+.BR avr-group-member-list (1),
+.BR avr-group-member-remove (1)

@@ -14,12 +14,11 @@ func (c *Client) CreateOrganization(ctx context.Context, name string) (map[strin
 	}
 	return decodeRecord(body)
 }
+
+// OrganizationMembers returns the first page of an organization's members.
+// The CLI follows cursors with DataList.
 func (c *Client) OrganizationMembers(ctx context.Context, org string) (Page, error) {
-	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/members", nil)
-	if err != nil {
-		return Page{}, err
-	}
-	return decodePage(body)
+	return c.DataList(ctx, "/orgs/"+url.PathEscape(org)+"/members", nil)
 }
 func (c *Client) Groups(ctx context.Context, org string, query url.Values) (Page, error) {
 	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/groups", query)

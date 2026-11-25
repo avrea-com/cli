@@ -19,6 +19,11 @@ Delete ART_ID from the selected repository.
 avr artifact delete [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    deleted, id
+```
+
 **Arguments**
 
 - <code class="cli-arg">ART_ID</code>
@@ -37,6 +42,11 @@ Download ART_ID and verify its size and SHA-256 before replacing the destination
 
 ```sh
 avr artifact download [OPTIONS] ART_ID
+```
+
+```sh
+JSON FIELDS
+    digest_sha256, id, path, size_bytes
 ```
 
 **Arguments**
@@ -59,6 +69,13 @@ Get metadata for ART_ID in the selected repository.
 avr artifact get [OPTIONS] ART_ID
 ```
 
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
+```
+
 **Arguments**
 
 - <code class="cli-arg">ART_ID</code>
@@ -76,6 +93,13 @@ List artifacts in REPO, optionally restricted to one run.
 
 ```sh
 avr artifact list [OPTIONS] REPO
+```
+
+```sh
+JSON FIELDS
+    archived, completed_at, created_at, digest_sha256, expires_at,
+    file_count, file_name, id, name, repository_id, run_attempt, run_kind,
+    size_bytes, state, workflow_run_id
 ```
 
 **Arguments**

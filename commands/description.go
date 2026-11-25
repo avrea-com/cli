@@ -1,12 +1,33 @@
 package commands
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/avrea-com/cli/docgen"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func descriptionText(value string) *string { return &value }
+
+// jsonFieldsHelp is the JSON FIELDS section of a command's help: the fields
+// --json accepts, sorted and wrapped.
+func jsonFieldsHelp(fields []string) string {
+	var lines []string
+	line := ""
+	for _, field := range slices.Sorted(slices.Values(fields)) {
+		switch {
+		case line == "":
+			line = field
+		case len(line)+2+len(field) > 72:
+			lines = append(lines, line+",")
+			line = field
+		default:
+			line += ", " + field
+		}
+	}
+	return "\b\nJSON FIELDS\n    " + strings.Join(append(lines, line), "\n    ") + "\n"
+}
 
 // Description supplies Go-owned prose and semantic metadata lazily. Command
 // membership, executable flags, defaults and aliases come from the live tree.
@@ -66,6 +87,8 @@ func Description(c *cobra.Command) docgen.Description {
 		return serviceTokenDescription(path)
 	case "settings":
 		return settingsDescription(path)
+	case "reference":
+		return referenceDescription(path)
 	case "skill":
 		return skillDescription(path)
 	case "status":
@@ -90,5 +113,5 @@ func commandHelp(c *cobra.Command) (docgen.HelpSpec, bool, error) {
 
 // Documentation renders the public tree, including composed live extensions.
 func Documentation(root *cobra.Command) (*docgen.Tree, error) {
-	return docgen.Build(root, Description, []docgen.Section{{Name: "Core Commands", Commands: []string{"artifact", "status", "run", "pr", "job", "vm", "build", "builder", "workflow", "cache", "tests", "sbom", "log"}}, {Name: "Setup & Config", Commands: []string{"auth", "token", "service-token", "group", "config", "settings", "skill", "firewall", "billing", "audit-events"}}, {Name: "Additional Commands", Commands: []string{"repo", "org", "health"}}})
+	return docgen.Build(root, Description, []docgen.Section{{Name: "Core Commands", Commands: []string{"artifact", "status", "run", "pr", "job", "vm", "build", "builder", "workflow", "cache", "tests", "sbom", "log"}}, {Name: "Setup & Config", Commands: []string{"auth", "token", "service-token", "group", "config", "settings", "skill", "reference", "firewall", "billing", "audit-events"}}, {Name: "Additional Commands", Commands: []string{"repo", "org", "health"}}})
 }

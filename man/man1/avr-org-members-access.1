@@ -1,0 +1,44 @@
+.TH AVR\-ORG\-MEMBERS\-ACCESS 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-org-members-access \- Explain a member's effective access and where it comes from.
+.SH SYNOPSIS
+.B avr org members access
+[OPTIONS] MEMBER
+.SH DESCRIPTION
+Explain a member's effective access and where it comes from.
+.PP
+MEMBER is a user ID (usr-...), @me, an email address the member verified, or a display name that only one active member has. The answer lists the member's groups, what each grant reaches and why, and their organization capabilities. A partial answer says so.
+.PP
+.RS 4
+.nf
+Examples:
+    avr org members access @me
+    avr org members access usr-0123456789abcdef0123456789abcdef --json groups
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    governance, groups, notes, org_role, org_role_source, resource_access,
+    resource_access_complete, resource_access_truncated, root_capabilities,
+    user_id
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIMEMBER\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-org-members (1)

@@ -401,21 +401,57 @@ func orgDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "List organization members.\n" +
 				"\n" +
+				"`avr org members access MEMBER` explains what one member can reach.\n" +
+				"\n" +
 				"\b\n" +
 				"Examples:\n" +
 				"    avr org members\n" +
 				"    avr org members --org org-abc123\n" +
 				"    avr org members --json name,role\n" +
 				"\n" +
-				"\b\n" +
-				"JSON FIELDS\n" +
-				"    joined_at, name, role, user_id\n",
+				jsonFieldsHelp(memberFields),
 			Short: "List organization members.",
+			Usage: []string{"[OPTIONS]", "[COMMAND [ARGS]...]"},
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID or slug. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "jq_expr", Kind: "option", Opts: []string{"-q", "--jq"}, Type: "text", Nargs: 1, Help: descriptionText("Filter --json output through a jq expression.")}, CompletionKind: "String"},
 			},
+		}
+	case "avr org members access":
+		return docgen.Description{
+			Help: "Explain a member's effective access and where it comes from.\n" +
+				"\n" +
+				"MEMBER is a user ID (usr-...), @me, an email address the member\n" +
+				"verified, or a display name that only one active member has. The\n" +
+				"answer lists the member's groups, what each grant reaches and why, and\n" +
+				"their organization capabilities. A partial answer says so.\n" +
+				"\n" +
+				"\b\n" +
+				"Examples:\n" +
+				"    avr org members access @me\n" +
+				"    avr org members access usr-0123456789abcdef0123456789abcdef --json groups\n" +
+				"\n" +
+				jsonFieldsHelp(effectiveAccessFields),
+			Short:      "Explain a member's effective access and where it comes from.",
+			Parameters: append([]docgen.Parameter{serviceTokenOrgParameter()}, serviceTokenJSONParameters()...),
+		}
+	case "avr org governance":
+		return docgen.Description{
+			Help: "Show what you may manage in the organization.\n" +
+				"\n" +
+				"Shows whether groups, resource access and delegation are on, which\n" +
+				"organization capabilities you hold, and for each group listed for you\n" +
+				"what you may and may not do there.\n" +
+				"\n" +
+				"\b\n" +
+				"Examples:\n" +
+				"    avr org governance\n" +
+				"    avr org governance --json groups --jq '.groups[].display_name'\n" +
+				"\n" +
+				jsonFieldsHelp(governanceFields),
+			Short:      "Show what you may manage in the organization.",
+			Parameters: append([]docgen.Parameter{serviceTokenOrgParameter()}, serviceTokenJSONParameters()...),
 		}
 	case "avr org saml configure":
 		return docgen.Description{
@@ -464,7 +500,9 @@ func orgDescription(path string) docgen.Description {
 				"\b\n" +
 				"Examples:\n" +
 				"    avr org saml enforcement on\n" +
-				"    avr org saml enforcement off --org acme\n",
+				"    avr org saml enforcement off --org acme\n" +
+				"\n" +
+				jsonFieldsHelp(samlFields),
 			Short:          "Enable or disable mandatory SAML sign-in (admin only).",
 			CompletionHelp: "Enable or disable mandatory SAML sign-in...",
 			Usage:          []string{"[OPTIONS]", "{on|off}"},
@@ -565,6 +603,7 @@ func orgDescription(path string) docgen.Description {
 			Commands: []docgen.HelpCommand{
 				{Name: "create", Description: "Create a new organization.", AutoShort: true},
 				{Name: "email-domain", Description: "Claim and verify organization email domains.", AutoShort: true},
+				{Name: "governance", Description: "Show what you may manage in the organization.", AutoShort: true},
 				{Name: "install", Description: "Manage GitHub and GitLab installations.", AutoShort: true},
 				{Name: "list", Description: "List organizations you belong to.", AutoShort: true},
 				{Name: "members", Description: "List organization members.", AutoShort: true},

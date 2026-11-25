@@ -14,6 +14,15 @@ Names, outcomes, recorded durations and available failure messages are shown tog
 Use --json '*' for the complete response or --json FIELDS to select fields. Continue with --cursor when pagination.next_cursor is present. All outcomes are included by default. Repeat --status to match any selected outcome, for example --status failed --status errored. Names match literally and combine with the status selection using AND. Every matching occurrence is retained, including duplicate names. A continuation means more of the report remains to be searched, not necessarily more matches. API refusal or a changed report fails the command without partial output.
 .PP
 Counts cover all recorded occurrences before filtering, including repeats. Unknown counts stay unknown. Use --summary for counts and collection state without downloading results; it cannot combine with test filters, --cursor or an explicit --limit. Indexing, unavailable and limited listings do not mean no tests were reported.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    commit_sha, counts, data, execution_id, filters, job_id, observed_at,
+    organization_id, pagination, reason, reporting_state, repository_id,
+    status, total_count
+.fi
+.RE
 .SH ARGUMENTS
 .TP
 \fIRUN_OR_JOB\fR

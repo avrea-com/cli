@@ -26,6 +26,10 @@ func TestClosedPipePreservesCommandOutcome(t *testing.T) {
 		{[]string{"repo", "clone"}, false, 1},
 		{[]string{"auth", "login"}, false, 1},
 		{[]string{"vm", "create"}, false, 1},
+		{[]string{"reference"}, false, 0},
+		{[]string{"group", "view"}, false, 0},
+		{[]string{"org", "members", "access"}, false, 0},
+		{[]string{"group", "member", "add"}, false, 1},
 	} {
 		t.Run(strings.Join(tc.path, " ")+"/"+fmt.Sprint(tc.gate), func(t *testing.T) {
 			d, _, _ := testDeps(t)
