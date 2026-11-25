@@ -1045,12 +1045,18 @@ func groupWriteAPI(t *testing.T, limits []map[string]any, handle func(manageRequ
 		case r.method == "GET" && r.path == platformRoute+"/limits":
 			return manageReply{200, nil, manageJSON(t, map[string]any{"data": limits})}, true
 		case r.method == "PUT" && r.path == platformRoute+"/limits/max_vcpu":
-			return manageReply{200, nil, manageJSON(t, map[string]any{"data": map[string]any{"group_id": groupPlatform, "limit_key": "max_vcpu", "kind": "shared_pool", "limit_type": "concurrent", "value": r.body["value"], "period": nil, "timezone": nil, "inherited": false}})}, true
+			return limitSetReply(t, r), true
 		case r.method == "DELETE" && r.path == platformRoute+"/limits/max_vcpu":
 			return manageReply{204, nil, ""}, true
 		}
 		return manageReply{}, false
 	})
+}
+
+// limitSetReply answers a limit PUT on the Platform group as the API does,
+// with the limit that was set.
+func limitSetReply(t *testing.T, r manageRequest) manageReply {
+	return manageReply{200, nil, manageJSON(t, map[string]any{"data": map[string]any{"group_id": groupPlatform, "limit_key": "max_vcpu", "kind": "shared_pool", "limit_type": "concurrent", "value": r.body["value"], "period": nil, "timezone": nil, "inherited": false}})}
 }
 
 func vcpuLimit(group string, value int, inherited bool) map[string]any {
@@ -1640,6 +1646,8 @@ func TestAPIContractGovernanceChains(t *testing.T) {
 					return manageReply{200, nil, manageJSON(t, map[string]any{"data": []any{orgMember(memberAda, "Ada", "active")}})}, true
 				case r.method == "GET" && r.path == platformRoute+"/limits":
 					return manageReply{200, nil, `{"data":[]}`}, true
+				case r.method == "PUT" && r.path == platformRoute+"/limits/max_vcpu":
+					return limitSetReply(t, r), true
 				case r.method == "GET" && r.path == platformRoute+"/members":
 					return manageReply{200, nil, `{"data":[],"pagination":{"next_cursor":null}}`}, true
 				case r.method == "DELETE":
