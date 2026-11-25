@@ -797,8 +797,8 @@ func TestGroupLimitSetAsksUnlessItRaisesTheLimit(t *testing.T) {
 	own, inherited := vcpuLimit(groupPlatform, 64, false), vcpuLimit(groupAcme, 16, true)
 	decimal, integral, unreadable := maps.Clone(own), maps.Clone(own), maps.Clone(own)
 	decimal["value"], integral["value"], unreadable["value"] = 64.5, json.Number("64.0"), "lots"
-	huge := maps.Clone(own)
-	huge["value"] = json.Number("9007199254740993")
+	huge, hugeDecimal, hugeExponent := maps.Clone(own), maps.Clone(own), maps.Clone(own)
+	huge["value"], hugeDecimal["value"], hugeExponent["value"] = json.Number("9007199254740993"), json.Number("9007199254740993.0"), json.Number("9.007199254740993e15")
 	for _, tt := range []struct {
 		name   string
 		limits []map[string]any
@@ -820,6 +820,8 @@ func TestGroupLimitSetAsksUnlessItRaisesTheLimit(t *testing.T) {
 		{"unreadable limit", []map[string]any{unreadable}, "128", "", false, "Replace the vCPU limit lots of group"},
 		{"below past float precision", []map[string]any{huge}, "9007199254740992", "", false, "from 9007199254740993 to 9007199254740992?"},
 		{"above past float precision", []map[string]any{huge}, "9007199254740994", "", true, ""},
+		{"below a decimal past float precision", []map[string]any{hugeDecimal}, "9007199254740992", "", false, " to 9007199254740992?"},
+		{"below an exponent past float precision", []map[string]any{hugeExponent}, "9007199254740992", "", false, " to 9007199254740992?"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, groupLimitAPI(t, tt.limits))
@@ -852,6 +854,24 @@ func TestGroupLimitSetAsksUnlessItRaisesTheLimit(t *testing.T) {
 		if code := h.run(t, append([]string{"group", "limit", "set", "Acme/Platform"}, args...)...); code != 2 || len(h.requests) != 0 {
 			t.Fatal(args, code, h.operations())
 		}
+	}
+}
+
+// The summary escapes the previous and the new value as the prompt does: both
+// come from the API.
+func TestGroupLimitSetEscapesTheAPIValues(t *testing.T) {
+	previous := vcpuLimit(groupPlatform, 0, false)
+	previous["value"] = "\x1b[2Jlots"
+	h := newManageHarness(t, managePersonal, groupWriteAPI(t, []map[string]any{previous}, func(r manageRequest) (manageReply, bool) {
+		record := vcpuLimit(groupPlatform, 0, false)
+		record["value"] = "\x1b]0;title\x07"
+		return manageReply{200, nil, manageJSON(t, map[string]any{"data": record})}, r.method == "PUT"
+	}))
+	if code := h.run(t, "group", "limit", "set", "Acme/Platform", "--max-vcpu", "8", "--yes"); code != 0 {
+		t.Fatal(code, h.stderr)
+	}
+	if got := h.out.String(); strings.ContainsAny(got, "\x1b\x07") || !strings.Contains(got, `to \x1b]0;title\x07 (was \x1b[2Jlots).`) {
+		t.Fatalf("%q", got)
 	}
 }
 

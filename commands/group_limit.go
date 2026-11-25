@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -124,8 +125,13 @@ func newGroupLimitSet(d Dependencies) *cobra.Command {
 			}
 		}
 		name := output.CellText(group.display())
-		// Exact arithmetic: the API keeps integers past float64 precision.
-		current, readable := new(big.Rat).SetString(pythonValue(previous))
+		// Exact arithmetic: the API keeps integers past float64 precision, so a
+		// number is compared as the API wrote it, never rounded through float64.
+		text := pythonValue(previous)
+		if number, ok := previous.(json.Number); ok {
+			text = number.String()
+		}
+		current, readable := new(big.Rat).SetString(text)
 		prompt := ""
 		switch {
 		case previous == nil:
@@ -153,9 +159,9 @@ func newGroupLimitSet(d Dependencies) *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			return o.record(cmd, d, record, groupLimitSetFields)
 		}
-		change := fmt.Sprintf("Set the vCPU limit of group %s to %s", output.CellText(group.display()), pythonValue(record["value"]))
+		change := fmt.Sprintf("Set the vCPU limit of group %s to %s", output.CellText(group.display()), output.CellText(pythonValue(record["value"])))
 		if previous != nil {
-			change += " (was " + pythonValue(previous) + ")"
+			change += " (was " + output.CellText(pythonValue(previous)) + ")"
 		}
 		_, err = fmt.Fprintln(d.Out, change+".")
 		return err
