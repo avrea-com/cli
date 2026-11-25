@@ -15,7 +15,7 @@ import (
 )
 
 func TestVMSpawnCredentialBoundaryAndNoRetries(t *testing.T) {
-	for _, scenario := range []string{"success", "echoed credential", "transport failure", "reused order", "reused order, server without codes", "cap reached"} {
+	for _, scenario := range []string{"success", "echoed credential", "transport failure", "reused order", "reused order, server without codes", "cap reached", "another coded conflict", "reused code on an outage"} {
 		t.Run(scenario, func(t *testing.T) {
 			d, out, stderr := testDeps(t)
 			credential := "synthetic-per-session-secret"
@@ -66,6 +66,16 @@ func TestVMSpawnCredentialBoundaryAndNoRetries(t *testing.T) {
 					status = 409
 					response = `{"detail":"This service token reached its cap of 2 VMs"}`
 				}
+				// Only a 409 with the reused-key code is final; any other code
+				// or status with it stays an ordinary failure.
+				if scenario == "another coded conflict" {
+					status = 409
+					response = `{"detail":"The order is still being placed","code":"order_in_progress"}`
+				}
+				if scenario == "reused code on an outage" {
+					status = 503
+					response = `{"detail":"Service unavailable","code":"idempotency_key_reused"}`
+				}
 				return &http.Response{StatusCode: status, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(response)), Request: r}, nil
 			})}
 			code := Execute(t.Context(), []string{"vm", "create", "--from-spawn-script", "claude-code", "--verbose"}, d)
@@ -73,7 +83,7 @@ func TestVMSpawnCredentialBoundaryAndNoRetries(t *testing.T) {
 			if scenario == "echoed credential" || scenario == "reused order" {
 				want = 2
 			}
-			if scenario == "transport failure" || scenario == "cap reached" || scenario == "reused order, server without codes" {
+			if scenario == "transport failure" || scenario == "cap reached" || scenario == "reused order, server without codes" || scenario == "another coded conflict" || scenario == "reused code on an outage" {
 				want = 1
 			}
 			combined := out.String() + stderr.String()

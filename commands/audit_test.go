@@ -23,8 +23,11 @@ func TestAuditEventsTableNamesTheActingServiceToken(t *testing.T) {
 		key   = "key-" + "019a0000000070008000000000000004"
 		vm    = "cvm-019a0000000070008000000000000005"
 		run   = "run-019a0000000070008000000000000006"
+		swept = "run-019a0000000070008000000000000007"
 	)
 	page := `{"data":[` +
+		// Empty IDs name nobody, as null does.
+		`{"event_id":4,"created_at":"2026-11-25T09:01:40Z","actor_user_id":"","actor_type":"SYSTEM","acting_api_key_id":"","resource_type":"workflow_run","resource_id":"` + swept + `","action":"UPDATE","event_data":{}},` +
 		`{"event_id":3,"created_at":"2026-11-25T09:01:30Z","actor_user_id":null,"actor_type":"API_KEY","acting_api_key_id":"` + token + `","resource_type":"customer_vm","resource_id":"` + vm + `","action":"CREATE","event_data":{}},` +
 		`{"event_id":2,"created_at":"2026-11-25T09:01:20Z","actor_user_id":"` + person + `","actor_type":"API_KEY","acting_api_key_id":"` + key + `","resource_type":"service_token","resource_id":"` + token + `","action":"UPDATE","event_data":{}},` +
 		`{"event_id":1,"created_at":"2026-11-25T09:01:10Z","actor_user_id":null,"actor_type":"SYSTEM","acting_api_key_id":null,"resource_type":"workflow_run","resource_id":"` + run + `","action":"UPDATE","event_data":{}}` +
@@ -45,7 +48,7 @@ func TestAuditEventsTableNamesTheActingServiceToken(t *testing.T) {
 			actors[strings.TrimSpace(cells[5])] = strings.TrimSpace(cells[2])
 		}
 	}
-	for target, actor := range map[string]string{vm: token, token: person, run: "SYSTEM"} {
+	for target, actor := range map[string]string{vm: token, token: person, run: "SYSTEM", swept: "SYSTEM"} {
 		if actors[target] != actor {
 			t.Errorf("%s: actor %q, want %q in\n%s", target, actors[target], actor, out)
 		}
