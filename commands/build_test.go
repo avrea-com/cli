@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -88,7 +89,16 @@ func newBuildFixture(t *testing.T) *buildFixture {
 		return config.Config{Host: "https://api.test", Token: "fixture", Org: inspectionOrg}, nil
 	}
 	f.d.GitRemote = func(context.Context) (string, error) { return "git@github.com:acme/widgets.git", nil }
-	f.d.Wait = func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
+	// Tunnel retries move the clock on, so a tunnel that never comes up
+	// exhausts its deadline without waiting for it.
+	var skew atomic.Int64
+	f.d.Now = func() time.Time { return time.Now().Add(time.Duration(skew.Load())) }
+	f.d.Wait = func(ctx context.Context, delay time.Duration) error {
+		if delay == buildTunnelRetryDelay {
+			skew.Add(int64(delay))
+		}
+		return ctx.Err()
+	}
 	f.d.LookPath = func(name string) (string, error) {
 		if path := f.programs[name]; path != "" {
 			return path, nil
@@ -102,15 +112,6 @@ func newBuildFixture(t *testing.T) *buildFixture {
 		if f.tool != nil {
 			if result, err, handled := f.tool(command); handled {
 				return result, err
-			}
-		}
-		if slices.Contains(command.Args, "create") {
-			// The stand-in ssh records its arguments before the build ends.
-			for range 500 {
-				if _, err := os.Stat(f.sshArgs); err == nil {
-					break
-				}
-				time.Sleep(10 * time.Millisecond)
 			}
 		}
 		switch line := strings.Join(command.Args, " "); {
@@ -136,7 +137,7 @@ func newBuildFixture(t *testing.T) *buildFixture {
 	}
 	// The stand-in ssh is this test binary, which serves the forwarded
 	// unix socket as ssh would; see TestBuildSSHStub.
-	script := "#!/bin/sh\nfor arg in \"$@\"; do printf '%s\\n' \"$arg\"; done >> '" + f.sshArgs + "'\nif [ -e '" + directory + "/dead' ]; then exit 1; fi\nexport AVR_BUILD_SSH_STUB=1\nexec '" + os.Args[0] + "' -test.run='^TestBuildSSHStub$' -- \"$@\"\n"
+	script := "#!/bin/sh\nfor arg in \"$@\"; do printf '%s\\n' \"$arg\"; done >> '" + f.sshArgs + "'\nif [ -e '" + directory + "/dead' ]; then exit 1; fi\ncase \"$*\" in *buildkitd-1.sock*) if [ -e '" + directory + "/dead-1' ]; then exit 1; fi;; esac\nexport AVR_BUILD_SSH_STUB=1\nexec '" + os.Args[0] + "' -test.run='^TestBuildSSHStub$' -- \"$@\"\n"
 	if err = os.WriteFile(filepath.Join(directory, "ssh"), []byte(script), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -638,11 +639,11 @@ func TestBuildUserCacheFlagsReplaceTheDefaults(t *testing.T) {
 
 func TestBuildForwardsOutputShorthandAndKeepsOrg(t *testing.T) {
 	f := newBuildFixture(t)
-	if code := f.run("--org", inspectionOrg, "-o", "type=local,dest=out", "-q", "--", "--platform-like", "."); code != 0 {
+	if code := f.run("--org", inspectionOrg, "-o", "type=local,dest=out", "-q", "."); code != 0 {
 		t.Fatal(code, f.stderr)
 	}
 	build := f.buildx("build")[0]
-	if got := strings.Join(build[len(build)-5:], " "); got != "-o type=local,dest=out -q --platform-like ." {
+	if got := strings.Join(build[len(build)-4:], " "); got != "-o type=local,dest=out -q ." {
 		t.Fatal(build)
 	}
 }
@@ -1002,5 +1003,241 @@ func TestBuildKeepSessionsKeepsTheKey(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(filepath.Dir(key), "buildx")); !os.IsNotExist(err) {
 		t.Fatal("builder state kept", err)
+	}
+}
+
+func TestBuildForwardsTheDoubleDash(t *testing.T) {
+	f := newBuildFixture(t)
+	if code := f.run("-t", "img", "--", "-ctx"); code != 0 {
+		t.Fatal(code, f.stderr)
+	}
+	build := f.buildx("build")[0]
+	// Nothing after `--` is a flag, and the context given there stays the
+	// only one.
+	if got := strings.Join(build[len(build)-4:], " "); got != "-t img -- -ctx" || slices.Index(build, "--load") > slices.Index(build, "--") {
+		t.Fatal(build)
+	}
+}
+
+func TestBuildEvaluationNeedsNoOutput(t *testing.T) {
+	f := newBuildFixture(t)
+	if code := f.run("--platform", "linux/amd64,linux/arm64", "--check"); code != 0 {
+		t.Fatal(code, f.stderr)
+	}
+	if build := f.buildx("build")[0]; slices.Contains(build, "--load") || build[len(build)-1] != "." {
+		t.Fatal(build)
+	}
+	f = newBuildFixture(t)
+	if code := f.run("--call=targets"); code != 0 || slices.Contains(f.buildx("build")[0], "--load") {
+		t.Fatal(code, f.buildx("build"), f.stderr)
+	}
+	// --resource takes a value, which is not the context.
+	f = newBuildFixture(t)
+	if code := f.run("--resource", "memory=2g"); code != 0 {
+		t.Fatal(code, f.stderr)
+	}
+	if build := f.buildx("build")[0]; strings.Join(build[len(build)-3:], " ") != "--resource memory=2g ." {
+		t.Fatal(build)
+	}
+}
+
+func TestBuildTunnelIgnoresUserSSHTrust(t *testing.T) {
+	f := newBuildFixture(t)
+	if code := f.run("."); code != 0 {
+		t.Fatal(code, f.stderr)
+	}
+	data, err := os.ReadFile(f.sshArgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	argv := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if argv[0] != "-F" || argv[1] != "none" {
+		t.Fatal(argv)
+	}
+	for _, option := range []string{"GlobalKnownHostsFile=none", "ControlMaster=no", "ControlPath=none", "StrictHostKeyChecking=yes", "BatchMode=yes"} {
+		if !slices.Contains(argv, option) {
+			t.Error(option, argv)
+		}
+	}
+}
+
+func TestBuildSecondTunnelFailureTearsDownTheFirst(t *testing.T) {
+	f := newBuildFixture(t)
+	if err := os.WriteFile(filepath.Join(f.directory, "dead-1"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if code := f.run("--platform", "linux/amd64,linux/arm64", "--push", "."); code != 1 || !strings.Contains(f.stderr.String(), "the tunnel to the linux/arm64 builder did not come up") || !f.deleted("bs-1") || !f.deleted("bs-2") || len(f.buildx("create")) != 0 {
+		t.Fatal(code, f.requests, f.stderr)
+	}
+	if !strings.Contains(f.stderr.String(), "Builder ready: bs-1 (linux/amd64)") {
+		t.Fatal(f.stderr)
+	}
+}
+
+func TestBuildKeepSessionsAfterAFailure(t *testing.T) {
+	t.Run("never reachable", func(t *testing.T) {
+		f := newBuildFixture(t)
+		f.poll = func(string, int) (int, http.Header, string) {
+			return 200, nil, `{"data":{"builder_session_id":"bs-1","platform":"linux/amd64","state":"FAILED","state_reason":"boot_error"}}`
+		}
+		if code := f.run("--keep-sessions", "."); code != 1 || !f.deleted("bs-1") || !strings.Contains(f.stderr.String(), "Stopping builder session(s) bs-1 despite --keep-sessions") || strings.Contains(f.stderr.String(), "Keeping") {
+			t.Fatal(code, f.requests, f.stderr)
+		}
+	})
+	t.Run("tunnel down", func(t *testing.T) {
+		f := newBuildFixture(t)
+		f.deadPort = true
+		if code := f.run("--keep-sessions", "."); code != 1 || f.deleted("bs-1") {
+			t.Fatal(code, f.requests, f.stderr)
+		}
+		// Why the tunnel did not come up is what the login is for.
+		_, login, found := strings.Cut(f.stderr.String(), "Reach them with:\n  bs-1: ")
+		if !found {
+			t.Fatal(f.stderr)
+		}
+		argv := strings.Fields(strings.SplitN(login, "\n", 2)[0])
+		key := argv[slices.Index(argv, "-i")+1]
+		t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(key)) })
+		if _, err := os.Stat(key); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("one of two reachable", func(t *testing.T) {
+		f := newBuildFixture(t)
+		f.poll = func(id string, _ int) (int, http.Header, string) {
+			if id == "bs-2" {
+				return 200, nil, `{"data":{"builder_session_id":"bs-2","platform":"linux/arm64","state":"FAILED"}}`
+			}
+			return 0, nil, ""
+		}
+		if code := f.run("--keep-sessions", "--platform", "linux/amd64,linux/arm64", "--push", "."); code != 1 || f.deleted("bs-1") || !f.deleted("bs-2") {
+			t.Fatal(code, f.requests, f.stderr)
+		}
+		text := f.stderr.String()
+		if !strings.Contains(text, "Keeping builder session(s) bs-1 running") || !strings.Contains(text, "Reach them with:\n  bs-1: ") {
+			t.Fatal(text)
+		}
+		if _, rest, found := strings.Cut(text, "Then remove "); found {
+			t.Cleanup(func() { _ = os.RemoveAll(strings.TrimSuffix(strings.SplitN(rest, "\n", 2)[0], ".")) })
+		}
+	})
+}
+
+func TestBuildHangupDeletesItsSessions(t *testing.T) {
+	f := newBuildFixture(t)
+	self, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.poll = func(_ string, attempt int) (int, http.Header, string) {
+		if attempt == 1 {
+			if err := self.Signal(syscall.SIGHUP); err != nil {
+				t.Error(err)
+			}
+		}
+		return 200, nil, `{"data":{"builder_session_id":"bs-1","platform":"linux/amd64","state":"PENDING"}}`
+	}
+	f.d.Wait = func(ctx context.Context, _ time.Duration) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(10 * time.Millisecond):
+			return nil
+		}
+	}
+	if code := f.run("."); code != 129 || !f.deleted("bs-1") {
+		t.Fatal(code, f.requests, f.stderr)
+	}
+}
+
+func TestBuildRefusesATemporaryDirectoryInsideTheContext(t *testing.T) {
+	f := newBuildFixture(t)
+	inside, err := filepath.Abs("tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Mkdir(inside, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMPDIR", inside)
+	if code := f.run("."); code != 1 || len(f.requests) != 0 || !strings.Contains(f.stderr.String(), "set TMPDIR outside the build context") {
+		t.Fatal(code, f.requests, f.stderr)
+	}
+}
+
+func TestBuildScopesTheCacheToTheContextRepository(t *testing.T) {
+	f := newBuildFixture(t)
+	sibling := t.TempDir()
+	f.tool = func(command ToolCommand) (ToolResult, error, bool) {
+		if command.Args[0] == "git" && slices.Contains(command.Args, "get-url") {
+			if command.Args[2] != sibling {
+				t.Error(command.Args)
+			}
+			return ToolResult{Stdout: "git@github.com:acme/gadgets.git\n"}, nil, true
+		}
+		return ToolResult{}, nil, false
+	}
+	var resolved []string
+	f.resolve = func(name string) (int, string) {
+		resolved = append(resolved, name)
+		return 0, ""
+	}
+	if code := f.run(sibling); code != 0 || !slices.Equal(resolved, []string{"acme/gadgets"}) {
+		t.Fatal(code, resolved, f.stderr)
+	}
+	// A context outside any repository builds without one.
+	f = newBuildFixture(t)
+	if code := f.run(t.TempDir()); code != 0 || f.count("GET /orgs/"+inspectionOrg+"/repos/resolve") != 0 || f.bodies[0]["repo"] != nil {
+		t.Fatal(code, f.requests, f.stderr)
+	}
+}
+
+func TestBuildDeleteChecksAnAmbiguousNotFound(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		gone  bool
+		warns bool
+	}{{"gone", true, false}, {"still active", false, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newBuildFixture(t)
+			transport := f.d.HTTP.Transport
+			deleted := false
+			f.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+				switch {
+				case r.Method == http.MethodDelete:
+					deleted = true
+					return buildJSONResponse(r, 404, nil, `{"detail":"not found"}`), nil
+				case r.Method == http.MethodGet && deleted && tc.gone:
+					return buildJSONResponse(r, 404, nil, `{"detail":"not found"}`), nil
+				}
+				return transport.RoundTrip(r)
+			})}
+			code := f.run(".")
+			if warned := strings.Contains(f.stderr.String(), "Warning: failed to stop builder session bs-1"); code != 0 || warned != tc.warns {
+				t.Fatal(code, f.stderr)
+			}
+		})
+	}
+}
+
+func TestBuildDeleteHonorsRetryAfter(t *testing.T) {
+	f := newBuildFixture(t)
+	transport := f.d.HTTP.Transport
+	deletes := 0
+	f.d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method == http.MethodDelete {
+			if deletes++; deletes == 1 {
+				return buildJSONResponse(r, 429, http.Header{"Retry-After": {"5"}}, `{}`), nil
+			}
+		}
+		return transport.RoundTrip(r)
+	})}
+	var waited []time.Duration
+	f.d.Wait = func(ctx context.Context, delay time.Duration) error {
+		waited = append(waited, delay)
+		return ctx.Err()
+	}
+	if code := f.run("."); code != 0 || deletes != 2 || !slices.Contains(waited, 5*time.Second) {
+		t.Fatal(code, deletes, waited, f.stderr)
 	}
 }

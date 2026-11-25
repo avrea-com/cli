@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -24,7 +25,13 @@ type vmForward struct {
 // listen is the local end as a `-L` bind address and a dialable address.
 func (f vmForward) listen() (bind, network, address string) {
 	if f.socket != "" {
-		return f.socket, "unix", f.socket
+		bind = f.socket
+		if runtime.GOOS == "windows" {
+			// ssh splits -L at colons, so the drive letter needs brackets, and
+			// it takes a field as a socket path only when it has a '/'.
+			bind = "[" + filepath.ToSlash(f.socket) + "]"
+		}
+		return bind, "unix", f.socket
 	}
 	address = "127.0.0.1:" + strconv.Itoa(f.local)
 	return address, "tcp4", address

@@ -68,8 +68,8 @@ var buildValueFlags = []string{
 	"--add-host", "--allow", "--annotation", "--attest", "--build-arg", "--build-context", "--builder",
 	"--cache-from", "--cache-to", "--call", "--cgroup-parent", "--cpu-period", "--cpu-quota", "--cpu-shares",
 	"--cpuset-cpus", "--cpuset-mems", "--file", "--iidfile", "--isolation", "--label", "--memory", "--memory-swap",
-	"--metadata-file", "--network", "--no-cache-filter", "--output", "--platform", "--progress", "--provenance",
-	"--sbom", "--secret", "--security-opt", "--shm-size", "--ssh", "--tag", "--target", "--ulimit",
+	"--metadata-file", "--network", "--no-cache-filter", "--output", "--platform", "--policy", "--progress", "--provenance",
+	"--resource", "--sbom", "--secret", "--security-opt", "--shm-size", "--ssh", "--tag", "--target", "--ulimit",
 }
 
 // Shorthands, to their canonical names. Those not in buildValueFlags are
@@ -195,6 +195,16 @@ func (a buildArgs) hasOutput() bool {
 	return a.enabled("--push") || a.has("--output")
 }
 
+// evaluatesOnly reports a build that only evaluates the Dockerfile (--check,
+// or --call with a method other than build), which exports nothing.
+func (a buildArgs) evaluatesOnly() bool {
+	if a.enabled("--check") {
+		return true
+	}
+	method, found := a.value("--call")
+	return found && method != "" && method != "build"
+}
+
 // wantsLocalLoad reports arguments that load the result into the local image
 // store, which needs a daemon speaking the docker API.
 func (a buildArgs) wantsLocalLoad() bool {
@@ -220,6 +230,25 @@ func (a buildArgs) contextDirectory() string {
 		return ""
 	}
 	return context
+}
+
+// localDirectories returns the local directories buildx sends to the
+// builder: the build context and every local --build-context.
+func (a buildArgs) localDirectories() []string {
+	directories := []string{}
+	if directory := a.contextDirectory(); directory != "" {
+		directories = append(directories, directory)
+	}
+	for _, value := range a.values("--build-context") {
+		_, source, found := strings.Cut(value, "=")
+		if !found || strings.Contains(source, "://") || strings.HasPrefix(source, "git@") {
+			continue
+		}
+		if info, err := os.Stat(source); err == nil && info.IsDir() {
+			directories = append(directories, source)
+		}
+	}
+	return directories
 }
 
 // dockerfileArgs selects a Containerfile when the context has one, has no
@@ -257,7 +286,7 @@ func (a buildArgs) dockerfileArgs() []string {
 // in the builder VM's cache, which is discarded after the build. An explicit
 // --load=false keeps it there.
 func (a buildArgs) outputArgs() []string {
-	if a.hasOutput() || a.has("--load") {
+	if a.hasOutput() || a.has("--load") || a.evaluatesOnly() {
 		return nil
 	}
 	return []string{"--load"}

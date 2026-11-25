@@ -8,10 +8,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"slices"
-	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -42,13 +41,13 @@ const (
 
 	buildPollInterval     = 3 * time.Second
 	buildTunnelTimeout    = 60 * time.Second
-	buildTunnelAttempts   = 5
 	buildTunnelRetryDelay = 2 * time.Second
 	buildTeardownTimeout  = 60 * time.Second
 	buildDeleteAttempts   = 3
 	buildDeleteRetryDelay = 2 * time.Second
 
-	// sun_path holds 104 bytes on macOS and 108 on Linux, with a NUL.
+	// sun_path holds 104 bytes on macOS and 108 on Linux and Windows, with
+	// a NUL.
 	buildSocketPathLimit = 100
 )
 
@@ -72,10 +71,17 @@ func NewBuild(deps Dependencies) *cobra.Command {
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		// Persistent flags must be present before splitting known/forwarded arguments.
 		cmd.Flags().AddFlagSet(cmd.InheritedFlags())
+		// What follows `--` is buildx's alone; `--` itself must reach buildx
+		// too, so that a context starting with '-' is not taken as a flag.
+		var literal []string
+		if i := slices.Index(args, "--"); i >= 0 {
+			args, literal = args[:i], args[i:]
+		}
 		args, err := vmSSHPassthrough(cmd, args)
 		if err != nil {
 			return err
 		}
+		args = append(args, literal...)
 		if err = prepareGlobalOptions(cmd, d); err != nil {
 			return err
 		}
@@ -93,7 +99,7 @@ func NewBuild(deps Dependencies) *cobra.Command {
 		if parsed.has("--builder") {
 			return usageError(cmd, "--builder is managed by avr build and cannot be overridden.")
 		}
-		if len(job.platforms) > 1 && !parsed.hasOutput() {
+		if len(job.platforms) > 1 && !parsed.hasOutput() && !parsed.evaluatesOnly() {
 			return usageError(cmd, "Multi-platform builds produce a manifest list, which cannot be loaded into the local docker daemon. Add --push (or --output type=...) to the build flags.")
 		}
 		if err = validateChoice("size", size, buildSizes); err != nil {
@@ -144,6 +150,20 @@ func NewBuild(deps Dependencies) *cobra.Command {
 // not have is dropped with a note. Sessions take the repository as owner/name.
 func (j *buildJob) resolveRepository(ctx context.Context) error {
 	name, platform, detected := j.repoOption, "", false
+	if name == "" && j.cfg.Repo == "" {
+		if directory, elsewhere := j.contextElsewhere(); elsewhere {
+			// The cache belongs to the repository being built, not to the one
+			// avr happens to run in.
+			remote := buildGitOrigin(ctx, j.d, directory)
+			if name, platform = parseGitRemote(remote); name == "" {
+				return ctx.Err()
+			}
+			detected = true
+			if j.d.IsErrorTerminal() {
+				_, _ = fmt.Fprintln(j.d.Err, j.d.errorPaint("(using repo: "+output.CellText(name)+")", "2"))
+			}
+		}
+	}
 	if name == "" {
 		var err error
 		if name, platform, detected, err = detectRepository(ctx, j.d, j.cfg); err != nil || name == "" {
@@ -176,6 +196,59 @@ func (j *buildJob) resolveRepository(ctx context.Context) error {
 	return nil
 }
 
+// contextElsewhere returns the local build context directory when it is
+// not the working directory.
+func (j *buildJob) contextElsewhere() (string, bool) {
+	directory := j.parsed.contextDirectory()
+	if directory == "" {
+		return "", false
+	}
+	working, err := os.Getwd()
+	if err != nil {
+		return "", false
+	}
+	return directory, !buildSamePath(directory, working)
+}
+
+// buildResolvePath returns path made absolute with symlinks resolved, or as
+// far as that succeeds.
+func buildResolvePath(path string) string {
+	if absolute, err := filepath.Abs(path); err == nil {
+		path = absolute
+	}
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	return path
+}
+
+func buildSamePath(a, b string) bool {
+	return buildResolvePath(a) == buildResolvePath(b)
+}
+
+// buildWithin reports whether path is directory or inside it.
+func buildWithin(path, directory string) bool {
+	relative, err := filepath.Rel(buildResolvePath(directory), buildResolvePath(path))
+	return err == nil && filepath.IsLocal(relative)
+}
+
+func buildGitOrigin(ctx context.Context, d Dependencies, directory string) string {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := d.RunTool(ctx, ToolCommand{Args: []string{"git", "-C", directory, "remote", "get-url", "origin"}})
+	if err != nil || result.Code != 0 {
+		return ""
+	}
+	return strings.TrimSpace(result.Stdout)
+}
+
+// buildSSH is how to reach one session's sshd with its host key pinned.
+type buildSSH struct {
+	host, user string
+	port       int
+	known      string
+}
+
 type buildTunnel struct {
 	*vmTunnel
 	platform string
@@ -203,8 +276,11 @@ type buildJob struct {
 	sessions []string
 	tunnels  []*buildTunnel
 	builder  string
-	// How to reach each session with ssh, for --keep-sessions.
-	logins []string
+	// How to reach each session that published an SSH endpoint, by id.
+	ssh map[string]buildSSH
+	// Where each session's buildkitd is forwarded to, by creation order.
+	sockets  []string
+	identity string
 }
 
 func (j *buildJob) note(format string, values ...any) error {
@@ -222,10 +298,35 @@ func (j *buildJob) sessionPath(id string) string {
 
 // run builds and then removes whatever the build made, on every way out.
 func (j *buildJob) run(parent context.Context) (err error) {
-	// SIGTERM must unwind through teardown instead of leaving the sessions to
-	// their TTL.
-	ctx, stop := signal.NotifyContext(parent, syscall.SIGTERM)
-	defer stop()
+	// The temporary directory holds the session key and registry
+	// credentials, which must not be sent to the builder with the context.
+	for _, directory := range j.parsed.localDirectories() {
+		if buildWithin(os.TempDir(), directory) {
+			return &ExitError{1, "Error: the temporary directory " + output.CellText(os.TempDir()) + " is inside the build context " + output.CellText(directory) + ", which would send the build's credentials to the builder; set TMPDIR outside the build context."}
+		}
+	}
+	// SIGTERM, and SIGHUP from a closed terminal, must unwind through
+	// teardown instead of leaving the sessions to their TTL.
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+	var caught atomic.Int32
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGHUP)
+	done := make(chan struct{})
+	go func() {
+		select {
+		case received := <-signals:
+			if number, ok := received.(syscall.Signal); ok {
+				caught.Store(int32(number))
+			}
+			cancel()
+		case <-done:
+		}
+	}()
+	defer func() {
+		signal.Stop(signals)
+		close(done)
+	}()
 	directory, err := os.MkdirTemp("", "avr-build-")
 	if err != nil {
 		return err
@@ -234,11 +335,19 @@ func (j *buildJob) run(parent context.Context) (err error) {
 		cleanup, cancel := context.WithTimeout(context.WithoutCancel(parent), buildTeardownTimeout)
 		defer cancel()
 		j.teardown(cleanup, directory)
-		if ctx.Err() != nil && parent.Err() == nil {
-			// 128 + SIGTERM, the conventional exit code for that signal.
-			err = &ExitError{Code: 143}
+		if number := caught.Load(); number != 0 && parent.Err() == nil {
+			// 128 + the signal, the conventional exit code for it.
+			err = &ExitError{Code: 128 + int(number)}
 		}
 	}()
+	// A path too long for a socket must fail before any session exists.
+	for i := range j.platforms {
+		socket := filepath.Join(directory, fmt.Sprintf("buildkitd-%d.sock", i))
+		if len(socket) > buildSocketPathLimit {
+			return &ExitError{1, "Error: the temporary directory path is too long for a unix socket (" + output.CellText(socket) + "); set TMPDIR to a shorter directory."}
+		}
+		j.sockets = append(j.sockets, socket)
+	}
 	code, err := j.build(ctx, directory)
 	if err != nil {
 		return err
@@ -257,6 +366,7 @@ func (j *buildJob) build(ctx context.Context, directory string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	j.identity = identity
 	if err = j.resolveRepository(ctx); err != nil {
 		return 0, err
 	}
@@ -265,12 +375,12 @@ func (j *buildJob) build(ctx context.Context, directory string) (int, error) {
 			return 0, err
 		}
 	}
-	ready, err := j.waitForSessions(ctx)
+	ready, err := j.waitForSessions(ctx, directory)
 	if err != nil {
 		return 0, err
 	}
 	for i, record := range ready {
-		if err = j.openTunnel(ctx, record, identity, directory, i); err != nil {
+		if err = j.openTunnel(ctx, record, i); err != nil {
 			return 0, err
 		}
 	}
@@ -342,11 +452,16 @@ func buildSessionDisposition(record map[string]any) (string, string) {
 // waitForSessions polls every session in turn until all are RUNNING with
 // endpoints, and returns them in creation order. The first definite failure
 // ends the wait; transient poll failures are retried until the deadline.
-func (j *buildJob) waitForSessions(ctx context.Context) ([]map[string]any, error) {
+func (j *buildJob) waitForSessions(ctx context.Context, directory string) ([]map[string]any, error) {
 	if err := j.note("Waiting up to %ds for %d builder session(s)...", j.timeout, len(j.sessions)); err != nil {
 		return nil, err
 	}
 	deadline := j.d.Now().Add(time.Duration(j.timeout) * time.Second)
+	notReady := &ExitError{1, fmt.Sprintf("Error: builder session(s) not ready after %ds; raise --provision-timeout or try again (`avr builder list` shows session state).", j.timeout)}
+	// The deadline also bounds each request, so that a slow answer cannot
+	// report a session ready after it.
+	polling, cancel := context.WithTimeout(ctx, time.Duration(j.timeout)*time.Second)
+	defer cancel()
 	ready := map[string]map[string]any{}
 	last := map[string]string{}
 	for {
@@ -355,10 +470,13 @@ func (j *buildJob) waitForSessions(ctx context.Context) ([]map[string]any, error
 			if ready[id] != nil {
 				continue
 			}
-			record, err := j.api.BuilderSession(ctx, j.sessionPath(id))
+			record, err := j.api.BuilderSession(polling, j.sessionPath(id))
 			if err != nil {
 				if ctx.Err() != nil {
 					return nil, ctx.Err()
+				}
+				if polling.Err() != nil {
+					return nil, notReady
 				}
 				retry, err := pollFailure(j.cfg, err, "check builder session status")
 				if err != nil {
@@ -378,6 +496,9 @@ func (j *buildJob) waitForSessions(ctx context.Context) ([]map[string]any, error
 			case "failed":
 				return nil, &ExitError{1, "Error: " + message}
 			case "ready":
+				if err = j.recordSSH(record, directory, slices.Index(j.sessions, id)); err != nil {
+					return nil, err
+				}
 				ready[id] = record
 			}
 		}
@@ -390,7 +511,7 @@ func (j *buildJob) waitForSessions(ctx context.Context) ([]map[string]any, error
 		}
 		remaining := deadline.Sub(j.d.Now())
 		if remaining <= 0 {
-			return nil, &ExitError{1, fmt.Sprintf("Error: builder session(s) not ready after %ds; raise --provision-timeout or try again (`avr builder list` shows session state).", j.timeout)}
+			return nil, notReady
 		}
 		if err := j.d.Wait(ctx, min(delay, remaining)); err != nil {
 			return nil, err
@@ -398,13 +519,12 @@ func (j *buildJob) waitForSessions(ctx context.Context) ([]map[string]any, error
 	}
 }
 
-// openTunnel forwards buildkitd in the builder VM to a unix socket in the
-// build's private directory, through the session's SSH endpoint with its host
-// key pinned. The tunnel carries the build context, secrets and registry
+// recordSSH pins a ready session's SSH host key in a private known_hosts,
+// so that the tunnel and, with --keep-sessions, the user's own ssh trust only
+// that key. The tunnel carries the build context, secrets and registry
 // credentials, so a session without a host key is refused rather than
-// trusted on first use, and only the user can reach the local end. ssh is
-// retried while the VM's sshd may still be starting.
-func (j *buildJob) openTunnel(ctx context.Context, record map[string]any, identity, directory string, index int) error {
+// trusted on first use.
+func (j *buildJob) recordSSH(record map[string]any, directory string, index int) error {
 	id, platform := fieldText(record, "builder_session_id"), fieldText(record, "platform")
 	endpoints, _ := record["endpoints"].(map[string]any)
 	endpoint, _ := endpoints["ssh"].(map[string]any)
@@ -425,30 +545,34 @@ func (j *buildJob) openTunnel(ctx context.Context, record map[string]any, identi
 	if err = os.WriteFile(known, []byte(line), 0o600); err != nil {
 		return err
 	}
-	forward := vmForward{guest: buildkitdGuestPort}
-	var remote string
-	if runtime.GOOS == "windows" {
-		// No unix socket forwarding: fall back to a loopback port.
-		if forward.local, err = vmPickPort(ctx, j.d); err != nil {
-			return err
-		}
-		remote = "tcp://127.0.0.1:" + strconv.Itoa(forward.local)
-	} else {
-		forward.socket = filepath.Join(directory, fmt.Sprintf("buildkitd-%d.sock", index))
-		if len(forward.socket) > buildSocketPathLimit {
-			return &ExitError{1, "Error: the temporary directory path is too long for a unix socket (" + output.CellText(forward.socket) + "); set TMPDIR to a shorter directory."}
-		}
-		remote = "unix://" + forward.socket
+	if j.ssh == nil {
+		j.ssh = map[string]buildSSH{}
 	}
+	j.ssh[id] = buildSSH{host, user, port, known}
+	return nil
+}
+
+// openTunnel forwards buildkitd in the builder VM to a unix socket in the
+// build's private directory, through the session's SSH endpoint with its host
+// key pinned, so only the user can reach the local end. ssh is retried while
+// the VM's sshd may still be starting.
+func (j *buildJob) openTunnel(ctx context.Context, record map[string]any, index int) error {
+	id, platform := fieldText(record, "builder_session_id"), fieldText(record, "platform")
+	login := j.ssh[id]
+	forward := vmForward{guest: buildkitdGuestPort, socket: j.sockets[index]}
+	remote := "unix://" + filepath.ToSlash(forward.socket)
 	forwards := []vmForward{forward}
-	argv := vmTunnelArgv(host, user, port, forwards, identity, known)
+	argv := vmTunnelArgv(login.host, login.user, login.port, forwards, j.identity, login.known)
 	// Never prompt: standard input stays with buildx, which may read the
-	// context from it.
-	argv = slices.Insert(argv, len(argv)-1, "-o", "BatchMode=yes")
+	// context from it. The pinned key is the only trust: no system
+	// known_hosts, no user ssh config, and no shared connection that skipped
+	// this host key check.
+	argv = slices.Insert(argv, 1, "-F", "none")
+	argv = slices.Insert(argv, len(argv)-1, "-o", "BatchMode=yes", "-o", "GlobalKnownHostsFile=none", "-o", "ControlMaster=no", "-o", "ControlPath=none")
 	detached := j.d
 	detached.In = nil
 	deadline := j.d.Now().Add(buildTunnelTimeout)
-	for attempt := 1; ; attempt++ {
+	for {
 		// The tunnel outlives a cancelled build: removing the buildx builder
 		// comes first in teardown.
 		tunnel, ready, err := vmStartTunnel(ctx, context.WithoutCancel(ctx), detached, argv, forwards, deadline.Sub(j.d.Now()))
@@ -457,16 +581,13 @@ func (j *buildJob) openTunnel(ctx context.Context, record map[string]any, identi
 		}
 		if ready {
 			j.tunnels = append(j.tunnels, &buildTunnel{vmTunnel: tunnel, platform: platform, endpoint: remote})
-			j.logins = append(j.logins, id+": "+vmShellJoin(vmSSHArgv(host, user, port, identity, known, nil)))
 			return j.note("Builder ready: %s (%s)", output.CellText(id), output.CellText(platform))
 		}
 		remaining := deadline.Sub(j.d.Now())
-		if attempt == buildTunnelAttempts || remaining <= 0 {
+		if remaining <= 0 {
 			return &ExitError{1, "Error: the tunnel to the " + output.CellText(platform) + " builder did not come up; the VM may be unreachable. Try again (`avr builder list` shows session state)."}
 		}
-		if forward.socket != "" {
-			_ = os.Remove(forward.socket)
-		}
+		_ = os.Remove(forward.socket)
 		if err = j.d.Wait(ctx, min(buildTunnelRetryDelay, remaining)); err != nil {
 			return err
 		}
@@ -540,28 +661,44 @@ func (j *buildJob) teardown(parent context.Context, directory string) {
 	for _, tunnel := range j.tunnels {
 		tunnel.close()
 	}
-	if j.keep && len(j.sessions) > 0 {
-		_ = j.note("Keeping builder session(s) %s running (--keep-sessions); stop with `avr builder stop <id>` or let the TTL reclaim them.", output.CellText(strings.Join(j.sessions, ", ")))
-		if len(j.logins) > 0 {
-			// The session key is the only one the VMs accept, so it stays.
-			_ = j.note("Reach them with:\n  %s\nThen remove %s.", output.CellText(strings.Join(j.logins, "\n  ")), output.CellText(directory))
-			for _, name := range []string{"buildx", "docker-config"} {
-				_ = os.RemoveAll(filepath.Join(directory, name))
-			}
-			return
+	// --keep-sessions keeps the sessions one can log in to; one that never
+	// published an SSH endpoint would only hold its VM and quota.
+	kept, logins, stop := []string{}, []string{}, []string{}
+	for _, id := range j.sessions {
+		login, reachable := j.ssh[id]
+		if !j.keep || !reachable {
+			stop = append(stop, id)
+			continue
 		}
-	} else {
-		ctx, cancel := context.WithTimeout(parent, buildTeardownTimeout)
-		for _, id := range j.sessions {
-			j.deleteSession(ctx, id)
+		kept = append(kept, id)
+		logins = append(logins, id+": "+vmShellJoin(vmSSHArgv(login.host, login.user, login.port, j.identity, login.known, nil)))
+	}
+	if j.keep && len(stop) > 0 {
+		_ = j.note("Stopping builder session(s) %s despite --keep-sessions: they published no SSH endpoint.", output.CellText(strings.Join(stop, ", ")))
+	}
+	ctx, cancel := context.WithTimeout(parent, buildTeardownTimeout)
+	for _, id := range stop {
+		j.deleteSession(ctx, id)
+	}
+	cancel()
+	if len(kept) > 0 {
+		_ = j.note("Keeping builder session(s) %s running (--keep-sessions); stop with `avr builder stop <id>` or let the TTL reclaim them.", output.CellText(strings.Join(kept, ", ")))
+		// The session key is the only one the VMs accept, so it stays.
+		_ = j.note("Reach them with:\n  %s\nThen remove %s.", output.CellText(strings.Join(logins, "\n  ")), output.CellText(directory))
+		for _, name := range []string{"buildx", "docker-config"} {
+			_ = os.RemoveAll(filepath.Join(directory, name))
 		}
-		cancel()
+		for _, socket := range j.sockets {
+			_ = os.Remove(socket)
+		}
+		return
 	}
 	_ = os.RemoveAll(directory)
 }
 
 // deleteSession stops one session, retrying transient failures: a session
-// left running holds its VM and a quota slot until the TTL.
+// left running holds its VM and a quota slot until the TTL. A rate limit's
+// Retry-After is honored as long as the teardown budget allows.
 func (j *buildJob) deleteSession(ctx context.Context, id string) {
 	for attempt := 1; ; attempt++ {
 		_, err := j.api.DeleteBuilderSession(ctx, j.sessionPath(id))
@@ -569,20 +706,45 @@ func (j *buildJob) deleteSession(ctx context.Context, id string) {
 			return
 		}
 		he, isHTTP := errors.AsType[*client.HTTPError](err)
+		var delay time.Duration
+		var permanent error
 		if isHTTP && he.Status == 404 {
-			return // Already gone.
+			// A 404 may also mean the session's node could not take the stop.
+			// Only a session that is gone or stopping is done with.
+			if j.sessionStopped(ctx, id) {
+				return
+			}
+			delay, err = buildDeleteRetryDelay, errors.New("the stop request was answered 404 while the session is still active")
+		} else {
+			delay, permanent = pollFailure(j.cfg, err, "stop builder session")
 		}
-		delay, permanent := pollFailure(j.cfg, err, "stop builder session")
 		if permanent == nil && attempt < buildDeleteAttempts && ctx.Err() == nil {
-			if j.d.Wait(ctx, min(delay, buildDeleteRetryDelay)) == nil {
-				continue
+			deadline, bounded := ctx.Deadline()
+			if !bounded || time.Until(deadline) > delay {
+				if j.d.Wait(ctx, delay) == nil {
+					continue
+				}
 			}
 		}
 		reclaim := ""
-		if isHTTP && he.Status == 409 {
+		if isHTTP && (he.Status == 409 || he.Status == 404) {
 			reclaim = " (its TTL will reclaim it)"
 		}
 		j.warn("failed to stop builder session %s%s: %s", output.CellText(id), reclaim, output.CellText(err.Error()))
 		return
 	}
+}
+
+// sessionStopped reports a session that no longer exists or is stopping.
+func (j *buildJob) sessionStopped(ctx context.Context, id string) bool {
+	record, err := j.api.BuilderSession(ctx, j.sessionPath(id))
+	if err != nil {
+		he, isHTTP := errors.AsType[*client.HTTPError](err)
+		return isHTTP && he.Status == 404
+	}
+	switch strings.ToUpper(fieldText(record, "state")) {
+	case "STOPPING", "STOPPED":
+		return true
+	}
+	return false
 }

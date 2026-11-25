@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -133,8 +135,13 @@ func buildFindBuildx(d Dependencies) string {
 // unit off).
 func buildPodmanHost(ctx context.Context, d Dependencies) string {
 	args := []string{"podman", "info", "--format", "{{.Host.RemoteSocket.Path}}"}
-	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "darwin":
 		args = []string{"podman", "machine", "inspect", "--format", "{{.ConnectionInfo.PodmanSocket.Path}}"}
+	case "windows":
+		// PodmanSocket is the machine's socket inside WSL or Hyper-V; the
+		// host reaches the API through the named pipe.
+		args = []string{"podman", "machine", "inspect", "--format", "{{.ConnectionInfo.PodmanPipe.Path}}"}
 	}
 	result, err := d.RunTool(ctx, ToolCommand{Args: args})
 	if err != nil || result.Code != 0 {
@@ -258,9 +265,10 @@ func buildCheckBuildx(ctx context.Context, d Dependencies, engine *buildEngine) 
 	return nil
 }
 
-// buildPodmanAuthFile finds podman's registry credentials in podman's own
-// lookup order.
-func buildPodmanAuthFile(d Dependencies) string {
+// buildPodmanAuthFiles lists podman's registry credential files that exist,
+// in podman's lookup order: a registry missing from one file is looked up in
+// the next.
+func buildPodmanAuthFiles(d Dependencies) []string {
 	candidates := []string{}
 	if path := d.Getenv("REGISTRY_AUTH_FILE"); path != "" {
 		candidates = append(candidates, path)
@@ -268,13 +276,43 @@ func buildPodmanAuthFile(d Dependencies) string {
 	if directory := d.Getenv("XDG_RUNTIME_DIR"); directory != "" {
 		candidates = append(candidates, filepath.Join(directory, "containers", "auth.json"))
 	}
-	candidates = append(candidates, buildExpandHome("~/.config/containers/auth.json"))
+	configHome := d.Getenv("XDG_CONFIG_HOME")
+	if configHome == "" {
+		configHome = buildExpandHome("~/.config")
+	}
+	candidates = append(candidates, filepath.Join(configHome, "containers", "auth.json"))
+	found := []string{}
 	for _, path := range candidates {
-		if isRegularFile(path) {
-			return path
+		if isRegularFile(path) && !slices.Contains(found, path) {
+			found = append(found, path)
 		}
 	}
-	return ""
+	return found
+}
+
+// buildPodmanAuth combines podman's credential files into one, the earlier
+// file winning for each registry.
+func buildPodmanAuth(d Dependencies) map[string]any {
+	combined := map[string]any{}
+	files := buildPodmanAuthFiles(d)
+	for i := len(files) - 1; i >= 0; i-- {
+		object := buildReadJSONObject(d, files[i])
+		for _, key := range []string{"auths", "credHelpers"} {
+			entries, ok := object[key].(map[string]any)
+			if !ok {
+				continue
+			}
+			section, _ := combined[key].(map[string]any)
+			if section == nil {
+				section = map[string]any{}
+				combined[key] = section
+			}
+			for name, entry := range entries {
+				section[name] = entry
+			}
+		}
+	}
+	return combined
 }
 
 func buildReadJSONObject(d Dependencies, path string) map[string]any {
@@ -311,8 +349,11 @@ func buildPodmanDockerConfig(d Dependencies, directory string) (string, error) {
 	if source := filepath.Join(configured, "config.json"); isRegularFile(source) {
 		merged = buildReadJSONObject(d, source)
 	}
-	if auth := buildPodmanAuthFile(d); auth != "" {
-		buildMergePodmanAuth(merged, buildReadJSONObject(d, auth))
+	// The private directory has no contexts/, so a copied context name would
+	// fail every buildx call that has no DOCKER_HOST.
+	delete(merged, "currentContext")
+	for _, host := range buildMergePodmanAuth(merged, buildPodmanAuth(d)) {
+		_, _ = fmt.Fprintf(d.Err, "Warning: podman holds credentials for several namespaces of %s; docker's credentials for it are used instead.\n", output.CellText(host))
 	}
 	data, err := json.Marshal(merged)
 	if err != nil {
@@ -321,13 +362,24 @@ func buildPodmanDockerConfig(d Dependencies, directory string) (string, error) {
 	return target, os.WriteFile(filepath.Join(target, "config.json"), data, 0o600)
 }
 
+// Docker keeps Docker Hub credentials under this key, whatever name the
+// registry was logged in to with.
+const buildDockerHubKey = "https://index.docker.io/v1/"
+
+var buildDockerHubHosts = []string{"docker.io", "index.docker.io", "registry-1.docker.io"}
+
 // buildMergePodmanAuth lays podman's registry credentials over a docker
 // config. Docker consults a registry's credHelpers entry, then credsStore,
 // and only then auths, so a docker helper would shadow a podman login. Each
 // registry podman holds credentials for therefore gets an empty credHelpers
 // entry, which sends the lookup to auths, unless podman names a helper of
 // its own for it.
-func buildMergePodmanAuth(merged, podman map[string]any) {
+//
+// Docker's store holds one credential per registry host, while podman may
+// scope one to a namespace (quay.io/acme). A namespace login stands for its
+// host only when it is podman's sole credential there; with several, docker
+// could pick the wrong account, so the host is left to docker and returned.
+func buildMergePodmanAuth(merged, podman map[string]any) (skipped []string) {
 	section := func(key string) map[string]any {
 		combined, _ := merged[key].(map[string]any)
 		if combined == nil {
@@ -338,12 +390,42 @@ func buildMergePodmanAuth(merged, podman map[string]any) {
 	}
 	if entries, ok := podman["auths"].(map[string]any); ok && len(entries) > 0 {
 		auths, helpers := section("auths"), section("credHelpers")
-		for name, entry := range entries {
-			auths[name] = entry
-			// Docker looks helpers up by registry host; podman may scope
-			// an entry to a repository path.
-			host, _, _ := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(name, "https://"), "http://"), "/")
+		byHost := map[string][]string{}
+		hostLevel := map[string]bool{}
+		for name := range entries {
+			host, path, _ := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(name, "https://"), "http://"), "/")
+			if slices.Contains(buildDockerHubHosts, host) {
+				host = "docker.io"
+				// The legacy index URL names the registry, not a namespace.
+				if path == "v1" || path == "v1/" {
+					path = ""
+				}
+			}
+			byHost[host] = append(byHost[host], name)
+			if path == "" {
+				hostLevel[host] = true
+			}
+		}
+		hosts := slices.Sorted(maps.Keys(byHost))
+		for _, host := range hosts {
+			names := byHost[host]
+			slices.Sort(names)
+			if !hostLevel[host] && len(names) > 1 {
+				skipped = append(skipped, host)
+				continue
+			}
+			var chosen any
+			for _, name := range names {
+				auths[name] = entries[name]
+				if chosen == nil || !strings.Contains(strings.TrimPrefix(strings.TrimPrefix(name, "https://"), "http://"), "/") {
+					chosen = entries[name]
+				}
+			}
 			helpers[host] = ""
+			if host == "docker.io" {
+				auths[buildDockerHubKey] = chosen
+				helpers[buildDockerHubKey] = ""
+			}
 		}
 	}
 	if entries, ok := podman["credHelpers"].(map[string]any); ok && len(entries) > 0 {
@@ -352,6 +434,7 @@ func buildMergePodmanAuth(merged, podman map[string]any) {
 			helpers[name] = entry
 		}
 	}
+	return skipped
 }
 
 // buildPrepareEnvironment gives buildx its private builder state and, for

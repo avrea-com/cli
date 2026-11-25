@@ -2,8 +2,12 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -145,5 +149,64 @@ func TestBuildPodmanCredentialsShadowDockerHelpers(t *testing.T) {
 	auths := merged["auths"].(map[string]any)
 	if merged["credsStore"] != "desktop" || auths["ghcr.io"] == nil || auths["quay.io/acme"] == nil || auths["docker.io"] == nil {
 		t.Fatal(merged)
+	}
+}
+
+func TestBuildPodmanDockerHubLoginReachesDockersKey(t *testing.T) {
+	merged := map[string]any{"credsStore": "desktop"}
+	skipped := buildMergePodmanAuth(merged, map[string]any{"auths": map[string]any{"docker.io": map[string]any{"auth": "aHVi"}}})
+	auths, helpers := merged["auths"].(map[string]any), merged["credHelpers"].(map[string]any)
+	if len(skipped) != 0 || auths[buildDockerHubKey] == nil || helpers[buildDockerHubKey] != "" || helpers["docker.io"] != "" {
+		t.Fatal(merged)
+	}
+}
+
+func TestBuildPodmanNamespaceLogins(t *testing.T) {
+	merged := map[string]any{"credHelpers": map[string]any{"quay.io": "quay-helper"}}
+	skipped := buildMergePodmanAuth(merged, map[string]any{"auths": map[string]any{
+		"quay.io/acme": map[string]any{"auth": "YQ=="}, "quay.io/other": map[string]any{"auth": "Yg=="},
+		"ghcr.io/acme": map[string]any{"auth": "Yw=="},
+	}})
+	auths, helpers := merged["auths"].(map[string]any), merged["credHelpers"].(map[string]any)
+	// Several namespaces of one host stay with docker; a sole one stands for
+	// its host.
+	if !slices.Equal(skipped, []string{"quay.io"}) || helpers["quay.io"] != "quay-helper" || auths["quay.io/acme"] != nil || auths["ghcr.io/acme"] == nil || helpers["ghcr.io"] != "" {
+		t.Fatal(skipped, merged)
+	}
+}
+
+func TestBuildPodmanDockerConfigFallsBackPerRegistry(t *testing.T) {
+	d, _, _ := testDeps(t)
+	home := t.TempDir()
+	primary, configHome, docker := filepath.Join(home, "primary.json"), filepath.Join(home, "config"), filepath.Join(home, "docker")
+	for path, text := range map[string]string{
+		primary: `{"auths":{"a.example":{"auth":"Zmlyc3Q="}}}`,
+		filepath.Join(configHome, "containers", "auth.json"): `{"auths":{"a.example":{"auth":"c2Vjb25k"},"b.example":{"auth":"c2Vjb25k"}}}`,
+		filepath.Join(docker, "config.json"):                 `{"currentContext":"colima","auths":{}}`,
+	} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	env := map[string]string{"REGISTRY_AUTH_FILE": primary, "XDG_CONFIG_HOME": configHome, "DOCKER_CONFIG": docker}
+	d.Getenv = func(name string) string { return env[name] }
+	target, err := buildPodmanDockerConfig(d, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(target, "config.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]any
+	if err = json.Unmarshal(data, &config); err != nil {
+		t.Fatal(err)
+	}
+	auths := config["auths"].(map[string]any)
+	if _, found := config["currentContext"]; found || fmt.Sprint(auths["a.example"]) != "map[auth:Zmlyc3Q=]" || fmt.Sprint(auths["b.example"]) != "map[auth:c2Vjb25k]" {
+		t.Fatal(string(data))
 	}
 }
