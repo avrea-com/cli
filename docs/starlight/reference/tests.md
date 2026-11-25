@@ -34,11 +34,11 @@ with the test ID and configuration to pass instead; it never picks one.
 If some reports were not searched, only an exact name can be selected.
 
 Each row is one report: how often the test passed, failed, errored or
-was skipped in it, the mean recorded duration and the job that ran it.
-A duration that cannot be shown names the reason. Open a row's job with
+was skipped in it, the mean recorded duration (none when the test
+recorded no duration) and the job that ran it. Open a row's job with
 avr tests JOB --test NAME to read its failure message.
 
-History that is still being updated is marked; unavailable history does
+Reports still being prepared are marked; a read that stops early does
 not mean the test never ran. Continue with --cursor for older runs.
 
 **Arguments**

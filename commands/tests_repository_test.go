@@ -123,9 +123,9 @@ func TestTestsSearchNamesAnEmptyRepository(t *testing.T) {
 	}
 }
 
-const historyPage = `{"status":"available","pending":true,"reason":null,"as_of_revision":3,"current_revision":4,"data":[
-{"capture_id":"tec-1","captured_at":"2026-11-14T10:00:00Z","passed_count":0,"failed_count":1,"errored_count":0,"skipped_count":0,"duration_status":"available","duration_total_ms":301,"duration_sample_count":2,"duration_max_ms":200,"job_id":"job-019a0000000070008000000000000003"},
-{"capture_id":"tec-2","captured_at":"2026-11-13T10:00:00Z","passed_count":1,"failed_count":0,"errored_count":0,"skipped_count":0,"duration_status":"expired_detail","duration_total_ms":null,"duration_sample_count":null,"duration_max_ms":null,"job_id":null}
+const historyPage = `{"status":"available","scope":{"reports_searched":12,"reports_indexing":1,"reports_unavailable":2},"data":[
+{"capture_id":"tec-1","captured_at":"2026-11-14T10:00:00Z","passed_count":0,"failed_count":1,"errored_count":0,"skipped_count":0,"duration_total_ms":301,"duration_sample_count":2,"duration_max_ms":200,"job_id":"job-019a0000000070008000000000000003"},
+{"capture_id":"tec-2","captured_at":"2026-11-13T10:00:00Z","passed_count":1,"failed_count":0,"errored_count":0,"skipped_count":0,"duration_total_ms":0,"duration_sample_count":0,"duration_max_ms":null,"job_id":null}
 ],"pagination":{"next_cursor":"older"}}`
 
 func TestTestsHistoryResolvesAnExactNameThenReadsItsRuns(t *testing.T) {
@@ -148,13 +148,38 @@ func TestTestsHistoryResolvesAnExactNameThenReadsItsRuns(t *testing.T) {
 	if code != 0 {
 		t.Fatal(code, out, stderr)
 	}
-	for _, want := range []string{"Test: tests.auth.test_login  Suite: pytest", "Test ID: " + historyTestID, "still being updated", "151", "expired_detail", resultTestJob, "unknown"} {
+	for _, want := range []string{"Test: tests.auth.test_login  Suite: pytest", "Test ID: " + historyTestID, "Reports searched: 12; still indexing: 1; unavailable: 2", "still being updated", "151", "none", resultTestJob, "unknown"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
 	}
 	if !strings.Contains(stderr, "avr tests history "+historyTestID+" --configuration "+historyConfiguration+" --repo "+resultTestRepo+" --cursor older") {
 		t.Error(stderr)
+	}
+}
+
+// The wildcard is the field list scripts see: it carries scope and none of the
+// keys the history response retired.
+func TestTestsHistoryWildcardJSONCarriesScopeAndNoRetiredKeys(t *testing.T) {
+	execute := repositoryTestsDeps(t, func(*http.Request) (int, string) { return 200, historyPage })
+	code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo, "--json", "*")
+	if code != 0 {
+		t.Fatal(code, out, stderr)
+	}
+	var record map[string]any
+	if err := json.Unmarshal([]byte(out), &record); err != nil {
+		t.Fatal(err, out)
+	}
+	scope, _ := record["scope"].(map[string]any)
+	for key, want := range map[string]float64{"reports_searched": 12, "reports_indexing": 1, "reports_unavailable": 2} {
+		if scope[key] != want {
+			t.Errorf("scope.%s = %v, want %v in:\n%s", key, scope[key], want, out)
+		}
+	}
+	for _, retired := range []string{"pending", "reason", "as_of_revision", "current_revision"} {
+		if _, present := record[retired]; present {
+			t.Errorf("retired key %q in:\n%s", retired, out)
+		}
 	}
 }
 
@@ -182,14 +207,26 @@ func TestTestsHistoryByIDSkipsResolutionAndReportsNoMatch(t *testing.T) {
 		if r.URL.Query().Get("cursor") != "older" {
 			t.Errorf("unexpected history request: %s", r.URL)
 		}
-		return 200, `{"status":"empty","pending":false,"as_of_revision":4,"current_revision":4,"data":[],"pagination":{"next_cursor":null}}`
+		return 200, `{"status":"available","scope":{"reports_searched":3,"reports_indexing":0,"reports_unavailable":0},"data":[],"pagination":{"next_cursor":null}}`
 	})
 	code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo, "--cursor", "older")
-	if code != 0 || requests != 1 || !strings.Contains(out, "No recorded runs for this test and configuration.") {
+	if code != 0 || requests != 1 || !strings.Contains(out, "No runs found in the reports searched on this page.") {
 		t.Fatal(code, requests, out, stderr)
 	}
 	if code, _, stderr := execute("history", "absent", "--repo", resultTestRepo); code != 1 || !strings.Contains(stderr, "Not every recorded report was searched") {
 		t.Fatal(code, stderr)
+	}
+}
+
+func TestTestsHistoryDoesNotCallAStoppedReadEmpty(t *testing.T) {
+	for _, status := range []string{"limited", "unavailable"} {
+		execute := repositoryTestsDeps(t, func(*http.Request) (int, string) {
+			return 200, `{"status":"` + status + `","scope":{"reports_searched":0,"reports_indexing":0,"reports_unavailable":0},"data":[],"pagination":{"next_cursor":null}}`
+		})
+		code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo)
+		if code != 0 || !strings.Contains(out, "This read stopped early; run the command again to retry.") || strings.Contains(out, "No runs found") {
+			t.Fatal(status, code, out, stderr)
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ import (
 )
 
 var testSearchFields = []string{"organization_id", "repository_id", "status", "scope", "truncated", "filters", "data", "pagination"}
-var testHistoryFields = []string{"organization_id", "repository_id", "test_id", "configuration_digest", "identity", "status", "pending", "reason", "as_of_revision", "current_revision", "data", "pagination"}
+var testHistoryFields = []string{"organization_id", "repository_id", "test_id", "configuration_digest", "identity", "status", "scope", "data", "pagination"}
 var testDigest = lazyRegexp("^[0-9a-f]{64}$")
 
 // The API serves at most this many rows per request on both endpoints.
@@ -176,6 +176,18 @@ func testTime(value any) string {
 	return formatTimestamp(text)
 }
 
+// reportsNotRead names the reports a scope counted but could not read yet.
+func reportsNotRead(scope map[string]any) string {
+	var b strings.Builder
+	if count := testCount(scope["reports_indexing"]); count > 0 {
+		fmt.Fprintf(&b, "; still indexing: %d", count)
+	}
+	if count := testCount(scope["reports_unavailable"]); count > 0 {
+		fmt.Fprintf(&b, "; unavailable: %d", count)
+	}
+	return b.String()
+}
+
 func showRepositoryTests(w io.Writer, response map[string]any) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Organization: %s  Repository: %s\n", testText(response["organization_id"]), testText(response["repository_id"]))
@@ -184,13 +196,7 @@ func showRepositoryTests(w io.Writer, response map[string]any) error {
 		if scope["oldest_recorded_at"] != nil && scope["newest_recorded_at"] != nil {
 			fmt.Fprintf(&b, " (%s to %s)", testTime(scope["oldest_recorded_at"]), testTime(scope["newest_recorded_at"]))
 		}
-		if count := testCount(scope["reports_indexing"]); count > 0 {
-			fmt.Fprintf(&b, "; still indexing: %d", count)
-		}
-		if count := testCount(scope["reports_unavailable"]); count > 0 {
-			fmt.Fprintf(&b, "; unavailable: %d", count)
-		}
-		b.WriteString("\n")
+		b.WriteString(reportsNotRead(scope) + "\n")
 		if complete, ok := scope["complete"].(bool); ok && !complete {
 			b.WriteString("Not every recorded report was searched; absent tests may still be recorded.\n")
 		}
@@ -382,19 +388,19 @@ func showTestHistory(w io.Writer, response map[string]any) error {
 	fmt.Fprintf(&b, "Test ID: %s\nConfiguration: %s\n", testText(response["test_id"]), testText(response["configuration_digest"]))
 	fmt.Fprintf(&b, "Organization: %s  Repository: %s\n", testText(response["organization_id"]), testText(response["repository_id"]))
 	fmt.Fprintf(&b, "History: %s\n", testText(response["status"]))
-	if testValuePresent(response["reason"]) {
-		fmt.Fprintf(&b, "Reason: %s\n", testText(response["reason"]))
+	if scope, ok := response["scope"].(map[string]any); ok {
+		fmt.Fprintf(&b, "Reports searched: %s%s\n", testText(scope["reports_searched"]), reportsNotRead(scope))
+		if testCount(scope["reports_indexing"]) > 0 {
+			b.WriteString("History is still being updated; the newest reports may be missing.\n")
+		}
 	}
-	if pending, _ := response["pending"].(bool); pending {
-		b.WriteString("History is still being updated; the newest reports may be missing.\n")
+	if status := response["status"]; status == "limited" || status == "unavailable" {
+		b.WriteString("This read stopped early; run the command again to retry. Missing runs do not mean the test never ran.\n")
 	}
 	rows := response["data"].([]any)
 	if len(rows) == 0 {
-		switch response["status"] {
-		case "unavailable":
-			b.WriteString("History cannot currently be read. This does not mean the test never ran.\n")
-		default:
-			b.WriteString("No recorded runs for this test and configuration.\n")
+		if response["status"] == "available" {
+			b.WriteString("No runs found in the reports searched on this page.\n")
 		}
 		_, err := io.WriteString(w, b.String())
 		return err
@@ -402,9 +408,10 @@ func showTestHistory(w io.Writer, response map[string]any) error {
 	cells := make([][]string, 0, len(rows))
 	for _, item := range rows {
 		row := item.(map[string]any)
-		// One report can hold several occurrences of a test; show their mean.
-		duration := testText(row["duration_status"])
-		if samples := testCount(row["duration_sample_count"]); row["duration_status"] == "available" && samples > 0 {
+		// One report can hold several occurrences of a test; show the mean of
+		// those that recorded a duration.
+		duration := "none"
+		if samples := testCount(row["duration_sample_count"]); samples > 0 {
 			duration = strconv.FormatInt((testCount(row["duration_total_ms"])+samples/2)/samples, 10)
 		}
 		job := "unknown"
