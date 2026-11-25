@@ -224,7 +224,7 @@ func TestTestsHistoryDoesNotCallAStoppedReadEmpty(t *testing.T) {
 			return 200, `{"status":"` + status + `","scope":{"reports_searched":0,"reports_indexing":0,"reports_unavailable":0},"data":[],"pagination":{"next_cursor":null}}`
 		})
 		code, out, stderr := execute("history", historyTestID, "--configuration", historyConfiguration, "--repo", resultTestRepo)
-		if code != 0 || !strings.Contains(out, "This read stopped early; run the command again to retry.") || strings.Contains(out, "No recorded runs") {
+		if code != 0 || !strings.Contains(out, "This read stopped early; run the command again to retry.") || strings.Contains(out, "No runs found") {
 			t.Fatal(status, code, out, stderr)
 		}
 	}
