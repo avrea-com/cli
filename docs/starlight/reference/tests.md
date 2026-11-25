@@ -90,7 +90,7 @@ mean no tests were reported.
 
 **Arguments**
 
-- <code class="cli-arg">TARGET</code>
+- <code class="cli-arg">RUN_OR_JOB</code>
 
 **Options**
 

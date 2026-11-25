@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -29,6 +30,9 @@ type Param struct {
 	ShowDefault bool     `json:"show_default"`
 	Default     any      `json:"default"`
 	Choices     []string `json:"choices,omitempty"`
+	// Metavar is the argument's name in the usage line when that differs
+	// from Name, so the argument list matches the usage line.
+	Metavar string `json:"metavar,omitempty"`
 }
 type Node struct {
 	Name        string   `json:"name"`
@@ -173,11 +177,51 @@ func LiveOptionNames(c *cobra.Command, options []string) []string {
 	return names
 }
 
-func params(c *cobra.Command, original []Param) []Param {
+// metavarPattern matches a plain usage name such as VM_ID_OR_NAME. Usage
+// tokens that spell out choices, like {on|off} or <endpoint>, keep the
+// parameter's own name in the argument list.
+var metavarPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
+
+// argumentLabel is how argument lists name a positional argument.
+func argumentLabel(p Param) string {
+	if p.Metavar != "" {
+		return p.Metavar
+	}
+	return strings.ToUpper(p.Name)
+}
+
+// usageName drops the optional brackets and repetition dots around a usage
+// token, written as [NAME], NAME..., [NAME...] or [NAME]...
+func usageName(token string) string {
+	token = strings.TrimSuffix(token, "...")
+	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
+		token = token[1 : len(token)-1]
+	}
+	return strings.TrimSuffix(token, "...")
+}
+
+// usageArguments returns the argument tokens of the usage line a command is
+// documented with. Cobra's own usage decides how many arguments there are,
+// so a description that words them differently is not used.
+func usageArguments(args, described []string) []string {
+	tokens := []string{}
+	for _, token := range strings.Fields(strings.Join(described, " ")) {
+		if token != "[OPTIONS]" {
+			tokens = append(tokens, token)
+		}
+	}
+	if len(tokens) != len(args) {
+		return args
+	}
+	return tokens
+}
+
+func params(c *cobra.Command, original []Param, usage []string) []Param {
 	out := []Param{}
 	arguments := []Param{}
 	used := map[string]bool{}
 	args := strings.Fields(c.Use)[1:]
+	labels := usageArguments(args, usage)
 	originals := []Param{}
 	for _, param := range original {
 		if param.Kind == "argument" {
@@ -185,14 +229,16 @@ func params(c *cobra.Command, original []Param) []Param {
 		}
 	}
 	for i, arg := range args {
-		name := strings.Trim(arg, "[]{}<>")
-		name = strings.TrimSuffix(name, "...")
+		name := strings.Trim(usageName(arg), "{}<>")
 		p := Param{Name: strings.ToLower(name), Kind: "argument", Opts: []string{strings.ToLower(name)}, Secondary: []string{}, Type: "text", Required: !strings.HasPrefix(arg, "["), Nargs: 1}
 		if strings.Contains(arg, "...") {
 			p.Nargs = -1
 		}
 		if len(args) == len(originals) {
 			p = originals[i]
+			if label := usageName(labels[i]); metavarPattern.MatchString(label) && strings.ToLower(label) != p.Name {
+				p.Metavar = label
+			}
 			p.Required = !strings.HasPrefix(arg, "[")
 			p.Nargs = 1
 			if strings.Contains(arg, "...") {
@@ -263,7 +309,7 @@ func buildNode(c *cobra.Command, path []string, describe Describer) *Node {
 	if d.Epilog != "" {
 		node.Epilog = str(d.Epilog)
 	}
-	node.Params = params(c, d.params())
+	node.Params = params(c, d.params(), d.Usage)
 	if len(d.Usage) > 0 {
 		node.Usage = node.Full + " " + strings.Join(d.Usage, " ")
 	}
@@ -295,7 +341,7 @@ func buildNode(c *cobra.Command, path []string, describe Describer) *Node {
 func Build(root *cobra.Command, describe Describer, sections []Section) (*Tree, error) {
 	d := describe(root)
 	tree := Tree{Program: "avr", Summary: strings.TrimSpace(d.Help),
-		GlobalOptions: params(root, d.params()), Aliases: map[string]string{}, Sections: map[string][]*Node{}}
+		GlobalOptions: params(root, d.params(), d.Usage), Aliases: map[string]string{}, Sections: map[string][]*Node{}}
 	live := map[string]*cobra.Command{}
 	for _, c := range root.Commands() {
 		if c.Hidden {
