@@ -24,7 +24,7 @@ func TestPRScopeAPIContract(t *testing.T) {
 			listed := false
 			d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 				body := `{"enabled":true}`
-				if strings.HasSuffix(r.URL.Path, "/pull-requests") {
+				if strings.HasSuffix(r.URL.Path, "/pulls") {
 					listed = true
 					want := scope
 					if want == "all" {
@@ -163,7 +163,7 @@ func TestPRAttentionEmptyPageRetainsCursor(t *testing.T) {
 		}
 		d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
 			body := `{"enabled":true}`
-			if strings.HasSuffix(r.URL.Path, "/pull-requests") {
+			if strings.HasSuffix(r.URL.Path, "/pulls") {
 				body = `{"data":[],"pagination":{"next_cursor":"next-page"}}`
 			}
 			return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil

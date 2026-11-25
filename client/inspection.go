@@ -234,7 +234,7 @@ func (c *Client) FeatureFlag(ctx context.Context, org, key string) (map[string]a
 	return decodeRecord(body)
 }
 func (c *Client) PullRequests(ctx context.Context, org string, query url.Values) (Page, error) {
-	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/pull-requests", query)
+	body, err := c.Get(ctx, "/orgs/"+url.PathEscape(org)+"/pulls", query)
 	if err != nil {
 		return Page{}, err
 	}
