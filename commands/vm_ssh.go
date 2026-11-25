@@ -13,6 +13,7 @@ import (
 
 	"github.com/avrea-com/cli/output"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var vmSessionName = lazyRegexp(`^[A-Za-z0-9_-]{1,64}$`)
@@ -103,13 +104,23 @@ func vmSSHPassthrough(c *cobra.Command, args []string) ([]string, error) {
 			continue
 		}
 		if len(arg) > 1 && arg[0] == '-' {
+			shorthand := func(short string) *pflag.Flag {
+				if len(arg) > 2 && c.InheritedFlags().ShorthandLookup(short) != nil {
+					return nil
+				}
+				return f.ShorthandLookup(short)
+			}
+			// A cluster that does not start with one of ours belongs to the
+			// forwarded program, attached values included: `-tghcr.io/a/b`
+			// is not -h, and `-oStrictHostKeyChecking=no` is not -i.
+			if shorthand(arg[1:2]) == nil {
+				remote = append(remote, arg)
+				continue
+			}
 			unknown := ""
 			for j := 1; j < len(arg); j++ {
 				short := arg[j : j+1]
-				flag := f.ShorthandLookup(short)
-				if len(arg) > 2 && c.InheritedFlags().ShorthandLookup(short) != nil {
-					flag = nil
-				}
+				flag := shorthand(short)
 				if flag == nil {
 					unknown += short
 					continue

@@ -238,11 +238,7 @@ func settingsWriteError(cfg config.Config, err error, action, key string, repo, 
 	} else {
 		hint += "use --org to target the organization."
 	}
-	first, rest, found := strings.Cut(result.Error(), "\n")
-	if found {
-		rest = "\n" + rest
-	}
-	return errors.New(first + "\n  Hint: " + hint + rest)
+	return withHint(result, hint)
 }
 func newSettingsWrite(d Dependencies, reset bool) *cobra.Command {
 	var org, repo string

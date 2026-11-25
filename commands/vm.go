@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
@@ -31,11 +30,7 @@ func vmError(cfg config.Config, err error, action string) error {
 	if !errors.As(err, &he) || he.Status != 404 && he.Status != 422 {
 		return result
 	}
-	first, rest, found := strings.Cut(result.Error(), "\n")
-	if found {
-		rest = "\n" + rest
-	}
-	return errors.New(first + "\n  Hint: Run `avr vm list` to see your VMs." + rest)
+	return withHint(result, "Run `avr vm list` to see your VMs.")
 }
 func vmGrid(d Dependencies, rows []map[string]any, keys, labels []string) error {
 	if len(rows) == 0 {
@@ -84,8 +79,8 @@ func newVMList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if cmd.Flags().Changed("cursor") && (cursor == "" || strings.TrimSpace(cursor) != cursor || utf8.RuneCountInString(cursor) > 512) {
-			return &ExitError{2, "Error: --cursor must be 1..512 chars and not surrounded by whitespace"}
+		if err := validateCursor(cmd, cursor); err != nil {
+			return err
 		}
 		query := url.Values{"limit": {strconv.Itoa(limit)}, "scope": {scope}}
 		if cmd.Flags().Changed("sandbox") || cmd.Flags().Changed("no-sandbox") {
@@ -110,14 +105,7 @@ func newVMList(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if page.NextCursor != "" {
-			prefix := "\nMore results available. Next page: --cursor "
-			if asJSON {
-				prefix = "next_cursor: "
-			}
-			_, err = fmt.Fprintln(d.Err, prefix+output.CellText(shellQuotePython(page.NextCursor)))
-		}
-		return err
+		return printNextCursor(d, page.NextCursor, asJSON)
 	})
 	return c
 }

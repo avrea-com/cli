@@ -23,6 +23,8 @@ func rootDescription(path string) docgen.Description {
 				{Name: "audit-events", Description: "View audit events for organization writes.", Section: descriptionText("Setup & Config")},
 				{Name: "auth", Description: "Authenticate and manage credentials.", Section: descriptionText("Setup & Config")},
 				{Name: "billing", Description: "Manage billing, invoices, and payment methods.", Section: descriptionText("Setup & Config")},
+				{Name: "build", Description: "Build container images remotely with docker buildx on Avrea builders.", Section: descriptionText("Core Commands")},
+				{Name: "builder", Description: "Manage remote builder sessions.", Section: descriptionText("Core Commands")},
 				{Name: "cache", Description: "Inspect and manage the Avrea build cache.", Section: descriptionText("Core Commands")},
 				{Name: "config", Description: "View and manage CLI configuration.", Section: descriptionText("Setup & Config")},
 				{Name: "firewall", Description: "Manage the egress firewall rule list for orgs and repositories.", Section: descriptionText("Setup & Config")},

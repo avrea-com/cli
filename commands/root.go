@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -26,10 +27,13 @@ type Dependencies struct {
 	// public executable; composed commands do not inherit a release feed.
 	StartUpdateCheck func(context.Context) <-chan string
 
-	UpdateNotices   <-chan string
-	Verbose         func() bool
-	ColorEnabled    func() bool
-	RunSSH          func(context.Context, []string) (int, error)
+	UpdateNotices <-chan string
+	Verbose       func() bool
+	ColorEnabled  func() bool
+	RunSSH        func(context.Context, []string) (int, error)
+	// LookPath and RunTool reach local helper programs such as buildx.
+	LookPath        func(string) (string, error)
+	RunTool         func(context.Context, ToolCommand) (ToolResult, error)
 	Store           *config.Store
 	LoadConfig      func() (config.Config, error)
 	HTTP            *http.Client
@@ -72,6 +76,15 @@ func (d Dependencies) defaults() Dependencies {
 	}
 	if d.GitRemote == nil {
 		d.GitRemote = gitOrigin
+	}
+	if d.LookPath == nil {
+		d.LookPath = exec.LookPath
+	}
+	if d.RunTool == nil {
+		streams := d
+		d.RunTool = func(ctx context.Context, command ToolCommand) (ToolResult, error) {
+			return executeTool(ctx, streams, command)
+		}
 	}
 	if d.Listen == nil {
 		d.Listen = (&net.ListenConfig{}).Listen
@@ -245,7 +258,7 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr run list", "avr run view", "avr run logs", "avr run watch", "avr run diagnose",
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr pr list", "avr pr view",
-		"avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics", "avr vm firewall",
+		"avr builder list", "avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics", "avr vm firewall",
 		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr group list", "avr settings list", "avr cache list",
 		"avr artifact list", "avr sbom list", "avr sbom view", "avr sbom diff",
 		"avr sbom packages", "avr sbom vulnerabilities", "avr log search",
@@ -291,7 +304,7 @@ func NewRoot(deps Dependencies) *cobra.Command {
 		return prepareGlobalOptions(cmd, d)
 	})
 	root.Flags().BoolP("version", "V", false, "Print version.")
-	root.AddCommand(NewSecret(d), NewVariable(d), NewAPI(d), NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d))
+	root.AddCommand(NewSecret(d), NewVariable(d), NewAPI(d), NewAuth(d), NewOrg(d), NewRepo(d), NewRun(d), NewJob(d), NewWorkflow(d), NewPR(d), NewStatus(d), NewArtifact(d), NewCache(d), NewLog(d), NewSBOM(d), NewConfig(d), NewToken(d), NewServiceToken(d), NewGroup(d), NewSettings(d), NewAudit(d), NewHealth(d), NewTests(d), NewBilling(d), NewFirewall(d), NewVM(d), NewBuild(d), NewBuilder(d))
 	login := NewLogin(d)
 	login.Hidden = true
 	logout := NewLogout(d)

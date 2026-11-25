@@ -1,0 +1,28 @@
+.TH AVR\-BUILDER\-STOP 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-builder-stop \- Stop a builder session, reclaiming its VM and quota slot.
+.SH SYNOPSIS
+.B avr builder stop
+[OPTIONS] SESSION_ID
+.SH DESCRIPTION
+Stop a builder session, reclaiming its VM and quota slot.
+.PP
+Asynchronous while the VM is live: the session shows STOPPING until the node confirms teardown. Stopping is idempotent — repeating it on an already-stopped session succeeds.
+.SH ARGUMENTS
+.TP
+\fISESSION_ID\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-yes\fR, \fB\-y\fR
+Skip the confirmation prompt.
+.TP
+\fB\-\-json\fR
+Emit the raw API response as JSON.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-builder (1),
+.BR avr-builder-list (1)

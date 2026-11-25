@@ -18,10 +18,11 @@ func TestScopeShorthandsAcrossCommandTree(t *testing.T) {
 			}
 			t.Run(c.CommandPath()+"/"+name, func(t *testing.T) {
 				option := "-" + shorthand
-				if c.CommandPath() == "avr vm ssh" && name == "org" {
+				// Forwarded arguments keep their own -o: ssh options, buildx --output.
+				if (c.CommandPath() == "avr vm ssh" || c.CommandPath() == "avr build") && name == "org" {
 					option = "--org"
 					if f.Shorthand != "" {
-						t.Fatal("SSH must preserve remote -o")
+						t.Fatal("forwarded -o must be preserved")
 					}
 				}
 				args := []string{option, "acme/web"}
@@ -67,7 +68,8 @@ func TestVMSSHScopeShorthandPreservesExplicitPassthrough(t *testing.T) {
 }
 
 func TestVMSSHRemoteOptions(t *testing.T) {
-	for _, args := range [][]string{{"vm-example", "ps", "-o", "pid,comm"}, {"vm-example", "ps", "-eo", "pid"}} {
+	// A cluster that is not ours stays whole, even with our shorthand in it.
+	for _, args := range [][]string{{"vm-example", "ps", "-o", "pid,comm"}, {"vm-example", "ps", "-eo", "pid"}, {"vm-example", "-oStrictHostKeyChecking=no", "true"}} {
 		c := newVMSSH(Dependencies{}.defaults())
 		remote, err := vmSSHPassthrough(c, args)
 		if err != nil || strings.Join(remote, "|") != strings.Join(args, "|") || c.Flags().Changed("org") {

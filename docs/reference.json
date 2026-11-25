@@ -80,6 +80,7 @@
     }
   ],
   "aliases": {
+    "builders": "builder",
     "groups": "group",
     "jobs": "job",
     "logs": "log",
@@ -12682,6 +12683,449 @@
                 "is_flag": true,
                 "envvar": null,
                 "help": "Print the tunnel and client commands and exit, without opening the tunnel.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          }
+        ]
+      },
+      {
+        "name": "build",
+        "path": [
+          "avr",
+          "build"
+        ],
+        "full": "avr build",
+        "is_group": false,
+        "short_help": "Build container images remotely with docker buildx on Avrea builders.",
+        "help": "Build container images remotely with docker buildx on Avrea builders.\n\nMirrors `docker build`: every flag not listed below is forwarded verbatim\nto `docker buildx build` running against buildkitd in an ephemeral Avrea\nbuilder VM, so `-t`, `--push`, `--build-arg`, `-f`, `--output` etc. all\nbehave as they do locally. Registry credentials come from your local\n`docker login` and are forwarded per build; Avrea never stores them.\n\nRequires either a local docker CLI with buildx, or podman plus the\nstandalone docker-buildx binary; with both installed podman is used\nunless --engine docker (or AVR_BUILD_ENGINE=docker) is given. With podman,\n`--load` goes into podman's image store and `podman login` credentials are\nused for --push. Also requires an authenticated `avr` client and the\nOpenSSH client.\n\nWithout --platform the image is built for this machine's CPU\narchitecture, as `docker build` does: linux/arm64 on Apple silicon and\nother ARM machines, linux/amd64 on x86. Pass --platform to build for\nanother architecture, such as linux/amd64 for an x86 server.\n\nThe repository (--repo, AVR_REPO, or auto-detected from the git remote)\nonly scopes the build cache. It is optional: without one, or when the\nauto-detected repository isn't connected to the org, the build runs\nwithout a repo-scoped cache.\n\nWith a repository, layers are cached in Avrea's GHA cache (BuildKit's\ntype=gha backend, mode=max), scoped per Dockerfile path, --target and\nplatform. The first build reads the default branch's CI cache; writes go\nto a builder-only scope that CI never reads. Passing any --cache-from or\n--cache-to replaces these defaults.\n\n\b\nExamples:\n    avr build -t myimage .\n    avr build --push -t registry.avrea.com/acme/app:latest .\n    avr build --platform linux/amd64,linux/arm64 --push -t acme/app .\n    avr build --size 8-vcpu --build-arg VERSION=1.2 -t app .\n\nLike `docker build`, a single-platform build without --push or --output\nis loaded into the local image store (docker, or podman through its API\nsocket); pass `--output type=cacheonly` to skip that. A `Containerfile`\nin the build context is used when there is no `Dockerfile`. Like\n`podman build`, the build context defaults to the current directory.\n\nMulti-platform builds create one builder session per architecture and\nrequire --push or --output (a manifest list cannot be loaded into the\nlocal docker daemon).\n\nThe builder sessions are deleted when the build exits, also on Ctrl-C.\n`avr builder list` shows sessions a killed client left behind.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr build [OPTIONS] [BUILDX_ARGS]...",
+        "params": [
+          {
+            "name": "buildx_args",
+            "kind": "argument",
+            "opts": [
+              "buildx_args"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": -1,
+            "is_flag": false,
+            "envvar": null,
+            "help": null,
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "platforms",
+            "kind": "option",
+            "opts": [
+              "--platform"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": true,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Target platform(s): linux/amd64 and/or linux/arm64, comma-separated or repeated. Each platform builds natively on its own builder VM. Defaults to this machine's architecture.",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "repo",
+            "kind": "option",
+            "opts": [
+              "--repo",
+              "-R"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Repository the build belongs to (org/repo or rep-...); scopes the build cache. Optional — auto-detected from the git remote if omitted.",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "org_id",
+            "kind": "option",
+            "opts": [
+              "--org"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "size",
+            "kind": "option",
+            "opts": [
+              "--size"
+            ],
+            "secondary_opts": [],
+            "type": "choice",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Builder VM size (per platform).",
+            "hidden": false,
+            "show_default": true,
+            "default": "4-vcpu",
+            "choices": [
+              "1-vcpu",
+              "2-vcpu",
+              "4-vcpu",
+              "8-vcpu",
+              "16-vcpu",
+              "32-vcpu"
+            ]
+          },
+          {
+            "name": "ttl",
+            "kind": "option",
+            "opts": [
+              "--ttl"
+            ],
+            "secondary_opts": [],
+            "type": "text",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Builder session TTL, e.g. 30m or 2h. Default 1h, max 8h.",
+            "hidden": false,
+            "show_default": false,
+            "default": null
+          },
+          {
+            "name": "keep_sessions",
+            "kind": "option",
+            "opts": [
+              "--keep-sessions"
+            ],
+            "secondary_opts": [],
+            "type": "boolean",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": true,
+            "envvar": null,
+            "help": "Debug: leave the builder sessions running after the build instead of deleting them.",
+            "hidden": false,
+            "show_default": false,
+            "default": false
+          },
+          {
+            "name": "provision_timeout",
+            "kind": "option",
+            "opts": [
+              "--provision-timeout"
+            ],
+            "secondary_opts": [],
+            "type": "integer",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": null,
+            "help": "Seconds to wait for builder VMs to become reachable.",
+            "hidden": false,
+            "show_default": true,
+            "default": 300
+          },
+          {
+            "name": "engine",
+            "kind": "option",
+            "opts": [
+              "--engine"
+            ],
+            "secondary_opts": [],
+            "type": "choice",
+            "required": false,
+            "multiple": false,
+            "nargs": 1,
+            "is_flag": false,
+            "envvar": "AVR_BUILD_ENGINE",
+            "help": "Local container tooling: docker (docker CLI + buildx plugin) or podman (podman + standalone docker-buildx). auto prefers podman when both are available. Env: AVR_BUILD_ENGINE.",
+            "hidden": false,
+            "show_default": true,
+            "default": "auto",
+            "choices": [
+              "auto",
+              "docker",
+              "podman"
+            ]
+          }
+        ],
+        "subcommands": []
+      },
+      {
+        "name": "builder",
+        "path": [
+          "avr",
+          "builder"
+        ],
+        "full": "avr builder",
+        "is_group": true,
+        "short_help": "Manage remote builder sessions.",
+        "help": "Manage remote builder sessions.\n\nBuilder sessions are the ephemeral VMs behind `avr build`. `avr build`\nnormally creates and deletes its own, but a crashed client leaves its\nsession running until the TTL expires — `list` finds those, `stop`\nreclaims them (and their quota) immediately.\n",
+        "epilog": null,
+        "deprecated": false,
+        "hidden": false,
+        "usage": "avr builder [OPTIONS] COMMAND [ARGS]...",
+        "params": [],
+        "subcommands": [
+          {
+            "name": "list",
+            "path": [
+              "avr",
+              "builder",
+              "list"
+            ],
+            "full": "avr builder list",
+            "is_group": false,
+            "short_help": "List builder sessions, newest first.",
+            "help": "List builder sessions, newest first.\n\nSessions are never hard-deleted, so terminal (STOPPED/FAILED) sessions\nkeep appearing here; filter with --state RUNNING to see only live ones.\nNon-admin members see only their own sessions.\n\n\b\nExamples:\n    avr builder list\n    avr builder list --state RUNNING\n    avr builder list --json builder_session_id,state,stop_at\n\n\b\nJSON FIELDS\n    builder_session_id, cpu_count, created_at, disk_gb, memory_mb, platform,\n    repository_full_name, state, state_reason, stop_at, updated_at\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr builder list [OPTIONS]",
+            "params": [
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "state",
+                "kind": "option",
+                "opts": [
+                  "--state"
+                ],
+                "secondary_opts": [],
+                "type": "choice",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter by state.",
+                "hidden": false,
+                "show_default": false,
+                "default": null,
+                "choices": [
+                  "PENDING",
+                  "STARTING",
+                  "RUNNING",
+                  "STOPPING",
+                  "STOPPED",
+                  "FAILED"
+                ]
+              },
+              {
+                "name": "limit",
+                "kind": "option",
+                "opts": [
+                  "-L",
+                  "--limit"
+                ],
+                "secondary_opts": [],
+                "type": "integer range",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Max sessions.",
+                "hidden": false,
+                "show_default": true,
+                "default": 50
+              },
+              {
+                "name": "cursor",
+                "kind": "option",
+                "opts": [
+                  "--cursor"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Pagination cursor from a previous response.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "json_fields",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "jq_expr",
+                "kind": "option",
+                "opts": [
+                  "-q",
+                  "--jq"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Filter --json output through a jq expression.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              }
+            ],
+            "subcommands": []
+          },
+          {
+            "name": "stop",
+            "path": [
+              "avr",
+              "builder",
+              "stop"
+            ],
+            "full": "avr builder stop",
+            "is_group": false,
+            "short_help": "Stop a builder session, reclaiming its VM and quota slot.",
+            "help": "Stop a builder session, reclaiming its VM and quota slot.\n\nAsynchronous while the VM is live: the session shows STOPPING until the\nnode confirms teardown. Stopping is idempotent — repeating it on an\nalready-stopped session succeeds.\n",
+            "epilog": null,
+            "deprecated": false,
+            "hidden": false,
+            "usage": "avr builder stop [OPTIONS] SESSION_ID",
+            "params": [
+              {
+                "name": "session_id",
+                "kind": "argument",
+                "opts": [
+                  "session_id"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": true,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": null,
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "org_id",
+                "kind": "option",
+                "opts": [
+                  "--org",
+                  "-o"
+                ],
+                "secondary_opts": [],
+                "type": "text",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": false,
+                "envvar": null,
+                "help": "Organization ID or slug. Uses default org if not specified (see: avr config set org).",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "yes",
+                "kind": "option",
+                "opts": [
+                  "--yes",
+                  "-y"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Skip the confirmation prompt.",
+                "hidden": false,
+                "show_default": false,
+                "default": null
+              },
+              {
+                "name": "as_json",
+                "kind": "option",
+                "opts": [
+                  "--json"
+                ],
+                "secondary_opts": [],
+                "type": "boolean",
+                "required": false,
+                "multiple": false,
+                "nargs": 1,
+                "is_flag": true,
+                "envvar": null,
+                "help": "Emit the raw API response as JSON.",
                 "hidden": false,
                 "show_default": false,
                 "default": null

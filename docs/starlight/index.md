@@ -197,6 +197,22 @@ avr vm pause dev ; avr vm resume dev --wait
 avr vm delete dev --yes
 ```
 
+**Remote container builds**
+
+`avr build` takes `docker build` arguments and runs the build on an ephemeral Avrea builder VM. It forwards every flag it does not own to `docker buildx build`, so `-t`, `--push`, `--build-arg`, `-f` and `--output` work as they do locally. It needs the OpenSSH client and either the docker CLI with buildx, or podman with the standalone `docker-buildx` binary.
+
+```sh
+avr build -t myimage .                                         # built remotely, loaded into the local image store
+avr build --push -t registry.example.com/acme/app:latest .     # pushed with your local registry login
+avr build --platform linux/amd64,linux/arm64 --push -t img .   # one builder VM per architecture
+avr build --size 8-vcpu --ttl 2h -t img .
+avr builder list ; avr builder stop <id>                       # sessions a killed client left behind
+```
+
+Without `--platform` the image is built for your machine's CPU architecture, as `docker build` does; pass `--platform linux/amd64` on an ARM machine to build for an x86 server. Without `--push` or `--output` the image is loaded into the local image store, and a build for several platforms needs one of the two. A `Containerfile` is used when the context has no `Dockerfile`. With docker and podman both installed, podman is used; pass `--engine docker` or set `AVR_BUILD_ENGINE=docker` for docker.
+
+The repository, from `--repo` or the git remote, only scopes the layer cache; a build without one runs uncached. Your own `--cache-from` or `--cache-to` replaces the default cache. The builder sessions are deleted when the build exits, also on Ctrl-C. A client that is killed leaves its session running until the TTL (1 hour by default) ends.
+
 **Clone from a nearby Git mirror**
 
 ```sh
@@ -264,6 +280,7 @@ Both print the secret once, with `export AVR_TOKEN=...` and `export AVR_ORG=...`
 | `AVR_ORG` | Default organization ID. A scoped token needs it, or `--org`, except for `repo clone`; a service token uses its own organization. |
 | `AVR_REPO` | Default repository (`owner/name` or `rep-...`). Overrides the git remote. |
 | `AVR_PROMPT_DISABLED` | Refuse interactive prompts, so scripts and agents fail fast instead of waiting for input. |
+| `AVR_BUILD_ENGINE` | Local tooling for `avr build`: `auto` (the default, which prefers podman), `docker` or `podman`. Same as `--engine`. |
 | `AVR_BROWSER` | Browser for `--web` and `avr auth login`. Falls back to `BROWSER`, then the system default. |
 | `AVR_PAGER` | Pager for long output. Overrides `PAGER`; set it empty to disable paging. |
 | `AVR_LINKS` | Set to `0` to disable terminal hyperlinks, like `--no-links`. |

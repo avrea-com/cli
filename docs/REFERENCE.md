@@ -21,6 +21,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 
 ## Aliases
 
+- `builders` → `builder`
 - `groups` → `group`
 - `jobs` → `job`
 - `logs` → `log`
@@ -44,6 +45,8 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr pr`](#avr-pr) — View and comment on pull requests.
 - [`avr job`](#avr-job) — Inspect Avrea job VMs (SSH, metrics, logs).
 - [`avr vm`](#avr-vm) — Manage long-running VMs (SSH/RDP/VNC).
+- [`avr build`](#avr-build) — Build container images remotely with docker buildx on Avrea builders.
+- [`avr builder`](#avr-builder) — Manage remote builder sessions.
 - [`avr workflow`](#avr-workflow) — List and view workflow definitions.
 - [`avr cache`](#avr-cache) — Inspect and manage the Avrea build cache.
 - [`avr tests`](#avr-tests) — Read recorded tests: a job's results, a repository search and one test's history.
@@ -1271,6 +1274,148 @@ tunnel open until Ctrl-C; pass --launch to also open Screen Sharing.
 - `-i, --identity <PATH>` — SSH private key file. Sets IdentitiesOnly=yes, so ssh offers only this key and other configured identities, including matching keys in the agent.
 - `--launch / --no-launch` — Also start a local VNC client (macOS Screen Sharing), instead of just printing the connect command.
 - `--print` — Print the tunnel and client commands and exit, without opening the tunnel.
+
+### `avr build`
+
+Build container images remotely with docker buildx on Avrea builders.
+
+```sh
+avr build [OPTIONS] [BUILDX_ARGS]...
+```
+
+Mirrors `docker build`: every flag not listed below is forwarded verbatim
+to `docker buildx build` running against buildkitd in an ephemeral Avrea
+builder VM, so `-t`, `--push`, `--build-arg`, `-f`, `--output` etc. all
+behave as they do locally. Registry credentials come from your local
+`docker login` and are forwarded per build; Avrea never stores them.
+
+Requires either a local docker CLI with buildx, or podman plus the
+standalone docker-buildx binary; with both installed podman is used
+unless --engine docker (or AVR_BUILD_ENGINE=docker) is given. With podman,
+`--load` goes into podman's image store and `podman login` credentials are
+used for --push. Also requires an authenticated `avr` client and the
+OpenSSH client.
+
+Without --platform the image is built for this machine's CPU
+architecture, as `docker build` does: linux/arm64 on Apple silicon and
+other ARM machines, linux/amd64 on x86. Pass --platform to build for
+another architecture, such as linux/amd64 for an x86 server.
+
+The repository (--repo, AVR_REPO, or auto-detected from the git remote)
+only scopes the build cache. It is optional: without one, or when the
+auto-detected repository isn't connected to the org, the build runs
+without a repo-scoped cache.
+
+With a repository, layers are cached in Avrea's GHA cache (BuildKit's
+type=gha backend, mode=max), scoped per Dockerfile path, --target and
+platform. The first build reads the default branch's CI cache; writes go
+to a builder-only scope that CI never reads. Passing any --cache-from or
+--cache-to replaces these defaults.
+
+```sh
+Examples:
+    avr build -t myimage .
+    avr build --push -t registry.avrea.com/acme/app:latest .
+    avr build --platform linux/amd64,linux/arm64 --push -t acme/app .
+    avr build --size 8-vcpu --build-arg VERSION=1.2 -t app .
+```
+
+Like `docker build`, a single-platform build without --push or --output
+is loaded into the local image store (docker, or podman through its API
+socket); pass `--output type=cacheonly` to skip that. A `Containerfile`
+in the build context is used when there is no `Dockerfile`. Like
+`podman build`, the build context defaults to the current directory.
+
+Multi-platform builds create one builder session per architecture and
+require --push or --output (a manifest list cannot be loaded into the
+local docker daemon).
+
+The builder sessions are deleted when the build exits, also on Ctrl-C.
+`avr builder list` shows sessions a killed client left behind.
+
+**Arguments**
+
+- `[BUILDX_ARGS...]`
+
+**Options**
+
+- `--platform <TEXT>` — Target platform(s): linux/amd64 and/or linux/arm64, comma-separated or repeated. Each platform builds natively on its own builder VM. Defaults to this machine's architecture. _(repeatable)_
+- `--repo, -R <TEXT>` — Repository the build belongs to (org/repo or rep-...); scopes the build cache. Optional — auto-detected from the git remote if omitted.
+- `--org <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--size <CHOICE>` — Builder VM size (per platform). _(choices: `1-vcpu`, `2-vcpu`, `4-vcpu`, `8-vcpu`, `16-vcpu`, `32-vcpu` · default: `4-vcpu`)_
+- `--ttl <TEXT>` — Builder session TTL, e.g. 30m or 2h. Default 1h, max 8h.
+- `--keep-sessions` — Debug: leave the builder sessions running after the build instead of deleting them.
+- `--provision-timeout <INTEGER>` — Seconds to wait for builder VMs to become reachable. _(default: `300`)_
+- `--engine <CHOICE>` — Local container tooling: docker (docker CLI + buildx plugin) or podman (podman + standalone docker-buildx). auto prefers podman when both are available. Env: AVR_BUILD_ENGINE. _(choices: `auto`, `docker`, `podman` · default: `auto` · env: `AVR_BUILD_ENGINE`)_
+
+### `avr builder`
+
+Manage remote builder sessions.
+
+```sh
+avr builder [OPTIONS] COMMAND [ARGS]...
+```
+
+Builder sessions are the ephemeral VMs behind `avr build`. `avr build`
+normally creates and deletes its own, but a crashed client leaves its
+session running until the TTL expires — `list` finds those, `stop`
+reclaims them (and their quota) immediately.
+
+#### `avr builder list`
+
+List builder sessions, newest first.
+
+```sh
+avr builder list [OPTIONS]
+```
+
+Sessions are never hard-deleted, so terminal (STOPPED/FAILED) sessions
+keep appearing here; filter with --state RUNNING to see only live ones.
+Non-admin members see only their own sessions.
+
+```sh
+Examples:
+    avr builder list
+    avr builder list --state RUNNING
+    avr builder list --json builder_session_id,state,stop_at
+```
+
+```sh
+JSON FIELDS
+    builder_session_id, cpu_count, created_at, disk_gb, memory_mb, platform,
+    repository_full_name, state, state_reason, stop_at, updated_at
+```
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--state <CHOICE>` — Filter by state. _(choices: `PENDING`, `STARTING`, `RUNNING`, `STOPPING`, `STOPPED`, `FAILED`)_
+- `-L, --limit <INTEGER RANGE>` — Max sessions. _(default: `50`)_
+- `--cursor <TEXT>` — Pagination cursor from a previous response.
+- `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+- `-q, --jq <TEXT>` — Filter --json output through a jq expression.
+
+#### `avr builder stop`
+
+Stop a builder session, reclaiming its VM and quota slot.
+
+```sh
+avr builder stop [OPTIONS] SESSION_ID
+```
+
+Asynchronous while the VM is live: the session shows STOPPING until the
+node confirms teardown. Stopping is idempotent — repeating it on an
+already-stopped session succeeds.
+
+**Arguments**
+
+- `SESSION_ID`
+
+**Options**
+
+- `--org, -o <TEXT>` — Organization ID or slug. Uses default org if not specified (see: avr config set org).
+- `--yes, -y` — Skip the confirmation prompt.
+- `--json` — Emit the raw API response as JSON.
 
 ### `avr workflow`
 

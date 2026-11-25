@@ -1,0 +1,50 @@
+.TH AVR\-BUILDER\-LIST 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-builder-list \- List builder sessions, newest first.
+.SH SYNOPSIS
+.B avr builder list
+[OPTIONS]
+.SH DESCRIPTION
+List builder sessions, newest first.
+.PP
+Sessions are never hard-deleted, so terminal (STOPPED/FAILED) sessions keep appearing here; filter with --state RUNNING to see only live ones. Non-admin members see only their own sessions.
+.PP
+.RS 4
+.nf
+Examples:
+    avr builder list
+    avr builder list --state RUNNING
+    avr builder list --json builder_session_id,state,stop_at
+.fi
+.RE
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    builder_session_id, cpu_count, created_at, disk_gb, memory_mb, platform,
+    repository_full_name, state, state_reason, stop_at, updated_at
+.fi
+.RE
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Uses default org if not specified (see: avr config set org).
+.TP
+\fB\-\-state\fR \fICHOICE\fR
+Filter by state. (choices: PENDING, STARTING, RUNNING, STOPPING, STOPPED, FAILED)
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Max sessions. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Pagination cursor from a previous response.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-builder (1),
+.BR avr-builder-stop (1)

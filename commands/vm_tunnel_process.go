@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 )
 
@@ -65,7 +64,8 @@ func vmTunnelListening(ctx context.Context, proc *vmTunnelProcess, forwards []vm
 		}
 		ready := true
 		for _, forward := range forwards {
-			connection, err := dialer.DialContext(ctx, "tcp4", "127.0.0.1:"+strconv.Itoa(forward.local))
+			_, network, address := forward.listen()
+			connection, err := dialer.DialContext(ctx, network, address)
 			if err != nil {
 				ready = false
 				break
@@ -81,6 +81,39 @@ func vmTunnelListening(ctx context.Context, proc *vmTunnelProcess, forwards []vm
 	}
 	return false, nil
 }
+
+// vmTunnel is a running `ssh -N` port forward.
+type vmTunnel struct {
+	*vmTunnelProcess
+	cancel context.CancelFunc
+}
+
+// close stops ssh and waits for it to exit.
+func (t *vmTunnel) close() {
+	t.cancel()
+	<-t.done
+}
+
+// vmStartTunnel launches argv, an `ssh -N` command, and waits up to timeout
+// for every forward's local end to accept a connection. ssh runs until close
+// or until parent ends, so a caller can keep the tunnel past ctx. When ssh
+// exits or the forwards do not come up in time, the tunnel is already closed
+// and ready is false.
+func vmStartTunnel(ctx, parent context.Context, d Dependencies, argv []string, forwards []vmForward, timeout time.Duration) (tunnel *vmTunnel, ready bool, err error) {
+	childCtx, cancel := context.WithCancel(parent)
+	proc, err := vmStartProcess(childCtx, d, argv)
+	if err != nil {
+		cancel()
+		return nil, false, &ExitError{1, "Error: failed to launch ssh: " + err.Error()}
+	}
+	tunnel = &vmTunnel{proc, cancel}
+	if ready, err = vmTunnelListening(ctx, proc, forwards, timeout, d); err != nil || !ready {
+		tunnel.close()
+		return nil, false, err
+	}
+	return tunnel, true, nil
+}
+
 func vmRunTunnel(ctx context.Context, d Dependencies, ep map[string]any, forwards []vmForward, identity string, onReady func(*vmTunnelProcess) error) (err error) {
 	defer func() {
 		if ctx.Err() != nil {
@@ -102,24 +135,18 @@ func vmRunTunnel(ctx context.Context, d Dependencies, ep map[string]any, forward
 			return err
 		}
 	}
-	childCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	proc, err := vmStartProcess(childCtx, d, vmTunnelArgv(host, user, port, forwards, identity, known))
-	if err != nil {
-		return fmt.Errorf("failed to launch ssh: %w", err)
-	}
-	defer func() { cancel(); <-proc.done }()
-	ready, err := vmTunnelListening(ctx, proc, forwards, 60*time.Second, d)
+	tunnel, ready, err := vmStartTunnel(ctx, ctx, d, vmTunnelArgv(host, user, port, forwards, identity, known), forwards, 60*time.Second)
 	if err != nil {
 		return err
 	}
 	if !ready {
 		return &ExitError{1, "Error: SSH tunnel did not come up. A local port may be busy (bind a different one — for port-forward use --port LOCAL:GUEST) or the VM may be unreachable (check `avr vm show`)."}
 	}
-	if err = onReady(proc); err != nil {
+	defer tunnel.close()
+	if err = onReady(tunnel.vmTunnelProcess); err != nil {
 		return err
 	}
-	if status, exited := proc.exitStatus(); exited && status > 0 {
+	if status, exited := tunnel.exitStatus(); exited && status > 0 {
 		return &ExitError{1, fmt.Sprintf("Error: SSH tunnel exited unexpectedly (status %d); the connection was lost.", status)}
 	}
 	return nil

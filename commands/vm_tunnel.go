@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -14,7 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type vmForward struct{ local, guest int }
+// vmForward forwards a guest port to a local TCP port or, when socket is set,
+// to a local unix socket.
+type vmForward struct {
+	local, guest int
+	socket       string
+}
+
+// listen is the local end as a `-L` bind address and a dialable address.
+func (f vmForward) listen() (bind, network, address string) {
+	if f.socket != "" {
+		bind = f.socket
+		if runtime.GOOS == "windows" {
+			// ssh splits -L at colons, so the drive letter needs brackets, and
+			// it takes a field as a socket path only when it has a '/'.
+			bind = "[" + filepath.ToSlash(f.socket) + "]"
+		}
+		return bind, "unix", f.socket
+	}
+	address = "127.0.0.1:" + strconv.Itoa(f.local)
+	return address, "tcp4", address
+}
 
 func vmPort(value, label string) (int, error) {
 	text := strings.TrimSpace(value)
@@ -75,7 +96,7 @@ func vmForwards(ctx context.Context, d Dependencies, specs []string, override in
 			}
 			locals[local] = true
 		}
-		forwards = append(forwards, vmForward{local, guest})
+		forwards = append(forwards, vmForward{local: local, guest: guest})
 	}
 	for i := range forwards {
 		if forwards[i].local != 0 {
@@ -101,7 +122,8 @@ func vmForwards(ctx context.Context, d Dependencies, specs []string, override in
 func vmTunnelArgv(host, user string, port int, forwards []vmForward, identity, known string) []string {
 	args := []string{"ssh", "-N", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=15", "-o", "ServerAliveInterval=30"}
 	for _, forward := range forwards {
-		args = append(args, "-L", fmt.Sprintf("127.0.0.1:%d:localhost:%d", forward.local, forward.guest))
+		bind, _, _ := forward.listen()
+		args = append(args, "-L", fmt.Sprintf("%s:localhost:%d", bind, forward.guest))
 	}
 	args = append(args, "-p", strconv.Itoa(port))
 	if known != "" {
@@ -287,7 +309,7 @@ func newVMDesktop(d Dependencies, protocol string) *cobra.Command {
 		if protocol == "vnc" {
 			guestPort = 5900
 		}
-		forwards := []vmForward{{local, guestPort}}
+		forwards := []vmForward{{local: local, guest: guestPort}}
 		address := fmt.Sprintf("127.0.0.1:%d", local)
 		if protocol == "rdp" && !validDesktopAddress(address, user) {
 			return &ExitError{1, "Error: VM endpoint returned an invalid remote desktop username."}
