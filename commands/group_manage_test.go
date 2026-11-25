@@ -157,6 +157,27 @@ func TestGroupCreateResumesWithTheGivenKey(t *testing.T) {
 	}
 }
 
+// An embedder can run one command tree many times: each create without
+// --idempotency-key gets a key of its own.
+func TestGroupCreateGeneratesAKeyPerRun(t *testing.T) {
+	h := newManageHarness(t, managePersonal, governanceAPI(t, func(r manageRequest) (manageReply, bool) {
+		if r.method == "POST" && r.path == groupsPath {
+			return manageReply{201, nil, manageJSON(t, map[string]any{"data": groupRecord("grp-"+"019a0000000070008000000000000027", groupPlatform, fmt.Sprint(r.body["display_name"]))})}, true
+		}
+		return manageReply{}, false
+	}))
+	root := NewRoot(h.d)
+	for _, name := range []string{"Builds", "Tests"} {
+		if code := ExecuteRoot(t.Context(), root, []string{"group", "create", name, "--parent", groupPlatform}, h.d.Err, h.d); code != 0 {
+			t.Fatal(name, code, h.stderr)
+		}
+	}
+	posts := requestsTo(h, "POST", groupsPath)
+	if len(posts) != 2 || posts[0].body["idempotency_key"] == posts[1].body["idempotency_key"] {
+		t.Fatal(posts)
+	}
+}
+
 func TestGroupCreateRefusesBeforeRequests(t *testing.T) {
 	for _, args := range [][]string{
 		{"group", "create", "Builds"},
@@ -187,6 +208,8 @@ func TestGroupCreateExplainsEachFailure(t *testing.T) {
 		{"proxy unavailable", manageReply{503, nil, `{"detail":"Service temporarily unavailable"}`}, []string{"may have taken effect", "The outcome is unknown. Rerun this command with --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
 		{"proxy error", manageReply{502, nil, `{}`}, []string{"may have taken effect", "The outcome is unknown. Rerun this command with --idempotency-key "}, []string{"Nothing changed", "Try again shortly"}},
 		{"unreadable answer", manageReply{201, nil, `not json`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
+		{"receipt without a group", manageReply{201, nil, `{"data":{}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
+		{"receipt with a malformed group ID", manageReply{201, nil, `{"data":{"group_id":"grp-1"}}`}, []string{"The outcome is unknown", "--idempotency-key "}, nil},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newManageHarness(t, managePersonal, governanceAPI(t, func(r manageRequest) (manageReply, bool) {

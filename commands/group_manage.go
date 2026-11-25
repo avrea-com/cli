@@ -236,6 +236,9 @@ func newGroupCreate(d Dependencies) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		// A generated key stays local: the flag's variable outlives this run
+		// when an embedder executes the same command tree again.
+		key := key
 		if key == "" {
 			if key, err = newInvocationKey(); err != nil {
 				return err
@@ -251,6 +254,10 @@ func newGroupCreate(d Dependencies) *cobra.Command {
 			body["label"] = label
 		}
 		record, err := api.DataRecord(cmd.Context(), http.MethodPost, groupRoute(id), body)
+		if err == nil && !serviceTokenGroupPattern().MatchString(fieldText(record, "group_id")) {
+			// A receipt without the group cannot say whether it was created.
+			err = errors.New("unexpected API response: the created group has no valid group_id")
+		}
 		if err != nil {
 			return groupFailure(cfg, err, groupRefusal{
 				action:   "create the group",
