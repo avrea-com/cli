@@ -19,9 +19,10 @@ Print the value of a configuration key.
 avr config get [OPTIONS] {org}
 ```
 
-```sh
 Available keys:
-  org   Active organization ID
+
+```sh
+org   Active organization ID
 ```
 
 **Arguments**
@@ -44,15 +45,17 @@ Set a CLI configuration value.
 avr config set [OPTIONS] {org} VALUE
 ```
 
-```sh
 Available keys:
-  org   Active organization (ID or slug)
-```
 
 ```sh
+org   Active organization (ID or slug)
+```
+
 Examples:
-    avr config set org org-abc123
-    avr config set org acme
+
+```sh
+avr config set org org-abc123
+avr config set org acme
 ```
 
 **Arguments**
@@ -68,14 +71,16 @@ Remove a configuration override.
 avr config unset [OPTIONS] {org}
 ```
 
-```sh
 Available keys:
-  org   Drop the stored default organization for the active host
-```
 
 ```sh
+org   Drop the stored default organization for the active host
+```
+
 Examples:
-    avr config unset org
+
+```sh
+avr config unset org
 ```
 
 **Arguments**

@@ -32,20 +32,22 @@ Requires a signed-in account (personal access tokens and service tokens
 cannot comment), pull request comments enabled for the organization, and
 an Avrea Git mirror of the repository.
 
-```sh
 Examples:
-    avr pr comment 42 --body "Looks good to me."
-    avr pr comment 42 --body-file review.md
-    go test ./... 2>&1 | tail -n 20 | avr pr comment 42 --body-file -
-    avr pr comment 42 --path src/app.go --line 18 --body "Handle this error."
-    avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body "Why?"
-    avr pr comment 42 --body "Ship it" --json id,publication
-```
 
 ```sh
+avr pr comment 42 --body "Looks good to me."
+avr pr comment 42 --body-file review.md
+go test ./... 2>&1 | tail -n 20 | avr pr comment 42 --body-file -
+avr pr comment 42 --path src/app.go --line 18 --body "Handle this error."
+avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body "Why?"
+avr pr comment 42 --body "Ship it" --json id,publication
+```
+
 JSON FIELDS
-    base_sha, body, commit_sha, created_at, end_line, id, path, publication,
-    pull_number, repository_id, side, start_line, thread_id
+
+```sh
+base_sha, body, commit_sha, created_at, end_line, id, path, publication,
+pull_number, repository_id, side, start_line, thread_id
 ```
 
 **Arguments**
@@ -73,21 +75,23 @@ List pull requests across repositories.
 avr pr list [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr pr list
-    avr pr list --scope authored
-    avr pr list --repo acme/widgets --state merged
-    avr pr list --json number,title,mergeability
-    avr pr list --json '?'           # list available fields
-    avr pr list --json '*'           # all fields
-```
 
 ```sh
+avr pr list
+avr pr list --scope authored
+avr pr list --repo acme/widgets --state merged
+avr pr list --json number,title,mergeability
+avr pr list --json '?'           # list available fields
+avr pr list --json '*'           # all fields
+```
+
 JSON FIELDS
-    author_login, base_ref, base_sha, check_status, comment_count, created_at,
-    draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
-    repository_id, state, title, unresolved_thread_count, updated_at
+
+```sh
+author_login, base_ref, base_sha, check_status, comment_count, created_at,
+draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
+repository_id, state, title, unresolved_thread_count, updated_at
 ```
 
 **Options**

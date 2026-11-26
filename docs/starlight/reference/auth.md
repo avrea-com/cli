@@ -79,10 +79,11 @@ Switch the default host used when AVR_HOST isn't set.
 avr auth switch [OPTIONS] [HOST]
 ```
 
-```sh
 Examples:
-    avr auth switch                     # show current default + all hosts
-    avr auth switch https://api.avrea.com
+
+```sh
+avr auth switch                     # show current default + all hosts
+avr auth switch https://api.avrea.com
 ```
 
 **Arguments**

@@ -77,6 +77,34 @@ func dedent(lines []string) []string {
 	}
 	return out
 }
+
+// preformattedBlock renders a click "\b" paragraph. "\b" only stops terminal
+// rewrapping, so unindented lines are prose and stay Markdown text; indented
+// runs are commands or file contents and become fenced code.
+func preformattedBlock(block []string, language string) []string {
+	out := []string{}
+	for start := 0; start < len(block); {
+		code := strings.HasPrefix(block[start], " ") || strings.HasPrefix(block[start], "\t")
+		end := start
+		for end < len(block) && (strings.HasPrefix(block[end], " ") || strings.HasPrefix(block[end], "\t")) == code {
+			end++
+		}
+		if len(out) > 0 {
+			out = append(out, "")
+		}
+		if code {
+			out = append(out, "```"+language)
+			out = append(out, dedent(block[start:end])...)
+			out = append(out, "```")
+		} else {
+			for _, line := range block[start:end] {
+				out = append(out, mdEscape(line))
+			}
+		}
+		start = end
+	}
+	return out
+}
 func helpBlock(value, language string) string {
 	if value == "" {
 		return ""
@@ -91,11 +119,7 @@ func helpBlock(value, language string) string {
 				block = append(block, lines[i])
 				i++
 			}
-			if len(block) > 0 {
-				out = append(out, "```"+language)
-				out = append(out, dedent(block)...)
-				out = append(out, "```")
-			}
+			out = append(out, preformattedBlock(block, language)...)
 			i--
 			continue
 		}

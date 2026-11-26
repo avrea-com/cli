@@ -22,10 +22,11 @@ avr run cancel [OPTIONS] RUN
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`.
 
-```sh
 Examples:
-    avr run cancel run-019e5a2e474e71c297e452279d4bcdea
-    avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes
+
+```sh
+avr run cancel run-019e5a2e474e71c297e452279d4bcdea
+avr run cancel run-019e5a2e474e71c297e452279d4bcdea --yes
 ```
 
 **Arguments**
@@ -52,12 +53,13 @@ failed-job log tails, queue/execution timings, runner metrics, and a
 prior-success workflow baseline. RUN already selects the run; --repo only
 checks that the run belongs to that repository.
 
-```sh
 Examples:
-    avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
-    avr run diagnose 123456789 --json
-    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
-    avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321
+
+```sh
+avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
+avr run diagnose 123456789 --json
+avr run diagnose https://github.com/acme/widgets/actions/runs/123456789
+avr run diagnose https://github.com/acme/widgets/actions/runs/123456789/job/987654321
 ```
 
 **Arguments**
@@ -78,23 +80,25 @@ List workflow runs for an organization.
 avr run list [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr run list
-    avr run list --status failure --limit 5
-    avr run list --status in_progress --json status,conclusion,head_branch
-    avr run list --branch main --status completed
-    avr run list --since 24h
-    avr run list --json '?'           # list available fields
-    avr run list --json '*'           # all fields
-    avr run list --json status,conclusion -q '[.[] | select(.status == "completed")]'
-```
 
 ```sh
+avr run list
+avr run list --status failure --limit 5
+avr run list --status in_progress --json status,conclusion,head_branch
+avr run list --branch main --status completed
+avr run list --since 24h
+avr run list --json '?'           # list available fields
+avr run list --json '*'           # all fields
+avr run list --json status,conclusion -q '[.[] | select(.status == "completed")]'
+```
+
 JSON FIELDS
-    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
-    head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
-    run_number, status, triggering_actor, updated_at, workflow, workflow_id
+
+```sh
+ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
+head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
+run_number, status, triggering_actor, updated_at, workflow, workflow_id
 ```
 
 **Options**
@@ -130,13 +134,14 @@ Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
 specific job when a run has many.
 
-```sh
 Examples:
-    avr run logs run-019e5a2e474e71c297e452279d4bcdea
-    avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed
-    avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test
-    avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow
-    avr run logs https://github.com/acme/widgets/actions/runs/123456789/job/987654321
+
+```sh
+avr run logs run-019e5a2e474e71c297e452279d4bcdea
+avr run logs run-019e5a2e474e71c297e452279d4bcdea --failed
+avr run logs run-019e5a2e474e71c297e452279d4bcdea --job test
+avr run logs run-019e5a2e474e71c297e452279d4bcdea --follow
+avr run logs https://github.com/acme/widgets/actions/runs/123456789/job/987654321
 ```
 
 **Arguments**
@@ -167,12 +172,13 @@ Avrea CI keeps the original revision. Use --failed for failed/cancelled
 jobs or repeat --job for selected jobs. Their downstream dependents also
 rerun; other results are retained. The new attempt can be watched immediately.
 
-```sh
 Examples:
-    avr run rerun run-019e5a2e474e71c297e452279d4bcdea
-    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
-    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
-    avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test
+
+```sh
+avr run rerun run-019e5a2e474e71c297e452279d4bcdea
+avr run rerun run-019e5a2e474e71c297e452279d4bcdea --failed
+avr run rerun run-019e5a2e474e71c297e452279d4bcdea --yes
+avr run rerun run-019e5a2e474e71c297e452279d4bcdea --job build --job test
 ```
 
 **Arguments**
@@ -195,34 +201,34 @@ View a workflow run with its jobs.
 avr run view [OPTIONS] [RUN]
 ```
 
-```sh
 RUN accepts an Avrea run ID, a positive GitHub run ID, a GitHub Actions
 run or job URL, or an Avrea console run URL. A job URL opens the attempt
 that job belongs to. Without RUN, shows 10 most recent runs.
 RUN already selects the run; --repo only checks that the run belongs to
 that repository, and narrows the recent runs when RUN is omitted.
-```
 
-```sh
 Examples:
-    avr run view
-    avr run view run-019e5a2e474e71c297e452279d4bcdea
-    avr run view 123456789
-    avr run view https://github.com/acme/widgets/actions/runs/123456789
-    avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321
-    avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
-    avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
-    avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
-    avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
-    avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
-```
 
 ```sh
+avr run view
+avr run view run-019e5a2e474e71c297e452279d4bcdea
+avr run view 123456789
+avr run view https://github.com/acme/widgets/actions/runs/123456789
+avr run view https://github.com/acme/widgets/actions/runs/123456789/job/987654321
+avr run view run-019e5a2e474e71c297e452279d4bcdea --steps
+avr run view run-019e5a2e474e71c297e452279d4bcdea --log-failed
+avr run view run-019e5a2e474e71c297e452279d4bcdea --job Build
+avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
+avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
+```
+
 JSON FIELDS
-    ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
-    head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
-    run_id, run_number, status, triggering_actor, updated_at, workflow,
-    workflow_id
+
+```sh
+ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
+head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
+run_id, run_number, status, triggering_actor, updated_at, workflow,
+workflow_id
 ```
 
 **Arguments**
@@ -250,23 +256,22 @@ Watch a workflow run until it completes.
 avr run watch [OPTIONS] [RUN]
 ```
 
-```sh
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`. Without RUN, auto-selects the latest in-progress run.
 Pass --repo (repeatable) to scope the auto-select to specific repositories.
-```
 
 NDJSON job and run completion events include ci_provider
 (github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null
 platform_job_id; correlate events using run_id and avrea_job_id.
 
-```sh
 Examples:
-    avr run watch
-    avr run watch --repo acme/web
-    avr run watch --repo a/x --repo b/y
-    avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status
-    avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .
+
+```sh
+avr run watch
+avr run watch --repo acme/web
+avr run watch --repo a/x --repo b/y
+avr run watch run-019e5a2e474e71c297e452279d4bcdea --exit-status
+avr run watch run-019e5a2e474e71c297e452279d4bcdea --ndjson | jq -c .
 ```
 
 **Arguments**

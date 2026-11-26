@@ -19,10 +19,11 @@ Delete one scoped value, or the whole name with --all.
 avr secret delete [OPTIONS] NAME
 ```
 
-```sh
 JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
+
+```sh
+availability, label, message, name, resource_id, stage, status,
+variant_id, version_id
 ```
 
 **Arguments**
@@ -48,10 +49,11 @@ Edit description, label, or availability without replacing a value.
 avr secret edit [OPTIONS] NAME
 ```
 
-```sh
 JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
+
+```sh
+availability, label, message, name, resource_id, stage, status,
+variant_id, version_id
 ```
 
 **Arguments**
@@ -86,9 +88,10 @@ Inspect a secret.
 avr secret get [OPTIONS] NAME
 ```
 
-```sh
 JSON FIELDS
-    as_file, description, name, secret_id, updated_at, variants
+
+```sh
+as_file, description, name, secret_id, updated_at, variants
 ```
 
 **Arguments**
@@ -113,9 +116,10 @@ List names, scoped-value counts, and update times.
 avr secret list [OPTIONS]
 ```
 
-```sh
 JSON FIELDS
-    as_file, description, name, secret_id, updated_at, variants
+
+```sh
+as_file, description, name, secret_id, updated_at, variants
 ```
 
 **Options**
@@ -133,10 +137,11 @@ Create or replace a scoped value.
 avr secret set [OPTIONS] [NAME]
 ```
 
-```sh
 JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
+
+```sh
+availability, label, message, name, resource_id, stage, status,
+variant_id, version_id
 ```
 
 **Arguments**

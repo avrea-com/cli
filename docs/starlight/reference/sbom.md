@@ -23,11 +23,12 @@ COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
 of at least 7 characters such as the one `avr sbom list` shows. Defaults to
 the latest SBOM.
 
-```sh
 Examples:
-    avr sbom download --repo acme/api
-    avr sbom download --repo acme/api --format spdx --out api.spdx.json
-    avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
+
+```sh
+avr sbom download --repo acme/api
+avr sbom download --repo acme/api --format spdx --out api.spdx.json
+avr sbom download 3f2c9a1b7d04 --repo acme/api --out - | jq .components
 ```
 
 **Arguments**
@@ -70,16 +71,18 @@ does not say which commit the run resolved, so --wait reports the analysis
 task's outcome only. Transient errors while waiting are retried until
 --wait-timeout; a wait that times out leaves the analysis running.
 
-```sh
 Examples:
-    avr sbom generate --repo acme/api
-    avr sbom generate v1.4.0 --repo acme/api
-    avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
-```
 
 ```sh
+avr sbom generate --repo acme/api
+avr sbom generate v1.4.0 --repo acme/api
+avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
+```
+
 JSON FIELDS
-    ai_task_id, commit_sha, error_code, recorded_at, status, task_status
+
+```sh
+ai_task_id, commit_sha, error_code, recorded_at, status, task_status
 ```
 
 **Arguments**
@@ -106,17 +109,19 @@ avr sbom list [OPTIONS]
 
 Counts shown as "?" were not recorded by the SBOM's schema version.
 
-```sh
 Examples:
-    avr sbom list --repo acme/api
-    avr sbom list --repo acme/api --json commit_sha,copyleft_count
-```
 
 ```sh
+avr sbom list --repo acme/api
+avr sbom list --repo acme/api --json commit_sha,copyleft_count
+```
+
 JSON FIELDS
-    artifacts, branch, commit_sha, copyleft_count, generated_at,
-    is_release, recorded_at, schema_version, total_dependencies,
-    unresolved
+
+```sh
+artifacts, branch, commit_sha, copyleft_count, generated_at,
+is_release, recorded_at, schema_version, total_dependencies,
+unresolved
 ```
 
 **Options**
@@ -144,18 +149,20 @@ A long license table is cut to the most common licenses and a long copyleft
 list to its first names; --full lists all of them. Long license names are
 clipped; the summary in --json carries them whole.
 
-```sh
 Examples:
-    avr sbom view --repo acme/api
-    avr sbom view 3f2c9a1b7d04 --repo acme/api
-    avr sbom view --repo acme/api --full
-    avr sbom view --repo acme/api --json summary --jq .summary.licenses
-```
 
 ```sh
+avr sbom view --repo acme/api
+avr sbom view 3f2c9a1b7d04 --repo acme/api
+avr sbom view --repo acme/api --full
+avr sbom view --repo acme/api --json summary --jq .summary.licenses
+```
+
 JSON FIELDS
-    artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
-    schema_version, summary
+
+```sh
+artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
+schema_version, summary
 ```
 
 **Arguments**

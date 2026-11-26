@@ -19,21 +19,23 @@ List workflows with aggregate run stats.
 avr workflow list [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr workflow list
-    avr workflow list --repo acme/web
-    avr workflow list --since 7d
-    avr workflow list --limit 5
-    avr workflow list --since all
-    avr workflow list --json name,runs,median_duration_seconds
-```
 
 ```sh
+avr workflow list
+avr workflow list --repo acme/web
+avr workflow list --since 7d
+avr workflow list --limit 5
+avr workflow list --since all
+avr workflow list --json name,runs,median_duration_seconds
+```
+
 JSON FIELDS
-    ci_provider, completed_runs, failure_count, flaked_count,
-    median_duration_seconds, name, path, platform_workflow_id, repository,
-    runs, workflow_id
+
+```sh
+ci_provider, completed_runs, failure_count, flaked_count,
+median_duration_seconds, name, path, platform_workflow_id, repository,
+runs, workflow_id
 ```
 
 **Options**
@@ -73,13 +75,14 @@ use the command to retry after a lost response or to resume
 following the run. The command is written to stderr and includes
 the input values.
 
-```sh
 Examples:
-    avr workflow run build.yml
-    avr workflow run "Build and Deploy" --ref feat/x
-    avr workflow run wfl-abc123 -f env=prod -f region=eu
-    echo '{"env":"prod"}' | avr workflow run build.yml --json
-    avr workflow run build.yml --watch --exit-status
+
+```sh
+avr workflow run build.yml
+avr workflow run "Build and Deploy" --ref feat/x
+avr workflow run wfl-abc123 -f env=prod -f region=eu
+echo '{"env":"prod"}' | avr workflow run build.yml --json
+avr workflow run build.yml --watch --exit-status
 ```
 
 **Arguments**
@@ -112,21 +115,23 @@ workflow ID (the integer in the GH URL), a workflow filename
 need a repository — pass --repo or run from inside the repo's git
 checkout.
 
-```sh
 Examples:
-    avr workflow view wfl-abc123
-    avr workflow view 200589168
-    avr workflow view ci.yml
-    avr workflow view "Build and Deploy" --since 7d
-    avr workflow view ci --json runs,median_duration_seconds
-    avr workflow view wfl-abc123 --json '*' --jq '.jobs[].job.name'
-```
 
 ```sh
+avr workflow view wfl-abc123
+avr workflow view 200589168
+avr workflow view ci.yml
+avr workflow view "Build and Deploy" --since 7d
+avr workflow view ci --json runs,median_duration_seconds
+avr workflow view wfl-abc123 --json '*' --jq '.jobs[].job.name'
+```
+
 JSON FIELDS
-    ci_provider, completed_runs, failure_count, flaked_count, jobs,
-    median_duration_seconds, name, p95_duration_seconds, path,
-    platform_workflow_id, repository, runs, workflow_id
+
+```sh
+ci_provider, completed_runs, failure_count, flaked_count, jobs,
+median_duration_seconds, name, p95_duration_seconds, path,
+platform_workflow_id, repository, runs, workflow_id
 ```
 
 **Arguments**

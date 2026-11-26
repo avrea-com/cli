@@ -44,10 +44,11 @@ List invoices.
 avr billing invoices list [OPTIONS]
 ```
 
-```sh
 JSON FIELDS
-    created_at, currency, has_pdf, invoice_id, period_end, period_start,
-    status, subtotal_cents, tax_cents, total_cents
+
+```sh
+created_at, currency, has_pdf, invoice_id, period_end, period_start,
+status, subtotal_cents, tax_cents, total_cents
 ```
 
 **Options**
@@ -66,10 +67,11 @@ Show details for a single invoice.
 avr billing invoices show [OPTIONS] INVOICE_ID
 ```
 
-```sh
 JSON FIELDS
-    created_at, currency, has_pdf, invoice_id, line_items, period_end,
-    period_start, status, subtotal_cents, tax_cents, total_cents
+
+```sh
+created_at, currency, has_pdf, invoice_id, line_items, period_end,
+period_start, status, subtotal_cents, tax_cents, total_cents
 ```
 
 **Arguments**
@@ -114,10 +116,11 @@ List payment methods.
 avr billing payment-methods list [OPTIONS]
 ```
 
-```sh
 JSON FIELDS
-    card_brand, card_exp_month, card_exp_year, card_last4, is_default,
-    payment_method_id
+
+```sh
+card_brand, card_exp_month, card_exp_year, card_last4, is_default,
+payment_method_id
 ```
 
 **Options**
@@ -167,9 +170,10 @@ Show billing settings.
 avr billing settings [OPTIONS]
 ```
 
-```sh
 JSON FIELDS
-    billing_address, billing_emails, tax_id
+
+```sh
+billing_address, billing_emails, tax_id
 ```
 
 **Options**
@@ -186,9 +190,10 @@ Show billing summary for the organization.
 avr billing summary [OPTIONS]
 ```
 
-```sh
 JSON FIELDS
-    billing_emails, default_payment_method, has_billing
+
+```sh
+billing_emails, default_payment_method, has_billing
 ```
 
 **Options**
@@ -205,16 +210,18 @@ Update billing settings.
 avr billing update-settings [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr billing update-settings --email billing@example.com
-    avr billing update-settings --tax-id EU123456789
-    avr billing update-settings --email a@example.com,b@example.com --tax-id FI12345678
-```
 
 ```sh
+avr billing update-settings --email billing@example.com
+avr billing update-settings --tax-id EU123456789
+avr billing update-settings --email a@example.com,b@example.com --tax-id FI12345678
+```
+
 JSON FIELDS
-    billing_address, billing_emails, tax_id
+
+```sh
+billing_address, billing_emails, tax_id
 ```
 
 **Options**

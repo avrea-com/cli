@@ -23,10 +23,11 @@ Exactly one of --key or --all must be provided.
 When using --key, --type is required to scope the deletion.
 With --all, the purge runs asynchronously; the command reports its status.
 
-```sh
 Examples:
-    avr cache delete --repo rep-abc123 --type gha --key "node_modules" --ref refs/heads/main --yes
-    avr cache delete --repo rep-abc123 --all --yes
+
+```sh
+avr cache delete --repo rep-abc123 --type gha --key "node_modules" --ref refs/heads/main --yes
+avr cache delete --repo rep-abc123 --all --yes
 ```
 
 **Options**
@@ -51,17 +52,19 @@ List cache entries for a repository.
 Large caches use cursor pagination; follow the next-page hint on stderr.
 Sort order and offsets apply only to smaller, sorted result sets.
 
-```sh
 Examples:
-    avr cache list --repo rep-abc123
-    avr cache list --repo rep-abc123 --type gha --limit 50
-    avr cache list --repo rep-abc123 --key "node_modules" --ref refs/heads/main
-    avr cache list --repo rep-abc123 --json key,size_bytes,created_at
-```
 
 ```sh
+avr cache list --repo rep-abc123
+avr cache list --repo rep-abc123 --type gha --limit 50
+avr cache list --repo rep-abc123 --key "node_modules" --ref refs/heads/main
+avr cache list --repo rep-abc123 --json key,size_bytes,created_at
+```
+
 JSON FIELDS
-    cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version
+
+```sh
+cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version
 ```
 
 **Options**
@@ -87,15 +90,17 @@ Show cache usage summary for a repository.
 avr cache usage [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr cache usage --repo rep-abc123
-    avr cache usage --repo rep-abc123 --json '*'
-```
 
 ```sh
+avr cache usage --repo rep-abc123
+avr cache usage --repo rep-abc123 --json '*'
+```
+
 JSON FIELDS
-    by_type, over_quota, quota_bytes, total_size_bytes
+
+```sh
+by_type, over_quota, quota_bytes, total_size_bytes
 ```
 
 **Options**

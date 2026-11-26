@@ -41,10 +41,11 @@ avr tests JOB --test NAME to read its failure message.
 Reports still being prepared are marked; a read that stops early does
 not mean the test never ran. Continue with --cursor for older runs.
 
-```sh
 JSON FIELDS
-    configuration_digest, data, identity, organization_id, pagination,
-    repository_id, scope, status, test_id
+
+```sh
+configuration_digest, data, identity, organization_id, pagination,
+repository_id, scope, status, test_id
 ```
 
 **Arguments**
@@ -94,11 +95,12 @@ without downloading results; it cannot combine with test filters, --cursor
 or an explicit --limit. Indexing, unavailable and limited listings do not
 mean no tests were reported.
 
-```sh
 JSON FIELDS
-    commit_sha, counts, data, execution_id, filters, job_id, observed_at,
-    organization_id, pagination, reason, reporting_state, repository_id,
-    status, total_count
+
+```sh
+commit_sha, counts, data, execution_id, filters, job_id, observed_at,
+organization_id, pagination, reason, reporting_state, repository_id,
+status, total_count
 ```
 
 **Arguments**
@@ -145,10 +147,11 @@ Read a row's failure message with avr tests JOB --status failed, and
 its earlier runs with avr tests history. Use --json '*' for test IDs,
 configuration digests and result IDs.
 
-```sh
 JSON FIELDS
-    data, filters, organization_id, pagination, repository_id, scope, status,
-    truncated
+
+```sh
+data, filters, organization_id, pagination, repository_id, scope, status,
+truncated
 ```
 
 **Arguments**

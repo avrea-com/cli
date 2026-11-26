@@ -19,21 +19,23 @@ List jobs for an organization.
 avr job list [OPTIONS]
 ```
 
-```sh
 Examples:
-    avr job list
-    avr job list --status failure --limit 5
-    avr job list --status in_progress --json job_name,state,conclusion
-    avr job list --since 24h
-    avr job list --json '?'           # list available fields
-    avr job list --json '*'           # all fields
-```
 
 ```sh
+avr job list
+avr job list --status failure --limit 5
+avr job list --status in_progress --json job_name,state,conclusion
+avr job list --since 24h
+avr job list --json '?'           # list available fields
+avr job list --json '*'           # all fields
+```
+
 JSON FIELDS
-    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
-    running_on_avrea, started_at, state
+
+```sh
+ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
+running_on_avrea, started_at, state
 ```
 
 **Options**
@@ -60,12 +62,13 @@ View logs for a job, grouped by step.
 avr job logs [OPTIONS] JOB_ID
 ```
 
-```sh
 Examples:
-    avr job logs job-abc123
-    avr job logs job-abc123 --failed
-    avr job logs job-abc123 --step "Build" --level error
-    avr job logs job-abc123 --follow
+
+```sh
+avr job logs job-abc123
+avr job logs job-abc123 --failed
+avr job logs job-abc123 --step "Build" --level error
+avr job logs job-abc123 --follow
 ```
 
 **Arguments**
@@ -90,11 +93,12 @@ Show CPU/memory/IO gauges for a job's VM.
 avr job metrics [OPTIONS] JOB_ID
 ```
 
-```sh
 Examples:
-    avr job metrics job-abc123
-    avr job metrics job-abc123 --source cpu --source network
-    avr job metrics job-abc123 --watch
+
+```sh
+avr job metrics job-abc123
+avr job metrics job-abc123 --source cpu --source network
+avr job metrics job-abc123 --watch
 ```
 
 **Arguments**
@@ -135,19 +139,21 @@ View a single job with its steps.
 avr job view [OPTIONS] JOB_ID
 ```
 
-```sh
 Examples:
-    avr job view job-abc123
-    avr job view job-abc123 --log-failed
-    avr job view job-abc123 --json conclusion,steps
-    avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion=="failure")'
-```
 
 ```sh
+avr job view job-abc123
+avr job view job-abc123 --log-failed
+avr job view job-abc123 --json conclusion,steps
+avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion=="failure")'
+```
+
 JSON FIELDS
-    ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-    platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
-    running_on_avrea, started_at, state, steps, workflow_run
+
+```sh
+ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
+platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
+running_on_avrea, started_at, state, steps, workflow_run
 ```
 
 **Arguments**

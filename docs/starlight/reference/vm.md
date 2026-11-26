@@ -19,14 +19,12 @@ Set up a RUNNING VM with your dev essentials over SSH.
 avr vm bootstrap [OPTIONS] VM_ID_OR_NAME
 ```
 
-```sh
 Each selected step runs on the VM and streams its output; bootstrap stops at
 the first failure. Secrets (GitHub token, forwarded env values, agent
 credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
 is a year-long, subscription-wide bearer, so it is only carried under the
 explicit --forward-agent-creds opt-in. Bootstrap changes survive pause
 and resume on the preserved disk. Example:
-```
 
 ```sh
 avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
@@ -73,19 +71,18 @@ Create a long-running VM.
 avr vm create [OPTIONS]
 ```
 
-```sh
 Provisioning is asynchronous: poll `avr vm show <id>` until the state is
 RUNNING and endpoints are populated, or pass --wait to block until then and
 print a ready-to-paste connect command with the password baked in. The
 response carries a one-time password for the VM's local account; save it
 now, it is never stored.
-```
 
-```sh
 With --from-spawn-script it creates an agent sandbox for a coding-agent
 vendor's work order instead, for that vendor's controller to run. For
 example, as Claude Code's spawn-runner hook:
-    exec avr vm create --from-spawn-script claude-code --org <org-id>
+
+```sh
+exec avr vm create --from-spawn-script claude-code --org <org-id>
 ```
 
 Organization admins can pass --egress-rules inline or as @path to a JSON
