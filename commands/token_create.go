@@ -288,7 +288,7 @@ func insertTokenHint(result error, hint string) error {
 	lines := strings.Split(result.Error(), "\n")
 	index := len(lines)
 	for i, line := range lines {
-		if strings.HasPrefix(line, "  Hint: a personal access token") || strings.HasPrefix(line, "  API: ") {
+		if strings.HasPrefix("\n"+line, personalAccessTokenHint) || strings.HasPrefix("\n"+line, serviceTokenHint) || strings.HasPrefix(line, "  API: ") {
 			index = i
 			break
 		}

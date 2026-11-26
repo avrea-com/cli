@@ -56,7 +56,7 @@ func TestScopedAndTokenRedaction(t *testing.T) {
 				_, _ = fmt.Fprint(w, `{"email":"fixture@example.test","token":"server-must-not-leak"}`)
 			}))
 			d.HTTP = server.Client()
-			if !config.IsScoped(token) {
+			if !config.IsPersonalAccessToken(token) {
 				d.LoadConfig = func() (config.Config, error) { return config.Config{Host: server.URL, Token: token}, nil }
 			}
 			args := []string{"auth", "status", "--json", "*"}

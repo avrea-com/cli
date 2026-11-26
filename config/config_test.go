@@ -272,16 +272,16 @@ func TestCredentialKind(t *testing.T) {
 		name                   string
 		scoped, service, bound bool
 	}{
-		{"", PersonalKey, "API key", false, false, false},
-		{"avr_personal", PersonalKey, "API key", false, false, false},
-		{"AVT_upper", PersonalKey, "API key", false, false, false},
-		{"xavt_embedded", PersonalKey, "API key", false, false, false},
-		{"avs_scoped", ScopedToken, "personal access token", true, false, true},
+		{"", APIKey, "API key", false, false, false},
+		{"avr_personal", APIKey, "API key", false, false, false},
+		{"AVT_upper", APIKey, "API key", false, false, false},
+		{"xavt_embedded", APIKey, "API key", false, false, false},
+		{"avs_scoped", PersonalAccessToken, "personal access token", true, false, true},
 		{"avt_service", ServiceToken, "service token", false, true, true},
 	} {
 		kind := Kind(tt.token)
-		if kind != tt.kind || kind.String() != tt.name || IsScoped(tt.token) != tt.scoped || IsService(tt.token) != tt.service || IsOrgBound(tt.token) != tt.bound {
-			t.Errorf("%q: kind=%v scoped=%v service=%v bound=%v", tt.token, kind, IsScoped(tt.token), IsService(tt.token), IsOrgBound(tt.token))
+		if kind != tt.kind || kind.String() != tt.name || IsPersonalAccessToken(tt.token) != tt.scoped || IsService(tt.token) != tt.service || IsOrgBound(tt.token) != tt.bound {
+			t.Errorf("%q: kind=%v scoped=%v service=%v bound=%v", tt.token, kind, IsPersonalAccessToken(tt.token), IsService(tt.token), IsOrgBound(tt.token))
 		}
 	}
 }

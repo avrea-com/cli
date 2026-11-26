@@ -20,6 +20,13 @@ var statusFields = []string{"email", "name", "created_at", "user_id", "host", "d
 const personalAccessTokenScope = "A personal access token can read the repositories you grant and administer VMs you grant or allow it to create."
 const serviceTokenScope = "A service token can access resources covered by its grants and the VMs it created in its organization."
 
+// The credential-kind hints apiError appends to a 403 or 404. insertTokenHint
+// finds them by these prefixes.
+const (
+	personalAccessTokenHint = "\n  Hint: " + personalAccessTokenScope
+	serviceTokenHint        = "\n  Hint: " + serviceTokenScope
+)
+
 // serviceStatusFields extends statusFields with a service token's identity;
 // the other credential kinds keep their field set.
 var serviceStatusFields = append(slices.Clone(statusFields), "organization_id", "api_key_id", "group_id", "expires_at", "previous_valid_until", "expiring_soon", "grants", "presented_secret", "secret_valid_until", "vm_cap", "vm_count")
@@ -76,20 +83,16 @@ func newStatus(d Dependencies) *cobra.Command {
 			}
 		}
 		result := map[string]any{}
-		var credentialType string
 		switch kind {
-		case config.PersonalKey:
-			credentialType = "api_key"
+		case config.APIKey:
 			result, err = d.apiClient(cfg).Do(cmd.Context(), http.MethodGet, "/users/me", nil)
 			if err != nil {
 				return apiError(cfg, err, "fetch user info")
 			}
-		case config.ScopedToken:
-			credentialType = "personal_access_token"
+		case config.PersonalAccessToken:
 		case config.ServiceToken:
 			// Unlike a personal access token, a service token can read its own identity,
 			// so this verifies it against the API.
-			credentialType = "service_token"
 			result, err = serviceIdentity(cmd.Context(), cfg, d.apiClient(cfg))
 			if err != nil {
 				return apiError(cfg, err, "verify the service token")
@@ -104,7 +107,7 @@ func newStatus(d Dependencies) *cobra.Command {
 			if cfg.Org != "" {
 				result["default_org"] = cfg.Org
 			}
-			result["credential_type"] = credentialType
+			result["credential_type"] = kind.ID()
 			delete(result, "token")
 			if show {
 				result["token"] = cfg.Token
@@ -118,8 +121,8 @@ func newStatus(d Dependencies) *cobra.Command {
 		}
 		row := func(key string, value any) { fmt.Fprintf(&b, "%-*s %s\n", width, key, output.Text(fmt.Sprint(value))) }
 		switch kind {
-		case config.ScopedToken:
-			row("Credential", "personal access token")
+		case config.PersonalAccessToken:
+			row("Credential", kind.String())
 			row("Host", cfg.Host)
 			org := cfg.Org
 			if org == "" {
@@ -140,7 +143,7 @@ func newStatus(d Dependencies) *cobra.Command {
 			default:
 				expires = formatTimestamp(fieldText(result, "expires_at"))
 			}
-			row("Credential", "service token")
+			row("Credential", kind.String())
 			row("Name", fallback(result["name"], "-"))
 			row("Token ID", fallback(result["api_key_id"], "-"))
 			row("Organization", fallback(result["organization_id"], "-"))
@@ -170,7 +173,7 @@ func newStatus(d Dependencies) *cobra.Command {
 				b.WriteString(d.paint("  ! This token was rotated: the replaced secret stops working at "+formatTimestamp(until)+". If AVR_TOKEN still holds it, switch to the new secret.", "33") + "\n")
 			}
 			b.WriteString(d.paint("  "+serviceTokenScope, "2") + "\n")
-		case config.PersonalKey:
+		case config.APIKey:
 			row("User ID", fallback(result["id"], "-"))
 			row("Email", fallback(result["email"], "-"))
 			name, exists := result["name"]
@@ -379,11 +382,11 @@ func apiError(cfg config.Config, err error, action string) error {
 	}
 	if he.Status == 403 || he.Status == 404 {
 		switch kind {
-		case config.ScopedToken:
-			message += "\n  Hint: " + personalAccessTokenScope + " Check that this is one of the operations open to tokens."
+		case config.PersonalAccessToken:
+			message += personalAccessTokenHint + " Check that this is one of the operations open to tokens."
 		case config.ServiceToken:
-			message += "\n  Hint: " + serviceTokenScope + " Check that this is one of the operations open to service tokens."
-		case config.PersonalKey:
+			message += serviceTokenHint + " Check that this is one of the operations open to service tokens."
+		case config.APIKey:
 		}
 	}
 	if cfg.Host != config.DefaultHost {
