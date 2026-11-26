@@ -189,7 +189,7 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 		kind := config.Kind(cfg.Token)
 		switch kind {
 		case config.ScopedToken:
-			authLine = "  - scoped token " + source(tokenSource) + ", not checked against the API"
+			authLine = "  - personal access token " + source(tokenSource) + ", not checked against the API"
 		case config.PersonalKey, config.ServiceToken:
 			path, fetch := "/users/me", func() (map[string]any, error) { return api.Get(ctx, "/users/me", nil) }
 			if kind == config.ServiceToken {

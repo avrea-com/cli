@@ -259,7 +259,8 @@ func serviceTokenDescription(path string) docgen.Description {
 				"than to a person, and keeps working when its creator leaves. It reads\n" +
 				"only the repositories and egress firewall rules its access names.\n" +
 				"Organization admins manage service tokens while signed in (avr auth\n" +
-				"device-login or avr auth login); a scoped or service token cannot.\n" +
+				"device-login or avr auth login); a personal access token or service\n" +
+				"token cannot.\n" +
 				"\n" +
 				"A service token reaches the VMs its grants name. With --max-owned-vms it\n" +
 				"creates VMs, and it administers those VMs even after VM creation is\n" +

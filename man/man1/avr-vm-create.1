@@ -26,7 +26,7 @@ example, as Claude Code's spawn-runner hook:
 .fi
 .RE
 .PP
-Organization admins can pass --egress-rules inline or as @path to a JSON file. Scoped tokens cannot set these rules. Use an array of up to 100 rule objects. Every rule requires action ("allow" or "deny"). A non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR). Protocol is "any" by default and also accepts "tcp", "udp" and "icmp". TCP and UDP rules may set port_start and port_end to integers from 0 to 65535. One endpoint matches one port. Two form an inclusive range with start at or below end. Omitting both matches all ports.
+Organization admins can pass --egress-rules inline or as @path to a JSON file. Personal access tokens cannot set these rules. Use an array of up to 100 rule objects. Every rule requires action ("allow" or "deny"). A non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR). Protocol is "any" by default and also accepts "tcp", "udp" and "icmp". TCP and UDP rules may set port_start and port_end to integers from 0 to 65535. One endpoint matches one port. Two form an inclusive range with start at or below end. Omitting both matches all ports.
 .PP
 An optional is_default boolean defaults to false. At most one rule can set it to true, with protocol "any" and no destination or ports. Agent sandboxes always deny unmatched traffic. The first matching non-default rule in array order wins. An optional nonnegative integer position is ignored.
 .PP

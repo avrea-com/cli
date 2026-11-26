@@ -46,7 +46,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 ### Setup & Config
 
 - [`avr auth`](./auth/) — Authenticate and manage credentials.
-- [`avr token`](./token/) — Create and manage scoped access tokens.
+- [`avr token`](./token/) — Create and manage personal access tokens.
 - [`avr service-token`](./service-token/) — Create and manage the organization's service tokens.
 - [`avr group`](./group/) — Build and manage the organization's group tree.
 - [`avr config`](./config/) — View and manage CLI configuration.

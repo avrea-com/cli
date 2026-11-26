@@ -7,7 +7,7 @@ avr-service-token \- Create and manage the organization's service tokens.
 .SH DESCRIPTION
 Create and manage the organization's service tokens.
 .PP
-A service token (avt_...) belongs to a group of one organization rather than to a person, and keeps working when its creator leaves. It reads only the repositories and egress firewall rules its access names. Organization admins manage service tokens while signed in (avr auth device-login or avr auth login); a scoped or service token cannot.
+A service token (avt_...) belongs to a group of one organization rather than to a person, and keeps working when its creator leaves. It reads only the repositories and egress firewall rules its access names. Organization admins manage service tokens while signed in (avr auth device-login or avr auth login); a personal access token or service token cannot.
 .PP
 A service token reaches the VMs its grants name. With --max-owned-vms it creates VMs, and it administers those VMs even after VM creation is stopped. It runs avr vm create without --repo or --egress-rules, list, show, ssh, ssh-config, metrics without --watch, update with --name or --ttl, rotate-https-label, pause and delete; resume and fork are refused. avr vm capabilities needs a VM grant or --max-owned-vms. Revoking the token deletes the VMs it created.
 .PP

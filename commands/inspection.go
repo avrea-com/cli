@@ -71,7 +71,7 @@ func resolveOrg(ctx context.Context, d Dependencies, cfg config.Config, api *cli
 		return value, nil
 	}
 	if config.IsScoped(cfg.Token) {
-		return "", &ExitError{1, "Error: A scoped token is bound to one organization and cannot look it up.\nPass --org org-... or set AVR_ORG to the organization ID."}
+		return "", &ExitError{1, "Error: A personal access token is bound to one organization and cannot look it up.\nPass --org org-... or set AVR_ORG to the organization ID."}
 	}
 	if config.IsService(cfg.Token) {
 		if value != "" {

@@ -51,7 +51,7 @@ func NewServiceToken(deps Dependencies) *cobra.Command {
 }
 
 // personContext loads a signed-in person's credentials and resolves the
-// organization. Routes the API closes to scoped and service tokens are refused
+// organization. Routes the API closes to personal access tokens and service tokens are refused
 // before any request; subject and action complete requirePerson's message.
 func personContext(ctx context.Context, d Dependencies, org, subject, action string) (config.Config, *client.Client, string, error) {
 	return orgContext(ctx, d, org, func(cfg config.Config) error { return requirePerson(cfg, subject, action) })

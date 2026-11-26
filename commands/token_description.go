@@ -7,22 +7,21 @@ func tokenDescription(path string) docgen.Description {
 	switch path {
 	case "avr token create":
 		return docgen.Description{
-			Help: "Create a scoped token and print its credential.\n" +
+			Help: "Create a personal access token and print its credential.\n" +
 				"\n" +
 				"The credential is shown once and cannot be retrieved later. A token needs\n" +
 				"at least one of --repo, --vm or --allow-vm-create. Repository grants are\n" +
 				"read-only and VM grants are admin; an optional level suffix\n" +
 				"(--repo acme/api:read, --vm cvm-abc123:admin) must name that level.\n" +
 				"\n" +
-				"The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped\n" +
-				"token needs the org-... ID in AVR_ORG or --org, ignores the stored\n" +
+				"The command prints export lines for AVR_TOKEN and AVR_ORG. A personal\n" +
+				"access token needs the org-... ID in AVR_ORG or --org, ignores the stored\n" +
 				"organization and cannot create further tokens. Pass run IDs rather than\n" +
-				"console URLs, whose organization slug a scoped token cannot resolve.\n" +
+				"console URLs, whose organization slug the token cannot resolve.\n" +
 				"If the request is\n" +
 				"interrupted or the server answers with a 5xx error, a token may already\n" +
 				"exist: check avr token list before retrying. A 404 names its reason;\n" +
-				"if scoped tokens are not enabled for the organization, contact\n" +
-				"support@avrea.com.\n" +
+				"if personal access tokens are unavailable, contact support@avrea.com.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +
@@ -36,8 +35,8 @@ func tokenDescription(path string) docgen.Description {
 				"    allow_vm_create, created_at, expires_at, grants, id, last_used_at,\n" +
 				"    name, organization_id, revoked_at, revoked_reason, token, user_id,\n" +
 				"    vm_create_count, vm_create_limit\n",
-			Short:          "Create a scoped token and print its credential.",
-			CompletionHelp: "Create a scoped token and print its...",
+			Short:          "Create a personal access token and print its credential.",
+			CompletionHelp: "Create a personal access token and...",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "name", Kind: "option", Opts: []string{"--name"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("Token name (1-100 characters).")}, Suffix: "  [required]", CompletionKind: "String"},
 				{Param: docgen.Param{Name: "repos", Kind: "option", Opts: []string{"--repo"}, Type: "text", Multiple: true, Nargs: 1, Help: descriptionText("Grant read access to a repository (org/repo or rep-xxx). Repeatable.")}, CompletionKind: "String"},
@@ -123,17 +122,22 @@ func tokenDescription(path string) docgen.Description {
 		}
 	case "avr token":
 		return docgen.Description{
-			Help: "Create and manage scoped access tokens.\n" +
+			Help: "Create and manage personal access tokens.\n" +
 				"\n" +
-				"A scoped access token is a credential bound to one organization that\n" +
-				"expires within seven days. It reaches only the repositories and VMs it\n" +
-				"names, and it cannot create further tokens. To use one, set AVR_TOKEN to\n" +
-				"the credential and AVR_ORG to the organization ID.\n",
-			Short:    "Create and manage scoped access tokens.",
+				"A personal access token (avs_...) is a credential of your own, bound to\n" +
+				"one organization, that expires within seven days. It can read the\n" +
+				"repositories you grant and administer VMs you grant or allow it to\n" +
+				"create. It cannot create further tokens. To use one, set AVR_TOKEN to\n" +
+				"the credential and AVR_ORG to the organization ID.\n" +
+				"\n" +
+				"It acts as you and stops working when you leave the organization. For\n" +
+				"automation that must outlive a person, use a service token, which\n" +
+				"belongs to a group: see avr service-token.\n",
+			Short:    "Create and manage personal access tokens.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,
 			Commands: []docgen.HelpCommand{
-				{Name: "create", Description: "Create a scoped token and print its credential.", AutoShort: true},
+				{Name: "create", Description: "Create a personal access token and print its credential.", AutoShort: true},
 				{Name: "list", Description: "List live tokens, newest first.", AutoShort: true},
 				{Name: "revoke", Description: "Revoke a token.", AutoShort: true},
 				{Name: "view", Description: "Show a token's details and grants, including a revoked or expired one.", AutoShort: true},

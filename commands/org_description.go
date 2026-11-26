@@ -243,7 +243,7 @@ func orgDescription(path string) docgen.Description {
 		return docgen.Description{
 			Help: "Create group runners in GitLab and configure their machine types in Avrea.\n" +
 				"\n" +
-				"Supply your own personal access token with create_runner scope and Owner\n" +
+				"Supply your own GitLab personal access token with create_runner scope and Owner\n" +
 				"role. It is sent only to gitlab.com and is never persisted. Already\n" +
 				"configured machine types must be replaced with 'runner set'.\n" +
 				"\n" +
@@ -257,7 +257,7 @@ func orgDescription(path string) docgen.Description {
 				{Param: docgen.Param{Name: "installation_id", Kind: "option", Opts: []string{"--installation-id"}, Type: "text", Required: true, Nargs: 1, Help: descriptionText("GitLab installation ID (ins-xxx format).")}, Suffix: "  [required]", CompletionKind: "String"},
 				{Param: docgen.Param{Name: "machine_types", Kind: "option", Opts: []string{"--machine-type"}, Type: "text", Required: true, Multiple: true, Nargs: 1, Help: descriptionText("Machine type to create; repeat for multiple machine types.")}, Suffix: "  [required]", CompletionKind: "String"},
 				{Param: docgen.Param{Name: "protected", Kind: "option", Opts: []string{"--protected"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Restrict the runners to protected branches and tags.")}, CompletionKind: "Bool"},
-				{Param: docgen.Param{Name: "personal_access_token_stdin", Kind: "option", Opts: []string{"--personal-access-token-stdin"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Read your personal access token from standard input instead of a hidden prompt.")}, CompletionKind: "Bool"},
+				{Param: docgen.Param{Name: "personal_access_token_stdin", Kind: "option", Opts: []string{"--personal-access-token-stdin"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Read your GitLab personal access token from standard input instead of a hidden prompt.")}, CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "json_fields", Kind: "option", Opts: []string{"--json"}, Type: "text", Nargs: 1, Help: descriptionText("Output JSON. Pass comma-separated field names, \"*\" for all fields, or \"?\" to list available fields.")}, CompletionKind: "String"},
 				{Param: docgen.Param{Name: "jq_expr", Kind: "option", Opts: []string{"-q", "--jq"}, Type: "text", Nargs: 1, Help: descriptionText("Filter --json output through a jq expression.")}, CompletionKind: "String"},
 			},

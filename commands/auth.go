@@ -16,6 +16,8 @@ import (
 
 var statusFields = []string{"email", "name", "created_at", "user_id", "host", "default_org", "token", "credential_type"}
 
+// personalAccessTokenScope and serviceTokenScope say what each token reaches.
+const personalAccessTokenScope = "A personal access token can read the repositories you grant and administer VMs you grant or allow it to create."
 const serviceTokenScope = "A service token can access resources covered by its grants and the VMs it created in its organization."
 
 // serviceStatusFields extends statusFields with a service token's identity;
@@ -83,9 +85,9 @@ func newStatus(d Dependencies) *cobra.Command {
 				return apiError(cfg, err, "fetch user info")
 			}
 		case config.ScopedToken:
-			credentialType = "scoped_token"
+			credentialType = "personal_access_token"
 		case config.ServiceToken:
-			// Unlike a scoped token, a service token can read its own identity,
+			// Unlike a personal access token, a service token can read its own identity,
 			// so this verifies it against the API.
 			credentialType = "service_token"
 			result, err = serviceIdentity(cmd.Context(), cfg, d.apiClient(cfg))
@@ -117,17 +119,17 @@ func newStatus(d Dependencies) *cobra.Command {
 		row := func(key string, value any) { fmt.Fprintf(&b, "%-*s %s\n", width, key, output.Text(fmt.Sprint(value))) }
 		switch kind {
 		case config.ScopedToken:
-			row("Credential", "scoped token")
+			row("Credential", "personal access token")
 			row("Host", cfg.Host)
 			org := cfg.Org
 			if org == "" {
 				org = "(not set: pass --org org-... or set AVR_ORG)"
 			} else if !strings.HasPrefix(org, "org-") {
-				org += " (a slug: a scoped token needs the ID, org-...)"
+				org += " (a slug: a personal access token needs the ID, org-...)"
 			}
 			row("Organization", org)
 			row("Token", maskToken(cfg.Token, show))
-			b.WriteString("\n" + d.paint("  A scoped token reaches only the repositories and VMs it names.", "2") + "\n" + d.paint("  It is not checked here: an expired or revoked one fails on first use.", "2") + "\n")
+			b.WriteString("\n" + d.paint("  "+personalAccessTokenScope, "2") + "\n" + d.paint("  It is not checked here: an expired or revoked one fails on first use.", "2") + "\n")
 		case config.ServiceToken:
 			expires, present := result["expires_at"]
 			switch {
@@ -378,7 +380,7 @@ func apiError(cfg config.Config, err error, action string) error {
 	if he.Status == 403 || he.Status == 404 {
 		switch kind {
 		case config.ScopedToken:
-			message += "\n  Hint: a scoped token reaches only the repositories and VMs it names, and only the operations open to tokens."
+			message += "\n  Hint: " + personalAccessTokenScope + " Check that this is one of the operations open to tokens."
 		case config.ServiceToken:
 			message += "\n  Hint: " + serviceTokenScope + " Check that this is one of the operations open to service tokens."
 		case config.PersonalKey:

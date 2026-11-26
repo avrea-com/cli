@@ -37,8 +37,8 @@ Once per session, before any other command:
 - Status 4 means authentication is required or the credential was rejected;
   follow Start here. Status 2 is a usage error, 1 a general failure and 130 an
   interrupt.
-- With `AVR_TOKEN` set (a scoped or service token), the token reaches only
-  what it names; a 403 or 404 usually means the token lacks that access.
+- With `AVR_TOKEN` set (a personal access token or service token), the token reaches only
+  what it was granted or created; a 403 or 404 usually means the token lacks that access.
 - Set `AVR_PROMPT_DISABLED=1` so a command fails instead of waiting for a
   confirmation, and pass `--yes` where you intend the action.
 - An empty result is not a pass. An empty run list, test listing or log search

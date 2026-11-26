@@ -13,7 +13,8 @@ A service token (avt_...) belongs to a group of one organization rather
 than to a person, and keeps working when its creator leaves. It reads
 only the repositories and egress firewall rules its access names.
 Organization admins manage service tokens while signed in (avr auth
-device-login or avr auth login); a scoped or service token cannot.
+device-login or avr auth login); a personal access token or service
+token cannot.
 
 A service token reaches the VMs its grants name. With --max-owned-vms it
 creates VMs, and it administers those VMs even after VM creation is

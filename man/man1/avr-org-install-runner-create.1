@@ -7,7 +7,7 @@ avr-org-install-runner-create \- Create group runners in GitLab and configure th
 .SH DESCRIPTION
 Create group runners in GitLab and configure their machine types in Avrea.
 .PP
-Supply your own personal access token with create_runner scope and Owner role. It is sent only to gitlab.com and is never persisted. Already configured machine types must be replaced with 'runner set'.
+Supply your own GitLab personal access token with create_runner scope and Owner role. It is sent only to gitlab.com and is never persisted. Already configured machine types must be replaced with 'runner set'.
 .PP
 .RS 4
 .nf
@@ -30,7 +30,7 @@ Machine type to create; repeat for multiple machine types. (repeatable; required
 Restrict the runners to protected branches and tags.
 .TP
 \fB\-\-personal\-access\-token\-stdin\fR
-Read your personal access token from standard input instead of a hidden prompt.
+Read your GitLab personal access token from standard input instead of a hidden prompt.
 .TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.

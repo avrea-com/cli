@@ -297,8 +297,9 @@ func groupDescription(path string) docgen.Description {
 				"\n" +
 				"Groups hold members, service tokens and vCPU limits. Organization\n" +
 				"members manage them while signed in (avr auth device-login or avr auth\n" +
-				"login); a scoped or service token cannot. What you may change depends\n" +
-				"on the groups you administer: `avr org governance` shows it.\n",
+				"login); a personal access token or service token cannot. What you may\n" +
+				"change depends on the groups you administer: `avr org governance` shows\n" +
+				"it.\n",
 			Short:    "Build and manage the organization's group tree.",
 			Usage:    []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections: true,

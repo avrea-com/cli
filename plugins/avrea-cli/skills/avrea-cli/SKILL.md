@@ -33,6 +33,6 @@ Otherwise start `avr auth device-login --no-qr` in the background (it waits
 for approval), read the link and code from its output, ask the user to open
 the link and approve, then wait for the command to exit. When no user can
 approve, as in a scheduled or cloud session, report that `AVR_TOKEN` must be
-set to a scoped or service token in the environment.
+set to a personal access token or service token in the environment.
 
 <!-- Managed by `avr skill install`. Edits are overwritten; remove with `avr skill uninstall`. -->

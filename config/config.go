@@ -54,7 +54,7 @@ func (k CredentialKind) String() string {
 	case PersonalKey:
 		return "API key"
 	case ScopedToken:
-		return "scoped token"
+		return "personal access token"
 	case ServiceToken:
 		return "service token"
 	default:

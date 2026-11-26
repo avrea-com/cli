@@ -41,8 +41,8 @@ With --project, the skill goes into .claude/skills and .agents/skills
 (or .kiro/skills) at the top of the current git repository instead.
 Commit it so cloud
 agents working on the repository, such as Devin or Codex cloud, find it.
-Those environments also need avr installed and AVR_TOKEN set to a scoped
-or service token.
+Those environments also need avr installed and AVR_TOKEN set to a personal
+access token or service token.
 
 ```sh
 Examples:

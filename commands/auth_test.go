@@ -311,7 +311,7 @@ func TestTimingIsOptInAndKeepsJSONClean(t *testing.T) {
 		if err := json.Unmarshal(out.Bytes(), &record); err != nil {
 			t.Fatal(err)
 		}
-		if record["credential_type"] != "scoped_token" {
+		if record["credential_type"] != "personal_access_token" {
 			t.Fatal(record)
 		}
 		hasTiming := strings.Contains(stderr.String(), "avr-timing ")

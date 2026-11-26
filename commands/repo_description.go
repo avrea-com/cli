@@ -17,8 +17,9 @@ func repoDescription(path string) docgen.Description {
 				"The origin remote stays on the selected read-only mirror. A repository-local\n" +
 				"Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull\n" +
 				"operations using your Avrea login. Push changes to the source repository\n" +
-				"using a separate remote. Tokens normally last one hour; scoped API keys have\n" +
-				"a shorter server-enforced lifetime. Tokens are never saved in the repository.\n" +
+				"using a separate remote. These Git tokens are short-lived, and shorter\n" +
+				"still when obtained with a personal access token. Tokens are never saved\n" +
+				"in the repository.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +

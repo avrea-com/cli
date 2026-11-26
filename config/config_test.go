@@ -276,7 +276,7 @@ func TestCredentialKind(t *testing.T) {
 		{"avr_personal", PersonalKey, "API key", false, false, false},
 		{"AVT_upper", PersonalKey, "API key", false, false, false},
 		{"xavt_embedded", PersonalKey, "API key", false, false, false},
-		{"avs_scoped", ScopedToken, "scoped token", true, false, true},
+		{"avs_scoped", ScopedToken, "personal access token", true, false, true},
 		{"avt_service", ServiceToken, "service token", false, true, true},
 	} {
 		kind := Kind(tt.token)

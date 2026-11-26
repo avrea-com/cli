@@ -1,17 +1,19 @@
 .TH AVR\-TOKEN 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-token \- Create and manage scoped access tokens.
+avr-token \- Create and manage personal access tokens.
 .SH SYNOPSIS
 .B avr token
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Create and manage scoped access tokens.
+Create and manage personal access tokens.
 .PP
-A scoped access token is a credential bound to one organization that expires within seven days. It reaches only the repositories and VMs it names, and it cannot create further tokens. To use one, set AVR_TOKEN to the credential and AVR_ORG to the organization ID.
+A personal access token (avs_...) is a credential of your own, bound to one organization, that expires within seven days. It can read the repositories you grant and administer VMs you grant or allow it to create. It cannot create further tokens. To use one, set AVR_TOKEN to the credential and AVR_ORG to the organization ID.
+.PP
+It acts as you and stops working when you leave the organization. For automation that must outlive a person, use a service token, which belongs to a group: see avr service-token.
 .SH COMMANDS
 .TP
 create
-Create a scoped token and print its credential.
+Create a personal access token and print its credential.
 .TP
 list
 List live tokens, newest first.

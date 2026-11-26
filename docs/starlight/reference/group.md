@@ -11,8 +11,9 @@ avr group [OPTIONS] COMMAND [ARGS]...
 
 Groups hold members, service tokens and vCPU limits. Organization
 members manage them while signed in (avr auth device-login or avr auth
-login); a scoped or service token cannot. What you may change depends
-on the groups you administer: `avr org governance` shows it.
+login); a personal access token or service token cannot. What you may
+change depends on the groups you administer: `avr org governance` shows
+it.
 
 ## Subcommands
 

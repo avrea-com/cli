@@ -67,8 +67,8 @@ func vmDescription(path string) docgen.Description {
 				"    exec avr vm create --from-spawn-script claude-code --org <org-id>\n" +
 				"\n" +
 				"Organization admins can pass --egress-rules inline or as @path to a JSON\n" +
-				"file. Scoped tokens cannot set these rules. Use an array of up to 100\n" +
-				"rule objects. Every rule requires action (\"allow\" or \"deny\"). A\n" +
+				"file. Personal access tokens cannot set these rules. Use an array of up to\n" +
+				"100 rule objects. Every rule requires action (\"allow\" or \"deny\"). A\n" +
 				"non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).\n" +
 				"Protocol is \"any\" by default and also accepts \"tcp\", \"udp\" and \"icmp\".\n" +
 				"TCP and UDP rules may set port_start and port_end to integers from 0 to\n" +
@@ -142,9 +142,10 @@ func vmDescription(path string) docgen.Description {
 			Help: "Boot a copy of a PAUSED VM's disk; the source remains paused.\n" +
 				"\n" +
 				"Copies the source's machine configuration and disk, including its SSH host\n" +
-				"keys and password, but discards memory state. A scoped-token password may\n" +
-				"be replaced without returning its replacement. No password is returned; use\n" +
-				"update --rotate-password if needed. Requires admin access to the source.\n",
+				"keys and password, but discards memory state. A password that a personal\n" +
+				"access token set or received may be replaced without returning its\n" +
+				"replacement. No password is returned; use update --rotate-password if\n" +
+				"needed. Requires admin access to the source.\n",
 			Short:          "Boot a copy of a PAUSED VM's disk; the source remains paused.",
 			CompletionHelp: "Boot a copy of a PAUSED VM's disk; the...",
 			Usage:          []string{"[OPTIONS]", "VM_ID_OR_NAME"},
@@ -266,10 +267,9 @@ func vmDescription(path string) docgen.Description {
 			Help: "Resume a PAUSED VM from its preserved snapshot.\n" +
 				"\n" +
 				"The existing password remains unless resume withdraws credentials supplied\n" +
-				"to a scoped token. Use update --rotate-password to obtain a fresh one.\n" +
-				"If a memory restore cannot complete,\n" +
-				"retry with --discard-memory to boot the preserved disk without restoring\n" +
-				"running processes.\n",
+				"to a personal access token. Use update --rotate-password to obtain a fresh\n" +
+				"one. If a memory restore cannot complete, retry with --discard-memory to\n" +
+				"boot the preserved disk without restoring running processes.\n",
 			Short:          "Resume a PAUSED VM from its preserved snapshot.",
 			CompletionHelp: "Resume a PAUSED VM from its preserved...",
 			Usage:          []string{"[OPTIONS]", "VM_ID_OR_NAME"},

@@ -17,8 +17,8 @@ with a dash, `help`, or a word resembling `status`.
 Organization attribution is optional. `--org` accepts a slug or organization ID;
 omitting it sends personal feedback even if you have a default organization.
 Your account supplies contact details, and the CLI supplies its version and
-platform in its user agent. Scoped tokens cannot use these endpoints. If
-`AVR_TOKEN` contains a scoped token, unset it and run `avr auth login`.
+platform in its user agent. Personal access tokens cannot use these
+endpoints. If `AVR_TOKEN` contains one, unset it and run `avr auth login`.
 
 The `--idempotency-key` option accepts a UUID with or without hyphens and
 normalizes it to 32 lowercase hex characters.
