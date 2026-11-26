@@ -13,7 +13,14 @@ Use --bug for a bug report and --org SLUG_OR_ID to attribute it to an organizati
 .PP
 The idempotency key is printed before sending. If the response is lost or the server asks you to retry, repeat the same message, --bug setting and organization with --idempotency-key KEY. For a key conflict, use the original content or omit --idempotency-key to create a new submission. Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it. Use -- before a message beginning with a dash, help, or a word resembling status.
 .PP
-Examples: avr feedback "Please support Lambda Cloud" avr feedback --bug "Run logs are missing" avr feedback status FEEDBACK_ID
+.RS 4
+.nf
+Examples:
+    avr feedback "Please support Lambda Cloud"
+    avr feedback --bug "Run logs are missing"
+    avr feedback status FEEDBACK_ID
+.fi
+.RE
 .PP
 .RS 4
 .nf

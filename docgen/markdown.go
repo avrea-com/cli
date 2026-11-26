@@ -170,7 +170,13 @@ func helpBlock(value, language string) string {
 			continue
 		}
 		if strings.HasPrefix(lines[i], "    ") {
-			out = append(out, lines[i])
+			run := []string{}
+			for i < len(lines) && strings.HasPrefix(lines[i], "    ") {
+				run = append(run, lines[i])
+				i++
+			}
+			out = append(out, indentedRun(dedent(run), language)...)
+			i--
 		} else {
 			out = append(out, mdEscape(lines[i]))
 		}

@@ -23,10 +23,13 @@ or omit --idempotency-key to create a new submission.
 Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.
 Use -- before a message beginning with a dash, help, or a word resembling status.
 
-Examples:
-    avr feedback "Please support Lambda Cloud"
-    avr feedback --bug "Run logs are missing"
-    avr feedback status FEEDBACK_ID
+**Examples**
+
+```sh
+avr feedback "Please support Lambda Cloud"
+avr feedback --bug "Run logs are missing"
+avr feedback status FEEDBACK_ID
+```
 
 **JSON FIELDS**
 

@@ -16,7 +16,7 @@ func TestMarkdownEscapesProseButPreservesCode(t *testing.T) {
 		}
 	}
 	block := helpBlock("Redirect it yourself:\n\n    ssh -L <local>:x VM >> ~/.ssh/config\n", "sh")
-	if !strings.Contains(block, "    ssh -L <local>:x VM >> ~/.ssh/config") {
+	if !strings.Contains(block, "Redirect it yourself:\n\n```sh\nssh -L <local>:x VM >> ~/.ssh/config\n```") {
 		t.Fatal(block)
 	}
 	fenced := helpBlock("Example:\n\n\b\n    avr vm ssh VM -- echo '<hello>'\n", "sh")

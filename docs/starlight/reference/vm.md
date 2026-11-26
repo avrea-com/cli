@@ -401,13 +401,17 @@ avr vm ssh [OPTIONS] VM_ID_OR_NAME [SSH_ARGS]...
 With no extra arguments this opens an interactive session. Anything after
 `--` is run as a remote command instead, e.g.:
 
-    avr vm ssh cvm-abc123 -- uname -a
+```sh
+avr vm ssh cvm-abc123 -- uname -a
+```
 
 A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
 so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
 in a login shell instead (e.g. so `claude` finds its subscription token):
 
-    avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+```sh
+avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+```
 
 Pass `--session <name>` to attach to (or create) a persistent tmux session,
 so the shell and any long-running process in it survive a dropped
@@ -445,12 +449,16 @@ avr vm ssh-config [OPTIONS] VM_ID_OR_NAME
 Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
 host key pinned, without wrapping each tool. Redirect it yourself:
 
-    avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+```sh
+avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+```
 
 or let --append manage the block for you (idempotent — re-run after a
 resume to refresh the endpoint in place):
 
-    avr vm ssh-config cvm-abc123 --append
+```sh
+avr vm ssh-config cvm-abc123 --append
+```
 
 The block references a dedicated known_hosts file that this command writes
 the pinned host key into (one entry per VM). If the endpoint publishes no
