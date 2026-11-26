@@ -100,15 +100,15 @@ sandboxes always deny unmatched traffic. The first matching non-default
 rule in array order wins. An optional nonnegative integer position is
 ignored.
 
-Save these HTTPS rules as meteor-egress.json.
+Save these rules as egress.json to allow HTTPS to the npm and PyPI
+registries.
 
 ```sh
-cat > meteor-egress.json <<'JSON'
+cat > egress.json <<'JSON'
 [
-  {"action":"allow","fqdn":"install.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"static.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"packages.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"warehouse.meteor.com","protocol":"tcp","port_start":443}
+  {"action":"allow","fqdn":"registry.npmjs.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"pypi.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"files.pythonhosted.org","protocol":"tcp","port_start":443}
 ]
 JSON
 ```
@@ -116,8 +116,8 @@ JSON
 Apply the file when creating or updating a VM.
 
 ```sh
-avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json
-avr vm update meteor --egress-rules @meteor-egress.json
+avr vm create --name builder --os linux --size 2-vcpu --egress-rules @egress.json
+avr vm update builder --egress-rules @egress.json
 ```
 
 **Options**

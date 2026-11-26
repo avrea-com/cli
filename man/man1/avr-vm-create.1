@@ -30,16 +30,15 @@ Organization admins can pass --egress-rules inline or as @path to a JSON file. P
 .PP
 An optional is_default boolean defaults to false. At most one rule can set it to true, with protocol "any" and no destination or ports. Agent sandboxes always deny unmatched traffic. The first matching non-default rule in array order wins. An optional nonnegative integer position is ignored.
 .PP
-Save these HTTPS rules as meteor-egress.json.
+Save these rules as egress.json to allow HTTPS to the npm and PyPI registries.
 .PP
 .RS 4
 .nf
-cat > meteor-egress.json <<'JSON'
+cat > egress.json <<'JSON'
 [
-  {"action":"allow","fqdn":"install.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"static.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"packages.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"warehouse.meteor.com","protocol":"tcp","port_start":443}
+  {"action":"allow","fqdn":"registry.npmjs.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"pypi.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"files.pythonhosted.org","protocol":"tcp","port_start":443}
 ]
 JSON
 .fi
@@ -49,8 +48,8 @@ Apply the file when creating or updating a VM.
 .PP
 .RS 4
 .nf
-avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json
-avr vm update meteor --egress-rules @meteor-egress.json
+avr vm create --name builder --os linux --size 2-vcpu --egress-rules @egress.json
+avr vm update builder --egress-rules @egress.json
 .fi
 .RE
 .SH OPTIONS

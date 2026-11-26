@@ -81,23 +81,23 @@ func vmDescription(path string) docgen.Description {
 				"rule in array order wins. An optional nonnegative integer position is\n" +
 				"ignored.\n" +
 				"\n" +
-				"Save these HTTPS rules as meteor-egress.json.\n" +
+				"Save these rules as egress.json to allow HTTPS to the npm and PyPI\n" +
+				"registries.\n" +
 				"\n" +
 				"\b\n" +
-				"    cat > meteor-egress.json <<'JSON'\n" +
+				"    cat > egress.json <<'JSON'\n" +
 				"    [\n" +
-				"      {\"action\":\"allow\",\"fqdn\":\"install.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
-				"      {\"action\":\"allow\",\"fqdn\":\"static.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
-				"      {\"action\":\"allow\",\"fqdn\":\"packages.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
-				"      {\"action\":\"allow\",\"fqdn\":\"warehouse.meteor.com\",\"protocol\":\"tcp\",\"port_start\":443}\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"registry.npmjs.org\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"pypi.org\",\"protocol\":\"tcp\",\"port_start\":443},\n" +
+				"      {\"action\":\"allow\",\"fqdn\":\"files.pythonhosted.org\",\"protocol\":\"tcp\",\"port_start\":443}\n" +
 				"    ]\n" +
 				"    JSON\n" +
 				"\n" +
 				"Apply the file when creating or updating a VM.\n" +
 				"\n" +
 				"\b\n" +
-				"    avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json\n" +
-				"    avr vm update meteor --egress-rules @meteor-egress.json\n",
+				"    avr vm create --name builder --os linux --size 2-vcpu --egress-rules @egress.json\n" +
+				"    avr vm update builder --egress-rules @egress.json\n",
 			Short: "Create a long-running VM.",
 			Parameters: []docgen.Parameter{
 				{Param: docgen.Param{Name: "org_id", Kind: "option", Opts: []string{"--org"}, Type: "text", Nargs: 1, Help: descriptionText("Organization ID. Uses default org if not specified (see: avr config set org).")}, CompletionKind: "String"},
