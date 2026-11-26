@@ -74,6 +74,19 @@ func TestGitLabCreatedRunnerUncertainAndRejected(t *testing.T) {
 		}
 	}
 }
+func TestGitLabSecretRefusesAvreaCredentials(t *testing.T) {
+	for _, value := range []string{"avk_key", "avs_personal", "avt_service", "avo_operator"} {
+		d, _, _ := testDeps(t)
+		d.In = strings.NewReader(value + "\n")
+		cmd := &cobra.Command{}
+		cmd.SetContext(t.Context())
+		secret, e := gitLabSecret(cmd, d, true, "GitLab token", "fixture")
+		var exit *ExitError
+		if secret != "" || !errors.As(e, &exit) || exit.Code != 2 || !strings.Contains(exit.Message, "looks like an Avrea credential") || strings.Contains(exit.Message, value) {
+			t.Fatal(value, secret, e)
+		}
+	}
+}
 func TestGitLabSecretReadsOnlyFirstLineAndNeverEchoes(t *testing.T) {
 	d, out, stderr := testDeps(t)
 	d.In = strings.NewReader("  first-secret  \nsecond-secret\n")
