@@ -79,7 +79,7 @@ Switch the default host used when AVR_HOST isn't set.
 avr auth switch [OPTIONS] [HOST]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr auth switch                     # show current default + all hosts

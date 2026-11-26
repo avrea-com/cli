@@ -95,11 +95,9 @@ Delete ART_ID from the selected repository.
 avr artifact delete [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-deleted, id
-```
+`deleted`, `id`
 
 **Arguments**
 
@@ -121,11 +119,9 @@ Download ART_ID and verify its size and SHA-256 before replacing the destination
 avr artifact download [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-digest_sha256, id, path, size_bytes
-```
+`digest_sha256`, `id`, `path`, `size_bytes`
 
 **Arguments**
 
@@ -147,13 +143,9 @@ Get metadata for ART_ID in the selected repository.
 avr artifact get [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-archived, completed_at, created_at, digest_sha256, expires_at,
-file_count, file_name, id, name, repository_id, run_attempt, run_kind,
-size_bytes, state, workflow_run_id
-```
+`archived`, `completed_at`, `created_at`, `digest_sha256`, `expires_at`, `file_count`, `file_name`, `id`, `name`, `repository_id`, `run_attempt`, `run_kind`, `size_bytes`, `state`, `workflow_run_id`
 
 **Arguments**
 
@@ -174,13 +166,9 @@ List artifacts in REPO, optionally restricted to one run.
 avr artifact list [OPTIONS] REPO
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-archived, completed_at, created_at, digest_sha256, expires_at,
-file_count, file_name, id, name, repository_id, run_attempt, run_kind,
-size_bytes, state, workflow_run_id
-```
+`archived`, `completed_at`, `created_at`, `digest_sha256`, `expires_at`, `file_count`, `file_name`, `id`, `name`, `repository_id`, `run_attempt`, `run_kind`, `size_bytes`, `state`, `workflow_run_id`
 
 **Arguments**
 
@@ -229,7 +217,7 @@ avr run cancel [OPTIONS] RUN
 RUN accepts the same Avrea IDs, GitHub run IDs, and run URLs as
 `avr run view`.
 
-Examples:
+**Examples**
 
 ```sh
 avr run cancel run-019e5a2e474e71c297e452279d4bcdea
@@ -260,7 +248,7 @@ failed-job log tails, queue/execution timings, runner metrics, and a
 prior-success workflow baseline. RUN already selects the run; --repo only
 checks that the run belongs to that repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr run diagnose run-019e5a2e474e71c297e452279d4bcdea
@@ -287,7 +275,7 @@ List workflow runs for an organization.
 avr run list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr run list
@@ -300,13 +288,9 @@ avr run list --json '*'           # all fields
 avr run list --json status,conclusion -q '[.[] | select(.status == "completed")]'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
-head_branch, head_sha, platform_run_id, repository, run_attempt, run_id,
-run_number, status, triggering_actor, updated_at, workflow, workflow_id
-```
+`ci_provider`, `workflow_name`, `workflow_path`, `conclusion`, `created_at`, `display_title`, `duration_seconds`, `event`, `head_branch`, `head_sha`, `platform_run_id`, `repository`, `run_attempt`, `run_id`, `run_number`, `status`, `triggering_actor`, `updated_at`, `workflow`, `workflow_id`
 
 **Options**
 
@@ -341,7 +325,7 @@ Long-form alternative to `avr run view --log[-failed]`. Use --follow to
 tail logs in real time for an in-progress job; pass --job to scope to a
 specific job when a run has many.
 
-Examples:
+**Examples**
 
 ```sh
 avr run logs run-019e5a2e474e71c297e452279d4bcdea
@@ -379,7 +363,7 @@ Avrea CI keeps the original revision. Use --failed for failed/cancelled
 jobs or repeat --job for selected jobs. Their downstream dependents also
 rerun; other results are retained. The new attempt can be watched immediately.
 
-Examples:
+**Examples**
 
 ```sh
 avr run rerun run-019e5a2e474e71c297e452279d4bcdea
@@ -414,7 +398,7 @@ that job belongs to. Without RUN, shows 10 most recent runs.
 RUN already selects the run; --repo only checks that the run belongs to
 that repository, and narrows the recent runs when RUN is omitted.
 
-Examples:
+**Examples**
 
 ```sh
 avr run view
@@ -429,14 +413,9 @@ avr run view run-019e5a2e474e71c297e452279d4bcdea --json conclusion,jobs
 avr run view run-019e5a2e474e71c297e452279d4bcdea --json '*' --jq '.jobs[].job_name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, workflow_name, workflow_path, conclusion, created_at, display_title, duration_seconds, event,
-head_branch, head_sha, jobs, platform_run_id, repository, run_attempt,
-run_id, run_number, status, triggering_actor, updated_at, workflow,
-workflow_id
-```
+`ci_provider`, `workflow_name`, `workflow_path`, `conclusion`, `created_at`, `display_title`, `duration_seconds`, `event`, `head_branch`, `head_sha`, `jobs`, `platform_run_id`, `repository`, `run_attempt`, `run_id`, `run_number`, `status`, `triggering_actor`, `updated_at`, `workflow`, `workflow_id`
 
 **Arguments**
 
@@ -471,7 +450,7 @@ NDJSON job and run completion events include ci_provider
 (github_actions, gitlab_ci, or avrea_ci). Avrea CI jobs have a null
 platform_job_id; correlate events using run_id and avrea_job_id.
 
-Examples:
+**Examples**
 
 ```sh
 avr run watch
@@ -522,7 +501,7 @@ Requires a signed-in account (personal access tokens and service tokens
 cannot comment), pull request comments enabled for the organization, and
 an Avrea Git mirror of the repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr pr comment 42 --body "Looks good to me."
@@ -533,12 +512,9 @@ avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body
 avr pr comment 42 --body "Ship it" --json id,publication
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-base_sha, body, commit_sha, created_at, end_line, id, path, publication,
-pull_number, repository_id, side, start_line, thread_id
-```
+`base_sha`, `body`, `commit_sha`, `created_at`, `end_line`, `id`, `path`, `publication`, `pull_number`, `repository_id`, `side`, `start_line`, `thread_id`
 
 **Arguments**
 
@@ -565,7 +541,7 @@ List pull requests across repositories.
 avr pr list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr pr list
@@ -576,13 +552,9 @@ avr pr list --json '?'           # list available fields
 avr pr list --json '*'           # all fields
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-author_login, base_ref, base_sha, check_status, comment_count, created_at,
-draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
-repository_id, state, title, unresolved_thread_count, updated_at
-```
+`author_login`, `base_ref`, `base_sha`, `check_status`, `comment_count`, `created_at`, `draft`, `head_ref`, `head_sha`, `mergeability`, `merged`, `number`, `repository_full_name`, `repository_id`, `state`, `title`, `unresolved_thread_count`, `updated_at`
 
 **Options**
 
@@ -611,7 +583,7 @@ List jobs for an organization.
 avr job list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr job list
@@ -622,13 +594,9 @@ avr job list --json '?'           # list available fields
 avr job list --json '*'           # all fields
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
-running_on_avrea, started_at, state
-```
+`ci_provider`, `run_id`, `completed_at`, `conclusion`, `created_at`, `duration_seconds`, `platform_job_id`, `platform_run_id`, `platform`, `job_id`, `job_name`, `labels`, `repository`, `repository_id`, `running_on_avrea`, `started_at`, `state`
 
 **Options**
 
@@ -654,7 +622,7 @@ View logs for a job, grouped by step.
 avr job logs [OPTIONS] JOB_ID
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr job logs job-abc123
@@ -685,7 +653,7 @@ Show CPU/memory/IO gauges for a job's VM.
 avr job metrics [OPTIONS] JOB_ID
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr job metrics job-abc123
@@ -731,7 +699,7 @@ View a single job with its steps.
 avr job view [OPTIONS] JOB_ID
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr job view job-abc123
@@ -740,13 +708,9 @@ avr job view job-abc123 --json conclusion,steps
 avr job view job-abc123 --json '*' --jq '.steps[] | select(.conclusion=="failure")'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, run_id, completed_at, conclusion, created_at, duration_seconds, platform_job_id,
-platform_run_id, platform, job_id, job_name, labels, repository, repository_id,
-running_on_avrea, started_at, state, steps, workflow_run
-```
+`ci_provider`, `run_id`, `completed_at`, `conclusion`, `created_at`, `duration_seconds`, `platform_job_id`, `platform_run_id`, `platform`, `job_id`, `job_name`, `labels`, `repository`, `repository_id`, `running_on_avrea`, `started_at`, `state`, `steps`, `workflow_run`
 
 **Arguments**
 
@@ -1353,7 +1317,7 @@ platform. The first build reads the default branch's CI cache; writes go
 to a builder-only scope that CI never reads. Passing any --cache-from or
 --cache-to replaces these defaults.
 
-Examples:
+**Examples**
 
 ```sh
 avr build -t myimage .
@@ -1415,7 +1379,7 @@ Sessions are never hard-deleted, so terminal (STOPPED/FAILED) sessions
 keep appearing here; filter with --state RUNNING to see only live ones.
 Non-admin members see only their own sessions.
 
-Examples:
+**Examples**
 
 ```sh
 avr builder list
@@ -1423,12 +1387,9 @@ avr builder list --state RUNNING
 avr builder list --json builder_session_id,state,stop_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-builder_session_id, cpu_count, created_at, disk_gb, memory_mb, platform,
-repository_full_name, state, state_reason, stop_at, updated_at
-```
+`builder_session_id`, `cpu_count`, `created_at`, `disk_gb`, `memory_mb`, `platform`, `repository_full_name`, `state`, `state_reason`, `stop_at`, `updated_at`
 
 **Options**
 
@@ -1477,7 +1438,7 @@ List workflows with aggregate run stats.
 avr workflow list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow list
@@ -1488,13 +1449,9 @@ avr workflow list --since all
 avr workflow list --json name,runs,median_duration_seconds
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, completed_runs, failure_count, flaked_count,
-median_duration_seconds, name, path, platform_workflow_id, repository,
-runs, workflow_id
-```
+`ci_provider`, `completed_runs`, `failure_count`, `flaked_count`, `median_duration_seconds`, `name`, `path`, `platform_workflow_id`, `repository`, `runs`, `workflow_id`
 
 **Options**
 
@@ -1533,7 +1490,7 @@ use the command to retry after a lost response or to resume
 following the run. The command is written to stderr and includes
 the input values.
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow run build.yml
@@ -1573,7 +1530,7 @@ workflow ID (the integer in the GH URL), a workflow filename
 need a repository — pass --repo or run from inside the repo's git
 checkout.
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow view wfl-abc123
@@ -1584,13 +1541,9 @@ avr workflow view ci --json runs,median_duration_seconds
 avr workflow view wfl-abc123 --json '*' --jq '.jobs[].job.name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, completed_runs, failure_count, flaked_count, jobs,
-median_duration_seconds, name, p95_duration_seconds, path,
-platform_workflow_id, repository, runs, workflow_id
-```
+`ci_provider`, `completed_runs`, `failure_count`, `flaked_count`, `jobs`, `median_duration_seconds`, `name`, `p95_duration_seconds`, `path`, `platform_workflow_id`, `repository`, `runs`, `workflow_id`
 
 **Arguments**
 
@@ -1625,7 +1578,7 @@ Exactly one of --key or --all must be provided.
 When using --key, --type is required to scope the deletion.
 With --all, the purge runs asynchronously; the command reports its status.
 
-Examples:
+**Examples**
 
 ```sh
 avr cache delete --repo rep-abc123 --type gha --key "node_modules" --ref refs/heads/main --yes
@@ -1654,7 +1607,7 @@ List cache entries for a repository.
 Large caches use cursor pagination; follow the next-page hint on stderr.
 Sort order and offsets apply only to smaller, sorted result sets.
 
-Examples:
+**Examples**
 
 ```sh
 avr cache list --repo rep-abc123
@@ -1663,11 +1616,9 @@ avr cache list --repo rep-abc123 --key "node_modules" --ref refs/heads/main
 avr cache list --repo rep-abc123 --json key,size_bytes,created_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-cache_type, created_at, hit_count, key, last_accessed_at, ref, size_bytes, version
-```
+`cache_type`, `created_at`, `hit_count`, `key`, `last_accessed_at`, `ref`, `size_bytes`, `version`
 
 **Options**
 
@@ -1692,18 +1643,16 @@ Show cache usage summary for a repository.
 avr cache usage [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr cache usage --repo rep-abc123
 avr cache usage --repo rep-abc123 --json '*'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-by_type, over_quota, quota_bytes, total_size_bytes
-```
+`by_type`, `over_quota`, `quota_bytes`, `total_size_bytes`
 
 **Options**
 
@@ -1750,12 +1699,9 @@ avr tests JOB --test NAME to read its failure message.
 Reports still being prepared are marked; a read that stops early does
 not mean the test never ran. Continue with --cursor for older runs.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-configuration_digest, data, identity, organization_id, pagination,
-repository_id, scope, status, test_id
-```
+`configuration_digest`, `data`, `identity`, `organization_id`, `pagination`, `repository_id`, `scope`, `status`, `test_id`
 
 **Arguments**
 
@@ -1804,13 +1750,9 @@ without downloading results; it cannot combine with test filters, --cursor
 or an explicit --limit. Indexing, unavailable and limited listings do not
 mean no tests were reported.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-commit_sha, counts, data, execution_id, filters, job_id, observed_at,
-organization_id, pagination, reason, reporting_state, repository_id,
-status, total_count
-```
+`commit_sha`, `counts`, `data`, `execution_id`, `filters`, `job_id`, `observed_at`, `organization_id`, `pagination`, `reason`, `reporting_state`, `repository_id`, `status`, `total_count`
 
 **Arguments**
 
@@ -1856,12 +1798,9 @@ Read a row's failure message with avr tests JOB --status failed, and
 its earlier runs with avr tests history. Use --json '*' for test IDs,
 configuration digests and result IDs.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-data, filters, organization_id, pagination, repository_id, scope, status,
-truncated
-```
+`data`, `filters`, `organization_id`, `pagination`, `repository_id`, `scope`, `status`, `truncated`
 
 **Arguments**
 
@@ -1897,7 +1836,7 @@ COMMIT is the commit of a recorded SBOM, as a full SHA or a unique prefix
 of at least 7 characters such as the one `avr sbom list` shows. Defaults to
 the latest SBOM.
 
-Examples:
+**Examples**
 
 ```sh
 avr sbom download --repo acme/api
@@ -1945,7 +1884,7 @@ does not say which commit the run resolved, so --wait reports the analysis
 task's outcome only. Transient errors while waiting are retried until
 --wait-timeout; a wait that times out leaves the analysis running.
 
-Examples:
+**Examples**
 
 ```sh
 avr sbom generate --repo acme/api
@@ -1953,11 +1892,9 @@ avr sbom generate v1.4.0 --repo acme/api
 avr sbom generate 3f2c9a1b7d04 --repo acme/api --wait
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ai_task_id, commit_sha, error_code, recorded_at, status, task_status
-```
+`ai_task_id`, `commit_sha`, `error_code`, `recorded_at`, `status`, `task_status`
 
 **Arguments**
 
@@ -1983,20 +1920,16 @@ avr sbom list [OPTIONS]
 
 Counts shown as "?" were not recorded by the SBOM's schema version.
 
-Examples:
+**Examples**
 
 ```sh
 avr sbom list --repo acme/api
 avr sbom list --repo acme/api --json commit_sha,copyleft_count
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-artifacts, branch, commit_sha, copyleft_count, generated_at,
-is_release, recorded_at, schema_version, total_dependencies,
-unresolved
-```
+`artifacts`, `branch`, `commit_sha`, `copyleft_count`, `generated_at`, `is_release`, `recorded_at`, `schema_version`, `total_dependencies`, `unresolved`
 
 **Options**
 
@@ -2023,7 +1956,7 @@ A long license table is cut to the most common licenses and a long copyleft
 list to its first names; --full lists all of them. Long license names are
 clipped; the summary in --json carries them whole.
 
-Examples:
+**Examples**
 
 ```sh
 avr sbom view --repo acme/api
@@ -2032,12 +1965,9 @@ avr sbom view --repo acme/api --full
 avr sbom view --repo acme/api --json summary --jq .summary.licenses
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-artifacts, branch, commit_sha, generated_at, is_release, recorded_at,
-schema_version, summary
-```
+`artifacts`, `branch`, `commit_sha`, `generated_at`, `is_release`, `recorded_at`, `schema_version`, `summary`
 
 **Arguments**
 
@@ -2072,7 +2002,7 @@ Performs full-text search when --query is provided, otherwise returns
 logs sorted by line number. Results are filtered to logs from repositories
 you have access to.
 
-Examples:
+**Examples**
 
 ```sh
 avr log search --repo acme/web --query "error"
@@ -2081,12 +2011,9 @@ avr log search --repo rep-abc123 --vm-id vm-xyz --stream stderr
 avr log search --repo rep-abc123 --query "OOM" --json content,timestamp,vm_id
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-content, group_name, id, level, line_number, repository_id, score,
-step_name, step_record_id, stream, timestamp, vm_id
-```
+`content`, `group_name`, `id`, `level`, `line_number`, `repository_id`, `score`, `step_name`, `step_record_id`, `stream`, `timestamp`, `vm_id`
 
 **Options**
 
@@ -2176,7 +2103,7 @@ Switch the default host used when AVR_HOST isn't set.
 avr auth switch [OPTIONS] [HOST]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr auth switch                     # show current default + all hosts
@@ -2227,7 +2154,7 @@ interrupted or the server answers with a 5xx error, a token may already
 exist: check avr token list before retrying. A 404 names its reason;
 if personal access tokens are unavailable, contact support@avrea.com.
 
-Examples:
+**Examples**
 
 ```sh
 avr token create --name ci-read --repo acme/api --repo acme/web
@@ -2236,13 +2163,9 @@ avr token create --name sandbox --allow-vm-create --vm-create-limit 3
 avr token create --name ci-read --repo acme/api --json token --jq .token
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, token, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `token`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Options**
 
@@ -2268,20 +2191,16 @@ Shows your own tokens, or every member's when you are an organization
 admin. Revoked and expired tokens are not listed; `avr token view` still
 reads them by ID.
 
-Examples:
+**Examples**
 
 ```sh
 avr token list
 avr token list --json id,name,expires_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Options**
 
@@ -2301,7 +2220,7 @@ avr token revoke [OPTIONS] TOKEN_ID
 Requests made with the token are refused from then on. Revoking a token
 that is already revoked succeeds.
 
-Examples:
+**Examples**
 
 ```sh
 avr token revoke <token-id>
@@ -2327,20 +2246,16 @@ avr token view [OPTIONS] TOKEN_ID
 
 The credential itself is never shown again after `avr token create`.
 
-Examples:
+**Examples**
 
 ```sh
 avr token view <token-id>
 avr token view <token-id> --json grants
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Arguments**
 
@@ -2413,7 +2328,7 @@ secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
 nonzero, so the secret is not lost.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token create --name ci --group Platform/CI --repo acme/api
@@ -2422,14 +2337,9 @@ avr service-token create --name agents --group Platform/CI --repo acme/api --max
 avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-grants_version, group_id, id, last_used_at, name, organization_id,
-previous_valid_until, revoked_at, revoked_reason, rotated_at,
-rotation_version, status, vm_cap, vm_count, token
-```
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`, `token`
 
 **Options**
 
@@ -2465,7 +2375,7 @@ one group's whole path selects that group; otherwise the end of a path,
 such as Platform/CI or a group name like CI, must select exactly one
 group.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token list
@@ -2473,14 +2383,9 @@ avr service-token list --status live --group Platform/CI
 avr service-token list --json id,name,expires_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-grants_version, group_id, id, last_used_at, name, organization_id,
-previous_valid_until, revoked_at, revoked_reason, rotated_at,
-rotation_version, status, vm_cap, vm_count
-```
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`
 
 **Options**
 
@@ -2503,7 +2408,7 @@ Its current secret and any old secret still in its rotation overlap stop
 working on their next request, its grants are removed, and the VMs it
 created are deleted. Revoking a token that is already revoked succeeds.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token revoke <token-id>
@@ -2531,7 +2436,7 @@ For a suspected leak: every unrevoked service token of the organization,
 expired ones included, stops working on its next request, and the VMs
 those tokens created are deleted.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token revoke-all --org <org>
@@ -2563,7 +2468,7 @@ secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
 nonzero, so the secret is not lost.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token rotate <token-id>
@@ -2571,14 +2476,9 @@ avr service-token rotate <token-id> --ttl 30d --overlap 2h
 avr service-token rotate <token-id> --json token --jq .token
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-grants_version, group_id, id, last_used_at, name, organization_id,
-previous_valid_until, revoked_at, revoked_reason, rotated_at,
-rotation_version, status, vm_cap, vm_count, token
-```
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`, `token`
 
 **Arguments**
 
@@ -2615,7 +2515,7 @@ own access now. The API may ask for a recent sign-in; the command then
 exits 4 and says to sign in again. The change applies to the token's
 next request.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token set-access <token-id> --repo acme/api --repo acme/web
@@ -2653,21 +2553,16 @@ Reads a revoked or expired token as well. Its grants are removed when it
 is revoked and 30 days after it expires. The secret itself is never
 shown again after `avr service-token create` or `rotate`.
 
-Examples:
+**Examples**
 
 ```sh
 avr service-token view <token-id>
 avr service-token view <token-id> --json grants
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-grants_version, group_id, id, last_used_at, name, organization_id,
-previous_valid_until, revoked_at, revoked_reason, rotated_at,
-rotation_version, status, vm_cap, vm_count
-```
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`
 
 **Arguments**
 
@@ -2710,20 +2605,16 @@ the request. If the response is lost, rerun the same command with
 --idempotency-key KEY: it returns the group that create made instead of
 making a second one. A key belongs to one parent, name and label.
 
-Examples:
+**Examples**
 
 ```sh
 avr group create Platform --parent Organization
 avr group create CI --parent Organization/Platform --label runners
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, display_name, group_id, idempotency_key, label, member_count,
-ownership, parent_id, soft_deleted_at, state, suspension_reason,
-updated_at
-```
+`created_at`, `display_name`, `group_id`, `idempotency_key`, `label`, `member_count`, `ownership`, `parent_id`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 
@@ -2759,18 +2650,16 @@ clear, at most 100 workflows at a time.
 Deleting a group also removes the resource access it grants, and stops
 charging it for workflows of repositories that are no longer installed.
 
-Examples:
+**Examples**
 
 ```sh
 avr group delete Platform/CI
 avr group delete grp-0123456789abcdef0123456789abcdef --yes
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-deleted, group_id, path
-```
+`deleted`, `group_id`, `path`
 
 **Arguments**
 
@@ -2797,19 +2686,16 @@ group has it, such as Platform/CI.
 
 Only the options you pass change; --label '' clears the label.
 
-Examples:
+**Examples**
 
 ```sh
 avr group edit Platform/CI --name Builds
 avr group edit Platform/CI --label ''
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, display_name, group_id, label, member_count, ownership,
-parent_id, soft_deleted_at, state, suspension_reason, updated_at
-```
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 
@@ -2850,17 +2736,15 @@ group has it, such as Platform/CI.
 
 Asks first unless --yes is passed. Limits on parent groups still apply.
 
-Examples:
+**Examples**
 
 ```sh
 avr group limit clear Platform/CI --yes
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-cleared, group_id, limit_key
-```
+`cleared`, `group_id`, `limit_key`
 
 **Arguments**
 
@@ -2885,18 +2769,15 @@ GROUP is a group ID (grp-...), the group's path from the root group,
 such as Organization/Platform/CI, or the end of a path when only one
 group has it, such as Platform/CI.
 
-Examples:
+**Examples**
 
 ```sh
 avr group limit list Platform/CI
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-group_id, inherited, kind, limit_key, limit_type, period, timezone,
-value
-```
+`group_id`, `inherited`, `kind`, `limit_key`, `limit_type`, `period`, `timezone`, `value`
 
 **Arguments**
 
@@ -2924,18 +2805,15 @@ Asks first unless --yes is passed or the change raises or keeps the
 group's own limit: a first limit or a lower one can make new jobs wait.
 Running jobs keep running.
 
-Examples:
+**Examples**
 
 ```sh
 avr group limit set Platform/CI --max-vcpu 64
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-group_id, inherited, kind, limit_key, limit_type, period, previous_value,
-timezone, value
-```
+`group_id`, `inherited`, `kind`, `limit_key`, `limit_type`, `period`, `previous_value`, `timezone`, `value`
 
 **Arguments**
 
@@ -2962,19 +2840,16 @@ with /, such as Organization/Platform/CI; a parent is listed before its
 children. Pass a group's ID or path to --group when you create or list
 service tokens.
 
-Examples:
+**Examples**
 
 ```sh
 avr group list
 avr group list --json group_id,path --jq '.[].path'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, display_name, group_id, label, member_count, ownership,
-parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
-```
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `path`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Options**
 
@@ -3015,7 +2890,7 @@ The command adds them all in one change, up to 250, and reports
 each member's result; a member already in the state asked for counts
 as done, so a rerun is safe.
 
-Examples:
+**Examples**
 
 ```sh
 avr group member add Platform/CI @me
@@ -3023,11 +2898,9 @@ avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef
 avr group member add Platform/CI --file members.txt
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-action, detail, member, status, user_id
-```
+`action`, `detail`, `member`, `status`, `user_id`
 
 **Arguments**
 
@@ -3055,18 +2928,16 @@ group has it, such as Platform/CI.
 
 Members of subgroups are listed with the subgroup.
 
-Examples:
+**Examples**
 
 ```sh
 avr group member list Platform/CI
 avr group member list Platform/CI -L 1000 --json user_id,email
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-added_at, email, name, source, stale_sources, user_id
-```
+`added_at`, `email`, `name`, `source`, `stale_sources`, `user_id`
 
 **Arguments**
 
@@ -3100,7 +2971,7 @@ as done, so a rerun is safe.
 Lists the members and asks first unless --yes is passed; reading
 members from standard input (--file -) needs --yes.
 
-Examples:
+**Examples**
 
 ```sh
 avr group member remove Platform/CI @me
@@ -3108,11 +2979,9 @@ avr group member remove Platform/CI usr-0123456789abcdef0123456789abcdef
 avr group member remove Platform/CI --file members.txt
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-action, detail, member, status, user_id
-```
+`action`, `detail`, `member`, `status`, `user_id`
 
 **Arguments**
 
@@ -3141,18 +3010,16 @@ group has it, such as Platform/CI.
 
 Usage counts the group and its subgroups.
 
-Examples:
+**Examples**
 
 ```sh
 avr group usage Platform
 avr group usage Platform --json used_vcpu,pools
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-group_id, group_state, measured_at, pools, used_vcpu
-```
+`group_id`, `group_state`, `measured_at`, `pools`, `used_vcpu`
 
 **Arguments**
 
@@ -3176,19 +3043,16 @@ GROUP is a group ID (grp-...), the group's path from the root group,
 such as Organization/Platform/CI, or the end of a path when only one
 group has it, such as Platform/CI.
 
-Examples:
+**Examples**
 
 ```sh
 avr group view Organization/Platform
 avr group view Platform/CI --json group_id,member_count
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, display_name, group_id, label, member_count, ownership,
-parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
-```
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `path`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 
@@ -3216,11 +3080,9 @@ Print the value of a configuration key.
 avr config get [OPTIONS] {org}
 ```
 
-Available keys:
+**Available keys**
 
-```sh
-org   Active organization ID
-```
+- `org`: Active organization ID
 
 **Arguments**
 
@@ -3242,13 +3104,11 @@ Set a CLI configuration value.
 avr config set [OPTIONS] {org} VALUE
 ```
 
-Available keys:
+**Available keys**
 
-```sh
-org   Active organization (ID or slug)
-```
+- `org`: Active organization (ID or slug)
 
-Examples:
+**Examples**
 
 ```sh
 avr config set org org-abc123
@@ -3268,13 +3128,11 @@ Remove a configuration override.
 avr config unset [OPTIONS] {org}
 ```
 
-Available keys:
+**Available keys**
 
-```sh
-org   Drop the stored default organization for the active host
-```
+- `org`: Drop the stored default organization for the active host
 
-Examples:
+**Examples**
 
 ```sh
 avr config unset org
@@ -3305,7 +3163,7 @@ remote and its effective values are shown. Pass --org to see organization
 values (this suppresses auto-detection), or --repo / AVR_REPO to target a
 repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr settings list --org org-abc123
@@ -3315,11 +3173,9 @@ avr settings list --prefix cache.
 avr settings list --json key,value,source
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-key, source, value
-```
+`key`, `source`, `value`
 
 **Options**
 
@@ -3342,7 +3198,7 @@ Clears the repository override when run inside a connected checkout (the
 repo is auto-detected), when --repo is given, or when AVR_REPO is set. Pass
 --org to clear the organization-scoped value (this suppresses auto-detection).
 
-Examples:
+**Examples**
 
 ```sh
 avr settings reset cache.gha.enabled --repo rep-xyz789
@@ -3366,7 +3222,7 @@ List available setting definitions.
 avr settings schema [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr settings schema
@@ -3374,12 +3230,9 @@ avr settings schema --prefix cache. --scope repository
 avr settings schema --json '*'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-choices, default, description, inherits, key, max_value, min_value,
-scopes, value_type
-```
+`choices`, `default`, `description`, `inherits`, `key`, `max_value`, `min_value`, `scopes`, `value_type`
 
 **Options**
 
@@ -3405,7 +3258,7 @@ targets org scope (the default org, or --org); org-only settings must be set
 with --org. A checkout whose repo isn't connected to the org is an error
 rather than a silent org-wide write.
 
-Examples:
+**Examples**
 
 ```sh
 avr settings set cache.gha.enabled false --org org-abc123
@@ -3463,7 +3316,7 @@ agents working on the repository, such as Devin or Codex cloud, find it.
 Those environments also need avr installed and AVR_TOKEN set to a personal
 access token or service token.
 
-Examples:
+**Examples**
 
 ```sh
 avr skill install
@@ -3489,14 +3342,12 @@ Without a topic, prints the rules every task follows and the list of
 topics. With a topic, prints that part of the guide. The guide belongs
 to the installed avr version.
 
-Topics:
+**Topics**
 
-```sh
-test      Push a change and follow its CI run, or dispatch a workflow
-diagnose  Find why a run failed
-speed     Find why CI is slow, caches and right-sized runners
-vms       On-demand Linux, macOS and Windows VMs
-```
+- `test`: Push a change and follow its CI run, or dispatch a workflow
+- `diagnose`: Find why a run failed
+- `speed`: Find why CI is slow, caches and right-sized runners
+- `vms`: On-demand Linux, macOS and Windows VMs
 
 **Arguments**
 
@@ -3545,7 +3396,7 @@ org install add, and an option such as tests list --summary or secret
 get --version-id selects others. The command with --json ? lists the
 fields of that invocation.
 
-Examples:
+**Examples**
 
 ```sh
 avr reference
@@ -3553,12 +3404,9 @@ avr reference group member
 avr reference --json command,json_fields --jq '.[] | select(.json_fields | length > 0)'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-command, deprecated, help, is_group, json_fields, params, short_help,
-usage
-```
+`command`, `deprecated`, `help`, `is_group`, `json_fields`, `params`, `short_help`, `usage`
 
 **Arguments**
 
@@ -3813,12 +3661,9 @@ List invoices.
 avr billing invoices list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, currency, has_pdf, invoice_id, period_end, period_start,
-status, subtotal_cents, tax_cents, total_cents
-```
+`created_at`, `currency`, `has_pdf`, `invoice_id`, `period_end`, `period_start`, `status`, `subtotal_cents`, `tax_cents`, `total_cents`
 
 **Options**
 
@@ -3836,12 +3681,9 @@ Show details for a single invoice.
 avr billing invoices show [OPTIONS] INVOICE_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, currency, has_pdf, invoice_id, line_items, period_end,
-period_start, status, subtotal_cents, tax_cents, total_cents
-```
+`created_at`, `currency`, `has_pdf`, `invoice_id`, `line_items`, `period_end`, `period_start`, `status`, `subtotal_cents`, `tax_cents`, `total_cents`
 
 **Arguments**
 
@@ -3885,12 +3727,9 @@ List payment methods.
 avr billing payment-methods list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-card_brand, card_exp_month, card_exp_year, card_last4, is_default,
-payment_method_id
-```
+`card_brand`, `card_exp_month`, `card_exp_year`, `card_last4`, `is_default`, `payment_method_id`
 
 **Options**
 
@@ -3939,11 +3778,9 @@ Show billing settings.
 avr billing settings [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_address, billing_emails, tax_id
-```
+`billing_address`, `billing_emails`, `tax_id`
 
 **Options**
 
@@ -3959,11 +3796,9 @@ Show billing summary for the organization.
 avr billing summary [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_emails, default_payment_method, has_billing
-```
+`billing_emails`, `default_payment_method`, `has_billing`
 
 **Options**
 
@@ -3979,7 +3814,7 @@ Update billing settings.
 avr billing update-settings [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr billing update-settings --email billing@example.com
@@ -3987,11 +3822,9 @@ avr billing update-settings --tax-id EU123456789
 avr billing update-settings --email a@example.com,b@example.com --tax-id FI12345678
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_address, billing_emails, tax_id
-```
+`billing_address`, `billing_emails`, `tax_id`
 
 **Options**
 
@@ -4017,12 +3850,9 @@ List audit events for the organization.
 avr audit-events list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-acting_api_key_id, action, actor_type, actor_user_id, client_ip,
-created_at, event_data, event_id, resource_id, resource_type
-```
+`acting_api_key_id`, `action`, `actor_type`, `actor_user_id`, `client_ip`, `created_at`, `event_data`, `event_id`, `resource_id`, `resource_type`
 
 **Options**
 
@@ -4065,7 +3895,7 @@ using a separate remote. These Git tokens are short-lived, and shorter
 still when obtained with a personal access token. Tokens are never saved
 in the repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo clone foo/faa
@@ -4092,7 +3922,7 @@ List repositories you can access in an organization.
 avr repo list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr repo list
@@ -4100,11 +3930,9 @@ avr repo list --json full_name,repository_id
 avr repo list --json '*' -q '.[].full_name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-full_name, platform, platform_repository_id, repository_id
-```
+`full_name`, `platform`, `platform_repository_id`, `repository_id`
 
 **Options**
 
@@ -4139,7 +3967,7 @@ Safe to repeat: existing placements and their source configuration are
 preserved. The initial sync runs asynchronously; use `mirror status`
 with the returned repository ID to check progress.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror locations
@@ -4147,11 +3975,9 @@ avr repo mirror create acme/widgets --location gsc-fi
 avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -4176,18 +4002,16 @@ avr repo mirror disable [OPTIONS]
 Placements are kept but become inert, so re-enabling restores them.
 Requires the organization admin role.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror disable
 avr repo mirror disable --repo acme/widgets --yes
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -4210,18 +4034,16 @@ Enabling makes existing placements active again; a freshly declared
 repository still needs at least one placement (`avr repo mirror place`)
 before anything is synced. Requires the organization admin role.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror enable
 avr repo mirror enable --repo acme/widgets
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -4241,18 +4063,16 @@ avr repo mirror locations [OPTIONS]
 
 Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror locations
 avr repo mirror locations --json cluster_id,name
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-cluster_id, datacenter_id, name
-```
+`cluster_id`, `datacenter_id`, `name`
 
 **Options**
 
@@ -4272,18 +4092,16 @@ CLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is
 idempotent; a new placement syncs from the upstream platform copy.
 Mirroring must be enabled first. Requires the organization admin role.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror place gsc-fi
 avr repo mirror place gsc-fi --repo acme/widgets
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -4305,7 +4123,7 @@ Show the repository's git-mirror declaration and placements.
 avr repo mirror status [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror status
@@ -4313,11 +4131,9 @@ avr repo mirror status --repo acme/widgets
 avr repo mirror status --json enabled,placements
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -4338,18 +4154,16 @@ avr repo mirror unplace [OPTIONS] CLUSTER_ID
 The mirrored data in that cluster is dropped; other placements are
 unaffected. Requires the organization admin role.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo mirror unplace gsc-fi
 avr repo mirror unplace gsc-fi --repo acme/widgets --yes
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-enabled, full_name, placements, repository_id
-```
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -4382,21 +4196,16 @@ avr repo public-mirror cancel [OPTIONS] REQUEST_ID
 
 An approved mirror is global and cannot be withdrawn by a requester.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef
 avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef --yes
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-approval_state, created_at, github_snapshot, public_access_expires_at,
-reason, repository_full_name, repository_id, request_id,
-requester_organization_id, requester_user_id, review_note, reviewed_at,
-reviewed_by_user_id, status, updated_at
-```
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 
@@ -4424,7 +4233,7 @@ A repository that is not mirrored is an answer, not a failure: the command
 reports ``Available: no`` (``available: false`` under --json) and exits 0.
 Only a real failure — denied, malformed name, server error — exits non-zero.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo public-mirror check rust-lang/rust
@@ -4432,16 +4241,9 @@ avr repo public-mirror check rust-lang/rust --json '*'
 avr repo public-mirror check rust-lang/rust --json available,default_branch
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-approval_state, available, default_branch, https_clone_url,
-installation_kind, is_archived, is_disabled, is_fork, mirror_enabled,
-platform_owner_id, platform_owner_login, platform_owner_type,
-platform_pushed_at, platform_repository_id, platform_size_kb,
-public_access_expires_at, public_metadata_verified_at,
-repository_full_name, repository_id
-```
+`approval_state`, `available`, `default_branch`, `https_clone_url`, `installation_kind`, `is_archived`, `is_disabled`, `is_fork`, `mirror_enabled`, `platform_owner_id`, `platform_owner_login`, `platform_owner_type`, `platform_pushed_at`, `platform_repository_id`, `platform_size_kb`, `public_access_expires_at`, `public_metadata_verified_at`, `repository_full_name`, `repository_id`
 
 **Arguments**
 
@@ -4463,7 +4265,7 @@ avr repo public-mirror request [OPTIONS] FULL_NAME
 FULL_NAME is the canonical GitHub owner/repository name. Avrea validates
 the repository with GitHub before recording the request.
 
-Examples:
+**Examples**
 
 ```sh
 avr repo public-mirror request rust-lang/rust
@@ -4471,14 +4273,9 @@ avr repo public-mirror request rust-lang/rust --reason "Build dependency"
 avr repo public-mirror request rust-lang/rust --org acme --json '*'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-approval_state, created_at, github_snapshot, public_access_expires_at,
-reason, repository_full_name, repository_id, request_id,
-requester_organization_id, requester_user_id, review_note, reviewed_at,
-reviewed_by_user_id, status, updated_at
-```
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 
@@ -4499,7 +4296,7 @@ List your organization's public-mirror requests.
 avr repo public-mirror requests [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr repo public-mirror requests
@@ -4507,14 +4304,9 @@ avr repo public-mirror requests --org acme
 avr repo public-mirror requests --json request_id,status,repository_full_name
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-approval_state, created_at, github_snapshot, public_access_expires_at,
-reason, repository_full_name, repository_id, request_id,
-requester_organization_id, requester_user_id, review_note, reviewed_at,
-reviewed_by_user_id, status, updated_at
-```
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Options**
 
@@ -4530,21 +4322,16 @@ View one public-mirror request.
 avr repo public-mirror view [OPTIONS] REQUEST_ID
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef
 avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef --json '*'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-approval_state, created_at, github_snapshot, public_access_expires_at,
-reason, repository_full_name, repository_id, request_id,
-requester_organization_id, requester_user_id, review_note, reviewed_at,
-reviewed_by_user_id, status, updated_at
-```
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 
@@ -4572,11 +4359,9 @@ Create a new organization.
 avr org create [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-name, organization_id, role, slug
-```
+`name`, `organization_id`, `role`, `slug`
 
 **Arguments**
 
@@ -4606,19 +4391,16 @@ avr org email-domain claim [OPTIONS] DOMAIN
 The domain does not need to match your GitHub or Avrea account email.
 Publish the returned TXT record, then run ``email-domain verify``.
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain claim example.com
 avr org email-domain claim corp.example.com --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Arguments**
 
@@ -4638,12 +4420,9 @@ List claimed organization email domains (admin only).
 avr org email-domain list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Options**
 
@@ -4663,7 +4442,7 @@ Replaces all existing domains — a typo wipes the org's auto-membership
 policy. Confirms before applying; pass --yes to skip the prompt (required
 when stdout isn't a TTY, e.g. in CI).
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain set example.com
@@ -4690,19 +4469,16 @@ avr org email-domain verify [OPTIONS] DOMAIN
 Each invocation performs a fresh DNS lookup. If DNS has not propagated,
 wait and run the command again.
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain verify example.com
 avr org email-domain verify corp.example.com --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Arguments**
 
@@ -4726,19 +4502,16 @@ Shows whether groups, resource access and delegation are on, which
 organization capabilities you hold, and for each group listed for you
 what you may and may not do there.
 
-Examples:
+**Examples**
 
 ```sh
 avr org governance
 avr org governance --json groups --jq '.groups[].display_name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-delegation_enabled, eligible_root_admin, groups, groups_enabled,
-manual_root_capabilities, resource_access_enabled, root_capabilities
-```
+`delegation_enabled`, `eligible_root_admin`, `groups`, `groups_enabled`, `manual_root_capabilities`, `resource_access_enabled`, `root_capabilities`
 
 **Options**
 
@@ -4768,7 +4541,7 @@ For GitLab, create an expiring gitlab.com group access token with Reporter
 role, api, and read_repository. The token is read from a hidden prompt
 or stdin and is never accepted as a command-line value.
 
-Examples:
+**Examples**
 
 ```sh
 avr org install add
@@ -4783,24 +4556,13 @@ as a list and keeps progress messages on stderr; GitLab emits the
 registered installation, and the field list or jq filter must keep
 webhook_setup, which carries the one-time webhook secret.
 
-JSON FIELDS (GitHub)
+**JSON FIELDS (GitHub)**
 
-```sh
-created_at, installation_id, organization_name, organization_slug,
-platform, platform_installation_id, platform_settings_url, state,
-target_id, target_name, target_type, configured_runner_count, degraded_runner_count
-```
+`created_at`, `installation_id`, `organization_name`, `organization_slug`, `platform`, `platform_installation_id`, `platform_settings_url`, `state`, `target_id`, `target_name`, `target_type`, `configured_runner_count`, `degraded_runner_count`
 
-JSON FIELDS (GitLab)
+**JSON FIELDS (GitLab)**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at, webhook_setup
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`, `webhook_setup`
 
 **Options**
 
@@ -4823,13 +4585,9 @@ List accessible installations across all your organizations.
 avr org install list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, installation_id, organization_name, organization_slug,
-platform, platform_installation_id, platform_settings_url, state,
-target_id, target_name, target_type, configured_runner_count, degraded_runner_count
-```
+`created_at`, `installation_id`, `organization_name`, `organization_slug`, `platform`, `platform_installation_id`, `platform_settings_url`, `state`, `target_id`, `target_name`, `target_type`, `configured_runner_count`, `degraded_runner_count`
 
 **Options**
 
@@ -4848,11 +4606,9 @@ GitHub installations are suspended. GitLab installations are permanently
 disconnected, including their Avrea history; use `avr org install rotate`
 for a credential problem instead. Pass --yes to skip confirmation.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-action, installation_id, organization_id, platform
-```
+`action`, `installation_id`, `organization_id`, `platform`
 
 **Options**
 
@@ -4877,16 +4633,9 @@ or stdin and is never accepted as a command-line value.
 With --json, the field list or jq filter must keep webhook_setup, which
 carries the one-time webhook secret.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at, webhook_setup
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`, `webhook_setup`
 
 **Options**
 
@@ -4916,11 +4665,9 @@ Supply your own GitLab personal access token with create_runner scope and Owner
 role. It is sent only to gitlab.com and is never persisted. Already
 configured machine types must be replaced with 'runner set'.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-data, setup
-```
+`data`, `setup`
 
 **Options**
 
@@ -4942,11 +4689,9 @@ avr org install runner delete [OPTIONS] MACHINE_TYPE
 
 The runner object in GitLab remains for the group Owner to remove.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-deleted, installation_id, machine_type
-```
+`deleted`, `installation_id`, `machine_type`
 
 **Arguments**
 
@@ -4968,11 +4713,9 @@ List all machine types, runner status, and exact GitLab setup instructions.
 avr org install runner list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-data, setup
-```
+`data`, `setup`
 
 **Options**
 
@@ -4991,13 +4734,9 @@ avr org install runner set [OPTIONS] MACHINE_TYPE
 
 Read the token from a hidden prompt or --runner-token-stdin.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-architecture, configured, cpu_count, description, disk_gb,
-invalid_at, machine_type, memory_mb, paused, run_untagged,
-runner_id, status, tag, token_expires_at, verified_at
-```
+`architecture`, `configured`, `cpu_count`, `description`, `disk_gb`, `invalid_at`, `machine_type`, `memory_mb`, `paused`, `run_untagged`, `runner_id`, `status`, `tag`, `token_expires_at`, `verified_at`
 
 **Arguments**
 
@@ -5023,16 +4762,9 @@ Use `--project-selection selected` without `--project-id` to select no
 projects. This updates the selection only; the next project sync applies
 it.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`
 
 **Options**
 
@@ -5051,7 +4783,7 @@ List organizations you belong to.
 avr org list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr org list
@@ -5059,11 +4791,9 @@ avr org list --json slug,role
 avr org list --json '*' -q '.[] | select(.role == "admin")'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-name, organization_id, role, slug
-```
+`name`, `organization_id`, `role`, `slug`
 
 **Options**
 
@@ -5080,7 +4810,7 @@ avr org members [OPTIONS] [COMMAND [ARGS]...]
 
 `avr org members access MEMBER` explains what one member can reach.
 
-Examples:
+**Examples**
 
 ```sh
 avr org members
@@ -5088,11 +4818,9 @@ avr org members --org org-abc123
 avr org members --json name,role
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-joined_at, name, role, user_id
-```
+`joined_at`, `name`, `role`, `user_id`
 
 **Options**
 
@@ -5113,20 +4841,16 @@ verified, or a display name that only one active member has. The
 answer lists the member's groups, what each grant reaches and why, and
 their organization capabilities. A partial answer says so.
 
-Examples:
+**Examples**
 
 ```sh
 avr org members access @me
 avr org members access usr-0123456789abcdef0123456789abcdef --json groups
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-governance, groups, notes, org_role, org_role_source, resource_access,
-resource_access_complete, resource_access_truncated, root_capabilities,
-user_id
-```
+`governance`, `groups`, `notes`, `org_role`, `org_role_source`, `resource_access`, `resource_access_complete`, `resource_access_truncated`, `root_capabilities`, `user_id`
 
 **Arguments**
 
@@ -5157,7 +4881,7 @@ avr org saml configure [OPTIONS] METADATA
 METADATA is an IdP metadata XML file; pass - to read it from stdin.
 Reconfiguring requires the complete metadata document again.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml configure idp-metadata.xml
@@ -5166,14 +4890,9 @@ avr org saml configure idp.xml --email-attribute mail \
     --given-name-attribute firstName --family-name-attribute lastName
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Arguments**
 
@@ -5203,21 +4922,16 @@ avr org saml enforcement [OPTIONS] {on|off}
 Enabling requires a configured SAML connection and at least one verified
 company domain.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml enforcement on
 avr org saml enforcement off --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Arguments**
 
@@ -5253,14 +4967,9 @@ Show the current SAML configuration (admin only).
 avr org saml show [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Options**
 
@@ -5278,7 +4987,7 @@ avr org saml sp-metadata [OPTIONS]
 
 Redirect stdout to a file for import into your identity provider.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml sp-metadata > avrea-sp.xml
@@ -5300,7 +5009,7 @@ avr org saml test [OPTIONS]
 The test performs a real IdP sign-in and displays the parsed assertion
 without creating a new Avrea session.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml test
@@ -5320,7 +5029,7 @@ Check Avrea platform status.
 avr health [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr health
@@ -5328,11 +5037,9 @@ avr health --json status
 avr health --json '*' -q '.status'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-status
-```
+`status`
 
 **Options**
 
@@ -5349,7 +5056,7 @@ avr api [OPTIONS] <endpoint>
 
 Use GET by default, or POST when supplying fields or input. With GET, HEAD, or --input, fields become query parameters.
 
-Examples:
+**Examples**
 
 ```sh
 avr api users/me/organizations
@@ -5400,11 +5107,9 @@ Examples:
     avr feedback --bug "Run logs are missing"
     avr feedback status FEEDBACK_ID
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, id, idempotency_key, status
-```
+`created_at`, `id`, `idempotency_key`, `status`
 
 **Arguments**
 
@@ -5426,11 +5131,9 @@ Read the delivery status of your feedback.
 avr feedback status [OPTIONS] FEEDBACK_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, id, status
-```
+`created_at`, `id`, `status`
 
 **Arguments**
 
@@ -5457,12 +5160,9 @@ Delete one scoped value, or the whole name with --all.
 avr secret delete [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -5487,12 +5187,9 @@ Edit description, label, or availability without replacing a value.
 avr secret edit [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -5526,11 +5223,9 @@ Inspect a secret.
 avr secret get [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-as_file, description, name, secret_id, updated_at, variants
-```
+`as_file`, `description`, `name`, `secret_id`, `updated_at`, `variants`
 
 **Arguments**
 
@@ -5554,11 +5249,9 @@ List names, scoped-value counts, and update times.
 avr secret list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-as_file, description, name, secret_id, updated_at, variants
-```
+`as_file`, `description`, `name`, `secret_id`, `updated_at`, `variants`
 
 **Options**
 
@@ -5575,12 +5268,9 @@ Create or replace a scoped value.
 avr secret set [OPTIONS] [NAME]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -5621,12 +5311,9 @@ Delete one scoped value, or the whole name with --all.
 avr variable delete [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -5651,12 +5338,9 @@ Edit description, label, or availability without replacing a value.
 avr variable edit [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -5690,13 +5374,9 @@ Inspect a variable.
 avr variable get [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, current_version, current_version_created_at,
-current_version_id, has_value, label, updated_at, value,
-variable_variant_id
-```
+`availability`, `current_version`, `current_version_created_at`, `current_version_id`, `has_value`, `label`, `updated_at`, `value`, `variable_variant_id`
 
 **Arguments**
 
@@ -5719,11 +5399,9 @@ List names, scoped-value counts, and update times.
 avr variable list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-description, name, updated_at, variable_id, variants
-```
+`description`, `name`, `updated_at`, `variable_id`, `variants`
 
 **Options**
 
@@ -5740,12 +5418,9 @@ Create or replace a scoped value.
 avr variable set [OPTIONS] [NAME]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-availability, label, message, name, resource_id, stage, status,
-variant_id, version_id
-```
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 

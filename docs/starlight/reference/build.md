@@ -38,7 +38,7 @@ platform. The first build reads the default branch's CI cache; writes go
 to a builder-only scope that CI never reads. Passing any --cache-from or
 --cache-to replaces these defaults.
 
-Examples:
+**Examples**
 
 ```sh
 avr build -t myimage .

@@ -28,7 +28,15 @@ func TestMarkdownRendersUnwrappedProseAsText(t *testing.T) {
 	got := helpBlock("Create a VM.\n\n\b\nFor example, as a <hook>:\n    exec avr vm create --org <org-id>\n\n\b\nExamples:\n    avr vm list\n      --json id\n", "sh")
 	want := "Create a VM.\n\n" +
 		"For example, as a &lt;hook&gt;:\n\n```sh\nexec avr vm create --org <org-id>\n```\n\n" +
-		"Examples:\n\n```sh\navr vm list\n  --json id\n```"
+		"**Examples**\n\n```sh\navr vm list\n  --json id\n```"
+	if got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+func TestMarkdownRendersFieldListsAndDefinitionsAsText(t *testing.T) {
+	got := helpBlock("\b\nJSON FIELDS (GitHub)\n    created_at, id,\n    name\n\n\b\nTopics:\n  test      Push a <change>\n  vms       On-demand VMs\n", "sh")
+	want := "**JSON FIELDS (GitHub)**\n\n`created_at`, `id`, `name`\n\n" +
+		"**Topics**\n\n- `test`: Push a &lt;change&gt;\n- `vms`: On-demand VMs"
 	if got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}

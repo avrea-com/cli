@@ -23,7 +23,7 @@ Performs full-text search when --query is provided, otherwise returns
 logs sorted by line number. Results are filtered to logs from repositories
 you have access to.
 
-Examples:
+**Examples**
 
 ```sh
 avr log search --repo acme/web --query "error"
@@ -32,12 +32,9 @@ avr log search --repo rep-abc123 --vm-id vm-xyz --stream stderr
 avr log search --repo rep-abc123 --query "OOM" --json content,timestamp,vm_id
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-content, group_name, id, level, line_number, repository_id, score,
-step_name, step_record_id, stream, timestamp, vm_id
-```
+`content`, `group_name`, `id`, `level`, `line_number`, `repository_id`, `score`, `step_name`, `step_record_id`, `stream`, `timestamp`, `vm_id`
 
 **Options**
 

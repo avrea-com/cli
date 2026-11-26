@@ -43,7 +43,7 @@ interrupted or the server answers with a 5xx error, a token may already
 exist: check avr token list before retrying. A 404 names its reason;
 if personal access tokens are unavailable, contact support@avrea.com.
 
-Examples:
+**Examples**
 
 ```sh
 avr token create --name ci-read --repo acme/api --repo acme/web
@@ -52,13 +52,9 @@ avr token create --name sandbox --allow-vm-create --vm-create-limit 3
 avr token create --name ci-read --repo acme/api --json token --jq .token
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, token, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `token`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Options**
 
@@ -84,20 +80,16 @@ Shows your own tokens, or every member's when you are an organization
 admin. Revoked and expired tokens are not listed; `avr token view` still
 reads them by ID.
 
-Examples:
+**Examples**
 
 ```sh
 avr token list
 avr token list --json id,name,expires_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Options**
 
@@ -117,7 +109,7 @@ avr token revoke [OPTIONS] TOKEN_ID
 Requests made with the token are refused from then on. Revoking a token
 that is already revoked succeeds.
 
-Examples:
+**Examples**
 
 ```sh
 avr token revoke <token-id>
@@ -143,20 +135,16 @@ avr token view [OPTIONS] TOKEN_ID
 
 The credential itself is never shown again after `avr token create`.
 
-Examples:
+**Examples**
 
 ```sh
 avr token view <token-id>
 avr token view <token-id> --json grants
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_vm_create, created_at, expires_at, grants, id, last_used_at,
-name, organization_id, revoked_at, revoked_reason, user_id,
-vm_create_count, vm_create_limit
-```
+`allow_vm_create`, `created_at`, `expires_at`, `grants`, `id`, `last_used_at`, `name`, `organization_id`, `revoked_at`, `revoked_reason`, `user_id`, `vm_create_count`, `vm_create_limit`
 
 **Arguments**
 

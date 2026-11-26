@@ -19,7 +19,7 @@ List workflows with aggregate run stats.
 avr workflow list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow list
@@ -30,13 +30,9 @@ avr workflow list --since all
 avr workflow list --json name,runs,median_duration_seconds
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, completed_runs, failure_count, flaked_count,
-median_duration_seconds, name, path, platform_workflow_id, repository,
-runs, workflow_id
-```
+`ci_provider`, `completed_runs`, `failure_count`, `flaked_count`, `median_duration_seconds`, `name`, `path`, `platform_workflow_id`, `repository`, `runs`, `workflow_id`
 
 **Options**
 
@@ -75,7 +71,7 @@ use the command to retry after a lost response or to resume
 following the run. The command is written to stderr and includes
 the input values.
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow run build.yml
@@ -115,7 +111,7 @@ workflow ID (the integer in the GH URL), a workflow filename
 need a repository — pass --repo or run from inside the repo's git
 checkout.
 
-Examples:
+**Examples**
 
 ```sh
 avr workflow view wfl-abc123
@@ -126,13 +122,9 @@ avr workflow view ci --json runs,median_duration_seconds
 avr workflow view wfl-abc123 --json '*' --jq '.jobs[].job.name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-ci_provider, completed_runs, failure_count, flaked_count, jobs,
-median_duration_seconds, name, p95_duration_seconds, path,
-platform_workflow_id, repository, runs, workflow_id
-```
+`ci_provider`, `completed_runs`, `failure_count`, `flaked_count`, `jobs`, `median_duration_seconds`, `name`, `p95_duration_seconds`, `path`, `platform_workflow_id`, `repository`, `runs`, `workflow_id`
 
 **Arguments**
 

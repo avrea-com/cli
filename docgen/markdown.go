@@ -2,6 +2,7 @@ package docgen
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -78,32 +79,77 @@ func dedent(lines []string) []string {
 	return out
 }
 
+var (
+	fieldListLine  = regexp.MustCompile(`^[a-z][a-z0-9_]*(, *[a-z][a-z0-9_]*)*,?$`)
+	definitionLine = regexp.MustCompile(`^(\S+) {2,}(\S.*)$`)
+)
+
+func indented(line string) bool {
+	return strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t")
+}
+func allMatch(lines []string, pattern *regexp.Regexp) bool {
+	for _, line := range lines {
+		if !pattern.MatchString(line) {
+			return false
+		}
+	}
+	return true
+}
+
 // preformattedBlock renders a click "\b" paragraph. "\b" only stops terminal
-// rewrapping, so unindented lines are prose and stay Markdown text; indented
-// runs are commands or file contents and become fenced code.
+// rewrapping, so unindented lines are prose and stay Markdown text. Indented
+// runs are field lists (inline code), "name  description" tables (a list) or
+// commands and file contents (fenced code). A one-line label introducing an
+// indented run, such as "Examples:" or "JSON FIELDS (GitHub)", becomes a bold
+// label.
 func preformattedBlock(block []string, language string) []string {
 	out := []string{}
 	for start := 0; start < len(block); {
-		code := strings.HasPrefix(block[start], " ") || strings.HasPrefix(block[start], "\t")
+		code := indented(block[start])
 		end := start
-		for end < len(block) && (strings.HasPrefix(block[end], " ") || strings.HasPrefix(block[end], "\t")) == code {
+		for end < len(block) && indented(block[end]) == code {
 			end++
 		}
 		if len(out) > 0 {
 			out = append(out, "")
 		}
-		if code {
-			out = append(out, "```"+language)
-			out = append(out, dedent(block[start:end])...)
-			out = append(out, "```")
-		} else {
-			for _, line := range block[start:end] {
+		run := block[start:end]
+		switch {
+		case !code && len(run) == 1 && end < len(block) && len(strings.Fields(run[0])) <= 3:
+			out = append(out, "**"+mdEscape(strings.TrimSuffix(strings.TrimSpace(run[0]), ":"))+"**")
+		case !code:
+			for _, line := range run {
 				out = append(out, mdEscape(line))
 			}
+		default:
+			out = append(out, indentedRun(dedent(run), language)...)
 		}
 		start = end
 	}
 	return out
+}
+func indentedRun(lines []string, language string) []string {
+	switch {
+	case allMatch(lines, fieldListLine):
+		fields := []string{}
+		for _, line := range lines {
+			for _, field := range strings.Split(line, ",") {
+				if field = strings.TrimSpace(field); field != "" {
+					fields = append(fields, "`"+field+"`")
+				}
+			}
+		}
+		return []string{strings.Join(fields, ", ")}
+	case allMatch(lines, definitionLine):
+		out := []string{}
+		for _, line := range lines {
+			match := definitionLine.FindStringSubmatch(line)
+			out = append(out, "- `"+match[1]+"`: "+mdEscape(match[2]))
+		}
+		return out
+	default:
+		return append(append([]string{"```" + language}, lines...), "```")
+	}
 }
 func helpBlock(value, language string) string {
 	if value == "" {

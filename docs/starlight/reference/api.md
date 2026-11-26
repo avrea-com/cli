@@ -11,7 +11,7 @@ avr api [OPTIONS] <endpoint>
 
 Use GET by default, or POST when supplying fields or input. With GET, HEAD, or --input, fields become query parameters.
 
-Examples:
+**Examples**
 
 ```sh
 avr api users/me/organizations

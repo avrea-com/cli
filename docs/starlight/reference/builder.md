@@ -28,7 +28,7 @@ Sessions are never hard-deleted, so terminal (STOPPED/FAILED) sessions
 keep appearing here; filter with --state RUNNING to see only live ones.
 Non-admin members see only their own sessions.
 
-Examples:
+**Examples**
 
 ```sh
 avr builder list
@@ -36,12 +36,9 @@ avr builder list --state RUNNING
 avr builder list --json builder_session_id,state,stop_at
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-builder_session_id, cpu_count, created_at, disk_gb, memory_mb, platform,
-repository_full_name, state, state_reason, stop_at, updated_at
-```
+`builder_session_id`, `cpu_count`, `created_at`, `disk_gb`, `memory_mb`, `platform`, `repository_full_name`, `state`, `state_reason`, `stop_at`, `updated_at`
 
 **Options**
 

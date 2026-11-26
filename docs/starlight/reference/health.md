@@ -9,7 +9,7 @@ Check Avrea platform status.
 avr health [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr health
@@ -17,11 +17,9 @@ avr health --json status
 avr health --json '*' -q '.status'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-status
-```
+`status`
 
 **Options**
 

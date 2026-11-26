@@ -19,11 +19,9 @@ Delete ART_ID from the selected repository.
 avr artifact delete [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-deleted, id
-```
+`deleted`, `id`
 
 **Arguments**
 
@@ -45,11 +43,9 @@ Download ART_ID and verify its size and SHA-256 before replacing the destination
 avr artifact download [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-digest_sha256, id, path, size_bytes
-```
+`digest_sha256`, `id`, `path`, `size_bytes`
 
 **Arguments**
 
@@ -71,13 +67,9 @@ Get metadata for ART_ID in the selected repository.
 avr artifact get [OPTIONS] ART_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-archived, completed_at, created_at, digest_sha256, expires_at,
-file_count, file_name, id, name, repository_id, run_attempt, run_kind,
-size_bytes, state, workflow_run_id
-```
+`archived`, `completed_at`, `created_at`, `digest_sha256`, `expires_at`, `file_count`, `file_name`, `id`, `name`, `repository_id`, `run_attempt`, `run_kind`, `size_bytes`, `state`, `workflow_run_id`
 
 **Arguments**
 
@@ -98,13 +90,9 @@ List artifacts in REPO, optionally restricted to one run.
 avr artifact list [OPTIONS] REPO
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-archived, completed_at, created_at, digest_sha256, expires_at,
-file_count, file_name, id, name, repository_id, run_attempt, run_kind,
-size_bytes, state, workflow_run_id
-```
+`archived`, `completed_at`, `created_at`, `digest_sha256`, `expires_at`, `file_count`, `file_name`, `id`, `name`, `repository_id`, `run_attempt`, `run_kind`, `size_bytes`, `state`, `workflow_run_id`
 
 **Arguments**
 

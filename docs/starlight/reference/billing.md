@@ -44,12 +44,9 @@ List invoices.
 avr billing invoices list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, currency, has_pdf, invoice_id, period_end, period_start,
-status, subtotal_cents, tax_cents, total_cents
-```
+`created_at`, `currency`, `has_pdf`, `invoice_id`, `period_end`, `period_start`, `status`, `subtotal_cents`, `tax_cents`, `total_cents`
 
 **Options**
 
@@ -67,12 +64,9 @@ Show details for a single invoice.
 avr billing invoices show [OPTIONS] INVOICE_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, currency, has_pdf, invoice_id, line_items, period_end,
-period_start, status, subtotal_cents, tax_cents, total_cents
-```
+`created_at`, `currency`, `has_pdf`, `invoice_id`, `line_items`, `period_end`, `period_start`, `status`, `subtotal_cents`, `tax_cents`, `total_cents`
 
 **Arguments**
 
@@ -116,12 +110,9 @@ List payment methods.
 avr billing payment-methods list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-card_brand, card_exp_month, card_exp_year, card_last4, is_default,
-payment_method_id
-```
+`card_brand`, `card_exp_month`, `card_exp_year`, `card_last4`, `is_default`, `payment_method_id`
 
 **Options**
 
@@ -170,11 +161,9 @@ Show billing settings.
 avr billing settings [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_address, billing_emails, tax_id
-```
+`billing_address`, `billing_emails`, `tax_id`
 
 **Options**
 
@@ -190,11 +179,9 @@ Show billing summary for the organization.
 avr billing summary [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_emails, default_payment_method, has_billing
-```
+`billing_emails`, `default_payment_method`, `has_billing`
 
 **Options**
 
@@ -210,7 +197,7 @@ Update billing settings.
 avr billing update-settings [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr billing update-settings --email billing@example.com
@@ -218,11 +205,9 @@ avr billing update-settings --tax-id EU123456789
 avr billing update-settings --email a@example.com,b@example.com --tax-id FI12345678
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-billing_address, billing_emails, tax_id
-```
+`billing_address`, `billing_emails`, `tax_id`
 
 **Options**
 

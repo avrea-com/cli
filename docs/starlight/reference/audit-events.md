@@ -19,12 +19,9 @@ List audit events for the organization.
 avr audit-events list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-acting_api_key_id, action, actor_type, actor_user_id, client_ip,
-created_at, event_data, event_id, resource_id, resource_type
-```
+`acting_api_key_id`, `action`, `actor_type`, `actor_user_id`, `client_ip`, `created_at`, `event_data`, `event_id`, `resource_id`, `resource_type`
 
 **Options**
 

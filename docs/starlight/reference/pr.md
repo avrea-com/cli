@@ -32,7 +32,7 @@ Requires a signed-in account (personal access tokens and service tokens
 cannot comment), pull request comments enabled for the organization, and
 an Avrea Git mirror of the repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr pr comment 42 --body "Looks good to me."
@@ -43,12 +43,9 @@ avr pr comment 42 --path src/app.go --start-line 10 --line 14 --side left --body
 avr pr comment 42 --body "Ship it" --json id,publication
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-base_sha, body, commit_sha, created_at, end_line, id, path, publication,
-pull_number, repository_id, side, start_line, thread_id
-```
+`base_sha`, `body`, `commit_sha`, `created_at`, `end_line`, `id`, `path`, `publication`, `pull_number`, `repository_id`, `side`, `start_line`, `thread_id`
 
 **Arguments**
 
@@ -75,7 +72,7 @@ List pull requests across repositories.
 avr pr list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr pr list
@@ -86,13 +83,9 @@ avr pr list --json '?'           # list available fields
 avr pr list --json '*'           # all fields
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-author_login, base_ref, base_sha, check_status, comment_count, created_at,
-draft, head_ref, head_sha, mergeability, merged, number, repository_full_name,
-repository_id, state, title, unresolved_thread_count, updated_at
-```
+`author_login`, `base_ref`, `base_sha`, `check_status`, `comment_count`, `created_at`, `draft`, `head_ref`, `head_sha`, `mergeability`, `merged`, `number`, `repository_full_name`, `repository_id`, `state`, `title`, `unresolved_thread_count`, `updated_at`
 
 **Options**
 

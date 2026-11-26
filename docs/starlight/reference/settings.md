@@ -24,7 +24,7 @@ remote and its effective values are shown. Pass --org to see organization
 values (this suppresses auto-detection), or --repo / AVR_REPO to target a
 repository.
 
-Examples:
+**Examples**
 
 ```sh
 avr settings list --org org-abc123
@@ -34,11 +34,9 @@ avr settings list --prefix cache.
 avr settings list --json key,value,source
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-key, source, value
-```
+`key`, `source`, `value`
 
 **Options**
 
@@ -61,7 +59,7 @@ Clears the repository override when run inside a connected checkout (the
 repo is auto-detected), when --repo is given, or when AVR_REPO is set. Pass
 --org to clear the organization-scoped value (this suppresses auto-detection).
 
-Examples:
+**Examples**
 
 ```sh
 avr settings reset cache.gha.enabled --repo rep-xyz789
@@ -85,7 +83,7 @@ List available setting definitions.
 avr settings schema [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr settings schema
@@ -93,12 +91,9 @@ avr settings schema --prefix cache. --scope repository
 avr settings schema --json '*'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-choices, default, description, inherits, key, max_value, min_value,
-scopes, value_type
-```
+`choices`, `default`, `description`, `inherits`, `key`, `max_value`, `min_value`, `scopes`, `value_type`
 
 **Options**
 
@@ -124,7 +119,7 @@ targets org scope (the default org, or --org); org-only settings must be set
 with --org. A checkout whose repo isn't connected to the org is an error
 rather than a silent org-wide write.
 
-Examples:
+**Examples**
 
 ```sh
 avr settings set cache.gha.enabled false --org org-abc123

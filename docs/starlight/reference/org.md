@@ -19,11 +19,9 @@ Create a new organization.
 avr org create [OPTIONS] NAME
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-name, organization_id, role, slug
-```
+`name`, `organization_id`, `role`, `slug`
 
 **Arguments**
 
@@ -53,19 +51,16 @@ avr org email-domain claim [OPTIONS] DOMAIN
 The domain does not need to match your GitHub or Avrea account email.
 Publish the returned TXT record, then run ``email-domain verify``.
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain claim example.com
 avr org email-domain claim corp.example.com --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Arguments**
 
@@ -85,12 +80,9 @@ List claimed organization email domains (admin only).
 avr org email-domain list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Options**
 
@@ -110,7 +102,7 @@ Replaces all existing domains — a typo wipes the org's auto-membership
 policy. Confirms before applying; pass --yes to skip the prompt (required
 when stdout isn't a TTY, e.g. in CI).
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain set example.com
@@ -137,19 +129,16 @@ avr org email-domain verify [OPTIONS] DOMAIN
 Each invocation performs a fresh DNS lookup. If DNS has not propagated,
 wait and run the command again.
 
-Examples:
+**Examples**
 
 ```sh
 avr org email-domain verify example.com
 avr org email-domain verify corp.example.com --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, dns_record_name, dns_record_value, domain,
-organization_email_domain_id, verified, verified_at
-```
+`created_at`, `dns_record_name`, `dns_record_value`, `domain`, `organization_email_domain_id`, `verified`, `verified_at`
 
 **Arguments**
 
@@ -173,19 +162,16 @@ Shows whether groups, resource access and delegation are on, which
 organization capabilities you hold, and for each group listed for you
 what you may and may not do there.
 
-Examples:
+**Examples**
 
 ```sh
 avr org governance
 avr org governance --json groups --jq '.groups[].display_name'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-delegation_enabled, eligible_root_admin, groups, groups_enabled,
-manual_root_capabilities, resource_access_enabled, root_capabilities
-```
+`delegation_enabled`, `eligible_root_admin`, `groups`, `groups_enabled`, `manual_root_capabilities`, `resource_access_enabled`, `root_capabilities`
 
 **Options**
 
@@ -215,7 +201,7 @@ For GitLab, create an expiring gitlab.com group access token with Reporter
 role, api, and read_repository. The token is read from a hidden prompt
 or stdin and is never accepted as a command-line value.
 
-Examples:
+**Examples**
 
 ```sh
 avr org install add
@@ -230,24 +216,13 @@ as a list and keeps progress messages on stderr; GitLab emits the
 registered installation, and the field list or jq filter must keep
 webhook_setup, which carries the one-time webhook secret.
 
-JSON FIELDS (GitHub)
+**JSON FIELDS (GitHub)**
 
-```sh
-created_at, installation_id, organization_name, organization_slug,
-platform, platform_installation_id, platform_settings_url, state,
-target_id, target_name, target_type, configured_runner_count, degraded_runner_count
-```
+`created_at`, `installation_id`, `organization_name`, `organization_slug`, `platform`, `platform_installation_id`, `platform_settings_url`, `state`, `target_id`, `target_name`, `target_type`, `configured_runner_count`, `degraded_runner_count`
 
-JSON FIELDS (GitLab)
+**JSON FIELDS (GitLab)**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at, webhook_setup
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`, `webhook_setup`
 
 **Options**
 
@@ -270,13 +245,9 @@ List accessible installations across all your organizations.
 avr org install list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, installation_id, organization_name, organization_slug,
-platform, platform_installation_id, platform_settings_url, state,
-target_id, target_name, target_type, configured_runner_count, degraded_runner_count
-```
+`created_at`, `installation_id`, `organization_name`, `organization_slug`, `platform`, `platform_installation_id`, `platform_settings_url`, `state`, `target_id`, `target_name`, `target_type`, `configured_runner_count`, `degraded_runner_count`
 
 **Options**
 
@@ -295,11 +266,9 @@ GitHub installations are suspended. GitLab installations are permanently
 disconnected, including their Avrea history; use `avr org install rotate`
 for a credential problem instead. Pass --yes to skip confirmation.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-action, installation_id, organization_id, platform
-```
+`action`, `installation_id`, `organization_id`, `platform`
 
 **Options**
 
@@ -324,16 +293,9 @@ or stdin and is never accepted as a command-line value.
 With --json, the field list or jq filter must keep webhook_setup, which
 carries the one-time webhook secret.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at, webhook_setup
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`, `webhook_setup`
 
 **Options**
 
@@ -363,11 +325,9 @@ Supply your own GitLab personal access token with create_runner scope and Owner
 role. It is sent only to gitlab.com and is never persisted. Already
 configured machine types must be replaced with 'runner set'.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-data, setup
-```
+`data`, `setup`
 
 **Options**
 
@@ -389,11 +349,9 @@ avr org install runner delete [OPTIONS] MACHINE_TYPE
 
 The runner object in GitLab remains for the group Owner to remove.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-deleted, installation_id, machine_type
-```
+`deleted`, `installation_id`, `machine_type`
 
 **Arguments**
 
@@ -415,11 +373,9 @@ List all machine types, runner status, and exact GitLab setup instructions.
 avr org install runner list [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-data, setup
-```
+`data`, `setup`
 
 **Options**
 
@@ -438,13 +394,9 @@ avr org install runner set [OPTIONS] MACHINE_TYPE
 
 Read the token from a hidden prompt or --runner-token-stdin.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-architecture, configured, cpu_count, description, disk_gb,
-invalid_at, machine_type, memory_mb, paused, run_untagged,
-runner_id, status, tag, token_expires_at, verified_at
-```
+`architecture`, `configured`, `cpu_count`, `description`, `disk_gb`, `invalid_at`, `machine_type`, `memory_mb`, `paused`, `run_untagged`, `runner_id`, `status`, `tag`, `token_expires_at`, `verified_at`
 
 **Arguments**
 
@@ -470,16 +422,9 @@ Use `--project-selection selected` without `--project-id` to select no
 projects. This updates the selection only; the next project sync applies
 it.
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-access_token_expires_on, access_token_invalid_at,
-access_token_last_validated_at, created_at, credential_kind,
-gitlab_namespace_full_path, gitlab_namespace_id, gitlab_project_ids,
-installation_id, organization_id, project_selection_mode, configured_runner_count,
-degraded_runner_count, selected_project_count, state, target_type,
-updated_at, webhook_secret_rotated_at
-```
+`access_token_expires_on`, `access_token_invalid_at`, `access_token_last_validated_at`, `created_at`, `credential_kind`, `gitlab_namespace_full_path`, `gitlab_namespace_id`, `gitlab_project_ids`, `installation_id`, `organization_id`, `project_selection_mode`, `configured_runner_count`, `degraded_runner_count`, `selected_project_count`, `state`, `target_type`, `updated_at`, `webhook_secret_rotated_at`
 
 **Options**
 
@@ -498,7 +443,7 @@ List organizations you belong to.
 avr org list [OPTIONS]
 ```
 
-Examples:
+**Examples**
 
 ```sh
 avr org list
@@ -506,11 +451,9 @@ avr org list --json slug,role
 avr org list --json '*' -q '.[] | select(.role == "admin")'
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-name, organization_id, role, slug
-```
+`name`, `organization_id`, `role`, `slug`
 
 **Options**
 
@@ -527,7 +470,7 @@ avr org members [OPTIONS] [COMMAND [ARGS]...]
 
 `avr org members access MEMBER` explains what one member can reach.
 
-Examples:
+**Examples**
 
 ```sh
 avr org members
@@ -535,11 +478,9 @@ avr org members --org org-abc123
 avr org members --json name,role
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-joined_at, name, role, user_id
-```
+`joined_at`, `name`, `role`, `user_id`
 
 **Options**
 
@@ -560,20 +501,16 @@ verified, or a display name that only one active member has. The
 answer lists the member's groups, what each grant reaches and why, and
 their organization capabilities. A partial answer says so.
 
-Examples:
+**Examples**
 
 ```sh
 avr org members access @me
 avr org members access usr-0123456789abcdef0123456789abcdef --json groups
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-governance, groups, notes, org_role, org_role_source, resource_access,
-resource_access_complete, resource_access_truncated, root_capabilities,
-user_id
-```
+`governance`, `groups`, `notes`, `org_role`, `org_role_source`, `resource_access`, `resource_access_complete`, `resource_access_truncated`, `root_capabilities`, `user_id`
 
 **Arguments**
 
@@ -604,7 +541,7 @@ avr org saml configure [OPTIONS] METADATA
 METADATA is an IdP metadata XML file; pass - to read it from stdin.
 Reconfiguring requires the complete metadata document again.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml configure idp-metadata.xml
@@ -613,14 +550,9 @@ avr org saml configure idp.xml --email-attribute mail \
     --given-name-attribute firstName --family-name-attribute lastName
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Arguments**
 
@@ -650,21 +582,16 @@ avr org saml enforcement [OPTIONS] {on|off}
 Enabling requires a configured SAML connection and at least one verified
 company domain.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml enforcement on
 avr org saml enforcement off --org acme
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Arguments**
 
@@ -700,14 +627,9 @@ Show the current SAML configuration (admin only).
 avr org saml show [OPTIONS]
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-allow_idp_initiated, attr_email, attr_family_name, attr_given_name,
-attr_groups, created_at, default_role, idp_entity_id, idp_slo_url,
-idp_sso_url, is_enforced, jit_provisioning, name_id_format,
-organization_id, organization_saml_config_id, updated_at
-```
+`allow_idp_initiated`, `attr_email`, `attr_family_name`, `attr_given_name`, `attr_groups`, `created_at`, `default_role`, `idp_entity_id`, `idp_slo_url`, `idp_sso_url`, `is_enforced`, `jit_provisioning`, `name_id_format`, `organization_id`, `organization_saml_config_id`, `updated_at`
 
 **Options**
 
@@ -725,7 +647,7 @@ avr org saml sp-metadata [OPTIONS]
 
 Redirect stdout to a file for import into your identity provider.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml sp-metadata > avrea-sp.xml
@@ -747,7 +669,7 @@ avr org saml test [OPTIONS]
 The test performs a real IdP sign-in and displays the parsed assertion
 without creating a new Avrea session.
 
-Examples:
+**Examples**
 
 ```sh
 avr org saml test

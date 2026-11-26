@@ -28,11 +28,9 @@ Examples:
     avr feedback --bug "Run logs are missing"
     avr feedback status FEEDBACK_ID
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, id, idempotency_key, status
-```
+`created_at`, `id`, `idempotency_key`, `status`
 
 **Arguments**
 
@@ -56,11 +54,9 @@ Read the delivery status of your feedback.
 avr feedback status [OPTIONS] FEEDBACK_ID
 ```
 
-JSON FIELDS
+**JSON FIELDS**
 
-```sh
-created_at, id, status
-```
+`created_at`, `id`, `status`
 
 **Arguments**
 
