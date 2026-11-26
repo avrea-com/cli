@@ -49,6 +49,11 @@ func manSignature(p Param) string {
 	}
 	return primary
 }
+func manLiteral(lines []string) []string {
+	out := []string{".RS 4", ".nf"}
+	out = append(out, strings.Split(troffEscape(strings.Join(lines, "\n")), "\n")...)
+	return append(out, ".fi", ".RE", ".PP")
+}
 func manHelp(value string) []string {
 	if value == "" {
 		return nil
@@ -75,15 +80,17 @@ func manHelp(value string) []string {
 				i++
 			}
 			if len(block) > 0 {
-				out = append(out, ".RS 4", ".nf")
-				out = append(out, strings.Split(troffEscape(strings.Join(dedent(block), "\n")), "\n")...)
-				out = append(out, ".fi", ".RE", ".PP")
+				out = append(out, manLiteral(dedent(block))...)
 			}
 			i--
 			continue
 		}
 		if line == "" {
 			flush()
+		} else if indented(lines[i]) && len(paragraph) == 0 && (i == 0 || strings.TrimSpace(lines[i-1]) == "") {
+			run, end := indentedSpan(lines, i)
+			out = append(out, manLiteral(run)...)
+			i = end - 1
 		} else {
 			paragraph = append(paragraph, line)
 		}

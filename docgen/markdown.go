@@ -60,7 +60,7 @@ func dedent(lines []string) []string {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		n := len(line) - len(strings.TrimLeft(line, " "))
+		n := len(line) - len(strings.TrimLeft(line, " \t"))
 		if indent < 0 || n < indent {
 			indent = n
 		}
@@ -81,7 +81,7 @@ func dedent(lines []string) []string {
 
 var (
 	fieldListLine  = regexp.MustCompile(`^[a-z][a-z0-9_]*(, *[a-z][a-z0-9_]*)*,?$`)
-	definitionLine = regexp.MustCompile(`^(\S+) {2,}(\S.*)$`)
+	definitionLine = regexp.MustCompile(`^(\S+) {2,}([^\s#].*)$`)
 )
 
 func indented(line string) bool {
@@ -96,41 +96,60 @@ func allMatch(lines []string, pattern *regexp.Regexp) bool {
 	return true
 }
 
+// indentedSpan returns the indented run starting at lines[i] and the index
+// after it. Blank lines stay in the run while the next non-blank line is
+// still indented, so an example with blank lines is one block.
+func indentedSpan(lines []string, i int) ([]string, int) {
+	end := i
+	for j := i; j < len(lines); j++ {
+		if indented(lines[j]) && strings.TrimSpace(lines[j]) != "" {
+			end = j + 1
+		} else if strings.TrimSpace(lines[j]) != "" {
+			break
+		}
+	}
+	return dedent(lines[i:end]), end
+}
+
 // preformattedBlock renders a click "\b" paragraph. "\b" only stops terminal
 // rewrapping, so unindented lines are prose and stay Markdown text. Indented
-// runs are field lists (inline code), "name  description" tables (a list) or
-// commands and file contents (fenced code). A one-line label introducing an
-// indented run, such as "Examples:" or "JSON FIELDS (GitHub)", becomes a bold
-// label.
+// runs are field lists under a JSON FIELDS label (inline code),
+// "name  description" tables (a list) or commands and file contents (fenced
+// code). A one-line label introducing an indented run, such as "Examples:" or
+// "JSON FIELDS (GitHub)", becomes a bold label.
 func preformattedBlock(block []string, language string) []string {
 	out := []string{}
+	label := ""
 	for start := 0; start < len(block); {
-		code := indented(block[start])
-		end := start
-		for end < len(block) && indented(block[end]) == code {
-			end++
-		}
 		if len(out) > 0 {
 			out = append(out, "")
 		}
+		if indented(block[start]) {
+			run, end := indentedSpan(block, start)
+			out = append(out, indentedRun(run, label, language)...)
+			start, label = end, ""
+			continue
+		}
+		end := start
+		for end < len(block) && !indented(block[end]) {
+			end++
+		}
 		run := block[start:end]
-		switch {
-		case !code && len(run) == 1 && end < len(block) && len(strings.Fields(run[0])) <= 3:
-			out = append(out, "**"+mdEscape(strings.TrimSuffix(strings.TrimSpace(run[0]), ":"))+"**")
-		case !code:
+		if len(run) == 1 && end < len(block) && len(strings.Fields(run[0])) <= 3 {
+			label = strings.TrimSuffix(strings.TrimSpace(run[0]), ":")
+			out = append(out, "**"+mdEscape(label)+"**")
+		} else {
 			for _, line := range run {
 				out = append(out, mdEscape(line))
 			}
-		default:
-			out = append(out, indentedRun(dedent(run), language)...)
 		}
 		start = end
 	}
 	return out
 }
-func indentedRun(lines []string, language string) []string {
+func indentedRun(lines []string, label, language string) []string {
 	switch {
-	case allMatch(lines, fieldListLine):
+	case strings.HasPrefix(label, "JSON FIELDS") && allMatch(lines, fieldListLine):
 		fields := []string{}
 		for _, line := range lines {
 			for _, field := range strings.Split(line, ",") {
@@ -151,34 +170,42 @@ func indentedRun(lines []string, language string) []string {
 		return append(append([]string{"```" + language}, lines...), "```")
 	}
 }
+
+// helpBlock renders help text as Markdown. Outside "\b" paragraphs, an
+// indented run after a blank line is an example; an indented line directly
+// after prose is a wrapped continuation and stays prose.
 func helpBlock(value, language string) string {
 	if value == "" {
 		return ""
 	}
 	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
 	out := []string{}
-	for i := 0; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == "\b" {
-			block := []string{}
-			i++
-			for i < len(lines) && strings.TrimSpace(lines[i]) != "" {
-				block = append(block, lines[i])
-				i++
-			}
-			out = append(out, preformattedBlock(block, language)...)
-			i--
-			continue
+	block := func(rendered []string) {
+		if len(out) > 0 && out[len(out)-1] != "" {
+			out = append(out, "")
 		}
-		if strings.HasPrefix(lines[i], "    ") {
-			run := []string{}
-			for i < len(lines) && strings.HasPrefix(lines[i], "    ") {
-				run = append(run, lines[i])
-				i++
+		out = append(out, rendered...)
+		out = append(out, "")
+	}
+	for i := 0; i < len(lines); {
+		line := lines[i]
+		switch {
+		case strings.TrimSpace(line) == "\b":
+			end := i + 1
+			for end < len(lines) && strings.TrimSpace(lines[end]) != "" {
+				end++
 			}
-			out = append(out, indentedRun(dedent(run), language)...)
-			i--
-		} else {
-			out = append(out, mdEscape(lines[i]))
+			block(preformattedBlock(lines[i+1:end], language))
+			i = end
+		case indented(line) && strings.TrimSpace(line) != "" && (i == 0 || strings.TrimSpace(lines[i-1]) == ""):
+			var run []string
+			run, i = indentedSpan(lines, i)
+			block(indentedRun(run, "", language))
+		case strings.TrimSpace(line) == "" && len(out) > 0 && out[len(out)-1] == "":
+			i++
+		default:
+			out = append(out, mdEscape(line))
+			i++
 		}
 	}
 	return strings.TrimSpace(strings.Join(out, "\n"))
