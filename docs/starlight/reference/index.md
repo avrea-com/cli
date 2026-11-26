@@ -39,7 +39,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 - [`avr builder`](./builder/) — Manage remote builder sessions.
 - [`avr workflow`](./workflow/) — List and view workflow definitions.
 - [`avr cache`](./cache/) — Inspect and manage the Avrea build cache.
-- [`avr tests`](./tests/) — Read recorded tests: a job's results, a repository search and one test's history.
+- [`avr tests`](./tests/) — Read recorded tests: a job's results, repository search and ranking, one test's history and one result.
 - [`avr sbom`](./sbom/) — View, generate, and download repository SBOMs.
 - [`avr log`](./log/) — Search across runner execution logs.
 

@@ -260,7 +260,7 @@ func closedPipeDisplay(c *cobra.Command) bool {
 		"avr run list", "avr run view", "avr run logs", "avr run watch", "avr run diagnose",
 		"avr job list", "avr job view", "avr job logs", "avr job watch", "avr job metrics",
 		"avr workflow list", "avr workflow view", "avr tests list", "avr tests search", "avr tests history",
-		"avr pr list", "avr pr view",
+		"avr tests view", "avr tests rank", "avr pr list", "avr pr view",
 		"avr builder list", "avr vm list", "avr vm show", "avr vm capabilities", "avr vm metrics", "avr vm firewall",
 		"avr token list", "avr token view", "avr service-token list", "avr service-token view", "avr settings list", "avr cache list",
 		"avr group list", "avr group view", "avr group member list", "avr group limit list", "avr group usage",

@@ -1,25 +1,31 @@
 .TH AVR\-TESTS 1 "" "avr" "Avrea CLI"
 .SH NAME
-avr-tests \- Read recorded tests: a job's results, a repository search and one test's history.
+avr-tests \- Read recorded tests: a job's results, repository search and ranking, one test's history and one result.
 .SH SYNOPSIS
 .B avr tests
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
-Read recorded tests: a job's results, a repository search and one test's history.
+Read recorded tests: a job's results, repository search and ranking, one test's history and one result.
 .PP
 Use avr tests RUN_OR_JOB (or avr tests list RUN_OR_JOB) for one job's tests, timings and failure messages. Accepts Avrea run/job IDs, GitHub run IDs and run or job URLs, and Avrea console run URLs. A single-job run is selected automatically. Use --job NAME to select one job from a run with several jobs.
 .PP
-Use avr tests search to find tests across a repository's reports, and avr tests history for one test's earlier runs.
+Use avr tests search to find tests across a repository's reports, avr tests rank to rank them by mean duration or failed reports, avr tests history for one test's earlier runs, and avr tests view for one result's failure summary and when its failure started.
 .SH COMMANDS
 .TP
 history
 Read one test's recorded runs in a repository, newest first.
 .TP
 list
-Read one job's latest confirmed execution, including repeated tests.
+Read one job's latest confirmed execution, or every job of a run.
+.TP
+rank
+Rank a repository's tests by mean duration or failed reports.
 .TP
 search
 Search the tests recorded for a repository.
+.TP
+view
+Read one recorded test result and when its failure started.
 .SH SEE ALSO
 .BR avr (1),
 .BR avr-artifact (1),
@@ -54,4 +60,6 @@ Search the tests recorded for a repository.
 .BR avr-variable (1),
 .BR avr-tests-history (1),
 .BR avr-tests-list (1),
-.BR avr-tests-search (1)
+.BR avr-tests-rank (1),
+.BR avr-tests-search (1),
+.BR avr-tests-view (1)

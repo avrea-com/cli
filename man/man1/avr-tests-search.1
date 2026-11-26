@@ -9,11 +9,11 @@ Search the tests recorded for a repository.
 .PP
 Search the tests recorded for a repository, newest report first.
 .PP
-Each row is a test's latest recorded result across the repository's retained reports. QUERY matches a substring of the test name, suite or class, case-insensitively and literally. Repeat --status to match any selected outcome, for example --status failed --status errored. With --status, each row is the test's most recent result with a selected outcome, so a test that has passed since still appears.
+Each row is a test's latest recorded result across the repository's retained reports. QUERY matches a substring of the test name, suite or class, case-insensitively and literally. Repeat --status to match any selected outcome, for example --status failed --status errored. With --status, each row is the test's most recent result with a selected outcome, so a test that has passed since still appears. --framework keeps tests of the selected frameworks, and --min-duration keeps tests with a result at least that long, listing that result.
 .PP
 The header reports how many reports were searched and their time range. Reports still being indexed or unavailable are counted, not hidden; a test absent from an incomplete search may still be recorded.
 .PP
-Read a row's failure message with avr tests JOB --status failed, and its earlier runs with avr tests history. Use --json '*' for test IDs, configuration digests and result IDs.
+Each failed or errored row is followed by the avr tests view command that reads its failure summary and when it started failing. Read a test's earlier runs with avr tests history. Use --json '*' for test IDs, configuration digests and result IDs.
 .PP
 .RS 4
 .nf
@@ -43,6 +43,12 @@ Continue from a previous response's next_cursor with the same query and filters.
 \fB\-\-status\fR \fICHOICE\fR
 Show each test's most recent result with one of these outcomes (repeatable). A test that has passed since still appears. (choices: passed, failed, skipped, errored; repeatable)
 .TP
+\fB\-\-framework\fR \fICHOICE\fR
+Test framework (repeatable; matches any selected framework). (choices: pytest, vitest, jest, go, junit, playwright, bun, rust; repeatable)
+.TP
+\fB\-\-min\-duration\fR \fITEXT\fR
+Only tests with a result at least this long: e.g. 500ms, 2s, 1m, or a number of milliseconds. 1 ms to 99,999,999 ms.
+.TP
 \fB\-\-json\fR \fITEXT\fR
 Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 .TP
@@ -52,4 +58,6 @@ Filter --json output through a jq expression.
 .BR avr (1),
 .BR avr-tests (1),
 .BR avr-tests-history (1),
-.BR avr-tests-list (1)
+.BR avr-tests-list (1),
+.BR avr-tests-rank (1),
+.BR avr-tests-view (1)
