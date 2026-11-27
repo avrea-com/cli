@@ -82,7 +82,7 @@ jobs:
         with:
           name: avr-go-package-${{ matrix.target }}
           path: build/go/downloaded
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version-file: pyproject.toml
           enable-cache: false
@@ -141,7 +141,7 @@ jobs:
         run: |
           python -m scripts.go_distribution --channels --commit "$GITHUB_SHA" --sbom-source build/go/sbom-source
           echo "SYFT_SOURCE_VERSION=$(cat internal/version/VERSION)" >> "$GITHUB_ENV"
-      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+      - uses: anchore/sbom-action@dfcb83b97731532d72be422cbc51ee64adb6fd56 # v0.24.4
         with:
           path: build/go/sbom-source
           format: cyclonedx-json
@@ -149,7 +149,7 @@ jobs:
           syft-version: v1.57.1
           upload-artifact: false
           upload-release-assets: false
-      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+      - uses: anchore/sbom-action@dfcb83b97731532d72be422cbc51ee64adb6fd56 # v0.24.4
         with:
           path: build/go/sbom-source
           format: spdx-json
@@ -158,7 +158,7 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
       - name: Scan native distribution SBOM
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:
           sbom: build/go/bom.cyclonedx.json
           severity-cutoff: medium
