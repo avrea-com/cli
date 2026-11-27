@@ -402,7 +402,7 @@ func TestTokenGrantsSummaryCountsServiceTokenVMs(t *testing.T) {
 		row  map[string]any
 		want string
 	}{
-		// A service token counts the VMs it owns now, a scoped token the VMs
+		// A service token counts the VMs it owns now, a personal access token the VMs
 		// it ever created; the same numbers must not read alike.
 		{map[string]any{"vm_cap": float64(5), "vm_count": float64(2)}, "VM create 2/5 owned"},
 		{map[string]any{"vm_cap": float64(5)}, "VM create 0/5 owned"},
@@ -411,7 +411,7 @@ func TestTokenGrantsSummaryCountsServiceTokenVMs(t *testing.T) {
 		{map[string]any{"grants": []any{manageVMGrant(manageVMA, "write")}, "vm_cap": nil, "vm_count": float64(1)}, "1 VM, 1 VM still owned"},
 		{map[string]any{"vm_cap": nil, "vm_count": float64(2)}, "2 VMs still owned"},
 		{map[string]any{"vm_cap": nil, "vm_count": float64(0)}, "-"},
-		// A scoped token's create count is not VMs it owns.
+		// A personal access token's create count is not VMs it owns.
 		{map[string]any{"allow_vm_create": false, "vm_create_count": float64(2)}, "-"},
 	} {
 		if got := tokenGrantsSummary(tc.row); got != tc.want {

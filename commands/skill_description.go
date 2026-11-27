@@ -50,8 +50,8 @@ func skillDescription(path string) docgen.Description {
 				"(or .kiro/skills) at the top of the current git repository instead.\n" +
 				"Commit it so cloud\n" +
 				"agents working on the repository, such as Devin or Codex cloud, find it.\n" +
-				"Those environments also need avr installed and AVR_TOKEN set to a scoped\n" +
-				"or service token.\n" +
+				"Those environments also need avr installed and AVR_TOKEN set to a personal\n" +
+				"access token or service token.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +

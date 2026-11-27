@@ -18,9 +18,9 @@ func prDescription(path string) docgen.Description {
 				"commit. --start-line extends it to a range of lines. Line numbers refer to the\n" +
 				"new file (--side right) or the old file (--side left).\n" +
 				"\n" +
-				"Requires a signed-in account (scoped and service tokens cannot comment),\n" +
-				"pull request comments enabled for the organization, and an Avrea Git\n" +
-				"mirror of the repository.\n" +
+				"Requires a signed-in account (personal access tokens and service tokens\n" +
+				"cannot comment), pull request comments enabled for the organization, and\n" +
+				"an Avrea Git mirror of the repository.\n" +
 				"\n" +
 				"\b\n" +
 				"Examples:\n" +

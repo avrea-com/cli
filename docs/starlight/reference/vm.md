@@ -89,8 +89,8 @@ example, as Claude Code's spawn-runner hook:
 ```
 
 Organization admins can pass --egress-rules inline or as @path to a JSON
-file. Scoped tokens cannot set these rules. Use an array of up to 100
-rule objects. Every rule requires action ("allow" or "deny"). A
+file. Personal access tokens cannot set these rules. Use an array of up to
+100 rule objects. Every rule requires action ("allow" or "deny"). A
 non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).
 Protocol is "any" by default and also accepts "tcp", "udp" and "icmp".
 TCP and UDP rules may set port_start and port_end to integers from 0 to
@@ -196,9 +196,10 @@ avr vm fork [OPTIONS] VM_ID_OR_NAME
 ```
 
 Copies the source's machine configuration and disk, including its SSH host
-keys and password, but discards memory state. A scoped-token password may
-be replaced without returning its replacement. No password is returned; use
-update --rotate-password if needed. Requires admin access to the source.
+keys and password, but discards memory state. A password that a personal
+access token set or received may be replaced without returning its
+replacement. No password is returned; use update --rotate-password if
+needed. Requires admin access to the source.
 
 **Arguments**
 
@@ -338,10 +339,9 @@ avr vm resume [OPTIONS] VM_ID_OR_NAME
 ```
 
 The existing password remains unless resume withdraws credentials supplied
-to a scoped token. Use update --rotate-password to obtain a fresh one.
-If a memory restore cannot complete,
-retry with --discard-memory to boot the preserved disk without restoring
-running processes.
+to a personal access token. Use update --rotate-password to obtain a fresh
+one. If a memory restore cannot complete, retry with --discard-memory to
+boot the preserved disk without restoring running processes.
 
 **Arguments**
 

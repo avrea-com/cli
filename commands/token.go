@@ -21,10 +21,10 @@ var tokenIDPattern = lazyRegexp("^key-[0-9a-f]{32}$")
 
 const noTokenHint = "Run \x60avr token list\x60 to see the tokens visible to you."
 
-// NewToken exposes scoped token creation, inspection and revocation.
+// NewToken exposes personal access token creation, inspection and revocation.
 func NewToken(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	c := &cobra.Command{Use: "token", Aliases: []string{"tokens"}, Short: "Create and manage scoped access tokens."}
+	c := &cobra.Command{Use: "token", Aliases: []string{"tokens"}, Short: "Create and manage personal access tokens."}
 	c.AddCommand(newTokenList(d), newTokenView(d), newTokenRevoke(d), newTokenCreate(d))
 	return c
 }
@@ -183,7 +183,7 @@ func newTokenRevoke(d Dependencies) *cobra.Command {
 
 // tokenVMCreate reads whether a token may create VMs, the count against its
 // limit, the limit (nil when there is none) and what the count counts. A
-// scoped token states this with allow_vm_create, vm_create_count and
+// personal access token states this with allow_vm_create, vm_create_count and
 // vm_create_limit, and counts the VMs it ever created ("used"). A service
 // token states it with vm_cap and vm_count, and counts the VMs it owns now
 // ("owned"): deleting one frees a place.

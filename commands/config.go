@@ -140,9 +140,9 @@ func refuseBoundStoredOrg(cfg config.Config, verb string) error {
 	kind := config.Kind(cfg.Token)
 	var next string
 	switch kind {
-	case config.PersonalKey:
+	case config.APIKey:
 		return nil
-	case config.ScopedToken:
+	case config.PersonalAccessToken:
 		next = "Pass that organization's ID with --org org-... or set AVR_ORG to it."
 	case config.ServiceToken:
 		next = "Its organization is resolved automatically, so --org and AVR_ORG can be omitted."
@@ -188,9 +188,9 @@ func printConfigStatus(ctx context.Context, d Dependencies) error {
 		}
 		kind := config.Kind(cfg.Token)
 		switch kind {
-		case config.ScopedToken:
-			authLine = "  - scoped token " + source(tokenSource) + ", not checked against the API"
-		case config.PersonalKey, config.ServiceToken:
+		case config.PersonalAccessToken:
+			authLine = "  - personal access token " + source(tokenSource) + ", not checked against the API"
+		case config.APIKey, config.ServiceToken:
 			path, fetch := "/users/me", func() (map[string]any, error) { return api.Get(ctx, "/users/me", nil) }
 			if kind == config.ServiceToken {
 				path, fetch = "/service-tokens/self", func() (map[string]any, error) { return serviceIdentity(ctx, cfg, api) }

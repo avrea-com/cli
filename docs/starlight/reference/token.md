@@ -1,24 +1,29 @@
 ---
 title: avr token
-description: "Create and manage scoped access tokens."
+description: "Create and manage personal access tokens."
 ---
 
-Create and manage scoped access tokens.
+Create and manage personal access tokens.
 
 ```sh
 avr token [OPTIONS] COMMAND [ARGS]...
 ```
 
-A scoped access token is a credential bound to one organization that
-expires within seven days. It reaches only the repositories and VMs it
-names, and it cannot create further tokens. To use one, set AVR_TOKEN to
+A personal access token (avs_...) is a credential of your own, bound to
+one organization, that expires within seven days. It can read the
+repositories you grant and administer VMs you grant or allow it to
+create. It cannot create further tokens. To use one, set AVR_TOKEN to
 the credential and AVR_ORG to the organization ID.
+
+It acts as you and stops working when you leave the organization. For
+automation that must outlive a person, use a service token, which
+belongs to a group: see avr service-token.
 
 ## Subcommands
 
 ### `avr token create`
 
-Create a scoped token and print its credential.
+Create a personal access token and print its credential.
 
 ```sh
 avr token create [OPTIONS]
@@ -29,15 +34,14 @@ at least one of --repo, --vm or --allow-vm-create. Repository grants are
 read-only and VM grants are admin; an optional level suffix
 (--repo acme/api:read, --vm cvm-abc123:admin) must name that level.
 
-The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped
-token needs the org-... ID in AVR_ORG or --org, ignores the stored
+The command prints export lines for AVR_TOKEN and AVR_ORG. A personal
+access token needs the org-... ID in AVR_ORG or --org, ignores the stored
 organization and cannot create further tokens. Pass run IDs rather than
-console URLs, whose organization slug a scoped token cannot resolve.
+console URLs, whose organization slug the token cannot resolve.
 If the request is
 interrupted or the server answers with a 5xx error, a token may already
 exist: check avr token list before retrying. A 404 names its reason;
-if scoped tokens are not enabled for the organization, contact
-support@avrea.com.
+if personal access tokens are unavailable, contact support@avrea.com.
 
 ```sh
 Examples:

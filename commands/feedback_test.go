@@ -330,14 +330,14 @@ func TestFeedbackGuardsCommandLikeMessages(t *testing.T) {
 	}
 }
 
-func TestFeedbackRejectsScopedTokensBeforeRequests(t *testing.T) {
+func TestFeedbackRejectsPersonalAccessTokensBeforeRequests(t *testing.T) {
 	for _, args := range [][]string{{"feedback", "hello"}, {"feedback", "hello", "--org", "acme"}, {"feedback", "status", feedbackTestID}} {
 		d, out, stderr := testDeps(t)
 		d.LoadConfig = func() (config.Config, error) {
 			return config.Config{Host: "https://api.example.test", Token: "avs_test"}, nil
 		}
 		d.HTTP = &http.Client{Transport: watchTransportFunc(func(r *http.Request) (*http.Response, error) {
-			t.Error("scoped token reached API")
+			t.Error("personal access token reached API")
 			return nil, errors.New("unexpected request")
 		})}
 		if code := Execute(t.Context(), args, d); code != 4 || out.Len() != 0 || !strings.Contains(stderr.String(), "AVR_TOKEN") || !strings.Contains(stderr.String(), "avr auth device-login") {

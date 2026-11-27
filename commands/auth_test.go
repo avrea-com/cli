@@ -56,7 +56,7 @@ func TestScopedAndTokenRedaction(t *testing.T) {
 				_, _ = fmt.Fprint(w, `{"email":"fixture@example.test","token":"server-must-not-leak"}`)
 			}))
 			d.HTTP = server.Client()
-			if !config.IsScoped(token) {
+			if !config.IsPersonalAccessToken(token) {
 				d.LoadConfig = func() (config.Config, error) { return config.Config{Host: server.URL, Token: token}, nil }
 			}
 			args := []string{"auth", "status", "--json", "*"}
@@ -311,7 +311,7 @@ func TestTimingIsOptInAndKeepsJSONClean(t *testing.T) {
 		if err := json.Unmarshal(out.Bytes(), &record); err != nil {
 			t.Fatal(err)
 		}
-		if record["credential_type"] != "scoped_token" {
+		if record["credential_type"] != "personal_access_token" {
 			t.Fatal(record)
 		}
 		hasTiming := strings.Contains(stderr.String(), "avr-timing ")

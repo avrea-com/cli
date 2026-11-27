@@ -287,8 +287,8 @@ func TestServiceTokenAPIErrors(t *testing.T) {
 		want, avoid []string
 	}{
 		{401, []string{"auth", "status"}, []string{"rejected the service token (HTTP 401): token expired", "avr service-token view <token-id>", "revoked or expired token cannot be rotated: create a new one with \x60avr service-token create\x60", "A live token was rotated", "avr service-token rotate <token-id>", "AVR_TOKEN"}, []string{"avr auth login", "avr token create"}},
-		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "its grants and the VMs it created", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "scoped token"}},
-		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "its grants and the VMs it created"}, []string{"avr org list", "avr auth login", "scoped token"}},
+		{403, []string{"repo", "list"}, []string{"(HTTP 403): refused", "its grants and the VMs it created", "operations open to service tokens"}, []string{"avr org list", "avr auth login", "personal access token"}},
+		{404, []string{"repo", "list"}, []string{"(HTTP 404): refused", "its grants and the VMs it created"}, []string{"avr org list", "avr auth login", "personal access token"}},
 	} {
 		detail := "refused"
 		if tc.status == 401 {
@@ -348,6 +348,18 @@ func TestServiceTokenConfigStatus(t *testing.T) {
 	}
 }
 
+// namesPersonalAccessToken reports whether a message meant for a service
+// token mentions the other token kind under any of its names.
+func namesPersonalAccessToken(message string) bool {
+	lower := strings.ToLower(message)
+	for _, name := range []string{"personal access", "avs_", "scoped"} {
+		if strings.Contains(lower, name) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestServiceTokenConfigOrgRefused(t *testing.T) {
 	for _, args := range [][]string{{"config", "set", "org", "acme"}, {"config", "unset", "org"}} {
 		h := newServiceTokenHarness(t, "", serviceTokenRoutes(serviceTokenSelf))
@@ -361,7 +373,7 @@ func TestServiceTokenConfigOrgRefused(t *testing.T) {
 		code := h.run(t, args...)
 		message := h.stderr.String()
 		after, _ := os.ReadFile(h.d.Store.Path)
-		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || !strings.Contains(message, "A service token is bound to one organization") || !strings.Contains(message, "resolved automatically") || strings.Contains(message, "scoped") {
+		if code != 1 || len(h.requests) != 0 || !bytes.Equal(before, after) || !strings.Contains(message, "A service token is bound to one organization") || !strings.Contains(message, "resolved automatically") || namesPersonalAccessToken(message) {
 			t.Fatal(args, code, h.requests, message)
 		}
 	}
@@ -405,7 +417,7 @@ func TestServiceTokenPersonOnlyCommandsRefusedBeforeRequests(t *testing.T) {
 		})
 		code := h.run(t, tc.args...)
 		message := h.stderr.String()
-		if code != 4 || len(h.requests) != 0 || h.out.Len() != 0 || !strings.Contains(message, tc.want) || !strings.Contains(message, "unset AVR_TOKEN if it contains the service token") || strings.Contains(message, "scoped") {
+		if code != 4 || len(h.requests) != 0 || h.out.Len() != 0 || !strings.Contains(message, tc.want) || !strings.Contains(message, "unset AVR_TOKEN if it contains the service token") || namesPersonalAccessToken(message) {
 			t.Fatal(tc.args, code, message)
 		}
 	}

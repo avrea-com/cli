@@ -110,6 +110,10 @@ func gitLabSecret(cmd *cobra.Command, d Dependencies, stdin bool, label, hint st
 	if value == "" || utf8.RuneCountInString(value) > 4096 {
 		return "", &ExitError{2, "Error: " + label + " must contain 1 to 4096 characters"}
 	}
+	// An Avrea credential (avk_, avs_, avt_ and the like) would be sent to GitLab.
+	if len(value) > 4 && strings.HasPrefix(value, "av") && value[2] >= 'a' && value[2] <= 'z' && value[3] == '_' {
+		return "", &ExitError{2, "Error: " + label + " looks like an Avrea credential (" + value[:4] + "...). Supply the token GitLab issued."}
+	}
 	return value, nil
 }
 func gitLabAPIError(cfg config.Config, err error, action, hint string) error {

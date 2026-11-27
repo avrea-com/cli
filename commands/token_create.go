@@ -100,7 +100,7 @@ func newTokenCreate(d Dependencies) *cobra.Command {
 	var allow bool
 	var limit int
 	var o jsonOptions
-	c := &cobra.Command{Use: "create", Short: "Create a scoped token and print its credential.", Args: cobra.NoArgs}
+	c := &cobra.Command{Use: "create", Short: "Create a personal access token and print its credential.", Args: cobra.NoArgs}
 	f := c.Flags()
 	f.StringVarP(&org, "org", "o", "", "Organization ID or slug.")
 	f.StringVar(&name, "name", "", "Token name (1–100 characters).")
@@ -252,9 +252,9 @@ func tokenCreateError(cfg config.Config, he *client.HTTPError, namesVMs bool) er
 			hint = tokenGrantOrderHint
 		}
 	case 404:
-		hint = "Check the organization and API host. If scoped-token access is unavailable, contact support@avrea.com."
+		hint = "Check the organization and API host. If personal access tokens are unavailable, contact support@avrea.com."
 		if namesVMs {
-			hint += " Check whether scoped tokens and customer VMs are enabled for this organization."
+			hint += " Check whether customer VMs are enabled for this organization."
 		}
 	case 409:
 		hint = "A member can hold at most 20 live tokens per organization. Free one with \x60avr token list\x60 and \x60avr token revoke <token-id>\x60."
@@ -288,7 +288,7 @@ func insertTokenHint(result error, hint string) error {
 	lines := strings.Split(result.Error(), "\n")
 	index := len(lines)
 	for i, line := range lines {
-		if strings.HasPrefix(line, "  Hint: a scoped token") || strings.HasPrefix(line, "  API: ") {
+		if strings.HasPrefix("\n"+line, personalAccessTokenHint) || strings.HasPrefix("\n"+line, serviceTokenHint) || strings.HasPrefix(line, "  API: ") {
 			index = i
 			break
 		}

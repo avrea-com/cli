@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/avrea-com/cli/client"
 	"github.com/avrea-com/cli/config"
 )
 
@@ -118,6 +119,19 @@ func TestTokenCreateUnknownOutcomeIsNotRetriedOrLeaked(t *testing.T) {
 		}
 		if code != expected || calls != 1 || out.Len() != 0 || !strings.Contains(stderr.String(), "may have been created") || strings.Contains(stderr.String(), createdTokenFixture) {
 			t.Fatal(code, calls, out, stderr)
+		}
+	}
+}
+
+// A hint about the action comes before the hint about the credential kind,
+// whichever token made the request.
+func TestInsertTokenHintPrecedesCredentialHint(t *testing.T) {
+	for _, token := range []string{"avs_secret", "avt_secret"} {
+		cfg := config.Config{Host: "https://api.example.test", Token: token}
+		refused := apiError(cfg, &client.HTTPError{Status: 404, Path: "/orgs/org-1/things"}, "read the thing")
+		lines := strings.Split(insertTokenHint(refused, "Check the name.").Error(), "\n")
+		if len(lines) != 4 || lines[1] != "  Hint: Check the name." || !strings.HasPrefix(lines[2], "  Hint: A "+config.Kind(token).String()+" can ") || !strings.HasPrefix(lines[3], "  API: ") {
+			t.Fatal(token, lines)
 		}
 	}
 }

@@ -619,7 +619,7 @@ func TestPRCommentValidationErrorFromServer(t *testing.T) {
 	}
 }
 
-func TestPRCommentRejectsScopedTokensBeforeRequests(t *testing.T) {
+func TestPRCommentRejectsPersonalAccessTokensBeforeRequests(t *testing.T) {
 	for _, inline := range []bool{false, true} {
 		t.Run(fmt.Sprint("inline=", inline), func(t *testing.T) {
 			h := newPRCommentHarness(t, prCommentRoutes)
@@ -632,7 +632,7 @@ func TestPRCommentRejectsScopedTokensBeforeRequests(t *testing.T) {
 			}
 			code := h.run(t, args...)
 			message := h.stderr.String()
-			if code != 4 || len(h.requests) != 0 || !strings.Contains(message, "scoped tokens cannot post comments") || !strings.Contains(message, "avr auth login") || strings.Contains(message, "avs_fixture_private") {
+			if code != 4 || len(h.requests) != 0 || !strings.Contains(message, "personal access tokens cannot post comments") || !strings.Contains(message, "avr auth login") || strings.Contains(message, "avs_fixture_private") {
 				t.Fatal(code, h.requests, message)
 			}
 		})

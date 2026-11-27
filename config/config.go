@@ -28,10 +28,10 @@ type Config struct {
 type CredentialKind int
 
 const (
-	// PersonalKey belongs to a user, who may belong to several organizations.
-	PersonalKey CredentialKind = iota
-	// ScopedToken (avs_) is minted by a member and bound to one organization.
-	ScopedToken
+	// APIKey belongs to a user, who may belong to several organizations.
+	APIKey CredentialKind = iota
+	// PersonalAccessToken (avs_) is minted by a member and bound to one organization.
+	PersonalAccessToken
 	// ServiceToken (avt_) is owned by a group, has no user and is bound to one
 	// organization. It is supplied only through AVR_TOKEN.
 	ServiceToken
@@ -40,21 +40,21 @@ const (
 func Kind(token string) CredentialKind {
 	switch {
 	case strings.HasPrefix(token, "avs_"):
-		return ScopedToken
+		return PersonalAccessToken
 	case strings.HasPrefix(token, "avt_"):
 		return ServiceToken
 	default:
-		return PersonalKey
+		return APIKey
 	}
 }
 
 // String names the kind in user-facing messages.
 func (k CredentialKind) String() string {
 	switch k {
-	case PersonalKey:
+	case APIKey:
 		return "API key"
-	case ScopedToken:
-		return "scoped token"
+	case PersonalAccessToken:
+		return "personal access token"
 	case ServiceToken:
 		return "service token"
 	default:
@@ -62,14 +62,28 @@ func (k CredentialKind) String() string {
 	}
 }
 
-func IsScoped(token string) bool  { return Kind(token) == ScopedToken }
-func IsService(token string) bool { return Kind(token) == ServiceToken }
+// ID names the kind in machine-readable output.
+func (k CredentialKind) ID() string {
+	switch k {
+	case APIKey:
+		return "api_key"
+	case PersonalAccessToken:
+		return "personal_access_token"
+	case ServiceToken:
+		return "service_token"
+	default:
+		return fmt.Sprintf("credential_kind_%d", int(k))
+	}
+}
+
+func IsPersonalAccessToken(token string) bool { return Kind(token) == PersonalAccessToken }
+func IsService(token string) bool             { return Kind(token) == ServiceToken }
 
 // IsOrgBound reports a token bound to one organization with no user behind
 // it: /users/me routes and stored organization defaults do not apply.
 func IsOrgBound(token string) bool {
 	kind := Kind(token)
-	return kind == ScopedToken || kind == ServiceToken
+	return kind == PersonalAccessToken || kind == ServiceToken
 }
 
 // ConfigDir preserves the Python CLI's platformdirs conventions.

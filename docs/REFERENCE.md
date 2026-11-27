@@ -56,7 +56,7 @@ avr [GLOBAL OPTIONS] COMMAND [ARGS]...
 ### Setup & Config
 
 - [`avr auth`](#avr-auth) — Authenticate and manage credentials.
-- [`avr token`](#avr-token) — Create and manage scoped access tokens.
+- [`avr token`](#avr-token) — Create and manage personal access tokens.
 - [`avr service-token`](#avr-service-token) — Create and manage the organization's service tokens.
 - [`avr group`](#avr-group) — Build and manage the organization's group tree.
 - [`avr config`](#avr-config) — View and manage CLI configuration.
@@ -509,9 +509,9 @@ Without --path, the comment applies to the whole pull request. With --path and
 commit. --start-line extends it to a range of lines. Line numbers refer to the
 new file (--side right) or the old file (--side left).
 
-Requires a signed-in account (scoped and service tokens cannot comment),
-pull request comments enabled for the organization, and an Avrea Git
-mirror of the repository.
+Requires a signed-in account (personal access tokens and service tokens
+cannot comment), pull request comments enabled for the organization, and
+an Avrea Git mirror of the repository.
 
 ```sh
 Examples:
@@ -845,8 +845,8 @@ example, as Claude Code's spawn-runner hook:
 ```
 
 Organization admins can pass --egress-rules inline or as @path to a JSON
-file. Scoped tokens cannot set these rules. Use an array of up to 100
-rule objects. Every rule requires action ("allow" or "deny"). A
+file. Personal access tokens cannot set these rules. Use an array of up to
+100 rule objects. Every rule requires action ("allow" or "deny"). A
 non-default rule takes exactly one of fqdn (hostname) or cidr (IPv4 CIDR).
 Protocol is "any" by default and also accepts "tcp", "udp" and "icmp".
 TCP and UDP rules may set port_start and port_end to integers from 0 to
@@ -952,9 +952,10 @@ avr vm fork [OPTIONS] VM_ID_OR_NAME
 ```
 
 Copies the source's machine configuration and disk, including its SSH host
-keys and password, but discards memory state. A scoped-token password may
-be replaced without returning its replacement. No password is returned; use
-update --rotate-password if needed. Requires admin access to the source.
+keys and password, but discards memory state. A password that a personal
+access token set or received may be replaced without returning its
+replacement. No password is returned; use update --rotate-password if
+needed. Requires admin access to the source.
 
 **Arguments**
 
@@ -1094,10 +1095,9 @@ avr vm resume [OPTIONS] VM_ID_OR_NAME
 ```
 
 The existing password remains unless resume withdraws credentials supplied
-to a scoped token. Use update --rotate-password to obtain a fresh one.
-If a memory restore cannot complete,
-retry with --discard-memory to boot the preserved disk without restoring
-running processes.
+to a personal access token. Use update --rotate-password to obtain a fresh
+one. If a memory restore cannot complete, retry with --discard-memory to
+boot the preserved disk without restoring running processes.
 
 **Arguments**
 
@@ -2147,20 +2147,25 @@ Examples:
 
 ### `avr token`
 
-Create and manage scoped access tokens.
+Create and manage personal access tokens.
 
 ```sh
 avr token [OPTIONS] COMMAND [ARGS]...
 ```
 
-A scoped access token is a credential bound to one organization that
-expires within seven days. It reaches only the repositories and VMs it
-names, and it cannot create further tokens. To use one, set AVR_TOKEN to
+A personal access token (avs_...) is a credential of your own, bound to
+one organization, that expires within seven days. It can read the
+repositories you grant and administer VMs you grant or allow it to
+create. It cannot create further tokens. To use one, set AVR_TOKEN to
 the credential and AVR_ORG to the organization ID.
+
+It acts as you and stops working when you leave the organization. For
+automation that must outlive a person, use a service token, which
+belongs to a group: see avr service-token.
 
 #### `avr token create`
 
-Create a scoped token and print its credential.
+Create a personal access token and print its credential.
 
 ```sh
 avr token create [OPTIONS]
@@ -2171,15 +2176,14 @@ at least one of --repo, --vm or --allow-vm-create. Repository grants are
 read-only and VM grants are admin; an optional level suffix
 (--repo acme/api:read, --vm cvm-abc123:admin) must name that level.
 
-The command prints export lines for AVR_TOKEN and AVR_ORG. A scoped
-token needs the org-... ID in AVR_ORG or --org, ignores the stored
+The command prints export lines for AVR_TOKEN and AVR_ORG. A personal
+access token needs the org-... ID in AVR_ORG or --org, ignores the stored
 organization and cannot create further tokens. Pass run IDs rather than
-console URLs, whose organization slug a scoped token cannot resolve.
+console URLs, whose organization slug the token cannot resolve.
 If the request is
 interrupted or the server answers with a 5xx error, a token may already
 exist: check avr token list before retrying. A 404 names its reason;
-if scoped tokens are not enabled for the organization, contact
-support@avrea.com.
+if personal access tokens are unavailable, contact support@avrea.com.
 
 ```sh
 Examples:
@@ -2311,7 +2315,8 @@ A service token (avt_...) belongs to a group of one organization rather
 than to a person, and keeps working when its creator leaves. It reads
 only the repositories and egress firewall rules its access names.
 Organization admins manage service tokens while signed in (avr auth
-device-login or avr auth login); a scoped or service token cannot.
+device-login or avr auth login); a personal access token or service
+token cannot.
 
 A service token reaches the VMs its grants name. With --max-owned-vms it
 creates VMs, and it administers those VMs even after VM creation is
@@ -2624,8 +2629,9 @@ avr group [OPTIONS] COMMAND [ARGS]...
 
 Groups hold members, service tokens and vCPU limits. Organization
 members manage them while signed in (avr auth device-login or avr auth
-login); a scoped or service token cannot. What you may change depends
-on the groups you administer: `avr org governance` shows it.
+login); a personal access token or service token cannot. What you may
+change depends on the groups you administer: `avr org governance` shows
+it.
 
 #### `avr group create`
 
@@ -3359,8 +3365,8 @@ With --project, the skill goes into .claude/skills and .agents/skills
 (or .kiro/skills) at the top of the current git repository instead.
 Commit it so cloud
 agents working on the repository, such as Devin or Codex cloud, find it.
-Those environments also need avr installed and AVR_TOKEN set to a scoped
-or service token.
+Those environments also need avr installed and AVR_TOKEN set to a personal
+access token or service token.
 
 ```sh
 Examples:
@@ -3948,8 +3954,9 @@ exact URL or hostname. Requires Git 2.31 or newer.
 The origin remote stays on the selected read-only mirror. A repository-local
 Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
 operations using your Avrea login. Push changes to the source repository
-using a separate remote. Tokens normally last one hour; scoped API keys have
-a shorter server-enforced lifetime. Tokens are never saved in the repository.
+using a separate remote. These Git tokens are short-lived, and shorter
+still when obtained with a personal access token. Tokens are never saved
+in the repository.
 
 ```sh
 Examples:
@@ -4756,7 +4763,7 @@ Create group runners in GitLab and configure their machine types in Avrea.
 avr org install runner create [OPTIONS]
 ```
 
-Supply your own personal access token with create_runner scope and Owner
+Supply your own GitLab personal access token with create_runner scope and Owner
 role. It is sent only to gitlab.com and is never persisted. Already
 configured machine types must be replaced with 'runner set'.
 
@@ -4771,7 +4778,7 @@ JSON FIELDS
 - `--installation-id <TEXT>` — GitLab installation ID (ins-xxx format). _(required)_
 - `--machine-type <TEXT>` — Machine type to create; repeat for multiple machine types. _(repeatable · required)_
 - `--protected` — Restrict the runners to protected branches and tags.
-- `--personal-access-token-stdin` — Read your personal access token from standard input instead of a hidden prompt.
+- `--personal-access-token-stdin` — Read your GitLab personal access token from standard input instead of a hidden prompt.
 - `--json <TEXT>` — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - `-q, --jq <TEXT>` — Filter --json output through a jq expression.
 

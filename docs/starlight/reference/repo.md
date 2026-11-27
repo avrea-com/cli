@@ -27,8 +27,9 @@ exact URL or hostname. Requires Git 2.31 or newer.
 The origin remote stays on the selected read-only mirror. A repository-local
 Avrea credential helper obtains fresh Git JWTs for subsequent fetch and pull
 operations using your Avrea login. Push changes to the source repository
-using a separate remote. Tokens normally last one hour; scoped API keys have
-a shorter server-enforced lifetime. Tokens are never saved in the repository.
+using a separate remote. These Git tokens are short-lived, and shorter
+still when obtained with a personal access token. Tokens are never saved
+in the repository.
 
 ```sh
 Examples:

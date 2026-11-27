@@ -67,7 +67,7 @@ func TestJQHasNoExecutableDependency(t *testing.T) {
 	if code := Execute(context.Background(), []string{"auth", "status", "--json", "credential_type", "--jq", ".credential_type"}, d); code != 0 {
 		t.Fatal(code, stderr)
 	}
-	if strings.TrimSpace(out.String()) != "scoped_token" {
+	if strings.TrimSpace(out.String()) != "personal_access_token" {
 		t.Fatal(out)
 	}
 }

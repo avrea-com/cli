@@ -43,7 +43,7 @@ func rootDescription(path string) docgen.Description {
 				{Name: "skill", Description: "Teach coding agents to use avr.", Section: descriptionText("Setup & Config")},
 				{Name: "status", Description: "Show recent runs, performance stats, and cache health.", Section: descriptionText("Core Commands")},
 				{Name: "tests", Description: "Read a job's tests, timings and recorded failure messages.", Section: descriptionText("Core Commands")},
-				{Name: "token", Description: "Create and manage scoped access tokens.", Section: descriptionText("Setup & Config")},
+				{Name: "token", Description: "Create and manage personal access tokens.", Section: descriptionText("Setup & Config")},
 				{Name: "vm", Description: "Manage long-running VMs (SSH/RDP/VNC).", Section: descriptionText("Core Commands")},
 				{Name: "workflow", Description: "List and view workflow definitions.", Section: descriptionText("Core Commands")},
 			},

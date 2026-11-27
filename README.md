@@ -61,7 +61,7 @@ avr config              # host, sign-in, default organization and repository, wi
 avr auth logout         # revoke the stored API key
 ```
 
-In CI and scripts, set `AVR_TOKEN` instead: a [scoped token or service token](#tokens-for-ci-scripts-and-agents).
+In CI and scripts, set `AVR_TOKEN` instead: a [personal access token or service token](#tokens-for-ci-scripts-and-agents).
 
 ## For coding agents
 
@@ -112,11 +112,11 @@ Pick one route per machine. With both a plugin and a skills directory install, t
 
 The skill uses the open [Agent Skills](https://agentskills.io/) format. Claude Code reads it from `~/.claude/skills`, and Codex, Cursor, GitHub Copilot, Gemini CLI, Devin, OpenCode, Pi and other tools read it from `~/.agents/skills`. Kiro reads only `~/.kiro/skills`: use `--agent kiro`. It tells the agent when `avr` is relevant and to read `avr skill show`, a guide to testing a change in CI, diagnosing failed or slow runs, reading tests and logs, and using on-demand VMs. The guide ships with `avr`, so it always matches the installed version. `avr skill uninstall` removes the skill.
 
-Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills` (and `.kiro/skills` with `--agent kiro`). Their environment also needs `avr` installed and `AVR_TOKEN` set to a [scoped or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."
+Cloud agents such as Devin or Codex cloud read skills from the repository: run `avr skill install --project` and commit `.claude/skills` and `.agents/skills` (and `.kiro/skills` with `--agent kiro`). Their environment also needs `avr` installed and `AVR_TOKEN` set to a [personal access token or service token](#tokens-for-ci-scripts-and-agents). For an agent that reads no skills, add a line to its instructions: "Run `avr skill show` before working with Avrea CI."
 
 What the agent needs to know:
 
-- **Sign in:** start `avr auth device-login --no-qr` in the background; it prints a link and code, then waits until the user approves them in a browser. For unattended agents, create a [scoped token](#tokens-for-ci-scripts-and-agents) and set `AVR_TOKEN` and `AVR_ORG`.
+- **Sign in:** start `avr auth device-login --no-qr` in the background; it prints a link and code, then waits until the user approves them in a browser. For unattended agents, create a [personal access token](#tokens-for-ci-scripts-and-agents) and set `AVR_TOKEN` and `AVR_ORG`.
 - **No prompts:** set `AVR_PROMPT_DISABLED=1` so a command fails instead of waiting for input, and pass `--yes` only where the action is intended.
 - **Structured output:** `--json '?'` lists a command's fields, `--json a,b` selects them, and `--jq` filters them without a separate `jq`.
 - **Exit codes:** `0` success, `1` failure, `2` usage error, `4` sign-in required, `130` interrupted.
@@ -259,7 +259,9 @@ esac
 
 ### Tokens for CI, scripts and agents
 
-A **scoped token** is a short-lived credential of your own, from 60 seconds to 7 days, that reads only the repositories it names and administers only the VMs it names:
+Avrea has two kinds of access token: a personal access token acts as you, and a service token belongs to a group. [Access tokens](https://docs.avrea.com/access-tokens/) compares them.
+
+A **personal access token** is a short-lived credential of your own, from 60 seconds to 7 days, that reads the repositories you grant and administers the VMs you grant or allow it to create:
 
 ```sh
 avr token create --name ci-read --org <org-id> --repo acme/api --ttl 8h
@@ -275,15 +277,15 @@ avr service-token rotate <token-id> --overlap 2h
 avr service-token list --status live
 ```
 
-Both print the secret once, with `export AVR_TOKEN=...` and `export AVR_ORG=...` lines. Store it, for example as a CI secret. A scoped token needs the `org-...` ID in `AVR_ORG` or `--org`. See `avr token --help` and `avr service-token --help` for grants, rotation and troubleshooting.
+Both print the secret once, with `export AVR_TOKEN=...` and `export AVR_ORG=...` lines. Store it, for example as a CI secret. A personal access token needs the `org-...` ID in `AVR_ORG` or `--org`. See `avr token --help` and `avr service-token --help` for grants, rotation and troubleshooting.
 
 ## Configuration
 
 | Variable | Purpose |
 | --- | --- |
 | `AVR_HOST` | Avrea API URL. Defaults to the active host in `hosts.json`, then `https://api.avrea.com`. |
-| `AVR_TOKEN` | API key, scoped token or service token. Overrides the stored credential. |
-| `AVR_ORG` | Default organization ID. A scoped token needs it, or `--org`, except for `repo clone`; a service token uses its own organization. |
+| `AVR_TOKEN` | API key, personal access token or service token. Overrides the stored credential. |
+| `AVR_ORG` | Default organization ID. A personal access token needs it, or `--org`, except for `repo clone`; a service token uses its own organization. |
 | `AVR_REPO` | Default repository (`owner/name` or `rep-...`). Overrides the git remote. |
 | `AVR_PROMPT_DISABLED` | Refuse interactive prompts, so scripts and agents fail fast instead of waiting for input. |
 | `AVR_BUILD_ENGINE` | Local tooling for `avr build`: `auto` (the default, which prefers podman), `docker` or `podman`. Same as `--engine`. |

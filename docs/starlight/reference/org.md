@@ -344,7 +344,7 @@ Create group runners in GitLab and configure their machine types in Avrea.
 avr org install runner create [OPTIONS]
 ```
 
-Supply your own personal access token with create_runner scope and Owner
+Supply your own GitLab personal access token with create_runner scope and Owner
 role. It is sent only to gitlab.com and is never persisted. Already
 configured machine types must be replaced with 'runner set'.
 
@@ -359,7 +359,7 @@ JSON FIELDS
 - <code class="cli-flag">&#x2D;&#x2D;installation-id</code> <code class="cli-value">&lt;TEXT&gt;</code> — GitLab installation ID (ins-xxx format). _(required)_
 - <code class="cli-flag">&#x2D;&#x2D;machine-type</code> <code class="cli-value">&lt;TEXT&gt;</code> — Machine type to create; repeat for multiple machine types. _(repeatable · required)_
 - <code class="cli-flag">&#x2D;&#x2D;protected</code> — Restrict the runners to protected branches and tags.
-- <code class="cli-flag">&#x2D;&#x2D;personal-access-token-stdin</code> — Read your personal access token from standard input instead of a hidden prompt.
+- <code class="cli-flag">&#x2D;&#x2D;personal-access-token-stdin</code> — Read your GitLab personal access token from standard input instead of a hidden prompt.
 - <code class="cli-flag">&#x2D;&#x2D;json</code> <code class="cli-value">&lt;TEXT&gt;</code> — Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
 - <code class="cli-flag">-q, &#x2D;&#x2D;jq</code> <code class="cli-value">&lt;TEXT&gt;</code> — Filter --json output through a jq expression.
 

@@ -45,7 +45,7 @@ func newGitLabRunnerCommand(d Dependencies, verb string) *cobra.Command {
 	if verb == "create" {
 		c.Flags().StringArrayVar(&types, "machine-type", nil, "Machine type to create (repeatable).")
 		c.Flags().BoolVar(&protected, "protected", false, "Restrict runners to protected branches and tags.")
-		c.Flags().BoolVar(&stdin, "personal-access-token-stdin", false, "Read your personal access token from stdin.")
+		c.Flags().BoolVar(&stdin, "personal-access-token-stdin", false, "Read your GitLab personal access token from stdin.")
 	}
 	orgFlag(c, &org)
 	c.Flags().StringVar(&id, "installation-id", "", "GitLab installation ID.")
