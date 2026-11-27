@@ -235,7 +235,7 @@ func walkRepositoryTests(ctx context.Context, api *client.Client, cfg config.Con
 		if cursor != nil {
 			query.Set("cursor", *cursor)
 		}
-		page, err := getTestResults(ctx, api, cfg, path, query, action, "Check the repository and organization, and that Repository Tests are enabled. If you passed --cursor, restart without it.")
+		page, err := getTestResults(ctx, api, cfg, path, query, action, "Check the repository and organization, and that Repository Tests are enabled. If you passed --cursor, restart without it.", false)
 		if err != nil {
 			return nil, err
 		}
@@ -451,9 +451,7 @@ func newRepositoryTestsCommand(d Dependencies, spec repositoryTestRead) *cobra.C
 		if err != nil {
 			return err
 		}
-		if next, ok := response["pagination"].(map[string]any)["next_cursor"].(string); ok {
-			_, err = fmt.Fprintf(d.Err, "More results available. Continue with %s and --cursor %s\n", spec.same, shellQuotePython(testText(next)))
-		}
+		err = writeTestContinuation(d.Err, response, false, "", spec.same)
 		if truncated, _ := response["truncated"].(bool); truncated && err == nil {
 			_, err = fmt.Fprintln(d.Err, spec.stopped)
 		}
@@ -665,7 +663,7 @@ func newTestsHistory(d Dependencies) *cobra.Command {
 			identity = map[string]any{"suite": row["suite"], "class_name": row["class_name"], "name": row["name"]}
 		}
 		query.Set("configuration", configuration)
-		response, err := getTestResults(cmd.Context(), api, cfg, path+"/history/"+target, query, "read the test history", "Check the test ID, configuration, repository and organization, and that Repository Tests are enabled.")
+		response, err := getTestResults(cmd.Context(), api, cfg, path+"/history/"+target, query, "read the test history", "Check the test ID, configuration, repository and organization, and that Repository Tests are enabled.", false)
 		if err != nil {
 			return err
 		}

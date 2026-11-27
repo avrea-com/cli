@@ -57,7 +57,7 @@ func newTestsView(d Dependencies) *cobra.Command {
 			return d.openWeb(cmd.Context(), target)
 		}
 		path := "/orgs/" + organization + "/repos/" + repository + "/tests/results/" + url.PathEscape(result)
-		response, err := getTestResults(cmd.Context(), api, cfg, path, nil, "read the test result", "Check the result ID, repository and organization, and that Repository Tests are enabled. A result ID belongs to one repository.")
+		response, err := getTestResults(cmd.Context(), api, cfg, path, nil, "read the test result", "Check the result ID, repository and organization, and that Repository Tests are enabled. A result ID belongs to one repository.", false)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func newTestsView(d Dependencies) *cobra.Command {
 			wanted = slices.Contains(fields, "failure_start")
 		}
 		if wanted && state == "available" && (data["outcome"] == "failed" || data["outcome"] == "errored") {
-			start, err := getTestResults(cmd.Context(), api, cfg, path+"/failure-start", nil, "check when the test started failing", "Check that Repository Tests are enabled, then retry.")
+			start, err := getTestResults(cmd.Context(), api, cfg, path+"/failure-start", nil, "check when the test started failing", "Check that Repository Tests are enabled, then retry.", false)
 			if err != nil {
 				return err
 			}

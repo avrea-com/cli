@@ -127,11 +127,12 @@ func NewTests(deps Dependencies) *cobra.Command {
 				return err
 			}
 			response["organization_id"], response["repository_id"] = organization, repository
-			response["status"] = runWalkStatus(response["status"], incompleteRunJobs(objectList(response["jobs"]), selected))
+			incomplete := incompleteRunJobs(objectList(response["jobs"]), selected)
+			response["status"] = runWalkStatus(response["status"], incomplete)
 			if cmd.Flags().Changed("json") {
 				err = o.record(cmd, d, response, fields)
 			} else {
-				err = showRunTestResults(d.Out, response, selected)
+				err = showRunTestResults(d.Out, response, incomplete, selected)
 			}
 			if err != nil {
 				return err
@@ -147,7 +148,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 			repository, err = requiredWorkflowRepo(cmd.Context(), d, cfg, api, organization, repo)
 		} else {
 			var response map[string]any
-			response, err = getTestResults(cmd.Context(), api, cfg, "/orgs/"+organization+"/jobs/"+job, nil, "read the job", "Check the job ID, or pass --org with the job's organization.")
+			response, err = getTestResults(cmd.Context(), api, cfg, "/orgs/"+organization+"/jobs/"+job, nil, "read the job", "Check the job ID, or pass --org with the job's organization.", false)
 			if err == nil {
 				data := response
 				if nested, exists := response["data"]; exists {
@@ -168,7 +169,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 		path := "/orgs/" + organization + "/repos/" + repository + "/jobs/" + job + "/tests"
 		var response map[string]any
 		if summary {
-			response, err = getTestResults(cmd.Context(), api, cfg, path+"/summary", nil, "read the job test summary", "Check the job, repository and organization, and that Repository Tests and summaries are available.")
+			response, err = getTestResults(cmd.Context(), api, cfg, path+"/summary", nil, "read the job test summary", "Check the job, repository and organization, and that Repository Tests and summaries are available.", false)
 			if err == nil {
 				if response["job_id"] != job || (response["status"] != "available" && response["status"] != "expired" && response["status"] != "not_recorded") {
 					return &ExitError{1, "Error: The API returned an invalid job test summary."}
@@ -226,14 +227,16 @@ func validTestCursor(value string) bool {
 	return value != "" && strings.TrimSpace(value) == value && utf8.RuneCountInString(value) <= 1024
 }
 
-func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, path string, query url.Values, action, hint string) (map[string]any, error) {
+// getTestResults adds hint to a 404. With filterHint, a 400 instead points
+// at the test filters, or at the cursor when one was passed.
+func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, path string, query url.Values, action, hint string, filterHint bool) (map[string]any, error) {
 	response, err := api.Get(ctx, path, query)
 	if err == nil {
 		return response, nil
 	}
 	result := apiError(cfg, err, action)
 	var status *client.HTTPError
-	if errors.As(err, &status) && (status.Status == 404 || (status.Status == 400 && (action == "read job test results" || action == "read run test results"))) {
+	if errors.As(err, &status) && (status.Status == 404 || (status.Status == 400 && filterHint)) {
 		if status.Status == 400 {
 			hint = "Check the test filters and whether this API deployment supports them."
 			if query.Get("cursor") != "" {
@@ -251,16 +254,19 @@ func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, 
 
 // testResultWalk reads a test-result listing page by page. check validates
 // each page; for a later page it also receives the first page, to compare
-// them or merge what the later page adds into it.
+// them. merge, when set, folds a validated later page into the first.
+// filterHint points a refused request at the test filters and cursor.
 type testResultWalk struct {
 	path, action, hint, invalid string
 	pageLimit                   int
+	filterHint                  bool
 	check                       func(page, first map[string]any) error
+	merge                       func(page, first map[string]any)
 }
 
 func jobTestResultWalk(path, job string) testResultWalk {
 	return testResultWalk{
-		path: path, action: "read job test results", invalid: "job test results", pageLimit: 1000,
+		path: path, action: "read job test results", invalid: "job test results", pageLimit: 1000, filterHint: true,
 		hint: "If you passed --cursor, restart without it. Otherwise check that Repository Tests are enabled and that the job belongs to the repository.",
 		check: func(page, first map[string]any) error {
 			if page["job_id"] != job {
@@ -310,7 +316,7 @@ func (w testResultWalk) collect(ctx context.Context, api *client.Client, cfg con
 		if cursor != nil {
 			query.Set("cursor", *cursor)
 		}
-		page, err := getTestResults(ctx, api, cfg, w.path, query, w.action, w.hint)
+		page, err := getTestResults(ctx, api, cfg, w.path, query, w.action, w.hint, w.filterHint)
 		if err != nil {
 			return nil, err
 		}
@@ -348,6 +354,8 @@ func (w testResultWalk) collect(ctx context.Context, api *client.Client, cfg con
 		}
 		if snapshot == nil {
 			snapshot = page
+		} else if w.merge != nil {
+			w.merge(page, snapshot)
 		}
 		cursor = nil
 		if value := pagination["next_cursor"]; value != nil {

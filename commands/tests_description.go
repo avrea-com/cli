@@ -18,7 +18,8 @@ func testsDescription(path string) docgen.Description {
 				"execution, and lists the jobs with their counts. --status failed --status\n" +
 				"errored finds a run's failures. A job whose results could not be read is\n" +
 				"named with the command that reads it alone; the rest of the run is still\n" +
-				"listed.\n" +
+				"listed. With --test, --suite or --class, a named job may in fact be\n" +
+				"complete.\n" +
 				"\n" +
 				"Names, outcomes, recorded durations and available failure messages are\n" +
 				"shown together, and each failed or errored row is followed by the\n" +
@@ -230,7 +231,7 @@ func testsDescription(path string) docgen.Description {
 				"avr tests history for one test's earlier runs, and avr tests view\n" +
 				"for one result's failure summary and when its failure started.\n",
 			Short:          "Read recorded tests: a job's results, repository search and ranking, one test's history and one result.",
-			CompletionHelp: "Read recorded tests: a job's results, a...",
+			CompletionHelp: "Read recorded tests: a job's results,...",
 			Usage:          []string{"[OPTIONS]", "COMMAND [ARGS]..."},
 			Sections:       true,
 			Commands: []docgen.HelpCommand{

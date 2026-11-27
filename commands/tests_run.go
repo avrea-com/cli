@@ -24,9 +24,9 @@ var testRunFields = []string{"organization_id", "repository_id", "run_id", "stat
 func runTestResultWalk(path, run string) testResultWalk {
 	invalid := &ExitError{1, "Error: The API returned invalid run test results."}
 	return testResultWalk{
-		path: path, action: "read run test results", invalid: "run test results", pageLimit: 100,
+		path: path, action: "read run test results", invalid: "run test results", pageLimit: 100, filterHint: true,
 		hint: "Check the run, repository and organization, and that Repository Tests are enabled.",
-		check: func(page, first map[string]any) error {
+		check: func(page, _ map[string]any) error {
 			values, ok := page["jobs"].([]any)
 			jobs := objectList(page["jobs"])
 			status, _ := page["status"].(string)
@@ -50,11 +50,11 @@ func runTestResultWalk(path, run string) testResultWalk {
 					return invalid
 				}
 			}
-			if first == nil {
-				return nil
-			}
-			// Later pages list the jobs as they are now, including jobs a
-			// running workflow added since the first page.
+			return nil
+		},
+		// Later pages list the jobs as they are now, including jobs a
+		// running workflow added since the first page.
+		merge: func(page, first map[string]any) {
 			delivered := map[string]bool{}
 			for _, row := range page["data"].([]any) {
 				delivered[row.(map[string]any)["job_id"].(string)] = true
@@ -65,14 +65,13 @@ func runTestResultWalk(path, run string) testResultWalk {
 					failed[job["job_id"].(string)] = job["status"]
 				}
 			}
-			for _, job := range jobs {
+			for _, job := range objectList(page["jobs"]) {
 				id := job["job_id"].(string)
 				if state, ok := failed[id]; ok && !delivered[id] && testListingMessage(job["status"]) == "" {
 					job["status"] = state
 				}
 			}
-			first["jobs"], first["status"] = page["jobs"], status
-			return nil
+			first["jobs"], first["status"] = page["jobs"], page["status"]
 		},
 	}
 }
@@ -196,7 +195,8 @@ func incompleteRunText(response map[string]any, jobs []map[string]any, outcomes 
 	return lines
 }
 
-func showRunTestResults(w io.Writer, response map[string]any, outcomes []string) error {
+// showRunTestResults prints a run walk; incomplete are its incompleteRunJobs.
+func showRunTestResults(w io.Writer, response map[string]any, incomplete []map[string]any, outcomes []string) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Run: %s\nOrganization: %s  Repository: %s\nResults: %s\n", testText(response["run_id"]), testText(response["organization_id"]), testText(response["repository_id"]), testText(response["status"]))
 	jobs := objectList(response["jobs"])
@@ -219,7 +219,6 @@ func showRunTestResults(w io.Writer, response map[string]any, outcomes []string)
 		label = "Matching results shown"
 	}
 	fmt.Fprintf(&b, "%s: %d\n", label, len(rows))
-	incomplete := incompleteRunJobs(jobs, outcomes)
 	if len(rows) > 0 {
 		cells = make([][]string, 0, len(rows))
 		for _, item := range rows {
@@ -236,6 +235,8 @@ func showRunTestResults(w io.Writer, response map[string]any, outcomes []string)
 		writeResultCommands(&b, response, rows, label)
 	} else if len(incomplete) == 0 {
 		switch {
+		case testListingMessage(response["status"]) != "":
+			b.WriteString(testListingMessage(response["status"]) + "\n")
 		case response["pagination"].(map[string]any)["next_cursor"] != nil:
 			b.WriteString("No matches in the searched portion.\n")
 		case filtered:

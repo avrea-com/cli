@@ -80,7 +80,8 @@ first; --job must also match it.
 execution, and lists the jobs with their counts. --status failed --status
 errored finds a run's failures. A job whose results could not be read is
 named with the command that reads it alone; the rest of the run is still
-listed.
+listed. With --test, --suite or --class, a named job may in fact be
+complete.
 
 Names, outcomes, recorded durations and available failure messages are
 shown together, and each failed or errored row is followed by the

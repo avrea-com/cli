@@ -132,6 +132,34 @@ func TestTestsAllJobsEmptyContinuationSaysRemaining(t *testing.T) {
 	}
 }
 
+// With no rows and no job named as incomplete, the run's own status still
+// says why nothing was listed, as it does for one job.
+func TestTestsAllJobsEmptyListingStatesTheRunStatus(t *testing.T) {
+	for _, tc := range []struct {
+		status, filters string
+		args            []string
+		jobs            []string
+	}{
+		// The indexing job's counts record no failure, so it is not named.
+		{"indexing", `{"outcome":"failed"}`, []string{"--status", "failed"}, []string{runJob(resultTestJob, "unit", "available", 0, 0), runJob(runTestIndexedJob, "lint", "indexing", 0, 0)}},
+		{"unavailable", `{"name":"test_login"}`, []string{"--test", "test_login"}, []string{runJob(resultTestJob, "unit", "available", 0, 0)}},
+		{"limited", `{}`, nil, []string{runJob(resultTestJob, "unit", "available", 0, 0)}},
+	} {
+		t.Run(tc.status, func(t *testing.T) {
+			execute := repositoryTestsDeps(t, func(*http.Request) (int, string) {
+				return 200, runPage(tc.status, tc.filters, `null`, tc.jobs)
+			})
+			code, out, stderr := execute(append([]string{"list", inspectionRun, "--all-jobs", "--repo", resultTestRepo}, tc.args...)...)
+			if code != 0 || !strings.Contains(out, testListingMessage(tc.status)) {
+				t.Fatal(code, out, stderr)
+			}
+			if strings.Contains(out, "No matching tests") || strings.Contains(out, "No test results returned") || strings.Contains(out, "may be incomplete") {
+				t.Errorf("unexpected output:\n%s", out)
+			}
+		})
+	}
+}
+
 func TestTestsAllJobsJSONKeepsWhatCouldNotBeListed(t *testing.T) {
 	calls := 0
 	execute := repositoryTestsDeps(t, func(*http.Request) (int, string) {
