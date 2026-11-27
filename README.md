@@ -20,23 +20,63 @@ Official command-line client for [Avrea](https://avrea.com/). `avr` brings runs,
 
 ## Quickstart
 
-```sh
-brew install avrea-com/tap/avr      # or another method below
-avr auth device-login               # approve the sign-in from any browser
-avr status                          # recent runs, performance and cache health of this repository
+### With a coding agent
+
+Paste this into Claude Code, Codex or another coding agent, started in the repository you want to work on:
+
+```text
+Set up the Avrea CLI (avr) on this machine and connect it to my Avrea account.
+
+1. Install avr with the first method available here: `brew install avrea-com/tap/avr`,
+   `mise use -g github:avrea-com/cli@latest` or `uv tool install avr-cli`. On Windows
+   without these, use install.ps1 from https://github.com/avrea-com/cli/releases/latest.
+   Confirm with `avr --version`.
+2. Sign me in: start `avr auth device-login --no-qr` in the background, show me the
+   link and code it prints, and wait until I have approved them.
+3. Install the agent skill with `avr skill install`, then read `avr skill show`.
+4. In this repository, run `avr status` and summarise what it shows.
+
+Do not create tokens or change settings beyond these steps.
 ```
 
-Using a coding agent? Run `avr skill install` and see [For coding agents](#for-coding-agents).
+### By hand
+
+Install, sign in from any browser, then see the recent runs, performance and cache health of the repository you are in:
+
+```sh
+brew install avrea-com/tap/avr
+avr auth device-login
+avr status
+```
+
+Without Homebrew, use another [install](#install) method. For your coding agent, run `avr skill install` and see [For coding agents](#for-coding-agents).
 
 ## Install
 
-`avr` is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64 and Windows AMD64. On other platforms Go supports, such as Intel macOS, build it with `go install`.
+`avr` is a native executable for macOS on Apple Silicon, Linux AMD64/ARM64 and Windows AMD64. On other platforms Go supports, such as Intel macOS, build it with `go install`. Pick one method:
+
+Homebrew:
 
 ```sh
-brew install avrea-com/tap/avr                          # Homebrew
-mise use -g github:avrea-com/cli@latest                 # mise
-go install github.com/avrea-com/cli/cmd/avr@latest      # Go
-uv tool install avr-cli                                 # PyPI (also pipx or pip)
+brew install avrea-com/tap/avr
+```
+
+mise:
+
+```sh
+mise use -g github:avrea-com/cli@latest
+```
+
+Go:
+
+```sh
+go install github.com/avrea-com/cli/cmd/avr@latest
+```
+
+PyPI, with uv (`pipx install avr-cli` and `pip install avr-cli` work too):
+
+```sh
+uv tool install avr-cli
 ```
 
 Shell and PowerShell installers and plain archives are on [GitHub Releases](https://github.com/avrea-com/cli/releases/latest). With `go install`, make sure `$(go env GOBIN)` is on PATH, or `$(go env GOPATH)/bin` when `GOBIN` is unset. The PyPI package uses Python only to install; `avr` itself runs without it.
@@ -67,25 +107,46 @@ In CI and scripts, set `AVR_TOKEN` instead: a [personal access token or service 
 
 `avr` works well from Claude Code, Codex, OpenCode, Pi, Devin and other coding agents: output is plain text or JSON, exit codes are stable, and every command documents itself in `--help`.
 
-Install the skill once on each machine:
+Install the skill once on each machine, for Claude Code plus Codex, Cursor, Copilot, Gemini CLI, Devin and other Agent Skills tools:
 
 ```sh
-avr skill install                    # Claude Code, plus Codex, Cursor, Copilot, Gemini CLI, Devin and other Agent Skills tools
-avr skill install --agent kiro       # one location only: claude, agents or kiro
-avr skill install --project          # commit it to the repository for cloud agents
-avr skill show                       # print the guide the skill points to
+avr skill install
 ```
 
-The same skill also installs without `avr`, from [skills.sh](https://www.skills.sh/avrea-com/cli) as a plugin for Claude Code, Codex or GitHub Copilot, or with Gemini CLI. It then tells the agent how to install `avr`:
+To install it in one location only (`claude`, `agents` or `kiro`), pass `--agent`, for example `avr skill install --agent kiro`. For cloud agents, `avr skill install --project` writes it into the repository to commit. `avr skill show` prints the guide the skill points to.
+
+The same skill also installs without `avr`. It then tells the agent how to install `avr`. Pick one route:
+
+[skills.sh](https://www.skills.sh/avrea-com/cli), for Claude Code, Codex, Cursor and other agents:
 
 ```sh
-npx skills add avrea-com/cli                  # skills.sh: Claude Code, Codex, Cursor and other agents
-claude plugin marketplace add avrea-com/cli   # Claude Code plugin: add the marketplace,
-claude plugin install avrea-cli@avrea         # then install the plugin
-codex plugin marketplace add avrea-com/cli    # Codex plugin
+npx skills add avrea-com/cli
+```
+
+Claude Code plugin:
+
+```sh
+claude plugin marketplace add avrea-com/cli
+claude plugin install avrea-cli@avrea
+```
+
+Codex plugin:
+
+```sh
+codex plugin marketplace add avrea-com/cli
 codex plugin add avrea-cli@avrea
-copilot plugin marketplace add avrea-com/cli  # GitHub Copilot CLI plugin
+```
+
+GitHub Copilot CLI plugin:
+
+```sh
+copilot plugin marketplace add avrea-com/cli
 copilot plugin install avrea-cli@avrea
+```
+
+Gemini CLI:
+
+```sh
 gemini skills install https://github.com/avrea-com/cli.git --path plugins/avrea-cli/skills
 ```
 
