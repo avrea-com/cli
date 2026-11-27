@@ -475,6 +475,23 @@ PRETTY_NAME="Fedora Linux 44 (Workstation Edition)"`, "Fedora Linux 44 (Workstat
 	}
 }
 
+func TestWindowsVersionName(t *testing.T) {
+	for _, tc := range []struct {
+		major, minor, build uint32
+		want                string
+	}{
+		{10, 0, 22631, "Windows 11 build 22631"},
+		{10, 0, 22000, "Windows 11 build 22000"},
+		{10, 0, 21999, "Windows 10 build 21999"},
+		{10, 0, 19045, "Windows 10 build 19045"},
+		{6, 3, 9600, "Windows 6.3 build 9600"},
+	} {
+		if got := windowsVersionName(tc.major, tc.minor, tc.build); got != tc.want {
+			t.Errorf("windowsVersionName(%d, %d, %d) = %q, want %q", tc.major, tc.minor, tc.build, got, tc.want)
+		}
+	}
+}
+
 func TestParseSystemVersionPlist(t *testing.T) {
 	for _, tc := range []struct{ name, data, want string }{
 		{"product version", `<?xml version="1.0" encoding="UTF-8"?>

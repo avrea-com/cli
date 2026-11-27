@@ -2,13 +2,9 @@
 
 package commands
 
-import (
-	"fmt"
-
-	"golang.org/x/sys/windows"
-)
+import "golang.org/x/sys/windows"
 
 func detectDeviceOS() (string, error) {
 	version := windows.RtlGetVersion()
-	return fmt.Sprintf("Windows %d.%d.%d", version.MajorVersion, version.MinorVersion, version.BuildNumber), nil
+	return windowsVersionName(version.MajorVersion, version.MinorVersion, version.BuildNumber), nil
 }

@@ -2,10 +2,27 @@ package commands
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strings"
 
 	"github.com/kballard/go-shellquote"
 )
+
+// Windows 11 still reports version 10.0; Microsoft tells the two apart by
+// build number, 22000 and later being Windows 11:
+// https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information
+const windows11FirstBuild = 22000
+
+func windowsVersionName(major, minor, build uint32) string {
+	switch {
+	case major == 10 && minor == 0 && build >= windows11FirstBuild:
+		return fmt.Sprintf("Windows 11 build %d", build)
+	case major == 10 && minor == 0:
+		return fmt.Sprintf("Windows 10 build %d", build)
+	default:
+		return fmt.Sprintf("Windows %d.%d build %d", major, minor, build)
+	}
+}
 
 // parseOSRelease reads the shell-compatible assignments of os-release(5):
 // https://www.freedesktop.org/software/systemd/man/latest/os-release.html
