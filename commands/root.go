@@ -47,6 +47,7 @@ type Dependencies struct {
 	OpenBrowser     func(context.Context, string) error
 	Listen          func(context.Context, string, string) (net.Listener, error)
 	Hostname        func() (string, error)
+	DeviceOS        func() (string, error)
 	Now             func() time.Time
 	Wait            func(context.Context, time.Duration) error
 	IsTerminal      func() bool
@@ -93,6 +94,9 @@ func (d Dependencies) defaults() Dependencies {
 	}
 	if d.Hostname == nil {
 		d.Hostname = os.Hostname
+	}
+	if d.DeviceOS == nil {
+		d.DeviceOS = detectDeviceOS
 	}
 	if d.Wait == nil {
 		d.Wait = waitPoll

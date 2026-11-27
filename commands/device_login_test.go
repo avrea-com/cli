@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -33,6 +34,7 @@ type deviceTestFlow struct {
 	mu                          sync.Mutex
 	d                           Dependencies
 	start, metadata             map[string]any
+	startForm                   url.Values
 	replies                     []deviceTestReply
 	polls, waits                []time.Duration
 	now                         time.Time
@@ -44,6 +46,8 @@ type deviceTestFlow struct {
 func newDeviceTestFlow(t *testing.T) *deviceTestFlow {
 	t.Helper()
 	d, _, _ := testDeps(t)
+	d.Hostname = func() (string, error) { return "", nil }
+	d.DeviceOS = func() (string, error) { return "", nil }
 	f := &deviceTestFlow{d: d, now: time.Unix(0, 0)}
 	f.start = map[string]any{"device_code": deviceTestSecret, "user_code": "BCDF-GHJK", "verification_uri": "https://console.example.com/device", "verification_uri_complete": "https://console.example.com/device?user_code=BCDF-GHJK", "expires_in": 600, "interval": 5}
 	f.replies = []deviceTestReply{{200, map[string]any{"access_token": deviceTestKey, "token_type": "Bearer", "expires_in": 7776000, "scope": "avrea"}, ""}}
@@ -70,7 +74,8 @@ func newDeviceTestFlow(t *testing.T) *deviceTestFlow {
 			if err := r.ParseForm(); err != nil {
 				t.Error(err)
 			}
-			if len(r.PostForm) != 2 || r.PostForm.Get("client_id") != "avr-cli" || r.PostForm.Get("scope") != "avrea" {
+			f.startForm = r.PostForm
+			if r.PostForm.Get("client_id") != "avr-cli" || r.PostForm.Get("scope") != "avrea" {
 				t.Error("wrong device request", r.PostForm)
 			}
 			f.now = f.now.Add(f.startDuration)
@@ -403,5 +408,88 @@ func TestDeviceTransportErrorsNeverExposeSecrets(t *testing.T) {
 	d.HTTP = &http.Client{Transport: watchTransportFunc(func(*http.Request) (*http.Response, error) { return nil, errors.New(deviceTestSecret) })}
 	if code := Execute(t.Context(), []string{"auth", "device-login"}, d); code != 1 || strings.Contains(stderr.String(), deviceTestSecret) || !strings.Contains(stderr.String(), "Could not reach Avrea while trying to sign in with device login") {
 		t.Fatal(code, stderr)
+	}
+}
+
+func TestDeviceLoginStartIncludesOnlyAvailableDeviceDetails(t *testing.T) {
+	for _, tc := range []struct {
+		name, hostname, deviceOS string
+		hostnameErr, osErr       error
+		wantName, wantOS         string
+	}{
+		{"both available", "avr-minis-01", "macOS 15.3", nil, nil, "avr-minis-01", "macOS 15.3"},
+		{"hostname failed", "ignored", "macOS 15.3", errors.New("hostname failed"), nil, "", "macOS 15.3"},
+		{"hostname empty", "", "macOS 15.3", nil, nil, "", "macOS 15.3"},
+		{"OS failed", "avr-minis-01", "ignored", nil, errors.New("OS failed"), "avr-minis-01", ""},
+		{"OS empty", "avr-minis-01", "", nil, nil, "avr-minis-01", ""},
+		{"both unavailable", "", "", errors.New("hostname failed"), errors.New("OS failed"), "", ""},
+		{"truncate ASCII", strings.Repeat("a", 65), strings.Repeat("b", 65), nil, nil, strings.Repeat("a", 64), strings.Repeat("b", 64)},
+		{"truncate Unicode", strings.Repeat("ä", 65), strings.Repeat("界", 65), nil, nil, strings.Repeat("ä", 64), strings.Repeat("界", 64)},
+		{"exactly 64 characters", strings.Repeat("a", 64), strings.Repeat("b", 64), nil, nil, strings.Repeat("a", 64), strings.Repeat("b", 64)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newDeviceTestFlow(t)
+			f.d.Hostname = func() (string, error) { return tc.hostname, tc.hostnameErr }
+			f.d.DeviceOS = func() (string, error) { return tc.deviceOS, tc.osErr }
+			if code := Execute(t.Context(), []string{"auth", "device-login", "--no-qr"}, f.d); code != 0 {
+				t.Fatal(code, f.d.Err)
+			}
+			want := url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}}
+			if tc.wantName != "" {
+				want.Set("device_name", tc.wantName)
+			}
+			if tc.wantOS != "" {
+				want.Set("device_os", tc.wantOS)
+			}
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			if !reflect.DeepEqual(f.startForm, want) {
+				t.Fatalf("start form %v want %v", f.startForm, want)
+			}
+		})
+	}
+}
+
+func TestParseOSRelease(t *testing.T) {
+	for _, tc := range []struct{ name, data, want string }{
+		{"pretty name", `NAME=Fedora
+VERSION_ID=44
+PRETTY_NAME="Fedora Linux 44 (Workstation Edition)"`, "Fedora Linux 44 (Workstation Edition)"},
+		{"name and version", "NAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
+		{"name only", "NAME=Debian", "Debian"},
+		{"version only", "VERSION_ID=44", ""},
+		{"last assignment wins", "PRETTY_NAME=Old\nPRETTY_NAME=\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
+		{"empty pretty name falls back", "PRETTY_NAME=\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
+		{"single quotes and comments", "# PRETTY_NAME=Wrong\n NAME='Fedora Linux' # distribution\nVERSION_ID='44' # version", "Fedora Linux 44"},
+		{"comment with quotes", `PRETTY_NAME="Example Linux" # user's "version`, "Example Linux"},
+		{"quoted hash", `PRETTY_NAME="Example #1" # comment`, "Example #1"},
+		{"double quote escapes", `PRETTY_NAME="Example \"OS\" \\ \$"`, "Example \"OS\" \\ $"},
+		{"malformed quote falls back", "PRETTY_NAME=\"broken\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
+		{"empty", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := parseOSRelease([]byte(tc.data)); got != tc.want {
+				t.Fatalf("got %q want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestParseSystemVersionPlist(t *testing.T) {
+	for _, tc := range []struct{ name, data, want string }{
+		{"product version", `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>ProductName</key><string>macOS</string><key>ProductVersion</key><string>15.3</string><key>ProductBuildVersion</key><string>24D60</string></dict></plist>`, "macOS 15.3"},
+		{"missing product version", `<plist><dict><key>ProductName</key><string>macOS</string></dict></plist>`, ""},
+		{"empty product version", `<plist><dict><key>ProductVersion</key><string></string></dict></plist>`, ""},
+		{"wrong value type", `<plist><dict><key>ProductVersion</key><integer>15</integer></dict></plist>`, ""},
+		{"malformed", `<plist><dict><key>ProductVersion</key><string>15.3</string>`, ""},
+		{"empty", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := parseSystemVersionPlist([]byte(tc.data)); got != tc.want {
+				t.Fatalf("got %q want %q", got, tc.want)
+			}
+		})
 	}
 }

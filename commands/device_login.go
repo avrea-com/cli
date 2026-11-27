@@ -234,8 +234,17 @@ func deviceAuthorize(ctx context.Context, d Dependencies, c deviceClient, base *
 			return "", errors.New("Device-login endpoints must use the configured API origin.") //nolint:staticcheck // Match the Python CLI diagnostic.
 		}
 	}
+	// The API names the issued key after these and keeps at most 64
+	// characters of each; a missing value only leaves it out of the name.
+	form := url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}}
+	for field, source := range map[string]func() (string, error){"device_name": d.Hostname, "device_os": d.DeviceOS} {
+		if value, err := source(); err == nil && value != "" {
+			runes := []rune(value)
+			form.Set(field, string(runes[:min(len(runes), 64)]))
+		}
+	}
 	started := d.Now()
-	r, err = c.request(ctx, device, url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}})
+	r, err = c.request(ctx, device, form)
 	if err != nil {
 		return "", err
 	}
