@@ -10,6 +10,8 @@ Sign in by approving this machine from any device.
 Sign in by approving this machine from a browser on any device.
 .PP
 Works anywhere: a laptop, an SSH session, a VM, a container or a coding agent's terminal. Open the displayed link or scan the QR code, confirm the code, and approve access. The CLI waits for approval and saves your credentials. No browser is opened on this machine. QR codes appear only in compatible terminals wide enough to display them.
+.PP
+The CLI sends this machine's hostname and operating system version with the request, and the API key you approve is named after them, so you can tell your machines apart in the key list.
 .SH OPTIONS
 .TP
 \fB\-\-no\-qr\fR

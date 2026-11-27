@@ -16538,7 +16538,7 @@
             "full": "avr auth device-login",
             "is_group": false,
             "short_help": "Sign in by approving this machine from any device.",
-            "help": "Sign in by approving this machine from a browser on any device.\n\nWorks anywhere: a laptop, an SSH session, a VM, a container or a coding\nagent's terminal. Open the displayed link or scan the QR code, confirm\nthe code, and approve access. The CLI waits for approval and saves your\ncredentials. No browser is opened on this machine. QR codes appear only\nin compatible terminals wide enough to display them.\n",
+            "help": "Sign in by approving this machine from a browser on any device.\n\nWorks anywhere: a laptop, an SSH session, a VM, a container or a coding\nagent's terminal. Open the displayed link or scan the QR code, confirm\nthe code, and approve access. The CLI waits for approval and saves your\ncredentials. No browser is opened on this machine. QR codes appear only\nin compatible terminals wide enough to display them.\n\nThe CLI sends this machine's hostname and operating system version\nwith the request, and the API key you approve is named after them, so\nyou can tell your machines apart in the key list.\n",
             "epilog": null,
             "deprecated": false,
             "hidden": false,

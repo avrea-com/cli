@@ -13,7 +13,11 @@ func authDescription(path string) docgen.Description {
 				"agent's terminal. Open the displayed link or scan the QR code, confirm\n" +
 				"the code, and approve access. The CLI waits for approval and saves your\n" +
 				"credentials. No browser is opened on this machine. QR codes appear only\n" +
-				"in compatible terminals wide enough to display them.\n",
+				"in compatible terminals wide enough to display them.\n" +
+				"\n" +
+				"The CLI sends this machine's hostname and operating system version\n" +
+				"with the request, and the API key you approve is named after them, so\n" +
+				"you can tell your machines apart in the key list.\n",
 			Short:          "Sign in by approving this machine from any device.",
 			CompletionHelp: "Sign in by approving this machine from...",
 			Parameters: []docgen.Parameter{

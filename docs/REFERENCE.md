@@ -2083,6 +2083,10 @@ the code, and approve access. The CLI waits for approval and saves your
 credentials. No browser is opened on this machine. QR codes appear only
 in compatible terminals wide enough to display them.
 
+The CLI sends this machine's hostname and operating system version
+with the request, and the API key you approve is named after them, so
+you can tell your machines apart in the key list.
+
 **Options**
 
 - `--no-qr` — Hide the terminal QR code; still display the sign-in link.
