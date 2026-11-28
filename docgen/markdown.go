@@ -54,26 +54,30 @@ func shortBody(help, short string) string {
 	}
 	return help
 }
+
+// dedent strips the leading whitespace every non-blank line shares byte for
+// byte; a tab and spaces are no common prefix. Blank lines become empty.
 func dedent(lines []string) []string {
-	indent := -1
+	prefix, found := "", false
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		n := len(line) - len(strings.TrimLeft(line, " \t"))
-		if indent < 0 || n < indent {
-			indent = n
+		lead := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		if !found {
+			prefix, found = lead, true
+			continue
 		}
-	}
-	if indent < 0 {
-		indent = 0
+		n := 0
+		for n < len(prefix) && n < len(lead) && prefix[n] == lead[n] {
+			n++
+		}
+		prefix = prefix[:n]
 	}
 	out := make([]string, len(lines))
 	for i, line := range lines {
-		if len(line) >= indent {
-			out[i] = line[indent:]
-		} else {
-			out[i] = line
+		if strings.TrimSpace(line) != "" {
+			out[i] = strings.TrimPrefix(line, prefix)
 		}
 	}
 	return out
@@ -82,6 +86,11 @@ func dedent(lines []string) []string {
 var (
 	fieldListLine  = regexp.MustCompile(`^[a-z][a-z0-9_]*(, *[a-z][a-z0-9_]*)*,?$`)
 	definitionLine = regexp.MustCompile(`^(\S+) {2,}([^\s#].*)$`)
+	backtickRun    = regexp.MustCompile("`+")
+	// keyTableLabels are the labels whose "name  description" runs are key
+	// tables. Aligned runs anywhere else, such as sample output under
+	// "Examples", stay code.
+	keyTableLabels = map[string]bool{"Available keys": true, "Topics": true}
 )
 
 func indented(line string) bool {
@@ -159,7 +168,7 @@ func indentedRun(lines []string, label, language string) []string {
 			}
 		}
 		return []string{strings.Join(fields, ", ")}
-	case allMatch(lines, definitionLine):
+	case keyTableLabels[label] && allMatch(lines, definitionLine):
 		out := []string{}
 		for _, line := range lines {
 			match := definitionLine.FindStringSubmatch(line)
@@ -167,48 +176,39 @@ func indentedRun(lines []string, label, language string) []string {
 		}
 		return out
 	default:
-		return append(append([]string{"```" + language}, lines...), "```")
+		// A fence ends at the first run of as many backticks, so it must
+		// be longer than any run inside the example.
+		longest := 0
+		for _, line := range lines {
+			for _, run := range backtickRun.FindAllString(line, -1) {
+				longest = max(longest, len(run))
+			}
+		}
+		fence := strings.Repeat("`", max(3, longest+1))
+		return append(append([]string{fence + language}, lines...), fence)
 	}
 }
 
-// helpBlock renders help text as Markdown. Outside "\b" paragraphs, an
-// indented run after a blank line is an example; an indented line directly
-// after prose is a wrapped continuation and stays prose.
+// helpBlock renders help text as Markdown, one block per help segment.
 func helpBlock(value, language string) string {
-	if value == "" {
-		return ""
-	}
-	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
-	out := []string{}
-	block := func(rendered []string) {
-		if len(out) > 0 && out[len(out)-1] != "" {
-			out = append(out, "")
-		}
-		out = append(out, rendered...)
-		out = append(out, "")
-	}
-	for i := 0; i < len(lines); {
-		line := lines[i]
-		switch {
-		case strings.TrimSpace(line) == "\b":
-			end := i + 1
-			for end < len(lines) && strings.TrimSpace(lines[end]) != "" {
-				end++
+	blocks := []string{}
+	for _, segment := range helpSegments(value) {
+		var rendered []string
+		switch segment.kind {
+		case proseSegment:
+			for _, line := range segment.lines {
+				rendered = append(rendered, mdEscape(line))
 			}
-			block(preformattedBlock(lines[i+1:end], language))
-			i = end
-		case indented(line) && strings.TrimSpace(line) != "" && (i == 0 || strings.TrimSpace(lines[i-1]) == ""):
-			var run []string
-			run, i = indentedSpan(lines, i)
-			block(indentedRun(run, "", language))
-		case strings.TrimSpace(line) == "" && len(out) > 0 && out[len(out)-1] == "":
-			i++
+		case unwrappedSegment:
+			rendered = preformattedBlock(segment.lines, language)
+		case exampleSegment:
+			rendered = indentedRun(segment.lines, "", language)
 		default:
-			out = append(out, mdEscape(line))
-			i++
+			panic("unknown help segment kind")
 		}
+		blocks = append(blocks, strings.Join(rendered, "\n"))
 	}
-	return strings.TrimSpace(strings.Join(out, "\n"))
+	return strings.TrimSpace(strings.Join(blocks, "\n\n"))
 }
 func paramSignature(p Param, html bool) string {
 	if p.Kind == "argument" {

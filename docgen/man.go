@@ -58,44 +58,23 @@ func manHelp(value string) []string {
 	if value == "" {
 		return nil
 	}
-	out, paragraph := []string{}, []string{}
-	flush := func() {
-		if len(paragraph) > 0 {
-			joined := strings.TrimSpace(strings.Join(paragraph, " "))
-			if joined != "" {
-				out = append(out, troffEscape(joined), ".PP")
+	out := []string{}
+	for _, segment := range helpSegments(value) {
+		switch segment.kind {
+		case proseSegment:
+			words := make([]string, len(segment.lines))
+			for i, line := range segment.lines {
+				words[i] = strings.TrimSpace(line)
 			}
-			paragraph = nil
+			out = append(out, troffEscape(strings.Join(words, " ")), ".PP")
+		case unwrappedSegment:
+			out = append(out, manLiteral(dedent(segment.lines))...)
+		case exampleSegment:
+			out = append(out, manLiteral(segment.lines)...)
+		default:
+			panic("unknown help segment kind")
 		}
 	}
-	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line == "\b" {
-			flush()
-			block := []string{}
-			i++
-			for i < len(lines) && strings.TrimSpace(lines[i]) != "" {
-				block = append(block, lines[i])
-				i++
-			}
-			if len(block) > 0 {
-				out = append(out, manLiteral(dedent(block))...)
-			}
-			i--
-			continue
-		}
-		if line == "" {
-			flush()
-		} else if indented(lines[i]) && len(paragraph) == 0 && (i == 0 || strings.TrimSpace(lines[i-1]) == "") {
-			run, end := indentedSpan(lines, i)
-			out = append(out, manLiteral(run)...)
-			i = end - 1
-		} else {
-			paragraph = append(paragraph, line)
-		}
-	}
-	flush()
 	if len(out) > 0 && out[len(out)-1] == ".PP" {
 		out = out[:len(out)-1]
 	}

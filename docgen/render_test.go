@@ -68,6 +68,46 @@ func TestMarkdownKeepsCommandsThatResembleListsAsCode(t *testing.T) {
 		}
 	}
 }
+func TestMarkdownBuildsDefinitionListsOnlyUnderKeyTableLabels(t *testing.T) {
+	for _, row := range [][2]string{
+		// Sample output is aligned like a key table but is still code.
+		{"\b\nExamples:\n    ID    NAME\n    vm-1  dev\n", "**Examples**\n\n```sh\nID    NAME\nvm-1  dev\n```"},
+		{"Output:\n\n    ID    NAME\n    vm-1  dev\n", "Output:\n\n```sh\nID    NAME\nvm-1  dev\n```"},
+		{"\b\nAvailable keys:\n  org   Default organization\n", "**Available keys**\n\n- `org`: Default organization"},
+	} {
+		if got := helpBlock(row[0], "sh"); got != row[1] {
+			t.Fatalf("%q:\ngot:\n%s\nwant:\n%s", row[0], got, row[1])
+		}
+	}
+}
+func TestMarkdownFencesOutlastBackticksInTheExample(t *testing.T) {
+	got := helpBlock("Run:\n\n    echo '```'\n    avr vm list\n", "sh")
+	if want := "Run:\n\n````sh\necho '```'\navr vm list\n````"; got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+func TestHelpTreatsWhitespaceOnlyAndEmptyUnwrappedParagraphsAsBreaks(t *testing.T) {
+	for _, in := range []string{"Intro.\n\b\n\nAfter.\n", "Intro.\n  \n\nAfter.\n", "Intro.\n\t\nAfter.\n"} {
+		if got := helpBlock(in, "sh"); got != "Intro.\n\nAfter." {
+			t.Fatalf("%q: markdown %q", in, got)
+		}
+		if got := strings.Join(manHelp(in), "\n"); got != "Intro.\n.PP\nAfter." {
+			t.Fatalf("%q: man %q", in, got)
+		}
+	}
+}
+func TestDedentStripsOnlyACommonPrefix(t *testing.T) {
+	for _, row := range []struct{ in, want []string }{
+		{[]string{"\t  foo", "\t    bar"}, []string{"foo", "  bar"}},
+		// A tab and spaces are no common prefix: the indentation stays.
+		{[]string{"\t  foo", "    bar"}, []string{"\t  foo", "    bar"}},
+		{[]string{"    a", "  ", "      b"}, []string{"a", "", "  b"}},
+	} {
+		if got := dedent(row.in); strings.Join(got, "|") != strings.Join(row.want, "|") {
+			t.Fatalf("%q: got %q, want %q", row.in, got, row.want)
+		}
+	}
+}
 func TestManKeepsIndentedExamplesOutsideUnwrappedParagraphs(t *testing.T) {
 	body := strings.Join(manHelp("Examples:\n\n    avr vm list\n    avr vm show VM\n\nDone.\n"), "\n")
 	if !strings.Contains(body, ".nf\navr vm list\navr vm show VM\n.fi") {
