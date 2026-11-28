@@ -34,18 +34,16 @@ the request. If the response is lost, rerun the same command with
 --idempotency-key KEY: it returns the group that create made instead of
 making a second one. A key belongs to one parent, name and label.
 
-```sh
-Examples:
-    avr group create Platform --parent Organization
-    avr group create CI --parent Organization/Platform --label runners
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    created_at, display_name, group_id, idempotency_key, label, member_count,
-    ownership, parent_id, soft_deleted_at, state, suspension_reason,
-    updated_at
+avr group create Platform --parent Organization
+avr group create CI --parent Organization/Platform --label runners
 ```
+
+**JSON FIELDS**
+
+`created_at`, `display_name`, `group_id`, `idempotency_key`, `label`, `member_count`, `ownership`, `parent_id`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 
@@ -81,16 +79,16 @@ clear, at most 100 workflows at a time.
 Deleting a group also removes the resource access it grants, and stops
 charging it for workflows of repositories that are no longer installed.
 
-```sh
-Examples:
-    avr group delete Platform/CI
-    avr group delete grp-0123456789abcdef0123456789abcdef --yes
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    deleted, group_id, path
+avr group delete Platform/CI
+avr group delete grp-0123456789abcdef0123456789abcdef --yes
 ```
+
+**JSON FIELDS**
+
+`deleted`, `group_id`, `path`
 
 **Arguments**
 
@@ -117,17 +115,16 @@ group has it, such as Platform/CI.
 
 Only the options you pass change; --label '' clears the label.
 
-```sh
-Examples:
-    avr group edit Platform/CI --name Builds
-    avr group edit Platform/CI --label ''
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    created_at, display_name, group_id, label, member_count, ownership,
-    parent_id, soft_deleted_at, state, suspension_reason, updated_at
+avr group edit Platform/CI --name Builds
+avr group edit Platform/CI --label ''
 ```
+
+**JSON FIELDS**
+
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 
@@ -168,15 +165,15 @@ group has it, such as Platform/CI.
 
 Asks first unless --yes is passed. Limits on parent groups still apply.
 
-```sh
-Examples:
-    avr group limit clear Platform/CI --yes
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    cleared, group_id, limit_key
+avr group limit clear Platform/CI --yes
 ```
+
+**JSON FIELDS**
+
+`cleared`, `group_id`, `limit_key`
 
 **Arguments**
 
@@ -201,16 +198,15 @@ GROUP is a group ID (grp-...), the group's path from the root group,
 such as Organization/Platform/CI, or the end of a path when only one
 group has it, such as Platform/CI.
 
-```sh
-Examples:
-    avr group limit list Platform/CI
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    group_id, inherited, kind, limit_key, limit_type, period, timezone,
-    value
+avr group limit list Platform/CI
 ```
+
+**JSON FIELDS**
+
+`group_id`, `inherited`, `kind`, `limit_key`, `limit_type`, `period`, `timezone`, `value`
 
 **Arguments**
 
@@ -238,16 +234,15 @@ Asks first unless --yes is passed or the change raises or keeps the
 group's own limit: a first limit or a lower one can make new jobs wait.
 Running jobs keep running.
 
-```sh
-Examples:
-    avr group limit set Platform/CI --max-vcpu 64
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    group_id, inherited, kind, limit_key, limit_type, period, previous_value,
-    timezone, value
+avr group limit set Platform/CI --max-vcpu 64
 ```
+
+**JSON FIELDS**
+
+`group_id`, `inherited`, `kind`, `limit_key`, `limit_type`, `period`, `previous_value`, `timezone`, `value`
 
 **Arguments**
 
@@ -274,17 +269,16 @@ with /, such as Organization/Platform/CI; a parent is listed before its
 children. Pass a group's ID or path to --group when you create or list
 service tokens.
 
-```sh
-Examples:
-    avr group list
-    avr group list --json group_id,path --jq '.[].path'
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    created_at, display_name, group_id, label, member_count, ownership,
-    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+avr group list
+avr group list --json group_id,path --jq '.[].path'
 ```
+
+**JSON FIELDS**
+
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `path`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Options**
 
@@ -325,17 +319,17 @@ The command adds them all in one change, up to 250, and reports
 each member's result; a member already in the state asked for counts
 as done, so a rerun is safe.
 
-```sh
-Examples:
-    avr group member add Platform/CI @me
-    avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef
-    avr group member add Platform/CI --file members.txt
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    action, detail, member, status, user_id
+avr group member add Platform/CI @me
+avr group member add Platform/CI usr-0123456789abcdef0123456789abcdef
+avr group member add Platform/CI --file members.txt
 ```
+
+**JSON FIELDS**
+
+`action`, `detail`, `member`, `status`, `user_id`
 
 **Arguments**
 
@@ -363,16 +357,16 @@ group has it, such as Platform/CI.
 
 Members of subgroups are listed with the subgroup.
 
-```sh
-Examples:
-    avr group member list Platform/CI
-    avr group member list Platform/CI -L 1000 --json user_id,email
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    added_at, email, name, source, stale_sources, user_id
+avr group member list Platform/CI
+avr group member list Platform/CI -L 1000 --json user_id,email
 ```
+
+**JSON FIELDS**
+
+`added_at`, `email`, `name`, `source`, `stale_sources`, `user_id`
 
 **Arguments**
 
@@ -406,17 +400,17 @@ as done, so a rerun is safe.
 Lists the members and asks first unless --yes is passed; reading
 members from standard input (--file -) needs --yes.
 
-```sh
-Examples:
-    avr group member remove Platform/CI @me
-    avr group member remove Platform/CI usr-0123456789abcdef0123456789abcdef
-    avr group member remove Platform/CI --file members.txt
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    action, detail, member, status, user_id
+avr group member remove Platform/CI @me
+avr group member remove Platform/CI usr-0123456789abcdef0123456789abcdef
+avr group member remove Platform/CI --file members.txt
 ```
+
+**JSON FIELDS**
+
+`action`, `detail`, `member`, `status`, `user_id`
 
 **Arguments**
 
@@ -445,16 +439,16 @@ group has it, such as Platform/CI.
 
 Usage counts the group and its subgroups.
 
-```sh
-Examples:
-    avr group usage Platform
-    avr group usage Platform --json used_vcpu,pools
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    group_id, group_state, measured_at, pools, used_vcpu
+avr group usage Platform
+avr group usage Platform --json used_vcpu,pools
 ```
+
+**JSON FIELDS**
+
+`group_id`, `group_state`, `measured_at`, `pools`, `used_vcpu`
 
 **Arguments**
 
@@ -478,17 +472,16 @@ GROUP is a group ID (grp-...), the group's path from the root group,
 such as Organization/Platform/CI, or the end of a path when only one
 group has it, such as Platform/CI.
 
-```sh
-Examples:
-    avr group view Organization/Platform
-    avr group view Platform/CI --json group_id,member_count
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    created_at, display_name, group_id, label, member_count, ownership,
-    parent_id, path, soft_deleted_at, state, suspension_reason, updated_at
+avr group view Organization/Platform
+avr group view Platform/CI --json group_id,member_count
 ```
+
+**JSON FIELDS**
+
+`created_at`, `display_name`, `group_id`, `label`, `member_count`, `ownership`, `parent_id`, `path`, `soft_deleted_at`, `state`, `suspension_reason`, `updated_at`
 
 **Arguments**
 

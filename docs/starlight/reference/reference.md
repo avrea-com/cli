@@ -25,18 +25,17 @@ org install add, and an option such as tests list --summary or secret
 get --version-id selects others. The command with --json ? lists the
 fields of that invocation.
 
-```sh
-Examples:
-    avr reference
-    avr reference group member
-    avr reference --json command,json_fields --jq '.[] | select(.json_fields | length > 0)'
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    command, deprecated, help, is_group, json_fields, params, short_help,
-    usage
+avr reference
+avr reference group member
+avr reference --json command,json_fields --jq '.[] | select(.json_fields | length > 0)'
 ```
+
+**JSON FIELDS**
+
+`command`, `deprecated`, `help`, `is_group`, `json_fields`, `params`, `short_help`, `usage`
 
 **Arguments**
 

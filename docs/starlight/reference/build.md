@@ -38,12 +38,13 @@ platform. The first build reads the default branch's CI cache; writes go
 to a builder-only scope that CI never reads. Passing any --cache-from or
 --cache-to replaces these defaults.
 
+**Examples**
+
 ```sh
-Examples:
-    avr build -t myimage .
-    avr build --push -t registry.avrea.com/acme/app:latest .
-    avr build --platform linux/amd64,linux/arm64 --push -t acme/app .
-    avr build --size 8-vcpu --build-arg VERSION=1.2 -t app .
+avr build -t myimage .
+avr build --push -t registry.avrea.com/acme/app:latest .
+avr build --platform linux/amd64,linux/arm64 --push -t acme/app .
+avr build --size 8-vcpu --build-arg VERSION=1.2 -t app .
 ```
 
 Like `docker build`, a single-platform build without --push or --output

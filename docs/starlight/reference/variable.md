@@ -19,11 +19,9 @@ Delete one scoped value, or the whole name with --all.
 avr variable delete [OPTIONS] NAME
 ```
 
-```sh
-JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
-```
+**JSON FIELDS**
+
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -48,11 +46,9 @@ Edit description, label, or availability without replacing a value.
 avr variable edit [OPTIONS] NAME
 ```
 
-```sh
-JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
-```
+**JSON FIELDS**
+
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 
@@ -86,12 +82,9 @@ Inspect a variable.
 avr variable get [OPTIONS] NAME
 ```
 
-```sh
-JSON FIELDS
-    availability, current_version, current_version_created_at,
-    current_version_id, has_value, label, updated_at, value,
-    variable_variant_id
-```
+**JSON FIELDS**
+
+`availability`, `current_version`, `current_version_created_at`, `current_version_id`, `has_value`, `label`, `updated_at`, `value`, `variable_variant_id`
 
 **Arguments**
 
@@ -114,10 +107,9 @@ List names, scoped-value counts, and update times.
 avr variable list [OPTIONS]
 ```
 
-```sh
-JSON FIELDS
-    description, name, updated_at, variable_id, variants
-```
+**JSON FIELDS**
+
+`description`, `name`, `updated_at`, `variable_id`, `variants`
 
 **Options**
 
@@ -134,11 +126,9 @@ Create or replace a scoped value.
 avr variable set [OPTIONS] [NAME]
 ```
 
-```sh
-JSON FIELDS
-    availability, label, message, name, resource_id, stage, status,
-    variant_id, version_id
-```
+**JSON FIELDS**
+
+`availability`, `label`, `message`, `name`, `resource_id`, `stage`, `status`, `variant_id`, `version_id`
 
 **Arguments**
 

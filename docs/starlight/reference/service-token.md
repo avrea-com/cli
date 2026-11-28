@@ -64,21 +64,18 @@ secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
 nonzero, so the secret is not lost.
 
-```sh
-Examples:
-    avr service-token create --name ci --group Platform/CI --repo acme/api
-    avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
-    avr service-token create --name agents --group Platform/CI --repo acme/api --max-owned-vms 5
-    avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-    grants_version, group_id, id, last_used_at, name, organization_id,
-    previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, vm_cap, vm_count, token
+avr service-token create --name ci --group Platform/CI --repo acme/api
+avr service-token create --name egress --group CI --all-firewall-rules --ttl 7d
+avr service-token create --name agents --group Platform/CI --repo acme/api --max-owned-vms 5
+avr service-token create --name ci --group <group-id> --repo acme/api --json token --jq .token
 ```
+
+**JSON FIELDS**
+
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`, `token`
 
 **Options**
 
@@ -114,20 +111,17 @@ one group's whole path selects that group; otherwise the end of a path,
 such as Platform/CI or a group name like CI, must select exactly one
 group.
 
-```sh
-Examples:
-    avr service-token list
-    avr service-token list --status live --group Platform/CI
-    avr service-token list --json id,name,expires_at
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-    grants_version, group_id, id, last_used_at, name, organization_id,
-    previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, vm_cap, vm_count
+avr service-token list
+avr service-token list --status live --group Platform/CI
+avr service-token list --json id,name,expires_at
 ```
+
+**JSON FIELDS**
+
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`
 
 **Options**
 
@@ -150,10 +144,11 @@ Its current secret and any old secret still in its rotation overlap stop
 working on their next request, its grants are removed, and the VMs it
 created are deleted. Revoking a token that is already revoked succeeds.
 
+**Examples**
+
 ```sh
-Examples:
-    avr service-token revoke <token-id>
-    avr service-token revoke <token-id> --yes
+avr service-token revoke <token-id>
+avr service-token revoke <token-id> --yes
 ```
 
 **Arguments**
@@ -177,10 +172,11 @@ For a suspected leak: every unrevoked service token of the organization,
 expired ones included, stops working on its next request, and the VMs
 those tokens created are deleted.
 
+**Examples**
+
 ```sh
-Examples:
-    avr service-token revoke-all --org <org>
-    avr service-token revoke-all --org <org> --yes
+avr service-token revoke-all --org <org>
+avr service-token revoke-all --org <org> --yes
 ```
 
 **Options**
@@ -208,20 +204,17 @@ secret cannot be read again. If a --jq filter fails or drops the
 secret, the command prints the unfiltered JSON instead and exits
 nonzero, so the secret is not lost.
 
-```sh
-Examples:
-    avr service-token rotate <token-id>
-    avr service-token rotate <token-id> --ttl 30d --overlap 2h
-    avr service-token rotate <token-id> --json token --jq .token
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-    grants_version, group_id, id, last_used_at, name, organization_id,
-    previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, vm_cap, vm_count, token
+avr service-token rotate <token-id>
+avr service-token rotate <token-id> --ttl 30d --overlap 2h
+avr service-token rotate <token-id> --json token --jq .token
 ```
+
+**JSON FIELDS**
+
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`, `token`
 
 **Arguments**
 
@@ -258,12 +251,13 @@ own access now. The API may ask for a recent sign-in; the command then
 exits 4 and says to sign in again. The change applies to the token's
 next request.
 
+**Examples**
+
 ```sh
-Examples:
-    avr service-token set-access <token-id> --repo acme/api --repo acme/web
-    avr service-token set-access <token-id> --all-firewall-rules --yes
-    avr service-token set-access <token-id> --max-owned-vms 10
-    avr service-token set-access <token-id> --no-vm-create
+avr service-token set-access <token-id> --repo acme/api --repo acme/web
+avr service-token set-access <token-id> --all-firewall-rules --yes
+avr service-token set-access <token-id> --max-owned-vms 10
+avr service-token set-access <token-id> --no-vm-create
 ```
 
 **Arguments**
@@ -295,19 +289,16 @@ Reads a revoked or expired token as well. Its grants are removed when it
 is revoked and 30 days after it expires. The secret itself is never
 shown again after `avr service-token create` or `rotate`.
 
-```sh
-Examples:
-    avr service-token view <token-id>
-    avr service-token view <token-id> --json grants
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    blocked_by, created_at, created_by, expires_at, expiring_soon, grants,
-    grants_version, group_id, id, last_used_at, name, organization_id,
-    previous_valid_until, revoked_at, revoked_reason, rotated_at,
-    rotation_version, status, vm_cap, vm_count
+avr service-token view <token-id>
+avr service-token view <token-id> --json grants
 ```
+
+**JSON FIELDS**
+
+`blocked_by`, `created_at`, `created_by`, `expires_at`, `expiring_soon`, `grants`, `grants_version`, `group_id`, `id`, `last_used_at`, `name`, `organization_id`, `previous_valid_until`, `revoked_at`, `revoked_reason`, `rotated_at`, `rotation_version`, `status`, `vm_cap`, `vm_count`
 
 **Arguments**
 

@@ -49,46 +49,32 @@ func manSignature(p Param) string {
 	}
 	return primary
 }
+func manLiteral(lines []string) []string {
+	out := []string{".RS 4", ".nf"}
+	out = append(out, strings.Split(troffEscape(strings.Join(lines, "\n")), "\n")...)
+	return append(out, ".fi", ".RE", ".PP")
+}
 func manHelp(value string) []string {
 	if value == "" {
 		return nil
 	}
-	out, paragraph := []string{}, []string{}
-	flush := func() {
-		if len(paragraph) > 0 {
-			joined := strings.TrimSpace(strings.Join(paragraph, " "))
-			if joined != "" {
-				out = append(out, troffEscape(joined), ".PP")
+	out := []string{}
+	for _, segment := range helpSegments(value) {
+		switch segment.kind {
+		case proseSegment:
+			words := make([]string, len(segment.lines))
+			for i, line := range segment.lines {
+				words[i] = strings.TrimSpace(line)
 			}
-			paragraph = nil
+			out = append(out, troffEscape(strings.Join(words, " ")), ".PP")
+		case unwrappedSegment:
+			out = append(out, manLiteral(dedent(segment.lines))...)
+		case exampleSegment:
+			out = append(out, manLiteral(segment.lines)...)
+		default:
+			panic("unknown help segment kind")
 		}
 	}
-	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line == "\b" {
-			flush()
-			block := []string{}
-			i++
-			for i < len(lines) && strings.TrimSpace(lines[i]) != "" {
-				block = append(block, lines[i])
-				i++
-			}
-			if len(block) > 0 {
-				out = append(out, ".RS 4", ".nf")
-				out = append(out, strings.Split(troffEscape(strings.Join(dedent(block), "\n")), "\n")...)
-				out = append(out, ".fi", ".RE", ".PP")
-			}
-			i--
-			continue
-		}
-		if line == "" {
-			flush()
-		} else {
-			paragraph = append(paragraph, line)
-		}
-	}
-	flush()
 	if len(out) > 0 && out[len(out)-1] == ".PP" {
 		out = out[:len(out)-1]
 	}

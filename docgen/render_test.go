@@ -16,12 +16,102 @@ func TestMarkdownEscapesProseButPreservesCode(t *testing.T) {
 		}
 	}
 	block := helpBlock("Redirect it yourself:\n\n    ssh -L <local>:x VM >> ~/.ssh/config\n", "sh")
-	if !strings.Contains(block, "    ssh -L <local>:x VM >> ~/.ssh/config") {
+	if !strings.Contains(block, "Redirect it yourself:\n\n```sh\nssh -L <local>:x VM >> ~/.ssh/config\n```") {
 		t.Fatal(block)
 	}
 	fenced := helpBlock("Example:\n\n\b\n    avr vm ssh VM -- echo '<hello>'\n", "sh")
 	if !strings.Contains(fenced, "```sh\navr vm ssh VM -- echo '<hello>'\n```") {
 		t.Fatal(fenced)
+	}
+}
+func TestMarkdownRendersUnwrappedProseAsText(t *testing.T) {
+	got := helpBlock("Create a VM.\n\n\b\nFor example, as a <hook>:\n    exec avr vm create --org <org-id>\n\n\b\nExamples:\n    avr vm list\n      --json id\n", "sh")
+	want := "Create a VM.\n\n" +
+		"For example, as a &lt;hook&gt;:\n\n```sh\nexec avr vm create --org <org-id>\n```\n\n" +
+		"**Examples**\n\n```sh\navr vm list\n  --json id\n```"
+	if got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+func TestMarkdownRendersFieldListsAndDefinitionsAsText(t *testing.T) {
+	got := helpBlock("\b\nJSON FIELDS (GitHub)\n    created_at, id,\n    name\n\n\b\nTopics:\n  test      Push a <change>\n  vms       On-demand VMs\n", "sh")
+	want := "**JSON FIELDS (GitHub)**\n\n`created_at`, `id`, `name`\n\n" +
+		"**Topics**\n\n- `test`: Push a &lt;change&gt;\n- `vms`: On-demand VMs"
+	if got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+func TestMarkdownSeparatesIndentedRunsFromProse(t *testing.T) {
+	for _, row := range [][2]string{
+		// A list after prose needs a blank line or it joins the paragraph.
+		{"\b\nTopics:\n  test  Run tests\nAfter the list.\n", "**Topics**\n\n- `test`: Run tests\n\nAfter the list."},
+		// A blank line inside an example keeps one block and its indentation.
+		{"Config:\n\n    jobs:\n      a: 1\n\n      b: 2\n\nDone.\n", "Config:\n\n```sh\njobs:\n  a: 1\n\n  b: 2\n```\n\nDone."},
+		// A wrapped continuation of a bullet stays prose.
+		{"- Pass --wait to block until the VM\n    is RUNNING.\n", "- Pass --wait to block until the VM\n    is RUNNING."},
+		// Tabs indent the same way as spaces.
+		{"Run:\n\n\tavr vm list\n", "Run:\n\n```sh\navr vm list\n```"},
+	} {
+		if got := helpBlock(row[0], "sh"); got != row[1] {
+			t.Fatalf("%q:\ngot:\n%s\nwant:\n%s", row[0], got, row[1])
+		}
+	}
+}
+func TestMarkdownKeepsCommandsThatResembleListsAsCode(t *testing.T) {
+	for _, row := range [][2]string{
+		{"\b\nExamples:\n    make\n", "**Examples**\n\n```sh\nmake\n```"},
+		{"\b\nExamples:\n    ls    # list files\n", "**Examples**\n\n```sh\nls    # list files\n```"},
+		{"Fields:\n\n    id, name\n", "Fields:\n\n```sh\nid, name\n```"},
+	} {
+		if got := helpBlock(row[0], "sh"); got != row[1] {
+			t.Fatalf("%q:\ngot:\n%s\nwant:\n%s", row[0], got, row[1])
+		}
+	}
+}
+func TestMarkdownBuildsDefinitionListsOnlyUnderKeyTableLabels(t *testing.T) {
+	for _, row := range [][2]string{
+		// Sample output is aligned like a key table but is still code.
+		{"\b\nExamples:\n    ID    NAME\n    vm-1  dev\n", "**Examples**\n\n```sh\nID    NAME\nvm-1  dev\n```"},
+		{"Output:\n\n    ID    NAME\n    vm-1  dev\n", "Output:\n\n```sh\nID    NAME\nvm-1  dev\n```"},
+		{"\b\nAvailable keys:\n  org   Default organization\n", "**Available keys**\n\n- `org`: Default organization"},
+	} {
+		if got := helpBlock(row[0], "sh"); got != row[1] {
+			t.Fatalf("%q:\ngot:\n%s\nwant:\n%s", row[0], got, row[1])
+		}
+	}
+}
+func TestMarkdownFencesOutlastBackticksInTheExample(t *testing.T) {
+	got := helpBlock("Run:\n\n    echo '```'\n    avr vm list\n", "sh")
+	if want := "Run:\n\n````sh\necho '```'\navr vm list\n````"; got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+func TestHelpTreatsWhitespaceOnlyAndEmptyUnwrappedParagraphsAsBreaks(t *testing.T) {
+	for _, in := range []string{"Intro.\n\b\n\nAfter.\n", "Intro.\n  \n\nAfter.\n", "Intro.\n\t\nAfter.\n"} {
+		if got := helpBlock(in, "sh"); got != "Intro.\n\nAfter." {
+			t.Fatalf("%q: markdown %q", in, got)
+		}
+		if got := strings.Join(manHelp(in), "\n"); got != "Intro.\n.PP\nAfter." {
+			t.Fatalf("%q: man %q", in, got)
+		}
+	}
+}
+func TestDedentStripsOnlyACommonPrefix(t *testing.T) {
+	for _, row := range []struct{ in, want []string }{
+		{[]string{"\t  foo", "\t    bar"}, []string{"foo", "  bar"}},
+		// A tab and spaces are no common prefix: the indentation stays.
+		{[]string{"\t  foo", "    bar"}, []string{"\t  foo", "    bar"}},
+		{[]string{"    a", "  ", "      b"}, []string{"a", "", "  b"}},
+	} {
+		if got := dedent(row.in); strings.Join(got, "|") != strings.Join(row.want, "|") {
+			t.Fatalf("%q: got %q, want %q", row.in, got, row.want)
+		}
+	}
+}
+func TestManKeepsIndentedExamplesOutsideUnwrappedParagraphs(t *testing.T) {
+	body := strings.Join(manHelp("Examples:\n\n    avr vm list\n    avr vm show VM\n\nDone.\n"), "\n")
+	if !strings.Contains(body, ".nf\navr vm list\navr vm show VM\n.fi") {
+		t.Fatal(body)
 	}
 }
 func TestTroffNeutralizesRequestsAndPreservesLiteralBlocks(t *testing.T) {

@@ -19,14 +19,12 @@ Set up a RUNNING VM with your dev essentials over SSH.
 avr vm bootstrap [OPTIONS] VM_ID_OR_NAME
 ```
 
-```sh
 Each selected step runs on the VM and streams its output; bootstrap stops at
 the first failure. Secrets (GitHub token, forwarded env values, agent
 credentials) ride SSH stdin, never argv. A forwarded CLAUDE_CODE_OAUTH_TOKEN
 is a year-long, subscription-wide bearer, so it is only carried under the
 explicit --forward-agent-creds opt-in. Bootstrap changes survive pause
 and resume on the preserved disk. Example:
-```
 
 ```sh
 avr vm bootstrap cvm-abc123 --setup-github --install claude,codex \
@@ -73,19 +71,18 @@ Create a long-running VM.
 avr vm create [OPTIONS]
 ```
 
-```sh
 Provisioning is asynchronous: poll `avr vm show <id>` until the state is
 RUNNING and endpoints are populated, or pass --wait to block until then and
 print a ready-to-paste connect command with the password baked in. The
 response carries a one-time password for the VM's local account; save it
 now, it is never stored.
-```
 
-```sh
 With --from-spawn-script it creates an agent sandbox for a coding-agent
 vendor's work order instead, for that vendor's controller to run. For
 example, as Claude Code's spawn-runner hook:
-    exec avr vm create --from-spawn-script claude-code --org <org-id>
+
+```sh
+exec avr vm create --from-spawn-script claude-code --org <org-id>
 ```
 
 Organization admins can pass --egress-rules inline or as @path to a JSON
@@ -103,15 +100,15 @@ sandboxes always deny unmatched traffic. The first matching non-default
 rule in array order wins. An optional nonnegative integer position is
 ignored.
 
-Save these HTTPS rules as meteor-egress.json.
+Save these rules as egress.json to allow HTTPS to the npm and PyPI
+registries.
 
 ```sh
-cat > meteor-egress.json <<'JSON'
+cat > egress.json <<'JSON'
 [
-  {"action":"allow","fqdn":"install.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"static.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"packages.meteor.com","protocol":"tcp","port_start":443},
-  {"action":"allow","fqdn":"warehouse.meteor.com","protocol":"tcp","port_start":443}
+  {"action":"allow","fqdn":"registry.npmjs.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"pypi.org","protocol":"tcp","port_start":443},
+  {"action":"allow","fqdn":"files.pythonhosted.org","protocol":"tcp","port_start":443}
 ]
 JSON
 ```
@@ -119,8 +116,8 @@ JSON
 Apply the file when creating or updating a VM.
 
 ```sh
-avr vm create --name meteor --os linux --size 2-vcpu --egress-rules @meteor-egress.json
-avr vm update meteor --egress-rules @meteor-egress.json
+avr vm create --name builder --os linux --size 2-vcpu --egress-rules @egress.json
+avr vm update builder --egress-rules @egress.json
 ```
 
 **Options**
@@ -404,13 +401,17 @@ avr vm ssh [OPTIONS] VM_ID_OR_NAME [SSH_ARGS]...
 With no extra arguments this opens an interactive session. Anything after
 `--` is run as a remote command instead, e.g.:
 
-    avr vm ssh cvm-abc123 -- uname -a
+```sh
+avr vm ssh cvm-abc123 -- uname -a
+```
 
 A one-off `-- <cmd>` runs in a non-login shell that sources no startup files,
 so it won't see env forwarded by `avr vm bootstrap`. Pass `--login` to run it
 in a login shell instead (e.g. so `claude` finds its subscription token):
 
-    avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+```sh
+avr vm ssh cvm-abc123 --login -- claude -p 'summarize the repo'
+```
 
 Pass `--session <name>` to attach to (or create) a persistent tmux session,
 so the shell and any long-running process in it survive a dropped
@@ -448,12 +449,16 @@ avr vm ssh-config [OPTIONS] VM_ID_OR_NAME
 Reach the VM with plain `ssh`, scp/rsync, and VS Code / Cursor Remote-SSH,
 host key pinned, without wrapping each tool. Redirect it yourself:
 
-    avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+```sh
+avr vm ssh-config cvm-abc123 >> ~/.ssh/config
+```
 
 or let --append manage the block for you (idempotent — re-run after a
 resume to refresh the endpoint in place):
 
-    avr vm ssh-config cvm-abc123 --append
+```sh
+avr vm ssh-config cvm-abc123 --append
+```
 
 The block references a dedicated known_hosts file that this command writes
 the pinned host key into (one entry per VM). If the endpoint publishes no

@@ -44,11 +44,12 @@ agents working on the repository, such as Devin or Codex cloud, find it.
 Those environments also need avr installed and AVR_TOKEN set to a personal
 access token or service token.
 
+**Examples**
+
 ```sh
-Examples:
-    avr skill install
-    avr skill install --agent claude
-    avr skill install --project --agent agents
+avr skill install
+avr skill install --agent claude
+avr skill install --project --agent agents
 ```
 
 **Options**
@@ -69,13 +70,12 @@ Without a topic, prints the rules every task follows and the list of
 topics. With a topic, prints that part of the guide. The guide belongs
 to the installed avr version.
 
-```sh
-Topics:
-  test      Push a change and follow its CI run, or dispatch a workflow
-  diagnose  Find why a run failed
-  speed     Find why CI is slow, caches and right-sized runners
-  vms       On-demand Linux, macOS and Windows VMs
-```
+**Topics**
+
+- `test`: Push a change and follow its CI run, or dispatch a workflow
+- `diagnose`: Find why a run failed
+- `speed`: Find why CI is slow, caches and right-sized runners
+- `vms`: On-demand Linux, macOS and Windows VMs
 
 **Arguments**
 

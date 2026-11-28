@@ -260,6 +260,30 @@ func argumentName(token string) string {
 	return strings.Trim(token, "[].")
 }
 
+// The JSON FIELDS list is read back from the help text, so a field name or
+// wrapping the parser misses would fall back to a code block unnoticed.
+func TestStarlightRendersEveryJSONFieldsListAsText(t *testing.T) {
+	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := 0
+	for path, page := range docgen.Starlight(tree, nil) {
+		lines := strings.Split(page, "\n")
+		for i, line := range lines {
+			if !strings.HasPrefix(line, "**JSON FIELDS") {
+				continue
+			}
+			checked++
+			if i+2 >= len(lines) || !strings.HasPrefix(lines[i+2], "`") {
+				t.Fatalf("%s: %s is not followed by an inline field list:\n%s", path, line, strings.Join(lines[i:min(i+6, len(lines))], "\n"))
+			}
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no JSON FIELDS list found")
+	}
+}
 func TestStarlightArgumentsMatchTheUsageLine(t *testing.T) {
 	tree, err := commands.Documentation(commands.NewRoot(commands.Dependencies{}))
 	if err != nil {

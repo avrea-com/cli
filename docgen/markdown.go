@@ -2,6 +2,7 @@ package docgen
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -53,59 +54,161 @@ func shortBody(help, short string) string {
 	}
 	return help
 }
+
+// dedent strips the leading whitespace every non-blank line shares byte for
+// byte; a tab and spaces are no common prefix. Blank lines become empty.
 func dedent(lines []string) []string {
-	indent := -1
+	prefix, found := "", false
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		n := len(line) - len(strings.TrimLeft(line, " "))
-		if indent < 0 || n < indent {
-			indent = n
+		lead := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		if !found {
+			prefix, found = lead, true
+			continue
 		}
-	}
-	if indent < 0 {
-		indent = 0
+		n := 0
+		for n < len(prefix) && n < len(lead) && prefix[n] == lead[n] {
+			n++
+		}
+		prefix = prefix[:n]
 	}
 	out := make([]string, len(lines))
 	for i, line := range lines {
-		if len(line) >= indent {
-			out[i] = line[indent:]
-		} else {
-			out[i] = line
+		if strings.TrimSpace(line) != "" {
+			out[i] = strings.TrimPrefix(line, prefix)
 		}
 	}
 	return out
 }
-func helpBlock(value, language string) string {
-	if value == "" {
-		return ""
+
+var (
+	fieldListLine  = regexp.MustCompile(`^[a-z][a-z0-9_]*(, *[a-z][a-z0-9_]*)*,?$`)
+	definitionLine = regexp.MustCompile(`^(\S+) {2,}([^\s#].*)$`)
+	backtickRun    = regexp.MustCompile("`+")
+	// keyTableLabels are the labels whose "name  description" runs are key
+	// tables. Aligned runs anywhere else, such as sample output under
+	// "Examples", stay code.
+	keyTableLabels = map[string]bool{"Available keys": true, "Topics": true}
+)
+
+func indented(line string) bool {
+	return strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t")
+}
+func allMatch(lines []string, pattern *regexp.Regexp) bool {
+	for _, line := range lines {
+		if !pattern.MatchString(line) {
+			return false
+		}
 	}
-	lines := strings.Split(strings.TrimSuffix(value, "\n"), "\n")
+	return true
+}
+
+// indentedSpan returns the indented run starting at lines[i] and the index
+// after it. Blank lines stay in the run while the next non-blank line is
+// still indented, so an example with blank lines is one block.
+func indentedSpan(lines []string, i int) ([]string, int) {
+	end := i
+	for j := i; j < len(lines); j++ {
+		if indented(lines[j]) && strings.TrimSpace(lines[j]) != "" {
+			end = j + 1
+		} else if strings.TrimSpace(lines[j]) != "" {
+			break
+		}
+	}
+	return dedent(lines[i:end]), end
+}
+
+// preformattedBlock renders a click "\b" paragraph. "\b" only stops terminal
+// rewrapping, so unindented lines are prose and stay Markdown text. Indented
+// runs are field lists under a JSON FIELDS label (inline code),
+// "name  description" tables (a list) or commands and file contents (fenced
+// code). A one-line label introducing an indented run, such as "Examples:" or
+// "JSON FIELDS (GitHub)", becomes a bold label.
+func preformattedBlock(block []string, language string) []string {
 	out := []string{}
-	for i := 0; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == "\b" {
-			block := []string{}
-			i++
-			for i < len(lines) && strings.TrimSpace(lines[i]) != "" {
-				block = append(block, lines[i])
-				i++
-			}
-			if len(block) > 0 {
-				out = append(out, "```"+language)
-				out = append(out, dedent(block)...)
-				out = append(out, "```")
-			}
-			i--
+	label := ""
+	for start := 0; start < len(block); {
+		if len(out) > 0 {
+			out = append(out, "")
+		}
+		if indented(block[start]) {
+			run, end := indentedSpan(block, start)
+			out = append(out, indentedRun(run, label, language)...)
+			start, label = end, ""
 			continue
 		}
-		if strings.HasPrefix(lines[i], "    ") {
-			out = append(out, lines[i])
-		} else {
-			out = append(out, mdEscape(lines[i]))
+		end := start
+		for end < len(block) && !indented(block[end]) {
+			end++
 		}
+		run := block[start:end]
+		if len(run) == 1 && end < len(block) && len(strings.Fields(run[0])) <= 3 {
+			label = strings.TrimSuffix(strings.TrimSpace(run[0]), ":")
+			out = append(out, "**"+mdEscape(label)+"**")
+		} else {
+			for _, line := range run {
+				out = append(out, mdEscape(line))
+			}
+		}
+		start = end
 	}
-	return strings.TrimSpace(strings.Join(out, "\n"))
+	return out
+}
+func indentedRun(lines []string, label, language string) []string {
+	switch {
+	case strings.HasPrefix(label, "JSON FIELDS") && allMatch(lines, fieldListLine):
+		fields := []string{}
+		for _, line := range lines {
+			for _, field := range strings.Split(line, ",") {
+				if field = strings.TrimSpace(field); field != "" {
+					fields = append(fields, "`"+field+"`")
+				}
+			}
+		}
+		return []string{strings.Join(fields, ", ")}
+	case keyTableLabels[label] && allMatch(lines, definitionLine):
+		out := []string{}
+		for _, line := range lines {
+			match := definitionLine.FindStringSubmatch(line)
+			out = append(out, "- `"+match[1]+"`: "+mdEscape(match[2]))
+		}
+		return out
+	default:
+		// A fence ends at the first run of as many backticks, so it must
+		// be longer than any run inside the example.
+		longest := 0
+		for _, line := range lines {
+			for _, run := range backtickRun.FindAllString(line, -1) {
+				longest = max(longest, len(run))
+			}
+		}
+		fence := strings.Repeat("`", max(3, longest+1))
+		return append(append([]string{fence + language}, lines...), fence)
+	}
+}
+
+// helpBlock renders help text as Markdown, one block per help segment.
+func helpBlock(value, language string) string {
+	blocks := []string{}
+	for _, segment := range helpSegments(value) {
+		var rendered []string
+		switch segment.kind {
+		case proseSegment:
+			for _, line := range segment.lines {
+				rendered = append(rendered, mdEscape(line))
+			}
+		case unwrappedSegment:
+			rendered = preformattedBlock(segment.lines, language)
+		case exampleSegment:
+			rendered = indentedRun(segment.lines, "", language)
+		default:
+			panic("unknown help segment kind")
+		}
+		blocks = append(blocks, strings.Join(rendered, "\n"))
+	}
+	return strings.TrimSpace(strings.Join(blocks, "\n\n"))
 }
 func paramSignature(p Param, html bool) string {
 	if p.Kind == "argument" {

@@ -31,11 +31,12 @@ using a separate remote. These Git tokens are short-lived, and shorter
 still when obtained with a personal access token. Tokens are never saved
 in the repository.
 
+**Examples**
+
 ```sh
-Examples:
-    avr repo clone foo/faa
-    avr repo clone foo/faa my-checkout --depth 1
-    avr repo clone foo/faa --placement https://git.fi.a.avrea.io
+avr repo clone foo/faa
+avr repo clone foo/faa my-checkout --depth 1
+avr repo clone foo/faa --placement https://git.fi.a.avrea.io
 ```
 
 **Arguments**
@@ -57,17 +58,17 @@ List repositories you can access in an organization.
 avr repo list [OPTIONS]
 ```
 
-```sh
-Examples:
-    avr repo list
-    avr repo list --json full_name,repository_id
-    avr repo list --json '*' -q '.[].full_name'
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    full_name, platform, platform_repository_id, repository_id
+avr repo list
+avr repo list --json full_name,repository_id
+avr repo list --json '*' -q '.[].full_name'
 ```
+
+**JSON FIELDS**
+
+`full_name`, `platform`, `platform_repository_id`, `repository_id`
 
 **Options**
 
@@ -102,17 +103,17 @@ Safe to repeat: existing placements and their source configuration are
 preserved. The initial sync runs asynchronously; use `mirror status`
 with the returned repository ID to check progress.
 
-```sh
-Examples:
-    avr repo mirror locations
-    avr repo mirror create acme/widgets --location gsc-fi
-    avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror locations
+avr repo mirror create acme/widgets --location gsc-fi
+avr repo mirror create acme/team/widgets --source gitlab --location gsc-fi
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -137,16 +138,16 @@ avr repo mirror disable [OPTIONS]
 Placements are kept but become inert, so re-enabling restores them.
 Requires the organization admin role.
 
-```sh
-Examples:
-    avr repo mirror disable
-    avr repo mirror disable --repo acme/widgets --yes
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror disable
+avr repo mirror disable --repo acme/widgets --yes
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -169,16 +170,16 @@ Enabling makes existing placements active again; a freshly declared
 repository still needs at least one placement (`avr repo mirror place`)
 before anything is synced. Requires the organization admin role.
 
-```sh
-Examples:
-    avr repo mirror enable
-    avr repo mirror enable --repo acme/widgets
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror enable
+avr repo mirror enable --repo acme/widgets
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -198,16 +199,16 @@ avr repo mirror locations [OPTIONS]
 
 Use a cluster ID, datacenter ID, or unique name with `mirror create --location`.
 
-```sh
-Examples:
-    avr repo mirror locations
-    avr repo mirror locations --json cluster_id,name
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    cluster_id, datacenter_id, name
+avr repo mirror locations
+avr repo mirror locations --json cluster_id,name
 ```
+
+**JSON FIELDS**
+
+`cluster_id`, `datacenter_id`, `name`
 
 **Options**
 
@@ -227,16 +228,16 @@ CLUSTER_ID is one of the ids from `avr repo mirror locations`. Placing is
 idempotent; a new placement syncs from the upstream platform copy.
 Mirroring must be enabled first. Requires the organization admin role.
 
-```sh
-Examples:
-    avr repo mirror place gsc-fi
-    avr repo mirror place gsc-fi --repo acme/widgets
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror place gsc-fi
+avr repo mirror place gsc-fi --repo acme/widgets
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -258,17 +259,17 @@ Show the repository's git-mirror declaration and placements.
 avr repo mirror status [OPTIONS]
 ```
 
-```sh
-Examples:
-    avr repo mirror status
-    avr repo mirror status --repo acme/widgets
-    avr repo mirror status --json enabled,placements
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror status
+avr repo mirror status --repo acme/widgets
+avr repo mirror status --json enabled,placements
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Options**
 
@@ -289,16 +290,16 @@ avr repo mirror unplace [OPTIONS] CLUSTER_ID
 The mirrored data in that cluster is dropped; other placements are
 unaffected. Requires the organization admin role.
 
-```sh
-Examples:
-    avr repo mirror unplace gsc-fi
-    avr repo mirror unplace gsc-fi --repo acme/widgets --yes
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    enabled, full_name, placements, repository_id
+avr repo mirror unplace gsc-fi
+avr repo mirror unplace gsc-fi --repo acme/widgets --yes
 ```
+
+**JSON FIELDS**
+
+`enabled`, `full_name`, `placements`, `repository_id`
 
 **Arguments**
 
@@ -331,19 +332,16 @@ avr repo public-mirror cancel [OPTIONS] REQUEST_ID
 
 An approved mirror is global and cannot be withdrawn by a requester.
 
-```sh
-Examples:
-    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef
-    avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef --yes
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    approval_state, created_at, github_snapshot, public_access_expires_at,
-    reason, repository_full_name, repository_id, request_id,
-    requester_organization_id, requester_user_id, review_note, reviewed_at,
-    reviewed_by_user_id, status, updated_at
+avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef
+avr repo public-mirror cancel pmr-0123456789abcdef0123456789abcdef --yes
 ```
+
+**JSON FIELDS**
+
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 
@@ -371,22 +369,17 @@ A repository that is not mirrored is an answer, not a failure: the command
 reports ``Available: no`` (``available: false`` under --json) and exits 0.
 Only a real failure — denied, malformed name, server error — exits non-zero.
 
-```sh
-Examples:
-    avr repo public-mirror check rust-lang/rust
-    avr repo public-mirror check rust-lang/rust --json '*'
-    avr repo public-mirror check rust-lang/rust --json available,default_branch
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    approval_state, available, default_branch, https_clone_url,
-    installation_kind, is_archived, is_disabled, is_fork, mirror_enabled,
-    platform_owner_id, platform_owner_login, platform_owner_type,
-    platform_pushed_at, platform_repository_id, platform_size_kb,
-    public_access_expires_at, public_metadata_verified_at,
-    repository_full_name, repository_id
+avr repo public-mirror check rust-lang/rust
+avr repo public-mirror check rust-lang/rust --json '*'
+avr repo public-mirror check rust-lang/rust --json available,default_branch
 ```
+
+**JSON FIELDS**
+
+`approval_state`, `available`, `default_branch`, `https_clone_url`, `installation_kind`, `is_archived`, `is_disabled`, `is_fork`, `mirror_enabled`, `platform_owner_id`, `platform_owner_login`, `platform_owner_type`, `platform_pushed_at`, `platform_repository_id`, `platform_size_kb`, `public_access_expires_at`, `public_metadata_verified_at`, `repository_full_name`, `repository_id`
 
 **Arguments**
 
@@ -408,20 +401,17 @@ avr repo public-mirror request [OPTIONS] FULL_NAME
 FULL_NAME is the canonical GitHub owner/repository name. Avrea validates
 the repository with GitHub before recording the request.
 
-```sh
-Examples:
-    avr repo public-mirror request rust-lang/rust
-    avr repo public-mirror request rust-lang/rust --reason "Build dependency"
-    avr repo public-mirror request rust-lang/rust --org acme --json '*'
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    approval_state, created_at, github_snapshot, public_access_expires_at,
-    reason, repository_full_name, repository_id, request_id,
-    requester_organization_id, requester_user_id, review_note, reviewed_at,
-    reviewed_by_user_id, status, updated_at
+avr repo public-mirror request rust-lang/rust
+avr repo public-mirror request rust-lang/rust --reason "Build dependency"
+avr repo public-mirror request rust-lang/rust --org acme --json '*'
 ```
+
+**JSON FIELDS**
+
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 
@@ -442,20 +432,17 @@ List your organization's public-mirror requests.
 avr repo public-mirror requests [OPTIONS]
 ```
 
-```sh
-Examples:
-    avr repo public-mirror requests
-    avr repo public-mirror requests --org acme
-    avr repo public-mirror requests --json request_id,status,repository_full_name
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    approval_state, created_at, github_snapshot, public_access_expires_at,
-    reason, repository_full_name, repository_id, request_id,
-    requester_organization_id, requester_user_id, review_note, reviewed_at,
-    reviewed_by_user_id, status, updated_at
+avr repo public-mirror requests
+avr repo public-mirror requests --org acme
+avr repo public-mirror requests --json request_id,status,repository_full_name
 ```
+
+**JSON FIELDS**
+
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Options**
 
@@ -471,19 +458,16 @@ View one public-mirror request.
 avr repo public-mirror view [OPTIONS] REQUEST_ID
 ```
 
-```sh
-Examples:
-    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef
-    avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef --json '*'
-```
+**Examples**
 
 ```sh
-JSON FIELDS
-    approval_state, created_at, github_snapshot, public_access_expires_at,
-    reason, repository_full_name, repository_id, request_id,
-    requester_organization_id, requester_user_id, review_note, reviewed_at,
-    reviewed_by_user_id, status, updated_at
+avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef
+avr repo public-mirror view pmr-0123456789abcdef0123456789abcdef --json '*'
 ```
+
+**JSON FIELDS**
+
+`approval_state`, `created_at`, `github_snapshot`, `public_access_expires_at`, `reason`, `repository_full_name`, `repository_id`, `request_id`, `requester_organization_id`, `requester_user_id`, `review_note`, `reviewed_at`, `reviewed_by_user_id`, `status`, `updated_at`
 
 **Arguments**
 

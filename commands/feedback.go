@@ -37,7 +37,7 @@ func NewFeedback(deps Dependencies) *cobra.Command {
 			"or omit --idempotency-key to create a new submission.\n" +
 			"Acceptance queues delivery; use avr feedback status FEEDBACK_ID to check it.\n" +
 			"Use -- before a message beginning with a dash, help, or a word resembling status.\n\n" +
-			"Examples:\n" +
+			"\b\nExamples:\n" +
 			"    avr feedback \"Please support Lambda Cloud\"\n" +
 			"    avr feedback --bug \"Run logs are missing\"\n" +
 			"    avr feedback status FEEDBACK_ID\n\n" +
