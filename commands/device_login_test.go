@@ -34,7 +34,7 @@ type deviceTestFlow struct {
 	mu                          sync.Mutex
 	d                           Dependencies
 	start, metadata             map[string]any
-	startForm                   url.Values
+	wantStartForm               url.Values
 	replies                     []deviceTestReply
 	polls, waits                []time.Duration
 	now                         time.Time
@@ -49,6 +49,7 @@ func newDeviceTestFlow(t *testing.T) *deviceTestFlow {
 	d.Hostname = func() (string, error) { return "", nil }
 	d.DeviceOS = func() (string, error) { return "", nil }
 	f := &deviceTestFlow{d: d, now: time.Unix(0, 0)}
+	f.wantStartForm = url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}}
 	f.start = map[string]any{"device_code": deviceTestSecret, "user_code": "BCDF-GHJK", "verification_uri": "https://console.example.com/device", "verification_uri_complete": "https://console.example.com/device?user_code=BCDF-GHJK", "expires_in": 600, "interval": 5}
 	f.replies = []deviceTestReply{{200, map[string]any{"access_token": deviceTestKey, "token_type": "Bearer", "expires_in": 7776000, "scope": "avrea"}, ""}}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -74,9 +75,8 @@ func newDeviceTestFlow(t *testing.T) *deviceTestFlow {
 			if err := r.ParseForm(); err != nil {
 				t.Error(err)
 			}
-			f.startForm = r.PostForm
-			if r.PostForm.Get("client_id") != "avr-cli" || r.PostForm.Get("scope") != "avrea" {
-				t.Error("wrong device request", r.PostForm)
+			if !reflect.DeepEqual(r.PostForm, f.wantStartForm) {
+				t.Errorf("start form %v want %v", r.PostForm, f.wantStartForm)
 			}
 			f.now = f.now.Add(f.startDuration)
 			data = f.start
@@ -200,7 +200,7 @@ func TestDevicePollingBackoffAndDeadline(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			key, err := deviceLogin(t.Context(), f.d.defaults(), api, false)
+			key, err := deviceLogin(t.Context(), f.d.defaults(), api, false, true)
 			if tc.errorText == "" {
 				if err != nil || key != deviceTestKey {
 					t.Fatal(key, err)
@@ -294,7 +294,7 @@ func TestDeviceCancellationDoesNotPollOrSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = deviceLogin(ctx, f.d.defaults(), api, false)
+	_, err = deviceLogin(ctx, f.d.defaults(), api, false, true)
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if !errors.Is(err, context.Canceled) || len(f.polls) != 0 {
@@ -431,22 +431,25 @@ func TestDeviceLoginStartIncludesOnlyAvailableDeviceDetails(t *testing.T) {
 			f := newDeviceTestFlow(t)
 			f.d.Hostname = func() (string, error) { return tc.hostname, tc.hostnameErr }
 			f.d.DeviceOS = func() (string, error) { return tc.deviceOS, tc.osErr }
+			if tc.wantName != "" {
+				f.wantStartForm.Set("device_name", tc.wantName)
+			}
+			if tc.wantOS != "" {
+				f.wantStartForm.Set("device_os", tc.wantOS)
+			}
 			if code := Execute(t.Context(), []string{"auth", "device-login", "--no-qr"}, f.d); code != 0 {
 				t.Fatal(code, f.d.Err)
 			}
-			want := url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}}
-			if tc.wantName != "" {
-				want.Set("device_name", tc.wantName)
-			}
-			if tc.wantOS != "" {
-				want.Set("device_os", tc.wantOS)
-			}
-			f.mu.Lock()
-			defer f.mu.Unlock()
-			if !reflect.DeepEqual(f.startForm, want) {
-				t.Fatalf("start form %v want %v", f.startForm, want)
-			}
 		})
+	}
+}
+
+func TestDeviceLoginOmitsDeviceDetailsOnRequest(t *testing.T) {
+	f := newDeviceTestFlow(t)
+	unexpected := func() (string, error) { t.Error("read device details after opt-out"); return "unexpected", nil }
+	f.d.Hostname, f.d.DeviceOS = unexpected, unexpected
+	if code := Execute(t.Context(), []string{"auth", "device-login", "--no-device-details"}, f.d); code != 0 {
+		t.Fatal(code, f.d.Err)
 	}
 }
 
@@ -457,11 +460,12 @@ VERSION_ID=44
 PRETTY_NAME="Fedora Linux 44 (Workstation Edition)"`, "Fedora Linux 44 (Workstation Edition)"},
 		{"name and version", "NAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
 		{"name only", "NAME=Debian", "Debian"},
-		{"version only", "VERSION_ID=44", ""},
+		{"version only", "VERSION_ID=44", "Linux 44"},
 		{"last assignment wins", "PRETTY_NAME=Old\nPRETTY_NAME=\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
 		{"empty pretty name falls back", "PRETTY_NAME=\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
 		{"single quotes and comments", "# PRETTY_NAME=Wrong\n NAME='Fedora Linux' # distribution\nVERSION_ID='44' # version", "Fedora Linux 44"},
 		{"comment with quotes", `PRETTY_NAME="Example Linux" # user's "version`, "Example Linux"},
+		{"escaped separator", `PRETTY_NAME=Foo\ #1`, "Foo #1"},
 		{"quoted hash", `PRETTY_NAME="Example #1" # comment`, "Example #1"},
 		{"double quote escapes", `PRETTY_NAME="Example \"OS\" \\ \$"`, "Example \"OS\" \\ $"},
 		{"malformed quote falls back", "PRETTY_NAME=\"broken\nNAME=Ubuntu\nVERSION_ID=24.04", "Ubuntu 24.04"},
@@ -486,8 +490,23 @@ func TestWindowsVersionName(t *testing.T) {
 		{10, 0, 19045, "Windows 10 build 19045"},
 		{6, 3, 9600, "Windows 6.3 build 9600"},
 	} {
-		if got := windowsVersionName(tc.major, tc.minor, tc.build); got != tc.want {
+		if got := windowsVersionName(tc.major, tc.minor, tc.build, windowsWorkstation); got != tc.want {
 			t.Errorf("windowsVersionName(%d, %d, %d) = %q, want %q", tc.major, tc.minor, tc.build, got, tc.want)
+		}
+	}
+}
+
+func TestWindowsServerVersionName(t *testing.T) {
+	for _, tc := range []struct {
+		build       uint32
+		productType byte
+		want        string
+	}{
+		{20348, 3, "Windows Server build 20348"},
+		{26100, 2, "Windows Server build 26100"},
+	} {
+		if got := windowsVersionName(10, 0, tc.build, tc.productType); got != tc.want {
+			t.Errorf("got %q want %q", got, tc.want)
 		}
 	}
 }

@@ -2084,11 +2084,12 @@ credentials. No browser is opened on this machine. QR codes appear only
 in compatible terminals wide enough to display them.
 
 The CLI sends this machine's hostname and operating system version
-with the request, and the API key you approve is named after them, so
-you can tell your machines apart in the key list.
+before you approve. Use --no-device-details to omit both. Otherwise,
+the approved key is named after this machine in the key list.
 
 **Options**
 
+- `--no-device-details` — Omit the hostname and operating system from the sign-in request.
 - `--no-qr` — Hide the terminal QR code; still display the sign-in link.
 
 #### `avr auth login`

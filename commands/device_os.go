@@ -13,8 +13,14 @@ import (
 // https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information
 const windows11FirstBuild = 22000
 
-func windowsVersionName(major, minor, build uint32) string {
+// VER_NT_WORKSTATION distinguishes desktop Windows from domain controllers
+// and servers: https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-osversioninfoexw
+const windowsWorkstation = 1
+
+func windowsVersionName(major, minor, build uint32, productType byte) string {
 	switch {
+	case productType != windowsWorkstation:
+		return fmt.Sprintf("Windows Server build %d", build)
 	case major == 10 && minor == 0 && build >= windows11FirstBuild:
 		return fmt.Sprintf("Windows 11 build %d", build)
 	case major == 10 && minor == 0:
@@ -45,16 +51,25 @@ func parseOSRelease(data []byte) string {
 	if pretty := values["PRETTY_NAME"]; pretty != "" {
 		return pretty
 	}
-	if name := values["NAME"]; name != "" {
-		return strings.TrimSpace(name + " " + values["VERSION_ID"])
+	if len(values) == 0 {
+		return ""
 	}
-	return ""
+	name := values["NAME"]
+	if name == "" {
+		name = "Linux"
+	}
+	return strings.TrimSpace(name + " " + values["VERSION_ID"])
 }
 
 func osReleaseWithoutComment(raw string) string {
 	var quote rune
 	escaped := false
+	separator := true
 	for i, c := range raw {
+		if c == '#' && separator {
+			return raw[:i]
+		}
+		separator = !escaped && quote == 0 && (c == ' ' || c == '\t')
 		switch {
 		case escaped:
 			escaped = false
@@ -65,8 +80,6 @@ func osReleaseWithoutComment(raw string) string {
 		case quote != 0:
 		case c == '\'' || c == '"':
 			quote = c
-		case c == '#' && (i == 0 || raw[i-1] == ' ' || raw[i-1] == '\t'):
-			return raw[:i]
 		}
 	}
 	return raw
