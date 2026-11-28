@@ -39,7 +39,7 @@ func discoveredTest(id, class, name, outcome string) string {
 }
 
 func discoveryPage(filters, cursor string, rows ...string) string {
-	return fmt.Sprintf(`{"status":"available","truncated":false,"filters":%s,"scope":{"complete":false,"reports_searched":7,"reports_indexing":2,"reports_unavailable":0,"oldest_recorded_at":"2026-11-01T00:00:00Z","newest_recorded_at":"2026-11-14T10:00:00Z"},"data":[%s],"pagination":{"next_cursor":%s}}`, filters, strings.Join(rows, ","), cursor)
+	return fmt.Sprintf(`{"organization_id":"`+inspectionOrg+`","repository_id":"`+resultTestRepo+`","status":"available","truncated":false,"filters":%s,"scope":{"complete":false,"reports_searched":7,"reports_indexing":2,"reports_unavailable":0,"oldest_recorded_at":"2026-11-01T00:00:00Z","newest_recorded_at":"2026-11-14T10:00:00Z"},"data":[%s],"pagination":{"next_cursor":%s}}`, filters, strings.Join(rows, ","), cursor)
 }
 
 func TestTestsSearchSendsFiltersAndShowsScope(t *testing.T) {

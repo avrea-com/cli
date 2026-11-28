@@ -1,0 +1,57 @@
+.TH AVR\-TESTS\-VIEW 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-tests-view \- Read one recorded test result and when its failure started.
+.SH SYNOPSIS
+.B avr tests view
+[OPTIONS] RESULT
+.SH DESCRIPTION
+Read one recorded test result and when its failure started.
+.PP
+RESULT is a result_id. avr tests search, rank and list print this command under their table for each failed or errored row. Every row's result_id is in their --json output, for example:
+.PP
+.RS 4
+.nf
+avr tests search login --status failed --json data -q '.data[].result_id'
+.fi
+.RE
+.PP
+It identifies one exact occurrence; a re-run never replaces it with a newer result. The result shows the test, outcome, duration, job, commit and the recorded failure summary.
+.PP
+For a failed or errored result, the command also checks earlier runs of the same job configuration on the same branch: where the failure started, the last run that passed and how many reports failed since. A commit range is named only as a candidate: it holds the change only when runs on the branch follow commit order. Reports still indexing or unavailable are counted and say why a start could not be named.
+.PP
+Use --json '*' for the result and its failure_start; failure_start is null when the result did not fail, and is not read when --json leaves it out. Use --web to open the result in the console.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    commit_sha, data, execution_id, failure_start, job_id, organization_id,
+    report_finished_at, repository_id, result_id, status
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+\fIRESULT\fR
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the current git repository.
+.TP
+\fB\-\-web\fR
+Open in browser.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1),
+.BR avr-tests-history (1),
+.BR avr-tests-list (1),
+.BR avr-tests-rank (1),
+.BR avr-tests-search (1)

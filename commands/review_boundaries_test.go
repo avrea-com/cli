@@ -20,6 +20,11 @@ func TestClosedPipePreservesCommandOutcome(t *testing.T) {
 		want int
 	}{
 		{[]string{"run", "list"}, false, 0},
+		{[]string{"tests", "list"}, false, 0},
+		{[]string{"tests", "search"}, false, 0},
+		{[]string{"tests", "history"}, false, 0},
+		{[]string{"tests", "view"}, false, 0},
+		{[]string{"tests", "rank"}, false, 0},
 		{[]string{"run", "watch"}, false, 0},
 		{[]string{"run", "watch"}, true, 1},
 		{[]string{"workflow", "run"}, true, 1},

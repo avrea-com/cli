@@ -1,0 +1,66 @@
+.TH AVR\-TESTS\-RANK 1 "" "avr" "Avrea CLI"
+.SH NAME
+avr-tests-rank \- Rank a repository's tests by mean duration or failed reports.
+.SH SYNOPSIS
+.B avr tests rank
+[OPTIONS] [QUERY]
+.SH DESCRIPTION
+Rank a repository's tests by mean duration or failed reports.
+.PP
+Each row is one test under one job configuration, with statistics over the repository's most recent reports: in how many it failed or errored, out of those where it ran, and its mean and longest duration. Durations are test time, not job time. A later passing attempt of the same job is another report.
+.PP
+The statistics describe the reports listed in the header, not the whole retained history; the header says when older reports were left out. Use avr tests history for one test's earlier runs.
+.PP
+--order duration_mean_ms.desc ranks the longest mean duration first and failed_reports.desc the tests that failed in the most reports. QUERY, --status, --framework and --min-duration select tests as avr tests search does. --status and --min-duration keep the tests with such a result and show the newest one; every searched report still counts.
+.PP
+Each failed or errored row is followed by the avr tests view command that reads its failure summary and when it started failing. Use --json '*' for every row's result ID.
+.PP
+.RS 4
+.nf
+JSON FIELDS
+    data, filters, order, organization_id, pagination, repository_id, scope,
+    status, truncated
+.fi
+.RE
+.SH ARGUMENTS
+.TP
+[\fIQUERY\fR]
+\&
+.SH OPTIONS
+.TP
+\fB\-\-org\fR, \fB\-o\fR \fITEXT\fR
+Organization ID or slug. Defaults to the configured organization.
+.TP
+\fB\-\-repo\fR, \fB\-R\fR \fITEXT\fR
+Repository (owner/name or rep-ID). Defaults to the current git repository.
+.TP
+\fB\-\-order\fR \fICHOICE\fR
+Ranking order. (choices: duration_mean_ms.desc, failed_reports.desc; default: duration_mean_ms.desc)
+.TP
+\fB\-L\fR, \fB\-\-limit\fR \fIINTEGER RANGE\fR
+Maximum tests to return; short pages are followed, up to 20 result pages. (default: 50)
+.TP
+\fB\-\-cursor\fR \fITEXT\fR
+Continue from a previous response's next_cursor with the same query, order and filters.
+.TP
+\fB\-\-status\fR \fICHOICE\fR
+Rank only tests with a result of one of these outcomes (repeatable); every searched report still counts. (choices: passed, failed, skipped, errored; repeatable)
+.TP
+\fB\-\-framework\fR \fICHOICE\fR
+Test framework (repeatable; matches any selected framework). (choices: pytest, vitest, jest, go, junit, playwright, bun, rust; repeatable)
+.TP
+\fB\-\-min\-duration\fR \fITEXT\fR
+Only tests with a result at least this long: e.g. 500ms, 2s, 1m, or a number of milliseconds. 1 ms to 99,999,999 ms.
+.TP
+\fB\-\-json\fR \fITEXT\fR
+Output JSON. Pass comma-separated field names, "*" for all fields, or "?" to list available fields.
+.TP
+\fB\-q\fR, \fB\-\-jq\fR \fITEXT\fR
+Filter --json output through a jq expression.
+.SH SEE ALSO
+.BR avr (1),
+.BR avr-tests (1),
+.BR avr-tests-history (1),
+.BR avr-tests-list (1),
+.BR avr-tests-search (1),
+.BR avr-tests-view (1)

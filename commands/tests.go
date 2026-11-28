@@ -28,15 +28,15 @@ var testJobID = lazyRegexp("^job-[0-9a-f]{32}$")
 // NewTests reads the retained results of a job, including repeated occurrences.
 func NewTests(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	group := &cobra.Command{Use: "tests", Short: "Read recorded tests: a job's results, a repository search and one test's history.", Annotations: map[string]string{"job-shorthand": "list"}}
+	group := &cobra.Command{Use: "tests", Short: "Read recorded tests: a job's results, repository search and ranking, one test's history and one result.", Annotations: map[string]string{"job-shorthand": "list"}}
 	var org, repo, cursor, jobName, testName, suite, className string
 	var outcomes []string
-	var summary bool
+	var summary, allJobs bool
 	var limit int
 	var o jsonOptions
-	c := &cobra.Command{Use: "list RUN_OR_JOB", Short: "Read the latest confirmed execution of JOB, including repeated tests.", Args: positionalArguments("RUN_OR_JOB")}
+	c := &cobra.Command{Use: "list RUN_OR_JOB", Short: "Read one job's latest confirmed execution, or every job of a run.", Args: positionalArguments("RUN_OR_JOB")}
 	orgFlag(c, &org)
-	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository (owner/name or rep-ID). Defaults to the job's repository.")
+	c.Flags().StringVarP(&repo, "repo", "R", "", "Repository (owner/name or rep-ID). Defaults to the job's or run's repository.")
 	c.Flags().IntVarP(&limit, "limit", "L", 100, "Maximum occurrences to return; short pages are followed, up to 20 result pages.")
 	c.Flags().StringVar(&cursor, "cursor", "", "Continue from a previous response's next_cursor.")
 	c.Flags().StringVar(&jobName, "job", "", "Select one run job by case-insensitive name substring.")
@@ -45,14 +45,23 @@ func NewTests(deps Dependencies) *cobra.Command {
 	c.Flags().StringVar(&className, "class", "", "Exact nonempty class name.")
 	c.Flags().StringArrayVar(&outcomes, "status", nil, "Recorded test outcome (repeatable; matches any selected outcome).")
 	c.Flags().BoolVar(&summary, "summary", false, "Show report counts and collection state without downloading test results.")
+	c.Flags().BoolVar(&allJobs, "all-jobs", false, "Read every job of RUN, job by job, instead of selecting one.")
 	o.flags(c)
 	c.RunE = run(func(cmd *cobra.Command, args []string) error {
 		if limit < 1 || limit > 1000 {
 			return usageError(cmd, "Invalid value for '--limit' / '-L': "+strconv.Itoa(limit)+" is not in the range 1<=x<=1000.")
 		}
-		_, selected, err := testOutcomeQuery(cmd, outcomes)
+		selected, err := testChoices(cmd, "status", outcomes, testOutcomes)
 		if err != nil {
 			return err
+		}
+		if allJobs {
+			if cmd.Flags().Changed("job") || summary {
+				return usageError(cmd, "--all-jobs reads every job of the run; it cannot be combined with --job or --summary")
+			}
+			if strings.HasPrefix(args[0], "job-") {
+				return usageError(cmd, "--all-jobs reads a whole run. Pass the run's ID or URL, or omit --all-jobs to read one job.")
+			}
 		}
 		if summary {
 			for _, flag := range []string{"test", "suite", "class", "status", "cursor", "limit"} {
@@ -64,6 +73,8 @@ func NewTests(deps Dependencies) *cobra.Command {
 		fields := testResultFields
 		if summary {
 			fields = testSummaryFields
+		} else if allJobs {
+			fields = testRunFields
 		}
 		if done, err := o.prepare(cmd, d, fields); done || err != nil {
 			return err
@@ -106,6 +117,28 @@ func NewTests(deps Dependencies) *cobra.Command {
 		if err = authenticated(cfg); err != nil {
 			return err
 		}
+		if allJobs {
+			organization, run, repository, err := resolveTestsRun(cmd, d, cfg, api, args[0], org, repo)
+			if err != nil {
+				return err
+			}
+			response, err := runTestResultWalk("/orgs/"+organization+"/repos/"+repository+"/workflow-runs/"+run+"/tests", run).collect(cmd.Context(), api, cfg, limit, start, filters)
+			if err != nil {
+				return err
+			}
+			response["organization_id"], response["repository_id"] = organization, repository
+			incomplete := incompleteRunJobs(objectList(response["jobs"]), selected)
+			response["status"] = runWalkStatus(response["status"], incomplete)
+			if cmd.Flags().Changed("json") {
+				err = o.record(cmd, d, response, fields)
+			} else {
+				err = showRunTestResults(d.Out, response, incomplete, selected)
+			}
+			if err != nil {
+				return err
+			}
+			return writeTestContinuation(d.Err, response, len(filters) > 0, "run", "--all-jobs, the same filters")
+		}
 		organization, job, err := resolveTestsJob(cmd, d, cfg, api, args[0], org, jobName, cmd.Flags().Changed("job"))
 		if err != nil {
 			return err
@@ -115,7 +148,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 			repository, err = requiredWorkflowRepo(cmd.Context(), d, cfg, api, organization, repo)
 		} else {
 			var response map[string]any
-			response, err = getTestResults(cmd.Context(), api, cfg, "/orgs/"+organization+"/jobs/"+job, nil, "read the job", "Check the job ID, or pass --org with the job's organization.")
+			response, err = getTestResults(cmd.Context(), api, cfg, "/orgs/"+organization+"/jobs/"+job, nil, "read the job", "Check the job ID, or pass --org with the job's organization.", false)
 			if err == nil {
 				data := response
 				if nested, exists := response["data"]; exists {
@@ -136,7 +169,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 		path := "/orgs/" + organization + "/repos/" + repository + "/jobs/" + job + "/tests"
 		var response map[string]any
 		if summary {
-			response, err = getTestResults(cmd.Context(), api, cfg, path+"/summary", nil, "read the job test summary", "Check the job, repository and organization, and that Repository Tests and summaries are available.")
+			response, err = getTestResults(cmd.Context(), api, cfg, path+"/summary", nil, "read the job test summary", "Check the job, repository and organization, and that Repository Tests and summaries are available.", false)
 			if err == nil {
 				if response["job_id"] != job || (response["status"] != "available" && response["status"] != "expired" && response["status"] != "not_recorded") {
 					return &ExitError{1, "Error: The API returned an invalid job test summary."}
@@ -144,7 +177,7 @@ func NewTests(deps Dependencies) *cobra.Command {
 				err = validateTestCounts(response)
 			}
 		} else {
-			response, err = collectTestResults(cmd.Context(), api, cfg, path, job, limit, start, filters)
+			response, err = jobTestResultWalk(path, job).collect(cmd.Context(), api, cfg, limit, start, filters)
 		}
 		if err != nil {
 			return err
@@ -158,16 +191,9 @@ func NewTests(deps Dependencies) *cobra.Command {
 		if err != nil || summary {
 			return err
 		}
-		if next, ok := response["pagination"].(map[string]any)["next_cursor"].(string); ok {
-			message := "More results available."
-			if len(filters) > 0 {
-				message = "Search incomplete; more of the report remains."
-			}
-			_, err = fmt.Fprintf(d.Err, "%s Continue with the same filters and --cursor %s\n", message, shellQuotePython(testText(next)))
-		}
-		return err
+		return writeTestContinuation(d.Err, response, len(filters) > 0, "report", "the same filters")
 	})
-	group.AddCommand(c, newTestsSearch(d), newTestsHistory(d))
+	group.AddCommand(c, newTestsSearch(d), newTestsRank(d), newTestsHistory(d), newTestsView(d))
 	return group
 }
 
@@ -201,14 +227,16 @@ func validTestCursor(value string) bool {
 	return value != "" && strings.TrimSpace(value) == value && utf8.RuneCountInString(value) <= 1024
 }
 
-func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, path string, query url.Values, action, hint string) (map[string]any, error) {
+// getTestResults adds hint to a 404. With filterHint, a 400 instead points
+// at the test filters, or at the cursor when one was passed.
+func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, path string, query url.Values, action, hint string, filterHint bool) (map[string]any, error) {
 	response, err := api.Get(ctx, path, query)
 	if err == nil {
 		return response, nil
 	}
 	result := apiError(cfg, err, action)
 	var status *client.HTTPError
-	if errors.As(err, &status) && (status.Status == 404 || (status.Status == 400 && action == "read job test results")) {
+	if errors.As(err, &status) && (status.Status == 404 || (status.Status == 400 && filterHint)) {
 		if status.Status == 400 {
 			hint = "Check the test filters and whether this API deployment supports them."
 			if query.Get("cursor") != "" {
@@ -224,7 +252,46 @@ func getTestResults(ctx context.Context, api *client.Client, cfg config.Config, 
 	return nil, result
 }
 
-func collectTestResults(ctx context.Context, api *client.Client, cfg config.Config, path, job string, limit int, cursor *string, filters map[string]any) (map[string]any, error) {
+// testResultWalk reads a test-result listing page by page. check validates
+// each page; for a later page it also receives the first page, to compare
+// them. merge, when set, folds a validated later page into the first.
+// filterHint points a refused request at the test filters and cursor.
+type testResultWalk struct {
+	path, action, hint, invalid string
+	pageLimit                   int
+	filterHint                  bool
+	check                       func(page, first map[string]any) error
+	merge                       func(page, first map[string]any)
+}
+
+func jobTestResultWalk(path, job string) testResultWalk {
+	return testResultWalk{
+		path: path, action: "read job test results", invalid: "job test results", pageLimit: 1000, filterHint: true,
+		hint: "If you passed --cursor, restart without it. Otherwise check that Repository Tests are enabled and that the job belongs to the repository.",
+		check: func(page, first map[string]any) error {
+			if page["job_id"] != job {
+				return &ExitError{1, "Error: The API returned invalid job test results."}
+			}
+			if err := validateTestCounts(page); err != nil {
+				return err
+			}
+			if first == nil {
+				return nil
+			}
+			if err := laterTestPageError(page); err != nil {
+				return err
+			}
+			for _, key := range testSnapshotFields {
+				if !reflect.DeepEqual(page[key], first[key]) {
+					return &ExitError{1, "Error: Job results changed while reading pages. Retry without --cursor."}
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func (w testResultWalk) collect(ctx context.Context, api *client.Client, cfg config.Config, limit int, cursor *string, filters map[string]any) (map[string]any, error) {
 	rows := make([]any, 0)
 	var snapshot map[string]any
 	seen := map[string]bool{}
@@ -232,8 +299,8 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 		seen[*cursor] = true
 	}
 	for range 20 {
-		remaining := limit - len(rows)
-		query := url.Values{"limit": {strconv.Itoa(remaining)}}
+		size := min(limit-len(rows), w.pageLimit)
+		query := url.Values{"limit": {strconv.Itoa(size)}}
 		for key, value := range filters {
 			if key == "outcomes" {
 				values := value.([]any)
@@ -249,7 +316,7 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 		if cursor != nil {
 			query.Set("cursor", *cursor)
 		}
-		page, err := getTestResults(ctx, api, cfg, path, query, "read job test results", "If you passed --cursor, restart without it. Otherwise check that Repository Tests are enabled and that the job belongs to the repository.")
+		page, err := getTestResults(ctx, api, cfg, w.path, query, w.action, w.hint, w.filterHint)
 		if err != nil {
 			return nil, err
 		}
@@ -271,10 +338,10 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 		page["filters"] = applied
 		data, dataOK := page["data"].([]any)
 		pagination, paginationOK := page["pagination"].(map[string]any)
-		if page["job_id"] != job || !dataOK || !paginationOK {
-			return nil, &ExitError{1, "Error: The API returned invalid job test results."}
+		if !dataOK || !paginationOK {
+			return nil, &ExitError{1, "Error: The API returned invalid " + w.invalid + "."}
 		}
-		if len(data) > remaining {
+		if len(data) > size {
 			return nil, &ExitError{1, "Error: The API returned an invalid test result page."}
 		}
 		for _, row := range data {
@@ -282,22 +349,13 @@ func collectTestResults(ctx context.Context, api *client.Client, cfg config.Conf
 				return nil, &ExitError{1, "Error: The API returned an invalid test result page."}
 			}
 		}
-		if err := validateTestCounts(page); err != nil {
+		if err := w.check(page, snapshot); err != nil {
 			return nil, err
-		}
-		if snapshot != nil {
-			if err := laterTestPageError(page); err != nil {
-				return nil, err
-			}
 		}
 		if snapshot == nil {
 			snapshot = page
-		} else {
-			for _, key := range testSnapshotFields {
-				if !reflect.DeepEqual(page[key], snapshot[key]) {
-					return nil, &ExitError{1, "Error: Job results changed while reading pages. Retry without --cursor."}
-				}
-			}
+		} else if w.merge != nil {
+			w.merge(page, snapshot)
 		}
 		cursor = nil
 		if value := pagination["next_cursor"]; value != nil {
@@ -410,6 +468,45 @@ func laterTestPageError(page map[string]any) error {
 	return nil
 }
 
+// testLabel names a listed test by its class and name.
+func testLabel(row map[string]any) string {
+	parts := []string{}
+	for _, key := range []string{"class_name", "name"} {
+		if testValuePresent(row[key]) {
+			parts = append(parts, testText(row[key]))
+		}
+	}
+	if len(parts) == 0 {
+		return "unknown"
+	}
+	return strings.Join(parts, ".")
+}
+
+// writeFailureSummaries prints each listed failure message under its label.
+func writeFailureSummaries(b *strings.Builder, rows []any, label func(map[string]any) string) {
+	for _, item := range rows {
+		row := item.(map[string]any)
+		if testValuePresent(row["failure_summary"]) {
+			fmt.Fprintf(b, "\n%s: %s\n", label(row), testText(row["failure_summary"]))
+		}
+	}
+}
+
+// writeTestContinuation says how to continue a listing with a next cursor.
+// scope names what remains to be searched, and same what must be repeated.
+func writeTestContinuation(w io.Writer, response map[string]any, filtered bool, scope, same string) error {
+	next, ok := response["pagination"].(map[string]any)["next_cursor"].(string)
+	if !ok {
+		return nil
+	}
+	message := "More results available."
+	if filtered {
+		message = "Search incomplete; more of the " + scope + " remains."
+	}
+	_, err := fmt.Fprintf(w, "%s Continue with %s and --cursor %s\n", message, same, shellQuotePython(testText(next)))
+	return err
+}
+
 func showTestResults(w io.Writer, response map[string]any, summary bool) error {
 	var b strings.Builder
 	text := func(key string) string { return testText(response[key]) }
@@ -456,23 +553,8 @@ func showTestResults(w io.Writer, response map[string]any, summary bool) error {
 		if err := output.Grid(&b, []string{"Suite", "Class", "Test", "Outcome", "Time (ms)"}, cells); err != nil {
 			return err
 		}
-		for _, item := range rows {
-			row := item.(map[string]any)
-			if !testValuePresent(row["failure_summary"]) {
-				continue
-			}
-			parts := []string{}
-			for _, key := range []string{"class_name", "name"} {
-				if testValuePresent(row[key]) {
-					parts = append(parts, testText(row[key]))
-				}
-			}
-			label := strings.Join(parts, ".")
-			if label == "" {
-				label = "unknown"
-			}
-			fmt.Fprintf(&b, "\n%s: %s\n", label, testText(row["failure_summary"]))
-		}
+		writeFailureSummaries(&b, rows, testLabel)
+		writeResultCommands(&b, response, rows, testLabel)
 	} else if message := testListingMessage(response["status"]); message != "" {
 		b.WriteString(message + "\n")
 	} else if response["status"] == "available" {
@@ -554,7 +636,7 @@ func resolveTestsJob(cmd *cobra.Command, d Dependencies, cfg config.Config, api 
 		if len(matched) == 0 {
 			prefix = "No jobs"
 		}
-		return "", "", &ExitError{1, "Error: " + prefix + " match. Use --job NAME to select one job or pass its Avrea job ID.\nAvailable jobs:\n" + strings.Join(choices, "\n")}
+		return "", "", &ExitError{1, "Error: " + prefix + " match. Use --job NAME to select one job, pass its Avrea job ID or read every job with --all-jobs.\nAvailable jobs:\n" + strings.Join(choices, "\n")}
 	}
 	id, ok := matched[0]["job_id"].(string)
 	if !ok || !testJobID().MatchString(id) {
