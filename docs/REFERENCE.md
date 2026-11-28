@@ -2059,8 +2059,13 @@ the code, and approve access. The CLI waits for approval and saves your
 credentials. No browser is opened on this machine. QR codes appear only
 in compatible terminals wide enough to display them.
 
+The CLI sends this machine's hostname and operating system version
+before you approve. Use --no-device-details to omit both. Otherwise,
+the approved key is named after this machine in the key list.
+
 **Options**
 
+- `--no-device-details` — Omit the hostname and operating system from the sign-in request.
 - `--no-qr` — Hide the terminal QR code; still display the sign-in link.
 
 #### `avr auth login`

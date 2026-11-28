@@ -19,6 +19,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const deviceLabelMax = 64
+const omitDeviceDetailsHelp = "Omit the hostname and operating system from the sign-in request."
+
 const deviceInvalidResponse = "The server returned an invalid device-login response."
 
 const deviceExpired = "The login code expired. Run avr auth device-login again."
@@ -28,9 +31,10 @@ var deviceAccessToken = lazyRegexp(`^avk_[A-Za-z0-9_-]{43}$`)
 // NewDeviceLogin signs in without opening a local browser or callback listener.
 func NewDeviceLogin(deps Dependencies) *cobra.Command {
 	d := deps.defaults()
-	var noQR bool
+	var noQR, noDeviceDetails bool
 	cmd := &cobra.Command{Use: "device-login", Short: "Sign in by approving this machine from any device.", Args: cobra.NoArgs}
 	cmd.Flags().BoolVar(&noQR, "no-qr", false, "Hide the terminal QR code; still display the sign-in link.")
+	cmd.Flags().BoolVar(&noDeviceDetails, "no-device-details", false, omitDeviceDetailsHelp)
 	cmd.RunE = run(func(cmd *cobra.Command, _ []string) error {
 		cfg, store, api, err := d.load()
 		if err != nil {
@@ -39,7 +43,7 @@ func NewDeviceLogin(deps Dependencies) *cobra.Command {
 		if err := store.ValidateMutation(); err != nil {
 			return err
 		}
-		key, err := deviceLogin(cmd.Context(), d, api, !noQR)
+		key, err := deviceLogin(cmd.Context(), d, api, !noQR, !noDeviceDetails)
 		if err != nil {
 			if cmd.Context().Err() != nil {
 				return &ExitError{130, "\nAborted!"}
@@ -195,7 +199,7 @@ func deviceTransportError(err error) error {
 	return &client.TransportError{Message: message, Reason: deviceTransportReason(err)}
 }
 
-func deviceLogin(ctx context.Context, d Dependencies, api *client.Client, showQR bool) (string, error) {
+func deviceLogin(ctx context.Context, d Dependencies, api *client.Client, showQR, sendDeviceDetails bool) (string, error) {
 	base, err := deviceSafeURL(api.Config.Host, true)
 	if err != nil {
 		return "", err
@@ -205,10 +209,10 @@ func deviceLogin(ctx context.Context, d Dependencies, api *client.Client, showQR
 	h.Jar = nil
 	h.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	c := deviceClient{http: &h, userAgent: api.UserAgent}
-	return deviceAuthorize(ctx, d, c, base, showQR)
+	return deviceAuthorize(ctx, d, c, base, showQR, sendDeviceDetails)
 }
 
-func deviceAuthorize(ctx context.Context, d Dependencies, c deviceClient, base *url.URL, showQR bool) (string, error) {
+func deviceAuthorize(ctx context.Context, d Dependencies, c deviceClient, base *url.URL, showQR, sendDeviceDetails bool) (string, error) {
 	r, err := c.request(ctx, base.String()+"/.well-known/oauth-authorization-server", nil)
 	if err != nil {
 		return "", err
@@ -234,8 +238,21 @@ func deviceAuthorize(ctx context.Context, d Dependencies, c deviceClient, base *
 			return "", errors.New("Device-login endpoints must use the configured API origin.") //nolint:staticcheck // Match the Python CLI diagnostic.
 		}
 	}
+	// The API names the issued key after these and keeps at most 64
+	// characters of each; a missing value only leaves it out of the name.
+	form := url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}}
+	if sendDeviceDetails {
+		setDeviceLabel := func(field string, source func() (string, error)) {
+			if value, err := source(); err == nil && value != "" {
+				runes := []rune(value)
+				form.Set(field, string(runes[:min(len(runes), deviceLabelMax)]))
+			}
+		}
+		setDeviceLabel("device_name", d.Hostname)
+		setDeviceLabel("device_os", d.DeviceOS)
+	}
 	started := d.Now()
-	r, err = c.request(ctx, device, url.Values{"client_id": {"avr-cli"}, "scope": {"avrea"}})
+	r, err = c.request(ctx, device, form)
 	if err != nil {
 		return "", err
 	}

@@ -13,10 +13,15 @@ func authDescription(path string) docgen.Description {
 				"agent's terminal. Open the displayed link or scan the QR code, confirm\n" +
 				"the code, and approve access. The CLI waits for approval and saves your\n" +
 				"credentials. No browser is opened on this machine. QR codes appear only\n" +
-				"in compatible terminals wide enough to display them.\n",
+				"in compatible terminals wide enough to display them.\n" +
+				"\n" +
+				"The CLI sends this machine's hostname and operating system version\n" +
+				"before you approve. Use --no-device-details to omit both. Otherwise,\n" +
+				"the approved key is named after this machine in the key list.\n",
 			Short:          "Sign in by approving this machine from any device.",
 			CompletionHelp: "Sign in by approving this machine from...",
 			Parameters: []docgen.Parameter{
+				{Param: docgen.Param{Name: "no_device_details", Kind: "option", Opts: []string{"--no-device-details"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText(omitDeviceDetailsHelp)}, CompletionKind: "Bool"},
 				{Param: docgen.Param{Name: "no_qr", Kind: "option", Opts: []string{"--no-qr"}, Type: "boolean", Nargs: 1, IsFlag: true, Help: descriptionText("Hide the terminal QR code; still display the sign-in link.")}, CompletionKind: "Bool"},
 			},
 		}
